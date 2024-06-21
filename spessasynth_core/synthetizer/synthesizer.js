@@ -1,5 +1,5 @@
 import {
-    createWorkletChannel,
+    addNewChannel,
 } from './worklet_system/worklet_utilities/worklet_processor_channel.js'
 
 import { SoundFont2 } from '../soundfont/soundfont_parser.js'
@@ -40,21 +40,16 @@ export const DEFAULT_PERCUSSION = 9;
 export const DEFAULT_CHANNEL_COUNT = 16;
 export const DEFAULT_SYNTH_MODE = "gs";
 
-/**
- * worklet_processor.js
- * purpose: manages the synthesizer (and worklet sequencer) from the AudioWorkletGlobalScope and renders the audio data
- */
-
 export const MIN_NOTE_LENGTH = 0.07; // if the note is released faster than that, it forced to last that long
 
 export const SYNTHESIZER_GAIN = 1.0;
 
 const BLOCK_SIZE = 128;
 
-class SpessaSynthCore {
+class Synthesizer {
     /**
      * Creates a new synthesizer
-     * @param soundFontBuffer {Buffer} the soundfont file buffer.
+     * @param soundFontBuffer {Buffer|ArrayBufferLike} the soundfont file buffer.
      * @param sampleRate {number} the sample rate, in hertz.
      * @param blockSize {number} the block size in samples, represets the interval of updating the sequencer, modulation envelope, etc. Defaults to 128.
      */
@@ -121,7 +116,7 @@ class SpessaSynthCore {
          */
         this.workletProcessorChannels = [];
         for (let i = 0; i < this._outputsAmount; i++) {
-            this.createWorkletChannel(false);
+            this.addNewChannel(false);
         }
 
         this.workletProcessorChannels[DEFAULT_PERCUSSION].preset = this.drumPreset;
@@ -150,6 +145,16 @@ class SpessaSynthCore {
             outputAmount: this._outputsAmount,
             dumpedSamples: this.workletDumpedSamplesList
         });
+    }
+
+    /**
+     * @param channel {number}
+     * @param controllerNumber {number}
+     * @param isLocked {boolean}
+     */
+    lockController(channel, controllerNumber, isLocked)
+    {
+        this.workletProcessorChannels[channel].lockedControllers[controllerNumber] = isLocked;
     }
 
     /**
@@ -245,54 +250,54 @@ class SpessaSynthCore {
 
 // include other methods
 // voice related
-SpessaSynthCore.prototype.renderVoice = renderVoice;
-SpessaSynthCore.prototype.releaseVoice = releaseVoice;
-SpessaSynthCore.prototype.voiceKilling = voiceKilling;
+Synthesizer.prototype.renderVoice = renderVoice;
+Synthesizer.prototype.releaseVoice = releaseVoice;
+Synthesizer.prototype.voiceKilling = voiceKilling;
 
 // system exlcusive related
-SpessaSynthCore.prototype.systemExclusive = systemExclusive;
+Synthesizer.prototype.systemExclusive = systemExclusive;
 
 // note messages related
-SpessaSynthCore.prototype.noteOn = noteOn;
-SpessaSynthCore.prototype.noteOff = noteOff;
-SpessaSynthCore.prototype.killNote = killNote;
-SpessaSynthCore.prototype.stopAll = stopAll;
-SpessaSynthCore.prototype.stopAllChannels = stopAllChannels;
-SpessaSynthCore.prototype.muteChannel = muteChannel;
+Synthesizer.prototype.noteOn = noteOn;
+Synthesizer.prototype.noteOff = noteOff;
+Synthesizer.prototype.killNote = killNote;
+Synthesizer.prototype.stopAll = stopAll;
+Synthesizer.prototype.stopAllChannels = stopAllChannels;
+Synthesizer.prototype.muteChannel = muteChannel;
 
 // vustom vibrato related
-SpessaSynthCore.prototype.setVibrato = setVibrato;
-SpessaSynthCore.prototype.disableAndLockVibrato = disableAndLockVibrato;
+Synthesizer.prototype.setVibrato = setVibrato;
+Synthesizer.prototype.disableAndLockVibrato = disableAndLockVibrato;
 
 // data entry related
-SpessaSynthCore.prototype.dataEntryCoarse = dataEntryCoarse;
-SpessaSynthCore.prototype.dataEntryFine = dataEntryFine;
+Synthesizer.prototype.dataEntryCoarse = dataEntryCoarse;
+Synthesizer.prototype.dataEntryFine = dataEntryFine;
 
 // channel related
-SpessaSynthCore.prototype.createWorkletChannel = createWorkletChannel;
-SpessaSynthCore.prototype.controllerChange = controllerChange;
-SpessaSynthCore.prototype.resetAllControllers = resetAllControllers;
-SpessaSynthCore.prototype.resetControllers = resetControllers;
-SpessaSynthCore.prototype.resetParameters = resetParameters;
+Synthesizer.prototype.addNewChannel = addNewChannel;
+Synthesizer.prototype.controllerChange = controllerChange;
+Synthesizer.prototype.resetAllControllers = resetAllControllers;
+Synthesizer.prototype.resetControllers = resetControllers;
+Synthesizer.prototype.resetParameters = resetParameters;
 
 // master parameter related
-SpessaSynthCore.prototype.setMainVolume = setMainVolume;
-SpessaSynthCore.prototype.setMasterPan = setMasterPan;
+Synthesizer.prototype.setMainVolume = setMainVolume;
+Synthesizer.prototype.setMasterPan = setMasterPan;
 
 // tuning related
-SpessaSynthCore.prototype.transposeAllChannels = transposeAllChannels;
-SpessaSynthCore.prototype.transposeChannel = transposeChannel;
-SpessaSynthCore.prototype.setChannelTuning = setChannelTuning;
-SpessaSynthCore.prototype.setMasterTuning = setMasterTuning;
-SpessaSynthCore.prototype.setModulationDepth = setModulationDepth;
-SpessaSynthCore.prototype.pitchWheel = pitchWheel;
+Synthesizer.prototype.transposeAllChannels = transposeAllChannels;
+Synthesizer.prototype.transposeChannel = transposeChannel;
+Synthesizer.prototype.setChannelTuning = setChannelTuning;
+Synthesizer.prototype.setMasterTuning = setMasterTuning;
+Synthesizer.prototype.setModulationDepth = setModulationDepth;
+Synthesizer.prototype.pitchWheel = pitchWheel;
 
 // program related
-SpessaSynthCore.prototype.programChange = programChange;
-SpessaSynthCore.prototype.setPreset = setPreset;
-SpessaSynthCore.prototype.setDrums = setDrums;
-SpessaSynthCore.prototype.reloadSoundFont = reloadSoundFont;
-SpessaSynthCore.prototype.sampleDump = sampleDump;
+Synthesizer.prototype.programChange = programChange;
+Synthesizer.prototype.setPreset = setPreset;
+Synthesizer.prototype.setDrums = setDrums;
+Synthesizer.prototype.reloadSoundFont = reloadSoundFont;
+Synthesizer.prototype.sampleDump = sampleDump;
 
 
-export { SpessaSynthCore }
+export { Synthesizer }

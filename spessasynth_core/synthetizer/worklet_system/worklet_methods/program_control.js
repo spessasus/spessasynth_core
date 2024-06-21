@@ -8,7 +8,7 @@ import { generatorTypes } from '../../../soundfont/chunk/generators.js'
  * @param channel {number}
  * @param programNumber {number}
  * @param userChange {boolean}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function programChange(channel, programNumber, userChange=false)
 {
@@ -29,7 +29,7 @@ export function programChange(channel, programNumber, userChange=false)
 /**
  * @param channel {number}
  * @param preset {Preset}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function setPreset(channel, preset)
 {
@@ -50,7 +50,7 @@ export function setPreset(channel, preset)
  * Toggles drums on a given channel
  * @param channel {number}
  * @param isDrum {boolean}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function setDrums(channel, isDrum)
 {
@@ -69,7 +69,7 @@ export function setDrums(channel, isDrum)
 
 /**
  * @param buffer {ArrayBuffer}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function reloadSoundFont(buffer)
 {
@@ -94,7 +94,6 @@ export function reloadSoundFont(buffer)
         channelObject.lockPreset = false;
         this.programChange(i, channelObject.preset.program);
     }
-    this.sendPresetList();
 }
 
 /**
@@ -102,7 +101,7 @@ export function reloadSoundFont(buffer)
  * @param channel {number}
  * @param sampleID {number}
  * @param sampleData {Float32Array}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function sampleDump(channel, sampleID, sampleData)
 {

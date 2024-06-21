@@ -1,6 +1,6 @@
 import { consoleColors } from '../../../utils/other.js'
 import { midiControllers } from '../../../midi_parser/midi_message.js'
-import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from '../../spessasynth_core.js'
+import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from '../../synthesizer.js'
 import {
     customControllers,
     customResetArray,
@@ -9,13 +9,13 @@ import {
 } from '../worklet_utilities/worklet_processor_channel.js'
 import { computeModulators } from '../worklet_utilities/worklet_modulator.js'
 import { SpessaSynthInfo } from '../../../utils/loggin.js'
-import { SYNTHESIZER_GAIN } from '../../spessasynth_core.js'
+import { SYNTHESIZER_GAIN } from '../../synthesizer.js'
 
 /**
  * @param channel {number}
  * @param controllerNumber {number}
  * @param controllerValue {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function controllerChange(channel, controllerNumber, controllerValue)
 {
@@ -140,7 +140,7 @@ export function controllerChange(channel, controllerNumber, controllerValue)
 }
 
 /**
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function resetAllControllers()
 {
@@ -176,7 +176,7 @@ export function resetAllControllers()
 /**
  * Resets all controllers for channel
  * @param channel {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function resetControllers(channel)
 {
@@ -221,7 +221,7 @@ export function resetControllers(channel)
 
 /**
  * @param channel {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function resetParameters(channel)
 {
@@ -248,7 +248,7 @@ export function resetParameters(channel)
 
 /**
  * @param volume {number} 0-1
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function setMainVolume(volume)
 {
@@ -258,7 +258,7 @@ export function setMainVolume(volume)
 
 /**
  * @param pan {number} -1 to 1
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 
 export function setMasterPan(pan)
@@ -273,7 +273,7 @@ export function setMasterPan(pan)
 /**
  * @param channel {number}
  * @param isMuted {boolean}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function muteChannel(channel, isMuted)
 {

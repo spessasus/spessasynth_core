@@ -8,11 +8,11 @@ import { SpessaSynthWarn } from '../utils/loggin.js'
 class Sequencer
 {
     /**
-     * @param SpessaSynthCore {SpessaSynthCore}
+     * @param Synthesizer {Synthesizer}
      */
-    constructor(SpessaSynthCore)
+    constructor(Synthesizer)
     {
-        this.synth = SpessaSynthCore;
+        this.synth = Synthesizer;
         this.ignoreEvents = false;
 
         // event's number in this.events

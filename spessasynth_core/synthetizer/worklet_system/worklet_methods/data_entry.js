@@ -12,7 +12,7 @@ import { SpessaSynthInfo, SpessaSynthWarn } from '../../../utils/loggin.js'
  * Executes a data entry for an NRP for a sc88pro NRP (because touhou yes) and RPN tuning
  * @param channel {number}
  * @param dataValue {number} dataEntryCoarse MSB
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @private
  */
 export function dataEntryCoarse(channel, dataValue)
@@ -233,7 +233,7 @@ export function dataEntryCoarse(channel, dataValue)
  * Executes a data entry for an RPN tuning
  * @param channel {number}
  * @param dataValue {number} dataEntry LSB
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @private
  */
 export function dataEntryFine(channel, dataValue)

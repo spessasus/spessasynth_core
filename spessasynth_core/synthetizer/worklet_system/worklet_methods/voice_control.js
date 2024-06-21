@@ -7,7 +7,7 @@ import { getOscillatorData } from '../worklet_utilities/wavetable_oscillator.js'
 import { panVoice } from '../worklet_utilities/stereo_panner.js'
 import { applyVolumeEnvelope } from '../worklet_utilities/volume_envelope.js'
 import { applyLowpassFilter } from '../worklet_utilities/lowpass_filter.js'
-import { MIN_NOTE_LENGTH } from '../../spessasynth_core.js'
+import { MIN_NOTE_LENGTH } from '../../synthesizer.js'
 
 /**
  * Renders a voice to the stereo output buffer
@@ -16,7 +16,7 @@ import { MIN_NOTE_LENGTH } from '../../spessasynth_core.js'
  * @param output {Float32Array[]} the output buffer
  * @param reverbOutput {Float32Array[]} output for reverb
  * @param chorusOutput {Float32Array[]} output for chorus
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function renderVoice(channel, voice, output, reverbOutput, chorusOutput)
 {
@@ -145,7 +145,7 @@ export function renderVoice(channel, voice, output, reverbOutput, chorusOutput)
 
 
 /**
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param amount {number}
  */
 export function voiceKilling(amount)
@@ -173,7 +173,7 @@ export function voiceKilling(amount)
 /**
  * Stops the voice
  * @param voice {WorkletVoice} the voice to stop
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function releaseVoice(voice)
 {

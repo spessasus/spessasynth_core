@@ -16,7 +16,7 @@ import { absCentsToHz, decibelAttenuationToGain } from './unit_converter.js'
  * @param outputBuffer {Float32Array} the buffer to apply the filter to
  * @param cutoffCents {number} cutoff frequency in cents
  * @param sampleRate {number} in hertz
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function applyLowpassFilter(voice, outputBuffer, cutoffCents, sampleRate)
 {

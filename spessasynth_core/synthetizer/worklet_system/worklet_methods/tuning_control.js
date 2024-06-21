@@ -6,7 +6,7 @@ import { SpessaSynthInfo } from '../../../utils/loggin.js'
 
 /**
  * Transposes all channels by given amount of semitones
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param semitones {number} Can be float
  * @param force {boolean} defaults to false, if true transposes the channel even if it's a drum channel
  */
@@ -21,7 +21,7 @@ export function transposeAllChannels(semitones, force = false)
 
 /**
  * Transposes the channel by given amount of semitones
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param channel {number}
  * @param semitones {number} Can be float
  * @param force {boolean} defaults to false, if true transposes the channel even if it's a drum channel
@@ -39,7 +39,7 @@ export function transposeChannel(channel, semitones, force=false)
 
 /**
  * Sets the channel's tuning
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param channel {number}
  * @param cents {number}
  */
@@ -55,7 +55,7 @@ export function setChannelTuning(channel, cents)
 
 /**
  * Sets the worklet's master tuning
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param cents {number}
  */
 export function setMasterTuning(cents)
@@ -67,7 +67,7 @@ export function setMasterTuning(cents)
 }
 
 /**
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param channel {number}
  * @param cents {number}
  */
@@ -92,7 +92,7 @@ export function setModulationDepth(channel, cents)
 
 /**
  * Sets the pitch of the given channel
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param channel {number} usually 0-15: the channel to change pitch
  * @param MSB {number} SECOND byte of the MIDI pitchWheel message
  * @param LSB {number} FIRST byte of the MIDI pitchWheel message

@@ -1,6 +1,6 @@
 /**
  * @param channel {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function disableAndLockVibrato(channel)
 {
@@ -15,7 +15,7 @@ export function disableAndLockVibrato(channel)
  * @param depth {number}
  * @param rate {number}
  * @param delay {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function setVibrato(channel, depth, rate, delay)
 {

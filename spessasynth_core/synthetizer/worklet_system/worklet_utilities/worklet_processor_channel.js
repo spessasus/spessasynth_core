@@ -28,9 +28,9 @@ import { modulatorSources } from '../../../soundfont/chunk/modulators.js'
  */
 
 /**
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
-export function createWorkletChannel()
+export function addNewChannel()
 {
     /**
      * @type {WorkletProcessorChannel}
