@@ -81,6 +81,12 @@ const synth = new Synthesizer(soundFontBuffer, sampleRate, blockSize)
 - blockSize - optional, a number. Sets the interval of the synth updating parameters like the sequencer tick processing and modulation envelope.
 Default value is 128, and it's recommended to leave it as the default.
 
+### sf3supportReady
+A promise that gets resolved when the vorbis decoder is ready. You must await it if you use sf3 soundfonts.
+```js
+await synth.sf3supportReady;
+```
+
 ### render
 Synthesizes audio the output buffers
 ```js
