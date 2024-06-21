@@ -6,7 +6,7 @@ import { SpessaSynthInfo, SpessaSynthWarn } from '../../../utils/loggin.js'
  * Release a note
  * @param channel {number}
  * @param midiNote {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function noteOff(channel, midiNote)
 {
@@ -48,7 +48,7 @@ export function noteOff(channel, midiNote)
  * Stops a note nearly instantly
  * @param channel {number}
  * @param midiNote {number}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function killNote(channel, midiNote)
 {
@@ -66,7 +66,7 @@ export function killNote(channel, midiNote)
  * stops all notes
  * @param channel {number}
  * @param force {boolean}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function stopAll(channel, force = false)
 {
@@ -76,7 +76,6 @@ export function stopAll(channel, force = false)
         // force stop all
         channelVoices.length = 0;
         this.workletProcessorChannels[channel].sustainedVoices.length = 0;
-        this.sendChannelProperties();
     }
     else
     {
@@ -91,7 +90,7 @@ export function stopAll(channel, force = false)
 }
 
 /**
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  * @param force {boolean}
  */
 export function stopAllChannels(force = false)

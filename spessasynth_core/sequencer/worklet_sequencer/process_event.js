@@ -118,7 +118,7 @@ export function _processEvent(event, trackIndex)
 export function _addNewMidiPort()
 {
     for (let i = 0; i < 16; i++) {
-        this.synth.createWorkletChannel(true);
+        this.synth.addNewChannel(true);
         if(i === 9)
         {
             this.synth.setDrums(this.synth.workletProcessorChannels.length - 1, true);

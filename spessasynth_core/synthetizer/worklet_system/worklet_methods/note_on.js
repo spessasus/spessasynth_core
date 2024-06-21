@@ -1,7 +1,7 @@
 import { getWorkletVoices } from '../worklet_utilities/worklet_voice.js'
 import { generatorTypes } from '../../../soundfont/chunk/generators.js'
 import { computeModulators } from '../worklet_utilities/worklet_modulator.js'
-import { VOICE_CAP } from "../../spessasynth_core.js";
+import { VOICE_CAP } from "../../synthesizer.js";
 import { SpessaSynthWarn } from '../../../utils/loggin.js'
 
 /**
@@ -10,7 +10,7 @@ import { SpessaSynthWarn } from '../../../utils/loggin.js'
  * @param midiNote {number}
  * @param velocity {number}
  * @param enableDebugging {boolean}
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 export function noteOn(channel, midiNote, velocity, enableDebugging = false)
 {

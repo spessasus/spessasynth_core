@@ -3,7 +3,7 @@ import { SpessaSynthInfo, SpessaSynthWarn } from '../../../utils/loggin.js'
 /**
  * Executes a system exclusive
  * @param messageData {number[]} - the message data without f0
- * @this {SpessaSynthCore}
+ * @this {Synthesizer}
  */
 
 export function systemExclusive(messageData)

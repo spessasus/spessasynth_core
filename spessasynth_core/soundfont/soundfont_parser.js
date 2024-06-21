@@ -19,7 +19,7 @@ export class SoundFont2
 {
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
-     * @param arrayBuffer {Buffer|{presets: Preset[], info: Object<string, string>}}
+     * @param arrayBuffer {Buffer|ArrayBufferLike|{presets: Preset[], info: Object<string, string>}}
      */
     constructor(arrayBuffer) {
         if(arrayBuffer.presets)
