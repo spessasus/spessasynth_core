@@ -75,7 +75,8 @@ export function controllerChange(channel, controllerNumber, controllerValue)
             {
                 if(channelObject.midiControllers[midiControllers.bankSelect] === 0)
                 {
-                    channelObject.midiControllers[midiControllers.bankSelect] = controllerValue;
+                    if(controllerValue !== 127)
+                        channelObject.midiControllers[midiControllers.bankSelect] = controllerValue;
                 }
             }
             else
