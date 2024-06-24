@@ -4,7 +4,7 @@ A fork of [SpessaSynth](https://github.com/spessasus/SpessaSynth).
 
 `npm install --save spessasynth_core`
 
-> [!TIP]
+
 > Looking for a browser version? Try [SpessaSynth](https://github.com/spessasus/SpessaSynth).
 
 ## Features:
@@ -95,8 +95,8 @@ synth.render(outputChannels, reverbOutputChannels, chorusOutputChannels);
 - outputChannels - two `Float32Arrays` that get filled with the audio data. Left is the left channel and right is the right channel. Can be any length. (except zero)
 - reverbOutputChannels - two `Float32Arrays` that get filled with the unprocessed audio data for reverb processing. Left is the left channel and right is the right channel. Can be undefined.
 - reverbOutputChannels - two `Float32Arrays` that get filled with the unprocessed audio data for chorus processing. Left is the left channel and right is the right channel. Can be undefined.
-> [!IMPORTANT]
-> All arrays must be the same length.
+
+**All arrays must be the same length.**
 
 ### noteOn
 
@@ -121,7 +121,6 @@ synth.noteOff(channel, midiNote);
 
 - channel - the MIDI channel to use. Usually ranges from 0 to 15, but it depends on the channel count.
 - midiNote - the note to play. Ranges from 0 to 127.
-> [!TIP]
 > To stop a note instantly, use `synth.killNote` (takes the same arguments)
 
 ### stopAllChannels
@@ -132,7 +131,6 @@ Stops all notes. Equivalent of MIDI "panic".
 synth.stopAllChannels(force);
 ```
 - force - `boolean`, if true, ignores the release time and stops everything instantly. Defaults to false.
-> [!TIP]
 > To stop all notes on a specific channel, use `synth.stopAll(channel, force)`. channel is the channel number.
 
 ### programChange
@@ -145,7 +143,6 @@ synth.programChange(channel, programNumber);
 
 - channel - the MIDI channel to change. Usually ranges from 0 to 15, but it depends on the channel count.
 - programNumber - the MIDI program number to use. Ranges from 0 to 127. To use other banks, go to [controllerChange](#controllerchange).
-> [!TIP]
 > To lock the preset (prevent MIDI file from changing it) use `synth.workletProcessorChannels[channel].lockPreset = true;`
 
 ### pitchWheel
@@ -158,7 +155,6 @@ synth.pitchWheel(channel, MSB, LSB);
 
 - channel - the MIDI channel to use. Usually ranges from 0 to 15, but it depends on the channel count.
 - MSB and LSB. 7-bit numbers that form a 14-bit pitch bend value.
-> [!TIP]
 > [I highly recommend this article for more info.](https://www.recordingblogs.com/wiki/midi-pitch-wheel-message)
 
 ### systemExclusive
@@ -170,7 +166,6 @@ synth.systemExclusive(messageData);
 ```
 
 - message data - Uint8Array, the message byte data **Excluding the 0xF0 byte!**
-> [!TIP]
 > Refer to [this table](https://github.com/spessasus/SpessaSynth/wiki/Synthetizer-Class#supported-system-exclusives) for the list of supported System Exclusives.
 
 ### setMainVolume
@@ -231,7 +226,6 @@ synth.controllerChange(channel, controllerNumber, controllerValue);
 - channel - the MIDI channel to use. Usually ranges from 0 to 15, but it depends on the channel count.
 - controllerName - the MIDI CC number. Refer to [this table](https://github.com/spessasus/SpessaSynth/wiki/Synthetizer-Class#default-supported-controllers) for the list of controllers supported by default.
 - controllerValue - the value to set the given controller to. Ranges from 0 to 127.
-> [!NOTE]
 > Note that theoreticallly all controllers are supported as it depends on the SoundFont's modulators.
 
 ### resetAllControllers
