@@ -50,7 +50,7 @@ export function loadNewSequence(parsedMidi)
 
         if(this.midiPortChannelOffsets[port] === undefined)
         {
-            if(this.synth.workletProcessorChannels.length < this.midiPortChannelOffset + 16) {
+            if(this.synth.workletProcessorChannels.length < this.midiPortChannelOffset + 15) {
                 this._addNewMidiPort();
             }
             this.midiPortChannelOffsets[port] = this.midiPortChannelOffset;

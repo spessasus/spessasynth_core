@@ -77,8 +77,11 @@ export function _playTo(time, ticks = undefined)
                 break;
 
             case messageTypes.controllerChange:
+
                 // do not skip data entries
                 const controllerNumber = event.messageData[0];
+                // Keep in mind midi ports to determine channel!!
+                const channel = info.channel + (this.midiPortChannelOffsets[this.midiPorts[trackIndex]] || 0);
                 if(
                     controllerNumber === midiControllers.dataDecrement           ||
                     controllerNumber === midiControllers.dataEntryMsb            ||
@@ -93,12 +96,10 @@ export function _playTo(time, ticks = undefined)
                     controllerNumber === midiControllers.resetAllControllers
                 )
                 {
-                    this.synth.controllerChange(info.channel, controllerNumber, event.messageData[1]);
+                    this.synth.controllerChange(channel, controllerNumber, event.messageData[1]);
                 }
                 else
                 {
-                    // Keep in mind midi ports to determine channel!!
-                    const channel = info.channel + (this.midiPortChannelOffsets[this.midiPorts[trackIndex]] || 0);
                     if(savedControllers[channel] === undefined)
                     {
                         savedControllers[channel] = Array.from(defaultControllerArray);
@@ -106,19 +107,6 @@ export function _playTo(time, ticks = undefined)
                     savedControllers[channel][controllerNumber] = event.messageData[1];
                 }
                 break;
-
-            // midiport: handle it and make sure that the saved controllers table is the same size as synth channels
-            case messageTypes.midiPort:
-                this._processEvent(event, trackIndex);
-                if(this.synth.workletProcessorChannels.length > savedControllers.length)
-                {
-                    while(this.synth.workletProcessorChannels.length > savedControllers.length)
-                    {
-                        savedControllers.push(Array.from(defaultControllerArray));
-                    }
-                }
-                break;
-
             default:
                 this._processEvent(event, trackIndex);
                 break;
