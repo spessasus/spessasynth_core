@@ -1,6 +1,6 @@
 {
   "name": "spessasynth_core",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "SoundFont2 synthesizer library for node.js",
   "main": "index.js",
   "type": "module",

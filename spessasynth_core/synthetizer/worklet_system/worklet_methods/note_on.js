@@ -64,12 +64,12 @@ export function noteOn(channel, midiNote, velocity, enableDebugging = false)
         computeModulators(voice, this.workletProcessorChannels[channel].midiControllers);
         voice.currentAttenuationDb = 100;
     })
-    channelVoices.push(...voices);
 
     this.totalVoicesAmount += voices.length;
     // cap the voices
     if(this.totalVoicesAmount > VOICE_CAP)
     {
-        this.voiceKilling(this.totalVoicesAmount - VOICE_CAP);
+        this.voiceKilling(voices.length);
     }
+    channelVoices.push(...voices);
 }
