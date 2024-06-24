@@ -59,6 +59,7 @@ import("spessasynth_core").then(core => {
  - [Sequencer](#sequencer)
  - [MIDI](#midi)
  - [SoundFont2](#soundfont2)
+ - [How to disable console output](#logging)
 
 ### Importing the library
 spessasynth_core is an es6 package.
@@ -374,3 +375,16 @@ See [MIDI on SpessaSynth wiki](https://github.com/spessasus/SpessaSynth/wiki/MID
 
 ## SoundFont2
 See [SoundFont2 on SpessaSynth wiki](https://github.com/spessasus/SpessaSynth/wiki/SoundFont2-Class)
+
+## Logging
+By default, SpessaSynth prints out a lot of stuff to console.
+Here's how you can disable it:
+```js
+// import (or require) here
+SpessaSynthLogging(enableInfo, enableWarning, enableGroup, enableTable);
+```
+All the input variables are booleans corresponding to the things SpessaSynth logs.
+- Info - all general info such as parsing soundfonts, midi files, RPN changes, etc.
+- Warnings - all messages unrecognized by the synthesizer, other warnings
+- group - the groups for parsing the soundfont and midi files.
+- table - the debug table `when enableDebugging` is set to `true` for `synth.noteOn`

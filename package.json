@@ -1,6 +1,6 @@
 {
   "name": "spessasynth_core",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "SoundFont2 synthesizer library for node.js",
   "main": "index.js",
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/spessasus/spessasynth_core.git"
+    "url": "git+https://github.com/spessasus/spessasynth_core.git"
   },
   "keywords": [
     "sf2",
