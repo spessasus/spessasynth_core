@@ -56,6 +56,12 @@ class Sequencer
          */
         this.playingNotes = [];
 
+        /**
+         * The current song's lenght, in seconds
+         * @type {number}
+         */
+        this.duration = 0;
+
         // controls if the sequencer loops (defaults to true)
         this.loop = true;
 
@@ -150,15 +156,6 @@ class Sequencer
             this.synth.controllerChange(i, midiControllers.sustainPedal, 0);
         }
         this.synth.stopAllChannels();
-    }
-
-    /**
-     * Total track length, in seconds.
-     * @return {number}
-     */
-    get duration()
-    {
-        return this.midiData.duration;
     }
 
     _resetTimers()

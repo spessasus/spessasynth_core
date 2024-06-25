@@ -2,8 +2,9 @@
 A SoundFont2 synthesizer library, made for use with node.js. 
 A fork of [SpessaSynth](https://github.com/spessasus/SpessaSynth).
 
-`npm install --save spessasynth_core`
+[Jump to documentation](#api-reference)
 
+`npm install --save spessasynth_core`
 
 > Looking for a browser version? Try [SpessaSynth](https://github.com/spessasus/SpessaSynth).
 
