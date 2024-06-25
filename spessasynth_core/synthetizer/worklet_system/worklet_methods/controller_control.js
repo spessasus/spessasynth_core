@@ -12,9 +12,10 @@ import { SpessaSynthInfo } from '../../../utils/loggin.js'
 import { SYNTHESIZER_GAIN } from '../../synthesizer.js'
 
 /**
- * @param channel {number}
- * @param controllerNumber {number}
- * @param controllerValue {number}
+ * Changes a MIDI controller
+ * @param channel {number} - The MIDI Channel to use
+ * @param controllerNumber {number} - The MIDI controller number
+ * @param controllerValue {number} - The new value
  * @this {Synthesizer}
  */
 export function controllerChange(channel, controllerNumber, controllerValue)
@@ -141,6 +142,7 @@ export function controllerChange(channel, controllerNumber, controllerValue)
 }
 
 /**
+ * Resets all controllers and programs
  * @this {Synthesizer}
  */
 export function resetAllControllers()
@@ -176,7 +178,7 @@ export function resetAllControllers()
 
 /**
  * Resets all controllers for channel
- * @param channel {number}
+ * @param channel {number} - The MIDI Channel to use
  * @this {Synthesizer}
  */
 export function resetControllers(channel)
@@ -248,7 +250,8 @@ export function resetParameters(channel)
 }
 
 /**
- * @param volume {number} 0-1
+ * Sets the main volume of the synthesizer
+ * @param volume {number} - 0-1 the volume
  * @this {Synthesizer}
  */
 export function setMainVolume(volume)
@@ -258,10 +261,10 @@ export function setMainVolume(volume)
 }
 
 /**
- * @param pan {number} -1 to 1
+ * Sets the master stereo panning of the synthesizer
+ * @param pan {number} - -1 to 1 the pan, -1 is left, 0 is the middle, 1 is right
  * @this {Synthesizer}
  */
-
 export function setMasterPan(pan)
 {
     this.pan = pan;
@@ -272,8 +275,9 @@ export function setMasterPan(pan)
 }
 
 /**
- * @param channel {number}
- * @param isMuted {boolean}
+ * Mutes/unmutes a channel
+ * @param channel {number} - The MIDI channel to use
+ * @param isMuted {boolean} - If the channel should be muted or not
  * @this {Synthesizer}
  */
 export function muteChannel(channel, isMuted)

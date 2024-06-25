@@ -3,9 +3,9 @@ import { consoleColors } from '../../../utils/other.js'
 import { SpessaSynthInfo, SpessaSynthWarn } from '../../../utils/loggin.js'
 
 /**
- * Release a note
- * @param channel {number}
- * @param midiNote {number}
+ * Releases a note
+ * @param channel {number} - The MIDI channel to use
+ * @param midiNote {number} - The MIDI key number
  * @this {Synthesizer}
  */
 export function noteOff(channel, midiNote)
@@ -46,8 +46,8 @@ export function noteOff(channel, midiNote)
 
 /**
  * Stops a note nearly instantly
- * @param channel {number}
- * @param midiNote {number}
+ * @param channel {number} - The MIDI channel to use
+ * @param midiNote {number} - The MIDI key number
  * @this {Synthesizer}
  */
 export function killNote(channel, midiNote)
@@ -64,8 +64,8 @@ export function killNote(channel, midiNote)
 
 /**
  * stops all notes
- * @param channel {number}
- * @param force {boolean}
+ * @param channel {number} - The MIDI channel to use
+ * @param force {boolean} - If the notes should stop instantly or release normally
  * @this {Synthesizer}
  */
 export function stopAll(channel, force = false)
@@ -91,7 +91,7 @@ export function stopAll(channel, force = false)
 
 /**
  * @this {Synthesizer}
- * @param force {boolean}
+ * @param force {boolean} - If the notes should stop instantly or release normally
  */
 export function stopAllChannels(force = false)
 {

@@ -5,12 +5,11 @@ import { generatorTypes } from '../../../soundfont/chunk/generators.js'
 
 /**
  * executes a program change
- * @param channel {number}
- * @param programNumber {number}
- * @param userChange {boolean}
+ * @param channel {number} - The MIDI Channel to use
+ * @param programNumber {number} - The MIDI program number
  * @this {Synthesizer}
  */
-export function programChange(channel, programNumber, userChange=false)
+export function programChange(channel, programNumber)
 {
     /**
      * @type {WorkletProcessorChannel}
@@ -48,8 +47,8 @@ export function setPreset(channel, preset)
 
 /**
  * Toggles drums on a given channel
- * @param channel {number}
- * @param isDrum {boolean}
+ * @param channel {number} - The MIDI Channel to use
+ * @param isDrum {boolean} - boolean, if the channel should be drums
  * @this {Synthesizer}
  */
 export function setDrums(channel, isDrum)
@@ -68,7 +67,8 @@ export function setDrums(channel, isDrum)
 }
 
 /**
- * @param buffer {ArrayBuffer}
+ * Reloads the soundfont, stops all voices
+ * @param buffer {ArrayBuffer} - the new soundfont buffer
  * @this {Synthesizer}
  */
 export function reloadSoundFont(buffer)

@@ -2,7 +2,7 @@
 A SoundFont2 synthesizer library, made for use with node.js. 
 A fork of [SpessaSynth](https://github.com/spessasus/SpessaSynth).
 
-[Jump to documentation](#api-reference)
+[Jump to the API reference](#api-reference)
 
 `npm install --save spessasynth_core`
 
@@ -19,7 +19,7 @@ A fork of [SpessaSynth](https://github.com/spessasus/SpessaSynth).
 - No SoundFont size limit
 - No dependencies
 
-### Example: render midi file to wav
+### Example: Render a MIDI file to a .wav file
 ```js
 const fs = require('fs');
 // spessasynth_core is an es6 module
@@ -49,6 +49,89 @@ import("spessasynth_core").then(core => {
         // write output data
         const wav = core.rawDataToWav(44100, outLeft, outRight);
         fs.writeFileSync(outputName, Buffer.from(wav));
+    });
+});
+```
+
+### Example 2: play a MIDI file to speakers
+via npm package `speaker`
+```js
+const fs = require('fs');
+const Speaker = require("speaker");
+const SAMPLE_RATE = 44100; // hertz
+const BLOCK_SIZE = 128; // samples
+
+// usage: node test.js <sf path> <midi path>
+import("spessasynth_core").then(core => {
+    // Disable logging
+    core.SpessaSynthLogging(false, false, false, false);
+
+    // Read arguments and load the input files
+    const [,, soundfontName, midiName] = process.argv;
+    const soundfont = fs.readFileSync(soundfontName);
+    const mid = new core.MIDI(fs.readFileSync(midiName)); // parse the midi
+
+
+    // Initialize synth and sequencer
+    const synth = new core.Synthesizer(soundfont, SAMPLE_RATE, BLOCK_SIZE);
+    const seq = new core.Sequencer(synth);
+
+    // Load new song and disable the loop
+    seq.loadNewSongList([mid]);
+    seq.loop = false;
+
+    // make the program stop after the sequence is finished
+    const time = seq.duration + 1
+    let isPlaying = true;
+    setTimeout(() => isPlaying = false, time * 1000);
+    console.log(`Playing "${mid.midiName || "<unnamed song>"}"`);
+
+    // Calculate length and allocate buffers
+    const outLeft = new Float32Array(BLOCK_SIZE);
+    const outRight = new Float32Array(BLOCK_SIZE);
+
+    // Wait for sf3 support to load and render
+    synth.sf3supportReady.then(() => {
+        const speakerOut = new Speaker({
+            channels: 2,
+            bitDepth: 16,
+            sampleRate: SAMPLE_RATE,
+        });
+
+        function render()
+        {
+            // Render audio samples from the synthesizer
+            synth.render([outLeft, outRight]);
+
+            // Prepare buffer for WAV output
+            const wavData = new Int16Array(outLeft.length * 2); // 2 channels
+
+            // Interleave audio data
+            let offset = 0;
+            for (let i = 0; i < outLeft.length; i++)
+            {
+                // Float ranges from -1 to 1, int16 ranges from -32768 to 32767, convert it here
+                const sampleL = Math.max(-1, Math.min(1, outLeft[i])) * 32767;
+                const sampleR = Math.max(-1, Math.min(1, outRight[i])) * 32767;
+
+                // Interleave data: L, R, L, R, etc...
+                wavData[offset++] = sampleL;
+                wavData[offset++] = sampleR;
+            }
+            // Write WAV data to speaker
+            speakerOut.write(wavData);
+
+            if(isPlaying)
+            {
+                setImmediate(render);
+            }
+            else
+            {
+                process.exit(0);
+            }
+        }
+
+        render();
     });
 });
 ```
@@ -207,12 +290,12 @@ synth.muteChannel(channel, isMuted);
 - channel - the channel to mute/unmute. Usually ranges from 0 to 15, but it depends on the channel count.
 - isMuted - if the channel should be muted. boolean.
 
-### transpose
+### transposeAllChannels
 
 Transposes the synth up or down in semitones. Floating point values can be used for more precise tuning.
 
 ```js
-synth.transpose(semitones);
+synth.transposeAllChannels(semitones);
 ```
 
 - semitones - the amount of semitones to transpose the synth by. Can be positive or negative or zero. Zero resets the pitch.

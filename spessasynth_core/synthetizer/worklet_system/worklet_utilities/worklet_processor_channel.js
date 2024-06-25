@@ -28,6 +28,7 @@ import { modulatorSources } from '../../../soundfont/chunk/modulators.js'
  */
 
 /**
+ * Adds a new channel
  * @this {Synthesizer}
  */
 export function addNewChannel()

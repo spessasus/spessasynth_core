@@ -1,8 +1,8 @@
-import { customControllers, NON_CC_INDEX_OFFSET } from '../worklet_utilities/worklet_processor_channel.js'
-import { consoleColors } from '../../../utils/other.js'
-import { modulatorSources } from '../../../soundfont/chunk/modulators.js'
-import { computeModulators } from '../worklet_utilities/worklet_modulator.js'
-import { SpessaSynthInfo } from '../../../utils/loggin.js'
+import {customControllers, NON_CC_INDEX_OFFSET} from '../worklet_utilities/worklet_processor_channel.js'
+import {consoleColors} from '../../../utils/other.js'
+import {modulatorSources} from '../../../soundfont/chunk/modulators.js'
+import {computeModulators} from '../worklet_utilities/worklet_modulator.js'
+import {SpessaSynthInfo} from '../../../utils/loggin.js'
 
 /**
  * Transposes all channels by given amount of semitones
@@ -22,9 +22,9 @@ export function transposeAllChannels(semitones, force = false)
 /**
  * Transposes the channel by given amount of semitones
  * @this {Synthesizer}
- * @param channel {number}
- * @param semitones {number} Can be float
- * @param force {boolean} defaults to false, if true transposes the channel even if it's a drum channel
+ * @param channel {number} - The MIDI Channel to use
+ * @param semitones {number} - Can be a float
+ * @param force {boolean} - defaults to false, if true transposes the channel even if it's a drum channel
  */
 export function transposeChannel(channel, semitones, force=false)
 {
@@ -99,7 +99,6 @@ export function setModulationDepth(channel, cents)
  */
 export function pitchWheel(channel, MSB, LSB)
 {
-    const bend = (LSB | (MSB << 7));
-    this.workletProcessorChannels[channel].midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel] = bend;
+    this.workletProcessorChannels[channel].midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel] = (LSB | (MSB << 7));
     this.workletProcessorChannels[channel].voices.forEach(v => computeModulators(v, this.workletProcessorChannels[channel].midiControllers));
 }

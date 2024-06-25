@@ -5,11 +5,11 @@ import { VOICE_CAP } from "../../synthesizer.js";
 import { SpessaSynthWarn } from '../../../utils/loggin.js'
 
 /**
- * Append the voices
- * @param channel {number}
- * @param midiNote {number}
- * @param velocity {number}
- * @param enableDebugging {boolean}
+ * Starts playing a MIDI note
+ * @param channel {number} - The MIDI Channel to use
+ * @param midiNote {number} - The MIDI key number
+ * @param velocity {number} - The velocity (how hard is the key pressed)
+ * @param enableDebugging {boolean} - used internally, ignore
  * @this {Synthesizer}
  */
 export function noteOn(channel, midiNote, velocity, enableDebugging = false)

@@ -2,8 +2,8 @@ import { arrayToHexString, consoleColors } from '../../../utils/other.js'
 import { SpessaSynthInfo, SpessaSynthWarn } from '../../../utils/loggin.js'
 /**
  * Executes a system exclusive
- * @param messageData {number[]} - the message data without f0
- * @param channelOffset {number}
+ * @param messageData {number[]} - The binary message data without f0
+ * @param channelOffset {number} - Channel offset (for midi ports). Defaults to 0.
  * @this {Synthesizer}
  */
 
