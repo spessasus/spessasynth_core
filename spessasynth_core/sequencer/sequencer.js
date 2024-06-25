@@ -90,6 +90,10 @@ class Sequencer
         this.currentTime = time;
     }
 
+    /**
+     * The current playback time, in seconds
+     * @return {number}
+     */
     get currentTime()
     {
         // return the paused time if it's set to something other than undefined
@@ -146,6 +150,15 @@ class Sequencer
             this.synth.controllerChange(i, midiControllers.sustainPedal, 0);
         }
         this.synth.stopAllChannels();
+    }
+
+    /**
+     * Total track length, in seconds.
+     * @return {number}
+     */
+    get duration()
+    {
+        return this.midiData.duration;
     }
 
     _resetTimers()
