@@ -17,23 +17,6 @@
  */
 
 /**
- * @typedef {Object} WorkletLowpassFilter
- * @property {number} a0 - filter coefficient 1
- * @property {number} a1 - filter coefficient 2
- * @property {number} a2 - filter coefficient 3
- * @property {number} a3 - filter coefficient 4
- * @property {number} a4 - filter coefficient 5
- * @property {number} x1 - input history 1
- * @property {number} x2 - input history 2
- * @property {number} y1 - output history 1
- * @property {number} y2 - output history 2
- * @property {number} reasonanceCb - reasonance in centibels
- * @property {number} reasonanceGain - resonance gain
- * @property {number} cutoffCents - cutoff frequency in cents
- * @property {number} cutoffHz - cutoff frequency in Hz
- */
-
-/**
  * @typedef {Object} WorkletVoice
  * @property {WorkletSample} sample - sample ID for voice.
  * @property {WorkletLowpassFilter} filter - lowpass filter applied to the voice
@@ -43,19 +26,20 @@
  *
  * @property {boolean} finished - indicates if the voice has finished
  * @property {boolean} isInRelease - indicates if the voice is in the release phase
+ * @property {boolean} hasStarted - indicates if the voice has started rendering
  *
  * @property {number} channelNumber - MIDI channel number
  * @property {number} velocity - velocity of the note
  * @property {number} midiNote - MIDI note number
  * @property {number} targetKey - target key for the note
  *
- * @property {number} currentAttenuationDb - current attenuation in dB (used for calculating start of the release phase)
- * @property {0|1|2|3|4} volumeEnvelopeState - state of the volume envelope.
+ * @property {WorkletVolumeEnvelope} volumeEnvelope
+ *
  * @property {number} currentModEnvValue - current value of the modulation envelope
+ * @property {number} releaseStartModEnv - modenv value at the start of the release phase
  *
  * @property {number} startTime - start time of the voice
  * @property {number} releaseStartTime - start time of the release phase
- * @property {number} releaseStartModEnv - modenv value at the start of the release phase
  *
  * @property {number} currentTuningCents - current tuning adjustment in cents
  * @property {number} currentTuningCalculated - calculated tuning adjustment
@@ -64,6 +48,8 @@
 
 import { addAndClampGenerator, generatorTypes } from '../../../soundfont/chunk/generators.js'
 import { SpessaSynthTable } from '../../../utils/loggin.js'
+import { DEFAULT_WORKLET_VOLUME_ENVELOPE } from './volume_envelope.js'
+import { DEFAULT_WORKLET_LOWPASS_FILTER } from './lowpass_filter.js'
 
 
 /**
@@ -260,22 +246,7 @@ export function getWorkletVoices(channel,
             }
 
             return {
-                filter: {
-                    a0: 0,
-                    a1: 0,
-                    a2: 0,
-                    a3: 0,
-                    a4: 0,
-
-                    x1: 0,
-                    x2: 0,
-                    y1: 0,
-                    y2: 0,
-                    reasonanceCb: 0,
-                    reasonanceGain: 1,
-                    cutoffCents: 13500,
-                    cutoffHz: 20000
-                },
+                filter: deepClone(DEFAULT_WORKLET_LOWPASS_FILTER),
                 // generators and modulators
                 generators: generators,
                 modulators: sampleAndGenerators.modulators,
@@ -295,11 +266,12 @@ export function getWorkletVoices(channel,
                 // envelope data
                 finished: false,
                 isInRelease: false,
-                currentAttenuationDb: 100,
+                hasStarted: false,
                 currentModEnvValue: 0,
                 releaseStartModEnv: 1,
-                volumeEnvelopeState: 0,
-                currentPan: 0.5
+                currentPan: 0.5,
+
+                volumeEnvelope: deepClone(DEFAULT_WORKLET_VOLUME_ENVELOPE)
             };
 
         });

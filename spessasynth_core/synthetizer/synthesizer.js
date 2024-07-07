@@ -30,8 +30,14 @@ import {
 import { disableAndLockVibrato, setVibrato } from './worklet_system/worklet_methods/vibrato_control.js'
 import { SpessaSynthInfo } from '../utils/loggin.js'
 import { consoleColors } from '../utils/other.js'
-import { releaseVoice, renderVoice, voiceKilling } from './worklet_system/worklet_methods/voice_control.js'
+import {
+    PAN_SMOOTHING_FACTOR,
+    releaseVoice,
+    renderVoice,
+    voiceKilling
+} from './worklet_system/worklet_methods/voice_control.js'
 import {stbvorbis} from "../utils/stbvorbis_sync.js";
+import {VOLUME_ENVELOPE_SMOOTHING_FACTOR} from "./worklet_system/worklet_utilities/volume_envelope.js";
 
 
 export const VOICE_CAP = 450;
@@ -124,6 +130,10 @@ class Synthesizer {
 
         // in seconds, time between two samples (very, very short)
         this.sampleTime = 1 / this.sampleRate;
+
+        // these smoothing factors were tested on 44100Hz, adjust them here
+        this.volumeEnvelopeSmoothingFactor = VOLUME_ENVELOPE_SMOOTHING_FACTOR * (sampleRate / 44100);
+        this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (sampleRate / 44100);
 
         /**
          * Controls the system
