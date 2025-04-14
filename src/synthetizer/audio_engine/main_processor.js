@@ -380,6 +380,12 @@ class SpessaSynthProcessor
         this.currentSynthTime = initialTime;
         this.sampleRate = sampleRate;
         
+        this.isFullyReady = false;
+        this.processorInitialized.then(() =>
+        {
+            this.isFullyReady = true;
+        });
+        
         /**
          * Sample time in seconds
          * @type {number}
@@ -400,7 +406,7 @@ class SpessaSynthProcessor
         this.soundfontManager = new WorkletSoundfontManager(
             soundfont
         );
-        
+        this.sendPresetList();
         this.getDefaultPresets();
         
         
@@ -422,8 +428,6 @@ class SpessaSynthProcessor
         {
             this.applySynthesizerSnapshot(snapshot);
         }
-        
-        this.sendPresetList();
         this.postReady();
     }
     
