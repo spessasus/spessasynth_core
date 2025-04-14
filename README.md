@@ -14,12 +14,12 @@ npm install --save spessasynth_core
 
 ### [Project site (consider giving it a star!)](https://github.com/spessasus/SpessaSynth)
 
-### [Demo (using the spessasynth_lib wrapper)](https://spessasus.github.io/spessasynth_core)
+### [Demo (using the spessasynth_lib wrapper)](https://spessasus.github.io/SpessaSynth)
 
 ### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
 
 
-> Note: This is the new heart of the spessasynth_core library, after the repository has been split.
+> Note: This is the new heart of the SpessaSynth library, after the repository has been split.
 
 ### 
 ```js
