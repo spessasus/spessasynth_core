@@ -44,6 +44,9 @@ import {
     SpessaSynthWarn
 } from "./src/utils/loggin.js";
 import { readBytesAsUintBigEndian } from "./src/utils/byte_functions/big_endian.js";
+import { readLittleEndian } from "./src/utils/byte_functions/little_endian.js";
+import { readBytesAsString } from "./src/utils/byte_functions/string.js";
+import { readVariableLengthQuantity } from "./src/utils/byte_functions/variable_length_quantity.js";
 import { consoleColors } from "./src/utils/other.js";
 import { inflateSync } from "./src/externals/fflate/fflate.min.js";
 
@@ -55,6 +58,9 @@ const SpessaSynthCoreUtils = {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     readBytesAsUintBigEndian,
+    readLittleEndian,
+    readBytesAsString,
+    readVariableLengthQuantity,
     inflateSync
 };
 
