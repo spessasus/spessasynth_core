@@ -12,7 +12,7 @@ import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/volume_env
 import { systemExclusive } from "./engine_methods/system_exclusive.js";
 import { masterParameterType, setMasterParameter } from "./engine_methods/controller_control/master_parameters.js";
 import { resetAllControllers } from "./engine_methods/controller_control/reset_controllers.js";
-import { WorkletSoundfontManager } from "./engine_components/soundfont_manager.js";
+import { SoundFontManager } from "./engine_components/soundfont_manager.js";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager.js";
 import { getVoices } from "./engine_components/voice.js";
 import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner.js";
@@ -314,7 +314,7 @@ class SpessaSynthProcessor
     defaultDrumsUsesOverride = false;
     
     /**
-     * Controls if the worklet processor is fully initialized
+     * Controls if the processor is fully initialized
      * @type {Promise<boolean>}
      */
     processorInitialized = stbvorbis.isInitialized;
@@ -340,7 +340,7 @@ class SpessaSynthProcessor
      */
     
     /**
-     * Creates a new worklet synthesis system. contains all channels
+     * Creates a new synthesizer engine.
      * @param midiChannels {number}
      * @param soundfont {ArrayBuffer}
      * @param enableEventSystem {boolean}
@@ -380,12 +380,6 @@ class SpessaSynthProcessor
         this.currentSynthTime = initialTime;
         this.sampleRate = sampleRate;
         
-        this.isFullyReady = false;
-        this.processorInitialized.then(() =>
-        {
-            this.isFullyReady = true;
-        });
-        
         /**
          * Sample time in seconds
          * @type {number}
@@ -401,9 +395,9 @@ class SpessaSynthProcessor
         }
         
         /**
-         * @type {WorkletSoundfontManager}
+         * @type {SoundFontManager}
          */
-        this.soundfontManager = new WorkletSoundfontManager(
+        this.soundfontManager = new SoundFontManager(
             soundfont
         );
         this.sendPresetList();
@@ -412,7 +406,7 @@ class SpessaSynthProcessor
         
         for (let i = 0; i < initialChannelCount; i++)
         {
-            this.createWorkletChannel(false);
+            this.createMidiChannel(false);
         }
         
         this.midiAudioChannels[DEFAULT_PERCUSSION].preset = this.drumPreset;
@@ -764,7 +758,7 @@ class SpessaSynthProcessor
     }
     
     /**
-     * Calls synth event from the worklet side
+     * Calls synth event
      * @param eventName {EventTypes} the event name
      * @param eventData {EventCallbackData}
      * @this {SpessaSynthProcessor}
@@ -785,7 +779,7 @@ SpessaSynthProcessor.prototype.systemExclusive = systemExclusive;
 
 // channel related
 SpessaSynthProcessor.prototype.stopAllChannels = stopAllChannels;
-SpessaSynthProcessor.prototype.createWorkletChannel = createMidiChannel;
+SpessaSynthProcessor.prototype.createMidiChannel = createMidiChannel;
 SpessaSynthProcessor.prototype.resetAllControllers = resetAllControllers;
 
 // master parameter related

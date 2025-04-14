@@ -1,7 +1,7 @@
 import { customControllers } from "../../engine_components/controller_tables.js";
 
 /**
- * Sets the worklet's primary tuning
+ * Sets the synth's primary tuning
  * @this {SpessaSynthProcessor}
  * @param cents {number}
  */

@@ -8,7 +8,7 @@ import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector.js";
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank
  * @this {BasicMIDI}
- * @param soundfont {BasicSoundBank|WorkletSoundfontManager} - the sound bank
+ * @param soundfont {BasicSoundBank|SoundFontManager} - the sound bank
  * @returns {Object<string, Set<string>>} Object<bank:program, Set<key-velocity>>
  */
 export function getUsedProgramsAndKeys(soundfont)

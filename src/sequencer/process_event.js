@@ -160,6 +160,6 @@ export function _addNewMidiPort()
 {
     for (let i = 0; i < 16; i++)
     {
-        this.synth.createWorkletChannel(true);
+        this.synth.createMidiChannel(true);
     }
 }

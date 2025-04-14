@@ -7,8 +7,8 @@ import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js"
 
 export const PAN_SMOOTHING_FACTOR = 0.05;
 
-export const WORKLET_SYSTEM_REVERB_DIVIDER = 4600;
-export const WORKLET_SYSTEM_CHORUS_DIVIDER = 2000;
+export const REVERB_DIVIDER = 4600;
+export const CHORUS_DIVIDER = 2000;
 const HALF_PI = Math.PI / 2;
 
 const MIN_PAN = -500;
@@ -78,7 +78,7 @@ export function panVoice(voice,
         if (reverbSend > 0)
         {
             // reverb is mono so we need to multiply by gain
-            const reverbGain = this.synth.reverbGain * gain * (reverbSend / WORKLET_SYSTEM_REVERB_DIVIDER);
+            const reverbGain = this.synth.reverbGain * gain * (reverbSend / REVERB_DIVIDER);
             for (let i = 0; i < inputBuffer.length; i++)
             {
                 reverbLeft[i] += reverbGain * inputBuffer[i];
@@ -91,7 +91,7 @@ export function panVoice(voice,
         if (chorusSend > 0)
         {
             // chorus is stereo so we do not need to
-            const chorusGain = this.synth.chorusGain * chorusSend / WORKLET_SYSTEM_CHORUS_DIVIDER;
+            const chorusGain = this.synth.chorusGain * chorusSend / CHORUS_DIVIDER;
             const chorusLeftGain = gainLeft * chorusGain;
             const chorusRightGain = gainRight * chorusGain;
             for (let i = 0; i < inputBuffer.length; i++)

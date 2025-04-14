@@ -53,27 +53,27 @@ export class SynthesizerSnapshot
     
     /**
      * Creates a snapshot of the synthesizer's state.
-     * @param workletProcessor {SpessaSynthProcessor}
+     * @param spessaSynthProcessor {SpessaSynthProcessor}
      * @returns {SynthesizerSnapshot}
      */
-    static createSynthesizerSnapshot(workletProcessor)
+    static createSynthesizerSnapshot(spessaSynthProcessor)
     {
         const snapshot = new SynthesizerSnapshot();
         // channel snapshots
         snapshot.channelSnapshots =
-            workletProcessor.midiAudioChannels.map((_, i) =>
-                ChannelSnapshot.getChannelSnapshot(workletProcessor, i));
+            spessaSynthProcessor.midiAudioChannels.map((_, i) =>
+                ChannelSnapshot.getChannelSnapshot(spessaSynthProcessor, i));
         
         // key mappings
-        snapshot.keyMappings = workletProcessor.keyModifierManager.getMappings();
+        snapshot.keyMappings = spessaSynthProcessor.keyModifierManager.getMappings();
         // pan and volume
-        snapshot.mainVolume = workletProcessor.midiVolume;
-        snapshot.pan = workletProcessor.pan;
+        snapshot.mainVolume = spessaSynthProcessor.midiVolume;
+        snapshot.pan = spessaSynthProcessor.pan;
         
         // others
-        snapshot.system = workletProcessor.system;
-        snapshot.interpolation = workletProcessor.interpolationType;
-        snapshot.transposition = workletProcessor.transposition;
+        snapshot.system = spessaSynthProcessor.system;
+        snapshot.interpolation = spessaSynthProcessor.interpolationType;
+        snapshot.transposition = spessaSynthProcessor.transposition;
         
         // effect config is stored on the main thread, leave it empty
         snapshot.effectsConfig = {};
@@ -83,31 +83,31 @@ export class SynthesizerSnapshot
     
     /**
      * Applies the snapshot to the synthesizer.
-     * @param workletProcessor {SpessaSynthProcessor}
+     * @param spessaSynthProcessor {SpessaSynthProcessor}
      * @param snapshot {SynthesizerSnapshot}
      */
-    static applySnapshot(workletProcessor, snapshot)
+    static applySnapshot(spessaSynthProcessor, snapshot)
     {
         // restore system
-        workletProcessor.setSystem(snapshot.system);
+        spessaSynthProcessor.setSystem(snapshot.system);
         
         // restore pan and volume
-        workletProcessor.setMasterParameter(masterParameterType.mainVolume, snapshot.mainVolume);
-        workletProcessor.setMasterParameter(masterParameterType.masterPan, snapshot.pan);
-        workletProcessor.transposeAllChannels(snapshot.transposition);
-        workletProcessor.interpolationType = snapshot.interpolation;
-        workletProcessor.keyModifierManager.setMappings(snapshot.keyMappings);
+        spessaSynthProcessor.setMasterParameter(masterParameterType.mainVolume, snapshot.mainVolume);
+        spessaSynthProcessor.setMasterParameter(masterParameterType.masterPan, snapshot.pan);
+        spessaSynthProcessor.transposeAllChannels(snapshot.transposition);
+        spessaSynthProcessor.interpolationType = snapshot.interpolation;
+        spessaSynthProcessor.keyModifierManager.setMappings(snapshot.keyMappings);
         
         // add channels if more needed
-        while (workletProcessor.midiAudioChannels.length < snapshot.channelSnapshots.length)
+        while (spessaSynthProcessor.midiAudioChannels.length < snapshot.channelSnapshots.length)
         {
-            workletProcessor.createWorkletChannel();
+            spessaSynthProcessor.createMidiChannel();
         }
         
         // restore channels
         snapshot.channelSnapshots.forEach((channelSnapshot, index) =>
         {
-            ChannelSnapshot.applyChannelSnapshot(workletProcessor, index, channelSnapshot);
+            ChannelSnapshot.applyChannelSnapshot(spessaSynthProcessor, index, channelSnapshot);
         });
         
         SpessaSynthInfo("%cFinished restoring controllers!", consoleColors.info);

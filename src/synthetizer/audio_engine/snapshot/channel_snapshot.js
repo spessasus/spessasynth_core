@@ -104,13 +104,13 @@ export class ChannelSnapshot
     
     /**
      * Creates a snapshot of a single channel's state in the synthesizer.
-     * @param workletProcessor {SpessaSynthProcessor}
+     * @param spessaSynthProcessor {SpessaSynthProcessor}
      * @param channelNumber {number}
      * @returns {ChannelSnapshot}
      */
-    static getChannelSnapshot(workletProcessor, channelNumber)
+    static getChannelSnapshot(spessaSynthProcessor, channelNumber)
     {
-        const channelObject = workletProcessor.midiAudioChannels[channelNumber];
+        const channelObject = spessaSynthProcessor.midiAudioChannels[channelNumber];
         const channelSnapshot = new ChannelSnapshot();
         // program data
         channelSnapshot.program = channelObject.preset.program;
@@ -142,13 +142,13 @@ export class ChannelSnapshot
     
     /**
      * Applies the snapshot to the specified channel.
-     * @param workletProcessor {SpessaSynthProcessor}
+     * @param spessaSynthProcessor {SpessaSynthProcessor}
      * @param channelNumber {number}
      * @param channelSnapshot {ChannelSnapshot}
      */
-    static applyChannelSnapshot(workletProcessor, channelNumber, channelSnapshot)
+    static applyChannelSnapshot(spessaSynthProcessor, channelNumber, channelSnapshot)
     {
-        const channelObject = workletProcessor.midiAudioChannels[channelNumber];
+        const channelObject = spessaSynthProcessor.midiAudioChannels[channelNumber];
         channelObject.muteChannel(channelSnapshot.isMuted);
         channelObject.setDrums(channelSnapshot.drumChannel);
         

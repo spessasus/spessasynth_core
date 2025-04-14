@@ -42,6 +42,7 @@ export class KeyModifierManager
 {
     /**
      * The velocity override mappings for MIDI keys
+     * stored as [channelNumber][midiNote]
      * @type {KeyModifier[][]}
      * @private
      */

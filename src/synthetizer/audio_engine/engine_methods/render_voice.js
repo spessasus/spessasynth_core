@@ -5,7 +5,7 @@ import { customControllers } from "../engine_components/controller_tables.js";
 import { absCentsToHz, timecentsToSeconds } from "../engine_components/unit_converter.js";
 import { getLFOValue } from "../engine_components/lfo.js";
 import { WavetableOscillator } from "../engine_components/wavetable_oscillator.js";
-import { WorkletLowpassFilter } from "../engine_components/lowpass_filter.js";
+import { LowpassFilter } from "../engine_components/lowpass_filter.js";
 import { interpolationTypes } from "../engine_components/enums.js";
 
 /**
@@ -181,7 +181,7 @@ export function renderVoice(
     }
     
     // low pass filter
-    WorkletLowpassFilter.apply(voice, bufferOut, lowpassExcursion, this.synth.filterSmoothingFactor);
+    LowpassFilter.apply(voice, bufferOut, lowpassExcursion, this.synth.filterSmoothingFactor);
     
     // vol env
     VolumeEnvelope.apply(voice, bufferOut, modLfoCentibels, this.synth.volumeEnvelopeSmoothingFactor);

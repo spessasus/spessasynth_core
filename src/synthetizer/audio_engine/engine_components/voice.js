@@ -1,11 +1,10 @@
 /**
  * voice.js
- * purpose: prepares Voices from sample and generator data and manages sample dumping
- * note: sample dumping means sending it over to the AudioWorkletGlobalScope
+ * purpose: prepares Voices from sample and generator data
  */
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "../main_processor.js";
 import { SpessaSynthWarn } from "../../../utils/loggin.js";
-import { WorkletLowpassFilter } from "./lowpass_filter.js";
+import { LowpassFilter } from "./lowpass_filter.js";
 import { VolumeEnvelope } from "./volume_envelope.js";
 import { ModulationEnvelope } from "./modulation_envelope.js";
 import { addAndClampGenerator, generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
@@ -122,7 +121,7 @@ class Voice
     
     /**
      * Lowpass filter applied to the voice.
-     * @type {WorkletLowpassFilter}
+     * @type {LowpassFilter}
      */
     filter;
     
@@ -270,7 +269,7 @@ class Voice
     /**
      * Creates a Voice
      * @param sampleRate {number}
-     * @param workletSample {AudioSample}
+     * @param audioSample {AudioSample}
      * @param midiNote {number}
      * @param velocity {number}
      * @param channel {number}
@@ -282,7 +281,7 @@ class Voice
      */
     constructor(
         sampleRate,
-        workletSample,
+        audioSample,
         midiNote,
         velocity,
         channel,
@@ -293,12 +292,12 @@ class Voice
         modulators
     )
     {
-        this.sample = workletSample;
+        this.sample = audioSample;
         this.generators = generators;
         this.exclusiveClass = this.generators[generatorTypes.exclusiveClass];
         this.modulatedGenerators = new Int16Array(generators);
         this.modulators = modulators;
-        this.filter = new WorkletLowpassFilter(sampleRate);
+        this.filter = new LowpassFilter(sampleRate);
         
         this.velocity = velocity;
         this.midiNote = midiNote;
@@ -461,11 +460,11 @@ export function getVoices(channel,
             let loopEnd = sampleAndGenerators.sample.sampleLoopEndIndex;
             let loopingMode = generators[generatorTypes.sampleModes];
             /**
-             * create the worklet sample
+             * create the sample
              * offsets are calculated at note on time (to allow for modulation of them)
              * @type {AudioSample}
              */
-            const workletSample = new AudioSample(
+            const audioSample = new AudioSample(
                 sampleAndGenerators.sample.sampleData,
                 (sampleAndGenerators.sample.sampleRate / this.sampleRate) * Math.pow(
                     2,
@@ -492,14 +491,14 @@ export function getVoices(channel,
             //     Velocity: velocity,
             //     TargetKey: targetKey,
             //     MidiNote: midiNote,
-            //     AudioSample: workletSample
+            //     AudioSample: audioSample
             // }]);
             
             
             voices.push(
                 new Voice(
                     this.sampleRate,
-                    workletSample,
+                    audioSample,
                     midiNote,
                     velocity,
                     channel,

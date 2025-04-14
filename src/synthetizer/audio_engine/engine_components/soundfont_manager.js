@@ -9,10 +9,10 @@ import { isXGDrums } from "../../../utils/xg_hacks.js";
  * @property {number} bankOffset - the soundfont's bank offset
  */
 
-export class WorkletSoundfontManager
+export class SoundFontManager
 {
     /**
-     * Creates a new instance of worklet soundfont manager (worklet scope)
+     * Creates a new instance of soundfont manager
      * @param initialSoundFontBuffer {ArrayBuffer} Array buffer of the soundfont. This soudfont always has the id "main"
      */
     constructor(initialSoundFontBuffer)

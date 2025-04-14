@@ -22,7 +22,7 @@ export const FILTER_SMOOTHING_FACTOR = 0.1;
  * @property {number} a4 - Filter coefficient 5
  */
 
-export class WorkletLowpassFilter
+export class LowpassFilter
 {
     /**
      * Cached coefficient calculations
@@ -175,7 +175,7 @@ export class WorkletLowpassFilter
         {
             filter.lastTargetCutoff = targetCutoff;
             filter.resonanceCb = modulatedResonance;
-            WorkletLowpassFilter.calculateCoefficients(filter, targetCutoff);
+            LowpassFilter.calculateCoefficients(filter, targetCutoff);
         }
         
         // filter the input
@@ -200,7 +200,7 @@ export class WorkletLowpassFilter
     }
     
     /**
-     * @param filter {WorkletLowpassFilter}
+     * @param filter {LowpassFilter}
      * @param cutoffCents {number}
      */
     static calculateCoefficients(filter, cutoffCents)
@@ -208,7 +208,7 @@ export class WorkletLowpassFilter
         cutoffCents = ~~cutoffCents; // Math.floor
         const qCb = filter.resonanceCb;
         // check if these coefficients were already cached
-        const cached = WorkletLowpassFilter.cachedCoefficients?.[qCb]?.[cutoffCents];
+        const cached = LowpassFilter.cachedCoefficients?.[qCb]?.[cutoffCents];
         if (cached !== undefined)
         {
             filter.a0 = cached.a0;
@@ -263,20 +263,20 @@ export class WorkletLowpassFilter
         filter.a3 = toCache.a3;
         filter.a4 = toCache.a4;
         
-        if (WorkletLowpassFilter.cachedCoefficients[qCb] === undefined)
+        if (LowpassFilter.cachedCoefficients[qCb] === undefined)
         {
-            WorkletLowpassFilter.cachedCoefficients[qCb] = [];
+            LowpassFilter.cachedCoefficients[qCb] = [];
         }
-        WorkletLowpassFilter.cachedCoefficients[qCb][cutoffCents] = toCache;
+        LowpassFilter.cachedCoefficients[qCb][cutoffCents] = toCache;
     }
 }
 
 // precompute all the cutoffs for 0q (most common)
-const dummy = new WorkletLowpassFilter(44100);
+const dummy = new LowpassFilter(44100);
 dummy.resonanceCb = 0;
 // sfspec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
 for (let i = 1500; i < 13500; i++)
 {
     dummy.currentInitialFc = i;
-    WorkletLowpassFilter.calculateCoefficients(dummy, i);
+    LowpassFilter.calculateCoefficients(dummy, i);
 }

@@ -59,6 +59,7 @@ $RECYCLE.BIN/
 *.msix
 *.msm
 *.msp
-
+# random wav files
+*.wav
 # Windows shortcuts
 *.lnk
