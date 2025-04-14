@@ -5,6 +5,7 @@ import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../../synth_constants.js";
 import { isSystemXG } from "../../../utils/xg_hacks.js";
 import { masterParameterType } from "./controller_control/master_parameters.js";
 import { readBytesAsString } from "../../../utils/byte_functions/string.js";
+import { synthDisplayTypes } from "../engine_components/enums.js";
 
 /**
  * KeyNum: tuning
@@ -38,16 +39,6 @@ function getTuning(byte1, byte2, byte3)
     // calculate cent tuning
     return { midiNote: midiNote, centTuning: fraction * 0.0061 };
 }
-
-/**
- * The text types for the synth display
- * @enum {number}
- */
-export const SynthDisplayType = {
-    SoundCanvasText: 0,
-    XGText: 1,
-    SoundCanvasDotDisplay: 2
-};
 
 
 /**
@@ -547,7 +538,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                             "synthdisplay",
                             {
                                 displayData: text,
-                                displayType: SynthDisplayType.SoundCanvasText
+                                displayType: synthDisplayTypes.SoundCanvasText
                             }
                         );
                     }
@@ -560,7 +551,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                             "synthdisplay",
                             {
                                 displayData: dotMatrixData,
-                                displayType: SynthDisplayType.SoundCanvasDotDisplay
+                                displayType: synthDisplayTypes.SoundCanvasDotDisplay
                             }
                         );
                         SpessaSynthInfo(
@@ -744,7 +735,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         "synthdisplay",
                         {
                             displayData: textData,
-                            displayType: SynthDisplayType.XGText
+                            displayType: synthDisplayTypes.XGText
                         }
                     );
                 }

@@ -13,7 +13,6 @@ import { systemExclusive } from "./engine_methods/system_exclusive.js";
 import { masterParameterType, setMasterParameter } from "./engine_methods/controller_control/master_parameters.js";
 import { resetAllControllers } from "./engine_methods/controller_control/reset_controllers.js";
 import { WorkletSoundfontManager } from "./engine_components/soundfont_manager.js";
-import { interpolationTypes } from "./engine_components/wavetable_oscillator.js";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager.js";
 import { getVoices } from "./engine_components/voice.js";
 import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner.js";
@@ -30,6 +29,7 @@ import { createMidiChannel } from "./engine_methods/create_midi_channel.js";
 import { FILTER_SMOOTHING_FACTOR } from "./engine_components/lowpass_filter.js";
 import { getEvent, messageTypes } from "../../midi/midi_message.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { interpolationTypes } from "./engine_components/enums.js";
 
 
 /**
@@ -95,7 +95,7 @@ import { IndexedByteArray } from "../../utils/indexed_array.js";
 /**
  * @typedef {Object} SynthDisplayCallback
  * @property {Uint8Array} displayData - The data to display.
- * @property {SynthDisplayType} displayType - The type of display.
+ * @property {synthDisplayTypes} displayType - The type of display.
  */
 
 /**

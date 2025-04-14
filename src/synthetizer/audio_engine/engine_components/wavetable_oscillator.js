@@ -3,16 +3,6 @@
  * purpose: plays back raw audio data at an arbitrary playback rate
  */
 
-/**
- *
- * @enum {number}
- */
-export const interpolationTypes = {
-    linear: 0,
-    nearestNeighbor: 1,
-    fourthOrder: 2
-};
-
 
 export class WavetableOscillator
 {

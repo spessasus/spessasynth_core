@@ -9,37 +9,84 @@
 npm install --save spessasynth_core
 ```
 
-### [Project site (consider giving it a star!)](https://github.com/spessasus/spessasynth_core)
+### [Project site (consider giving it a star!)](https://github.com/spessasus/SpessaSynth)
 
-### [Demo (using the spessasynth_lib wrapper)](https://spessasus.github.io/SpessaSynth)
+### [Demo (using the spessasynth_lib wrapper)](https://spessasus.github.io/spessasynth_core)
 
 ### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
 
 
-> Note: This is the new heart of the SpessaSynth library, after the repository has been split.
+> Note: This is the new heart of the spessasynth_core library, after the repository has been split.
 
+### 
+```js
+import * as fs from "node:fs";
+import { MIDI } from "../../src/midi/midi_loader.js";
+import { SpessaSynthProcessor } from "../../src/synthetizer/audio_engine/main_processor.js";
+import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
+import { audioToWav } from "../../src/utils/buffer_to_wav.js";
+
+// process arguments
+const args = process.argv.slice(2);
+if (args.length !== 3)
+{
+    console.log("Usage: node index.js <soundfont path> <midi path> <wav output path>");
+    process.exit();
+}
+// load the files
+const sf = fs.readFileSync(args[0]);
+const mid = fs.readFileSync(args[1]);
+
+const midi = new MIDI(mid);
+const sampleRate = 44100;
+const sampleCount = 44100 * (midi.duration + 2);
+
+const synth = new SpessaSynthProcessor(
+    sf,
+    sampleRate,
+    {},
+    false,
+    false
+);
+await synth.processorInitialized;
+
+const seq = new SpessaSynthSequencer(synth);
+seq.loadNewSongList([midi]);
+seq.loop = false;
+
+const outLeft = new Float32Array(sampleCount);
+const outRight = new Float32Array(sampleCount);
+const start = performance.now();
+let filledSamples = 0;
+
+const bufSize = 128;
+while (filledSamples + bufSize < sampleCount)
+{
+    const bufLeft = new Float32Array(bufSize);
+    const bufRight = new Float32Array(bufSize);
+    seq.processTick();
+    const arr = [bufLeft, bufRight];
+    synth.renderAudio(arr, arr, arr);
+    outLeft.set(bufLeft, filledSamples);
+    outRight.set(bufRight, filledSamples);
+    filledSamples += bufSize;
+}
+const wave = audioToWav({
+    leftChannel: outLeft,
+    rightChannel: outRight,
+    sampleRate: sampleRate
+});
+fs.writeFileSync(args[2], new Buffer(wave));
+process.exit();
+```
 
 ## Current Features
 
-### Numerous Format Support
-Supported formats list:
-- `.mid` - Standard MIDI File
-- `.kar` - Soft Karaoke MIDI File
-- `.sf2` - SoundFont2 File
-- `.sf3` - SoundFont2 Compressed File
-- `.sfogg` - SF2Pack With Vorbis Compression
-- `.dls` - Downloadable Sounds Levels 1 & 2 (as well as Mobile DLS)
-- `.rmi` - RIFF MIDI File
-- `.rmi` - RIFF MIDI File With Embedded DLS
-- `.rmi` - [RIFF MIDI File With Embedded SF2](https://github.com/spessasus/sf2-rmidi-specification)
-- `.xmf` - eXtensible Music Format
-- `.mxmf` - Mobile eXtensible Music format
-
-*With [an easy way of converting between them!](https://github.com/spessasus/spessasynth_core/wiki/Converting-Between-Formats)*
-
 ### Easy Integration
 - **Modular design:** *Easy integration into other projects (load what you need)*
+- **[Detailed documentation:](https://github.com/spessasus/spessasynth_core/wiki/Home)** *With [examples!](https://github.com/spessasus/spessasynth_core/wiki/Usage-As-Library#examples)*
 - **Flexible:** *It's not just a MIDI player!*
+- **Easy to Use:** *Basic setup is just [two lines of code!](https://github.com/spessasus/spessasynth_core/wiki/Usage-As-Library#minimal-setup)*
 - **No dependencies:** *Batteries included!*
 
 ### Powerful MIDI Synthesizer
@@ -50,7 +97,7 @@ Supported formats list:
   - **GeneralUserGS Compatible:** *[See more here!](https://github.com/mrbumpy409/GeneralUser-GS/blob/main/documentation/README.md)*
   - **SoundFont3 Support:** Play compressed SoundFonts!
   - **Experimental SF2Pack Support:** Play soundfonts compressed with BASSMIDI! (*Note: only works with vorbis compression*)
-  - **Can load very large SoundFonts:** up to 4GB!
+  - **Can load very large SoundFonts:** up to 4GB! *Note: Only Firefox handles this well; Chromium has a hard-coded memory limit*
 - **Great DLS Support:**
   - **DLS Level 1 Support**
   - **DLS Level 2 Support**
@@ -62,7 +109,6 @@ Supported formats list:
   - **Both unsigned 8-bit and signed 16-bit sample support (24-bit theoretically supported as well!)**
   - **Detects special articulator combinations:** *Such as vibratoLfoToPitch*
 - **Soundfont manager:** Stack multiple soundfonts!
-- **[Custom modulators for additional controllers](https://github.com/spessasus/spessasynth_core/wiki/Modulator-Class#default-modulators):** *Why not?*
 - **Unlimited channel count:** Your CPU is the limit!
 - **Excellent MIDI Standards Support:**
   - **MIDI Controller Support:** Default supported controllers [here](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#supported-controllers)
@@ -78,7 +124,8 @@ Supported formats list:
 - **Smart preloading:** Only preloads the samples used in the MIDI file for smooth playback *(down to key and velocity!)*
 - **Lyrics support:** Add karaoke to your program!
 - **Raw lyrics available:** Decode in any encoding! *(Kanji? No problem!)*
-- **Loop points support:** Ensures seamless loops!
+- **Runs in Audio Thread as well:** Never blocks the main thread
+- **Loop points support:** Ensures seamless loops
 
 ### Read and Write SoundFont and MIDI Files with Ease
 #### Read and write MIDI files
@@ -130,6 +177,7 @@ Supported formats list:
   - **Metadata support:** *Embed metadata such as title, artist, album and more!*
   - **Cue points:** *Write MIDI loop points as cue points!*
   - **Loop multiple times:** *Render two (or more) loops into the file for seamless transitions!*
+  - *That's right, saving as WAV is also [just one function!](https://github.com/spessasus/spessasynth_core/wiki/Writing-Wave-Files#audiobuffertowav)*
 
 ### Special Thanks
 - [FluidSynth](https://github.com/FluidSynth/fluidsynth) - for the source code that helped implement functionality and fixes

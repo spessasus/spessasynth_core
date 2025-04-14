@@ -4,8 +4,9 @@ import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js"
 import { customControllers } from "../engine_components/controller_tables.js";
 import { absCentsToHz, timecentsToSeconds } from "../engine_components/unit_converter.js";
 import { getLFOValue } from "../engine_components/lfo.js";
-import { interpolationTypes, WavetableOscillator } from "../engine_components/wavetable_oscillator.js";
+import { WavetableOscillator } from "../engine_components/wavetable_oscillator.js";
 import { WorkletLowpassFilter } from "../engine_components/lowpass_filter.js";
+import { interpolationTypes } from "../engine_components/enums.js";
 
 /**
  * Renders a voice to the stereo output buffer
