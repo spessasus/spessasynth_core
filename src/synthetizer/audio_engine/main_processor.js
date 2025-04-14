@@ -400,7 +400,6 @@ class SpessaSynthProcessor
         this.soundfontManager = new WorkletSoundfontManager(
             soundfont
         );
-        this.sendPresetList();
         
         this.getDefaultPresets();
         
@@ -424,6 +423,7 @@ class SpessaSynthProcessor
             this.applySynthesizerSnapshot(snapshot);
         }
         
+        this.sendPresetList();
         this.postReady();
     }
     
