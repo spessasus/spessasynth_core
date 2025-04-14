@@ -184,7 +184,6 @@ class MIDISequenceData
     
     /**
      * INTERNAL USE ONLY!
-     * DO NOT USE IN SPESSASYNTH_LIB
      * @param sequence {MIDISequenceData}
      * @protected
      */
