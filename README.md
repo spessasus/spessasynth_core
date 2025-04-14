@@ -1,4 +1,7 @@
-# spessasynth_core
+<!--suppress HtmlDeprecatedAttribute, HtmlRequiredAltAttribute, HtmlExtraClosingTag -->
+<p align='center'>
+<img src='https://raw.githubusercontent.com/spessasus/SpessaSynth/refs/heads/master/src/website/spessasynth_logo_rounded.png' width='300' alt='SpessaSynth logo'>
+</p>
 
 **A powerful SF2/DLS/MIDI JavaScript library. It works with any modern JS environment that supports WebAssembly.**
 
