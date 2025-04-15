@@ -1,12 +1,7 @@
 import { SpessaSynthInfo } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
 import { voiceKilling } from "./engine_methods/stopping_notes/voice_killing.js";
-import {
-    ALL_CHANNELS_OR_DIFFERENT_ACTION,
-    DEFAULT_PERCUSSION,
-    DEFAULT_SYNTH_MODE,
-    VOICE_CAP
-} from "../synth_constants.js";
+import { ALL_CHANNELS_OR_DIFFERENT_ACTION, DEFAULT_SYNTH_MODE, VOICE_CAP } from "../synth_constants.js";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/volume_envelope.js";
 import { systemExclusive } from "./engine_methods/system_exclusive.js";
@@ -18,9 +13,8 @@ import { getVoices } from "./engine_components/voice.js";
 import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner.js";
 import { stopAllChannels } from "./engine_methods/stopping_notes/stop_all_channels.js";
 import { setEmbeddedSoundFont } from "./engine_methods/soundfont_management/set_embedded_sound_font.js";
-import { reloadSoundFont } from "./engine_methods/soundfont_management/reload_sound_font.js";
 import { clearSoundFont } from "./engine_methods/soundfont_management/clear_sound_font.js";
-import { sendPresetList } from "./engine_methods/soundfont_management/send_preset_list.js";
+import { updatePresetList } from "./engine_methods/soundfont_management/update_preset_list.js";
 import { getPreset } from "./engine_methods/soundfont_management/get_preset.js";
 import { transposeAllChannels } from "./engine_methods/tuning_control/transpose_all_channels.js";
 import { setMasterTuning } from "./engine_methods/tuning_control/set_master_tuning.js";
@@ -30,6 +24,8 @@ import { FILTER_SMOOTHING_FACTOR } from "./engine_components/lowpass_filter.js";
 import { getEvent, messageTypes } from "../../midi/midi_message.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { interpolationTypes } from "./engine_components/enums.js";
+import { DEFAULT_SYNTH_OPTIONS } from "./synth_processor_options.js";
+import { fillWithDefaults } from "../../utils/fill_with_defaults.js";
 
 
 /**
@@ -332,61 +328,73 @@ class SpessaSynthProcessor
     sampleRate;
     
     /**
-     * @typedef {Object} CallbacksTypedef
-     * @property {function?} ready
-     * @property {function(EventTypes, EventCallbackData)?} eventCall
-     * @property {function(ChannelProperty, number)?} channelPropertyChange
-     * @property {function(masterParameterType, number|string)?} masterParameterChange
+     * Sample time in seconds
+     * @type {number}
      */
+    sampleTime;
+    
+    /**
+     * are the chorus and reverb effects enabled?
+     * @type {boolean}
+     */
+    effectsEnabled;
+    
+    /**
+     * for applying the snapshot after an override sound bank too
+     * @type {SynthesizerSnapshot}
+     * @private
+     */
+    _snapshot;
+    
+    /**
+     * Calls when an event occurs.
+     * @type {function}
+     * @param {EventTypes} eventType - the event type.
+     * @param {EventCallbackData} eventData - the event data.
+     */
+    onEventCall;
+    
+    /**
+     * Calls when a channel property is changed.
+     * @type {function}
+     * @param {ChannelProperty} property - the updated property.
+     * @param {number} channelNumber - the channel number of the said property.
+     */
+    onChannelPropertyChange;
+    
+    /**
+     * Calls when a master parameter is changed.
+     * @type {function}
+     * @param {masterParameterType} parameter - the parameter type
+     * @param {number|string} value - the new value.
+     */
+    onMasterParameterChange;
+    
     
     /**
      * Creates a new synthesizer engine.
-     * @param midiChannels {number}
-     * @param soundfont {ArrayBuffer}
-     * @param enableEventSystem {boolean}
-     * @param callbacks {CallbacksTypedef}
-     * @param sampleRate {number}
-     * @param initialTime {number}
-     * @param effectsEnabled {boolean}
-     * @param snapshot {SynthesizerSnapshot}
+     * @param sampleRate {number} - sample rate, in Hertz.
+     * @param options {SynthProcessorOptions} - the processor's options.
      */
-    constructor(
-        soundfont,
-        sampleRate,
-        callbacks,
-        effectsEnabled = true,
-        enableEventSystem = true,
-        initialTime = 0,
-        midiChannels = 16,
-        snapshot = undefined)
+    constructor(sampleRate,
+                options = DEFAULT_SYNTH_OPTIONS)
     {
+        options = fillWithDefaults(options, DEFAULT_SYNTH_OPTIONS);
         /**
          * Midi output count
          * @type {number}
          */
-        this.midiOutputsCount = midiChannels;
-        /**
-         * are the chorus and reverb effects enabled?
-         * @type {boolean}
-         */
-        this.effectsEnabled = effectsEnabled;
-        let initialChannelCount = this.midiOutputsCount;
-        
-        /**
-         * @type {CallbacksTypedef}
-         */
-        this.callbacks = callbacks;
-        
-        this.currentSynthTime = initialTime;
+        this.midiOutputsCount = options.midiChannels;
+        this.effectsEnabled = options.effectsEnabled;
+        this.enableEventSystem = options.enableEventSystem;
+        this.currentSynthTime = options.midiChannels;
+        this.sampleTime = 1 / sampleRate;
         this.sampleRate = sampleRate;
         
-        /**
-         * Sample time in seconds
-         * @type {number}
-         */
-        this.sampleTime = 1 / sampleRate;
-        
-        this.enableEventSystem = enableEventSystem;
+        // these smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
+        this.volumeEnvelopeSmoothingFactor = VOLUME_ENVELOPE_SMOOTHING_FACTOR * (44100 / sampleRate);
+        this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44100 / sampleRate);
+        this.filterSmoothingFactor = FILTER_SMOOTHING_FACTOR * (44100 / sampleRate);
         
         
         for (let i = 0; i < 128; i++)
@@ -397,32 +405,16 @@ class SpessaSynthProcessor
         /**
          * @type {SoundFontManager}
          */
-        this.soundfontManager = new SoundFontManager(
-            soundfont
-        );
-        this.sendPresetList();
-        this.getDefaultPresets();
+        this.soundfontManager = new SoundFontManager(this.updatePresetList.bind(this));
         
-        
-        for (let i = 0; i < initialChannelCount; i++)
+        for (let i = 0; i < this.midiOutputsCount; i++)
         {
             this.createMidiChannel(false);
         }
-        
-        this.midiAudioChannels[DEFAULT_PERCUSSION].preset = this.drumPreset;
-        this.midiAudioChannels[DEFAULT_PERCUSSION].drumChannel = true;
-        
-        // these smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
-        this.volumeEnvelopeSmoothingFactor = VOLUME_ENVELOPE_SMOOTHING_FACTOR * (44100 / sampleRate);
-        this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44100 / sampleRate);
-        this.filterSmoothingFactor = FILTER_SMOOTHING_FACTOR * (44100 / sampleRate);
-        
-        this._snapshot = snapshot;
-        if (this?._snapshot)
+        this.processorInitialized.then(() =>
         {
-            this.applySynthesizerSnapshot(snapshot);
-        }
-        this.postReady();
+            SpessaSynthInfo("%cSpessaSynth is ready!", consoleColors.recognized);
+        });
     }
     
     /**
@@ -451,7 +443,7 @@ class SpessaSynthProcessor
     setSystem(value)
     {
         this.system = value;
-        this?.callbacks?.masterParameterChange?.(masterParameterType.midiSystem, this.system);
+        this?.onMasterParameterChange?.(masterParameterType.midiSystem, this.system);
     }
     
     /**
@@ -495,16 +487,6 @@ class SpessaSynthProcessor
         
         // cache
         this.cachedVoices[bank][program][midiNote][velocity] = voices;
-    }
-    
-    postReady()
-    {
-        // ensure stbvorbis is fully initialized
-        this.processorInitialized.then(() =>
-        {
-            SpessaSynthInfo("%cSpessaSynth is ready!", consoleColors.recognized);
-            this?.callbacks?.ready?.();
-        });
     }
     
     // noinspection JSUnusedGlobalSymbols
@@ -765,7 +747,7 @@ class SpessaSynthProcessor
      */
     callEvent(eventName, eventData)
     {
-        this?.callbacks?.eventCall?.(eventName, eventData);
+        this?.onEventCall?.(eventName, eventData);
     }
 }
 
@@ -791,10 +773,9 @@ SpessaSynthProcessor.prototype.setMasterTuning = setMasterTuning;
 
 // program related
 SpessaSynthProcessor.prototype.getPreset = getPreset;
-SpessaSynthProcessor.prototype.reloadSoundFont = reloadSoundFont;
 SpessaSynthProcessor.prototype.clearSoundFont = clearSoundFont;
 SpessaSynthProcessor.prototype.setEmbeddedSoundFont = setEmbeddedSoundFont;
-SpessaSynthProcessor.prototype.sendPresetList = sendPresetList;
+SpessaSynthProcessor.prototype.updatePresetList = updatePresetList;
 
 // snapshot related
 SpessaSynthProcessor.prototype.applySynthesizerSnapshot = applySynthesizerSnapshot;

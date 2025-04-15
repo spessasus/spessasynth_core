@@ -1,7 +1,5 @@
 import { MidiAudioChannel } from "../engine_components/midi_audio_channel.js";
 
-import { DEFAULT_PERCUSSION } from "../../synth_constants.js";
-
 /**
  * @param sendEvent {boolean}
  * @this {SpessaSynthProcessor}
@@ -13,15 +11,10 @@ export function createMidiChannel(sendEvent = false)
      */
     const channel = new MidiAudioChannel(this, this.defaultPreset, this.midiAudioChannels.length);
     this.midiAudioChannels.push(channel);
-    channel.resetControllers();
-    channel.sendChannelProperty();
     if (sendEvent)
     {
         this.callEvent("newchannel", undefined);
-    }
-    
-    if (channel.channelNumber % 16 === DEFAULT_PERCUSSION)
-    {
+        channel.sendChannelProperty();
         this.midiAudioChannels[this.midiAudioChannels.length - 1].setDrums(true);
     }
 }

@@ -1,5 +1,4 @@
 import { SpessaSynthWarn } from "../../../utils/loggin.js";
-import { loadSoundFont } from "../../../soundfont/load_soundfont.js";
 import { isXGDrums } from "../../../utils/xg_hacks.js";
 
 /**
@@ -12,12 +11,21 @@ import { isXGDrums } from "../../../utils/xg_hacks.js";
 export class SoundFontManager
 {
     /**
-     * Creates a new instance of soundfont manager
-     * @param initialSoundFontBuffer {ArrayBuffer} Array buffer of the soundfont. This soudfont always has the id "main"
+     * All the soundfonts, ordered from the most important to the least.
+     * @type {SoundFontType[]}
      */
-    constructor(initialSoundFontBuffer)
+    soundfontList = [];
+    /**
+     * @type {{bank: number, presetName: string, program: number}[]}
+     */
+    presetList = [];
+    
+    /**
+     * @param presetListChangeCallback {function} to call when stuff changes
+     */
+    constructor(presetListChangeCallback)
     {
-        this.reloadManager(initialSoundFontBuffer);
+        this.presetListChangeCallback = presetListChangeCallback;
     }
     
     generatePresetList()
@@ -49,9 +57,6 @@ export class SoundFontManager
             }
         }
         
-        /**
-         * @type {{bank: number, presetName: string, program: number}[]}
-         */
         this.presetList = [];
         for (const [string, name] of Object.entries(presetList))
         {
@@ -62,6 +67,7 @@ export class SoundFontManager
                 bank: parseInt(pb[0])
             });
         }
+        this.presetListChangeCallback();
     }
     
     /**
@@ -73,13 +79,13 @@ export class SoundFontManager
         return this.presetList.slice();
     }
     
+    // noinspection JSUnusedGlobalSymbols
     /**
-     * Clears all soundfonts and adds a new one
-     * @param soundFontArrayBuffer {ArrayBuffer}
+     * Clears all soundfonts and adds a new one with an ID "main"
+     * @param soundFont {BasicSoundBank}
      */
-    reloadManager(soundFontArrayBuffer)
+    reloadManager(soundFont)
     {
-        const font = loadSoundFont(soundFontArrayBuffer);
         /**
          * All the soundfonts, ordered from the most important to the least.
          * @type {SoundFontType[]}
@@ -88,11 +94,16 @@ export class SoundFontManager
         this.soundfontList.push({
             id: "main",
             bankOffset: 0,
-            soundfont: font
+            soundfont: soundFont
         });
         this.generatePresetList();
     }
     
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Deletes a given soundfont.
+     * @param id {string}
+     */
     deleteSoundFont(id)
     {
         if (this.soundfontList.length === 0)
@@ -113,13 +124,14 @@ export class SoundFontManager
         this.generatePresetList();
     }
     
+    // noinspection JSUnusedGlobalSymbols
     /**
-     * Adds a new soundfont buffer with a given ID
-     * @param buffer {ArrayBuffer}
+     * Adds a new soundfont with a given ID
+     * @param font {BasicSoundBank}
      * @param id {string}
      * @param bankOffset {number}
      */
-    addNewSoundFont(buffer, id, bankOffset)
+    addNewSoundFont(font, id, bankOffset)
     {
         if (this.soundfontList.find(s => s.id === id) !== undefined)
         {
@@ -127,12 +139,13 @@ export class SoundFontManager
         }
         this.soundfontList.push({
             id: id,
-            soundfont: loadSoundFont(buffer),
+            soundfont: font,
             bankOffset: bankOffset
         });
         this.generatePresetList();
     }
     
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Rearranges the soundfonts
      * @param newList {string[]} the order of soundfonts, a list of strings, first overwrites second
@@ -156,7 +169,7 @@ export class SoundFontManager
     {
         if (this.soundfontList.length < 1)
         {
-            throw new Error("No soundfonts! This should never happen.");
+            throw new Error("No soundfonts! Did you forget to add one?");
         }
         for (const sf of this.soundfontList)
         {

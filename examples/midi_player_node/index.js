@@ -4,6 +4,7 @@ import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
 import { MIDI } from "../../src/midi/midi_loader.js";
 import { Readable } from "stream";
 import Speaker from "speaker";
+import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -19,13 +20,9 @@ const sf = fs.readFileSync(sfPath);
 const mid = fs.readFileSync(midPath);
 
 const sampleRate = 44100;
-const synth = new SpessaSynthProcessor(
-    sf,
-    sampleRate,
-    {},
-    false,
-    false
-);
+const synth = new SpessaSynthProcessor(sampleRate);
+synth.soundfontManager.reloadManager(loadSoundFont(sf));
+await synth.processorInitialized;
 
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([new MIDI(mid)]);

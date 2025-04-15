@@ -9,6 +9,7 @@ import { SynthesizerSnapshot } from "./synthesizer_snapshot.js";
  */
 export function applySynthesizerSnapshot(snapshot)
 {
+    this._snapshot = snapshot;
     SynthesizerSnapshot.applySnapshot(this, snapshot);
     SpessaSynthInfo("%cFinished applying snapshot!", consoleColors.info);
     this.resetAllControllers();

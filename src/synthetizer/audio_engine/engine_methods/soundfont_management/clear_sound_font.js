@@ -14,6 +14,11 @@ export function clearSoundFont(sendPresets = true, clearOverride = true)
     this.getDefaultPresets();
     this.cachedVoices = [];
     
+    if (sendPresets)
+    {
+        this.updatePresetList();
+    }
+    
     for (let i = 0; i < this.midiAudioChannels.length; i++)
     {
         const channelObject = this.midiAudioChannels[i];
@@ -23,8 +28,5 @@ export function clearSoundFont(sendPresets = true, clearOverride = true)
         }
         channelObject.programChange(channelObject.preset.program);
     }
-    if (sendPresets)
-    {
-        this.sendPresetList();
-    }
+    
 }

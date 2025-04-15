@@ -1,7 +1,7 @@
 /**
  * @this {SpessaSynthProcessor}
  */
-export function sendPresetList()
+export function updatePresetList()
 {
     /**
      * @type {{bank: number, presetName: string, program: number}[]}
@@ -28,4 +28,6 @@ export function sendPresetList()
         });
     }
     this.callEvent("presetlistchange", mainFont);
+    this.getDefaultPresets();
+    this.resetAllControllers(false);
 }

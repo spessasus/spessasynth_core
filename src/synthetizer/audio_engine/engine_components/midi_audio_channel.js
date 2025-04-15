@@ -370,6 +370,7 @@ class MidiAudioChannel
         this.sendChannelProperty();
     }
     
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a custom vibrato
      * @param depth {number} cents
@@ -387,6 +388,10 @@ class MidiAudioChannel
         this.channelVibrato.depth = depth;
     }
     
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Yes
+     */
     disableAndLockGSNRPN()
     {
         this.lockGSNRPNParams = true;
@@ -431,7 +436,7 @@ class MidiAudioChannel
             bank: this.sentBank,
             program: this.preset.program
         };
-        this.synth?.callbacks?.channelPropertyChange?.(data, this.channelNumber);
+        this.synth?.onChannelPropertyChange?.(data, this.channelNumber);
     }
 }
 
