@@ -65,3 +65,4 @@ $RECYCLE.BIN/
 *.lnk
 
 examples/node_modules/
+examples/package-lock.json
