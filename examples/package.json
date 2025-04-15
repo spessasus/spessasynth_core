@@ -1,0 +1,8 @@
+{
+  "name": "spessasynth_core_examples",
+  "type": "module",
+  "version": "1.0.0",
+  "dependencies": {
+    "speaker": "^0.5.5"
+  }
+}

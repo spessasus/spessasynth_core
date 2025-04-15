@@ -63,3 +63,5 @@ $RECYCLE.BIN/
 *.wav
 # Windows shortcuts
 *.lnk
+
+examples/node_modules/
