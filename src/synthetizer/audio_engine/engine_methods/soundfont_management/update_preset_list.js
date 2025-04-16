@@ -27,6 +27,7 @@ export function updatePresetList()
             }
         });
     }
+    this.clearCache();
     this.callEvent("presetlistchange", mainFont);
     this.getDefaultPresets();
     this.resetAllControllers(false);

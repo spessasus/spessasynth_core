@@ -12,7 +12,7 @@ export function clearSoundFont(sendPresets = true, clearOverride = true)
         this.overrideSoundfont = undefined;
     }
     this.getDefaultPresets();
-    this.cachedVoices = [];
+    this.clearCache();
     
     if (sendPresets)
     {

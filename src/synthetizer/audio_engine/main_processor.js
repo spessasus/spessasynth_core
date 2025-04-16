@@ -468,10 +468,6 @@ class SpessaSynthProcessor
     setCachedVoice(bank, program, midiNote, velocity, voices)
     {
         // make sure that it exists
-        if (!this.cachedVoices)
-        {
-            this.cachedVoices = [];
-        }
         if (!this.cachedVoices[bank])
         {
             this.cachedVoices[bank] = [];
@@ -748,6 +744,11 @@ class SpessaSynthProcessor
     callEvent(eventName, eventData)
     {
         this?.onEventCall?.(eventName, eventData);
+    }
+    
+    clearCache()
+    {
+        this.cachedVoices = [];
     }
 }
 
