@@ -142,6 +142,7 @@ export function _playTo(time, ticks = undefined)
                 }
                 const p = programs[channel];
                 p.program = event.messageData[0];
+                console.log("program", p.actualBank, p.program, channel);
                 p.actualBank = p.bank;
                 break;
             
@@ -264,11 +265,20 @@ export function _playTo(time, ticks = undefined)
                 });
             }
             // restore programs
-            if (programs[channelNumber].program >= 0 && programs[channelNumber].actualBank >= 0)
+            if (programs[channelNumber].actualBank >= 0)
             {
-                const bank = programs[channelNumber].actualBank;
-                this.synth.controllerChange(channelNumber, midiControllers.bankSelect, bank);
-                this.synth.programChange(channelNumber, programs[channelNumber].program);
+                const p = programs[channelNumber];
+                if (p.program !== -1)
+                {
+                    // a program change has occurred, apply the actual bank when program change was executed
+                    this.synth.controllerChange(channelNumber, midiControllers.bankSelect, p.actualBank);
+                    this.synth.programChange(channelNumber, p.program);
+                }
+                else
+                {
+                    // no program change, apply the current bank select
+                    this.synth.controllerChange(channelNumber, midiControllers.bankSelect, p.bank);
+                }
             }
         }
     }
