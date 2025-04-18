@@ -79,6 +79,11 @@ export class BasicPreset
         }
     }
     
+    clearCache()
+    {
+        this.foundSamplesAndGenerators = [];
+    }
+    
     /**
      * @param allowXG {boolean}
      * @param allowSFX {boolean}
