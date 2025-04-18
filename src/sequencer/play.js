@@ -142,7 +142,6 @@ export function _playTo(time, ticks = undefined)
                 }
                 const p = programs[channel];
                 p.program = event.messageData[0];
-                console.log("program", p.actualBank, p.program, channel);
                 p.actualBank = p.bank;
                 break;
             
