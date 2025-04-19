@@ -4,11 +4,12 @@ import { messageTypes, midiControllers } from "../midi_message.js";
 import { DEFAULT_PERCUSSION } from "../../synthetizer/synth_constants.js";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks.js";
 import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector.js";
+import { SoundFontManager } from "../../synthetizer/audio_engine/engine_components/soundfont_manager.js";
 
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank
  * @this {BasicMIDI}
- * @param soundfont {BasicSoundBank|SoundFontManager} - the sound bank
+ * @param soundfont {SoundFontManager|BasicSoundBank} - the sound bank
  * @returns {Object<string, Set<string>>} Object<bank:program, Set<key-velocity>>
  */
 export function getUsedProgramsAndKeys(soundfont)
@@ -44,9 +45,27 @@ export function getUsedProgramsAndKeys(soundfont)
     {
         const bank = chooseBank(ch.bank, ch.bankLSB, ch.drums, isSystemXG(system));
         // check if this exists in the soundfont
-        let exists = soundfont.getPreset(bank, ch.program, isSystemXG(system));
-        ch.actualBank = exists.bank;
-        ch.program = exists.program;
+        let existsBank, existsProgram;
+        if (soundfont instanceof SoundFontManager)
+        {
+            /**
+             * @type {{preset: BasicPreset, bankOffset: number}}
+             */
+            let exists = soundfont.getPreset(bank, ch.program, isSystemXG(system));
+            existsBank = exists.preset.bank + exists.bankOffset;
+            existsProgram = exists.preset.program;
+        }
+        else
+        {
+            /**
+             * @type {BasicPreset}
+             */
+            let exists = soundfont.getPreset(bank, ch.program, isSystemXG(system));
+            existsBank = exists.bank;
+            existsProgram = exists.program;
+        }
+        ch.actualBank = existsBank;
+        ch.program = existsProgram;
         ch.string = ch.actualBank + ":" + ch.program;
         if (!usedProgramsAndKeys[ch.string])
         {
@@ -147,19 +166,18 @@ export function getUsedProgramsAndKeys(soundfont)
                     continue;
                 }
                 const bank = event.messageData[1];
-                const realBank = Math.max(0, bank - mid.bankOffset);
                 if (isLSB)
                 {
-                    ch.bankLSB = realBank;
+                    ch.bankLSB = bank;
                 }
                 else
                 {
-                    ch.bank = realBank;
+                    ch.bank = bank;
                 }
                 // interpret the bank
                 const intepretation = parseBankSelect(
                     ch.bank,
-                    realBank,
+                    bank,
                     system,
                     isLSB,
                     ch.drums,

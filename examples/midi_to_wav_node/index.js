@@ -50,10 +50,11 @@ while (filledSamples + bufSize < sampleCount)
     // log progress
     if (i % 100 === 0)
     {
-        console.log("Rendered", seq.currentTime, "/", midi.duration);
+        console.log("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", midi.duration, synth.totalVoicesAmount);
     }
 }
-console.log("Rendered in", Math.floor(performance.now() - start), "ms");
+const rendered = Math.floor(performance.now() - start);
+console.log("Rendered in", rendered, `ms (${Math.floor((midi.duration * 1000 / rendered) * 100) / 100}x)`);
 const wave = audioToWav({
     leftChannel: outLeft,
     rightChannel: outRight,

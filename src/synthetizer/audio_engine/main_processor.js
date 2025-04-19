@@ -9,13 +9,11 @@ import { masterParameterType, setMasterParameter } from "./engine_methods/contro
 import { resetAllControllers } from "./engine_methods/controller_control/reset_controllers.js";
 import { SoundFontManager } from "./engine_components/soundfont_manager.js";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager.js";
-import { getVoices } from "./engine_components/voice.js";
+import { getVoices, getVoicesForPreset } from "./engine_components/voice.js";
 import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner.js";
 import { stopAllChannels } from "./engine_methods/stopping_notes/stop_all_channels.js";
-import { setEmbeddedSoundFont } from "./engine_methods/soundfont_management/set_embedded_sound_font.js";
-import { clearSoundFont } from "./engine_methods/soundfont_management/clear_sound_font.js";
+import { clearEmbeddedBank, setEmbeddedSoundFont } from "./engine_methods/soundfont_management/embedded_sound_bank.js";
 import { updatePresetList } from "./engine_methods/soundfont_management/update_preset_list.js";
-import { getPreset } from "./engine_methods/soundfont_management/get_preset.js";
 import { transposeAllChannels } from "./engine_methods/tuning_control/transpose_all_channels.js";
 import { setMasterTuning } from "./engine_methods/tuning_control/set_master_tuning.js";
 import { applySynthesizerSnapshot } from "./snapshot/apply_synthesizer_snapshot.js";
@@ -26,6 +24,7 @@ import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { interpolationTypes } from "./engine_components/enums.js";
 import { DEFAULT_SYNTH_OPTIONS } from "./synth_processor_options.js";
 import { fillWithDefaults } from "../../utils/fill_with_defaults.js";
+import { isSystemXG } from "../../utils/xg_hacks.js";
 
 
 /**
@@ -169,7 +168,7 @@ class SpessaSynthProcessor
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting goes like this:
-     * this.cachedVoices[bankNumber][programNumber][midiNote][velocity] = a list of Voices for that.
+     * this.cachedVoices[bankNumber][programNumber][midiNote][velocity] = a list of voices for that.
      * @type {Voice[][][][][]}
      */
     cachedVoices = [];
@@ -210,7 +209,6 @@ class SpessaSynthProcessor
      * @type {number}
      */
     soundfontBankOffset = 0;
-    
     
     /**
      * The volume gain, set by user
@@ -271,12 +269,6 @@ class SpessaSynthProcessor
     keyModifierManager = new KeyModifierManager();
     
     /**
-     * Overrides the main soundfont (embedded, for example)
-     * @type {BasicSoundBank}
-     */
-    overrideSoundfont = undefined;
-    
-    /**
      * contains all the channels with their voices on the processor size
      * @type {MidiAudioChannel[]}
      */
@@ -299,15 +291,11 @@ class SpessaSynthProcessor
      */
     defaultPreset;
     
-    defaultPresetUsesOverride = false;
-    
     /**
      * Synth's default (reset) drum preset
      * @type {BasicPreset}
      */
     drumPreset;
-    
-    defaultDrumsUsesOverride = false;
     
     /**
      * Controls if the processor is fully initialized
@@ -431,10 +419,8 @@ class SpessaSynthProcessor
         const sys = this.system;
         this.system = "xg";
         this.defaultPreset = this.getPreset(0, 0);
-        this.defaultPresetUsesOverride = this.overrideSoundfont?.presets?.indexOf(this.defaultPreset) >= 0;
         this.system = sys;
         this.drumPreset = this.getPreset(128, 0);
-        this.defaultDrumsUsesOverride = this.overrideSoundfont?.presets?.indexOf(this.drumPreset) >= 0;
     }
     
     /**
@@ -750,11 +736,22 @@ class SpessaSynthProcessor
     {
         this.cachedVoices = [];
     }
+    
+    /**
+     * @param program {number}
+     * @param bank {number}
+     * @returns {BasicPreset}
+     */
+    getPreset(bank, program)
+    {
+        return this.soundfontManager.getPreset(bank, program, isSystemXG(this.system)).preset;
+    }
 }
 
 // include other methods
 // voice related
 SpessaSynthProcessor.prototype.voiceKilling = voiceKilling;
+SpessaSynthProcessor.prototype.getVoicesForPreset = getVoicesForPreset;
 SpessaSynthProcessor.prototype.getVoices = getVoices;
 
 // system-exclusive related
@@ -773,8 +770,7 @@ SpessaSynthProcessor.prototype.transposeAllChannels = transposeAllChannels;
 SpessaSynthProcessor.prototype.setMasterTuning = setMasterTuning;
 
 // program related
-SpessaSynthProcessor.prototype.getPreset = getPreset;
-SpessaSynthProcessor.prototype.clearSoundFont = clearSoundFont;
+SpessaSynthProcessor.prototype.clearEmbeddedBank = clearEmbeddedBank;
 SpessaSynthProcessor.prototype.setEmbeddedSoundFont = setEmbeddedSoundFont;
 SpessaSynthProcessor.prototype.updatePresetList = updatePresetList;
 

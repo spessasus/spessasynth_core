@@ -361,7 +361,6 @@ class MidiAudioChannel
         {
             this.drumChannel = false;
         }
-        this.presetUsesOverride = false;
         this.synth.callEvent("drumchange", {
             channel: this.channelNumber,
             isDrumChannel: this.drumChannel

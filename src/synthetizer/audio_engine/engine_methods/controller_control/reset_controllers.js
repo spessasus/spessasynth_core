@@ -43,7 +43,6 @@ export function resetAllControllers(log = true)
             if (channelNumber % 16 === DEFAULT_PERCUSSION)
             {
                 ch.setPreset(this.drumPreset);
-                ch.presetUsesOverride = this.defaultDrumsUsesOverride;
                 ch.drumChannel = true;
                 this.callEvent("drumchange", {
                     channel: channelNumber,
@@ -53,7 +52,6 @@ export function resetAllControllers(log = true)
             else
             {
                 ch.drumChannel = false;
-                ch.presetUsesOverride = this.defaultDrumsUsesOverride;
                 ch.setPreset(this.defaultPreset);
                 this.callEvent("drumchange", {
                     channel: channelNumber,
@@ -70,13 +68,11 @@ export function resetAllControllers(log = true)
         }
         
         const presetBank = ch.preset.bank;
-        const sentBank = presetBank === 128 ? 128 : (ch.presetUsesOverride ? presetBank + this.soundfontBankOffset : presetBank);
-        
         // call program change
         this.callEvent("programchange", {
             channel: channelNumber,
             program: ch.preset.program,
-            bank: sentBank
+            bank: presetBank
         });
         
         for (let ccNum = 0; ccNum < 128; ccNum++)

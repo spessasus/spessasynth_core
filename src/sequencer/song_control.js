@@ -57,41 +57,36 @@ export function loadNewSequence(parsedMidi, autoPlay = true)
      */
     this.midiData = parsedMidi;
     
+    // clear old embedded bank if exists
+    this.synth.clearEmbeddedBank();
+    
     // check for embedded soundfont
     if (this.midiData.embeddedSoundFont !== undefined)
     {
         SpessaSynthInfo("%cEmbedded soundfont detected! Using it.", consoleColors.recognized);
         this.synth.setEmbeddedSoundFont(this.midiData.embeddedSoundFont, this.midiData.bankOffset);
     }
-    else
+    
+    SpessaSynthGroupCollapsed("%cPreloading samples...", consoleColors.info);
+    // smart preloading: load only samples used in the midi!
+    const used = this.midiData.getUsedProgramsAndKeys(this.synth.soundfontManager);
+    for (const [programBank, combos] of Object.entries(used))
     {
-        if (this.synth.overrideSoundfont)
+        const [bank, program] = programBank.split(":").map(Number);
+        const preset = this.synth.getPreset(bank, program);
+        SpessaSynthInfo(
+            `%cPreloading used samples on %c${preset.presetName}%c...`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info
+        );
+        for (const combo of combos)
         {
-            // clean up the embedded soundfont
-            this.synth.clearSoundFont(true, true);
+            const [midiNote, velocity] = combo.split("-").map(Number);
+            this.synth.getVoicesForPreset(preset, bank, program, midiNote, velocity, midiNote);
         }
-        SpessaSynthGroupCollapsed("%cPreloading samples...", consoleColors.info);
-        // smart preloading: load only samples used in the midi!
-        const used = this.midiData.getUsedProgramsAndKeys(this.synth.soundfontManager);
-        for (const [programBank, combos] of Object.entries(used))
-        {
-            const bank = parseInt(programBank.split(":")[0]);
-            const program = parseInt(programBank.split(":")[1]);
-            const preset = this.synth.getPreset(bank, program);
-            SpessaSynthInfo(
-                `%cPreloading used samples on %c${preset.presetName}%c...`,
-                consoleColors.info,
-                consoleColors.recognized,
-                consoleColors.info
-            );
-            for (const combo of combos)
-            {
-                const split = combo.split("-");
-                preset.preloadSpecific(parseInt(split[0]), parseInt(split[1]));
-            }
-        }
-        SpessaSynthGroupEnd();
     }
+    SpessaSynthGroupEnd();
     
     /**
      * the midi track data

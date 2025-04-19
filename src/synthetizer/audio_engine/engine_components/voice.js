@@ -9,7 +9,6 @@ import { VolumeEnvelope } from "./volume_envelope.js";
 import { ModulationEnvelope } from "./modulation_envelope.js";
 import { addAndClampGenerator, generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
-import { isSystemXG } from "../../../utils/xg_hacks.js";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans
@@ -163,12 +162,6 @@ class Voice
     isInRelease = false;
     
     /**
-     * MIDI channel number.
-     * @type {number}
-     */
-    channelNumber = 0;
-    
-    /**
      * Velocity of the note.
      * @type {number}
      */
@@ -272,7 +265,6 @@ class Voice
      * @param audioSample {AudioSample}
      * @param midiNote {number}
      * @param velocity {number}
-     * @param channel {number}
      * @param currentTime {number}
      * @param targetKey {number}
      * @param realKey {number}
@@ -284,7 +276,6 @@ class Voice
         audioSample,
         midiNote,
         velocity,
-        channel,
         currentTime,
         targetKey,
         realKey,
@@ -301,7 +292,6 @@ class Voice
         
         this.velocity = velocity;
         this.midiNote = midiNote;
-        this.channelNumber = channel;
         this.startTime = currentTime;
         this.targetKey = targetKey;
         this.realKey = realKey;
@@ -333,7 +323,6 @@ class Voice
             sample,
             voice.midiNote,
             voice.velocity,
-            voice.channelNumber,
             currentTime,
             voice.targetKey,
             realKey,
@@ -372,53 +361,21 @@ class Voice
 }
 
 /**
- * @param channel {number} a hint for the processor to recalculate sample cursors when sample dumping
+ * @param preset {BasicPreset} the preset to get voices for
+ * @param bank {number} the bank to cache the voices in
+ * @param program {number} program to cache the voices in
  * @param midiNote {number} the MIDI note to use
  * @param velocity {number} the velocity to use
  * @param realKey {number} the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
  * @this {SpessaSynthProcessor}
  * @returns {Voice[]} output is an array of Voices
  */
-export function getVoices(channel,
-                          midiNote,
-                          velocity,
-                          realKey)
+export function getVoicesForPreset(preset, bank, program, midiNote, velocity, realKey)
 {
     /**
      * @type {Voice[]}
      */
-    let voices;
-    const channelObject = this.midiAudioChannels[channel];
-    
-    // override patch
-    const overridePatch = this.keyModifierManager.hasOverridePatch(channel, midiNote);
-    
-    let bank = channelObject.getBankSelect();
-    let program = channelObject.preset.program;
-    if (overridePatch)
-    {
-        const override = this.keyModifierManager.getPatch(channel, midiNote);
-        bank = override.bank;
-        program = override.program;
-    }
-    
-    const cached = this.getCachedVoice(bank, program, midiNote, velocity);
-    // if cached, return it!
-    if (cached !== undefined)
-    {
-        return cached.map(v => Voice.copy(v, this.currentSynthTime, realKey));
-    }
-    
-    // not cached...
-    let preset = channelObject.preset;
-    if (overridePatch)
-    {
-        preset = this.soundfontManager.getPreset(bank, program, isSystemXG(this.system));
-    }
-    /**
-     * @returns {Voice[]}
-     */
-    voices = preset.getSamplesAndGenerators(midiNote, velocity)
+    const voices = preset.getSamplesAndGenerators(midiNote, velocity)
         .reduce((voices, sampleAndGenerators) =>
         {
             if (sampleAndGenerators.sample.getAudioData() === undefined)
@@ -501,7 +458,6 @@ export function getVoices(channel,
                     audioSample,
                     midiNote,
                     velocity,
-                    channel,
                     this.currentSynthTime,
                     targetKey,
                     realKey,
@@ -515,4 +471,44 @@ export function getVoices(channel,
     this.setCachedVoice(bank, program, midiNote, velocity, voices.map(v =>
         Voice.copy(v, this.currentSynthTime, realKey)));
     return voices;
+}
+
+/**
+ * @param channel {number} a hint for the processor to recalculate sample cursors when sample dumping
+ * @param midiNote {number} the MIDI note to use
+ * @param velocity {number} the velocity to use
+ * @param realKey {number} the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
+ * @this {SpessaSynthProcessor}
+ * @returns {Voice[]} output is an array of Voices
+ */
+export function getVoices(channel, midiNote, velocity, realKey)
+{
+    const channelObject = this.midiAudioChannels[channel];
+    
+    // override patch
+    const overridePatch = this.keyModifierManager.hasOverridePatch(channel, midiNote);
+    
+    let bank = channelObject.getBankSelect();
+    let program = channelObject.preset.program;
+    if (overridePatch)
+    {
+        const override = this.keyModifierManager.getPatch(channel, midiNote);
+        bank = override.bank;
+        program = override.program;
+    }
+    
+    const cached = this.getCachedVoice(bank, program, midiNote, velocity);
+    // if cached, return it!
+    if (cached !== undefined)
+    {
+        return cached.map(v => Voice.copy(v, this.currentSynthTime, realKey));
+    }
+    
+    // not cached...
+    let preset = channelObject.preset;
+    if (overridePatch)
+    {
+        preset = this.getPreset(bank, program);
+    }
+    return this.getVoicesForPreset(preset, bank, program, midiNote, velocity, realKey);
 }

@@ -45,12 +45,6 @@ export class BasicPreset
     presetZones = [];
     
     /**
-     * Stores already found getSamplesAndGenerators for reuse
-     * @type {SampleAndGenerators[][][]}
-     */
-    foundSamplesAndGenerators = [];
-    
-    /**
      * unused metadata
      * @type {number}
      */
@@ -73,15 +67,6 @@ export class BasicPreset
     constructor(parentSoundBank)
     {
         this.parentSoundBank = parentSoundBank;
-        for (let i = 0; i < 128; i++)
-        {
-            this.foundSamplesAndGenerators[i] = [];
-        }
-    }
-    
-    clearCache()
-    {
-        this.foundSamplesAndGenerators = [];
     }
     
     /**
@@ -136,34 +121,13 @@ export class BasicPreset
     }
     
     /**
-     * Preloads a specific key/velocity combo
-     * @param key {number}
-     * @param velocity {number}
-     */
-    preloadSpecific(key, velocity)
-    {
-        this.getSamplesAndGenerators(key, velocity).forEach(samandgen =>
-        {
-            if (!samandgen.sample.isSampleLoaded)
-            {
-                samandgen.sample.getAudioData();
-            }
-        });
-    }
-    
-    /**
-     * Returns generatorTranslator and generators for given note
+     * Returns samples and generators for given note
      * @param midiNote {number}
      * @param velocity {number}
      * @returns {SampleAndGenerators[]}
      */
     getSamplesAndGenerators(midiNote, velocity)
     {
-        const memorized = this.foundSamplesAndGenerators[midiNote][velocity];
-        if (memorized)
-        {
-            return memorized;
-        }
         
         if (this.presetZones.length < 1)
         {
@@ -333,9 +297,6 @@ export class BasicPreset
                 });
             });
         });
-        
-        // save and return
-        this.foundSamplesAndGenerators[midiNote][velocity] = parsedGeneratorsAndSamples;
         return parsedGeneratorsAndSamples;
     }
 }

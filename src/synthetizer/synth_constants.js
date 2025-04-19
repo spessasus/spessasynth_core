@@ -20,3 +20,5 @@ export const MIDI_CHANNEL_COUNT = 16;
 export const DEFAULT_SYNTH_MODE = "gs";
 
 export const ALL_CHANNELS_OR_DIFFERENT_ACTION = -1;
+
+export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()}`;

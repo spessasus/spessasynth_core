@@ -1,5 +1,6 @@
-import { SpessaSynthWarn } from "../../../utils/loggin.js";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin.js";
 import { isXGDrums } from "../../../utils/xg_hacks.js";
+import { EMBEDDED_SOUND_BANK_ID } from "../../synth_constants.js";
 
 /**
  * @typedef {Object} SoundFontType
@@ -47,7 +48,8 @@ export class SoundFontManager
             const presets = new Set();
             for (const p of font.soundfont.presets)
             {
-                const presetString = `${p.bank + font.bankOffset}-${p.program}`;
+                const bank = Math.min(128, p.bank + font.bankOffset);
+                const presetString = `${bank}-${p.program}`;
                 if (presets.has(presetString))
                 {
                     continue;
@@ -86,11 +88,8 @@ export class SoundFontManager
      */
     reloadManager(soundFont)
     {
-        /**
-         * All the soundfonts, ordered from the most important to the least.
-         * @type {SoundFontType[]}
-         */
-        this.soundfontList = [];
+        // do not clear the embedded bank
+        this.soundfontList = this.soundfontList.filter(sf => sf.id === EMBEDDED_SOUND_BANK_ID);
         this.soundfontList.push({
             id: "main",
             bankOffset: 0,
@@ -114,7 +113,7 @@ export class SoundFontManager
         const index = this.soundfontList.findIndex(s => s.id === id);
         if (index === -1)
         {
-            SpessaSynthWarn(`No soundfont with id of "${id}" found. Aborting!`);
+            SpessaSynthInfo(`No soundfont with id of "${id}" found. Aborting!`);
             return;
         }
         delete this.soundfontList[index].soundfont.presets;
@@ -145,6 +144,15 @@ export class SoundFontManager
         this.generatePresetList();
     }
     
+    /**
+     * Gets the current soundfont order
+     * @returns {string[]}
+     */
+    getCurrentSoundFontOrder()
+    {
+        return this.soundfontList.map(s => s.id);
+    }
+    
     // noinspection JSUnusedGlobalSymbols
     /**
      * Rearranges the soundfonts
@@ -163,7 +171,7 @@ export class SoundFontManager
      * @param bankNumber {number}
      * @param programNumber {number}
      * @param allowXGDrums {boolean} if true, allows XG drum banks (120, 126 and 127) as drum preset
-     * @returns {BasicPreset} the preset
+     * @returns {{preset: BasicPreset, bankOffset: number}} the preset and its bank offset
      */
     getPreset(bankNumber, programNumber, allowXGDrums = false)
     {
@@ -171,21 +179,24 @@ export class SoundFontManager
         {
             throw new Error("No soundfonts! Did you forget to add one?");
         }
+        const isDrum = bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));
         for (const sf of this.soundfontList)
         {
             // check for the preset (with given offset)
             const preset = sf.soundfont.getPresetNoFallback(
-                bankNumber - sf.bankOffset,
+                bankNumber === 128 ? 128 : bankNumber - sf.bankOffset,
                 programNumber,
                 allowXGDrums
             );
             if (preset !== undefined)
             {
-                return preset;
+                return {
+                    preset: preset,
+                    bankOffset: sf.bankOffset
+                };
             }
             // if not found, advance to the next soundfont
         }
-        const isDrum = bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));
         // if none found, return the first correct preset found
         if (!isDrum)
         {
@@ -195,11 +206,18 @@ export class SoundFontManager
                     allowXGDrums));
                 if (preset)
                 {
-                    return preset;
+                    return {
+                        preset: preset,
+                        bankOffset: sf.bankOffset
+                    };
                 }
             }
             // if nothing at all, use the first preset
-            return this.soundfontList[0].soundfont.presets[0];
+            const sf = this.soundfontList[0];
+            return {
+                preset: sf.soundfont.presets[0],
+                bankOffset: sf.bankOffset
+            };
         }
         else
         {
@@ -209,17 +227,27 @@ export class SoundFontManager
                 const p = sf.soundfont.presets.find(p => p.isDrumPreset(allowXGDrums) && p.program === programNumber);
                 if (p)
                 {
-                    return p;
+                    return {
+                        preset: p,
+                        bankOffset: sf.bankOffset
+                    };
                 }
                 // check for any drum preset
                 const preset = sf.soundfont.presets.find(p => p.isDrumPreset(allowXGDrums));
                 if (preset)
                 {
-                    return preset;
+                    return {
+                        preset: preset,
+                        bankOffset: sf.bankOffset
+                    };
                 }
             }
             // if nothing at all, use the first preset
-            return this.soundfontList[0].soundfont.presets[0];
+            const sf = this.soundfontList[0];
+            return {
+                preset: sf.soundfont.presets[0],
+                bankOffset: sf.bankOffset
+            };
         }
     }
     
