@@ -57,12 +57,14 @@ setResetValue(NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange, 2);
  * @enum {number}
  */
 export const customControllers = {
-    channelTuning: 0,           // cents, RPN for fine tuning
-    channelTransposeFine: 1,    // cents, only the decimal tuning, (e.g., transpose is 4.5,
+    channelTuning: 0,              // cents, RPN for fine tuning
+    channelTransposeFine: 1,       // cents, only the decimal tuning, (e.g., transpose is 4.5,
     // then shift by 4 keys + tune by 50 cents)
-    modulationMultiplier: 2,    // cents, set by modulation depth RPN
-    masterTuning: 3,            // cents, set by system exclusive
-    channelTuningSemitones: 4   // semitones, for RPN coarse tuning
+    modulationMultiplier: 2,       // cents, set by modulation depth RPN
+    masterTuning: 3,               // cents, set by system exclusive
+    channelTuningSemitones: 4,     // semitones, for RPN coarse tuning
+    channelKeyShift: 5,            // key shift: for system exclusive
+    channelPressurePitchControl: 6 // semitones, sound canvas, see https://github.com/spessasus/SpessaSynth/issues/154
 };
 export const CUSTOM_CONTROLLER_TABLE_SIZE = Object.keys(customControllers).length;
 export const customResetArray = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);

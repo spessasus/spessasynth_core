@@ -10,6 +10,7 @@ import { computeModulators } from "../../engine_components/compute_modulator.js"
 export function channelPressure(pressure)
 {
     this.midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.channelPressure] = pressure << 7;
+    this.updateChannelTuning();
     this.voices.forEach(v =>
         computeModulators(
             v,

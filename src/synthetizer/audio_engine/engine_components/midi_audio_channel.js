@@ -148,12 +148,6 @@ class MidiAudioChannel
     lockedSystem = "gs";
     
     /**
-     * Indicates whether the channel uses a preset from the override soundfont.
-     * @type {boolean}
-     */
-    presetUsesOverride = false;
-    
-    /**
      * Indicates whether the GS NRPN parameters are enabled for this channel.
      * @type {boolean}
      */
@@ -228,11 +222,14 @@ class MidiAudioChannel
     
     updateChannelTuning()
     {
+        const pressure = (this.midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.channelPressure] >> 7) / 127;
+        const channelPressurePitchShift = this.customControllers[customControllers.channelPressurePitchControl] * pressure;
         this.channelTuningCents =
-            this.customControllers[customControllers.channelTuning]                     // RPN channel fine tuning
-            + this.customControllers[customControllers.channelTransposeFine]            // user tuning (transpose)
-            + this.customControllers[customControllers.masterTuning]                    // master tuning, set by sysEx
-            + (this.customControllers[customControllers.channelTuningSemitones] * 100); // RPN channel coarse tuning
+            this.customControllers[customControllers.channelTuning]                         // RPN channel fine tuning
+            + this.customControllers[customControllers.channelTransposeFine]                // user tuning (transpose)
+            + this.customControllers[customControllers.masterTuning]                        // master tuning, set by sysEx
+            + (this.customControllers[customControllers.channelTuningSemitones] * 100)      // RPN channel coarse tuning
+            + channelPressurePitchShift * 100;                                              // CAf pitch shift (gs)
     }
     
     /**

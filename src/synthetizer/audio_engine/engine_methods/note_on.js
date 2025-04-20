@@ -2,6 +2,7 @@ import { computeModulators } from "../engine_components/compute_modulator.js";
 import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { midiControllers } from "../../../midi/midi_message.js";
 import { portamentoTimeToSeconds } from "./portamento_time.js";
+import { customControllers } from "../engine_components/controller_tables.js";
 
 /**
  * sends a "MIDI Note on message"
@@ -27,8 +28,8 @@ export function noteOn(midiNote, velocity)
         return;
     }
     
-    const realKey = midiNote + this.channelTransposeKeyShift;
-    let sentMidiNote = realKey;
+    const realKey = midiNote + this.channelTransposeKeyShift + this.customControllers[customControllers.channelKeyShift];
+    let internalMidiNote = realKey;
     
     if (realKey > 127 || realKey < 0)
     {
@@ -38,7 +39,7 @@ export function noteOn(midiNote, velocity)
     const tune = this.synth.tunings[program]?.[realKey]?.midiNote;
     if (tune >= 0)
     {
-        sentMidiNote = tune;
+        internalMidiNote = tune;
     }
     
     // velocity override
@@ -66,7 +67,7 @@ export function noteOn(midiNote, velocity)
     const currentFromKey = control >> 7;
     if (
         !this.drumChannel && // no portamento on drum channel
-        currentFromKey !== sentMidiNote && // if the same note, there's no portamento
+        currentFromKey !== internalMidiNote && // if the same note, there's no portamento
         this.midiControllers[midiControllers.portamentoOnOff] >= 8192 && // (64 << 7)
         portamentoTime > 0 // 0 duration is no portamento
     )
@@ -74,18 +75,18 @@ export function noteOn(midiNote, velocity)
         // a value of one means the initial portamento
         if (control !== 1)
         {
-            const diff = Math.abs(sentMidiNote - currentFromKey);
+            const diff = Math.abs(internalMidiNote - currentFromKey);
             portamentoDuration = portamentoTimeToSeconds(portamentoTime, diff);
             portamentoFromKey = currentFromKey;
         }
         // set portamento control to previous value
-        this.controllerChange(midiControllers.portamentoControl, sentMidiNote);
+        this.controllerChange(midiControllers.portamentoControl, internalMidiNote);
     }
     
     // get voices
     const voices = this.synth.getVoices(
         this.channelNumber,
-        sentMidiNote,
+        internalMidiNote,
         velocity,
         realKey
     );

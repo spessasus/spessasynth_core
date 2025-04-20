@@ -6,6 +6,7 @@ import { isSystemXG } from "../../../utils/xg_hacks.js";
 import { masterParameterType } from "./controller_control/master_parameters.js";
 import { readBytesAsString } from "../../../utils/byte_functions/string.js";
 import { synthDisplayTypes } from "../engine_components/enums.js";
+import { customControllers } from "../engine_components/controller_tables.js";
 
 /**
  * KeyNum: tuning
@@ -355,6 +356,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                     {
                         // this is an individual part (channel) parameter
                         // determine the channel 0 means channel 10 (default), 1 means 1 etc.
+                        // SC88 manual page 196
                         const channel = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][messageData[5] & 0x0F] + channelOffset;
                         // for example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const channelObject = this.midiAudioChannels[channel];
@@ -386,7 +388,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                             case 0x16:
                                 // this is the pitch key shift sysex
                                 const keyShift = messageValue - 64;
-                                channelObject.transposeChannel(keyShift);
+                                channelObject.setCustomController(customControllers.channelKeyShift, keyShift);
                                 SpessaSynthInfo(
                                     `%cChannel %c${channel}%c pitch shift. Semitones %c${keyShift}%c, with %c${arrayToHexString(
                                         messageData)}`,
@@ -467,6 +469,43 @@ export function systemExclusive(messageData, channelOffset = 0)
                                 break;
                         }
                         return;
+                    }
+                    else
+                        // this is a system parameter also
+                    if ((messageData[5] & 0x20) > 0)
+                    {
+                        // this is an individual part (channel) parameter
+                        // determine the channel 0 means channel 10 (default), 1 means 1 etc.
+                        // SC88 manual page 196
+                        const channel = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][messageData[5] & 0x0F] + channelOffset;
+                        // for example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                        const channelObject = this.midiAudioChannels[channel];
+                        switch (messageData[6])
+                        {
+                            default:
+                                // this is some other GS sysex...
+                                notRecognized();
+                                break;
+                            
+                            case 0x20:
+                                // channel pressure pitch control
+                                const pitchShift = messageValue - 64;
+                                channelObject.setCustomController(
+                                    customControllers.channelPressurePitchControl,
+                                    pitchShift
+                                );
+                                SpessaSynthInfo(
+                                    `%cChannel %c${channel}%c channel pressure pitch control. Semitones %c${pitchShift}%c, with %c${arrayToHexString(
+                                        messageData)}`,
+                                    consoleColors.info,
+                                    consoleColors.recognized,
+                                    consoleColors.info,
+                                    consoleColors.value,
+                                    consoleColors.info,
+                                    consoleColors.value
+                                );
+                                break;
+                        }
                     }
                     else
                         // this is a global system parameter

@@ -1,4 +1,5 @@
 import { generatorTypes } from "../../../../soundfont/basic_soundfont/generator.js";
+import { customControllers } from "../../engine_components/controller_tables.js";
 
 /**
  * Stops a note nearly instantly
@@ -8,6 +9,8 @@ import { generatorTypes } from "../../../../soundfont/basic_soundfont/generator.
  */
 export function killNote(midiNote, releaseTime = -12000)
 {
+    midiNote += this.customControllers[customControllers.channelKeyShift];
+    
     this.voices.forEach(v =>
     {
         if (v.realKey !== midiNote)

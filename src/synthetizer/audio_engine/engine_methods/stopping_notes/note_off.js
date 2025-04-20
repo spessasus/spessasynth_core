@@ -1,4 +1,5 @@
 import { SpessaSynthWarn } from "../../../../utils/loggin.js";
+import { customControllers } from "../../engine_components/controller_tables.js";
 
 /**
  * Release a note
@@ -13,7 +14,7 @@ export function noteOff(midiNote)
         return;
     }
     
-    let realKey = midiNote + this.channelTransposeKeyShift;
+    let realKey = midiNote + this.channelTransposeKeyShift + this.customControllers[customControllers.channelKeyShift];
     
     // if high performance mode, kill notes instead of stopping them
     if (this.synth.highPerformanceMode)
