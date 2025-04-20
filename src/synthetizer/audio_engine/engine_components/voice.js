@@ -7,7 +7,11 @@ import { SpessaSynthWarn } from "../../../utils/loggin.js";
 import { LowpassFilter } from "./lowpass_filter.js";
 import { VolumeEnvelope } from "./volume_envelope.js";
 import { ModulationEnvelope } from "./modulation_envelope.js";
-import { addAndClampGenerator, generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
+import {
+    addAndClampGenerator,
+    GENERATORS_AMOUNT,
+    generatorTypes
+} from "../../../soundfont/basic_soundfont/generator.js";
 import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
@@ -385,7 +389,7 @@ export function getVoicesForPreset(preset, bank, program, midiNote, velocity, re
             }
             
             // create the generator list
-            const generators = new Int16Array(60);
+            const generators = new Int16Array(GENERATORS_AMOUNT);
             // apply and sum the gens
             for (let i = 0; i < 60; i++)
             {

@@ -3,6 +3,7 @@ import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js"
 import { midiControllers } from "../../../midi/midi_message.js";
 import { portamentoTimeToSeconds } from "./portamento_time.js";
 import { customControllers } from "../engine_components/controller_tables.js";
+import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
 
 /**
  * sends a "MIDI Note on message"
@@ -82,7 +83,6 @@ export function noteOn(midiNote, velocity)
         // set portamento control to previous value
         this.controllerChange(midiControllers.portamentoControl, internalMidiNote);
     }
-    
     // get voices
     const voices = this.synth.getVoices(
         this.channelNumber,
@@ -99,6 +99,9 @@ export function noteOn(midiNote, velocity)
         panOverride = Math.round(Math.random() * 1000 - 500);
     }
     
+    // dynamic modulators (sysEx)
+    const dynamicModulators = this.sysExModulators.getModulators();
+    
     // add voices
     const channelVoices = this.voices;
     voices.forEach(voice =>
@@ -112,6 +115,22 @@ export function noteOn(midiNote, velocity)
         
         // apply gain override
         voice.gain = voiceGain;
+        
+        dynamicModulators.forEach(mod =>
+        {
+            const existingModIndex = voice.modulators.findIndex(voiceMod => Modulator.isIdentical(voiceMod, mod));
+            
+            // replace or add
+            if (existingModIndex !== -1)
+            {
+                voice.modulators[existingModIndex] = Modulator.copy(mod);
+            }
+            else
+            {
+                voice.modulators.push(Modulator.copy(mod));
+            }
+        });
+        
         
         // apply exclusive class
         const exclusive = voice.exclusiveClass;

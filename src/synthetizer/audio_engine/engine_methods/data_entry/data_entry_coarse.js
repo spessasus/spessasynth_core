@@ -17,22 +17,28 @@ const registeredParameterTypes = {
 };
 
 /**
+ * @enum {number}
+ */
+const nonRegisteredGSMSB = {
+    partParameter: 0x01
+};
+
+/**
  * https://cdn.roland.com/assets/media/pdf/SC-88PRO_OM.pdf
  * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
  * @enum {number}
  */
-const nonRegisteredParameterNumbers = {
-    partParameter: 0x01,
-    
+const nonRegisteredGSLSB = {
     vibratoRate: 0x08,
     vibratoDepth: 0x09,
     vibratoDelay: 0x0A,
     
-    EGAttackTime: 0x64,
-    EGReleaseTime: 0x66,
-    
     TVFFilterCutoff: 0x20,
-    drumReverb: 0x1D
+    TVFFilterResonance: 0x21,
+    
+    EGAttackTime: 0x63,
+    EGReleaseTime: 0x66
+    
 };
 
 
@@ -111,7 +117,7 @@ export function dataEntryCoarse(dataValue)
                     break;
                 
                 // part parameters: vibrato, cutoff
-                case nonRegisteredParameterNumbers.partParameter:
+                case nonRegisteredGSMSB.partParameter:
                     switch (NRPNFine)
                     {
                         default:
@@ -133,7 +139,7 @@ export function dataEntryCoarse(dataValue)
                             break;
                         
                         // vibrato rate
-                        case nonRegisteredParameterNumbers.vibratoRate:
+                        case nonRegisteredGSLSB.vibratoRate:
                             if (dataValue === 64)
                             {
                                 return;
@@ -144,7 +150,7 @@ export function dataEntryCoarse(dataValue)
                             break;
                         
                         // vibrato depth
-                        case nonRegisteredParameterNumbers.vibratoDepth:
+                        case nonRegisteredGSLSB.vibratoDepth:
                             if (dataValue === 64)
                             {
                                 return;
@@ -155,7 +161,7 @@ export function dataEntryCoarse(dataValue)
                             break;
                         
                         // vibrato delay
-                        case nonRegisteredParameterNumbers.vibratoDelay:
+                        case nonRegisteredGSLSB.vibratoDelay:
                             if (dataValue === 64)
                             {
                                 return;
@@ -166,33 +172,26 @@ export function dataEntryCoarse(dataValue)
                             break;
                         
                         // filter cutoff
-                        case nonRegisteredParameterNumbers.TVFFilterCutoff:
+                        case nonRegisteredGSLSB.TVFFilterCutoff:
                             // affect the "brightness" controller as we have a default modulator that controls it
                             this.controllerChange(midiControllers.brightness, dataValue);
                             coolInfo("Filter cutoff", dataValue.toString(), "");
                             break;
                         
                         // attack time
-                        case nonRegisteredParameterNumbers.EGAttackTime:
+                        case nonRegisteredGSLSB.EGAttackTime:
                             // affect the "attack time" controller as we have a default modulator that controls it
                             this.controllerChange(midiControllers.attackTime, dataValue);
                             coolInfo("EG attack time", dataValue.toString(), "");
                             break;
                         
                         // release time
-                        case nonRegisteredParameterNumbers.EGReleaseTime:
+                        case nonRegisteredGSLSB.EGReleaseTime:
                             // affect the "release time" controller as we have a default modulator that controls it
                             this.controllerChange(midiControllers.releaseTime, dataValue);
                             coolInfo("EG release time", dataValue.toString(), "");
                             break;
                     }
-                    break;
-                
-                // drum reverb
-                case nonRegisteredParameterNumbers.drumReverb:
-                    const reverb = dataValue;
-                    this.controllerChange(midiControllers.reverbDepth, reverb);
-                    coolInfo("GS Drum reverb", reverb.toString(), "percent");
                     break;
             }
             break;

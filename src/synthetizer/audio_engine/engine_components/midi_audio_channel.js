@@ -31,6 +31,7 @@ import { programChange } from "../engine_methods/program_change.js";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks.js";
 import { DEFAULT_PERCUSSION } from "../../synth_constants.js";
 import { modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
+import { DynamicModulatorSystem } from "./dynamic_modulator_system.js";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -80,6 +81,12 @@ class MidiAudioChannel
      * @type {number}
      */
     channelTuningCents = 0;
+    
+    /**
+     * A system for dynamic modulator assignment for system exclusives
+     * @type {DynamicModulatorSystem}
+     */
+    sysExModulators = new DynamicModulatorSystem();
     
     /**
      * Indicates whether the sustain (hold) pedal is active.
@@ -222,14 +229,11 @@ class MidiAudioChannel
     
     updateChannelTuning()
     {
-        const pressure = (this.midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.channelPressure] >> 7) / 127;
-        const channelPressurePitchShift = this.customControllers[customControllers.channelPressurePitchControl] * pressure;
         this.channelTuningCents =
             this.customControllers[customControllers.channelTuning]                         // RPN channel fine tuning
             + this.customControllers[customControllers.channelTransposeFine]                // user tuning (transpose)
             + this.customControllers[customControllers.masterTuning]                        // master tuning, set by sysEx
-            + (this.customControllers[customControllers.channelTuningSemitones] * 100)      // RPN channel coarse tuning
-            + channelPressurePitchShift * 100;                                              // CAf pitch shift (gs)
+            + (this.customControllers[customControllers.channelTuningSemitones] * 100);      // RPN channel coarse tuning
     }
     
     /**

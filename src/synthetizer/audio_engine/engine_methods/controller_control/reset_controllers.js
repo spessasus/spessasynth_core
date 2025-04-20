@@ -150,12 +150,13 @@ export function resetControllers()
     this.holdPedal = false;
     this.randomPan = false;
     
+    this.sysExModulators.resetModulators();
+    
     // reset custom controllers
     // special case: transpose does not get affected
     const transpose = this.customControllers[customControllers.channelTransposeFine];
     this.customControllers.set(customResetArray);
     this.setCustomController(customControllers.channelTransposeFine, transpose);
-    
     this.resetParameters();
     
 }

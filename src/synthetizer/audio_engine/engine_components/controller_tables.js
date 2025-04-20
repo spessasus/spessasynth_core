@@ -63,8 +63,7 @@ export const customControllers = {
     modulationMultiplier: 2,       // cents, set by modulation depth RPN
     masterTuning: 3,               // cents, set by system exclusive
     channelTuningSemitones: 4,     // semitones, for RPN coarse tuning
-    channelKeyShift: 5,            // key shift: for system exclusive
-    channelPressurePitchControl: 6 // semitones, sound canvas, see https://github.com/spessasus/SpessaSynth/issues/154
+    channelKeyShift: 5            // key shift: for system exclusive
 };
 export const CUSTOM_CONTROLLER_TABLE_SIZE = Object.keys(customControllers).length;
 export const customResetArray = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);

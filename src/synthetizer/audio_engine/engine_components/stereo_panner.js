@@ -78,7 +78,7 @@ export function panVoice(voice,
         if (reverbSend > 0)
         {
             // reverb is mono so we need to multiply by gain
-            const reverbGain = this.synth.reverbGain * gain * (reverbSend / REVERB_DIVIDER);
+            const reverbGain = this.synth.reverbGain * this.synth.reverbSend * gain * (reverbSend / REVERB_DIVIDER);
             for (let i = 0; i < inputBuffer.length; i++)
             {
                 reverbLeft[i] += reverbGain * inputBuffer[i];
@@ -91,7 +91,7 @@ export function panVoice(voice,
         if (chorusSend > 0)
         {
             // chorus is stereo so we do not need to
-            const chorusGain = this.synth.chorusGain * chorusSend / CHORUS_DIVIDER;
+            const chorusGain = this.synth.chorusGain * this.synth.chorusSend * (chorusSend / CHORUS_DIVIDER);
             const chorusLeftGain = gainLeft * chorusGain;
             const chorusRightGain = gainRight * chorusGain;
             for (let i = 0; i < inputBuffer.length; i++)

@@ -63,8 +63,14 @@ export const generatorTypes = {
     exclusiveClass: 57,                 // sample - = cut = choke group
     overridingRootKey: 58,              // sample - can override the sample's original pitch
     unused5: 59,                        // unused
-    endOper: 60                         // end marker
+    endOper: 60,                        // end marker
+    
+    // additional generators that are used in system exclusives and will not be saved
+    vibLfoToVolume: 61,
+    vibLfoToFilterFc: 62
 };
+export const GENERATORS_AMOUNT = Object.keys(generatorTypes).length;
+
 /**
  * @type {{min: number, max: number, def: number}[]}
  */
@@ -85,11 +91,13 @@ generatorLimits[generatorTypes.modEnvToPitch] = { min: -12000, max: 12000, def: 
 generatorLimits[generatorTypes.initialFilterFc] = { min: 1500, max: 13500, def: 13500 };
 generatorLimits[generatorTypes.initialFilterQ] = { min: 0, max: 960, def: 0 };
 generatorLimits[generatorTypes.modLfoToFilterFc] = { min: -12000, max: 12000, def: 0 };
+generatorLimits[generatorTypes.vibLfoToFilterFc] = { min: -12000, max: 12000, def: 0 }; // NON-STANDARD
 generatorLimits[generatorTypes.modEnvToFilterFc] = { min: -12000, max: 12000, def: 0 };
 
 generatorLimits[generatorTypes.endAddrsCoarseOffset] = { min: -32768, max: 32768, def: 0 };
 
 generatorLimits[generatorTypes.modLfoToVolume] = { min: -960, max: 960, def: 0 };
+generatorLimits[generatorTypes.vibLfoToVolume] = { min: -960, max: 960, def: 0 }; // NON-STANDARD
 
 // effects, pan
 generatorLimits[generatorTypes.chorusEffectsSend] = { min: 0, max: 1000, def: 0 };

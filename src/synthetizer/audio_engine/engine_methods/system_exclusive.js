@@ -6,7 +6,9 @@ import { isSystemXG } from "../../../utils/xg_hacks.js";
 import { masterParameterType } from "./controller_control/master_parameters.js";
 import { readBytesAsString } from "../../../utils/byte_functions/string.js";
 import { synthDisplayTypes } from "../engine_components/enums.js";
-import { customControllers } from "../engine_components/controller_tables.js";
+import { customControllers, NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables.js";
+import { modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 
 /**
  * KeyNum: tuning
@@ -41,29 +43,54 @@ function getTuning(byte1, byte2, byte3)
     return { midiNote: midiNote, centTuning: fraction * 0.0061 };
 }
 
-
 /**
  * Executes a system exclusive
- * @param messageData {number[]|IndexedByteArray} - the message data without f0
+ * @param syx {number[]|IndexedByteArray} - the message data without f0
  * @param channelOffset {number}
  * @this {SpessaSynthProcessor}
  */
-export function systemExclusive(messageData, channelOffset = 0)
+export function systemExclusive(syx, channelOffset = 0)
 {
-    const type = messageData[0];
-    if (this.deviceID !== ALL_CHANNELS_OR_DIFFERENT_ACTION && messageData[1] !== 0x7F)
+    const type = syx[0];
+    if (this.deviceID !== ALL_CHANNELS_OR_DIFFERENT_ACTION && syx[1] !== 0x7F)
     {
-        if (this.deviceID !== messageData[1])
+        if (this.deviceID !== syx[1])
         {
             // not our device ID
             return;
         }
     }
+    
+    function niceLogging(channel, value, what, units)
+    {
+        SpessaSynthInfo(
+            `%cChannel %c${channel}%c ${what}. %c${value} ${units}%c, with %c${arrayToHexString(syx)}`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info,
+            consoleColors.value,
+            consoleColors.info,
+            consoleColors.value
+        );
+    }
+    
+    function notRecognized()
+    {
+        // this is some other GS sysex...
+        SpessaSynthWarn(
+            `%cUnrecognized Roland %cGS %cSysEx: %c${arrayToHexString(syx)}`,
+            consoleColors.warn,
+            consoleColors.recognized,
+            consoleColors.warn,
+            consoleColors.unrecognized
+        );
+    }
+    
     switch (type)
     {
         default:
             SpessaSynthWarn(
-                `%cUnrecognized SysEx: %c${arrayToHexString(messageData)}`,
+                `%cUnrecognized SysEx: %c${arrayToHexString(syx)}`,
                 consoleColors.warn,
                 consoleColors.unrecognized
             );
@@ -72,16 +99,16 @@ export function systemExclusive(messageData, channelOffset = 0)
         // non realtime
         case 0x7E:
         case 0x7F:
-            switch (messageData[2])
+            switch (syx[2])
             {
                 case 0x04:
                     let cents;
                     // device control
-                    switch (messageData[3])
+                    switch (syx[3])
                     {
                         case 0x01:
                             // main volume
-                            const vol = messageData[5] << 7 | messageData[4];
+                            const vol = syx[5] << 7 | syx[4];
                             this.setMIDIVolume(vol / 16384);
                             SpessaSynthInfo(
                                 `%cMaster Volume. Volume: %c${vol}`,
@@ -93,7 +120,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         case 0x02:
                             // main balance
                             // midi spec page 62
-                            const balance = messageData[5] << 7 | messageData[4];
+                            const balance = syx[5] << 7 | syx[4];
                             const pan = (balance - 8192) / 8192;
                             this.setMasterParameter(masterParameterType.masterPan, pan);
                             SpessaSynthInfo(
@@ -106,7 +133,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         
                         case 0x03:
                             // fine-tuning
-                            const tuningValue = ((messageData[5] << 7) | messageData[6]) - 8192;
+                            const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
                             cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
                             this.setMasterTuning(cents);
                             SpessaSynthInfo(
@@ -119,7 +146,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         case 0x04:
                             // coarse tuning
                             // lsb is ignored
-                            const semitones = messageData[5] - 64;
+                            const semitones = syx[5] - 64;
                             cents = semitones * 100;
                             this.setMasterTuning(cents);
                             SpessaSynthInfo(
@@ -131,7 +158,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         
                         default:
                             SpessaSynthWarn(
-                                `%cUnrecognized MIDI Device Control Real-time message: %c${arrayToHexString(messageData)}`,
+                                `%cUnrecognized MIDI Device Control Real-time message: %c${arrayToHexString(syx)}`,
                                 consoleColors.warn,
                                 consoleColors.unrecognized
                             );
@@ -140,12 +167,12 @@ export function systemExclusive(messageData, channelOffset = 0)
                 
                 case 0x09:
                     // gm system related
-                    if (messageData[3] === 0x01)
+                    if (syx[3] === 0x01)
                     {
                         SpessaSynthInfo("%cGM1 system on", consoleColors.info);
                         this.setSystem("gm");
                     }
-                    else if (messageData[3] === 0x03)
+                    else if (syx[3] === 0x03)
                     {
                         SpessaSynthInfo("%cGM2 system on", consoleColors.info);
                         this.setSystem("gm2");
@@ -161,18 +188,18 @@ export function systemExclusive(messageData, channelOffset = 0)
                 // https://midi.org/midi-tuning-updated-specification
                 case 0x08:
                     let currentMessageIndex = 4;
-                    switch (messageData[3])
+                    switch (syx[3])
                     {
                         // bulk tuning dump: all 128 notes
                         case 0x01:
-                            const program = messageData[currentMessageIndex++];
+                            const program = syx[currentMessageIndex++];
                             // read the name
-                            messageData.currentIndex = currentMessageIndex;
-                            const tuningName = readBytesAsString(messageData, 16);
+                            syx.currentIndex = currentMessageIndex;
+                            const tuningName = readBytesAsString(syx, 16);
                             currentMessageIndex += 16;
-                            if (messageData.length < 384)
+                            if (syx.length < 384)
                             {
-                                SpessaSynthWarn(`The Bulk Tuning Dump is too short! (${messageData.length} bytes, at least 384 are expected)`);
+                                SpessaSynthWarn(`The Bulk Tuning Dump is too short! (${syx.length} bytes, at least 384 are expected)`);
                                 return;
                             }
                             // 128 frequencies follow
@@ -180,9 +207,9 @@ export function systemExclusive(messageData, channelOffset = 0)
                             {
                                 // set the given tuning to the program
                                 this.tunings[program][i] = getTuning(
-                                    messageData[currentMessageIndex++],
-                                    messageData[currentMessageIndex++],
-                                    messageData[currentMessageIndex++]
+                                    syx[currentMessageIndex++],
+                                    syx[currentMessageIndex++],
+                                    syx[currentMessageIndex++]
                                 );
                             }
                             SpessaSynthInfo(
@@ -198,21 +225,21 @@ export function systemExclusive(messageData, channelOffset = 0)
                         // single note change bank
                         case 0x02:
                         case 0x07:
-                            if (messageData[3] === 0x07)
+                            if (syx[3] === 0x07)
                             {
                                 // skip the bank
                                 currentMessageIndex++;
                             }
                             // get program and number of changes
-                            const tuningProgram = messageData[currentMessageIndex++];
-                            const numberOfChanges = messageData[currentMessageIndex++];
+                            const tuningProgram = syx[currentMessageIndex++];
+                            const numberOfChanges = syx[currentMessageIndex++];
                             for (let i = 0; i < numberOfChanges; i++)
                             {
                                 // set the given tuning to the program
-                                this.tunings[tuningProgram][messageData[currentMessageIndex++]] = getTuning(
-                                    messageData[currentMessageIndex++],
-                                    messageData[currentMessageIndex++],
-                                    messageData[currentMessageIndex++]
+                                this.tunings[tuningProgram][syx[currentMessageIndex++]] = getTuning(
+                                    syx[currentMessageIndex++],
+                                    syx[currentMessageIndex++],
+                                    syx[currentMessageIndex++]
                                 );
                             }
                             SpessaSynthInfo(
@@ -231,12 +258,12 @@ export function systemExclusive(messageData, channelOffset = 0)
                             // get tuning:
                             const newOctaveTuning = new Int8Array(12);
                             // start from bit 7
-                            if (messageData[3] === 0x08)
+                            if (syx[3] === 0x08)
                             {
                                 // 1 byte tuning: 0 is -64 cents, 64 is 0, 127 is +63
                                 for (let i = 0; i < 12; i++)
                                 {
-                                    newOctaveTuning[i] = messageData[7 + i] - 64;
+                                    newOctaveTuning[i] = syx[7 + i] - 64;
                                 }
                             }
                             else
@@ -244,17 +271,17 @@ export function systemExclusive(messageData, channelOffset = 0)
                                 // 2 byte tuning. Like fine tune: 0 is -100 cents, 8192 is 0 cents, 16,383 is +100 cents
                                 for (let i = 0; i < 24; i += 2)
                                 {
-                                    const tuning = ((messageData[7 + i] << 7) | messageData[8 + i]) - 8192;
+                                    const tuning = ((syx[7 + i] << 7) | syx[8 + i]) - 8192;
                                     newOctaveTuning[i / 2] = Math.floor(tuning / 81.92); // map to [-100;+99] cents
                                 }
                             }
                             // apply to channels (ordered from 0)
                             // bit 1: 14 and 15
-                            if ((messageData[4] & 1) === 1)
+                            if ((syx[4] & 1) === 1)
                             {
                                 this.midiAudioChannels[14 + channelOffset].setOctaveTuning(newOctaveTuning);
                             }
-                            if (((messageData[4] >> 1) & 1) === 1)
+                            if (((syx[4] >> 1) & 1) === 1)
                             {
                                 this.midiAudioChannels[15 + channelOffset].setOctaveTuning(newOctaveTuning);
                             }
@@ -262,7 +289,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                             // bit 2: channels 7 to 13
                             for (let i = 0; i < 7; i++)
                             {
-                                const bit = (messageData[5] >> i) & 1;
+                                const bit = (syx[5] >> i) & 1;
                                 if (bit === 1)
                                 {
                                     this.midiAudioChannels[7 + i + channelOffset].setOctaveTuning(newOctaveTuning);
@@ -272,7 +299,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                             // bit 3: channels 0 to 16
                             for (let i = 0; i < 7; i++)
                             {
-                                const bit = (messageData[6] >> i) & 1;
+                                const bit = (syx[6] >> i) & 1;
                                 if (bit === 1)
                                 {
                                     this.midiAudioChannels[i + channelOffset].setOctaveTuning(newOctaveTuning);
@@ -281,7 +308,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                             
                             SpessaSynthInfo(
                                 `%cMIDI Octave Scale ${
-                                    messageData[3] === 0x08 ? "(1 byte)" : "(2 bytes)"
+                                    syx[3] === 0x08 ? "(1 byte)" : "(2 bytes)"
                                 } tuning via Tuning: %c${newOctaveTuning.join(" ")}`,
                                 consoleColors.info,
                                 consoleColors.value
@@ -290,7 +317,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         
                         default:
                             SpessaSynthWarn(
-                                `%cUnrecognized MIDI Tuning standard message: %c${arrayToHexString(messageData)}`,
+                                `%cUnrecognized MIDI Tuning standard message: %c${arrayToHexString(syx)}`,
                                 consoleColors.warn,
                                 consoleColors.unrecognized
                             );
@@ -300,7 +327,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                 
                 default:
                     SpessaSynthWarn(
-                        `%cUnrecognized MIDI Realtime/non realtime message: %c${arrayToHexString(messageData)}`,
+                        `%cUnrecognized MIDI Realtime/non realtime message: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
                     );
@@ -312,55 +339,24 @@ export function systemExclusive(messageData, channelOffset = 0)
         // http://www.bandtrax.com.au/sysex.htm
         // https://cdn.roland.com/assets/media/pdf/AT-20R_30R_MI.pdf
         case 0x41:
-        
-        function notRecognized()
-        {
-            // this is some other GS sysex...
-            SpessaSynthWarn(
-                `%cUnrecognized Roland %cGS %cSysEx: %c${arrayToHexString(messageData)}`,
-                consoleColors.warn,
-                consoleColors.recognized,
-                consoleColors.warn,
-                consoleColors.unrecognized
-            );
-        }
-            
-            if (messageData[2] === 0x42 && messageData[3] === 0x12)
+            if (syx[2] === 0x42 && syx[3] === 0x12)
             {
                 // this is a GS sysex
-                // messageData[5] and [6] is the system parameter, messageData[7] is the value
-                const messageValue = messageData[7];
-                if (messageData[6] === 0x7F)
+                const messageValue = syx[7];
+                // syx[5] and [6] is the system parameter, syx[7] is the value
+                // either patch common or SC-88 mode set
+                if (syx[4] === 0x40 || (syx[4] === 0x00 && syx[6] === 0x7F))
                 {
-                    // GS mode set
-                    if (messageValue === 0x00)
-                    {
-                        // this is a GS reset
-                        SpessaSynthInfo("%cGS Reset received!", consoleColors.info);
-                        this.resetAllControllers(false);
-                        this.setSystem("gs");
-                    }
-                    else if (messageValue === 0x7F)
-                    {
-                        // GS mode off
-                        SpessaSynthInfo("%cGS system off, switching to GM2", consoleColors.info);
-                        this.resetAllControllers(false);
-                        this.setSystem("gm2");
-                    }
-                    return;
-                }
-                else if (messageData[4] === 0x40)
-                {
-                    // this is a system parameter
-                    if ((messageData[5] & 0x10) > 0)
+                    // this is a channel parameter
+                    if ((syx[5] & 0x10) > 0)
                     {
                         // this is an individual part (channel) parameter
                         // determine the channel 0 means channel 10 (default), 1 means 1 etc.
                         // SC88 manual page 196
-                        const channel = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][messageData[5] & 0x0F] + channelOffset;
+                        const channel = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][syx[5] & 0x0F] + channelOffset;
                         // for example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const channelObject = this.midiAudioChannels[channel];
-                        switch (messageData[6])
+                        switch (syx[6])
                         {
                             default:
                                 // this is some other GS sysex...
@@ -369,14 +365,14 @@ export function systemExclusive(messageData, channelOffset = 0)
                             
                             case 0x15:
                                 // this is the Use for Drum Part sysex (multiple drums)
-                                const isDrums = messageValue > 0 && messageData[5] >> 4; // if set to other than 0, is a drum channel
+                                const isDrums = messageValue > 0 && syx[5] >> 4; // if set to other than 0, is a drum channel
                                 channelObject.setDrums(isDrums);
                                 SpessaSynthInfo(
                                     `%cChannel %c${channel}%c ${isDrums ?
                                         "is now a drum channel"
                                         :
                                         "now isn't a drum channel"
-                                    }%c via: %c${arrayToHexString(messageData)}`,
+                                    }%c via: %c${arrayToHexString(syx)}`,
                                     consoleColors.info,
                                     consoleColors.value,
                                     consoleColors.recognized,
@@ -389,16 +385,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                                 // this is the pitch key shift sysex
                                 const keyShift = messageValue - 64;
                                 channelObject.setCustomController(customControllers.channelKeyShift, keyShift);
-                                SpessaSynthInfo(
-                                    `%cChannel %c${channel}%c pitch shift. Semitones %c${keyShift}%c, with %c${arrayToHexString(
-                                        messageData)}`,
-                                    consoleColors.info,
-                                    consoleColors.recognized,
-                                    consoleColors.info,
-                                    consoleColors.value,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
+                                niceLogging(channel, keyShift, "key shift", "keys");
                                 return;
                             
                             // pan position
@@ -446,133 +433,376 @@ export function systemExclusive(messageData, channelOffset = 0)
                             case 0x4A:
                             case 0x4B:
                                 // scale tuning: up to 12 bytes
-                                const tuningBytes = messageData.length - 9; // data starts at 7, minus checksum and f7
+                                const tuningBytes = syx.length - 9; // data starts at 7, minus checksum and f7
                                 // read em bytes
                                 const newTuning = new Int8Array(12);
                                 for (let i = 0; i < tuningBytes; i++)
                                 {
-                                    newTuning[i] = messageData[i + 7] - 64;
+                                    newTuning[i] = syx[i + 7] - 64;
                                 }
                                 channelObject.setOctaveTuning(newTuning);
                                 const cents = messageValue - 64;
-                                SpessaSynthInfo(
-                                    `%cChannel %c${channel}%c octave scale tuning. Cents %c${newTuning.join(
-                                        " ")}%c, with %c${arrayToHexString(messageData)}`,
-                                    consoleColors.info,
-                                    consoleColors.recognized,
-                                    consoleColors.info,
-                                    consoleColors.value,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
+                                niceLogging(channel, newTuning.join(" "), "octave scale tuning", "cents");
                                 channelObject.setTuning(cents);
                                 break;
                         }
                         return;
                     }
                     else
-                        // this is a system parameter also
-                    if ((messageData[5] & 0x20) > 0)
+                        // this is a channel parameter also
+                    if ((syx[5] & 0x20) > 0)
                     {
                         // this is an individual part (channel) parameter
                         // determine the channel 0 means channel 10 (default), 1 means 1 etc.
-                        // SC88 manual page 196
-                        const channel = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][messageData[5] & 0x0F] + channelOffset;
+                        const channel = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][syx[5] & 0x0F] + channelOffset;
                         // for example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const channelObject = this.midiAudioChannels[channel];
-                        switch (messageData[6])
+                        const centeredValue = (messageValue - 64);
+                        const normalizedValue = centeredValue / 64;
+                        const normalizedNotCentered = messageValue / 128;
+                        
+                        // setup receivers for cc to parameter (sc-88 manual page 198)
+                        const setupReceivers = (source, sourceName, bipolar = false) =>
+                        {
+                            switch (syx[6] & 0x0F)
+                            {
+                                case 0x00:
+                                    // see https://github.com/spessasus/SpessaSynth/issues/154
+                                    // pitch control
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.fineTune,
+                                        centeredValue * 100,
+                                        bipolar
+                                    );
+                                    niceLogging(channel, centeredValue, `${sourceName} pitch control`, "semitones");
+                                    break;
+                                
+                                case 0x01:
+                                    // cutoff
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.initialFilterFc,
+                                        normalizedValue * 9600,
+                                        bipolar
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedValue * 9600,
+                                        `${sourceName} pitch control`,
+                                        "cents"
+                                    );
+                                    break;
+                                
+                                case 0x02:
+                                    // amplitude
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.initialAttenuation,
+                                        normalizedValue * 960, // spec says "100%" so 960cB in sf2
+                                        bipolar
+                                    );
+                                    niceLogging(channel, normalizedValue * 960, `${sourceName} amplitude`, "cB");
+                                    break;
+                                
+                                // rate control is ignored as it is in hertz
+                                
+                                case 0x04:
+                                    // LFO1 pitch depth
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.vibLfoToPitch,
+                                        normalizedNotCentered * 600
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedNotCentered * 600,
+                                        `${sourceName} LFO1 pitch depth`,
+                                        "cents"
+                                    );
+                                    break;
+                                
+                                case 0x05:
+                                    // LFO1 filter depth
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.vibLfoToFilterFc,
+                                        normalizedNotCentered * 2400
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedNotCentered * 2400,
+                                        `${sourceName} LFO1 filter depth`,
+                                        "cents"
+                                    );
+                                    break;
+                                
+                                case 0x06:
+                                    // LFO1 amplitude depth
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.vibLfoToVolume,
+                                        normalizedNotCentered * 960
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedNotCentered * 960,
+                                        `${sourceName} LFO1 amplitude depth`,
+                                        "cB"
+                                    );
+                                    break;
+                                
+                                // rate control is ignored as it is in hertz
+                                
+                                case 0x08:
+                                    // LFO2 pitch depth
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.modLfoToPitch,
+                                        normalizedNotCentered * 600
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedNotCentered * 600,
+                                        `${sourceName} LFO2 pitch depth`,
+                                        "cents"
+                                    );
+                                    break;
+                                
+                                case 0x09:
+                                    // LFO2 filter depth
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.modLfoToFilterFc,
+                                        normalizedNotCentered * 2400
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedNotCentered * 2400,
+                                        `${sourceName} LFO2 filter depth`,
+                                        "cents"
+                                    );
+                                    break;
+                                
+                                case 0x0A:
+                                    // LFO2 amplitude depth
+                                    channelObject.sysExModulators.setModulator(
+                                        source,
+                                        generatorTypes.modLfoToVolume,
+                                        normalizedNotCentered * 960
+                                    );
+                                    niceLogging(
+                                        channel,
+                                        normalizedNotCentered * 960,
+                                        `${sourceName} LFO2 amplitude depth`,
+                                        "cB"
+                                    );
+                                    break;
+                            }
+                        };
+                        
+                        // SC88 manual page 198
+                        switch (syx[6] & 0xF0)
                         {
                             default:
                                 // this is some other GS sysex...
                                 notRecognized();
                                 break;
                             
+                            case 0x00:
+                                // modulation wheel
+                                setupReceivers(midiControllers.modulationWheel, "mod wheel");
+                                break;
+                            
+                            case 0x10:
+                                // pitch bend
+                                setupReceivers(NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel, "pitch bend", true);
+                                break;
+                            
                             case 0x20:
-                                // channel pressure pitch control
-                                const pitchShift = messageValue - 64;
-                                channelObject.setCustomController(
-                                    customControllers.channelPressurePitchControl,
-                                    pitchShift
+                                // channel pressure
+                                setupReceivers(
+                                    NON_CC_INDEX_OFFSET + modulatorSources.channelPressure,
+                                    "channel pressure"
                                 );
+                                break;
+                            
+                            case 0x30:
+                                // poly pressure
+                                setupReceivers(
+                                    NON_CC_INDEX_OFFSET + modulatorSources.polyPressure,
+                                    "poly pressure"
+                                );
+                                break;
+                        }
+                        return;
+                    }
+                    else
+                        // this is a global system parameter
+                    if (syx[5] === 0x00)
+                    {
+                        switch (syx[6])
+                        {
+                            default:
+                                notRecognized();
+                                break;
+                            
+                            case 0x7F:
+                                // roland mode set
+                                // GS mode set
+                                if (messageValue === 0x00)
+                                {
+                                    // this is a GS reset
+                                    SpessaSynthInfo("%cGS Reset received!", consoleColors.info);
+                                    this.resetAllControllers(false);
+                                    this.setSystem("gs");
+                                }
+                                else if (messageValue === 0x7F)
+                                {
+                                    // GS mode off
+                                    SpessaSynthInfo("%cGS system off, switching to GM2", consoleColors.info);
+                                    this.resetAllControllers(false);
+                                    this.setSystem("gm2");
+                                }
+                                break;
+                            
+                            case 0x06:
+                                // roland master pan
                                 SpessaSynthInfo(
-                                    `%cChannel %c${channel}%c channel pressure pitch control. Semitones %c${pitchShift}%c, with %c${arrayToHexString(
-                                        messageData)}`,
-                                    consoleColors.info,
-                                    consoleColors.recognized,
+                                    `%cRoland GS Master Pan set to: %c${messageValue}%c with: %c${arrayToHexString(
+                                        syx)}`,
                                     consoleColors.info,
                                     consoleColors.value,
                                     consoleColors.info,
                                     consoleColors.value
                                 );
+                                this.setMasterParameter(masterParameterType.masterPan, (messageValue - 64) / 64);
+                                break;
+                            
+                            
+                            case 0x04:
+                                // roland GS master volume
+                                SpessaSynthInfo(
+                                    `%cRoland GS Master Volume set to: %c${messageValue}%c with: %c${arrayToHexString(
+                                        syx)}`,
+                                    consoleColors.info,
+                                    consoleColors.value,
+                                    consoleColors.info,
+                                    consoleColors.value
+                                );
+                                this.setMIDIVolume(messageValue / 127);
+                                break;
+                            
+                            case 0x05:
+                                // roland master key shift (transpose)
+                                const transpose = messageValue - 64;
+                                SpessaSynthInfo(
+                                    `%cRoland GS Master Key-Shift set to: %c${transpose}%c with: %c${arrayToHexString(
+                                        syx)}`,
+                                    consoleColors.info,
+                                    consoleColors.value,
+                                    consoleColors.info,
+                                    consoleColors.value
+                                );
+                                this.setMasterTuning(transpose * 100);
+                                break;
+                        }
+                        return;
+                    }
+                    else
+                        // this is a global system parameter also
+                    if (syx[5] === 0x01)
+                    {
+                        switch (syx[6])
+                        {
+                            default:
+                                notRecognized();
+                                break;
+                            
+                            case 0x00:
+                                // patch name. cool!
+                                syx.currentIndex = 7;
+                                const patchName = readBytesAsString(syx, 16);
+                                SpessaSynthInfo(
+                                    `%cGS Patch name: %c${patchName}`,
+                                    consoleColors.info,
+                                    consoleColors.value
+                                );
+                                break;
+                            
+                            case 0x33:
+                                // reverb level
+                                SpessaSynthInfo(
+                                    `%cGS Reverb level: %c${messageValue}`,
+                                    consoleColors.info, consoleColors.value
+                                );
+                                // 64 is the default
+                                this.reverbSend = messageValue / 64;
+                                break;
+                            
+                            // unsupported reverb params
+                            case 0x30:
+                            case 0x31:
+                            case 0x32:
+                            case 0x34:
+                            case 0x35:
+                            case 0x37:
+                                SpessaSynthInfo(
+                                    `%cUnsupported GS Reverb Parameter: %c${syx[6].toString(16)}`,
+                                    consoleColors.warn, consoleColors.unrecognized
+                                );
+                                break;
+                            
+                            case 0x3A:
+                                // chorus level
+                                SpessaSynthInfo(
+                                    `%cGS Chorus level: %c${messageValue}`,
+                                    consoleColors.info, consoleColors.value
+                                );
+                                // 64 is the default
+                                this.chorusSend = messageValue / 64;
+                                break;
+                            
+                            // unsupported chorus params
+                            case 0x38:
+                            case 0x39:
+                            case 0x3B:
+                            case 0x3C:
+                            case 0x3D:
+                            case 0x3E:
+                            case 0x3F:
+                            case 0x40:
+                                SpessaSynthInfo(
+                                    `%cUnsupported GS Chorus Parameter: %c${syx[6].toString(16)}`,
+                                    consoleColors.warn, consoleColors.unrecognized
+                                );
                                 break;
                         }
                     }
-                    else
-                        // this is a global system parameter
-                    if (messageData[5] === 0x00 && messageData[6] === 0x06)
-                    {
-                        // roland master pan
-                        SpessaSynthInfo(
-                            `%cRoland GS Master Pan set to: %c${messageValue}%c with: %c${arrayToHexString(
-                                messageData)}`,
-                            consoleColors.info,
-                            consoleColors.value,
-                            consoleColors.info,
-                            consoleColors.value
-                        );
-                        this.setMasterParameter(masterParameterType.masterPan, (messageValue - 64) / 64);
-                        return;
-                    }
-                    else if (messageData[5] === 0x00 && messageData[6] === 0x05)
-                    {
-                        // roland master key shift (transpose)
-                        const transpose = messageValue - 64;
-                        SpessaSynthInfo(
-                            `%cRoland GS Master Key-Shift set to: %c${transpose}%c with: %c${arrayToHexString(
-                                messageData)}`,
-                            consoleColors.info,
-                            consoleColors.value,
-                            consoleColors.info,
-                            consoleColors.value
-                        );
-                        this.setMasterTuning(transpose * 100);
-                        return;
-                    }
-                    else if (messageData[5] === 0x00 && messageData[6] === 0x04)
-                    {
-                        // roland GS master volume
-                        SpessaSynthInfo(
-                            `%cRoland GS Master Volume set to: %c${messageValue}%c with: %c${arrayToHexString(
-                                messageData)}`,
-                            consoleColors.info,
-                            consoleColors.value,
-                            consoleColors.info,
-                            consoleColors.value
-                        );
-                        this.setMIDIVolume(messageValue / 127);
-                        return;
-                    }
                 }
-                // this is some other GS sysex...
-                notRecognized();
+                else
+                {
+                    // this is some other GS sysex...
+                    notRecognized();
+                }
                 return;
             }
-            else if (messageData[2] === 0x45 && messageData[3] === 0x12)
+            else if (syx[2] === 0x45 && syx[3] === 0x12)
             {
                 // 0x45: GS Display Data, 0x12: DT1 (Device Transmit)
                 // check for embedded copyright
                 // (roland SC display sysex) http://www.bandtrax.com.au/sysex.htm
                 
                 if (
-                    messageData[4] === 0x10 && // Sound Canvas Display
-                    messageData[6] === 0x00    // Data follows
+                    syx[4] === 0x10 && // Sound Canvas Display
+                    syx[6] === 0x00    // Data follows
                 )
                 {
-                    if (messageData[5] === 0x00) // Display letters
+                    if (syx[5] === 0x00) // Display letters
                     {
                         // get the text
                         // and header ends with (checksum) F7
-                        const text = new Uint8Array(messageData.slice(7, messageData.length - 2));
+                        const text = new Uint8Array(syx.slice(7, syx.length - 2));
                         this.callEvent(
                             "synthdisplay",
                             {
@@ -581,11 +811,11 @@ export function systemExclusive(messageData, channelOffset = 0)
                             }
                         );
                     }
-                    else if (messageData[5] === 0x01) // Matrix display
+                    else if (syx[5] === 0x01) // Matrix display
                     {
                         // get the data
                         // and header ends with (checksum) F7
-                        const dotMatrixData = new Uint8Array(messageData.slice(7, messageData.length - 3));
+                        const dotMatrixData = new Uint8Array(syx.slice(7, syx.length - 3));
                         this.callEvent(
                             "synthdisplay",
                             {
@@ -595,7 +825,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         );
                         SpessaSynthInfo(
                             `%cRoland SC Display Dot Matrix via: %c${arrayToHexString(
-                                messageData)}`,
+                                syx)}`,
                             consoleColors.info,
                             consoleColors.value
                         );
@@ -607,13 +837,13 @@ export function systemExclusive(messageData, channelOffset = 0)
                     }
                 }
             }
-            else if (messageData[2] === 0x16 && messageData[3] === 0x12 && messageData[4] === 0x10)
+            else if (syx[2] === 0x16 && syx[3] === 0x12 && syx[4] === 0x10)
             {
                 // this is a roland master volume message
-                this.setMIDIVolume(messageData[7] / 100);
+                this.setMIDIVolume(syx[7] / 100);
                 SpessaSynthInfo(
-                    `%cRoland Master Volume control set to: %c${messageData[7]}%c via: %c${arrayToHexString(
-                        messageData)}`,
+                    `%cRoland Master Volume control set to: %c${syx[7]}%c via: %c${arrayToHexString(
+                        syx)}`,
                     consoleColors.info,
                     consoleColors.value,
                     consoleColors.info,
@@ -625,7 +855,7 @@ export function systemExclusive(messageData, channelOffset = 0)
             {
                 // this is something else...
                 SpessaSynthWarn(
-                    `%cUnrecognized Roland SysEx: %c${arrayToHexString(messageData)}`,
+                    `%cUnrecognized Roland SysEx: %c${arrayToHexString(syx)}`,
                     consoleColors.warn,
                     consoleColors.unrecognized
                 );
@@ -637,16 +867,16 @@ export function systemExclusive(messageData, channelOffset = 0)
         // http://www.studio4all.de/htmle/main91.html
         case 0x43:
             // XG sysex
-            if (messageData[2] === 0x4C)
+            if (syx[2] === 0x4C)
             {
                 // XG system parameter
-                if (messageData[3] === 0x00 && messageData[4] === 0x00)
+                if (syx[3] === 0x00 && syx[4] === 0x00)
                 {
-                    switch (messageData[5])
+                    switch (syx[5])
                     {
                         // master volume
                         case 0x04:
-                            const vol = messageData[6];
+                            const vol = syx[6];
                             this.setMIDIVolume(vol / 127);
                             SpessaSynthInfo(
                                 `%cXG master volume. Volume: %c${vol}`,
@@ -657,7 +887,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         
                         // master transpose
                         case 0x06:
-                            const transpose = messageData[6] - 64;
+                            const transpose = syx[6] - 64;
                             this.transposeAllChannels(transpose);
                             SpessaSynthInfo(
                                 `%cXG master transpose. Volume: %c${transpose}`,
@@ -676,21 +906,21 @@ export function systemExclusive(messageData, channelOffset = 0)
                 }
                 else
                     // XG part parameter
-                if (messageData[3] === 0x08)
+                if (syx[3] === 0x08)
                 {
                     if (!isSystemXG(this.system))
                     {
                         return;
                     }
-                    const channel = messageData[4] + channelOffset;
+                    const channel = syx[4] + channelOffset;
                     if (channel >= this.midiAudioChannels.length)
                     {
                         // invalid channel
                         return;
                     }
                     const channelObject = this.midiAudioChannels[channel];
-                    const value = messageData[6];
-                    switch (messageData[5])
+                    const value = syx[6];
+                    switch (syx[5])
                     {
                         // bank-select MSB
                         case 0x01:
@@ -755,7 +985,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                         
                         default:
                             SpessaSynthWarn(
-                                `%cUnrecognized Yamaha XG Part Setup: %c${messageData[5].toString(16)
+                                `%cUnrecognized Yamaha XG Part Setup: %c${syx[5].toString(16)
                                     .toUpperCase()}`,
                                 consoleColors.warn,
                                 consoleColors.unrecognized
@@ -763,13 +993,13 @@ export function systemExclusive(messageData, channelOffset = 0)
                     }
                 }
                 else if (
-                    messageData[3] === 0x06 && // XG System parameter
-                    messageData[4] === 0x00    // System Byte
+                    syx[3] === 0x06 && // XG System parameter
+                    syx[4] === 0x00    // System Byte
                 )
                 {
                     // displayed letters (remove F7 at the end)
                     // include byte 5 as it seems to be line information (useful)
-                    const textData = new Uint8Array(messageData.slice(5, messageData.length - 1));
+                    const textData = new Uint8Array(syx.slice(5, syx.length - 1));
                     this.callEvent(
                         "synthdisplay",
                         {
@@ -781,7 +1011,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                 else if (isSystemXG(this.system))
                 {
                     SpessaSynthWarn(
-                        `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(messageData)}`,
+                        `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
                     );
@@ -793,7 +1023,7 @@ export function systemExclusive(messageData, channelOffset = 0)
                 if (isSystemXG(this.system))
                 {
                     SpessaSynthWarn(
-                        `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(messageData)}`,
+                        `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
                     );

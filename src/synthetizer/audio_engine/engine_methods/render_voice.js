@@ -88,26 +88,33 @@ export function renderVoice(
     // calculate tuning by key using soundfont's scale tuning
     cents += (targetKey - voice.sample.rootKey) * voice.modulatedGenerators[generatorTypes.scaleTuning];
     
+    // low pass excursion with LFO and mod envelope
+    let lowpassExcursion = 0;
+    let volumeExcursionCentibels = 0;
+    
     // vibrato LFO
-    const vibratoDepth = voice.modulatedGenerators[generatorTypes.vibLfoToPitch];
-    if (vibratoDepth !== 0)
+    const vibPitchDepth = voice.modulatedGenerators[generatorTypes.vibLfoToPitch];
+    const vibVolDepth = voice.modulatedGenerators[generatorTypes.vibLfoToVolume];
+    const vibFilterDepth = voice.modulatedGenerators[generatorTypes.vibLfoToFilterFc];
+    if (vibPitchDepth !== 0 || vibVolDepth !== 0 || vibFilterDepth !== 0)
     {
         // calculate start time and lfo value
         const vibStart = voice.startTime + timecentsToSeconds(voice.modulatedGenerators[generatorTypes.delayVibLFO]);
         const vibFreqHz = absCentsToHz(voice.modulatedGenerators[generatorTypes.freqVibLFO]);
-        const lfoVal = getLFOValue(vibStart, vibFreqHz, timeNow);
+        const vibLfoValue = getLFOValue(vibStart, vibFreqHz, timeNow);
         // use modulation multiplier (RPN modulation depth)
-        cents += lfoVal * (vibratoDepth * this.customControllers[customControllers.modulationMultiplier]);
+        cents += vibLfoValue * (vibPitchDepth * this.customControllers[customControllers.modulationMultiplier]);
+        // vol env volume offset
+        // negate the lfo value because audigy starts with increase rather than decrease
+        volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
+        // low pass frequency
+        lowpassExcursion += vibLfoValue * vibFilterDepth;
     }
-    
-    // low pass excursion with LFO and mod envelope
-    let lowpassExcursion = 0;
     
     // mod LFO
     const modPitchDepth = voice.modulatedGenerators[generatorTypes.modLfoToPitch];
     const modVolDepth = voice.modulatedGenerators[generatorTypes.modLfoToVolume];
     const modFilterDepth = voice.modulatedGenerators[generatorTypes.modLfoToFilterFc];
-    let modLfoCentibels = 0;
     // don't compute mod lfo unless necessary
     if (modPitchDepth !== 0 || modFilterDepth !== 0 || modVolDepth !== 0)
     {
@@ -117,9 +124,9 @@ export function renderVoice(
         const modLfoValue = getLFOValue(modStart, modFreqHz, timeNow);
         // use modulation multiplier (RPN modulation depth)
         cents += modLfoValue * (modPitchDepth * this.customControllers[customControllers.modulationMultiplier]);
-        // vole nv volume offset
+        // vol env volume offset
         // negate the lfo value because audigy starts with increase rather than decrease
-        modLfoCentibels = -modLfoValue * modVolDepth;
+        volumeExcursionCentibels += -modLfoValue * modVolDepth;
         // low pass frequency
         lowpassExcursion += modLfoValue * modFilterDepth;
     }
@@ -184,7 +191,7 @@ export function renderVoice(
     LowpassFilter.apply(voice, bufferOut, lowpassExcursion, this.synth.filterSmoothingFactor);
     
     // vol env
-    VolumeEnvelope.apply(voice, bufferOut, modLfoCentibels, this.synth.volumeEnvelopeSmoothingFactor);
+    VolumeEnvelope.apply(voice, bufferOut, volumeExcursionCentibels, this.synth.volumeEnvelopeSmoothingFactor);
     
     this.panVoice(
         voice,

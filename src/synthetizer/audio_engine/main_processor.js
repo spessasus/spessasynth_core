@@ -234,6 +234,17 @@ class SpessaSynthProcessor
     chorusGain = 1;
     
     /**
+     * Set via system exclusive
+     * @type {number}
+     */
+    reverbSend = 1;
+    /**
+     * Set via system exclusive
+     * @type {number}
+     */
+    chorusSend = 1;
+    
+    /**
      * Maximum number of voices allowed at once
      * @type {number}
      */
