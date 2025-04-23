@@ -120,13 +120,9 @@ npm install --save spessasynth_core
   - **Loop multiple times:** *Render two (or more) loops into the file for seamless transitions!*
   - *That's right, saving as WAV is also [just one function!](https://github.com/spessasus/spessasynth_core/wiki/Writing-Wave-Files#audiobuffertowav)*
 
-## Limitations
-- Synth's performance may be suboptimal, especially on mobile devices.
-- [SF2 to DLS Conversion](https://github.com/spessasus/SpessaSynth/wiki/DLS-Conversion-Problem)
-- Audio may sometimes sound distorted in Chrome, Edge, Brave,
-  etc. due to a **[Chromium Bug](https://issues.chromium.org/issues/367304685).**
-  I can't do anything about it, only hope that it gets fixed.
-  Please consider voting for it on the bug tracker to get it fixed!
+### Limitations
+- Synth's performance may be questionable sometimes
+- [SF2 to DLS Conversion limits](https://github.com/spessasus/SpessaSynth/wiki/DLS-Conversion-Problem)
 
 #### TODO
 - Improve the performance of the engine
