@@ -21,6 +21,12 @@ npm install --save spessasynth_core
 
 > Note: This is the new heart of the SpessaSynth library, after the repository has been split.
 
+**Project index**
+
+- spessasynth_core (you are here) - SF2/DLS/MIDI library
+- [spessasynth_lib](https://github.com/spessasus/spessasynth_lib) - spessasynth_core wrapper optimized for browsers and WebAudioAPI
+- [SpessaSynth](https://github.com/spessasus/SpessaSynth) - online/local web player/editor application
+
 ## Current Features
 
 ### Easy Integration
@@ -87,7 +93,7 @@ npm install --save spessasynth_core
   - **Compression and trimming support:** Reduce a MIDI file with a 1GB soundfont to **as small as 5MB**!
   - **DLS Version support:** The original legacy format with bank offset detection!
   - **Automatic bank shifting and validation:** Every soundfont *just works!*
-  - **Metadata support:** Add title, artist, album name and cover and more! And of course read them too! *(In any encoding!)*
+  - **Metadata support:** Add title, artist, album name and cover and more! And of course, read them too! *(In any encoding!)*
   - **Compatible with [Falcosoft Midi Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
   - **Easy saving:** [As simple as saving a MIDI file!](https://github.com/spessasus/spessasynth_core/wiki/Writing-MIDI-Files#writermidi)
 
