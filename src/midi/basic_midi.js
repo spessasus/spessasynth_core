@@ -402,6 +402,9 @@ class BasicMIDI extends MIDISequenceData
             }
         }
         
+        // fix empty port channel offsets (do a copy to turn empty slots into undefined so map goes over them)
+        this.midiPortChannelOffsets = [...this.midiPortChannelOffsets].map(o => o ?? 0);
+        
         // fix midi ports:
         // midi tracks without ports will have a value of -1
         // if all ports have a value of -1, set it to 0,
@@ -426,7 +429,7 @@ class BasicMIDI extends MIDISequenceData
         {
             defaultPort = 0;
         }
-        this.midiPorts = this.midiPorts.map(port => port === -1 ? defaultPort : port);
+        this.midiPorts = this.midiPorts.map(port => port === -1 || port === undefined ? defaultPort : port);
         // add fake port if empty
         if (this.midiPortChannelOffsets.length === 0)
         {
