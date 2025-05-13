@@ -334,6 +334,10 @@ export function play(resetTime = false)
  */
 export function setTimeTicks(ticks)
 {
+    if (!this.midiData)
+    {
+        return;
+    }
     this.stop();
     this.playingNotes = [];
     this.pausedTime = undefined;

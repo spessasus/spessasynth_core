@@ -208,6 +208,10 @@ class SpessaSynthSequencer
     
     set currentTime(time)
     {
+        if (!this.midiData)
+        {
+            return;
+        }
         if (time > this.duration || time < 0)
         {
             // time is 0
