@@ -152,6 +152,13 @@ import { isSystemXG } from "../../utils/xg_hacks.js";
  * @property {number} time - the audio context time when the event should execute, in seconds.
  */
 
+/**
+ * @type {SynthMethodOptions}
+ */
+const DEFAULT_SYNTH_METHOD_OPTIONS = {
+    time: 0
+};
+
 // if the note is released faster than that, it forced to last that long
 // this is used mostly for drum channels, where a lot of midis like to send instant note off after a note on
 export const MIN_NOTE_LENGTH = 0.03;
@@ -386,7 +393,7 @@ class SpessaSynthProcessor
         this.midiOutputsCount = options.midiChannels;
         this.effectsEnabled = options.effectsEnabled;
         this.enableEventSystem = options.enableEventSystem;
-        this.currentSynthTime = options.midiChannels;
+        this.currentSynthTime = options.initialTime;
         this.sampleTime = 1 / sampleRate;
         this.sampleRate = sampleRate;
         
@@ -634,12 +641,13 @@ class SpessaSynthProcessor
     
     // noinspection JSUnusedGlobalSymbols
     /**
-     * @param message {Uint8Array}
-     * @param channelOffset {number}
+     * Processes a MIDI message
+     * @param message {Uint8Array} - the message to process
+     * @param channelOffset {number} - channel offset for the message
      * @param force {boolean} cool stuff
-     * @param options {SynthMethodOptions}
+     * @param options {SynthMethodOptions} - additional options for scheduling the message
      */
-    processMessage(message, channelOffset, force, options)
+    processMessage(message, channelOffset = 0, force = false, options = DEFAULT_SYNTH_METHOD_OPTIONS)
     {
         const call = () =>
         {
