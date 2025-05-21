@@ -134,13 +134,19 @@ export class SoundFontManager
     {
         if (this.soundfontList.find(s => s.id === id) !== undefined)
         {
-            throw new Error("Cannot overwrite the existing soundfont. Use soundfontManager.delete(id) instead.");
+            // replace
+            const soundfont = this.soundfontList.find(s => s.id === id);
+            soundfont.soundfont = font;
+            soundfont.bankOffset = bankOffset;
         }
-        this.soundfontList.push({
-            id: id,
-            soundfont: font,
-            bankOffset: bankOffset
-        });
+        else
+        {
+            this.soundfontList.push({
+                id: id,
+                soundfont: font,
+                bankOffset: bankOffset
+            });
+        }
         this.generatePresetList();
     }
     
