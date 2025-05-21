@@ -4,6 +4,7 @@ import { midiControllers } from "../../../midi/midi_message.js";
 import { portamentoTimeToSeconds } from "./portamento_time.js";
 import { customControllers } from "../engine_components/controller_tables.js";
 import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
+import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../../synth_constants.js";
 
 /**
  * sends a "MIDI Note on message"
@@ -99,9 +100,6 @@ export function noteOn(midiNote, velocity)
         panOverride = Math.round(Math.random() * 1000 - 500);
     }
     
-    // dynamic modulators (sysEx)
-    const dynamicModulators = this.sysExModulators.getModulators();
-    
     // add voices
     const channelVoices = this.voices;
     voices.forEach(voice =>
@@ -116,8 +114,10 @@ export function noteOn(midiNote, velocity)
         // apply gain override
         voice.gain = voiceGain;
         
-        dynamicModulators.forEach(mod =>
+        // dynamic modulators (if none, this won't iterate over anything)
+        this.sysExModulators.modulatorList.forEach(m =>
         {
+            const mod = m.mod;
             const existingModIndex = voice.modulators.findIndex(voiceMod => Modulator.isIdentical(voiceMod, mod));
             
             // replace or add
@@ -130,6 +130,19 @@ export function noteOn(midiNote, velocity)
                 voice.modulators.push(Modulator.copy(mod));
             }
         });
+        
+        // apply generator override
+        if (this.generatorOverridesEnabled)
+        {
+            this.generatorOverrides.forEach((overrideValue, generatorType) =>
+            {
+                if (overrideValue === GENERATOR_OVERRIDE_NO_CHANGE_VALUE)
+                {
+                    return;
+                }
+                voice.generators[generatorType] = overrideValue;
+            });
+        }
         
         
         // apply exclusive class

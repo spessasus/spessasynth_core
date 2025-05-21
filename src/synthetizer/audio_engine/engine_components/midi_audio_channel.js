@@ -29,9 +29,11 @@ import { pitchWheel } from "../engine_methods/tuning_control/pitch_wheel.js";
 import { setOctaveTuning } from "../engine_methods/tuning_control/set_octave_tuning.js";
 import { programChange } from "../engine_methods/program_change.js";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks.js";
-import { DEFAULT_PERCUSSION } from "../../synth_constants.js";
+import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../../synth_constants.js";
 import { modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system.js";
+import { GENERATORS_AMOUNT } from "../../../soundfont/basic_soundfont/generator.js";
+import { computeModulators } from "./compute_modulator.js";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -83,10 +85,23 @@ class MidiAudioChannel
     channelTuningCents = 0;
     
     /**
-     * A system for dynamic modulator assignment for system exclusives
+     * A system for dynamic modulator assignment for advanced system exclusives.
      * @type {DynamicModulatorSystem}
      */
     sysExModulators = new DynamicModulatorSystem();
+    
+    /**
+     * An array of override generators for AWE32 support.
+     * A value of 32,767 means unchanged, as it is not allowed anywhere.
+     * @type {Int16Array}
+     */
+    generatorOverrides = new Int16Array(GENERATORS_AMOUNT);
+    
+    /**
+     * A small optimization that disables applying overrides until at least one is set.
+     * @type {boolean}
+     */
+    generatorOverridesEnabled = false;
     
     /**
      * Indicates whether the sustain (hold) pedal is active.
@@ -210,6 +225,7 @@ class MidiAudioChannel
         this.synth = synth;
         this.preset = preset;
         this.channelNumber = channelNumber;
+        this.resetGeneratorOverrides();
     }
     
     get isXGChannel()
@@ -437,6 +453,31 @@ class MidiAudioChannel
             program: this.preset.program
         };
         this.synth?.onChannelPropertyChange?.(data, this.channelNumber);
+    }
+    
+    resetGeneratorOverrides()
+    {
+        this.generatorOverrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
+        this.generatorOverridesEnabled = false;
+    }
+    
+    /**
+     * @param gen {generatorTypes}
+     * @param value {number}
+     * @param realtime {boolean}
+     */
+    setGeneratorOverride(gen, value, realtime = false)
+    {
+        this.generatorOverrides[gen] = value;
+        this.generatorOverridesEnabled = true;
+        if (realtime)
+        {
+            this.voices.forEach(v =>
+            {
+                v.generators[gen] = value;
+                computeModulators(v, this.midiControllers);
+            });
+        }
     }
 }
 

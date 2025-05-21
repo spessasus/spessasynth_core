@@ -219,6 +219,7 @@ export function resetControllersRP15Compliant()
             }
         }
     }
+    this.resetGeneratorOverrides();
 }
 
 /**
@@ -228,9 +229,13 @@ export function resetParameters()
 {
     /**
      * reset the state machine to idle
-     * @type {string}
      */
     this.dataEntryState = dataEntryStates.Idle;
+    this.midiControllers[midiControllers.NRPNLsb] = 127 << 7;
+    this.midiControllers[midiControllers.NRPNMsb] = 127 << 7;
+    this.midiControllers[midiControllers.RPNLsb] = 127 << 7;
+    this.midiControllers[midiControllers.RPNMsb] = 127 << 7;
+    this.resetGeneratorOverrides();
     SpessaSynthInfo(
         "%cResetting Registered and Non-Registered Parameters!",
         consoleColors.info

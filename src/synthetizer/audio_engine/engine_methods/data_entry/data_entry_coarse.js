@@ -8,7 +8,7 @@ import { modulatorSources } from "../../../../soundfont/basic_soundfont/modulato
 /**
  * @enum {number}
  */
-const registeredParameterTypes = {
+export const registeredParameterTypes = {
     pitchBendRange: 0x0000,
     fineTuning: 0x0001,
     coarseTuning: 0x0002,
@@ -19,8 +19,9 @@ const registeredParameterTypes = {
 /**
  * @enum {number}
  */
-const nonRegisteredGSMSB = {
-    partParameter: 0x01
+export const nonRegisteredMSB = {
+    partParameter: 0x01,
+    awe32: 0x7F
 };
 
 /**
@@ -50,6 +51,8 @@ const nonRegisteredGSLSB = {
  */
 export function dataEntryCoarse(dataValue)
 {
+    // store in cc table
+    this.midiControllers[midiControllers.dataEntryMsb] = dataValue << 7;
     const addDefaultVibrato = () =>
     {
         if (this.channelVibrato.delay === 0 && this.channelVibrato.rate === 0 && this.channelVibrato.depth === 0)
@@ -117,7 +120,7 @@ export function dataEntryCoarse(dataValue)
                     break;
                 
                 // part parameters: vibrato, cutoff
-                case nonRegisteredGSMSB.partParameter:
+                case nonRegisteredMSB.partParameter:
                     switch (NRPNFine)
                     {
                         default:
@@ -192,6 +195,9 @@ export function dataEntryCoarse(dataValue)
                             coolInfo("EG release time", dataValue.toString(), "");
                             break;
                     }
+                    break;
+                
+                case nonRegisteredMSB.awe32:
                     break;
             }
             break;

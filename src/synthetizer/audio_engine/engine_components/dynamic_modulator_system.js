@@ -19,14 +19,6 @@ export class DynamicModulatorSystem
     }
     
     /**
-     * @returns {Modulator[]}
-     */
-    getModulators()
-    {
-        return this.modulatorList.map(m => m.mod);
-    }
-    
-    /**
      * @param source {number}
      * @param destination {generatorTypes}
      * @param isBipolar {boolean}

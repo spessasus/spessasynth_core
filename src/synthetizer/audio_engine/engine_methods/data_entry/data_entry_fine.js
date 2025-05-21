@@ -1,8 +1,10 @@
 import { consoleColors } from "../../../../utils/other.js";
-import { SpessaSynthInfo } from "../../../../utils/loggin.js";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin.js";
 import { modulatorSources } from "../../../../soundfont/basic_soundfont/modulator.js";
 import { customControllers, dataEntryStates, NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables.js";
 import { midiControllers } from "../../../../midi/midi_message.js";
+import { nonRegisteredMSB, registeredParameterTypes } from "./data_entry_coarse.js";
+import { handleAWE32NRPN } from "./awe32.js";
 
 /**
  * Executes a data entry for an RPN tuning
@@ -12,6 +14,8 @@ import { midiControllers } from "../../../../midi/midi_message.js";
  */
 export function dataEntryFine(dataValue)
 {
+    // store in cc table
+    this.midiControllers[midiControllers.lsbForControl6DataEntry] = dataValue << 7;
     switch (this.dataEntryState)
     {
         default:
@@ -26,7 +30,7 @@ export function dataEntryFine(dataValue)
                     break;
                 
                 // pitch bend range fine tune
-                case 0x0000:
+                case registeredParameterTypes.pitchBendRange:
                     if (dataValue === 0)
                     {
                         break;
@@ -42,7 +46,7 @@ export function dataEntryFine(dataValue)
                     break;
                 
                 // fine-tuning
-                case 0x0001:
+                case registeredParameterTypes.fineTuning:
                     // grab the data and shift
                     const coarse = this.customControllers[customControllers.channelTuning];
                     const finalTuning = (coarse << 7) | dataValue;
@@ -50,7 +54,7 @@ export function dataEntryFine(dataValue)
                     break;
                 
                 // modulation depth
-                case 0x0005:
+                case registeredParameterTypes.modulationDepth:
                     const currentModulationDepthCents = this.customControllers[customControllers.modulationMultiplier] * 50;
                     let cents = currentModulationDepthCents + (dataValue / 128) * 100;
                     this.setModulationDepth(cents);
@@ -61,6 +65,41 @@ export function dataEntryFine(dataValue)
                     break;
                 
             }
+            break;
         
+        case dataEntryStates.NRPFine:
+            /**
+             * @type {number}
+             */
+            const NRPNCoarse = this.midiControllers[midiControllers.NRPNMsb] >> 7;
+            /**
+             * @type {number}
+             */
+            const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
+            switch (NRPNCoarse)
+            {
+                default:
+                    SpessaSynthWarn(
+                        `%cUnrecognized NRPN LSB for %c${this.channelNumber}%c: %c(0x${NRPNFine.toString(16)
+                            .toUpperCase()} 0x${NRPNFine.toString(
+                            16).toUpperCase()})%c data value: %c${dataValue}`,
+                        consoleColors.warn,
+                        consoleColors.recognized,
+                        consoleColors.warn,
+                        consoleColors.unrecognized,
+                        consoleColors.warn,
+                        consoleColors.value
+                    );
+                    break;
+                
+                case nonRegisteredMSB.awe32:
+                    handleAWE32NRPN.call(
+                        this,
+                        NRPNFine,
+                        dataValue,
+                        this.midiControllers[midiControllers.dataEntryMsb] >> 7
+                    );
+                    break;
+            }
     }
 }
