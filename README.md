@@ -63,6 +63,7 @@ npm install --save spessasynth_core
   - **Sound Controllers:** Real-time filter and envelope control!
   - **MIDI Tuning Standard Support:** [more info here](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#midi-tuning-standard)
   - [Full **RPN** and limited **NRPN** support](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#supported-registered-parameters)
+  - [**AWE32** NRPN Compatibility Layer](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#awe32-nrpn-compatibility-layer)
   - Supports some [**Roland GS** and **Yamaha XG** system exclusives](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#supported-system-exclusives)
 
 ### Powerful and Fast MIDI Sequencer
