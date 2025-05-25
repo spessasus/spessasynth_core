@@ -36,12 +36,18 @@ export function writeMIDI()
                 // this is a meta-message
                 // syntax is FF<type><length><data>
                 messageData = [0xff, event.messageStatusByte, ...writeVariableLengthQuantity(event.messageData.length), ...event.messageData];
+                // RP-001:
+                // Sysex events and meta-events cancel any running status which was in effect.
+                runningByte = undefined;
             }
             else if (event.messageStatusByte === messageTypes.systemExclusive)
             {
                 // this is a system exclusive message
                 // syntax is F0<length><data>
                 messageData = [0xf0, ...writeVariableLengthQuantity(event.messageData.length), ...event.messageData];
+                // RP-001:
+                // Sysex events and meta-events cancel any running status which was in effect.
+                runningByte = undefined;
             }
             else
             {
