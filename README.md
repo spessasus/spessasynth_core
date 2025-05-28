@@ -5,6 +5,12 @@
 
 **A powerful SF2/DLS/MIDI JavaScript library. It works with any modern JS environment that supports WebAssembly.**
 
+It allows you to:
+- Play MIDI files using SF2/SF3/DLS files
+- Write MIDI files
+- Write SF2/SF3 files
+- Convert DLS to SF2 (and back!)
+- [and more!](https://github.com/spessasus/spessasynth_core?tab=readme-ov-file#current-features)
 > **TIP:**
 > Looking for an easy-to-use WebAudioAPI browser wrapper? Try [spessasynth_lib](https://github.com/spessasus/spessasynth_lib)!
 
