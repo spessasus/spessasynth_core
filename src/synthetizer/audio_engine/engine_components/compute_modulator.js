@@ -4,6 +4,7 @@ import { ModulationEnvelope } from "./modulation_envelope.js";
 import { generatorLimits, generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { Modulator, modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables.js";
+import { SpessaSynthWarn } from "../../../utils/loggin.js";
 
 /**
  * compute_modulator.js
@@ -137,6 +138,11 @@ export function computeModulators(voice, controllerTable, sourceUsesCC = -1, sou
         modulators.forEach(mod =>
         {
             const limits = generatorLimits[mod.modulatorDestination];
+            if (!limits)
+            {
+                SpessaSynthWarn(`Invalid modulator: ${mod.modulatorDestination}`);
+                return;
+            }
             const newValue = modulatedGenerators[mod.modulatorDestination] + computeModulator(
                 controllerTable,
                 mod,

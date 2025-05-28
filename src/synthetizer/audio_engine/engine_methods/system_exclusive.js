@@ -469,13 +469,28 @@ export function systemExclusive(syx, channelOffset = 0)
                                 case 0x00:
                                     // see https://github.com/spessasus/SpessaSynth/issues/154
                                     // pitch control
-                                    channelObject.sysExModulators.setModulator(
-                                        source,
-                                        generatorTypes.fineTune,
-                                        centeredValue * 100,
-                                        bipolar
-                                    );
-                                    niceLogging(channel, centeredValue, `${sourceName} pitch control`, "semitones");
+                                    // special case:
+                                    // if the source is a pitch wheel, it's a strange way of setting the bend range
+                                    // testcase: th07_03.mid
+                                    if (source === NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel)
+                                    {
+                                        channelObject.controllerChange(midiControllers.RPNMsb, 0x0);
+                                        channelObject.controllerChange(midiControllers.RPNLsb, 0x0);
+                                        channelObject.controllerChange(
+                                            midiControllers.dataEntryMsb,
+                                            Math.floor(centeredValue)
+                                        );
+                                    }
+                                    else
+                                    {
+                                        channelObject.sysExModulators.setModulator(
+                                            source,
+                                            generatorTypes.fineTune,
+                                            centeredValue * 100,
+                                            bipolar
+                                        );
+                                        niceLogging(channel, centeredValue, `${sourceName} pitch control`, "semitones");
+                                    }
                                     break;
                                 
                                 case 0x01:
@@ -512,7 +527,8 @@ export function systemExclusive(syx, channelOffset = 0)
                                     channelObject.sysExModulators.setModulator(
                                         source,
                                         generatorTypes.vibLfoToPitch,
-                                        normalizedNotCentered * 600
+                                        normalizedNotCentered * 600,
+                                        bipolar
                                     );
                                     niceLogging(
                                         channel,
@@ -527,7 +543,8 @@ export function systemExclusive(syx, channelOffset = 0)
                                     channelObject.sysExModulators.setModulator(
                                         source,
                                         generatorTypes.vibLfoToFilterFc,
-                                        normalizedNotCentered * 2400
+                                        normalizedNotCentered * 2400,
+                                        bipolar
                                     );
                                     niceLogging(
                                         channel,
@@ -542,11 +559,12 @@ export function systemExclusive(syx, channelOffset = 0)
                                     channelObject.sysExModulators.setModulator(
                                         source,
                                         generatorTypes.vibLfoToVolume,
-                                        normalizedNotCentered * 960
+                                        normalizedValue * 960,
+                                        bipolar
                                     );
                                     niceLogging(
                                         channel,
-                                        normalizedNotCentered * 960,
+                                        normalizedValue * 960,
                                         `${sourceName} LFO1 amplitude depth`,
                                         "cB"
                                     );
@@ -559,7 +577,8 @@ export function systemExclusive(syx, channelOffset = 0)
                                     channelObject.sysExModulators.setModulator(
                                         source,
                                         generatorTypes.modLfoToPitch,
-                                        normalizedNotCentered * 600
+                                        normalizedNotCentered * 600,
+                                        bipolar
                                     );
                                     niceLogging(
                                         channel,
@@ -574,7 +593,8 @@ export function systemExclusive(syx, channelOffset = 0)
                                     channelObject.sysExModulators.setModulator(
                                         source,
                                         generatorTypes.modLfoToFilterFc,
-                                        normalizedNotCentered * 2400
+                                        normalizedNotCentered * 2400,
+                                        bipolar
                                     );
                                     niceLogging(
                                         channel,
@@ -589,11 +609,12 @@ export function systemExclusive(syx, channelOffset = 0)
                                     channelObject.sysExModulators.setModulator(
                                         source,
                                         generatorTypes.modLfoToVolume,
-                                        normalizedNotCentered * 960
+                                        normalizedValue * 960,
+                                        bipolar
                                     );
                                     niceLogging(
                                         channel,
-                                        normalizedNotCentered * 960,
+                                        normalizedValue * 960,
                                         `${sourceName} LFO2 amplitude depth`,
                                         "cB"
                                     );

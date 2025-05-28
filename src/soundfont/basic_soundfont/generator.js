@@ -70,6 +70,7 @@ export const generatorTypes = {
     vibLfoToFilterFc: 62
 };
 export const GENERATORS_AMOUNT = Object.keys(generatorTypes).length;
+export const MAX_GENERATOR = Math.max(...Object.values(generatorTypes));
 
 /**
  * @type {{min: number, max: number, def: number}[]}

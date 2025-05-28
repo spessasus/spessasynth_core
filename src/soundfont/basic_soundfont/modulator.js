@@ -1,4 +1,4 @@
-import { generatorTypes } from "./generator.js";
+import { generatorTypes, MAX_GENERATOR } from "./generator.js";
 import { midiControllers } from "../../midi/midi_message.js";
 
 /**
@@ -79,7 +79,7 @@ export class Modulator
         this.transformType = transformType;
         
         
-        if (this.modulatorDestination > 58)
+        if (this.modulatorDestination > MAX_GENERATOR)
         {
             this.modulatorDestination = generatorTypes.INVALID; // flag as invalid (for linked ones)
         }
