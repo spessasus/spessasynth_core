@@ -129,7 +129,7 @@ export class LowpassFilter
     
     /**
      * Applies a low-pass filter to the given buffer
-     * @param voice {Voice} the voice we're working on
+     * @param voice {Voice} the voice we are working on
      * @param outputBuffer {Float32Array} the buffer to apply the filter to
      * @param fcExcursion {number} the addition of modenv and mod lfo in cents to the filter
      * @param smoothingFactor {number} filter's cutoff frequency smoothing factor

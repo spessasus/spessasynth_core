@@ -172,7 +172,7 @@ export class WavetableOscillator
                 let y1 = y0 + 1;    // point after the cursor
                 let y2 = y1 + 1;    // point 1 after the cursor
                 let y3 = y2 + 1;    // point 2 after the cursor
-                const t = cur - y0; // distance from y0 to cursor
+                const t = cur - y0; // the distance from y0 to cursor
                 // y0 is not handled here
                 // as it's math.floor of cur which is handled above
                 if (y1 >= sample.loopEnd)

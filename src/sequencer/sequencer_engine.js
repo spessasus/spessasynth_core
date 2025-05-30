@@ -185,6 +185,7 @@ class SpessaSynthSequencer
      */
     _playbackRate = 1;
     
+    // noinspection JSUnusedGlobalSymbols
     /**
      * @param value {number}
      */

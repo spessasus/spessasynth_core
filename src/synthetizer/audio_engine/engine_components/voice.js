@@ -400,7 +400,8 @@ export function getVoicesForPreset(preset, bank, program, midiNote, velocity, re
                 );
             }
             
-            // !! EMU initial attenuation correction, multiply initial attenuation by 0.4
+            // EMU initial attenuation correction, multiply initial attenuation by 0.4!
+            // all EMU sound cards have this quirk and all sf2 editors and players emulate it too
             generators[generatorTypes.initialAttenuation] = Math.floor(generators[generatorTypes.initialAttenuation] * 0.4);
             
             // key override

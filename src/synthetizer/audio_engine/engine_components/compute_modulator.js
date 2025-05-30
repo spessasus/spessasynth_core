@@ -27,7 +27,7 @@ export function computeModulator(controllerTable, modulator, voice)
         modulator.currentValue = 0;
         return 0;
     }
-    // mapped to 0 - 16,384
+    // mapped to 0-16,384
     let rawSourceValue;
     if (modulator.sourceUsesCC)
     {
