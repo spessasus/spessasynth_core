@@ -4,8 +4,8 @@ import { DLSSoundFont } from "./dls/dls_soundfont.js";
 import { SoundFont2 } from "./read_sf2/soundfont.js";
 
 /**
- * Loads a soundfont file
- * @param buffer {ArrayBuffer}
+ * Loads a soundfont or dls file
+ * @param buffer {ArrayBuffer} the binary file to load
  * @returns {BasicSoundBank}
  */
 export function loadSoundFont(buffer)

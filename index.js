@@ -23,8 +23,8 @@ import { BasicSample } from "./src/soundfont/basic_soundfont/basic_sample.js";
 import { BasicInstrumentZone, BasicPresetZone } from "./src/soundfont/basic_soundfont/basic_zones.js";
 import { BasicInstrument } from "./src/soundfont/basic_soundfont/basic_instrument.js";
 import { BasicPreset } from "./src/soundfont/basic_soundfont/basic_preset.js";
-import { Generator } from "./src/soundfont/basic_soundfont/generator.js";
-import { Modulator, modulatorSources } from "./src/soundfont/basic_soundfont/modulator.js";
+import { Generator, generatorTypes } from "./src/soundfont/basic_soundfont/generator.js";
+import { Modulator, modulatorCurveTypes, modulatorSources } from "./src/soundfont/basic_soundfont/modulator.js";
 import { loadSoundFont } from "./src/soundfont/load_soundfont.js";
 
 import { MIDI } from "./src/midi/midi_loader.js";
@@ -49,7 +49,8 @@ import { readBytesAsString } from "./src/utils/byte_functions/string.js";
 import { readVariableLengthQuantity } from "./src/utils/byte_functions/variable_length_quantity.js";
 import { consoleColors } from "./src/utils/other.js";
 import { inflateSync } from "./src/externals/fflate/fflate.min.js";
-
+import { DLSDestinations } from "./src/soundfont/dls/dls_destinations.js";
+import { DLSSources } from "./src/soundfont/dls/dls_sources.js";
 // you shouldn't use these...
 const SpessaSynthCoreUtils = {
     consoleColors,
@@ -64,6 +65,7 @@ const SpessaSynthCoreUtils = {
     inflateSync
 };
 
+// see All-NPN-Exports.md in the wiki
 export {
     // synth and seq
     SpessaSynthSequencer,
@@ -71,6 +73,7 @@ export {
     SynthesizerSnapshot,
     ChannelSnapshot,
     KeyModifier,
+    
     masterParameterType,
     channelConfiguration,
     interpolationTypes,
@@ -92,7 +95,13 @@ export {
     BasicPresetZone,
     Generator,
     Modulator,
+    
     modulatorSources,
+    modulatorCurveTypes,
+    generatorTypes,
+    DLSSources,
+    DLSDestinations,
+    
     
     // MIDI
     MIDI,
@@ -100,13 +109,14 @@ export {
     BasicMIDI,
     MIDIBuilder,
     MIDIMessage,
+    
     RMIDINFOChunks,
+    midiControllers,
+    messageTypes,
     
     // utils
     IndexedByteArray,
     audioToWav,
     SpessaSynthLogging,
-    midiControllers,
-    messageTypes,
     SpessaSynthCoreUtils
 };
