@@ -51,28 +51,19 @@ export function readBytesAsString(dataArray, bytes, encoding = undefined, trimEn
 
 /**
  * @param string {string}
- * @param padLength {number}
+ * @param addZero {boolean} adds a zero terminator at the end
  * @returns {IndexedByteArray}
  */
-export function getStringBytes(string, padLength = 0)
+export function getStringBytes(string, addZero = false)
 {
     let len = string.length;
-    if (padLength > 0)
+    if (addZero)
     {
-        len = padLength;
+        len = len + 1;
     }
     const arr = new IndexedByteArray(len);
-    writeStringAsBytes(arr, string, padLength);
+    writeStringAsBytes(arr, string);
     return arr;
-}
-
-/**
- * @param string {string}
- * @returns {IndexedByteArray}
- */
-export function getStringBytesZero(string)
-{
-    return getStringBytes(string, string.length + 1);
 }
 
 /**

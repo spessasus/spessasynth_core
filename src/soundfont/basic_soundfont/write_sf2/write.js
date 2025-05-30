@@ -1,5 +1,5 @@
 import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { RiffChunk, writeRIFFChunk, writeRIFFOddSize } from "../riff_chunk.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { consoleColors } from "../../../utils/other.js";
 import { getIGEN } from "./igen.js";
@@ -97,20 +97,17 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         }
         else
         {
-            const arr = new IndexedByteArray(data.length);
+            // pad with zero
+            const arr = new IndexedByteArray(data.length + 1);
             writeStringAsBytes(arr, data);
             infoArrays.push(writeRIFFChunk(new RiffChunk(
                 type,
-                data.length,
+                arr.length,
                 arr
             )));
         }
     }
-    const combined = combineArrays([
-        new IndexedByteArray([73, 78, 70, 79]), // INFO
-        ...infoArrays
-    ]);
-    const infoChunk = writeRIFFChunk(new RiffChunk("LIST", combined.length, combined));
+    const infoChunk = writeRIFFOddSize("INFO", combineArrays(infoArrays), false, true);
     
     SpessaSynthInfo(
         "%cWriting SDTA...",

@@ -2,9 +2,9 @@ import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { writeRIFFOddSize } from "../riff_chunk.js";
 import { writeWavesample } from "./wsmp.js";
-import { getStringBytesZero } from "../../../utils/byte_functions/string.js";
 import { SpessaSynthInfo } from "../../../utils/loggin.js";
 import { consoleColors } from "../../../utils/other.js";
+import { getStringBytes } from "../../../utils/byte_functions/string.js";
 
 /**
  * @param sample {BasicSample}
@@ -66,7 +66,7 @@ export function writeDLSSample(sample)
     
     const inam = writeRIFFOddSize(
         "INAM",
-        getStringBytesZero(sample.sampleName)
+        getStringBytes(sample.sampleName, true)
     );
     const info = writeRIFFOddSize(
         "INFO",

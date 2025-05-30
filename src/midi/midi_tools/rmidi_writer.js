@@ -1,6 +1,6 @@
 import { combineArrays, IndexedByteArray } from "../../utils/indexed_array.js";
 import { writeRIFFOddSize } from "../../soundfont/basic_soundfont/riff_chunk.js";
-import { getStringBytes, getStringBytesZero } from "../../utils/byte_functions/string.js";
+import { getStringBytes } from "../../utils/byte_functions/string.js";
 import { messageTypes, midiControllers, MIDIMessage } from "../midi_message.js";
 import { getGsOn } from "./midi_editor.js";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin.js";
@@ -459,7 +459,7 @@ export function writeRMIDI(
             minute: "numeric"
         });
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.creationDate, getStringBytesZero(today), true)
+            writeRIFFOddSize(RMIDINFOChunks.creationDate, getStringBytes(today, true), true)
         );
     }
     // comment
@@ -525,7 +525,7 @@ export function writeRMIDI(
         // use midi copyright if possible
         const copyright = mid.copyright.length > 0 ? mid.copyright : DEFAULT_COPYRIGHT;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.copyright, getStringBytesZero(copyright))
+            writeRIFFOddSize(RMIDINFOChunks.copyright, getStringBytes(copyright, true))
         );
     }
     
@@ -542,7 +542,7 @@ export function writeRMIDI(
         encoding = FORCED_ENCODING;
     }
     // encoding
-    infoContent.push(writeRIFFOddSize(RMIDINFOChunks.encoding, getStringBytesZero(encoding)));
+    infoContent.push(writeRIFFOddSize(RMIDINFOChunks.encoding, getStringBytes(encoding, true)));
     
     // combine and write out
     const infodata = combineArrays(infoContent);

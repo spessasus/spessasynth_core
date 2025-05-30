@@ -93,7 +93,7 @@ export function writeRIFFChunk(chunk, prepend = undefined)
  * @param header {string}
  * @param data {Uint8Array}
  * @param addZeroByte {Boolean}
- * @param isList {boolean}
+ * @param isList {boolean} adds "LIST" as the chunk type and writes the actual type at the start of the data
  * @returns {IndexedByteArray}
  */
 export function writeRIFFOddSize(header, data, addZeroByte = false, isList = false)

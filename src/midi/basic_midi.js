@@ -402,7 +402,7 @@ class BasicMIDI extends MIDISequenceData
             }
         }
         
-        // fix empty port channel offsets (do a copy to turn empty slots into undefined so map goes over them)
+        // fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
         this.midiPortChannelOffsets = [...this.midiPortChannelOffsets].map(o => o ?? 0);
         
         // fix midi ports:
