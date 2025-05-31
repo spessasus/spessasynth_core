@@ -126,8 +126,9 @@ export class MIDIBuilder extends BasicMIDI
      * @param track {number} the track number to use
      * @param channel {number} the channel to use
      * @param midiNote {number} the midi note of the key release
+     * @param velocity {number} optional and unsupported by spessasynth
      */
-    addNoteOff(ticks, track, channel, midiNote)
+    addNoteOff(ticks, track, channel, midiNote, velocity = 64)
     {
         channel %= 16;
         midiNote %= 128;
@@ -135,7 +136,7 @@ export class MIDIBuilder extends BasicMIDI
             ticks,
             track,
             messageTypes.noteOff | channel,
-            [midiNote, 64]
+            [midiNote, velocity]
         );
     }
     

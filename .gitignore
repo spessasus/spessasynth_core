@@ -61,6 +61,7 @@ $RECYCLE.BIN/
 *.msp
 # random wav files
 *.wav
+*.mid
 # Windows shortcuts
 *.lnk
 

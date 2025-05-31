@@ -32,7 +32,7 @@ import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks
 import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../../synth_constants.js";
 import { modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system.js";
-import { GENERATORS_AMOUNT } from "../../../soundfont/basic_soundfont/generator.js";
+import { generatorLimits, GENERATORS_AMOUNT } from "../../../soundfont/basic_soundfont/generator.js";
 import { computeModulators } from "./compute_modulator.js";
 
 /**
@@ -89,6 +89,19 @@ class MidiAudioChannel
      * @type {DynamicModulatorSystem}
      */
     sysExModulators = new DynamicModulatorSystem();
+    
+    /**
+     * An array of offsets generators for SF2 nrpn support.
+     * A value of 0 means no change; -10 means 10 lower, etc.
+     * @type {Int16Array}
+     */
+    generatorOffsets = new Int16Array(GENERATORS_AMOUNT);
+    
+    /**
+     * A small optimization that disables applying offsets until at least one is set.
+     * @type {boolean}
+     */
+    generatorOffsetsEnabled = false;
     
     /**
      * An array of override generators for AWE32 support.
@@ -226,6 +239,7 @@ class MidiAudioChannel
         this.preset = preset;
         this.channelNumber = channelNumber;
         this.resetGeneratorOverrides();
+        this.resetGeneratorOffsets();
     }
     
     get isXGChannel()
@@ -475,9 +489,29 @@ class MidiAudioChannel
             this.voices.forEach(v =>
             {
                 v.generators[gen] = value;
-                computeModulators(v, this.midiControllers);
+                this.computeModulators(v);
             });
         }
+    }
+    
+    resetGeneratorOffsets()
+    {
+        this.generatorOffsets.fill(0);
+        this.generatorOffsetsEnabled = false;
+    }
+    
+    /**
+     * @param gen {generatorTypes}
+     * @param value {number}
+     */
+    setGeneratorOffset(gen, value)
+    {
+        this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
+        this.generatorOffsetsEnabled = true;
+        this.voices.forEach(v =>
+        {
+            this.computeModulators(v);
+        });
     }
 }
 
@@ -487,6 +521,7 @@ MidiAudioChannel.prototype.panVoice = panVoice;
 MidiAudioChannel.prototype.killNote = killNote;
 MidiAudioChannel.prototype.stopAllNotes = stopAllNotes;
 MidiAudioChannel.prototype.muteChannel = muteChannel;
+MidiAudioChannel.prototype.computeModulators = computeModulators;
 
 // MIDI messages
 MidiAudioChannel.prototype.noteOn = noteOn;

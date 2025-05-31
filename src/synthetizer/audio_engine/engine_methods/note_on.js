@@ -1,4 +1,3 @@
-import { computeModulators } from "../engine_components/compute_modulator.js";
 import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { midiControllers } from "../../../midi/midi_message.js";
 import { portamentoTimeToSeconds } from "./portamento_time.js";
@@ -159,7 +158,7 @@ export function noteOn(midiNote, velocity)
             });
         }
         // compute all modulators
-        computeModulators(voice, this.midiControllers);
+        this.computeModulators(voice);
         // modulate sample offsets (these are not real time)
         const cursorStartOffset = voice.modulatedGenerators[generatorTypes.startAddrsOffset] + voice.modulatedGenerators[generatorTypes.startAddrsCoarseOffset] * 32768;
         const endOffset = voice.modulatedGenerators[generatorTypes.endAddrOffset] + voice.modulatedGenerators[generatorTypes.endAddrsCoarseOffset] * 32768;

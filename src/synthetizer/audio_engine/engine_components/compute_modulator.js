@@ -121,14 +121,23 @@ export function computeModulator(controllerTable, modulator, voice)
 /**
  * Computes modulators of a given voice. Source and index indicate what modulators shall be computed
  * @param voice {Voice} the voice to compute modulators for
- * @param controllerTable {Int16Array} all midi controllers as 14bit values + the non-controller indexes, starting at 128
  * @param sourceUsesCC {number} what modulators should be computed, -1 means all, 0 means modulator source enum 1 means midi controller
  * @param sourceIndex {number} enum for the source
+ * @this {MidiAudioChannel}
  */
-export function computeModulators(voice, controllerTable, sourceUsesCC = -1, sourceIndex = 0)
+export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0)
 {
     const modulators = voice.modulators;
-    const generators = voice.generators;
+    let generators = voice.generators;
+    // apply offsets if enabled
+    if (this.generatorOffsetsEnabled)
+    {
+        generators = new Int16Array(generators);
+        for (let i = 0; i < generators.length; i++)
+        {
+            generators[i] += this.generatorOffsets[i];
+        }
+    }
     const modulatedGenerators = voice.modulatedGenerators;
     
     if (sourceUsesCC === -1)
@@ -144,7 +153,7 @@ export function computeModulators(voice, controllerTable, sourceUsesCC = -1, sou
                 return;
             }
             const newValue = modulatedGenerators[mod.modulatorDestination] + computeModulator(
-                controllerTable,
+                this.midiControllers,
                 mod,
                 voice
             );
@@ -186,7 +195,7 @@ export function computeModulators(voice, controllerTable, sourceUsesCC = -1, sou
                 // Reset this destination
                 modulatedGenerators[destination] = generators[destination];
                 // compute our modulator
-                computeModulator(controllerTable, mod, voice);
+                computeModulator(this.midiControllers, mod, voice);
                 // sum the values of all modulators for this destination
                 modulators.forEach(m =>
                 {

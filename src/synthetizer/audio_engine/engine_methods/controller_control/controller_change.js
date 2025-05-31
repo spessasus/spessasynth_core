@@ -1,6 +1,6 @@
 import { midiControllers } from "../../../../midi/midi_message.js";
-import { computeModulators } from "../../engine_components/compute_modulator.js";
-import { channelConfiguration, dataEntryStates } from "../../engine_components/controller_tables.js";
+import { channelConfiguration, customControllers, dataEntryStates } from "../../engine_components/controller_tables.js";
+import { nonRegisteredMSB } from "../data_entry/data_entry_coarse.js";
 
 /**
  * @param controllerNumber {number}
@@ -42,7 +42,7 @@ export function controllerChange(controllerNumber, controllerValue, force = fals
         }
         // append the lower nibble to the main controller
         this.midiControllers[actualCCNum] = (this.midiControllers[actualCCNum] & 0x3F80) | (controllerValue & 0x7F);
-        this.voices.forEach(v => computeModulators(v, this.midiControllers, 1, actualCCNum));
+        this.voices.forEach(v => this.computeModulators(v, 1, actualCCNum));
     }
     if (this.lockedControllers[controllerNumber])
     {
@@ -83,10 +83,37 @@ export function controllerChange(controllerNumber, controllerValue, force = fals
                 break;
             
             case midiControllers.NRPNMsb:
+                // sfspec section 9.6.2
+                this.customControllers[customControllers.sf2NPRNGeneratorLSB] = 0;
                 this.dataEntryState = dataEntryStates.NRPCoarse;
                 break;
             
             case midiControllers.NRPNLsb:
+                if (this.midiControllers[midiControllers.NRPNMsb] >> 7 === nonRegisteredMSB.SF2)
+                {
+                    // if a <100 value has already been sent, reset!
+                    if (this.customControllers[customControllers.sf2NPRNGeneratorLSB] % 100 !== 0)
+                    {
+                        this.customControllers[customControllers.sf2NPRNGeneratorLSB] = 0;
+                    }
+                    
+                    if (controllerValue === 100)
+                    {
+                        this.customControllers[customControllers.sf2NPRNGeneratorLSB] += 100;
+                    }
+                    else if (controllerValue === 101)
+                    {
+                        this.customControllers[customControllers.sf2NPRNGeneratorLSB] += 1000;
+                    }
+                    else if (controllerValue === 102)
+                    {
+                        this.customControllers[customControllers.sf2NPRNGeneratorLSB] += 10000;
+                    }
+                    else if (controllerValue < 100)
+                    {
+                        this.customControllers[customControllers.sf2NPRNGeneratorLSB] += controllerValue;
+                    }
+                }
                 this.dataEntryState = dataEntryStates.NRPFine;
                 break;
             
@@ -120,7 +147,7 @@ export function controllerChange(controllerNumber, controllerValue, force = fals
             
             // default: just compute modulators
             default:
-                this.voices.forEach(v => computeModulators(v, this.midiControllers, 1, controllerNumber));
+                this.voices.forEach(v => this.computeModulators(v, 1, controllerNumber));
                 break;
         }
     }

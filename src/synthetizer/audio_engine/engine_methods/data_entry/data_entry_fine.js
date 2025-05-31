@@ -76,6 +76,10 @@ export function dataEntryFine(dataValue)
              * @type {number}
              */
             const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
+            if (NRPNCoarse === nonRegisteredMSB.SF2)
+            {
+                return;
+            }
             switch (NRPNCoarse)
             {
                 default:

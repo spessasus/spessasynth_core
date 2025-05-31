@@ -21,7 +21,8 @@ export const registeredParameterTypes = {
  */
 export const nonRegisteredMSB = {
     partParameter: 0x01,
-    awe32: 0x7F
+    awe32: 0x7F,
+    SF2: 120
 };
 
 /**
@@ -98,6 +99,7 @@ export function dataEntryCoarse(dataValue)
              * @type {number}
              */
             const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
+            const dataEntryFine = this.midiControllers[midiControllers.lsbForControl6DataEntry] >> 7;
             switch (NRPNCoarse)
             {
                 default:
@@ -198,6 +200,20 @@ export function dataEntryCoarse(dataValue)
                     break;
                 
                 case nonRegisteredMSB.awe32:
+                    break;
+                
+                // SF2 NRPN
+                case nonRegisteredMSB.SF2:
+                    if (NRPNFine > 100)
+                    {
+                        // sfspec:
+                        // Note that NRPN Select LSB greater than 100 are for setup only, and should not be used on their own to select a
+                        // generator parameter.
+                        break;
+                    }
+                    const gen = this.customControllers[customControllers.sf2NPRNGeneratorLSB];
+                    const offset = (dataValue << 7 | dataEntryFine) - 8192;
+                    this.setGeneratorOffset(gen, offset);
                     break;
             }
             break;

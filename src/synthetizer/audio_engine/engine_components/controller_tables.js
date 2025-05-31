@@ -63,7 +63,8 @@ export const customControllers = {
     modulationMultiplier: 2,       // cents, set by modulation depth RPN
     masterTuning: 3,               // cents, set by system exclusive
     channelTuningSemitones: 4,     // semitones, for RPN coarse tuning
-    channelKeyShift: 5            // key shift: for system exclusive
+    channelKeyShift: 5,            // key shift: for system exclusive
+    sf2NPRNGeneratorLSB: 6         // sf2 NPRN LSB for selecting a generator value
 };
 export const CUSTOM_CONTROLLER_TABLE_SIZE = Object.keys(customControllers).length;
 export const customResetArray = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);

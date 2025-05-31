@@ -220,6 +220,7 @@ export function resetControllersRP15Compliant()
         }
     }
     this.resetGeneratorOverrides();
+    this.resetGeneratorOffsets();
 }
 
 /**
@@ -236,6 +237,7 @@ export function resetParameters()
     this.midiControllers[midiControllers.RPNLsb] = 127 << 7;
     this.midiControllers[midiControllers.RPNMsb] = 127 << 7;
     this.resetGeneratorOverrides();
+    this.resetGeneratorOffsets();
     SpessaSynthInfo(
         "%cResetting Registered and Non-Registered Parameters!",
         consoleColors.info

@@ -1,6 +1,5 @@
 import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables.js";
 import { modulatorSources } from "../../../../soundfont/basic_soundfont/modulator.js";
-import { computeModulators } from "../../engine_components/compute_modulator.js";
 
 /**
  * Sets the pitch of the given channel
@@ -23,9 +22,8 @@ export function pitchWheel(MSB, LSB)
     this.midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel] = bend;
     this.voices.forEach(v =>
         // compute pitch modulators
-        computeModulators(
+        this.computeModulators(
             v,
-            this.midiControllers,
             0,
             modulatorSources.pitchWheel
         ));

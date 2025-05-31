@@ -1,4 +1,3 @@
-import { computeModulators } from "../../engine_components/compute_modulator.js";
 import { modulatorSources } from "../../../../soundfont/basic_soundfont/modulator.js";
 
 /**
@@ -16,9 +15,8 @@ export function polyPressure(midiNote, pressure)
             return;
         }
         v.pressure = pressure;
-        computeModulators(
+        this.computeModulators(
             v,
-            this.midiControllers,
             0,
             modulatorSources.polyPressure
         );
