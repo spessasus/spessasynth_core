@@ -12,7 +12,7 @@ import { getPGEN } from "./pgen.js";
 import { getPMOD } from "./pmod.js";
 import { getPBAG } from "./pbag.js";
 import { getPHDR } from "./phdr.js";
-import { writeWord } from "../../../utils/byte_functions/little_endian.js";
+import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
 /**
  * @typedef {Object} SoundFont2WriteOptions
@@ -72,6 +72,17 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         this.soundFontInfo["ifil"] = "3.0"; // set version to 3
     }
     
+    if (this.defaultModulators.length > 0)
+    {
+        // trigger the DMOD write
+        this.soundFontInfo["DMOD"] = `${this.defaultModulators.length} Modulators`;
+        this.customDefaultModulators = true;
+    }
+    else
+    {
+        delete this.soundFontInfo["DMOD"];
+    }
+    
     for (const [type, data] of Object.entries(this.soundFontInfo))
     {
         if (type === "ifil" || type === "iver")
@@ -89,10 +100,32 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         }
         else if (type === "DMOD")
         {
+            
+            const mods = this.defaultModulators;
+            SpessaSynthInfo(
+                `%cWriting %c${mods.length}%c default modulators...`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info
+            );
+            let dmodsize = 10 + mods.length * 10;
+            const dmoddata = new IndexedByteArray(dmodsize);
+            for (const mod of mods)
+            {
+                writeWord(dmoddata, mod.sourceEnum);
+                writeWord(dmoddata, mod.modulatorDestination);
+                writeWord(dmoddata, mod.transformAmount);
+                writeWord(dmoddata, mod.secondarySourceEnum);
+                writeWord(dmoddata, mod.transformType);
+            }
+            
+            // terminal modulator, is zero
+            writeLittleEndian(dmoddata, 0, 10);
+            
             infoArrays.push(writeRIFFChunk(new RiffChunk(
                 type,
-                data.length,
-                data
+                dmoddata.length,
+                dmoddata
             )));
         }
         else

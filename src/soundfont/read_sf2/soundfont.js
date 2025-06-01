@@ -87,15 +87,11 @@ export class SoundFont2 extends BasicSoundBank
                     const newModulators = readModulators(chunk);
                     newModulators.pop(); // remove the terminal record
                     text = `Modulators: ${newModulators.length}`;
-                    // override default modulators
-                    const oldDefaults = this.defaultModulators;
                     
+                    // override default modulators
                     this.defaultModulators = newModulators;
-                    this.defaultModulators.push(...oldDefaults.filter(m => !this.defaultModulators.find(mm => Modulator.isIdentical(
-                        m,
-                        mm
-                    ))));
-                    this.soundFontInfo[chunk.header] = chunk.chunkData;
+                    this.customDefaultModulators = true;
+                    this.soundFontInfo[chunk.header] = text;
                     break;
                 
                 default:
