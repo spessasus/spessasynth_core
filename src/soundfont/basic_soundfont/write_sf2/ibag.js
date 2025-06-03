@@ -16,8 +16,16 @@ export function getIBAG()
     let modulatorIndex = 0;
     for (const inst of this.instruments)
     {
+        // ensure that the first zone is global
+        const zones = inst.instrumentZones.filter(z => !z.isGlobal);
+        const global = inst.instrumentZones.filter(z => z.isGlobal);
+        // only take the first one
+        if (global?.[0])
+        {
+            zones.unshift(global?.[0]);
+        }
         inst.instrumentZoneIndex = zoneID;
-        for (const ibag of inst.instrumentZones)
+        for (const ibag of zones)
         {
             ibag.zoneID = zoneID;
             writeWord(ibagdata, generatorIndex);

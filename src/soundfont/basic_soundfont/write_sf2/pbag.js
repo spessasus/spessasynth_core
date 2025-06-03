@@ -16,8 +16,16 @@ export function getPBAG()
     let modulatorIndex = 0;
     for (const preset of this.presets)
     {
+        // ensure that the first zone is global
+        const zones = preset.presetZones.filter(z => !z.isGlobal);
+        const global = preset.presetZones.filter(z => z.isGlobal);
+        // only take the first one
+        if (global?.[0])
+        {
+            zones.unshift(global?.[0]);
+        }
         preset.presetZoneStartIndex = zoneID;
-        for (const pbag of preset.presetZones)
+        for (const pbag of zones)
         {
             pbag.zoneID = zoneID;
             writeWord(pbagdata, generatorIndex);
