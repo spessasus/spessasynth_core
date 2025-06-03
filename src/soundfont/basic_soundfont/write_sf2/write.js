@@ -112,10 +112,10 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
             const dmoddata = new IndexedByteArray(dmodsize);
             for (const mod of mods)
             {
-                writeWord(dmoddata, mod.sourceEnum);
+                writeWord(dmoddata, mod.getSourceEnum());
                 writeWord(dmoddata, mod.modulatorDestination);
                 writeWord(dmoddata, mod.transformAmount);
-                writeWord(dmoddata, mod.secondarySourceEnum);
+                writeWord(dmoddata, mod.getSecSrcEnum());
                 writeWord(dmoddata, mod.transformType);
             }
             

@@ -33,18 +33,6 @@ export class Modulator
     currentValue = 0;
     
     /**
-     * The source enumeration for this modulator
-     * @type {number}
-     */
-    sourceEnum;
-    
-    /**
-     * The secondary source enumeration for this modulator
-     * @type {number}
-     */
-    secondarySourceEnum;
-    
-    /**
      * The generator destination of this modulator
      * @type {generatorTypes}
      */
@@ -72,9 +60,9 @@ export class Modulator
      */
     constructor(srcEnum, secSrcEnum, destination, amount, transformType)
     {
-        this.sourceEnum = srcEnum;
+        const sourceEnum = srcEnum;
         this.modulatorDestination = destination;
-        this.secondarySourceEnum = secSrcEnum;
+        const secondarySourceEnum = secSrcEnum;
         this.transformAmount = amount;
         this.transformType = transformType;
         
@@ -85,18 +73,18 @@ export class Modulator
         }
         
         // decode the source
-        this.sourcePolarity = this.sourceEnum >> 9 & 1;
-        this.sourceDirection = this.sourceEnum >> 8 & 1;
-        this.sourceUsesCC = this.sourceEnum >> 7 & 1;
-        this.sourceIndex = this.sourceEnum & 127;
-        this.sourceCurveType = this.sourceEnum >> 10 & 3;
+        this.sourcePolarity = sourceEnum >> 9 & 1;
+        this.sourceDirection = sourceEnum >> 8 & 1;
+        this.sourceUsesCC = sourceEnum >> 7 & 1;
+        this.sourceIndex = sourceEnum & 127;
+        this.sourceCurveType = sourceEnum >> 10 & 3;
         
         // decode the secondary source
-        this.secSrcPolarity = this.secondarySourceEnum >> 9 & 1;
-        this.secSrcDirection = this.secondarySourceEnum >> 8 & 1;
-        this.secSrcUsesCC = this.secondarySourceEnum >> 7 & 1;
-        this.secSrcIndex = this.secondarySourceEnum & 127;
-        this.secSrcCurveType = this.secondarySourceEnum >> 10 & 3;
+        this.secSrcPolarity = secondarySourceEnum >> 9 & 1;
+        this.secSrcDirection = secondarySourceEnum >> 8 & 1;
+        this.secSrcUsesCC = secondarySourceEnum >> 7 & 1;
+        this.secSrcIndex = secondarySourceEnum & 127;
+        this.secSrcCurveType = secondarySourceEnum >> 10 & 3;
         
         /**
          * Indicates if the given modulator is chorus or reverb effects modulator.
@@ -111,10 +99,10 @@ export class Modulator
          */
         this.isEffectModulator =
             (
-                this.sourceEnum === 0x00DB
-                || this.sourceEnum === 0x00DD
+                sourceEnum === 0x00DB
+                || sourceEnum === 0x00DD
             )
-            && this.secondarySourceEnum === 0x0
+            && secondarySourceEnum === 0x0
             && (
                 this.modulatorDestination === generatorTypes.reverbEffectsSend
                 || this.modulatorDestination === generatorTypes.chorusEffectsSend
@@ -128,8 +116,8 @@ export class Modulator
     static copy(modulator)
     {
         return new Modulator(
-            modulator.sourceEnum,
-            modulator.secondarySourceEnum,
+            modulator.getSourceEnum(),
+            modulator.getSecSrcEnum(),
             modulator.modulatorDestination,
             modulator.transformAmount,
             modulator.transformType
@@ -144,9 +132,19 @@ export class Modulator
      */
     static isIdentical(mod1, mod2, checkAmount = false)
     {
-        return (mod1.sourceEnum === mod2.sourceEnum)
+        return (mod1.sourceIndex === mod2.sourceIndex)
+            && (mod1.sourceUsesCC === mod2.sourceUsesCC)
+            && (mod1.sourcePolarity === mod2.sourcePolarity)
+            && (mod1.sourceDirection === mod2.sourceDirection)
+            && (mod1.sourceCurveType === mod2.sourceCurveType)
+            
+            && (mod1.secSrcIndex === mod2.secSrcIndex)
+            && (mod1.secSrcUsesCC === mod2.secSrcUsesCC)
+            && (mod1.secSrcPolarity === mod2.secSrcPolarity)
+            && (mod1.secSrcDirection === mod2.secSrcDirection)
+            && (mod1.secSrcCurveType === mod2.secSrcCurveType)
+            
             && (mod1.modulatorDestination === mod2.modulatorDestination)
-            && (mod1.secondarySourceEnum === mod2.secondarySourceEnum)
             && (mod1.transformType === mod2.transformType)
             && (!checkAmount || (mod1.transformAmount === mod2.transformAmount));
     }
@@ -194,6 +192,28 @@ export class Modulator
         \n\n`;
     }
     
+    getSourceEnum()
+    {
+        return getModSourceEnum(
+            this.sourceCurveType,
+            this.sourcePolarity,
+            this.sourceDirection,
+            this.sourceUsesCC,
+            this.sourceIndex
+        );
+    }
+    
+    getSecSrcEnum()
+    {
+        return getModSourceEnum(
+            this.secSrcCurveType,
+            this.secSrcPolarity,
+            this.secSrcDirection,
+            this.secSrcUsesCC,
+            this.secSrcIndex
+        );
+    }
+    
     /**
      * Sum transform and create a NEW modulator
      * @param modulator {Modulator}
@@ -202,8 +222,8 @@ export class Modulator
     sumTransform(modulator)
     {
         return new Modulator(
-            this.sourceEnum,
-            this.secondarySourceEnum,
+            this.getSourceEnum(),
+            this.getSecSrcEnum(),
             this.modulatorDestination,
             this.transformAmount + modulator.transformAmount,
             this.transformType

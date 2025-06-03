@@ -25,10 +25,10 @@ export function getIMOD()
             ibag.modulatorZoneStartIndex = imodIndex;
             for (const mod of ibag.modulators)
             {
-                writeWord(imoddata, mod.sourceEnum);
+                writeWord(imoddata, mod.getSourceEnum());
                 writeWord(imoddata, mod.modulatorDestination);
                 writeWord(imoddata, mod.transformAmount);
-                writeWord(imoddata, mod.secondarySourceEnum);
+                writeWord(imoddata, mod.getSecSrcEnum());
                 writeWord(imoddata, mod.transformType);
                 imodIndex++;
             }
