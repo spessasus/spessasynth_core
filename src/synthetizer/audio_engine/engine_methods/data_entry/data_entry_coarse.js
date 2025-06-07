@@ -54,6 +54,13 @@ export function dataEntryCoarse(dataValue)
 {
     // store in cc table
     this.midiControllers[midiControllers.dataEntryMsb] = dataValue << 7;
+    /*
+    A note on this vibrato.
+    This is a completely custom vibrato, with its own oscillator and parameters.
+    It is disabled by default,
+    only being enabled when one of the NPRN messages changing it is received
+    and stays on until the next system-reset.
+     */
     const addDefaultVibrato = () =>
     {
         if (this.channelVibrato.delay === 0 && this.channelVibrato.rate === 0 && this.channelVibrato.depth === 0)

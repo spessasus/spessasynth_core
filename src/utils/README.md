@@ -1,5 +1,8 @@
 ## This is the utility folder.
 
-There are various utilites here used by the SpessaSynth library.
+There are various utilities here used by the SpessaSynth library.
 
-### Note that the stbvorbis_sync.js is licensed under Apache-2.0.
+- `byte_functions` - low-level byte manipulation utilities
+- `buffer_to_wav.js` - converts audio buffer to WAV format
+- `sysex_detector.js` - detects various System Exclusive messages
+- `xg_hacks.js` - XG-specific MIDI handling utilities
