@@ -1,24 +1,5 @@
 import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { Modulator } from "../basic_soundfont/modulator.js";
-
-
-export class ReadModulator extends Modulator
-{
-    /**
-     * Creates a modulator
-     * @param dataArray {IndexedByteArray}
-     */
-    constructor(dataArray)
-    {
-        const srcEnum = readLittleEndian(dataArray, 2);
-        const destination = readLittleEndian(dataArray, 2);
-        const amount = signedInt16(dataArray[dataArray.currentIndex++], dataArray[dataArray.currentIndex++]);
-        const secSrcEnum = readLittleEndian(dataArray, 2);
-        const transformType = readLittleEndian(dataArray, 2);
-        super(srcEnum, secSrcEnum, destination, amount, transformType);
-    }
-}
+import { DecodedModulator, Modulator } from "../basic_soundfont/modulator.js";
 
 /**
  * Reads the modulator read
@@ -27,10 +8,16 @@ export class ReadModulator extends Modulator
  */
 export function readModulators(modulatorChunk)
 {
-    let gens = [];
+    let mods = [];
     while (modulatorChunk.chunkData.length > modulatorChunk.chunkData.currentIndex)
     {
-        gens.push(new ReadModulator(modulatorChunk.chunkData));
+        const dataArray = modulatorChunk.chunkData;
+        const sourceEnum = readLittleEndian(dataArray, 2);
+        const destination = readLittleEndian(dataArray, 2);
+        const amount = signedInt16(dataArray[dataArray.currentIndex++], dataArray[dataArray.currentIndex++]);
+        const secondarySourceEnum = readLittleEndian(dataArray, 2);
+        const transformType = readLittleEndian(dataArray, 2);
+        mods.push(new DecodedModulator(sourceEnum, secondarySourceEnum, destination, amount, transformType));
     }
-    return gens;
+    return mods;
 }

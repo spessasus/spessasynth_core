@@ -1,4 +1,4 @@
-import { getModSourceEnum, Modulator, modulatorCurveTypes } from "../../../soundfont/basic_soundfont/modulator.js";
+import { Modulator, modulatorCurveTypes, modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables.js";
 
 /**
@@ -72,8 +72,16 @@ export class DynamicModulatorSystem
                 isCC = true;
             }
             const modulator = new Modulator(
-                getModSourceEnum(modulatorCurveTypes.linear, isBipolar, 0, isCC, srcNum),
-                0x0, // linear no controller
+                srcNum,
+                modulatorCurveTypes.linear,
+                isCC ? 1 : 0,
+                isBipolar ? 1 : 0,
+                0,
+                modulatorSources.noController,
+                modulatorCurveTypes.linear,
+                0,
+                0,
+                0,
                 destination,
                 amount,
                 0

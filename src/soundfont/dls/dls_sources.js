@@ -1,4 +1,4 @@
-import { Modulator } from "../basic_soundfont/modulator.js";
+import { DecodedModulator } from "../basic_soundfont/modulator.js";
 import { generatorTypes } from "../basic_soundfont/generator.js";
 
 /**
@@ -29,7 +29,7 @@ export const DLSSources = {
     coarseTune: 0x102
 };
 
-export const DEFAULT_DLS_REVERB = new Modulator(
+export const DEFAULT_DLS_REVERB = new DecodedModulator(
     0x00DB,
     0x0,
     generatorTypes.reverbEffectsSend,
@@ -37,7 +37,7 @@ export const DEFAULT_DLS_REVERB = new Modulator(
     0
 );
 
-export const DEFAULT_DLS_CHORUS = new Modulator(
+export const DEFAULT_DLS_CHORUS = new DecodedModulator(
     0x00DD,
     0x0,
     generatorTypes.chorusEffectsSend,
@@ -45,7 +45,7 @@ export const DEFAULT_DLS_CHORUS = new Modulator(
     0
 );
 
-export const DLS_1_NO_VIBRATO_MOD = new Modulator(
+export const DLS_1_NO_VIBRATO_MOD = new DecodedModulator(
     0x0081,
     0x0,
     generatorTypes.vibLfoToPitch,
@@ -53,7 +53,7 @@ export const DLS_1_NO_VIBRATO_MOD = new Modulator(
     0
 );
 
-export const DLS_1_NO_VIBRATO_PRESSURE = new Modulator(
+export const DLS_1_NO_VIBRATO_PRESSURE = new DecodedModulator(
     0x000D,
     0x0,
     generatorTypes.vibLfoToPitch,

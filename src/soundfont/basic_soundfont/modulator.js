@@ -6,6 +6,9 @@ import { midiControllers } from "../../midi/midi_message.js";
  * purpose: parses soundfont modulators and the source enums, also includes the default modulators list
  **/
 
+/**
+ * @enum {number}
+ */
 export const modulatorSources = {
     noController: 0,
     noteOnVelocity: 2,
@@ -17,6 +20,11 @@ export const modulatorSources = {
     link: 127
     
 };
+
+/**
+ *
+ * @enum {number}
+ */
 export const modulatorCurveTypes = {
     linear: 0,
     concave: 1,
@@ -27,7 +35,7 @@ export const modulatorCurveTypes = {
 export class Modulator
 {
     /**
-     * The current computed value of this modulator
+     * The current computed value of this modulator. Only used in the synthesis engine for local voices
      * @type {number}
      */
     currentValue = 0;
@@ -51,18 +59,123 @@ export class Modulator
     transformType;
     
     /**
-     * creates a modulator
-     * @param srcEnum {number}
-     * @param secSrcEnum {number}
-     * @param destination {generatorTypes|number}
-     * @param amount {number}
-     * @param transformType {number}
+     * Indicates if the given modulator is chorus or reverb effects modulator.
+     * This is done to simulate BASSMIDI effects behavior:
+     * - defaults to 1000 transform amount rather than 200
+     * - values can be changed, but anything above 200 is 1000
+     * (except for values above 1000, they are copied directly)
+     * - all values below are multiplied by 5 (200 * 5 = 1000)
+     * - still can be disabled if the soundfont has its own modulator curve
+     * - this fixes the very low amount of reverb by default and doesn't break soundfonts
+     * @type {boolean}
      */
-    constructor(srcEnum, secSrcEnum, destination, amount, transformType)
+    isEffectModulator = false;
+    
+    /**
+     * 1 if the source is bipolar (min is -1, max is 1)
+     * otherwise min is 0 and max is 1
+     * @type {0|1}
+     */
+    sourcePolarity;
+    
+    /**
+     * 1 if the source is negative (from 1 to 0)
+     * @type {0|1}
+     */
+    sourceDirection;
+    
+    /**
+     * 1 if the source uses a MIDI CC
+     * @type {0|1}
+     */
+    sourceUsesCC;
+    
+    /**
+     * source index/CC number
+     * @type {modulatorSources|midiControllers}
+     */
+    sourceIndex;
+    
+    /**
+     * source curve type
+     * @type {modulatorCurveTypes}
+     */
+    sourceCurveType;
+    
+    /**
+     * 1 if the source is bipolar (min is -1, max is 1)
+     * otherwise min is 0 and max is 1
+     * @type {0|1}
+     */
+    secSrcPolarity;
+    
+    /**
+     * 1 if the source is negative (from 1 to 0)
+     * @type {0|1}
+     */
+    secSrcDirection;
+    
+    /**
+     * 1 if the source uses a MIDI CC
+     * @type {0|1}
+     */
+    secSrcUsesCC;
+    
+    /**
+     * source index/CC number
+     * @type {modulatorSources|midiControllers}
+     */
+    secSrcIndex;
+    
+    /**
+     * source curve type
+     * @type {modulatorCurveTypes}
+     */
+    secSrcCurveType;
+    
+    /**
+     * Creates a new SF2 Modulator
+     * @param sourceIndex {modulatorSources|midiControllers}
+     * @param sourceCurveType {modulatorCurveTypes}
+     * @param sourceUsesCC {0|1}
+     * @param sourcePolarity {0|1}
+     * @param sourceDirection {0|1}
+     * @param secSrcIndex {modulatorSources|midiControllers}
+     * @param secSrcCurveType {modulatorCurveTypes}
+     * @param secSrcUsesCC {0|1}
+     * @param secSrcPolarity {0|1}
+     * @param secSrcDirection {0|1}
+     * @param destination {generatorTypes}
+     * @param amount {number}
+     * @param transformType {0|2}
+     */
+    constructor(sourceIndex,
+                sourceCurveType,
+                sourceUsesCC,
+                sourcePolarity,
+                sourceDirection,
+                secSrcIndex,
+                secSrcCurveType,
+                secSrcUsesCC,
+                secSrcPolarity,
+                secSrcDirection,
+                destination,
+                amount,
+                transformType)
     {
-        const sourceEnum = srcEnum;
+        this.sourcePolarity = sourcePolarity;
+        this.sourceDirection = sourceDirection;
+        this.sourceUsesCC = sourceUsesCC;
+        this.sourceIndex = sourceIndex;
+        this.sourceCurveType = sourceCurveType;
+        
+        this.secSrcPolarity = secSrcPolarity;
+        this.secSrcDirection = secSrcDirection;
+        this.secSrcUsesCC = secSrcUsesCC;
+        this.secSrcIndex = secSrcIndex;
+        this.secSrcCurveType = secSrcCurveType;
+        
         this.modulatorDestination = destination;
-        const secondarySourceEnum = secSrcEnum;
         this.transformAmount = amount;
         this.transformType = transformType;
         
@@ -72,41 +185,6 @@ export class Modulator
             this.modulatorDestination = generatorTypes.INVALID; // flag as invalid (for linked ones)
         }
         
-        // decode the source
-        this.sourcePolarity = sourceEnum >> 9 & 1;
-        this.sourceDirection = sourceEnum >> 8 & 1;
-        this.sourceUsesCC = sourceEnum >> 7 & 1;
-        this.sourceIndex = sourceEnum & 127;
-        this.sourceCurveType = sourceEnum >> 10 & 3;
-        
-        // decode the secondary source
-        this.secSrcPolarity = secondarySourceEnum >> 9 & 1;
-        this.secSrcDirection = secondarySourceEnum >> 8 & 1;
-        this.secSrcUsesCC = secondarySourceEnum >> 7 & 1;
-        this.secSrcIndex = secondarySourceEnum & 127;
-        this.secSrcCurveType = secondarySourceEnum >> 10 & 3;
-        
-        /**
-         * Indicates if the given modulator is chorus or reverb effects modulator.
-         * This is done to simulate BASSMIDI effects behavior:
-         * - defaults to 1000 transform amount rather than 200
-         * - values can be changed, but anything above 200 is 1000
-         * (except for values above 1000, they are copied directly)
-         * - all values below are multiplied by 5 (200 * 5 = 1000)
-         * - still can be disabled if the soundfont has its own modulator curve
-         * - this fixes the very low amount of reverb by default and doesn't break soundfonts
-         * @type {boolean}
-         */
-        this.isEffectModulator =
-            (
-                sourceEnum === 0x00DB
-                || sourceEnum === 0x00DD
-            )
-            && secondarySourceEnum === 0x0
-            && (
-                this.modulatorDestination === generatorTypes.reverbEffectsSend
-                || this.modulatorDestination === generatorTypes.chorusEffectsSend
-            );
     }
     
     /**
@@ -116,8 +194,16 @@ export class Modulator
     static copy(modulator)
     {
         return new Modulator(
-            modulator.getSourceEnum(),
-            modulator.getSecSrcEnum(),
+            modulator.sourceIndex,
+            modulator.sourceCurveType,
+            modulator.sourceUsesCC,
+            modulator.sourcePolarity,
+            modulator.sourceDirection,
+            modulator.secSrcIndex,
+            modulator.secSrcCurveType,
+            modulator.secSrcUsesCC,
+            modulator.secSrcPolarity,
+            modulator.secSrcDirection,
             modulator.modulatorDestination,
             modulator.transformAmount,
             modulator.transformType
@@ -174,7 +260,7 @@ export class Modulator
         
         let secSrcString = getKeyByValue(modulatorCurveTypes, mod.secSrcCurveType);
         secSrcString += mod.secSrcPolarity === 0 ? " unipolar " : " bipolar ";
-        secSrcString += mod.secSrcCurveType === 0 ? "forwards " : "backwards ";
+        secSrcString += mod.secSrcDirection === 0 ? "forwards " : "backwards ";
         if (mod.secSrcUsesCC)
         {
             secSrcString += getKeyByValue(midiControllers, mod.secSrcIndex);
@@ -222,12 +308,76 @@ export class Modulator
     sumTransform(modulator)
     {
         return new Modulator(
-            this.getSourceEnum(),
-            this.getSecSrcEnum(),
+            this.sourceIndex,
+            this.sourceCurveType,
+            this.sourceUsesCC,
+            this.sourcePolarity,
+            this.sourceDirection,
+            this.secSrcIndex,
+            this.secSrcCurveType,
+            this.secSrcUsesCC,
+            this.secSrcPolarity,
+            this.secSrcDirection,
             this.modulatorDestination,
             this.transformAmount + modulator.transformAmount,
             this.transformType
         );
+    }
+}
+
+export class DecodedModulator extends Modulator
+{
+    /**
+     * reads an SF2 modulator
+     * @param sourceEnum {number} SF2 source enum
+     * @param secondarySourceEnum {number} SF2 secondary source enum
+     * @param destination {generatorTypes|number} destination
+     * @param amount {number} amount
+     * @param transformType {number} transform type
+     */
+    constructor(sourceEnum, secondarySourceEnum, destination, amount, transformType)
+    {
+        // decode the source
+        const sourcePolarity = sourceEnum >> 9 & 1;
+        const sourceDirection = sourceEnum >> 8 & 1;
+        const sourceUsesCC = sourceEnum >> 7 & 1;
+        const sourceIndex = /** @type {modulatorSources} **/ sourceEnum & 127;
+        const sourceCurveType = /** @type {modulatorCurveTypes} **/ sourceEnum >> 10 & 3;
+        
+        // decode the secondary source
+        const secSrcPolarity = secondarySourceEnum >> 9 & 1;
+        const secSrcDirection = secondarySourceEnum >> 8 & 1;
+        const secSrcUsesCC = secondarySourceEnum >> 7 & 1;
+        const secSrcIndex = /** @type {modulatorSources} **/ secondarySourceEnum & 127;
+        const secSrcCurveType = /** @type {modulatorCurveTypes} **/ secondarySourceEnum >> 10 & 3;
+        
+        super(
+            sourceIndex,
+            sourceCurveType,
+            sourceUsesCC,
+            sourcePolarity,
+            sourceDirection,
+            secSrcIndex,
+            secSrcCurveType,
+            secSrcUsesCC,
+            secSrcPolarity,
+            secSrcDirection,
+            destination,
+            amount,
+            transformType
+        );
+        
+        
+        this.isEffectModulator =
+            (
+                sourceEnum === 0x00DB
+                || sourceEnum === 0x00DD
+            )
+            && secondarySourceEnum === 0x0
+            && (
+                this.modulatorDestination === generatorTypes.reverbEffectsSend
+                || this.modulatorDestination === generatorTypes.chorusEffectsSend
+            );
     }
 }
 
@@ -241,7 +391,7 @@ export function getModSourceEnum(curveType, polarity, direction, isCC, index)
 
 const soundFontModulators = [
     // vel to attenuation
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
             0,
@@ -256,10 +406,10 @@ const soundFontModulators = [
     ),
     
     // mod wheel to vibrato
-    new Modulator(0x0081, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
+    new DecodedModulator(0x0081, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
     
     // vol to attenuation
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
             0,
@@ -274,17 +424,17 @@ const soundFontModulators = [
     ),
     
     // channel pressure to vibrato
-    new Modulator(0x000D, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
+    new DecodedModulator(0x000D, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
     
     // pitch wheel to tuning
-    new Modulator(0x020E, 0x0010, generatorTypes.fineTune, 12700, 0),
+    new DecodedModulator(0x020E, 0x0010, generatorTypes.fineTune, 12700, 0),
     
     // pan to uhh, pan
     // amount is 500 instead of 1000, see #59
-    new Modulator(0x028A, 0x0, generatorTypes.pan, 500, 0),
+    new DecodedModulator(0x028A, 0x0, generatorTypes.pan, 500, 0),
     
     // expression to attenuation
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
             0,
@@ -299,16 +449,16 @@ const soundFontModulators = [
     ),
     
     // reverb effects to send
-    new Modulator(0x00DB, 0x0, generatorTypes.reverbEffectsSend, 200, 0),
+    new DecodedModulator(0x00DB, 0x0, generatorTypes.reverbEffectsSend, 200, 0),
     
     // chorus effects to send
-    new Modulator(0x00DD, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
+    new DecodedModulator(0x00DD, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
 ];
 
 const customModulators = [
     // custom modulators heck yeah
     // poly pressure to vibrato
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(modulatorCurveTypes.linear, 0, 0, 0, modulatorSources.polyPressure),
         0x0,
         generatorTypes.vibLfoToPitch,
@@ -317,7 +467,7 @@ const customModulators = [
     ),
     
     // cc 92 (tremolo) to modLFO volume
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
             0,
@@ -332,7 +482,7 @@ const customModulators = [
     ),
     
     // cc 73 (attack time) to volEnv attack
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.convex,
             1,
@@ -347,7 +497,7 @@ const customModulators = [
     ),
     
     // cc 72 (release time) to volEnv release
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
             1,
@@ -362,7 +512,7 @@ const customModulators = [
     ),
     
     // cc 74 (brightness) to filterFc
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
             1,
@@ -377,7 +527,7 @@ const customModulators = [
     ),
     
     // cc 71 (filter Q) to filter Q
-    new Modulator(
+    new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
             1,

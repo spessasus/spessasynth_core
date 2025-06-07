@@ -1,10 +1,11 @@
 import { SpessaSynthProcessor } from "../../src/synthetizer/audio_engine/main_processor.js";
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
 import { MIDI } from "../../src/midi/midi_loader.js";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 import Speaker from "speaker";
 import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
+import { SpessaSynthLogging } from "../../src/utils/loggin.js";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -21,6 +22,7 @@ const mid = fs.readFileSync(midPath);
 
 const sampleRate = 44100;
 const synth = new SpessaSynthProcessor(sampleRate);
+SpessaSynthLogging(true, true, true, true);
 synth.soundfontManager.reloadManager(loadSoundFont(sf));
 await synth.processorInitialized;
 

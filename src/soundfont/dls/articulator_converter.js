@@ -1,5 +1,11 @@
 import { DLSSources } from "./dls_sources.js";
-import { getModSourceEnum, Modulator, modulatorCurveTypes, modulatorSources } from "../basic_soundfont/modulator.js";
+import {
+    DecodedModulator,
+    getModSourceEnum,
+    Modulator,
+    modulatorCurveTypes,
+    modulatorSources
+} from "../basic_soundfont/modulator.js";
 import { midiControllers } from "../../midi/midi_message.js";
 import { DLSDestinations } from "./dls_destinations.js";
 
@@ -385,7 +391,7 @@ export function getSF2ModulatorFromArticulator(
     }
     
     // return the modulator!
-    return new Modulator(
+    return new DecodedModulator(
         sourceEnumFinal,
         secSourceEnumFinal,
         destinationGenerator,
