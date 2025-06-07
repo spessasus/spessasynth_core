@@ -563,15 +563,6 @@ class BasicSoundBank
         delete this.instruments;
         delete this.samples;
     }
-    
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Clears the cache for all the presets
-     */
-    clearCache()
-    {
-        this.presets.forEach(p => p.clearCache());
-    }
 }
 
 BasicSoundBank.prototype.write = write;
