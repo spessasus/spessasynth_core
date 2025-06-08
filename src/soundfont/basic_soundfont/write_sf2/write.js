@@ -15,12 +15,15 @@ import { getPHDR } from "./phdr.js";
 import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
 import { MOD_BYTE_SIZE } from "../modulator.js";
+import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
 /**
  * @typedef {Object} SoundFont2WriteOptions
- * @property {boolean} compress - if the soundfont should be compressed with the Ogg Vorbis codec
- * @property {number} compressionQuality - the vorbis compression quality, from -0.1 to 1
- * @property {EncodeVorbisFunction|undefined} compressionFunction - the encode vorbis function.
- * Can be undefined if not compressed.
+ * @property {?boolean} compress - if the soundfont should be compressed with the Ogg Vorbis codec
+ * @property {?number} compressionQuality - the vorbis compression quality, from -0.1 to 1
+ * @property {?EncodeVorbisFunction} compressionFunction -
+ * the encode vorbis function. Can be undefined if not compressed.
+ * @property {?boolean} writeDefaultModulators - if the DMOD chunk should be written.
+ * Recommended.
  */
 
 /**
@@ -29,7 +32,8 @@ import { MOD_BYTE_SIZE } from "../modulator.js";
 const DEFAULT_WRITE_OPTIONS = {
     compress: false,
     compressionQuality: 0.5,
-    compressionFunction: undefined
+    compressionFunction: undefined,
+    writeDefaultModulators: true
 };
 
 /**
@@ -40,6 +44,7 @@ const DEFAULT_WRITE_OPTIONS = {
  */
 export function write(options = DEFAULT_WRITE_OPTIONS)
 {
+    options = fillWithDefaults(options, DEFAULT_WRITE_OPTIONS);
     if (options.compress)
     {
         if (typeof options.compressionFunction !== "function")
@@ -73,7 +78,7 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         this.soundFontInfo["ifil"] = "3.0"; // set version to 3
     }
     
-    if (this.defaultModulators.length > 0)
+    if (options?.writeDefaultModulators)
     {
         // trigger the DMOD write
         this.soundFontInfo["DMOD"] = `${this.defaultModulators.length} Modulators`;
