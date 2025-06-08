@@ -18,11 +18,11 @@ import { MOD_BYTE_SIZE } from "../modulator.js";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
 /**
  * @typedef {Object} SoundFont2WriteOptions
- * @property {?boolean} compress - if the soundfont should be compressed with the Ogg Vorbis codec
- * @property {?number} compressionQuality - the vorbis compression quality, from -0.1 to 1
- * @property {?EncodeVorbisFunction} compressionFunction -
+ * @property {boolean|undefined} compress - if the soundfont should be compressed with the Ogg Vorbis codec
+ * @property {number|undefined} compressionQuality - the vorbis compression quality, from -0.1 to 1
+ * @property {EncodeVorbisFunction|undefined} compressionFunction -
  * the encode vorbis function. Can be undefined if not compressed.
- * @property {?boolean} writeDefaultModulators - if the DMOD chunk should be written.
+ * @property {boolean|undefined} writeDefaultModulators - if the DMOD chunk should be written.
  * Recommended.
  */
 
