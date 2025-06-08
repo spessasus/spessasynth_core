@@ -76,6 +76,14 @@ export class BasicPreset
     }
     
     /**
+     * @param zones {BasicPresetZone}
+     */
+    addZones(...zones)
+    {
+        this.presetZones.push(...zones);
+    }
+    
+    /**
      * @param allowXG {boolean}
      * @param allowSFX {boolean}
      * @returns {boolean}

@@ -68,15 +68,6 @@ export function addAndClampGenerator(generatorType, presetGens, instrumentGens)
         instruValue = instruGen.generatorValue;
     }
     
-    let value = instruValue + presetValue;
-    
-    // Special case, initial attenuation.
-    // Shall get clamped in the volume envelope,
-    // so the modulators can be affected by negative generators (the "Brass" patch was problematic...)
-    if (generatorType === generatorTypes.initialAttenuation)
-    {
-        return value;
-    }
-    
-    return Math.max(limits.min, Math.min(limits.max, value));
+    // limits are applied in the compute_modulator function
+    return instruValue + presetValue;
 }

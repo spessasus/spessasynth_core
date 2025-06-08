@@ -3,7 +3,6 @@ import { VolumeEnvelope } from "./volume_envelope.js";
 import { ModulationEnvelope } from "./modulation_envelope.js";
 import { Modulator, modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables.js";
-import { SpessaSynthWarn } from "../../../utils/loggin.js";
 import { generatorLimits, generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
@@ -146,22 +145,23 @@ export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0)
         modulatedGenerators.set(generators);
         modulators.forEach(mod =>
         {
-            const limits = generatorLimits[mod.modulatorDestination];
-            if (!limits)
-            {
-                SpessaSynthWarn(`Invalid modulator: ${mod.modulatorDestination}`);
-                return;
-            }
-            const newValue = modulatedGenerators[mod.modulatorDestination] + computeModulator(
+            modulatedGenerators[mod.modulatorDestination] += computeModulator(
                 this.midiControllers,
                 mod,
                 voice
             );
-            modulatedGenerators[mod.modulatorDestination] = Math.max(
-                limits.min,
-                Math.min(newValue, limits.max)
-            );
         });
+        // apply limits
+        for (let gen = 0; gen < modulatedGenerators.length; gen++)
+        {
+            const limit = generatorLimits[gen];
+            if (!limit)
+            {
+                // skip unused
+                continue;
+            }
+            modulatedGenerators[gen] = Math.min(limit.max, Math.max(limit.min, modulatedGenerators[gen]));
+        }
         VolumeEnvelope.recalculate(voice);
         ModulationEnvelope.recalculate(voice);
         return;
@@ -201,14 +201,15 @@ export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0)
                 {
                     if (m.modulatorDestination === destination)
                     {
-                        const limits = generatorLimits[mod.modulatorDestination];
-                        const newValue = modulatedGenerators[mod.modulatorDestination] + m.currentValue;
-                        modulatedGenerators[mod.modulatorDestination] = Math.max(
-                            limits.min,
-                            Math.min(newValue, limits.max)
-                        );
+                        modulatedGenerators[destination] += m.currentValue;
                     }
                 });
+                // apply limits
+                const limits = generatorLimits[destination];
+                modulatedGenerators[destination] = Math.max(
+                    limits.min,
+                    Math.min(modulatedGenerators[destination], limits.max)
+                );
                 computedDestinations.add(destination);
             }
         }

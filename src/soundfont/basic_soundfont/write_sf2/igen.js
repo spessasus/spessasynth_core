@@ -18,16 +18,16 @@ export function getIGEN()
         igensize += inst.instrumentZones.reduce((sum, z) =>
         {
             // clear sample and range generators before determining the size
-            z.generators = z.generators.filter(g =>
+            z.generators = (z.generators.filter(g =>
                 g.generatorType !== generatorTypes.sampleID &&
                 g.generatorType !== generatorTypes.keyRange &&
                 g.generatorType !== generatorTypes.velRange
-            );
+            ));
             // add sample and ranges if necessary
             // unshift vel then key (to make key first) and the sample is last
             if (z.hasVelRange)
             {
-                z.generators.unshift(new Generator(
+                z.prependGenerator(new Generator(
                     generatorTypes.velRange,
                     z.velRange.max << 8 | Math.max(z.velRange.min, 0),
                     false
@@ -35,14 +35,14 @@ export function getIGEN()
             }
             if (z.hasKeyRange)
             {
-                z.generators.unshift(new Generator(
+                z.prependGenerator(new Generator(
                     generatorTypes.keyRange,
                     z.keyRange.max << 8 | Math.max(z.keyRange.min, 0),
                     false
                 ));
             }
             // add sample id
-            z.generators.push(new Generator(
+            z.addGenerators(new Generator(
                 generatorTypes.sampleID,
                 this.samples.indexOf(z.sample),
                 false

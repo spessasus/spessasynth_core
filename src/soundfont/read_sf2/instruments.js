@@ -36,7 +36,7 @@ export class Instrument extends BasicInstrument
             const zone = zones[i];
             if (zone.hasSample())
             {
-                this.addZone(zone);
+                this.addZones(zone);
             }
             else
             {

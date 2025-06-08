@@ -67,15 +67,47 @@ class BasicSoundBank
     isXGBank = false;
     
     /**
-     * Creates a new basic soundfont template
+     * Creates a new basic soundfont template (or copies)
      * @param data {undefined|{presets: BasicPreset[], info: Object<string, string>}}
      */
     constructor(data = undefined)
     {
         if (data?.presets)
         {
-            this.presets.push(...data.presets);
             this.soundFontInfo = data.info;
+            this.addPresets(...data.presets);
+            /**
+             * @type {BasicInstrument[]}
+             */
+            const instrumentList = [];
+            for (const preset of data.presets)
+            {
+                for (const zone of preset.presetZones)
+                {
+                    if (!instrumentList.includes(zone.instrument))
+                    {
+                        instrumentList.push(zone.instrument);
+                    }
+                }
+            }
+            this.addInstruments(...instrumentList);
+            
+            /**
+             * @type {BasicSample[]}
+             */
+            const sampleList = [];
+            
+            for (const instrument of instrumentList)
+            {
+                for (const zone of instrument.instrumentZones)
+                {
+                    if (!sampleList.includes(zone.sample))
+                    {
+                        sampleList.push(zone.sample);
+                    }
+                }
+            }
+            this.addSamples(...sampleList);
         }
     }
     
@@ -127,41 +159,72 @@ class BasicSoundBank
         {
             sample.sampleData[i] = (i / 128) * 2 - 1;
         }
-        font.samples.push(sample);
+        font.addSamples(sample);
         
         const gZone = new BasicGlobalZone();
-        gZone.generators.push(new Generator(generatorTypes.initialAttenuation, 375));
-        gZone.generators.push(new Generator(generatorTypes.releaseVolEnv, -1000));
-        gZone.generators.push(new Generator(generatorTypes.sampleModes, 1));
+        gZone.addGenerators(
+            new Generator(generatorTypes.initialAttenuation, 375),
+            new Generator(generatorTypes.releaseVolEnv, -1000),
+            new Generator(generatorTypes.sampleModes, 1)
+        );
         
         const zone1 = new BasicInstrumentZone();
         zone1.setSample(sample);
         
         const zone2 = new BasicInstrumentZone();
         zone2.setSample(sample);
-        zone2.generators.push(new Generator(generatorTypes.fineTune, -9));
+        zone2.addGenerators(new Generator(generatorTypes.fineTune, -9));
         
         
         const inst = new BasicInstrument();
         inst.instrumentName = "Saw Wave";
         inst.globalZone = gZone;
-        inst.addZone(zone1);
-        inst.addZone(zone2);
-        font.instruments.push(inst);
+        inst.addZones(zone1, zone2);
+        font.addInstruments(inst);
         
         const pZone = new BasicPresetZone();
         pZone.setInstrument(inst);
         
         const preset = new BasicPreset(font);
         preset.presetName = "Saw Wave";
-        preset.presetZones.push(pZone);
-        font.presets.push(preset);
+        preset.addZones(pZone);
+        font.addPresets(preset);
         
         font.soundFontInfo["ifil"] = "2.1";
         font.soundFontInfo["isng"] = "EMU8000";
         font.soundFontInfo["INAM"] = "Dummy";
-        font._parseInternal();
+        font.flush();
         return font.write().buffer;
+    }
+    
+    /**
+     * @param preset {BasicPreset}
+     */
+    addPresets(...preset)
+    {
+        this.presets.push(...preset);
+    }
+    
+    flush()
+    {
+        this.presets.sort((a, b) => (a.program - b.program) + (a.bank - b.bank));
+        this._parseInternal();
+    }
+    
+    /**
+     * @param instrument {BasicInstrument}
+     */
+    addInstruments(...instrument)
+    {
+        this.instruments.push(...instrument);
+    }
+    
+    /**
+     * @param sample {BasicSample}
+     */
+    addSamples(...sample)
+    {
+        this.samples.push(...sample);
     }
     
     /**

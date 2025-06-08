@@ -46,7 +46,7 @@ export class InstrumentZone extends BasicInstrumentZone
             {
                 throw new Error("Missing generator in instrument zone! The file may corrupted.");
             }
-            this.generators.push(g);
+            this.addGenerators(g);
         }
     }
     
@@ -63,7 +63,7 @@ export class InstrumentZone extends BasicInstrumentZone
             {
                 throw new Error("Missing modulator in instrument zone! The file may corrupted.");
             }
-            this.modulators.push(m);
+            this.addModulators(m);
         }
     }
     
@@ -77,32 +77,6 @@ export class InstrumentZone extends BasicInstrumentZone
         if (sampleID)
         {
             this.setSample(samples[sampleID.generatorValue]);
-        }
-    }
-    
-    /**
-     * Reads the keyRange of the zone
-     */
-    getKeyRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.keyRange);
-        if (range)
-        {
-            this.keyRange.min = range.generatorValue & 0x7F;
-            this.keyRange.max = (range.generatorValue >> 8) & 0x7F;
-        }
-    }
-    
-    /**
-     * reads the velolicty range of the zone
-     */
-    getVelRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.velRange);
-        if (range)
-        {
-            this.velRange.min = range.generatorValue & 0x7F;
-            this.velRange.max = (range.generatorValue >> 8) & 0x7F;
         }
     }
 }
@@ -132,8 +106,6 @@ export function readInstrumentZones(zonesChunk, instrumentGenerators, instrument
             zones[zones.length - 1].getGenerators(instrumentGenerators);
             zones[zones.length - 1].getModulators(instrumentModulators);
             zones[zones.length - 1].getSample(instrumentSamples);
-            zones[zones.length - 1].getKeyRange();
-            zones[zones.length - 1].getVelRange();
         }
         zones.push(zone);
     }
@@ -179,7 +151,7 @@ export class PresetZone extends BasicPresetZone
             {
                 throw new Error("Missing generator in preset zone! The file may corrupted.");
             }
-            this.generators.push(g);
+            this.addGenerators(g);
         }
     }
     
@@ -196,7 +168,7 @@ export class PresetZone extends BasicPresetZone
             {
                 throw new Error("Missing modulator in preset zone! The file may corrupted.");
             }
-            this.modulators.push(m);
+            this.addModulators(m);
         }
     }
     
@@ -210,32 +182,6 @@ export class PresetZone extends BasicPresetZone
         if (instrumentID)
         {
             this.setInstrument(instruments[instrumentID.generatorValue]);
-        }
-    }
-    
-    /**
-     * Reads the keyRange of the zone
-     */
-    getKeyRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.keyRange);
-        if (range)
-        {
-            this.keyRange.min = range.generatorValue & 0x7F;
-            this.keyRange.max = (range.generatorValue >> 8) & 0x7F;
-        }
-    }
-    
-    /**
-     * reads the velolicty range of the zone
-     */
-    getVelRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.velRange);
-        if (range)
-        {
-            this.velRange.min = range.generatorValue & 0x7F;
-            this.velRange.max = (range.generatorValue >> 8) & 0x7F;
         }
     }
 }
@@ -265,8 +211,6 @@ export function readPresetZones(zonesChunk, presetGenerators, presetModulators, 
             zones[zones.length - 1].getGenerators(presetGenerators);
             zones[zones.length - 1].getModulators(presetModulators);
             zones[zones.length - 1].getInstrument(instruments);
-            zones[zones.length - 1].getKeyRange();
-            zones[zones.length - 1].getVelRange();
         }
         zones.push(zone);
     }

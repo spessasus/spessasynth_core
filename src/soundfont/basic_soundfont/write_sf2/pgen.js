@@ -28,7 +28,7 @@ export function getPGEN()
             // unshift vel then key and instrument is last
             if (z.hasVelRange)
             {
-                z.generators.unshift(new Generator(
+                z.prependGenerator(new Generator(
                     generatorTypes.velRange,
                     z.velRange.max << 8 | Math.max(z.velRange.min, 0),
                     false
@@ -36,14 +36,14 @@ export function getPGEN()
             }
             if (z.hasKeyRange)
             {
-                z.generators.unshift(new Generator(
+                z.prependGenerator(new Generator(
                     generatorTypes.keyRange,
                     z.keyRange.max << 8 | Math.max(z.keyRange.min, 0),
                     false
                 ));
             }
             // write the instrument id
-            z.generators.push(new Generator(
+            z.addGenerators(new Generator(
                 generatorTypes.instrument,
                 this.instruments.indexOf(z.instrument),
                 false

@@ -3,6 +3,8 @@
  * @property {number} min - the minimum midi note
  * @property {number} max - the maximum midi note
  */
+import { generatorTypes } from "./generator_types.js";
+import { Generator } from "./generator.js";
 
 export class BasicZone
 {
@@ -45,6 +47,76 @@ export class BasicZone
     get hasVelRange()
     {
         return this.velRange.min !== -1;
+    }
+    
+    /**
+     * Adds at the start
+     * @param generator {Generator}
+     */
+    prependGenerator(generator)
+    {
+        this.generators.unshift(generator);
+    }
+    
+    /**
+     * @param type {generatorTypes}
+     * @param value {number}
+     */
+    setGenerator(type, value)
+    {
+        switch (type)
+        {
+            case generatorTypes.sampleID:
+                throw new Error("Use setSample()");
+            case generatorTypes.instrument:
+                throw new Error("Use setInstrument()");
+            
+            case generatorTypes.velRange:
+            case generatorTypes.keyRange:
+                throw new Error("Set the range manually");
+        }
+        let generator = this.generators.find(g => g.generatorType === type);
+        if (generator)
+        {
+            generator.generatorValue = value;
+        }
+        else
+        {
+            this.addGenerators(new Generator(type, value));
+        }
+    }
+    
+    /**
+     * @param generators {Generator}
+     */
+    addGenerators(...generators)
+    {
+        generators.forEach(g =>
+        {
+            switch (g.generatorType)
+            {
+                default:
+                    this.generators.push(g);
+                    break;
+                
+                case generatorTypes.velRange:
+                    this.velRange.min = g.generatorValue & 0x7F;
+                    this.velRange.max = (g.generatorValue >> 8) & 0x7F;
+                    break;
+                
+                case generatorTypes.keyRange:
+                    this.keyRange.min = g.generatorValue & 0x7F;
+                    this.keyRange.max = (g.generatorValue >> 8) & 0x7F;
+            }
+        });
+    }
+    
+    /**
+     * @param modulators {Modulator}
+     */
+    addModulators(...modulators)
+    {
+        this.modulators.push(...modulators);
     }
     
     /**

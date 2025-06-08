@@ -16,8 +16,8 @@ export function readLart(lartChunk, lar2Chunk, zone)
             const art1 = readRIFFChunk(lartChunk.chunkData);
             this.verifyHeader(art1, "art1", "art2");
             const modsAndGens = readArticulation(art1, true);
-            zone.generators.push(...modsAndGens.generators);
-            zone.modulators.push(...modsAndGens.modulators);
+            zone.addGenerators(...modsAndGens.generators);
+            zone.addModulators(...modsAndGens.modulators);
         }
     }
     
@@ -28,8 +28,8 @@ export function readLart(lartChunk, lar2Chunk, zone)
             const art2 = readRIFFChunk(lar2Chunk.chunkData);
             this.verifyHeader(art2, "art2", "art1");
             const modsAndGens = readArticulation(art2, false);
-            zone.generators.push(...modsAndGens.generators);
-            zone.modulators.push(...modsAndGens.modulators);
+            zone.addGenerators(...modsAndGens.generators);
+            zone.addModulators(...modsAndGens.modulators);
         }
     }
 }

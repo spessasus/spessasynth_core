@@ -37,12 +37,12 @@ export class BasicInstrument
     }
     
     /**
-     * @param zone {BasicInstrumentZone}
+     * @param zones {BasicInstrumentZone}
      */
-    addZone(zone)
+    addZones(...zones)
     {
-        zone.useCount++;
-        this.instrumentZones.push(zone);
+        zones.forEach(z => z.useCount++);
+        this.instrumentZones.push(...zones);
     }
     
     addUseCount()

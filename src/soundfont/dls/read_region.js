@@ -52,7 +52,7 @@ export function readRegion(chunk)
     const exclusive = readLittleEndian(regionHeader.chunkData, 2);
     if (exclusive !== 0)
     {
-        zone.generators.push(new Generator(generatorTypes.exclusiveClass, exclusive));
+        zone.addGenerators(new Generator(generatorTypes.exclusiveClass, exclusive));
     }
     
     // lart
@@ -61,7 +61,6 @@ export function readRegion(chunk)
     this.readLart(lart, lar2, zone);
     
     // wsmp: wave sample chunk
-    zone.isGlobal = false;
     const waveSampleChunk = regionChunks.find(c => c.header === "wsmp");
     // cbSize
     readLittleEndian(waveSampleChunk.chunkData, 4);

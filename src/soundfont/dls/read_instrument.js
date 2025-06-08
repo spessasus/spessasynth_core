@@ -84,12 +84,12 @@ export function readDLSInstrument(chunk)
     // reverb
     if (globalZone.modulators.find(m => m.modulatorDestination === generatorTypes.reverbEffectsSend) === undefined)
     {
-        globalZone.modulators.push(Modulator.copy(DEFAULT_DLS_REVERB));
+        globalZone.addModulators(Modulator.copy(DEFAULT_DLS_REVERB));
     }
     // chorus
     if (globalZone.modulators.find(m => m.modulatorDestination === generatorTypes.chorusEffectsSend) === undefined)
     {
-        globalZone.modulators.push(Modulator.copy(DEFAULT_DLS_CHORUS));
+        globalZone.addModulators(Modulator.copy(DEFAULT_DLS_CHORUS));
     }
     
     // read regions
@@ -108,11 +108,11 @@ export function readDLSInstrument(chunk)
         const zone = this.readRegion(chunk);
         if (zone)
         {
-            preset.DLSInstrument.addZone(zone);
+            preset.DLSInstrument.addZones(zone);
         }
     }
     
-    this.presets.push(preset);
-    this.instruments.push(preset.DLSInstrument);
+    this.addPresets(preset);
+    this.addInstruments(preset.DLSInstrument);
     SpessaSynthGroupEnd();
 }

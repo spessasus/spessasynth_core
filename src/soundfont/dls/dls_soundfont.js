@@ -114,8 +114,7 @@ class DLSSoundFont extends BasicSoundBank
         this.readDLSInstrumentList(instrumentListChunk);
         
         // sort presets
-        this.presets.sort((a, b) => (a.program - b.program) + (a.bank - b.bank));
-        this._parseInternal();
+        this.flush();
         SpessaSynthInfo(
             `%cParsing finished! %c"${this.soundFontInfo["INAM"] || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,

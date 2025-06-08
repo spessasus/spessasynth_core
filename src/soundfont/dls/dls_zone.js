@@ -36,22 +36,21 @@ export class DLSZone extends BasicInstrumentZone
     {
         if (loopingMode !== 0)
         {
-            this.generators.push(new Generator(generatorTypes.sampleModes, loopingMode));
+            this.addGenerators(new Generator(generatorTypes.sampleModes, loopingMode));
         }
-        this.generators.push(new Generator(generatorTypes.initialAttenuation, attenuationCb));
-        this.isGlobal = false;
+        this.addGenerators(new Generator(generatorTypes.initialAttenuation, attenuationCb));
         
         // correct tuning if needed
         samplePitchCorrection -= sample.samplePitchCorrection;
         const coarseTune = Math.trunc(samplePitchCorrection / 100);
         if (coarseTune !== 0)
         {
-            this.generators.push(new Generator(generatorTypes.coarseTune, coarseTune));
+            this.addGenerators(new Generator(generatorTypes.coarseTune, coarseTune));
         }
         const fineTune = samplePitchCorrection - (coarseTune * 100);
         if (fineTune !== 0)
         {
-            this.generators.push(new Generator(generatorTypes.fineTune, fineTune));
+            this.addGenerators(new Generator(generatorTypes.fineTune, fineTune));
         }
         
         // correct loop if needed
@@ -62,33 +61,32 @@ export class DLSZone extends BasicInstrumentZone
             if (diffStart !== 0)
             {
                 const fine = diffStart % 32768;
-                this.generators.push(new Generator(generatorTypes.startloopAddrsOffset, fine));
+                this.addGenerators(new Generator(generatorTypes.startloopAddrsOffset, fine));
                 // coarse generator uses 32768 samples per step
                 const coarse = Math.trunc(diffStart / 32768);
                 if (coarse !== 0)
                 {
-                    this.generators.push(new Generator(generatorTypes.startloopAddrsCoarseOffset, coarse));
+                    this.addGenerators(new Generator(generatorTypes.startloopAddrsCoarseOffset, coarse));
                 }
             }
             if (diffEnd !== 0)
             {
                 const fine = diffEnd % 32768;
-                this.generators.push(new Generator(generatorTypes.endloopAddrsOffset, fine));
+                this.addGenerators(new Generator(generatorTypes.endloopAddrsOffset, fine));
                 // coarse generator uses 32768 samples per step
                 const coarse = Math.trunc(diffEnd / 32768);
                 if (coarse !== 0)
                 {
-                    this.generators.push(new Generator(generatorTypes.endloopAddrsCoarseOffset, coarse));
+                    this.addGenerators(new Generator(generatorTypes.endloopAddrsCoarseOffset, coarse));
                 }
             }
         }
         // correct the key if needed
         if (sampleKey !== sample.samplePitch)
         {
-            this.generators.push(new Generator(generatorTypes.overridingRootKey, sampleKey));
+            this.addGenerators(new Generator(generatorTypes.overridingRootKey, sampleKey));
         }
         // add sample ID
-        this.generators.push(new Generator(generatorTypes.sampleID, sampleID));
         this.setSample(sample);
     }
 }

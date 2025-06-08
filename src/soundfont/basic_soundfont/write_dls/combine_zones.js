@@ -308,7 +308,7 @@ export function combineZones(preset, globalize = true)
                 // if the global value is the default value just remove it, no need to add it
                 if (targetValue !== defaultForChecked)
                 {
-                    globalZone.generators.push(new Generator(checkedType, targetValue));
+                    globalZone.addGenerators(new Generator(checkedType, targetValue));
                 }
                 // remove from the zones
                 finalZones.forEach(z =>
@@ -329,7 +329,7 @@ export function combineZones(preset, globalize = true)
                         // Since we're globalizing, we need to add the default here.
                         if (targetValue !== defaultForChecked)
                         {
-                            z.generators.push(new Generator(checkedType, defaultForChecked));
+                            z.addGenerators(new Generator(checkedType, defaultForChecked));
                         }
                     }
                 });
@@ -360,7 +360,7 @@ export function combineZones(preset, globalize = true)
             }
             if (existsForAllZones === true)
             {
-                globalZone.modulators.push(Modulator.copy(checkedModulator));
+                globalZone.addModulators(Modulator.copy(checkedModulator));
                 // delete it from local zones.
                 for (const zone of finalZones)
                 {
