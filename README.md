@@ -79,7 +79,6 @@ npm install --save spessasynth_core
 - **Smart preloading:** Only preloads the samples used in the MIDI file for smooth playback *(down to key and velocity!)*
 - **Lyrics support:** Add karaoke to your program!
 - **Raw lyrics available:** Decode in any encoding! *(Kanji? No problem!)*
-- **Runs in Audio Thread as well:** Never blocks the main thread
 - **Loop points support:** Ensures seamless loops
 
 ### Read and Write SoundFont and MIDI Files with Ease
