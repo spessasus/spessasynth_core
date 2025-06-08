@@ -1,14 +1,14 @@
 import { midiControllers } from "../../../midi/midi_message.js";
 import { DLSSources } from "../../dls/dls_sources.js";
 import { modulatorCurveTypes, modulatorSources } from "../modulator.js";
-import { generatorTypes } from "../generator.js";
 import { DLSDestinations } from "../../dls/dls_destinations.js";
 import { Articulator } from "./articulator.js";
 import { SpessaSynthWarn } from "../../../utils/loggin.js";
+import { generatorTypes } from "../generator_types.js";
 
 
 /**
- * @param cc {boolean}
+ * @param cc {0|1}
  * @param index {number}
  * @returns {number|undefined}
  */

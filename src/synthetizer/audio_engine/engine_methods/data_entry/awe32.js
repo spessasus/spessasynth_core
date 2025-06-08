@@ -1,6 +1,6 @@
-import { generatorTypes } from "../../../../soundfont/basic_soundfont/generator.js";
 import { SpessaSynthWarn } from "../../../../utils/loggin.js";
 import { consoleColors } from "../../../../utils/other.js";
+import { generatorTypes } from "../../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * http://archive.gamedev.net/archive/reference/articles/article445.html

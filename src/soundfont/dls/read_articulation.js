@@ -4,8 +4,9 @@ import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE, DLSSources } from "./d
 import { getSF2ModulatorFromArticulator } from "./articulator_converter.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
-import { Generator, generatorTypes } from "../basic_soundfont/generator.js";
+import { Generator } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
 
 
 /**

@@ -18,12 +18,12 @@ import {
 import { SynthesizerSnapshot } from "./src/synthetizer/audio_engine/snapshot/synthesizer_snapshot.js";
 import { ChannelSnapshot } from "./src/synthetizer/audio_engine/snapshot/channel_snapshot.js";
 
-import { BasicSoundBank } from "./src/soundfont/basic_soundfont/basic_soundfont.js";
+import { BasicSoundBank } from "./src/soundfont/basic_soundfont/basic_soundbank.js";
 import { BasicSample } from "./src/soundfont/basic_soundfont/basic_sample.js";
-import { BasicInstrumentZone, BasicPresetZone } from "./src/soundfont/basic_soundfont/basic_zones.js";
+import { BasicPresetZone } from "./src/soundfont/basic_soundfont/basic_preset_zone.js";
 import { BasicInstrument } from "./src/soundfont/basic_soundfont/basic_instrument.js";
 import { BasicPreset } from "./src/soundfont/basic_soundfont/basic_preset.js";
-import { Generator, generatorTypes } from "./src/soundfont/basic_soundfont/generator.js";
+import { Generator } from "./src/soundfont/basic_soundfont/generator.js";
 import { Modulator, modulatorCurveTypes, modulatorSources } from "./src/soundfont/basic_soundfont/modulator.js";
 import { loadSoundFont } from "./src/soundfont/load_soundfont.js";
 
@@ -51,6 +51,8 @@ import { consoleColors } from "./src/utils/other.js";
 import { inflateSync } from "./src/externals/fflate/fflate.min.js";
 import { DLSDestinations } from "./src/soundfont/dls/dls_destinations.js";
 import { DLSSources } from "./src/soundfont/dls/dls_sources.js";
+import { generatorTypes } from "./src/soundfont/basic_soundfont/generator_types.js";
+import { BasicInstrumentZone } from "./src/soundfont/basic_soundfont/basic_instrument_zone.js";
 // you shouldn't use these...
 const SpessaSynthCoreUtils = {
     consoleColors,

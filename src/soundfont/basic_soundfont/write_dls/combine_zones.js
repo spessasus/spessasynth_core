@@ -1,6 +1,8 @@
 import { Modulator } from "../modulator.js";
-import { BasicInstrumentZone } from "../basic_zones.js";
-import { Generator, generatorLimits, generatorTypes } from "../generator.js";
+import { Generator } from "../generator.js";
+import { generatorLimits, generatorTypes } from "../generator_types.js";
+import { BasicInstrumentZone } from "../basic_instrument_zone.js";
+import { BasicGlobalZone } from "../basic_global_zone.js";
 
 const notGlobalizedTypes = new Set([
     generatorTypes.velRange,
@@ -30,7 +32,7 @@ const notGlobalizedTypes = new Set([
  * Combines preset zones
  * @param preset {BasicPreset}
  * @param globalize {boolean}
- * @returns {BasicInstrumentZone[]}
+ * @returns {{global: BasicGlobalZone, zones: BasicInstrumentZone[]}}
  */
 export function combineZones(preset, globalize = true)
 {
@@ -75,25 +77,16 @@ export function combineZones(preset, globalize = true)
      * @type {Modulator[]}
      */
     const globalPresetModulators = [];
-    let globalPresetKeyRange = { min: 0, max: 127 };
-    let globalPresetVelRange = { min: 0, max: 127 };
     
     // find the global zone and apply ranges, generators, and modulators
-    const globalPresetZone = preset.presetZones.find(z => z.isGlobal);
-    if (globalPresetZone)
-    {
-        globalPresetGenerators.push(...globalPresetZone.generators);
-        globalPresetModulators.push(...globalPresetZone.modulators);
-        globalPresetKeyRange = globalPresetZone.keyRange;
-        globalPresetVelRange = globalPresetZone.velRange;
-    }
+    const globalPresetZone = preset.globalZone;
+    globalPresetGenerators.push(...globalPresetZone.generators);
+    globalPresetModulators.push(...globalPresetZone.modulators);
+    let globalPresetKeyRange = globalPresetZone.keyRange;
+    let globalPresetVelRange = globalPresetZone.velRange;
     // for each non-global preset zone
     for (const presetZone of preset.presetZones)
     {
-        if (presetZone.isGlobal)
-        {
-            continue;
-        }
         // use global ranges if not provided
         let presetZoneKeyRange = presetZone.keyRange;
         if (!presetZone.hasKeyRange)
@@ -110,8 +103,8 @@ export function combineZones(preset, globalize = true)
         addUnique(presetGenerators, globalPresetGenerators);
         const presetModulators = [...presetZone.modulators];
         addUniqueMods(presetModulators, globalPresetModulators);
-        
-        const iZones = presetZone.instrument.instrumentZones;
+        const instrument = presetZone.instrument;
+        const iZones = instrument.instrumentZones;
         /**
          * @type {Generator[]}
          */
@@ -120,23 +113,14 @@ export function combineZones(preset, globalize = true)
          * @type {Modulator[]}
          */
         const globalInstModulators = [];
-        let globalInstKeyRange = { min: 0, max: 127 };
-        let globalInstVelRange = { min: 0, max: 127 };
-        const globalInstZone = iZones.find(z => z.isGlobal);
-        if (globalInstZone)
-        {
-            globalInstGenerators.push(...globalInstZone.generators);
-            globalInstModulators.push(...globalInstZone.modulators);
-            globalInstKeyRange = globalInstZone.keyRange;
-            globalInstVelRange = globalInstZone.velRange;
-        }
+        const globalInstZone = instrument.globalZone;
+        globalInstGenerators.push(...globalInstZone.generators);
+        globalInstModulators.push(...globalInstZone.modulators);
+        let globalInstKeyRange = globalInstZone.keyRange;
+        let globalInstVelRange = globalInstZone.velRange;
         // for each non-global instrument zone
         for (const instZone of iZones)
         {
-            if (instZone.isGlobal)
-            {
-                continue;
-            }
             // use global ranges if not provided
             let instZoneKeyRange = instZone.keyRange;
             if (!instZone.hasKeyRange)
@@ -236,20 +220,17 @@ export function combineZones(preset, globalize = true)
             {
                 zone.velRange.min = -1;
             }
-            zone.isGlobal = false;
-            zone.sample = instZone.sample;
+            zone.setSample(instZone.sample);
             zone.generators = finalGenList;
             zone.modulators = finalModList;
             finalZones.push(zone);
         }
     }
-    
+    const globalZone = new BasicGlobalZone();
     if (globalize)
     {
         // create a global zone and add repeating generators to it
         // also modulators
-        const globalZone = new BasicInstrumentZone();
-        globalZone.isGlobal = true;
         // iterate over every type of generator
         for (let checkedType = 0; checkedType < 58; checkedType++)
         {
@@ -356,14 +337,14 @@ export function combineZones(preset, globalize = true)
         }
         
         // globalize only modulators that exist in all zones
-        const firstZone = finalZones.find(z => !z.isGlobal);
+        const firstZone = finalZones[0];
         const modulators = firstZone.modulators.map(m => Modulator.copy(m));
         for (const checkedModulator of modulators)
         {
             let existsForAllZones = true;
             for (const zone of finalZones)
             {
-                if (zone.isGlobal || !existsForAllZones)
+                if (!existsForAllZones)
                 {
                     continue;
                 }
@@ -394,7 +375,9 @@ export function combineZones(preset, globalize = true)
                 }
             }
         }
-        finalZones.splice(0, 0, globalZone);
     }
-    return finalZones;
+    return {
+        zones: finalZones,
+        global: globalZone
+    };
 }

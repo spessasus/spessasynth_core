@@ -1,3 +1,5 @@
+import { BasicGlobalZone } from "./basic_global_zone.js";
+
 export class BasicInstrument
 {
     /**
@@ -9,8 +11,15 @@ export class BasicInstrument
     /**
      * The instrument's zones
      * @type {BasicInstrumentZone[]}
+     * @readonly
      */
     instrumentZones = [];
+    
+    /**
+     * Instrument's global zone
+     * @type {BasicGlobalZone}
+     */
+    globalZone = new BasicGlobalZone();
     
     /**
      * Instrument's use count, used for trimming
@@ -27,6 +36,15 @@ export class BasicInstrument
         return this._useCount;
     }
     
+    /**
+     * @param zone {BasicInstrumentZone}
+     */
+    addZone(zone)
+    {
+        zone.useCount++;
+        this.instrumentZones.push(zone);
+    }
+    
     addUseCount()
     {
         this._useCount++;
@@ -36,16 +54,10 @@ export class BasicInstrument
     removeUseCount()
     {
         this._useCount--;
-        for (let i = 0; i < this.instrumentZones.length; i++)
-        {
-            if (this.safeDeleteZone(i))
-            {
-                i--;
-            }
-        }
+        this.instrumentZones.forEach(z => z.useCount--);
     }
     
-    deleteInstrument()
+    deleteZones()
     {
         this.instrumentZones.forEach(z => z.deleteZone());
         this.instrumentZones.length = 0;
@@ -53,25 +65,17 @@ export class BasicInstrument
     
     /**
      * @param index {number}
-     * @returns {boolean} is the zone has been deleted
-     */
-    safeDeleteZone(index)
-    {
-        this.instrumentZones[index].useCount--;
-        if (this.instrumentZones[index].useCount < 1)
-        {
-            this.deleteZone(index);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * @param index {number}
+     * @returns {boolean} if deleted
      */
     deleteZone(index)
     {
-        this.instrumentZones[index].deleteZone();
-        this.instrumentZones.splice(index, 1);
+        const zone = this.instrumentZones[index];
+        if (zone.useCount < 1)
+        {
+            zone.deleteZone();
+            this.instrumentZones.splice(index, 1);
+            return true;
+        }
+        return false;
     }
 }

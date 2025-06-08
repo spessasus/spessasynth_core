@@ -3,11 +3,10 @@ import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { DLSPreset } from "./dls_preset.js";
 import { findRIFFListType, readRIFFChunk } from "../basic_soundfont/riff_chunk.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../utils/loggin.js";
-import { BasicInstrumentZone } from "../basic_soundfont/basic_zones.js";
 import { consoleColors } from "../../utils/other.js";
-import { generatorLimits, generatorTypes } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
 import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./dls_sources.js";
+import { generatorLimits, generatorTypes } from "../basic_soundfont/generator_types.js";
 
 /**
  * @this {DLSSoundFont}
@@ -70,8 +69,7 @@ export function readDLSInstrument(chunk)
     }
     
     // global articulation: essentially global zone
-    const globalZone = new BasicInstrumentZone();
-    globalZone.isGlobal = true;
+    const globalZone = preset.DLSInstrument.globalZone;
     
     // read articulators
     const globalLart = findRIFFListType(chunks, "lart");
@@ -93,7 +91,6 @@ export function readDLSInstrument(chunk)
     {
         globalZone.modulators.push(Modulator.copy(DEFAULT_DLS_CHORUS));
     }
-    preset.DLSInstrument.instrumentZones.push(globalZone);
     
     // read regions
     for (let i = 0; i < regions; i++)
@@ -111,7 +108,7 @@ export function readDLSInstrument(chunk)
         const zone = this.readRegion(chunk);
         if (zone)
         {
-            preset.DLSInstrument.instrumentZones.push(zone);
+            preset.DLSInstrument.addZone(zone);
         }
     }
     

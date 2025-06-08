@@ -1,9 +1,9 @@
-import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { midiControllers } from "../../../midi/midi_message.js";
 import { portamentoTimeToSeconds } from "./portamento_time.js";
 import { customControllers } from "../engine_components/controller_tables.js";
 import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
 import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../../synth_constants.js";
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * sends a "MIDI Note on message"

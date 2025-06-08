@@ -1,4 +1,4 @@
-import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * stereo_panner.js

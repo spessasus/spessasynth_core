@@ -2,6 +2,8 @@ import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
 
+const BAG_SIZE = 4;
+
 /**
  * @this {BasicSoundBank}
  * @returns {IndexedByteArray}
@@ -9,30 +11,31 @@ import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
 export function getPBAG()
 {
     // write all pbag with their start indexes as they were changed in getPGEN() and getPMOD()
-    const pbagsize = this.presets.reduce((sum, i) => i.presetZones.length * 4 + sum, 4);
+    const pbagsize = this.presets.reduce((sum, i) =>
+        // +1 because global zone
+        (i.presetZones.length + 1) * BAG_SIZE + sum, BAG_SIZE);
     const pbagdata = new IndexedByteArray(pbagsize);
-    let zoneID = 0;
     let generatorIndex = 0;
     let modulatorIndex = 0;
+    
+    /**
+     * @param z {BasicZone}
+     */
+    const writeZone = z =>
+    {
+        writeWord(pbagdata, generatorIndex);
+        writeWord(pbagdata, modulatorIndex);
+        generatorIndex += z.generators.length;
+        modulatorIndex += z.modulators.length;
+    };
+    
     for (const preset of this.presets)
     {
-        // ensure that the first zone is global
-        const zones = preset.presetZones.filter(z => !z.isGlobal);
-        const global = preset.presetZones.filter(z => z.isGlobal);
-        // only take the first one
-        if (global?.[0])
+        // global
+        writeZone(preset.globalZone);
+        for (const pbag of preset.presetZones)
         {
-            zones.unshift(global?.[0]);
-        }
-        preset.presetZoneStartIndex = zoneID;
-        for (const pbag of zones)
-        {
-            pbag.zoneID = zoneID;
-            writeWord(pbagdata, generatorIndex);
-            writeWord(pbagdata, modulatorIndex);
-            generatorIndex += pbag.generators.length;
-            modulatorIndex += pbag.modulators.length;
-            zoneID++;
+            writeZone(pbag);
         }
     }
     // write the terminal PBAG

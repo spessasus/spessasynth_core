@@ -1,5 +1,6 @@
 import { DecodedModulator } from "../basic_soundfont/modulator.js";
-import { generatorTypes } from "../basic_soundfont/generator.js";
+
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
 
 /**
  * @enum {number}

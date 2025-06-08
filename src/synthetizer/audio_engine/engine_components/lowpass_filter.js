@@ -1,5 +1,5 @@
 import { absCentsToHz, decibelAttenuationToGain } from "./unit_converter.js";
-import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * lowpass_filter.js

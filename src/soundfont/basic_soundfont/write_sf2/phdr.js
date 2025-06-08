@@ -3,13 +3,15 @@ import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
 
+const PHDR_SIZE = 38;
+
 /**
  * @this {BasicSoundBank}
  * @returns {IndexedByteArray}
  */
 export function getPHDR()
 {
-    const phdrsize = this.presets.length * 38 + 38;
+    const phdrsize = this.presets.length * PHDR_SIZE + PHDR_SIZE;
     const phdrdata = new IndexedByteArray(phdrsize);
     // the preset start is adjusted in pbag, this is only for the terminal preset index
     let presetStart = 0;
@@ -23,7 +25,7 @@ export function getPHDR()
         writeDword(phdrdata, preset.library);
         writeDword(phdrdata, preset.genre);
         writeDword(phdrdata, preset.morphology);
-        presetStart += preset.presetZones.length;
+        presetStart += preset.presetZones.length + 1; // global
     }
     // write EOP
     writeStringAsBytes(phdrdata, "EOP", 20);

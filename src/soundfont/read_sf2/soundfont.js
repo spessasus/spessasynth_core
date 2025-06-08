@@ -11,7 +11,7 @@ import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
-import { BasicSoundBank } from "../basic_soundfont/basic_soundfont.js";
+import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { Generator } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
 
@@ -215,7 +215,6 @@ export class SoundFont2 extends BasicSoundBank
          * @type {Modulator[]}
          */
         let instrumentModulators = readModulators(presetInstrumentModulatorsChunk);
-        
         /**
          * read all the instrument zones
          * @type {InstrumentZone[]}

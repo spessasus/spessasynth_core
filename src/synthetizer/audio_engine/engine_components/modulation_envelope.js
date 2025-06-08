@@ -1,7 +1,7 @@
 import { timecentsToSeconds } from "./unit_converter.js";
 import { getModulatorCurveValue } from "./modulator_curves.js";
-import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { modulatorCurveTypes } from "../../../soundfont/basic_soundfont/modulator.js";
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * modulation_envelope.js

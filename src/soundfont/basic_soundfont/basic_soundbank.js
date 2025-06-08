@@ -10,15 +10,20 @@ import { write } from "./write_sf2/write.js";
 import { defaultModulators, Modulator } from "./modulator.js";
 import { writeDLS } from "./write_dls/write_dls.js";
 import { BasicSample } from "./basic_sample.js";
-import { BasicInstrumentZone, BasicPresetZone } from "./basic_zones.js";
-import { Generator, generatorTypes } from "./generator.js";
+import { BasicPresetZone } from "./basic_preset_zone.js";
+import { Generator } from "./generator.js";
 import { BasicInstrument } from "./basic_instrument.js";
 import { BasicPreset } from "./basic_preset.js";
 import { isXGDrums } from "../../utils/xg_hacks.js";
+import { generatorTypes } from "./generator_types.js";
+import { BasicInstrumentZone } from "./basic_instrument_zone.js";
+import { BasicGlobalZone } from "./basic_global_zone.js";
 
+/**
+ * Represents a single sound bank, be it DLS or SF2.
+ */
 class BasicSoundBank
 {
-    
     /**
      * Soundfont's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
      * @type {Object<string, string|IndexedByteArray>}
@@ -124,29 +129,28 @@ class BasicSoundBank
         }
         font.samples.push(sample);
         
-        const gZone = new BasicInstrumentZone();
-        gZone.isGlobal = true;
+        const gZone = new BasicGlobalZone();
         gZone.generators.push(new Generator(generatorTypes.initialAttenuation, 375));
         gZone.generators.push(new Generator(generatorTypes.releaseVolEnv, -1000));
         gZone.generators.push(new Generator(generatorTypes.sampleModes, 1));
         
         const zone1 = new BasicInstrumentZone();
-        zone1.sample = sample;
+        zone1.setSample(sample);
         
         const zone2 = new BasicInstrumentZone();
-        zone2.sample = sample;
+        zone2.setSample(sample);
         zone2.generators.push(new Generator(generatorTypes.fineTune, -9));
         
         
         const inst = new BasicInstrument();
         inst.instrumentName = "Saw Wave";
-        inst.instrumentZones.push(gZone);
-        inst.instrumentZones.push(zone1);
-        inst.instrumentZones.push(zone2);
+        inst.globalZone = gZone;
+        inst.addZone(zone1);
+        inst.addZone(zone2);
         font.instruments.push(inst);
         
         const pZone = new BasicPresetZone();
-        pZone.instrument = inst;
+        pZone.setInstrument(inst);
         
         const preset = new BasicPreset(font);
         preset.presetName = "Saw Wave";
@@ -209,7 +213,7 @@ class BasicSoundBank
         const soundfont = this;
         
         /**
-         * @param instrument {Instrument}
+         * @param instrument {BasicInstrument}
          * @param combos {{key: number, velocity: number}[]}
          * @returns {number}
          */
@@ -219,10 +223,6 @@ class BasicSoundBank
             for (let iZoneIndex = 0; iZoneIndex < instrument.instrumentZones.length; iZoneIndex++)
             {
                 const iZone = instrument.instrumentZones[iZoneIndex];
-                if (iZone.isGlobal)
-                {
-                    continue;
-                }
                 const iKeyRange = iZone.keyRange;
                 const iVelRange = iZone.velRange;
                 let isIZoneUsed = false;
@@ -240,14 +240,13 @@ class BasicSoundBank
                 if (!isIZoneUsed)
                 {
                     SpessaSynthInfo(
-                        `%c${iZone.sample.sampleName} %cremoved from %c${instrument.instrumentName}%c. Use count: %c${iZone.useCount - 1}`,
+                        `%c${iZone.sample.sampleName} %cremoved from %c${instrument.instrumentName}%c.`,
                         consoleColors.recognized,
                         consoleColors.info,
                         consoleColors.recognized,
-                        consoleColors.info,
-                        consoleColors.recognized
+                        consoleColors.info
                     );
-                    if (instrument.safeDeleteZone(iZoneIndex))
+                    if (instrument.deleteZone(iZoneIndex))
                     {
                         trimmedIZones++;
                         iZoneIndex--;
@@ -293,6 +292,7 @@ class BasicSoundBank
                     consoleColors.info
                 );
                 soundfont.deletePreset(p);
+                soundfont.removeUnusedElements();
                 presetIndex--;
             }
             else
@@ -316,10 +316,6 @@ class BasicSoundBank
                 for (let zoneIndex = 0; zoneIndex < p.presetZones.length; zoneIndex++)
                 {
                     const zone = p.presetZones[zoneIndex];
-                    if (zone.isGlobal)
-                    {
-                        continue;
-                    }
                     const keyRange = zone.keyRange;
                     const velRange = zone.velRange;
                     // check if any of the combos matches the zone
@@ -384,13 +380,7 @@ class BasicSoundBank
         {
             if (i.useCount < 1)
             {
-                i.instrumentZones.forEach(z =>
-                {
-                    if (!z.isGlobal)
-                    {
-                        z.sample.useCount--;
-                    }
-                });
+                i.deleteZones();
             }
         });
         this.instruments = this.instruments.filter(i => i.useCount > 0);
@@ -407,8 +397,7 @@ class BasicSoundBank
             throw new Error(`Cannot delete an instrument that has ${instrument.useCount} usages.`);
         }
         this.instruments.splice(this.instruments.indexOf(instrument), 1);
-        instrument.deleteInstrument();
-        this.removeUnusedElements();
+        instrument.deleteZones();
     }
     
     /**
@@ -418,7 +407,6 @@ class BasicSoundBank
     {
         preset.deletePreset();
         this.presets.splice(this.presets.indexOf(preset), 1);
-        this.removeUnusedElements();
     }
     
     /**
@@ -431,7 +419,6 @@ class BasicSoundBank
             throw new Error(`Cannot delete sample that has ${sample.useCount} usages.`);
         }
         this.samples.splice(this.samples.indexOf(sample), 1);
-        this.removeUnusedElements();
     }
     
     /**

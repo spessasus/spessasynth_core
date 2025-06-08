@@ -1,5 +1,6 @@
-import { BasicInstrumentZone } from "../basic_soundfont/basic_zones.js";
-import { Generator, generatorTypes } from "../basic_soundfont/generator.js";
+import { Generator } from "../basic_soundfont/generator.js";
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
+import { BasicInstrumentZone } from "../basic_soundfont/basic_instrument_zone.js";
 
 export class DLSZone extends BasicInstrumentZone
 {
@@ -12,7 +13,6 @@ export class DLSZone extends BasicInstrumentZone
         super();
         this.keyRange = keyRange;
         this.velRange = velRange;
-        this.isGlobal = true;
     }
     
     /**
@@ -89,7 +89,6 @@ export class DLSZone extends BasicInstrumentZone
         }
         // add sample ID
         this.generators.push(new Generator(generatorTypes.sampleID, sampleID));
-        this.sample = sample;
-        sample.useCount++;
+        this.setSample(sample);
     }
 }

@@ -1,5 +1,5 @@
-import { generatorTypes } from "../../../../soundfont/basic_soundfont/generator.js";
 import { customControllers } from "../../engine_components/controller_tables.js";
+import { generatorTypes } from "../../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * Stops a note nearly instantly

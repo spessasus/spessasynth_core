@@ -1,7 +1,8 @@
 import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
 import { findRIFFListType, readRIFFChunk } from "../basic_soundfont/riff_chunk.js";
 import { DLSZone } from "./dls_zone.js";
-import { Generator, generatorTypes } from "../basic_soundfont/generator.js";
+import { Generator } from "../basic_soundfont/generator.js";
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
 
 /**
  * @this {DLSSoundFont}

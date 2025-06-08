@@ -1,13 +1,13 @@
 import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { generatorTypes } from "../generator.js";
 import { writeRIFFOddSize } from "../riff_chunk.js";
 import { writeWavesample } from "./wsmp.js";
 import { writeArticulator } from "./art2.js";
+import { generatorTypes } from "../generator_types.js";
 
 /**
  * @param zone {BasicInstrumentZone}
- * @param globalZone {BasicInstrumentZone}
+ * @param globalZone {BasicGlobalZone}
  * @this {BasicSoundBank}
  * @returns {IndexedByteArray}
  */

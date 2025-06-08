@@ -4,12 +4,12 @@
  *  presetGenerators: Generator[],
  *  modulators: Modulator[],
  *  sample: BasicSample,
- *  sampleID: number,
  * }} SampleAndGenerators
  */
-import { generatorTypes } from "./generator.js";
 import { Modulator } from "./modulator.js";
 import { isXGDrums } from "../../utils/xg_hacks.js";
+
+import { BasicGlobalZone } from "./basic_global_zone.js";
 
 export class BasicPreset
 {
@@ -43,6 +43,12 @@ export class BasicPreset
      * @type {BasicPresetZone[]}
      */
     presetZones = [];
+    
+    /**
+     * Preset's global zone
+     * @type {BasicGlobalZone}
+     */
+    globalZone = new BasicGlobalZone();
     
     /**
      * unused metadata
@@ -171,62 +177,60 @@ export class BasicPreset
          * global zone is always first, so it or nothing
          * @type {Generator[]}
          */
-        let globalPresetGenerators = this.presetZones[0].isGlobal ? [...this.presetZones[0].generators] : [];
+        let globalPresetGenerators = [...this.globalZone.generators];
         
         /**
          * @type {Modulator[]}
          */
-        let globalPresetModulators = this.presetZones[0].isGlobal ? [...this.presetZones[0].modulators] : [];
-        const globalKeyRange = this.presetZones[0].isGlobal ? this.presetZones[0].keyRange : { min: 0, max: 127 };
-        const globalVelRange = this.presetZones[0].isGlobal ? this.presetZones[0].velRange : { min: 0, max: 127 };
+        let globalPresetModulators = [...this.globalZone.modulators];
+        const globalKeyRange = this.globalZone.keyRange;
+        const globalVelRange = this.globalZone.velRange;
         
         // find the preset zones in range
         let presetZonesInRange = this.presetZones.filter(currentZone =>
-            (
-                isInRange(
-                    currentZone.hasKeyRange ? currentZone.keyRange : globalKeyRange,
-                    midiNote
-                )
-                &&
-                isInRange(
-                    currentZone.hasVelRange ? currentZone.velRange : globalVelRange,
-                    velocity
-                )
-            ) && !currentZone.isGlobal);
+            isInRange(
+                currentZone.hasKeyRange ? currentZone.keyRange : globalKeyRange,
+                midiNote
+            )
+            &&
+            isInRange(
+                currentZone.hasVelRange ? currentZone.velRange : globalVelRange,
+                velocity
+            )
+        );
         
-        presetZonesInRange.forEach(zone =>
+        presetZonesInRange.forEach(presetZone =>
         {
+            const instrument = presetZone.instrument;
             // the global zone is already taken into account earlier
-            if (zone.instrument.instrumentZones.length < 1)
+            if (instrument.instrumentZones.length < 1)
             {
                 return;
             }
-            let presetGenerators = zone.generators;
-            let presetModulators = zone.modulators;
-            const firstZone = zone.instrument.instrumentZones[0];
+            let presetGenerators = presetZone.generators;
+            let presetModulators = presetZone.modulators;
             /**
              * global zone is always first, so it or nothing
              * @type {Generator[]}
              */
-            let globalInstrumentGenerators = firstZone.isGlobal ? [...firstZone.generators] : [];
-            let globalInstrumentModulators = firstZone.isGlobal ? [...firstZone.modulators] : [];
-            const globalKeyRange = firstZone.isGlobal ? firstZone.keyRange : { min: 0, max: 127 };
-            const globalVelRange = firstZone.isGlobal ? firstZone.velRange : { min: 0, max: 127 };
+            let globalInstrumentGenerators = [...instrument.globalZone.generators];
+            let globalInstrumentModulators = [...instrument.globalZone.modulators];
+            const globalKeyRange = instrument.globalZone.keyRange;
+            const globalVelRange = instrument.globalZone.velRange;
             
             
-            let instrumentZonesInRange = zone.instrument.instrumentZones
+            let instrumentZonesInRange = instrument.instrumentZones
                 .filter(currentZone =>
-                    (
-                        isInRange(
-                            currentZone.hasKeyRange ? currentZone.keyRange : globalKeyRange,
-                            midiNote
-                        )
-                        &&
-                        isInRange(
-                            currentZone.hasVelRange ? currentZone.velRange : globalVelRange,
-                            velocity
-                        )
-                    ) && !currentZone.isGlobal
+                    
+                    isInRange(
+                        currentZone.hasKeyRange ? currentZone.keyRange : globalKeyRange,
+                        midiNote
+                    )
+                    &&
+                    isInRange(
+                        currentZone.hasVelRange ? currentZone.velRange : globalVelRange,
+                        velocity
+                    )
                 );
             
             instrumentZonesInRange.forEach(instrumentZone =>
@@ -275,7 +279,8 @@ export class BasicPreset
                     if (identicalInstrumentModulator !== -1)
                     {
                         // sum the amounts
-                        // (this makes a new modulator because otherwise it would overwrite the one in the soundfont!
+                        // this makes a new modulator
+                        // because otherwise it would overwrite the one in the soundfont!
                         finalModulatorList[identicalInstrumentModulator] = finalModulatorList[identicalInstrumentModulator].sumTransform(
                             mod);
                     }
@@ -291,9 +296,7 @@ export class BasicPreset
                     instrumentGenerators: instrumentGenerators,
                     presetGenerators: presetGenerators,
                     modulators: finalModulatorList,
-                    sample: instrumentZone.sample,
-                    sampleID: instrumentZone.generators.find(
-                        g => g.generatorType === generatorTypes.sampleID).generatorValue
+                    sample: instrumentZone.sample
                 });
             });
         });

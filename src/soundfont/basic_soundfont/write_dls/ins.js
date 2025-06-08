@@ -22,20 +22,12 @@ export function writeIns(preset)
         consoleColors.info
     );
     // combine preset and instrument zones into a single instrument zone (region) list
-    const combined = combineZones(preset);
+    const { global, zones } = combineZones(preset);
     
-    const nonGlobalRegionsCount = combined.reduce((sum, z) =>
-    {
-        if (!z.isGlobal)
-        {
-            return sum + 1;
-        }
-        return sum;
-    }, 0);
     
     // insh: instrument header
     const inshData = new IndexedByteArray(12);
-    writeDword(inshData, nonGlobalRegionsCount); // cRegions
+    writeDword(inshData, zones.length); // cRegions
     // bank MSB is in bits 8-14
     let ulBank = (preset.bank & 127) << 8;
     // bit 32 means drums
@@ -52,26 +44,18 @@ export function writeIns(preset)
     );
     
     // write global zone
-    let lar2 = new IndexedByteArray(0);
-    const globalZone = combined.find(z => z.isGlobal === true);
-    if (globalZone)
-    {
-        const art2 = writeArticulator(globalZone);
-        lar2 = writeRIFFOddSize(
-            "lar2",
-            art2,
-            false,
-            true
-        );
-    }
+    const art2 = writeArticulator(global);
+    let lar2 = writeRIFFOddSize(
+        "lar2",
+        art2,
+        false,
+        true
+    );
     
     // write the region list
-    const lrgnData = combineArrays(combined.reduce((arrs, z) =>
+    const lrgnData = combineArrays(zones.reduce((arrs, z) =>
     {
-        if (!z.isGlobal)
-        {
-            arrs.push(writeDLSRegion.apply(this, [z, globalZone]));
-        }
+        arrs.push(writeDLSRegion.apply(this, [z, global]));
         return arrs;
     }, []));
     const lrgn = writeRIFFOddSize(

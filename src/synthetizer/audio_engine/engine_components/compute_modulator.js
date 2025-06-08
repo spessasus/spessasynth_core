@@ -1,10 +1,10 @@
 import { getModulatorCurveValue, MOD_PRECOMPUTED_LENGTH } from "./modulator_curves.js";
 import { VolumeEnvelope } from "./volume_envelope.js";
 import { ModulationEnvelope } from "./modulation_envelope.js";
-import { generatorLimits, generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { Modulator, modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables.js";
 import { SpessaSynthWarn } from "../../../utils/loggin.js";
+import { generatorLimits, generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * compute_modulator.js

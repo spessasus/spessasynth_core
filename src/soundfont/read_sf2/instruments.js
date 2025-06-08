@@ -33,7 +33,16 @@ export class Instrument extends BasicInstrument
         this.instrumentZonesAmount = amount;
         for (let i = this.instrumentZoneIndex; i < this.instrumentZonesAmount + this.instrumentZoneIndex; i++)
         {
-            this.instrumentZones.push(zones[i]);
+            const zone = zones[i];
+            if (zone.hasSample())
+            {
+                this.addZone(zone);
+            }
+            else
+            {
+                // global!
+                this.globalZone.copyFrom(zone);
+            }
         }
     }
 }

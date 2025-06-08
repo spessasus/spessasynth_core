@@ -19,11 +19,7 @@ export class BasicZone
      * @type {SoundFontRange}
      */
     keyRange = { min: -1, max: 127 };
-    /**
-     * Indicates if the zone is global
-     * @type {boolean}
-     */
-    isGlobal = false;
+    
     /**
      * The zone's generators
      * @type {Generator[]}

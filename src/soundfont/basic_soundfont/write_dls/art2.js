@@ -1,7 +1,7 @@
 import { getDLSArticulatorFromSf2Generator, getDLSArticulatorFromSf2Modulator } from "./modulator_converter.js";
 import { writeRIFFOddSize } from "../riff_chunk.js";
 import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
-import { Generator, generatorTypes } from "../generator.js";
+import { Generator } from "../generator.js";
 import { writeDword } from "../../../utils/byte_functions/little_endian.js";
 import { consoleColors } from "../../../utils/other.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin.js";
@@ -12,6 +12,7 @@ import {
     DLS_1_NO_VIBRATO_MOD,
     DLS_1_NO_VIBRATO_PRESSURE
 } from "../../dls/dls_sources.js";
+import { generatorTypes } from "../generator_types.js";
 
 const invalidGeneratorTypes = new Set([
     generatorTypes.sampleModes,
@@ -34,7 +35,7 @@ const invalidGeneratorTypes = new Set([
 ]);
 
 /**
- * @param zone {BasicInstrumentZone}
+ * @param zone {BasicZone}
  * @returns {IndexedByteArray}
  */
 export function writeArticulator(zone)

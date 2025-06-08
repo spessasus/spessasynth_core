@@ -32,8 +32,8 @@ import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks
 import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../../synth_constants.js";
 import { modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system.js";
-import { generatorLimits, GENERATORS_AMOUNT } from "../../../soundfont/basic_soundfont/generator.js";
 import { computeModulators } from "./compute_modulator.js";
+import { generatorLimits, GENERATORS_AMOUNT } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.

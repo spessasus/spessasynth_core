@@ -1,6 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { MOD_BYTE_SIZE } from "../modulator.js";
 
 /**
  * @this {BasicSoundBank}
@@ -10,28 +11,37 @@ export function getIMOD()
 {
     // very similar to igen,
     // go through all instruments -> zones and write modulators sequentially
-    let imodsize = 10;
+    let imodsize = MOD_BYTE_SIZE; // terminal
     for (const inst of this.instruments)
     {
+        imodsize += inst.globalZone.modulators.length * MOD_BYTE_SIZE;
+        // start with one mod for global
         imodsize += inst.instrumentZones.reduce((sum, z) => z.modulators.length * 10 + sum, 0);
     }
     const imoddata = new IndexedByteArray(imodsize);
-    let imodIndex = 0;
+    
+    /**
+     * @param z {BasicZone}
+     */
+    const writeZone = z =>
+    {
+        for (const mod of z.modulators)
+        {
+            writeWord(imoddata, mod.getSourceEnum());
+            writeWord(imoddata, mod.modulatorDestination);
+            writeWord(imoddata, mod.transformAmount);
+            writeWord(imoddata, mod.getSecSrcEnum());
+            writeWord(imoddata, mod.transformType);
+        }
+    };
+    
     for (const inst of this.instruments)
     {
-        for (const ibag of inst.instrumentZones)
+        // global
+        writeZone(inst.globalZone);
+        for (const instrumentZone of inst.instrumentZones)
         {
-            // set the start index here
-            ibag.modulatorZoneStartIndex = imodIndex;
-            for (const mod of ibag.modulators)
-            {
-                writeWord(imoddata, mod.getSourceEnum());
-                writeWord(imoddata, mod.modulatorDestination);
-                writeWord(imoddata, mod.transformAmount);
-                writeWord(imoddata, mod.getSecSrcEnum());
-                writeWord(imoddata, mod.transformType);
-                imodIndex++;
-            }
+            writeZone(instrumentZone);
         }
     }
     

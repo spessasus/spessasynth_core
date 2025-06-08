@@ -7,12 +7,9 @@ import { SpessaSynthWarn } from "../../../utils/loggin.js";
 import { LowpassFilter } from "./lowpass_filter.js";
 import { VolumeEnvelope } from "./volume_envelope.js";
 import { ModulationEnvelope } from "./modulation_envelope.js";
-import {
-    addAndClampGenerator,
-    GENERATORS_AMOUNT,
-    generatorTypes
-} from "../../../soundfont/basic_soundfont/generator.js";
+import { addAndClampGenerator } from "../../../soundfont/basic_soundfont/generator.js";
 import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
+import { GENERATORS_AMOUNT, generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans
@@ -330,7 +327,7 @@ class Voice
             currentTime,
             voice.targetKey,
             realKey,
-            voice.generators,
+            new Int16Array(voice.generators),
             voice.modulators.map(m => Modulator.copy(m))
         );
     }
@@ -401,7 +398,7 @@ export function getVoicesForPreset(preset, bank, program, midiNote, velocity, re
             }
             
             // EMU initial attenuation correction, multiply initial attenuation by 0.4!
-            // all EMU sound cards have this quirk and all sf2 editors and players emulate it too
+            // all EMU sound cards have this quirk, and all sf2 editors and players emulate it too
             generators[generatorTypes.initialAttenuation] = Math.floor(generators[generatorTypes.initialAttenuation] * 0.4);
             
             // key override
@@ -473,9 +470,9 @@ export function getVoicesForPreset(preset, bank, program, midiNote, velocity, re
             return voices;
         }, []);
     // cache the voice
-    this.setCachedVoice(bank, program, midiNote, velocity, voices.map(v =>
-        Voice.copy(v, this.currentSynthTime, realKey)));
-    return voices;
+    this.setCachedVoice(bank, program, midiNote, velocity, voices);
+    return voices.map(v =>
+        Voice.copy(v, this.currentSynthTime, realKey));
 }
 
 /**

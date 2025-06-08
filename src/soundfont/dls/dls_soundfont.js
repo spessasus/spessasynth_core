@@ -1,4 +1,4 @@
-import { BasicSoundBank } from "../basic_soundfont/basic_soundfont.js";
+import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";

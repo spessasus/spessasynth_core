@@ -8,7 +8,8 @@ import { readBytesAsString } from "../../../utils/byte_functions/string.js";
 import { synthDisplayTypes } from "../engine_components/enums.js";
 import { customControllers, NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables.js";
 import { modulatorSources } from "../../../soundfont/basic_soundfont/modulator.js";
-import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
+
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * KeyNum: tuning

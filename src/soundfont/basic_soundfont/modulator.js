@@ -1,10 +1,12 @@
-import { generatorTypes, MAX_GENERATOR } from "./generator.js";
 import { midiControllers } from "../../midi/midi_message.js";
+import { generatorTypes, MAX_GENERATOR } from "./generator_types.js";
 
 /**
  * modulators.js
  * purpose: parses soundfont modulators and the source enums, also includes the default modulators list
  **/
+
+export const MOD_BYTE_SIZE = 10;
 
 /**
  * @enum {number}

@@ -1,12 +1,12 @@
 import { VolumeEnvelope } from "../engine_components/volume_envelope.js";
 import { ModulationEnvelope } from "../engine_components/modulation_envelope.js";
-import { generatorTypes } from "../../../soundfont/basic_soundfont/generator.js";
 import { customControllers } from "../engine_components/controller_tables.js";
 import { absCentsToHz, timecentsToSeconds } from "../engine_components/unit_converter.js";
 import { getLFOValue } from "../engine_components/lfo.js";
 import { WavetableOscillator } from "../engine_components/wavetable_oscillator.js";
 import { LowpassFilter } from "../engine_components/lowpass_filter.js";
 import { interpolationTypes } from "../engine_components/enums.js";
+import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
  * Renders a voice to the stereo output buffer

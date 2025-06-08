@@ -1,8 +1,9 @@
-import { writeWord } from "../../../utils/byte_functions/little_endian.js";
+import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
 
-import { Generator, generatorTypes } from "../generator.js";
+import { GEN_BYTE_SIZE, Generator } from "../generator.js";
+import { generatorTypes } from "../generator_types.js";
 
 /**
  * @this {BasicSoundBank}
@@ -12,9 +13,10 @@ export function getPGEN()
 {
     // almost identical to igen, except the correct instrument instead of sample gen
     // goes through all preset zones and writes generators sequentially (add 4 for terminal)
-    let pgensize = 4;
+    let pgensize = GEN_BYTE_SIZE;
     for (const preset of this.presets)
     {
+        pgensize += preset.globalZone.generators.length * GEN_BYTE_SIZE;
         pgensize += preset.presetZones.reduce((size, z) =>
         {
             // clear instrument and range generators before determining the size
@@ -40,39 +42,40 @@ export function getPGEN()
                     false
                 ));
             }
-            if (!z.isGlobal)
-            {
-                // write the instrument
-                z.generators.push(new Generator(
-                    generatorTypes.instrument,
-                    this.instruments.indexOf(z.instrument),
-                    false
-                ));
-            }
-            return z.generators.length * 4 + size;
+            // write the instrument id
+            z.generators.push(new Generator(
+                generatorTypes.instrument,
+                this.instruments.indexOf(z.instrument),
+                false
+            ));
+            return z.generators.length * GEN_BYTE_SIZE + size;
         }, 0);
     }
     const pgendata = new IndexedByteArray(pgensize);
-    let pgenIndex = 0;
+    
+    /**
+     * @param z {BasicZone}
+     */
+    const writeZone = z =>
+    {
+        for (const gen of z.generators)
+        {
+            // name is deceptive, it works on negatives
+            writeWord(pgendata, gen.generatorType);
+            writeWord(pgendata, gen.generatorValue);
+        }
+    };
     for (const preset of this.presets)
     {
-        for (const presetZone of preset.presetZones)
+        // global zone
+        writeZone(preset.globalZone);
+        for (const zone of preset.presetZones)
         {
-            // set the start index here
-            presetZone.generatorZoneStartIndex = pgenIndex;
-            // write generators
-            for (const gen of presetZone.generators)
-            {
-                // name is deceptive, it works on negatives
-                writeWord(pgendata, gen.generatorType);
-                writeWord(pgendata, gen.generatorValue);
-            }
-            pgenIndex += presetZone.generators.length;
+            writeZone(zone);
         }
     }
     // terminal generator, is zero
-    writeWord(pgendata, 0);
-    writeWord(pgendata, 0);
+    writeDword(pgendata, 0);
     
     return writeRIFFChunk(new RiffChunk(
         "pgen",

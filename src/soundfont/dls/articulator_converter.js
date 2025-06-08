@@ -9,9 +9,9 @@ import {
 import { midiControllers } from "../../midi/midi_message.js";
 import { DLSDestinations } from "./dls_destinations.js";
 
-import { generatorTypes } from "../basic_soundfont/generator.js";
 import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthWarn } from "../../utils/loggin.js";
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
 
 /**
  * @param source {number}

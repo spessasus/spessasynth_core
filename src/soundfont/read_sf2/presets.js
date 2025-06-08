@@ -43,7 +43,16 @@ export class Preset extends BasicPreset
         this.presetZonesAmount = amount;
         for (let i = this.presetZoneStartIndex; i < this.presetZonesAmount + this.presetZoneStartIndex; i++)
         {
-            this.presetZones.push(zones[i]);
+            const zone = zones[i];
+            if (zone.hasInstrument())
+            {
+                this.presetZones.push(zone);
+            }
+            else
+            {
+                // global!
+                this.globalZone.copyFrom(zone);
+            }
         }
     }
 }

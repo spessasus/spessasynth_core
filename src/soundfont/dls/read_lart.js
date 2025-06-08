@@ -4,7 +4,7 @@ import { readArticulation } from "./read_articulation.js";
 /**
  * @param lartChunk {RiffChunk|undefined}
  * @param lar2Chunk {RiffChunk|undefined}
- * @param zone {BasicInstrumentZone}
+ * @param zone {BasicZone}
  * @this {DLSSoundFont}
  */
 export function readLart(lartChunk, lar2Chunk, zone)
