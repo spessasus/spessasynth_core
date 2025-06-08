@@ -14,6 +14,7 @@ import { getPBAG } from "./pbag.js";
 import { getPHDR } from "./phdr.js";
 import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
+import { MOD_BYTE_SIZE } from "../modulator.js";
 /**
  * @typedef {Object} SoundFont2WriteOptions
  * @property {boolean} compress - if the soundfont should be compressed with the Ogg Vorbis codec
@@ -108,7 +109,7 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
                 consoleColors.recognized,
                 consoleColors.info
             );
-            let dmodsize = 10 + mods.length * 10;
+            let dmodsize = MOD_BYTE_SIZE + mods.length * MOD_BYTE_SIZE;
             const dmoddata = new IndexedByteArray(dmodsize);
             for (const mod of mods)
             {
@@ -120,7 +121,7 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
             }
             
             // terminal modulator, is zero
-            writeLittleEndian(dmoddata, 0, 10);
+            writeLittleEndian(dmoddata, 0, MOD_BYTE_SIZE);
             
             infoArrays.push(writeRIFFChunk(new RiffChunk(
                 type,

@@ -16,7 +16,7 @@ export function getIMOD()
     {
         imodsize += inst.globalZone.modulators.length * MOD_BYTE_SIZE;
         // start with one mod for global
-        imodsize += inst.instrumentZones.reduce((sum, z) => z.modulators.length * 10 + sum, 0);
+        imodsize += inst.instrumentZones.reduce((sum, z) => z.modulators.length * MOD_BYTE_SIZE + sum, 0);
     }
     const imoddata = new IndexedByteArray(imodsize);
     
@@ -46,7 +46,7 @@ export function getIMOD()
     }
     
     // terminal modulator, is zero
-    writeLittleEndian(imoddata, 0, 10);
+    writeLittleEndian(imoddata, 0, MOD_BYTE_SIZE);
     
     return writeRIFFChunk(new RiffChunk(
         "imod",

@@ -46,7 +46,7 @@ export function getPMOD()
     }
     
     // terminal modulator, is zero
-    writeLittleEndian(pmoddata, 0, 10);
+    writeLittleEndian(pmoddata, 0, MOD_BYTE_SIZE);
     
     return writeRIFFChunk(new RiffChunk(
         "pmod",
