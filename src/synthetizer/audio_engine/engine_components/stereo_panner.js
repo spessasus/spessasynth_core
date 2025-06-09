@@ -7,7 +7,8 @@ import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_typ
 
 export const PAN_SMOOTHING_FACTOR = 0.05;
 
-export const REVERB_DIVIDER = 4600;
+// optimized for spessasynth_lib's effects
+export const REVERB_DIVIDER = 3070;
 export const CHORUS_DIVIDER = 2000;
 const HALF_PI = Math.PI / 2;
 

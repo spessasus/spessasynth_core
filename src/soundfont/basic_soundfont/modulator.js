@@ -150,6 +150,7 @@ export class Modulator
      * @param destination {generatorTypes}
      * @param amount {number}
      * @param transformType {0|2}
+     * @param isEffectModulator {boolean}
      */
     constructor(sourceIndex,
                 sourceCurveType,
@@ -163,7 +164,8 @@ export class Modulator
                 secSrcDirection,
                 destination,
                 amount,
-                transformType)
+                transformType,
+                isEffectModulator = false)
     {
         this.sourcePolarity = sourcePolarity;
         this.sourceDirection = sourceDirection;
@@ -180,6 +182,7 @@ export class Modulator
         this.modulatorDestination = destination;
         this.transformAmount = amount;
         this.transformType = transformType;
+        this.isEffectModulator = isEffectModulator;
         
         
         if (this.modulatorDestination > MAX_GENERATOR)
@@ -208,7 +211,8 @@ export class Modulator
             modulator.secSrcDirection,
             modulator.modulatorDestination,
             modulator.transformAmount,
-            modulator.transformType
+            modulator.transformType,
+            modulator.isEffectModulator
         );
     }
     
@@ -322,7 +326,8 @@ export class Modulator
             this.secSrcDirection,
             this.modulatorDestination,
             this.transformAmount + modulator.transformAmount,
-            this.transformType
+            this.transformType,
+            this.isEffectModulator
         );
     }
 }
