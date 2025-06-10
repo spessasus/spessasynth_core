@@ -207,7 +207,14 @@ class BasicSoundBank
     
     flush()
     {
-        this.presets.sort((a, b) => (a.program - b.program) + (a.bank - b.bank));
+        this.presets.sort((a, b) =>
+        {
+            if (a.bank !== b.bank)
+            {
+                return a.bank - b.bank;
+            }
+            return a.program - b.program;
+        });
         this._parseInternal();
     }
     
