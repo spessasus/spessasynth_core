@@ -1,6 +1,7 @@
 // process arguments
 import fs from "fs";
 import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
+import { SpessaSynthLogging } from "../../src/utils/loggin.js";
 
 const args = process.argv.slice(2);
 if (args.length !== 2)
@@ -13,6 +14,7 @@ const sf2Path = args[0];
 const dlsPath = args[1];
 
 console.warn("DLS conversion may lose data.");
+SpessaSynthLogging(true, true, true, true);
 const sf2 = fs.readFileSync(sf2Path);
 const bank = loadSoundFont(sf2);
 console.log(`Loaded! Name: ${bank.soundFontInfo["INAM"]}`);

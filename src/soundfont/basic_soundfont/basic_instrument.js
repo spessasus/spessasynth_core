@@ -1,4 +1,5 @@
 import { BasicGlobalZone } from "./basic_global_zone.js";
+import { BasicInstrumentZone } from "./basic_instrument_zone.js";
 
 export class BasicInstrument
 {
@@ -22,42 +23,53 @@ export class BasicInstrument
     globalZone = new BasicGlobalZone();
     
     /**
-     * Instrument's use count, used for trimming
-     * @type {number}
-     * @private
+     * Instrument's linked presets (the presets that use it)
+     * note that duplicates are allowed since one preset can use the same instrument multople times
+     * @type {BasicPreset[]}
      */
-    _useCount = 0;
+    linkedPresets = [];
     
     /**
      * @returns {number}
      */
     get useCount()
     {
-        return this._useCount;
+        return this.linkedPresets.length;
     }
     
     /**
-     * @param zones {BasicInstrumentZone}
+     * @returns {BasicInstrumentZone}
      */
-    addZones(...zones)
+    createZone()
     {
-        zones.forEach(z => z.useCount++);
-        this.instrumentZones.push(...zones);
+        const zone = new BasicInstrumentZone(this);
+        this.instrumentZones.push(zone);
+        return zone;
     }
     
-    addUseCount()
+    /**
+     * @param preset {BasicPreset}
+     */
+    linkTo(preset)
     {
-        this._useCount++;
-        this.instrumentZones.forEach(z => z.useCount++);
+        this.linkedPresets.push(preset);
+        this.instrumentZones.forEach(z => z.useCount = this.linkedPresets.length);
     }
     
-    removeUseCount()
+    /**
+     * @param preset {BasicPreset}
+     */
+    unlinkFrom(preset)
     {
-        this._useCount--;
-        this.instrumentZones.forEach(z => z.useCount--);
+        const index = this.linkedPresets.indexOf(preset);
+        if (index < 0)
+        {
+            throw new Error(`Cannot unlink ${preset.presetName} from ${this.instrumentName}: not linked.`);
+        }
+        this.linkedPresets.splice(index, 1);
     }
     
-    deleteZones()
+    deleteAllZones()
     {
         this.instrumentZones.forEach(z => z.deleteZone());
         this.instrumentZones.length = 0;

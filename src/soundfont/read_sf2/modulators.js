@@ -19,5 +19,7 @@ export function readModulators(modulatorChunk)
         const transformType = readLittleEndian(dataArray, 2);
         mods.push(new DecodedModulator(sourceEnum, secondarySourceEnum, destination, amount, transformType));
     }
+    // remove terminal
+    mods.pop();
     return mods;
 }

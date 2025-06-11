@@ -1,8 +1,8 @@
 import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
-import { PresetZone } from "./zones.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicPreset } from "../basic_soundfont/basic_preset.js";
+import { PresetZone } from "./preset_zones.js";
 
 /**
  * parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
@@ -10,6 +10,16 @@ import { BasicPreset } from "../basic_soundfont/basic_preset.js";
 
 export class Preset extends BasicPreset
 {
+    
+    /**
+     * @type {number}
+     */
+    zoneStartIndex;
+    /**
+     * @type {number}
+     */
+    zonesCount = 0;
+    
     /**
      * Creates a preset
      * @param presetChunk {RiffChunk}
@@ -24,47 +34,32 @@ export class Preset extends BasicPreset
         
         this.program = readLittleEndian(presetChunk.chunkData, 2);
         this.bank = readLittleEndian(presetChunk.chunkData, 2);
-        this.presetZoneStartIndex = readLittleEndian(presetChunk.chunkData, 2);
+        this.zoneStartIndex = readLittleEndian(presetChunk.chunkData, 2);
         
         // read the dword
         this.library = readLittleEndian(presetChunk.chunkData, 4);
         this.genre = readLittleEndian(presetChunk.chunkData, 4);
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
-        this.presetZonesAmount = 0;
     }
     
     /**
-     * Loads all the preset zones, given the amount
-     * @param amount {number}
-     * @param zones {PresetZone[]}
+     * @returns {PresetZone}
      */
-    getPresetZones(amount, zones)
+    createZone()
     {
-        this.presetZonesAmount = amount;
-        for (let i = this.presetZoneStartIndex; i < this.presetZonesAmount + this.presetZoneStartIndex; i++)
-        {
-            const zone = zones[i];
-            if (zone.hasInstrument())
-            {
-                this.presetZones.push(zone);
-            }
-            else
-            {
-                // global!
-                this.globalZone.copyFrom(zone);
-            }
-        }
+        const z = new PresetZone(this);
+        this.presetZones.push(z);
+        return z;
     }
 }
 
 /**
  * Reads the presets
  * @param presetChunk {RiffChunk}
- * @param presetZones {PresetZone[]}
- * @param sf2 {BasicSoundBank}
+ * @param parent {BasicSoundBank}
  * @returns {Preset[]}
  */
-export function readPresets(presetChunk, presetZones, sf2)
+export function readPresets(presetChunk, parent)
 {
     /**
      * @type {Preset[]}
@@ -72,18 +67,15 @@ export function readPresets(presetChunk, presetZones, sf2)
     let presets = [];
     while (presetChunk.chunkData.length > presetChunk.chunkData.currentIndex)
     {
-        let preset = new Preset(presetChunk, sf2);
+        let preset = new Preset(presetChunk, parent);
         if (presets.length > 0)
         {
-            let presetZonesAmount = preset.presetZoneStartIndex - presets[presets.length - 1].presetZoneStartIndex;
-            presets[presets.length - 1].getPresetZones(presetZonesAmount, presetZones);
+            const previous = presets[presets.length - 1];
+            previous.zonesCount = preset.zoneStartIndex - previous.zoneStartIndex;
         }
         presets.push(preset);
     }
     // remove EOP
-    if (presets.length > 1)
-    {
-        presets.pop();
-    }
+    presets.pop();
     return presets;
 }

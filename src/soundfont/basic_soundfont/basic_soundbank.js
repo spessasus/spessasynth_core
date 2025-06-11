@@ -10,13 +10,11 @@ import { write } from "./write_sf2/write.js";
 import { defaultModulators, Modulator } from "./modulator.js";
 import { writeDLS } from "./write_dls/write_dls.js";
 import { BasicSample } from "./basic_sample.js";
-import { BasicPresetZone } from "./basic_preset_zone.js";
 import { Generator } from "./generator.js";
 import { BasicInstrument } from "./basic_instrument.js";
 import { BasicPreset } from "./basic_preset.js";
 import { isXGDrums } from "../../utils/xg_hacks.js";
 import { generatorTypes } from "./generator_types.js";
-import { BasicInstrumentZone } from "./basic_instrument_zone.js";
 import { BasicGlobalZone } from "./basic_global_zone.js";
 
 /**
@@ -168,26 +166,25 @@ class BasicSoundBank
             new Generator(generatorTypes.sampleModes, 1)
         );
         
-        const zone1 = new BasicInstrumentZone();
-        zone1.setSample(sample);
-        
-        const zone2 = new BasicInstrumentZone();
-        zone2.setSample(sample);
-        zone2.addGenerators(new Generator(generatorTypes.fineTune, -9));
-        
-        
         const inst = new BasicInstrument();
         inst.instrumentName = "Saw Wave";
         inst.globalZone = gZone;
-        inst.addZones(zone1, zone2);
+        
+        const zone1 = inst.createZone();
+        zone1.setSample(sample);
+        
+        const zone2 = inst.createZone();
+        zone2.setSample(sample);
+        zone2.addGenerators(new Generator(generatorTypes.fineTune, -9));
+        
         font.addInstruments(inst);
         
-        const pZone = new BasicPresetZone();
-        pZone.setInstrument(inst);
         
         const preset = new BasicPreset(font);
         preset.presetName = "Saw Wave";
-        preset.addZones(pZone);
+        const pZone = preset.createZone();
+        pZone.setInstrument(inst);
+        
         font.addPresets(preset);
         
         font.soundFontInfo["ifil"] = "2.1";
@@ -450,7 +447,7 @@ class BasicSoundBank
         {
             if (i.useCount < 1)
             {
-                i.deleteZones();
+                i.deleteAllZones();
             }
         });
         this.instruments = this.instruments.filter(i => i.useCount > 0);
@@ -467,7 +464,7 @@ class BasicSoundBank
             throw new Error(`Cannot delete an instrument that has ${instrument.useCount} usages.`);
         }
         this.instruments.splice(this.instruments.indexOf(instrument), 1);
-        instrument.deleteZones();
+        instrument.deleteAllZones();
     }
     
     /**

@@ -22,7 +22,9 @@ export function writeIns(preset)
         consoleColors.info
     );
     // combine preset and instrument zones into a single instrument zone (region) list
-    const { global, zones } = combineZones(preset);
+    const inst = combineZones(preset);
+    const global = inst.globalZone;
+    const zones = inst.instrumentZones;
     
     
     // insh: instrument header

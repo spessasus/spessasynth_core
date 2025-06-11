@@ -3,14 +3,29 @@ import { BasicZone } from "./basic_zone.js";
 export class BasicPresetZone extends BasicZone
 {
     /**
-     * Zone's instrument
+     * The parent preset.
+     * @type {BasicPreset}
+     */
+    parentPreset;
+    
+    /**
+     * Zone's instrument.
      * @type {BasicInstrument}
      */
     instrument;
     
+    /**
+     * @param preset {BasicPreset}
+     */
+    constructor(preset)
+    {
+        super();
+        this.parentPreset = preset;
+    }
+    
     deleteZone()
     {
-        this.instrument.removeUseCount();
+        this.instrument.unlinkFrom(this.parentPreset);
     }
     
     /**
@@ -19,12 +34,18 @@ export class BasicPresetZone extends BasicZone
     setInstrument(instrument)
     {
         this.instrument = instrument;
-        this.instrument.addUseCount();
+        this.instrument.linkTo(this.parentPreset);
     }
     
-    
-    hasInstrument()
+    /**
+     * @param zone {BasicZone}
+     */
+    copyFrom(zone)
     {
-        return !!this.instrument;
+        super.copyFrom(zone);
+        if (zone instanceof BasicPresetZone)
+        {
+            this.instrument = zone.instrument;
+        }
     }
 }

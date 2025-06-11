@@ -2,7 +2,7 @@ import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readSamples } from "./samples.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readGenerators } from "./generators.js";
-import { InstrumentZone, readInstrumentZones, readPresetZones } from "./zones.js";
+import { readPresetZones } from "./preset_zones.js";
 import { readPresets } from "./presets.js";
 import { readInstruments } from "./instruments.js";
 import { readModulators } from "./modulators.js";
@@ -14,6 +14,7 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js"
 import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { Generator } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
+import { InstrumentZone, readInstrumentZones } from "./instrument_zones.js";
 
 /**
  * soundfont.js
@@ -22,6 +23,16 @@ import { Modulator } from "../basic_soundfont/modulator.js";
 
 export class SoundFont2 extends BasicSoundBank
 {
+    /**
+     * @type {Instrument[]}
+     */
+    instruments = [];
+    
+    /**
+     * @type {Preset[]}
+     */
+    presets = [];
+    
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      * @param arrayBuffer {ArrayBuffer}
@@ -170,79 +181,80 @@ export class SoundFont2 extends BasicSoundBank
         readBytesAsString(presetChunk.chunkData, 4);
         
         // read the hydra chunks
-        const presetHeadersChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetHeadersChunk, "phdr");
+        const pHdrChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(pHdrChunk, "phdr");
         
-        const presetZonesChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetZonesChunk, "pbag");
+        const pBagChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(pBagChunk, "pbag");
         
-        const presetModulatorsChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetModulatorsChunk, "pmod");
+        const pModChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(pModChunk, "pmod");
         
-        const presetGeneratorsChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetGeneratorsChunk, "pgen");
+        const pGenChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(pGenChunk, "pgen");
         
-        const presetInstrumentsChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetInstrumentsChunk, "inst");
+        const instChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(instChunk, "inst");
         
-        const presetInstrumentZonesChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetInstrumentZonesChunk, "ibag");
+        const iBagChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(iBagChunk, "ibag");
         
-        const presetInstrumentModulatorsChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetInstrumentModulatorsChunk, "imod");
+        const iModChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(iModChunk, "imod");
         
-        const presetInstrumentGeneratorsChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetInstrumentGeneratorsChunk, "igen");
+        const iGenChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(iGenChunk, "igen");
         
-        const presetSamplesChunk = readRIFFChunk(presetChunk.chunkData);
-        this.verifyHeader(presetSamplesChunk, "shdr");
+        const sHdrChunk = readRIFFChunk(presetChunk.chunkData);
+        this.verifyHeader(sHdrChunk, "shdr");
         
         /**
          * read all the samples
          * (the current index points to start of the smpl read)
          */
         this.dataArray.currentIndex = this.sampleDataStartIndex;
-        this.samples.push(...readSamples(presetSamplesChunk, sampleData, !isSF2Pack));
+        this.samples.push(...readSamples(sHdrChunk, sampleData, !isSF2Pack));
         
         /**
          * read all the instrument generators
          * @type {Generator[]}
          */
-        let instrumentGenerators = readGenerators(presetInstrumentGeneratorsChunk);
+        let instrumentGenerators = readGenerators(iGenChunk);
         
         /**
          * read all the instrument modulators
          * @type {Modulator[]}
          */
-        let instrumentModulators = readModulators(presetInstrumentModulatorsChunk);
+        let instrumentModulators = readModulators(iModChunk);
+        
+        this.instruments = readInstruments(instChunk);
         /**
-         * read all the instrument zones
+         * read all the instrument zones (and apply them)
          * @type {InstrumentZone[]}
          */
-        let instrumentZones = readInstrumentZones(
-            presetInstrumentZonesChunk,
+        readInstrumentZones(
+            iBagChunk,
             instrumentGenerators,
             instrumentModulators,
-            this.samples
+            this.samples,
+            this.instruments
         );
-        
-        this.instruments = readInstruments(presetInstrumentsChunk, instrumentZones);
         
         /**
          * read all the preset generators
          * @type {Generator[]}
          */
-        let presetGenerators = readGenerators(presetGeneratorsChunk);
+        let presetGenerators = readGenerators(pGenChunk);
         
         /**
          * Read all the preset modulatorrs
          * @type {Modulator[]}
          */
-        let presetModulators = readModulators(presetModulatorsChunk);
+        let presetModulators = readModulators(pModChunk);
         
-        let presetZones = readPresetZones(presetZonesChunk, presetGenerators, presetModulators, this.instruments);
+        this.addPresets(...readPresets(pHdrChunk, this));
         
-        this.addPresets(...readPresets(presetHeadersChunk, presetZones, this));
+        readPresetZones(pBagChunk, presetGenerators, presetModulators, this.instruments, this.presets);
         this.flush();
         SpessaSynthInfo(
             `%cParsing finished! %c"${this.soundFontInfo["INAM"]}"%c has %c${this.presets.length} %cpresets,

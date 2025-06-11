@@ -128,5 +128,16 @@ export class BasicZone
     {
         return this.generators.find(g => g.generatorType === generatorType)?.generatorValue ?? notFoundValue;
     }
+    
+    /**
+     * @param zone {BasicZone}
+     */
+    copyFrom(zone)
+    {
+        this.generators = [...zone.generators];
+        this.modulators = [...zone.modulators];
+        this.velRange = { ...zone.velRange };
+        this.keyRange = { ...zone.keyRange };
+    }
 }
 

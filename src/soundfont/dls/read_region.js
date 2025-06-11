@@ -1,15 +1,14 @@
 import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
 import { findRIFFListType, readRIFFChunk } from "../basic_soundfont/riff_chunk.js";
-import { DLSZone } from "./dls_zone.js";
 import { Generator } from "../basic_soundfont/generator.js";
 import { generatorTypes } from "../basic_soundfont/generator_types.js";
 
 /**
  * @this {DLSSoundFont}
  * @param chunk {RiffChunk}
- * @returns {DLSZone}
+ * @param zone {DLSZone}
  */
-export function readRegion(chunk)
+export function readRegion(chunk, zone)
 {
     // regions are essentially instrument zones
     
@@ -40,10 +39,9 @@ export function readRegion(chunk)
     }
     // cannot do the same to key zones sadly
     
-    const zone = new DLSZone(
-        { min: keyMin, max: keyMax },
-        { min: velMin, max: velMax }
-    );
+    // apply ranges
+    zone.keyRange = { min: keyMin, max: keyMax };
+    zone.velRange = { min: velMin, max: velMax };
     
     // fusOptions: no idea about that one???
     readLittleEndian(regionHeader.chunkData, 2);
@@ -148,5 +146,4 @@ export function readRegion(chunk)
         sampleID,
         pitchCorrection
     );
-    return zone;
 }

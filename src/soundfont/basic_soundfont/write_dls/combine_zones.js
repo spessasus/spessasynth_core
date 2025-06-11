@@ -1,8 +1,7 @@
 import { Modulator } from "../modulator.js";
 import { Generator } from "../generator.js";
 import { generatorLimits, generatorTypes } from "../generator_types.js";
-import { BasicInstrumentZone } from "../basic_instrument_zone.js";
-import { BasicGlobalZone } from "../basic_global_zone.js";
+import { BasicInstrument } from "../basic_instrument.js";
 
 const notGlobalizedTypes = new Set([
     generatorTypes.velRange,
@@ -32,7 +31,7 @@ const notGlobalizedTypes = new Set([
  * Combines preset zones
  * @param preset {BasicPreset}
  * @param globalize {boolean}
- * @returns {{global: BasicGlobalZone, zones: BasicInstrumentZone[]}}
+ * @returns {BasicInstrument}
  */
 export function combineZones(preset, globalize = true)
 {
@@ -64,10 +63,7 @@ export function combineZones(preset, globalize = true)
         main.push(...adder.filter(m => !main.find(mm => Modulator.isIdentical(m, mm))));
     }
     
-    /**
-     * @type {BasicInstrumentZone[]}
-     */
-    const finalZones = [];
+    const outputInstrument = new BasicInstrument();
     
     /**
      * @type {Generator[]}
@@ -77,7 +73,6 @@ export function combineZones(preset, globalize = true)
      * @type {Modulator[]}
      */
     const globalPresetModulators = [];
-    
     // find the global zone and apply ranges, generators, and modulators
     const globalPresetZone = preset.globalZone;
     globalPresetGenerators.push(...globalPresetZone.generators);
@@ -209,7 +204,7 @@ export function combineZones(preset, globalize = true)
             );
             
             // create the zone and copy over values
-            const zone = new BasicInstrumentZone();
+            const zone = outputInstrument.createZone();
             zone.keyRange = instZoneKeyRange;
             zone.velRange = instZoneVelRange;
             if (zone.keyRange.min === 0 && zone.keyRange.max === 127)
@@ -221,12 +216,11 @@ export function combineZones(preset, globalize = true)
                 zone.velRange.min = -1;
             }
             zone.setSample(instZone.sample);
-            zone.generators = finalGenList;
-            zone.modulators = finalModList;
-            finalZones.push(zone);
+            zone.addGenerators(...finalGenList);
+            zone.addModulators(...finalModList);
         }
     }
-    const globalZone = new BasicGlobalZone();
+    const globalZone = outputInstrument.globalZone;
     if (globalize)
     {
         // create a global zone and add repeating generators to it
@@ -245,7 +239,7 @@ export function combineZones(preset, globalize = true)
             let occurencesForValues = {};
             const defaultForChecked = generatorLimits[checkedType]?.def || 0;
             occurencesForValues[defaultForChecked] = 0;
-            for (const z of finalZones)
+            for (const z of outputInstrument.instrumentZones)
             {
                 const gen = z.generators.find(g => g.generatorType === checkedType);
                 if (gen)
@@ -311,7 +305,7 @@ export function combineZones(preset, globalize = true)
                     globalZone.addGenerators(new Generator(checkedType, targetValue));
                 }
                 // remove from the zones
-                finalZones.forEach(z =>
+                outputInstrument.instrumentZones.forEach(z =>
                 {
                     const gen = z.generators.findIndex(g =>
                         g.generatorType === checkedType);
@@ -337,12 +331,12 @@ export function combineZones(preset, globalize = true)
         }
         
         // globalize only modulators that exist in all zones
-        const firstZone = finalZones[0];
+        const firstZone = outputInstrument.instrumentZones[0];
         const modulators = firstZone.modulators.map(m => Modulator.copy(m));
         for (const checkedModulator of modulators)
         {
             let existsForAllZones = true;
-            for (const zone of finalZones)
+            for (const zone of outputInstrument.instrumentZones)
             {
                 if (!existsForAllZones)
                 {
@@ -362,7 +356,7 @@ export function combineZones(preset, globalize = true)
             {
                 globalZone.addModulators(Modulator.copy(checkedModulator));
                 // delete it from local zones.
-                for (const zone of finalZones)
+                for (const zone of outputInstrument.instrumentZones)
                 {
                     const modulator = zone.modulators.find(m => Modulator.isIdentical(m, checkedModulator));
                     // Check if the amount is correct.
@@ -376,8 +370,5 @@ export function combineZones(preset, globalize = true)
             }
         }
     }
-    return {
-        zones: finalZones,
-        global: globalZone
-    };
+    return outputInstrument;
 }

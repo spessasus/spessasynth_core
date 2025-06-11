@@ -10,6 +10,7 @@ import { Modulator } from "./modulator.js";
 import { isXGDrums } from "../../utils/xg_hacks.js";
 
 import { BasicGlobalZone } from "./basic_global_zone.js";
+import { BasicPresetZone } from "./basic_preset_zone.js";
 
 export class BasicPreset
 {
@@ -76,14 +77,6 @@ export class BasicPreset
     }
     
     /**
-     * @param zones {BasicPresetZone}
-     */
-    addZones(...zones)
-    {
-        this.presetZones.push(...zones);
-    }
-    
-    /**
      * @param allowXG {boolean}
      * @param allowSFX {boolean}
      * @returns {boolean}
@@ -111,6 +104,16 @@ export class BasicPreset
     {
         this.presetZones[index].deleteZone();
         this.presetZones.splice(index, 1);
+    }
+    
+    /**
+     * @returns {BasicPresetZone}
+     */
+    createZone()
+    {
+        const z = new BasicPresetZone(this);
+        this.presetZones.push(z);
+        return z;
     }
     
     // noinspection JSUnusedGlobalSymbols

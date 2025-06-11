@@ -1,8 +1,9 @@
 import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
-import { InstrumentZone } from "./zones.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicInstrument } from "../basic_soundfont/basic_instrument.js";
+
+import { InstrumentZone } from "./instrument_zones.js";
 
 /**
  * instrument.js
@@ -12,6 +13,15 @@ import { BasicInstrument } from "../basic_soundfont/basic_instrument.js";
 export class Instrument extends BasicInstrument
 {
     /**
+     * @type {number}
+     */
+    zoneStartIndex;
+    /**
+     * @type {number}
+     */
+    zonesCount = 0;
+    
+    /**
      * Creates an instrument
      * @param instrumentChunk {RiffChunk}
      */
@@ -19,57 +29,43 @@ export class Instrument extends BasicInstrument
     {
         super();
         this.instrumentName = readBytesAsString(instrumentChunk.chunkData, 20).trim();
-        this.instrumentZoneIndex = readLittleEndian(instrumentChunk.chunkData, 2);
-        this.instrumentZonesAmount = 0;
+        this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
     
     /**
-     * Loads all the instrument zones, given the amount
-     * @param amount {number}
-     * @param zones {InstrumentZone[]}
+     * @returns {InstrumentZone}
      */
-    getInstrumentZones(amount, zones)
+    createZone()
     {
-        this.instrumentZonesAmount = amount;
-        for (let i = this.instrumentZoneIndex; i < this.instrumentZonesAmount + this.instrumentZoneIndex; i++)
-        {
-            const zone = zones[i];
-            if (zone.hasSample())
-            {
-                this.addZones(zone);
-            }
-            else
-            {
-                // global!
-                this.globalZone.copyFrom(zone);
-            }
-        }
+        const z = new InstrumentZone(this);
+        this.instrumentZones.push(z);
+        return z;
     }
 }
 
 /**
  * Reads the instruments
  * @param instrumentChunk {RiffChunk}
- * @param instrumentZones {InstrumentZone[]}
  * @returns {Instrument[]}
  */
-export function readInstruments(instrumentChunk, instrumentZones)
+export function readInstruments(instrumentChunk)
 {
+    /**
+     * @type {Instrument[]}
+     */
     let instruments = [];
     while (instrumentChunk.chunkData.length > instrumentChunk.chunkData.currentIndex)
     {
         let instrument = new Instrument(instrumentChunk);
+        
         if (instruments.length > 0)
         {
-            let instrumentsAmount = instrument.instrumentZoneIndex - instruments[instruments.length - 1].instrumentZoneIndex;
-            instruments[instruments.length - 1].getInstrumentZones(instrumentsAmount, instrumentZones);
+            const previous = instruments[instruments.length - 1];
+            previous.zonesCount = instrument.zoneStartIndex - previous.zoneStartIndex;
         }
         instruments.push(instrument);
     }
-    if (instruments.length > 1)
-    {
-        // remove EOI
-        instruments.pop();
-    }
+    // remove EOI
+    instruments.pop();
     return instruments;
 }

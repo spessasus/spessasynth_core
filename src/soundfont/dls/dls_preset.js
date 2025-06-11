@@ -1,9 +1,13 @@
 import { BasicPreset } from "../basic_soundfont/basic_preset.js";
-import { BasicPresetZone } from "../basic_soundfont/basic_preset_zone.js";
-import { BasicInstrument } from "../basic_soundfont/basic_instrument.js";
+import { DLSInstrument } from "./dls_instrument.js";
 
 export class DLSPreset extends BasicPreset
 {
+    /**
+     * @type {DLSInstrument}
+     */
+    dlsInstrument = new DLSInstrument();
+    
     /**
      * Creates a new DLS preset
      * @param dls {BasicSoundBank}
@@ -33,11 +37,7 @@ export class DLSPreset extends BasicPreset
             this.bank = 128;
         }
         
-        this.DLSInstrument = new BasicInstrument();
-        
-        const zone = new BasicPresetZone();
-        zone.setInstrument(this.DLSInstrument);
-        
-        this.presetZones = [zone];
+        const zone = this.createZone();
+        zone.setInstrument(this.dlsInstrument);
     }
 }

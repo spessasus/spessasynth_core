@@ -37,10 +37,7 @@ export function readGenerators(generatorChunk)
     {
         gens.push(new ReadGenerator(generatorChunk.chunkData));
     }
-    if (gens.length > 1)
-    {
-        // remove terminal
-        gens.pop();
-    }
+    // remove terminal
+    gens.pop();
     return gens;
 }

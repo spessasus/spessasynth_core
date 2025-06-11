@@ -5,14 +5,11 @@ import { BasicInstrumentZone } from "../basic_soundfont/basic_instrument_zone.js
 export class DLSZone extends BasicInstrumentZone
 {
     /**
-     * @param keyRange {SoundFontRange}
-     * @param velRange {SoundFontRange}
+     * @param inst {BasicInstrument}
      */
-    constructor(keyRange, velRange)
+    constructor(inst)
     {
-        super();
-        this.keyRange = keyRange;
-        this.velRange = velRange;
+        super(inst);
     }
     
     /**
@@ -86,7 +83,7 @@ export class DLSZone extends BasicInstrumentZone
         {
             this.addGenerators(new Generator(generatorTypes.overridingRootKey, sampleKey));
         }
-        // add sample ID
+        // add sample
         this.setSample(sample);
     }
 }

@@ -52,7 +52,7 @@ export function readDLSInstrument(chunk)
         presetName = readBytesAsString(info.chunkData, info.chunkData.length).trim();
     }
     preset.presetName = presetName;
-    preset.DLSInstrument.instrumentName = presetName;
+    preset.dlsInstrument.instrumentName = presetName;
     SpessaSynthGroupCollapsed(
         `%cParsing %c"${presetName}"%c...`,
         consoleColors.info,
@@ -69,7 +69,7 @@ export function readDLSInstrument(chunk)
     }
     
     // global articulation: essentially global zone
-    const globalZone = preset.DLSInstrument.globalZone;
+    const globalZone = preset.dlsInstrument.globalZone;
     
     // read articulators
     const globalLart = findRIFFListType(chunks, "lart");
@@ -105,14 +105,10 @@ export function readDLSInstrument(chunk)
         }
         
         
-        const zone = this.readRegion(chunk);
-        if (zone)
-        {
-            preset.DLSInstrument.addZones(zone);
-        }
+        const zone = preset.dlsInstrument.createZone();
+        this.readRegion(chunk, zone);
     }
-    
     this.addPresets(preset);
-    this.addInstruments(preset.DLSInstrument);
+    this.addInstruments(preset.dlsInstrument);
     SpessaSynthGroupEnd();
 }

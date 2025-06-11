@@ -79,13 +79,12 @@ export class BasicSample
      * @type {Uint8Array}
      */
     compressedData = undefined;
-    
     /**
-     * The sample's use count
-     * @type {number}
+     * Sample's linked instruments (the instruments that use it)
+     * note that duplicates are allowed since one instrument can use the same sample multople times
+     * @type {BasicInstrument[]}
      */
-    useCount = 0;
-    
+    linkedInstruments = [];
     /**
      * The sample's audio data
      * @type {Float32Array}
@@ -126,6 +125,14 @@ export class BasicSample
         this.isCompressed = (sampleType & 0x10) > 0;
     }
     
+    /**
+     * The sample's use count
+     * @type {number}
+     */
+    get useCount()
+    {
+        return this.linkedInstruments.length;
+    }
     
     /**
      * @returns {Uint8Array|IndexedByteArray}
@@ -194,6 +201,27 @@ export class BasicSample
             this.sampleType &= 0xEF;
         }
         
+    }
+    
+    /**
+     * @param instrument {BasicInstrument}
+     */
+    linkTo(instrument)
+    {
+        this.linkedInstruments.push(instrument);
+    }
+    
+    /**
+     * @param instrument {BasicInstrument}
+     */
+    unlinkFrom(instrument)
+    {
+        const index = this.linkedInstruments.indexOf(instrument);
+        if (index < 0)
+        {
+            throw new Error(`Cannot unlink ${instrument.instrumentName} from ${this.sampleName}: not linked.`);
+        }
+        this.linkedInstruments.splice(index, 1);
     }
     
     /**

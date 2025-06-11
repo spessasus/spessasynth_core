@@ -205,7 +205,10 @@ export class SoundFontSample extends BasicSample
          * read the sample data
          * @type {Float32Array}
          */
-        let audioData = this.sampleDataArray.slice(this.sampleStartIndex / 2, this.sampleEndIndex / 2);
+        let audioData = /**@type {Float32Array}*/ this.sampleDataArray.slice(
+            this.sampleStartIndex / 2,
+            this.sampleEndIndex / 2
+        );
         this.sampleData = audioData;
         this.isSampleLoaded = true;
         return audioData;
@@ -233,10 +236,7 @@ export function readSamples(sampleHeadersChunk, smplChunkData, isSmplDataRaw = t
         index++;
     }
     // remove EOS
-    if (samples.length > 1)
-    {
-        samples.pop();
-    }
+    samples.pop();
     return samples;
 }
 
