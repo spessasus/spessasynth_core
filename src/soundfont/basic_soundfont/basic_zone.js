@@ -58,6 +58,7 @@ export class BasicZone
         this.generators.unshift(generator);
     }
     
+    // noinspection JSUnusedGlobalSymbols
     /**
      * @param type {generatorTypes}
      * @param value {number}

@@ -13,18 +13,17 @@ import { writeLittleEndian } from "./byte_functions/little_endian.js";
 
 /**
  *
- * @param audioData {{leftChannel: Float32Array, rightChannel: Float32Array, sampleRate: number}}
+ * @param audioData {Float32Array[]} channels
+ * @param sampleRate {number}
  * @param normalizeAudio {boolean} find the max sample point and set it to 1, and scale others with it
  * @param metadata {WaveMetadata}
  * @param loop {{start: number, end: number}} loop start and end points in seconds. Undefined if no loop
  * @returns {ArrayBuffer}
  */
-export function audioToWav(audioData, normalizeAudio = true, metadata = {}, loop = undefined)
+export function audioToWav(audioData, sampleRate, normalizeAudio = true, metadata = {}, loop = undefined)
 {
-    const channel1Data = audioData.leftChannel;
-    const channel2Data = audioData.rightChannel;
-    const length = channel1Data.length;
-    const sampleRate = audioData.sampleRate;
+    const length = audioData[0].length;
+    const numChannels = audioData.length;
     
     const bytesPerSample = 2; // 16-bit PCM
     
@@ -100,7 +99,7 @@ export function audioToWav(audioData, normalizeAudio = true, metadata = {}, loop
     
     // Prepare the header
     const headerSize = 44;
-    const dataSize = length * 2 * bytesPerSample; // 2 channels, 16-bit per channel
+    const dataSize = length * numChannels * bytesPerSample; // 16-bit per channel
     const fileSize = headerSize + dataSize + infoChunk.length + cueChunk.length - 8; // total file size minus the first 8 bytes
     const header = new Uint8Array(headerSize);
     
@@ -120,20 +119,20 @@ export function audioToWav(audioData, normalizeAudio = true, metadata = {}, loop
     // audio format (PCM)
     header.set([1, 0], 20);
     // number of channels (2)
-    header.set([2, 0], 22);
+    header.set([numChannels & 255, numChannels >> 8], 22);
     // sample rate
     header.set(
         new Uint8Array([sampleRate & 0xff, (sampleRate >> 8) & 0xff, (sampleRate >> 16) & 0xff, (sampleRate >> 24) & 0xff]),
         24
     );
     // byte rate (sample rate * block align)
-    const byteRate = sampleRate * 2 * bytesPerSample; // 2 channels, 16-bit per channel
+    const byteRate = sampleRate * numChannels * bytesPerSample; // 16-bit per channel
     header.set(
         new Uint8Array([byteRate & 0xff, (byteRate >> 8) & 0xff, (byteRate >> 16) & 0xff, (byteRate >> 24) & 0xff]),
         28
     );
     // block align (channels * bytes per sample)
-    header.set([4, 0], 32); // 2 channels * 16-bit per channel / 8
+    header.set([numChannels * bytesPerSample, 0], 32); // n channels * 16-bit per channel / 8
     // bits per sample
     header.set([16, 0], 34); // 16-bit
     
@@ -154,21 +153,37 @@ export function audioToWav(audioData, normalizeAudio = true, metadata = {}, loop
     if (normalizeAudio)
     {
         // find min and max values to prevent clipping when converting to 16 bits
-        const maxAbsValue = channel1Data.map((v, i) => Math.max(Math.abs(v), Math.abs(channel2Data[i])))
-            .reduce((a, b) => Math.max(a, b));
+        const numSamples = audioData[0].length;
+        
+        let maxAbsValue = 0;
+        
+        for (let ch = 0; ch < numChannels; ch++)
+        {
+            const data = audioData[ch];
+            for (let i = 0; i < numSamples; i++)
+            {
+                const sample = Math.abs(data[i]);
+                if (sample > maxAbsValue)
+                {
+                    maxAbsValue = sample;
+                }
+            }
+        }
+        
         multiplier = maxAbsValue > 0 ? (32767 / maxAbsValue) : 1;
     }
     for (let i = 0; i < length; i++)
     {
         // interleave both channels
-        const sample1 = Math.min(32767, Math.max(-32768, channel1Data[i] * multiplier));
-        const sample2 = Math.min(32767, Math.max(-32768, channel2Data[i] * multiplier));
+        audioData.forEach(d =>
+        {
+            const sample = Math.min(32767, Math.max(-32768, d[i] * multiplier));
+            // convert to 16-bit
+            wavData[offset++] = sample & 0xff;
+            wavData[offset++] = (sample >> 8) & 0xff;
+            
+        });
         
-        // convert to 16-bit
-        wavData[offset++] = sample1 & 0xff;
-        wavData[offset++] = (sample1 >> 8) & 0xff;
-        wavData[offset++] = sample2 & 0xff;
-        wavData[offset++] = (sample2 >> 8) & 0xff;
     }
     
     if (infoOn)

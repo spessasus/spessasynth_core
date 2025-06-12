@@ -55,10 +55,9 @@ while (filledSamples + bufSize < sampleCount)
 }
 const rendered = Math.floor(performance.now() - start);
 console.log("Rendered in", rendered, `ms (${Math.floor((midi.duration * 1000 / rendered) * 100) / 100}x)`);
-const wave = audioToWav({
-    leftChannel: outLeft,
-    rightChannel: outRight,
-    sampleRate: sampleRate
-});
+const wave = audioToWav(
+    [outLeft, outRight],
+    sampleRate
+);
 fs.writeFileSync(args[2], new Buffer(wave));
 process.exit();

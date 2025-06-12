@@ -229,6 +229,21 @@ export class BasicSample
      */
     getAudioData()
     {
+        if (!this.sampleData)
+        {
+            throw new Error("Error! Sample data is undefined. Is the method overriden properly?");
+        }
         return this.sampleData;
+    }
+    
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * @param audioData {Float32Array}
+     */
+    setAudioData(audioData)
+    {
+        this.isCompressed = false;
+        delete this.compressedData;
+        this.sampleData = audioData;
     }
 }
