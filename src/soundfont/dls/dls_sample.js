@@ -52,6 +52,14 @@ export class DLSSample extends BasicSample
         return this.sampleData;
     }
     
+    /**
+     * @param audioData {Float32Array}
+     */
+    setAudioData(audioData)
+    {
+        super.setAudioData(audioData);
+    }
+    
     getRawData()
     {
         if (this.isCompressed)

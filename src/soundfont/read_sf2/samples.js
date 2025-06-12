@@ -136,6 +136,16 @@ export class SoundFontSample extends BasicSample
     }
     
     /**
+     * @param audioData {Float32Array}
+     */
+    setAudioData(audioData)
+    {
+        super.setAudioData(audioData);
+        this.isSampleLoaded = true;
+        this.isDataRaw = false;
+    }
+    
+    /**
      * Loads the audio data and stores it for reuse
      * @returns {Float32Array} The audioData
      */
