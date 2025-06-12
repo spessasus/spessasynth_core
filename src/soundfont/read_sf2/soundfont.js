@@ -96,7 +96,6 @@ export class SoundFont2 extends BasicSoundBank
                 // dmod: default modulators
                 case "dmod":
                     const newModulators = readModulators(chunk);
-                    newModulators.pop(); // remove the terminal record
                     text = `Modulators: ${newModulators.length}`;
                     
                     // override default modulators
