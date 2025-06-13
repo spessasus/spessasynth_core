@@ -6,6 +6,8 @@ import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicSample } from "../basic_soundfont/basic_sample.js";
 
+export const SF3_BIT_FLIT = 0x10;
+
 export class SoundFontSample extends BasicSample
 {
     /**
@@ -47,6 +49,11 @@ export class SoundFontSample extends BasicSample
         isDataRaw
     )
     {
+        // read sf3
+        // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
+        const compressed = (sampleType & SF3_BIT_FLIT) > 0;
+        // remove the compression flag
+        sampleType &= ~SF3_BIT_FLIT;
         super(
             sampleName,
             sampleRate,
@@ -56,6 +63,7 @@ export class SoundFontSample extends BasicSample
             sampleLoopStartIndex - (sampleStartIndex / 2),
             sampleLoopEndIndex - (sampleStartIndex / 2)
         );
+        this.isCompressed = compressed;
         this.sampleName = sampleName;
         // in bytes
         this.sampleStartIndex = sampleStartIndex;
@@ -82,7 +90,7 @@ export class SoundFontSample extends BasicSample
      */
     getLinkedSample(samplesArray)
     {
-        if (this.isCompressed || this.linkedSample || !this.isLinked)
+        if (this.linkedSample || !this.isLinked)
         {
             return;
         }

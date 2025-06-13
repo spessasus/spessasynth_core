@@ -66,8 +66,8 @@ export class BasicSample
     linkedSample;
     
     /**
-     * The type of the sample, it can indicate an SF3 sample
-     * @type {sampleTypes|number}
+     * The type of the sample
+     * @type {sampleTypes}
      */
     sampleType;
     
@@ -84,7 +84,7 @@ export class BasicSample
     sampleLoopEndIndex;
     
     /**
-     * Indicates if the sample is compressed
+     * Indicates if the sample is compressed using vorbis SF3
      * @type {boolean}
      */
     isCompressed;
@@ -132,7 +132,7 @@ export class BasicSample
         this.samplePitchCorrection = samplePitchCorrection;
         this.sampleLoopStartIndex = loopStart;
         this.sampleLoopEndIndex = loopEnd;
-        this.setSampleType(sampleType);
+        this.sampleType = sampleType;
     }
     
     /**
@@ -141,10 +141,9 @@ export class BasicSample
      */
     get isLinked()
     {
-        return !this.isCompressed &&
-            (this.sampleType === sampleTypes.rightSample ||
-                this.sampleType === sampleTypes.leftSample ||
-                this.sampleType === sampleTypes.linkedSample);
+        return this.sampleType === sampleTypes.rightSample ||
+            this.sampleType === sampleTypes.leftSample ||
+            this.sampleType === sampleTypes.linkedSample;
     }
     
     /**
@@ -229,8 +228,6 @@ export class BasicSample
     setSampleType(type)
     {
         this.sampleType = type;
-        // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
-        this.isCompressed = (type & 0x10) > 0;
         if (!this.isLinked)
         {
             // unlink the other sample
@@ -242,9 +239,9 @@ export class BasicSample
             
             this.linkedSample = undefined;
         }
-        if ((type & 0x8000) > 0 && this.linkedSample)
+        if ((type & 0x8000) > 0)
         {
-            throw new Error("ROM samples cannot be linked.");
+            throw new Error("ROM samples are not supported.");
         }
         
     }
@@ -261,15 +258,11 @@ export class BasicSample
     // noinspection JSUnusedGlobalSymbols
     /**
      * Links a stereo sample
-     * @param sample {BasicSample}
-     * @param type {sampleTypes}
+     * @param sample {BasicSample} the sample to link to
+     * @param type {sampleTypes} either left, right or linked
      */
     setLinkedSample(sample, type)
     {
-        if (this.isCompressed)
-        {
-            throw new Error("Cannot link a compressed sample.");
-        }
         this.linkedSample = sample;
         sample.linkedSample = this;
         if (type === sampleTypes.leftSample)
