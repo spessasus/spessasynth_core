@@ -350,7 +350,7 @@ class XMFNode
 }
 
 /**
- * @param midi {MIDI}
+ * @param midi {BasicMIDI}
  * @param binaryData {IndexedByteArray}
  * @returns {IndexedByteArray} the file byte array
  */

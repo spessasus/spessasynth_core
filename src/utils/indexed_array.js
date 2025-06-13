@@ -27,7 +27,7 @@ export class IndexedByteArray extends Uint8Array
      */
     slice(start, end)
     {
-        const a = super.slice(start, end);
+        const a = /** @type {IndexedByteArray} */ super.slice(start, end);
         a.currentIndex = 0;
         return a;
     }

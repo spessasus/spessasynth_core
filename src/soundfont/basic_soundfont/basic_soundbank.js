@@ -149,7 +149,6 @@ class BasicSoundBank
             20,
             0,
             0,
-            0,
             127
         );
         sample.sampleData = new Float32Array(128);

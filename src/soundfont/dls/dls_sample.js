@@ -1,4 +1,4 @@
-import { BasicSample } from "../basic_soundfont/basic_sample.js";
+import { BasicSample, sampleTypes } from "../basic_soundfont/basic_sample.js";
 
 export class DLSSample extends BasicSample
 {
@@ -38,12 +38,11 @@ export class DLSSample extends BasicSample
             rate,
             pitch,
             pitchCorrection,
-            0,
-            1,
+            sampleTypes.monoSample,
             loopStart,
             loopEnd
         );
-        this.sampleData = data;
+        this.setAudioData(data);
         this.sampleDbAttenuation = sampleDbAttenuation;
     }
     
