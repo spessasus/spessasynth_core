@@ -102,6 +102,16 @@ export function resetAllControllers(log = true)
                 LSB: lsb
             });
         }
+        
+        // restore channel pressure
+        if (this.midiAudioChannels[channelNumber].lockedControllers[NON_CC_INDEX_OFFSET + modulatorSources.channelPressure] === false)
+        {
+            const val = this.midiAudioChannels[channelNumber].midiControllers[NON_CC_INDEX_OFFSET + modulatorSources.channelPressure] >> 7;
+            this.callEvent("channelpressure", {
+                channel: channelNumber,
+                pressure: val
+            });
+        }
     }
     this.tunings = [];
     this.tunings = [];
