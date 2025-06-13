@@ -9,6 +9,21 @@ import { SpessaSynthWarn } from "../../utils/loggin.js";
 const RESAMPLE_RATE = 48000;
 
 /**
+ * @enum {number}
+ */
+export const sampleTypes = {
+    monoSample: 1,
+    rightSample: 2,
+    leftSample: 4,
+    linkedSample: 8,
+    romMonoSample: 32769,
+    romRightSample: 32770,
+    romLeftSample: 32772,
+    romLinkedSample: 32776
+};
+
+
+/**
  * @typedef {function} EncodeVorbisFunction
  * @param channelAudioData {Float32Array[]}
  * @param sampleRate {number}
@@ -45,14 +60,14 @@ export class BasicSample
     samplePitchCorrection;
     
     /**
-     * Sample link, currently unused here
-     * @type {number}
+     * Linked sample, unused if mono
+     * @type {BasicSample|undefined}
      */
-    sampleLink;
+    linkedSample;
     
     /**
-     * Type of the sample, currently only used for SF3
-     * @type {number}
+     * The type of the sample, it can indicate an SF3 sample
+     * @type {sampleTypes|number}
      */
     sampleType;
     
@@ -97,8 +112,7 @@ export class BasicSample
      * @param sampleRate {number} The sample's rate in Hz
      * @param samplePitch {number} The sample's pitch as a MIDI note number
      * @param samplePitchCorrection {number} The sample's pitch correction in cents
-     * @param sampleLink {number} The sample's link, currently unused
-     * @param sampleType {number} The sample's type, an enum
+     * @param sampleType {sampleTypes|number} The sample's type, an enum that can indicate SF3
      * @param loopStart {number} The sample's loop start relative to the sample start in sample points
      * @param loopEnd {number} The sample's loop end relative to the sample start in sample points
      */
@@ -107,7 +121,6 @@ export class BasicSample
         sampleRate,
         samplePitch,
         samplePitchCorrection,
-        sampleLink,
         sampleType,
         loopStart,
         loopEnd
@@ -117,12 +130,21 @@ export class BasicSample
         this.sampleRate = sampleRate;
         this.samplePitch = samplePitch;
         this.samplePitchCorrection = samplePitchCorrection;
-        this.sampleLink = sampleLink;
-        this.sampleType = sampleType;
         this.sampleLoopStartIndex = loopStart;
         this.sampleLoopEndIndex = loopEnd;
-        // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
-        this.isCompressed = (sampleType & 0x10) > 0;
+        this.setSampleType(sampleType);
+    }
+    
+    /**
+     * If the sample is linked to another sample
+     * @returns {boolean}
+     */
+    get isLinked()
+    {
+        return !this.isCompressed &&
+            (this.sampleType === sampleTypes.rightSample ||
+                this.sampleType === sampleTypes.leftSample ||
+                this.sampleType === sampleTypes.linkedSample);
     }
     
     /**
@@ -189,18 +211,86 @@ export class BasicSample
             }
             this.compressedData = encodeVorbis([audioData], 1, this.sampleRate, quality);
             // flag as compressed
-            this.sampleType |= 0x10;
-            this.isCompressed = true;
+            this.setSampleType(this.sampleType | 0x10);
         }
         catch (e)
         {
             SpessaSynthWarn(`Failed to compress ${this.sampleName}. Leaving as uncompressed!`);
-            this.isCompressed = false;
             this.compressedData = undefined;
             // flag as uncompressed
-            this.sampleType &= 0xEF;
+            this.setSampleType(this.sampleType & 0xEF);
         }
         
+    }
+    
+    /**
+     * @param type {sampleTypes|number}
+     */
+    setSampleType(type)
+    {
+        this.sampleType = type;
+        // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
+        this.isCompressed = (type & 0x10) > 0;
+        if (!this.isLinked)
+        {
+            // unlink the other sample
+            if (this.linkedSample)
+            {
+                this.linkedSample.linkedSample = undefined;
+                this.linkedSample.sampleType = type;
+            }
+            
+            this.linkedSample = undefined;
+        }
+        if ((type & 0x8000) > 0 && this.linkedSample)
+        {
+            throw new Error("ROM samples cannot be linked.");
+        }
+        
+    }
+    
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Unlinks a sample link
+     */
+    unlinkSample()
+    {
+        this.setSampleType(sampleTypes.monoSample);
+    }
+    
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Links a stereo sample
+     * @param sample {BasicSample}
+     * @param type {sampleTypes}
+     */
+    setLinkedSample(sample, type)
+    {
+        if (this.isCompressed)
+        {
+            throw new Error("Cannot link a compressed sample.");
+        }
+        this.linkedSample = sample;
+        sample.linkedSample = this;
+        if (type === sampleTypes.leftSample)
+        {
+            this.setSampleType(sampleTypes.leftSample);
+            sample.setSampleType(sampleTypes.rightSample);
+        }
+        else if (type === sampleTypes.rightSample)
+        {
+            this.setSampleType(sampleTypes.rightSample);
+            sample.setSampleType(sampleTypes.leftSample);
+        }
+        else if (type === sampleTypes.linkedSample)
+        {
+            this.setSampleType(sampleTypes.linkedSample);
+            sample.setSampleType(sampleTypes.linkedSample);
+        }
+        else
+        {
+            throw new Error("Invalid sample type: " + type);
+        }
     }
     
     /**

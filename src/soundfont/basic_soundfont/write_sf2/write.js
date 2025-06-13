@@ -37,7 +37,7 @@ const DEFAULT_WRITE_OPTIONS = {
 };
 
 /**
- * Write the soundfont as an .sf2 file. This method is DESTRUCTIVE
+ * Write the soundfont as an .sf2 file
  * @this {BasicSoundBank}
  * @param {SoundFont2WriteOptions} options
  * @returns {Uint8Array}

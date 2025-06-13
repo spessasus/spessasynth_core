@@ -40,7 +40,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
         shdrData[shdrData.currentIndex++] = sample.samplePitch;
         shdrData[shdrData.currentIndex++] = sample.samplePitchCorrection;
         // sample link
-        writeWord(shdrData, sample.sampleLink);
+        const sampleLinkIndex = this.samples.indexOf(sample.linkedSample);
+        writeWord(shdrData, Math.max(0, sampleLinkIndex));
         // sample type: write raw because we simply copy compressed samples
         writeWord(shdrData, sample.sampleType);
     });

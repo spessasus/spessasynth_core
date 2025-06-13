@@ -16,5 +16,6 @@ const dls = fs.readFileSync(dlsPath);
 const bank = loadSoundFont(dls);
 console.log(`Loaded! Name: ${bank.soundFontInfo["INAM"]}`);
 const outSF2 = bank.write();
-fs.writeFileSync(sf2Path, outSF2);
 console.log("Converted succesfully!");
+fs.writeFileSync(sf2Path, outSF2);
+console.log(`File written to ${sf2Path}`);
