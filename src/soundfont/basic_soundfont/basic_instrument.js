@@ -69,8 +69,12 @@ export class BasicInstrument
         this.linkedPresets.splice(index, 1);
     }
     
-    deleteAllZones()
+    deleteInstrument()
     {
+        if (this.useCount > 0)
+        {
+            throw new Error(`Cannot delete an instrument that has ${this.useCount} usages.`);
+        }
         this.instrumentZones.forEach(z => z.deleteZone());
         this.instrumentZones.length = 0;
     }

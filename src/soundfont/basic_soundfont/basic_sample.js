@@ -246,6 +246,15 @@ export class BasicSample
         
     }
     
+    deleteSample()
+    {
+        if (this.useCount > 0)
+        {
+            throw new Error(`Cannot delete sample that has ${this.useCount} usages.`);
+        }
+        this.unlinkSample();
+    }
+    
     // noinspection JSUnusedGlobalSymbols
     /**
      * Unlinks a sample link
