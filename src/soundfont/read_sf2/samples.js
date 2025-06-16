@@ -17,6 +17,12 @@ export class SoundFontSample extends BasicSample
     linkedSampleIndex;
     
     /**
+     * False value means SF2pack: the data array is a Float32 that's ready to be copied
+     * @type {boolean}
+     */
+    isDataRaw;
+    
+    /**
      * Creates a sample
      * @param sampleName {string}
      * @param sampleStartIndex {number}
@@ -188,16 +194,19 @@ export class SoundFontSample extends BasicSample
             
             if (this.isCompressed)
             {
+                // SF3
                 // if compressed, decode
                 this.decodeVorbis();
                 this.isSampleLoaded = true;
                 return this.sampleData;
             }
-            else if (!this.isDataRaw)
+            else if (this.isDataRaw)
             {
-                return this.getUncompressedReadyData();
+                // SF2
+                return this.loadUncompressedData();
             }
-            return this.loadUncompressedData();
+            // SF2Pack
+            return this.getUncompressedReadyData();
         }
         return this.sampleData;
     }
@@ -217,8 +226,10 @@ export class SoundFontSample extends BasicSample
         let audioData = new Float32Array(this.sampleLength / 2);
         const dataStartIndex = this.sampleDataArray.currentIndex;
         let convertedSigned16 = new Int16Array(
-            this.sampleDataArray.slice(dataStartIndex + this.sampleStartIndex, dataStartIndex + this.sampleEndIndex)
-                .buffer
+            this.sampleDataArray.buffer.slice(
+                dataStartIndex + this.sampleStartIndex,
+                dataStartIndex + this.sampleEndIndex
+            )
         );
         
         // convert to float
