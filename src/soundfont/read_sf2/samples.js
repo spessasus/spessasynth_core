@@ -2,9 +2,10 @@ import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian.js";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
-import { SpessaSynthWarn } from "../../utils/loggin.js";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicSample, sampleTypes } from "../basic_soundfont/basic_sample.js";
+import { consoleColors } from "../../utils/other.js";
 
 export const SF3_BIT_FLIT = 0x10;
 
@@ -139,7 +140,8 @@ export class SoundFontSample extends BasicSample
         const linkedSample = samplesArray[this.linkedSampleIndex];
         if (!linkedSample)
         {
-            SpessaSynthWarn(`Invalid linked sample for ${this.sampleName}. Setting to mono.`);
+            // log as info because it's common and not really dangerous
+            SpessaSynthInfo(`%cInvalid linked sample for ${this.sampleName}. Setting to mono.`, consoleColors.warn);
             this.setSampleType(sampleTypes.monoSample);
         }
         else
