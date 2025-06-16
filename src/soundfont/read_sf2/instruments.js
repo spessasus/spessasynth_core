@@ -28,7 +28,7 @@ export class Instrument extends BasicInstrument
     constructor(instrumentChunk)
     {
         super();
-        this.instrumentName = readBytesAsString(instrumentChunk.chunkData, 20).trim();
+        this.instrumentName = readBytesAsString(instrumentChunk.chunkData, 20);
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
     

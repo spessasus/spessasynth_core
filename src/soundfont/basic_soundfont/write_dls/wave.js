@@ -60,7 +60,7 @@ export function writeDLSSample(sample)
     {
         data = writeRIFFOddSize(
             "data",
-            sample.getRawData()
+            sample.getRawData(false) // no vorbis allowed
         );
     }
     

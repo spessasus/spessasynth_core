@@ -36,10 +36,13 @@ export function readRIFFChunk(dataArray, readData = true, forceShift = false)
     let header = readBytesAsString(dataArray, 4);
     
     let size = readLittleEndian(dataArray, 4);
+    /**
+     * @type {IndexedByteArray}
+     */
     let chunkData = undefined;
     if (readData)
     {
-        chunkData = new IndexedByteArray(dataArray.buffer.slice(dataArray.currentIndex, dataArray.currentIndex + size));
+        chunkData = dataArray.slice(dataArray.currentIndex, dataArray.currentIndex + size);
     }
     if (readData || forceShift)
     {

@@ -1,5 +1,3 @@
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { BasicPresetZone } from "../basic_soundfont/basic_preset_zone.js";
 import { Generator } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
@@ -35,30 +33,19 @@ export class PresetZone extends BasicPresetZone
     }
 }
 
+
 /**
- * Reads the given preset zone read
- * @param zonesChunk {RiffChunk}
+ * Reads the given preset zone
+ * @param indexes {{mod: number[], gen: number[]}}
  * @param presetGens {Generator[]}
  * @param instruments {BasicInstrument[]}
  * @param presetMods {Modulator[]}
  * @param presets {Preset[]}
  */
-export function readPresetZones(zonesChunk, presetGens, presetMods, instruments, presets)
+export function applyPresetZones(indexes, presetGens, presetMods, instruments, presets)
 {
-    /**
-     * @type {number[]}
-     */
-    const modStartIndexes = [];
-    /**
-     * @type {number[]}
-     */
-    const genStartIndexes = [];
-    
-    while (zonesChunk.chunkData.length > zonesChunk.chunkData.currentIndex)
-    {
-        genStartIndexes.push(readLittleEndian(zonesChunk.chunkData, 2));
-        modStartIndexes.push(readLittleEndian(zonesChunk.chunkData, 2));
-    }
+    const genStartIndexes = indexes.gen;
+    const modStartIndexes = indexes.mod;
     
     let modIndex = 0;
     let genIndex = 0;

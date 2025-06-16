@@ -5,20 +5,20 @@ import { MOD_BYTE_SIZE } from "../modulator.js";
 
 /**
  * @this {BasicSoundBank}
- * @returns {IndexedByteArray}
+ * @returns {ReturnedExtendedSf2Chunks}
  */
 export function getIMOD()
 {
     // very similar to igen,
     // go through all instruments -> zones and write modulators sequentially
-    let imodsize = MOD_BYTE_SIZE; // terminal
+    let imodSize = MOD_BYTE_SIZE; // terminal
     for (const inst of this.instruments)
     {
-        imodsize += inst.globalZone.modulators.length * MOD_BYTE_SIZE;
+        imodSize += inst.globalZone.modulators.length * MOD_BYTE_SIZE;
         // start with one mod for global
-        imodsize += inst.instrumentZones.reduce((sum, z) => z.modulators.length * MOD_BYTE_SIZE + sum, 0);
+        imodSize += inst.instrumentZones.reduce((sum, z) => z.modulators.length * MOD_BYTE_SIZE + sum, 0);
     }
-    const imoddata = new IndexedByteArray(imodsize);
+    const imodData = new IndexedByteArray(imodSize);
     
     /**
      * @param z {BasicZone}
@@ -27,11 +27,11 @@ export function getIMOD()
     {
         for (const mod of z.modulators)
         {
-            writeWord(imoddata, mod.getSourceEnum());
-            writeWord(imoddata, mod.modulatorDestination);
-            writeWord(imoddata, mod.transformAmount);
-            writeWord(imoddata, mod.getSecSrcEnum());
-            writeWord(imoddata, mod.transformType);
+            writeWord(imodData, mod.getSourceEnum());
+            writeWord(imodData, mod.modulatorDestination);
+            writeWord(imodData, mod.transformAmount);
+            writeWord(imodData, mod.getSecSrcEnum());
+            writeWord(imodData, mod.transformType);
         }
     };
     
@@ -46,11 +46,25 @@ export function getIMOD()
     }
     
     // terminal modulator, is zero
-    writeLittleEndian(imoddata, 0, MOD_BYTE_SIZE);
+    writeLittleEndian(imodData, 0, MOD_BYTE_SIZE);
     
-    return writeRIFFChunk(new RiffChunk(
+    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+    const ximodData = new IndexedByteArray(MOD_BYTE_SIZE);
+    writeLittleEndian(ximodData, 0, MOD_BYTE_SIZE);
+    
+    const imod = writeRIFFChunk(new RiffChunk(
         "imod",
-        imoddata.length,
-        imoddata
+        imodData.length,
+        imodData
     ));
+    const ximod = writeRIFFChunk(new RiffChunk(
+        "imod",
+        ximodData.length,
+        ximodData
+    ));
+    return {
+        pdta: imod,
+        xdta: ximod,
+        highestIndex: 0 // not applicable
+    };
 }

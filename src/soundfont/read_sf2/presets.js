@@ -29,7 +29,6 @@ export class Preset extends BasicPreset
     {
         super(sf2);
         this.presetName = readBytesAsString(presetChunk.chunkData, 20)
-            .trim()
             .replace(/\d{3}:\d{3}/, ""); // remove those pesky "000:001"
         
         this.program = readLittleEndian(presetChunk.chunkData, 2);

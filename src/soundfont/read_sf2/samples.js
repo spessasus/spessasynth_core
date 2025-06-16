@@ -17,10 +17,21 @@ export class SoundFontSample extends BasicSample
     linkedSampleIndex;
     
     /**
-     * False value means SF2pack: the data array is a Float32 that's ready to be copied
-     * @type {boolean}
+     * The handle to the core sf2 file for dynamic sample reading
+     * @type {Uint8Array}
      */
-    isDataRaw;
+    sf2FileArrayHandle;
+    
+    /**
+     * Start index of the sample in the file byte array
+     * @type {number}
+     */
+    s16leStart = 0;
+    /**
+     * End index of the sample in the file byte array
+     * @type {number}
+     */
+    s16leEnd = 0;
     
     /**
      * Creates a sample
@@ -34,9 +45,8 @@ export class SoundFontSample extends BasicSample
      * @param samplePitchCorrection {number}
      * @param linkedSampleIndex {number}
      * @param sampleType {number}
-     * @param smplArr {IndexedByteArray|Float32Array}
+     * @param sampleDataArray {IndexedByteArray|Float32Array}
      * @param sampleIndex {number} initial sample index when loading the sfont
-     * @param isDataRaw {boolean} if false, the data is decoded as float32.
      * Used for SF2Pack support
      */
     constructor(
@@ -50,9 +60,8 @@ export class SoundFontSample extends BasicSample
         samplePitchCorrection,
         linkedSampleIndex,
         sampleType,
-        smplArr,
-        sampleIndex,
-        isDataRaw
+        sampleDataArray,
+        sampleIndex
     )
     {
         // read sf3
@@ -74,20 +83,47 @@ export class SoundFontSample extends BasicSample
         // in bytes
         this.sampleStartIndex = sampleStartIndex;
         this.sampleEndIndex = sampleEndIndex;
-        this.isSampleLoaded = false;
         this.sampleID = sampleIndex;
         // in bytes
         this.sampleLength = this.sampleEndIndex - this.sampleStartIndex;
-        this.sampleDataArray = smplArr;
-        this.sampleData = new Float32Array(0);
+        const smplStart = sampleDataArray.currentIndex;
+        
+        // three data types in:
+        // SF2 (s16le)
+        // SF3 (vorbis)
+        // SF2Pack (
         if (this.isCompressed)
         {
             // correct loop points
             this.sampleLoopStartIndex += this.sampleStartIndex / 2;
             this.sampleLoopEndIndex += this.sampleStartIndex / 2;
             this.sampleLength = 99999999; // set to 999,999 before we decode it
+            
+            // copy the compressed data, it can be preserved during writing
+            this.compressedData = sampleDataArray.slice(
+                this.sampleStartIndex / 2 + smplStart,
+                this.sampleEndIndex / 2 + smplStart
+            );
         }
-        this.isDataRaw = isDataRaw;
+        else
+        {
+            if (sampleDataArray instanceof Float32Array)
+            {
+                // float32 array from SF2pack, copy directly
+                this.sampleData = sampleDataArray.slice(
+                    this.sampleStartIndex / 2,
+                    this.sampleEndIndex / 2
+                );
+            }
+            else
+            {
+                // regular sf2 s16le
+                this.s16leStart = smplStart + this.sampleStartIndex;
+                this.s16leEnd = smplStart + this.sampleEndIndex;
+                this.sf2FileArrayHandle = sampleDataArray;
+            }
+            
+        }
         this.linkedSampleIndex = linkedSampleIndex;
     }
     
@@ -104,66 +140,49 @@ export class SoundFontSample extends BasicSample
     }
     
     /**
-     * Get raw data, whether it's compressed or not as we simply write it to the file
-     * @return {Uint8Array} either s16 or vorbis data
-     */
-    getRawData()
-    {
-        const smplArr = this.sampleDataArray;
-        if (this.isCompressed)
-        {
-            if (this.compressedData)
-            {
-                return this.compressedData;
-            }
-            const smplStart = smplArr.currentIndex;
-            return smplArr.slice(this.sampleStartIndex / 2 + smplStart, this.sampleEndIndex / 2 + smplStart);
-        }
-        else
-        {
-            if (!this.isDataRaw)
-            {
-                // encode the f32 into s16 manually
-                super.getRawData();
-            }
-            const dataStartIndex = smplArr.currentIndex;
-            return smplArr.slice(dataStartIndex + this.sampleStartIndex, dataStartIndex + this.sampleEndIndex);
-        }
-    }
-    
-    /**
+     * @private
      * Decode binary vorbis into a float32 pcm
+     * @returns {Float32Array}
      */
     decodeVorbis()
     {
+        if (this.sampleData)
+        {
+            return this.sampleData;
+        }
         if (this.sampleLength < 1)
         {
             // eos, do not do anything
-            return;
+            return new Float32Array(0);
         }
         // get the compressed byte stream
-        const smplArr = this.sampleDataArray;
-        const smplStart = smplArr.currentIndex;
-        const buff = smplArr.slice(this.sampleStartIndex / 2 + smplStart, this.sampleEndIndex / 2 + smplStart);
         // reset array and being decoding
-        this.sampleData = new Float32Array(0);
         try
         {
             /**
              * @type {{data: Float32Array[], error: (string|null), sampleRate: number, eof: boolean}}
              */
-            const vorbis = stbvorbis.decode(buff.buffer);
-            this.sampleData = vorbis.data[0];
-            if (this.sampleData === undefined)
+            const vorbis = stbvorbis.decode(this.compressedData);
+            const decoded = vorbis.data[0];
+            if (decoded === undefined)
             {
                 SpessaSynthWarn(`Error decoding sample ${this.sampleName}: Vorbis decode returned undefined.`);
+                return new Float32Array(0);
             }
+            // clip
+            // because vorbis can go above 1 sometimes
+            for (let i = 0; i < decoded.length; i++)
+            {
+                // magic number is 32,767 / 32,768
+                decoded[i] = Math.max(-1, Math.min(decoded[i], 0.999969482421875));
+            }
+            return decoded;
         }
         catch (e)
         {
             // do not error out, fill with silence
             SpessaSynthWarn(`Error decoding sample ${this.sampleName}: ${e}`);
-            this.sampleData = new Float32Array(this.sampleLoopEndIndex + 1);
+            return new Float32Array(this.sampleLoopEndIndex + 1);
         }
     }
     
@@ -173,8 +192,6 @@ export class SoundFontSample extends BasicSample
     setAudioData(audioData)
     {
         super.setAudioData(audioData);
-        this.isSampleLoaded = true;
-        this.isDataRaw = false;
     }
     
     /**
@@ -183,53 +200,31 @@ export class SoundFontSample extends BasicSample
      */
     getAudioData()
     {
-        if (!this.isSampleLoaded)
+        if (this.sampleData)
         {
-            // start loading data if it is not loaded
-            if (this.sampleLength < 1)
-            {
-                SpessaSynthWarn(`Invalid sample ${this.sampleName}! Invalid length: ${this.sampleLength}`);
-                return new Float32Array(1);
-            }
-            
-            if (this.isCompressed)
-            {
-                // SF3
-                // if compressed, decode
-                this.decodeVorbis();
-                this.isSampleLoaded = true;
-                return this.sampleData;
-            }
-            else if (this.isDataRaw)
-            {
-                // SF2
-                return this.loadUncompressedData();
-            }
-            // SF2Pack
-            return this.getUncompressedReadyData();
+            return this.sampleData;
         }
-        return this.sampleData;
-    }
-    
-    /**
-     * @returns {Float32Array}
-     */
-    loadUncompressedData()
-    {
-        if (this.isCompressed)
+        // SF2Pack is decoded during load time
+        
+        // start loading data if it is not loaded
+        if (this.sampleLength < 1)
         {
-            SpessaSynthWarn("Trying to load a compressed sample via loadUncompressedData()... aborting!");
-            return new Float32Array(0);
+            SpessaSynthWarn(`Invalid sample ${this.sampleName}! Invalid length: ${this.sampleLength}`);
+            return new Float32Array(1);
         }
         
+        if (this.isCompressed)
+        {
+            // SF3
+            // if compressed, decode
+            this.sampleData = this.decodeVorbis();
+            return this.sampleData;
+        }
+        // SF2
         // read the sample data
         let audioData = new Float32Array(this.sampleLength / 2);
-        const dataStartIndex = this.sampleDataArray.currentIndex;
         let convertedSigned16 = new Int16Array(
-            this.sampleDataArray.buffer.slice(
-                dataStartIndex + this.sampleStartIndex,
-                dataStartIndex + this.sampleEndIndex
-            )
+            this.sf2FileArrayHandle.buffer.slice(this.s16leStart, this.s16leEnd)
         );
         
         // convert to float
@@ -239,26 +234,28 @@ export class SoundFontSample extends BasicSample
         }
         
         this.sampleData = audioData;
-        this.isSampleLoaded = true;
         return audioData;
+        
     }
     
     /**
-     * @returns {Float32Array}
+     * @param allowVorbis
+     * @returns {Uint8Array}
      */
-    getUncompressedReadyData()
+    getRawData(allowVorbis = true)
     {
-        /**
-         * read the sample data
-         * @type {Float32Array}
-         */
-        let audioData = /**@type {Float32Array}*/ this.sampleDataArray.slice(
-            this.sampleStartIndex / 2,
-            this.sampleEndIndex / 2
-        );
-        this.sampleData = audioData;
-        this.isSampleLoaded = true;
-        return audioData;
+        if (this.dataOverriden)
+        {
+            return this.encodeS16LE();
+        }
+        else
+        {
+            if (this.compressedData && allowVorbis)
+            {
+                return this.compressedData;
+            }
+            return this.sf2FileArrayHandle.slice(this.s16leStart, this.s16leEnd);
+        }
     }
 }
 
@@ -266,10 +263,10 @@ export class SoundFontSample extends BasicSample
  * Reads the generatorTranslator from the shdr read
  * @param sampleHeadersChunk {RiffChunk}
  * @param smplChunkData {IndexedByteArray|Float32Array}
- * @param isSmplDataRaw {boolean}
+ * @param linkSamples {boolean}
  * @returns {SoundFontSample[]}
  */
-export function readSamples(sampleHeadersChunk, smplChunkData, isSmplDataRaw = true)
+export function readSamples(sampleHeadersChunk, smplChunkData, linkSamples = true)
 {
     /**
      * @type {SoundFontSample[]}
@@ -278,7 +275,7 @@ export function readSamples(sampleHeadersChunk, smplChunkData, isSmplDataRaw = t
     let index = 0;
     while (sampleHeadersChunk.chunkData.length > sampleHeadersChunk.chunkData.currentIndex)
     {
-        const sample = readSample(index, sampleHeadersChunk.chunkData, smplChunkData, isSmplDataRaw);
+        const sample = readSample(index, sampleHeadersChunk.chunkData, smplChunkData);
         samples.push(sample);
         index++;
     }
@@ -286,7 +283,10 @@ export function readSamples(sampleHeadersChunk, smplChunkData, isSmplDataRaw = t
     samples.pop();
     
     // link samples
-    samples.forEach(s => s.getLinkedSample(samples));
+    if (linkSamples)
+    {
+        samples.forEach(s => s.getLinkedSample(samples));
+    }
     
     return samples;
 }
@@ -296,10 +296,9 @@ export function readSamples(sampleHeadersChunk, smplChunkData, isSmplDataRaw = t
  * @param index {number}
  * @param sampleHeaderData {IndexedByteArray}
  * @param smplArrayData {IndexedByteArray|Float32Array}
- * @param isDataRaw {boolean} true means binary 16-bit data, false means float32
  * @returns {SoundFontSample}
  */
-function readSample(index, sampleHeaderData, smplArrayData, isDataRaw)
+function readSample(index, sampleHeaderData, smplArrayData)
 {
     
     // read the sample name
@@ -322,9 +321,9 @@ function readSample(index, sampleHeaderData, smplArrayData, isDataRaw)
     
     // read the original sample pitch
     let samplePitch = sampleHeaderData[sampleHeaderData.currentIndex++];
-    if (samplePitch === 255)
+    if (samplePitch > 127)
     {
-        // if it's 255, then default to 60
+        // if it's out of range, then default to 60
         samplePitch = 60;
     }
     
@@ -349,7 +348,6 @@ function readSample(index, sampleHeaderData, smplArrayData, isDataRaw)
         sampleLink,
         sampleType,
         smplArrayData,
-        index,
-        isDataRaw
+        index
     );
 }

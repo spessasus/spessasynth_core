@@ -26,7 +26,7 @@ export class BasicInstrumentZone extends BasicZone
     {
         super();
         this.parentInstrument = instrument;
-        this.useCount = instrument.linkedPresets.length;
+        this.useCount = instrument.useCount;
     }
     
     /**

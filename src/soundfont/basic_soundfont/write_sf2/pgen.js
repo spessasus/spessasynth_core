@@ -7,17 +7,17 @@ import { generatorTypes } from "../generator_types.js";
 
 /**
  * @this {BasicSoundBank}
- * @returns {IndexedByteArray}
+ * @returns {ReturnedExtendedSf2Chunks}
  */
 export function getPGEN()
 {
     // almost identical to igen, except the correct instrument instead of sample gen
     // goes through all preset zones and writes generators sequentially (add 4 for terminal)
-    let pgensize = GEN_BYTE_SIZE;
+    let pgenSize = GEN_BYTE_SIZE;
     for (const preset of this.presets)
     {
-        pgensize += preset.globalZone.generators.length * GEN_BYTE_SIZE;
-        pgensize += preset.presetZones.reduce((size, z) =>
+        pgenSize += preset.globalZone.generators.length * GEN_BYTE_SIZE;
+        pgenSize += preset.presetZones.reduce((size, z) =>
         {
             // clear instrument and range generators before determining the size
             z.generators = z.generators.filter(g =>
@@ -51,7 +51,7 @@ export function getPGEN()
             return z.generators.length * GEN_BYTE_SIZE + size;
         }, 0);
     }
-    const pgendata = new IndexedByteArray(pgensize);
+    const pgenData = new IndexedByteArray(pgenSize);
     
     /**
      * @param z {BasicZone}
@@ -61,8 +61,8 @@ export function getPGEN()
         for (const gen of z.generators)
         {
             // name is deceptive, it works on negatives
-            writeWord(pgendata, gen.generatorType);
-            writeWord(pgendata, gen.generatorValue);
+            writeWord(pgenData, gen.generatorType);
+            writeWord(pgenData, gen.generatorValue);
         }
     };
     for (const preset of this.presets)
@@ -75,11 +75,25 @@ export function getPGEN()
         }
     }
     // terminal generator, is zero
-    writeDword(pgendata, 0);
+    writeDword(pgenData, 0);
     
-    return writeRIFFChunk(new RiffChunk(
+    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+    const xpgenData = new IndexedByteArray(GEN_BYTE_SIZE);
+    writeDword(xpgenData, 0);
+    
+    const pgen = writeRIFFChunk(new RiffChunk(
         "pgen",
-        pgendata.length,
-        pgendata
+        pgenData.length,
+        pgenData
     ));
+    const xpgen = writeRIFFChunk(new RiffChunk(
+        "pgen",
+        xpgenData.length,
+        xpgenData
+    ));
+    return {
+        pdta: pgen,
+        xdta: xpgen,
+        highestIndex: 0 // not applicable
+    };
 }

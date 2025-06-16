@@ -4,7 +4,6 @@
  */
 import { BasicInstrumentZone } from "../basic_soundfont/basic_instrument_zone.js";
 import { generatorTypes } from "../basic_soundfont/generator_types.js";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 
 export class InstrumentZone extends BasicInstrumentZone
 {
@@ -33,28 +32,16 @@ export class InstrumentZone extends BasicInstrumentZone
 
 /**
  * Reads the given instrument zone
- * @param zonesChunk {RiffChunk}
+ * @param indexes {{mod: number[], gen: number[]}}
  * @param instrumentGenerators {Generator[]}
  * @param instrumentModulators {Modulator[]}
  * @param samples {BasicSample[]}
  * @param instruments {Instrument[]}
  */
-export function readInstrumentZones(zonesChunk, instrumentGenerators, instrumentModulators, samples, instruments)
+export function applyInstrumentZones(indexes, instrumentGenerators, instrumentModulators, samples, instruments)
 {
-    /**
-     * @type {number[]}
-     */
-    const modStartIndexes = [];
-    /**
-     * @type {number[]}
-     */
-    const genStartIndexes = [];
-    
-    while (zonesChunk.chunkData.length > zonesChunk.chunkData.currentIndex)
-    {
-        genStartIndexes.push(readLittleEndian(zonesChunk.chunkData, 2));
-        modStartIndexes.push(readLittleEndian(zonesChunk.chunkData, 2));
-    }
+    const genStartIndexes = indexes.gen;
+    const modStartIndexes = indexes.mod;
     
     let modIndex = 0;
     let genIndex = 0;

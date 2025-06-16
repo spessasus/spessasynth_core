@@ -6,16 +6,16 @@ import { generatorTypes } from "../generator_types.js";
 
 /**
  * @this {BasicSoundBank}
- * @returns {IndexedByteArray}
+ * @returns {ReturnedExtendedSf2Chunks}
  */
 export function getIGEN()
 {
     // go through all instruments -> zones and write generators sequentially (add 4 for terminal)
-    let igensize = GEN_BYTE_SIZE;
+    let igenSize = GEN_BYTE_SIZE;
     for (const inst of this.instruments)
     {
-        igensize += inst.globalZone.generators.length * GEN_BYTE_SIZE;
-        igensize += inst.instrumentZones.reduce((sum, z) =>
+        igenSize += inst.globalZone.generators.length * GEN_BYTE_SIZE;
+        igenSize += inst.instrumentZones.reduce((sum, z) =>
         {
             // clear sample and range generators before determining the size
             z.generators = (z.generators.filter(g =>
@@ -50,7 +50,7 @@ export function getIGEN()
             return z.generators.length * GEN_BYTE_SIZE + sum;
         }, 0);
     }
-    const igendata = new IndexedByteArray(igensize);
+    const igenData = new IndexedByteArray(igenSize);
     
     /**
      * @param z {BasicZone}
@@ -60,8 +60,8 @@ export function getIGEN()
         for (const gen of z.generators)
         {
             // name is deceptive, it works on negatives
-            writeWord(igendata, gen.generatorType);
-            writeWord(igendata, gen.generatorValue);
+            writeWord(igenData, gen.generatorType);
+            writeWord(igenData, gen.generatorValue);
         }
     };
     
@@ -75,10 +75,25 @@ export function getIGEN()
         }
     }
     // terminal generator, is zero
-    writeDword(igendata, 0);
-    return writeRIFFChunk(new RiffChunk(
+    writeDword(igenData, 0);
+    
+    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+    const xigenData = new IndexedByteArray(GEN_BYTE_SIZE);
+    writeDword(xigenData, 0);
+    
+    const igen = writeRIFFChunk(new RiffChunk(
         "igen",
-        igendata.length,
-        igendata
+        igenData.length,
+        igenData
     ));
+    const xigen = writeRIFFChunk(new RiffChunk(
+        "igen",
+        xigenData.length,
+        xigenData
+    ));
+    return {
+        pdta: igen,
+        xdta: xigen,
+        highestIndex: 0 // not applicable
+    };
 }

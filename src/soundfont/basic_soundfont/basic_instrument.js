@@ -53,7 +53,7 @@ export class BasicInstrument
     linkTo(preset)
     {
         this.linkedPresets.push(preset);
-        this.instrumentZones.forEach(z => z.useCount = this.linkedPresets.length);
+        this.instrumentZones.forEach(z => z.useCount++);
     }
     
     /**
@@ -67,6 +67,20 @@ export class BasicInstrument
             throw new Error(`Cannot unlink ${preset.presetName} from ${this.instrumentName}: not linked.`);
         }
         this.linkedPresets.splice(index, 1);
+        this.instrumentZones.forEach(z => z.useCount--);
+    }
+    
+    deleteUnusedZones()
+    {
+        this.instrumentZones = this.instrumentZones.filter(z =>
+        {
+            const stays = z.useCount > 0;
+            if (!stays)
+            {
+                z.deleteZone();
+            }
+            return stays;
+        });
     }
     
     deleteInstrument()
@@ -86,6 +100,7 @@ export class BasicInstrument
     deleteZone(index)
     {
         const zone = this.instrumentZones[index];
+        zone.useCount -= 1;
         if (zone.useCount < 1)
         {
             zone.deleteZone();

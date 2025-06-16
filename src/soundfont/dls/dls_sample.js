@@ -1,6 +1,7 @@
 import { BasicSample, sampleTypes } from "../basic_soundfont/basic_sample.js";
 import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
 
 const W_FORMAT_TAG = {
     PCM: 0x01,
@@ -9,11 +10,11 @@ const W_FORMAT_TAG = {
 
 
 /**
- * @param dataChunk {RiffChunk}
+ * @param data {IndexedByteArray}
  * @param bytesPerSample {number}
  * @returns {Float32Array}
  */
-function readPCM(dataChunk, bytesPerSample)
+function readPCM(data, bytesPerSample)
 {
     const maxSampleValue = Math.pow(2, bytesPerSample * 8 - 1); // Max value for the sample
     const maxUnsigned = Math.pow(2, bytesPerSample * 8);
@@ -30,12 +31,12 @@ function readPCM(dataChunk, bytesPerSample)
     {
         normalizationFactor = maxSampleValue; // For 16-bit normalize from -32,768 to 32,767
     }
-    const sampleLength = dataChunk.size / bytesPerSample;
+    const sampleLength = data.length / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
     if (bytesPerSample === 2)
     {
         // special optimized case for s16 (most common)
-        const s16 = new Int16Array(dataChunk.chunkData.buffer);
+        const s16 = new Int16Array(data.buffer);
         for (let i = 0; i < s16.length; i++)
         {
             sampleData[i] = s16[i] / 32768;
@@ -46,7 +47,7 @@ function readPCM(dataChunk, bytesPerSample)
         for (let i = 0; i < sampleData.length; i++)
         {
             // read
-            let sample = readLittleEndian(dataChunk.chunkData, bytesPerSample);
+            let sample = readLittleEndian(data, bytesPerSample);
             // turn into signed
             if (isUnsigned)
             {
@@ -68,18 +69,18 @@ function readPCM(dataChunk, bytesPerSample)
 }
 
 /**
- * @param dataChunk {RiffChunk}
+ * @param data {IndexedByteArray}
  * @param bytesPerSample {number}
  * @returns {Float32Array}
  */
-function readALAW(dataChunk, bytesPerSample)
+function readALAW(data, bytesPerSample)
 {
-    const sampleLength = dataChunk.size / bytesPerSample;
+    const sampleLength = data / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
     for (let i = 0; i < sampleData.length; i++)
     {
         // read
-        const input = readLittleEndian(dataChunk.chunkData, bytesPerSample);
+        const input = readLittleEndian(data, bytesPerSample);
         
         // https://en.wikipedia.org/wiki/G.711#A-law
         // re-toggle toggled bits
@@ -123,13 +124,6 @@ export class DLSSample extends BasicSample
      */
     sampleData;
     
-    isLoaded = false;
-    
-    /**
-     * @type {RiffChunk}
-     */
-    sampleDataChunk;
-    
     /**
      * @type {number}
      */
@@ -139,6 +133,12 @@ export class DLSSample extends BasicSample
      * @type {number}
      */
     bytesPerSample;
+    
+    /**
+     * Sample's raw data before decoding it, for faster writing
+     * @type {IndexedByteArray}
+     */
+    rawData;
     
     /**
      * @param name {string}
@@ -175,29 +175,36 @@ export class DLSSample extends BasicSample
             loopEnd
         );
         this.sampleDbAttenuation = sampleDbAttenuation;
-        this.sampleDataChunk = dataChunk;
+        /**
+         * @type {IndexedByteArray}
+         */
+        this.rawData = dataChunk.chunkData;
         this.wFormatTag = wFormatTag;
         this.bytesPerSample = bytesPerSample;
     }
     
     getAudioData()
     {
-        if (!this.isLoaded)
+        if (!(this.rawData instanceof Uint8Array))
+        {
+            return new Float32Array(0);
+        }
+        if (!this.sampleData)
         {
             let sampleData;
             switch (this.wFormatTag)
             {
                 default:
                     SpessaSynthWarn(`Failed to decode sample. Unknown wFormatTag: ${this.wFormatTag}`);
-                    sampleData = new Float32Array(this.sampleDataChunk.size / this.bytesPerSample);
+                    sampleData = new Float32Array(this.rawData.length / this.bytesPerSample);
                     break;
                 
                 case W_FORMAT_TAG.PCM:
-                    sampleData = readPCM(this.sampleDataChunk, this.bytesPerSample);
+                    sampleData = readPCM(this.rawData, this.bytesPerSample);
                     break;
                 
                 case W_FORMAT_TAG.ALAW:
-                    sampleData = readALAW(this.sampleDataChunk, this.bytesPerSample);
+                    sampleData = readALAW(this.rawData, this.bytesPerSample);
                     break;
                 
             }
@@ -211,21 +218,26 @@ export class DLSSample extends BasicSample
      */
     setAudioData(audioData)
     {
-        this.isLoaded = true;
         super.setAudioData(audioData);
     }
     
-    getRawData()
+    getRawData(allowVorbis = true)
     {
-        if (this.isCompressed)
+        if (this.dataOverriden)
         {
-            if (!this.compressedData)
-            {
-                throw new Error("Compressed but no data?? This shouldn't happen!!");
-            }
-            return this.compressedData;
+            return this.encodeS16LE();
         }
-        // turn into s16
-        return super.getRawData();
+        else
+        {
+            if (this.compressedData && allowVorbis)
+            {
+                return this.compressedData;
+            }
+            if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2)
+            {
+                return this.rawData;
+            }
+            return this.encodeS16LE();
+        }
     }
 }

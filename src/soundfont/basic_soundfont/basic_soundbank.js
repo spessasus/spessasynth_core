@@ -358,7 +358,6 @@ class BasicSoundBank
                     consoleColors.info
                 );
                 soundfont.deletePreset(p);
-                soundfont.removeUnusedElements();
                 presetIndex--;
             }
             else
@@ -444,12 +443,13 @@ class BasicSoundBank
     {
         this.instruments = this.instruments.filter(i =>
         {
+            i.deleteUnusedZones();
             const deletable = i.useCount < 1;
             if (deletable)
             {
                 i.deleteInstrument();
             }
-            return deletable;
+            return !deletable;
         });
         this.samples = this.samples.filter(s =>
         {
@@ -458,7 +458,7 @@ class BasicSoundBank
             {
                 s.deleteSample();
             }
-            return deletable;
+            return !deletable;
         });
     }
     

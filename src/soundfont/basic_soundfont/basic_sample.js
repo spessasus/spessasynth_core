@@ -4,6 +4,7 @@
  * loads sample data, handles async loading of sf3 compressed samples
  */
 import { SpessaSynthWarn } from "../../utils/loggin.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
 
 // should be reasonable for most cases
 const RESAMPLE_RATE = 48000;
@@ -21,7 +22,6 @@ export const sampleTypes = {
     romLeftSample: 32772,
     romLinkedSample: 32776
 };
-
 
 /**
  * @typedef {function} EncodeVorbisFunction
@@ -90,8 +90,8 @@ export class BasicSample
     isCompressed;
     
     /**
-     * The compressed sample data if it was compressed by spessasynth
-     * @type {Uint8Array}
+     * The compressed sample data if the sample has been compressed
+     * @type {Uint8Array|undefined}
      */
     compressedData = undefined;
     /**
@@ -107,7 +107,13 @@ export class BasicSample
     sampleData = undefined;
     
     /**
-     * The basic representation of a soundfont sample
+     * Indicates if the data was overriden, so it cannot be copied back unchanged
+     * @type {boolean}
+     */
+    dataOverriden = false;
+    
+    /**
+     * The basic representation of a sample
      * @param sampleName {string} The sample's name
      * @param sampleRate {number} The sample's rate in Hz
      * @param samplePitch {number} The sample's pitch as a MIDI note number
@@ -156,19 +162,14 @@ export class BasicSample
     }
     
     /**
-     * @returns {Uint8Array|IndexedByteArray}
+     * Get raw data for writing the file
+     * @param allowVorbis {boolean}
+     * @return {Uint8Array} either s16 or vorbis data
+     * @virtual
      */
-    getRawData()
+    getRawData(allowVorbis = true)
     {
-        const data = this.getAudioData();
-        const uint8 = new Uint8Array(data.length * 2);
-        for (let i = 0; i < data.length; i++)
-        {
-            const sample = Math.floor(data[i] * 32768);
-            uint8[i * 2] = sample & 0xFF; // lower byte
-            uint8[i * 2 + 1] = (sample >> 8) & 0xFF; // upper byte
-        }
-        return uint8;
+        return this.encodeS16LE();
     }
     
     resampleData(newSampleRate)
@@ -211,14 +212,16 @@ export class BasicSample
             }
             this.compressedData = encodeVorbis([audioData], 1, this.sampleRate, quality);
             // flag as compressed
-            this.setSampleType(this.sampleType | 0x10);
+            this.isCompressed = true;
+            // allow the data to be copied from the compressedData chunk during the write operation
+            this.dataOverriden = false;
         }
         catch (e)
         {
             SpessaSynthWarn(`Failed to compress ${this.sampleName}. Leaving as uncompressed!`);
-            this.compressedData = undefined;
+            delete this.compressedData;
             // flag as uncompressed
-            this.setSampleType(this.sampleType & 0xEF);
+            this.isCompressed = false;
         }
         
     }
@@ -330,8 +333,25 @@ export class BasicSample
         return this.sampleData;
     }
     
+    /**
+     * Encodes s16le sample
+     * @return {IndexedByteArray}
+     */
+    encodeS16LE()
+    {
+        const data = this.getAudioData();
+        const data16 = new Int16Array(data.length);
+        
+        for (let i = 0; i < data.length; i++)
+        {
+            data16[i] = data[i] * 32768;
+        }
+        return new IndexedByteArray(data16.buffer);
+    }
+    
     // noinspection JSUnusedGlobalSymbols
     /**
+     * REPLACES the audio data
      * @param audioData {Float32Array}
      * @virtual
      */
@@ -340,5 +360,6 @@ export class BasicSample
         this.isCompressed = false;
         delete this.compressedData;
         this.sampleData = audioData;
+        this.dataOverriden = true;
     }
 }

@@ -24,6 +24,16 @@ import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
  * the encode vorbis function. Can be undefined if not compressed.
  * @property {boolean|undefined} writeDefaultModulators - if the DMOD chunk should be written.
  * Recommended.
+ * @property {boolean|undefined} writeExtendedLimits - if the xdta chunk should be written to allow virtually infinite parameters.
+ * Recommended.
+ */
+
+
+/**
+ * @typedef {Object} ReturnedExtendedSf2Chunks
+ * @property {IndexedByteArray} pdta - the pdta part of the chunk
+ * @property {IndexedByteArray} xdta - the xdta (https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md) part of the chunk
+ * @property {number} highestIndex - the highest index written (0 if not applicable). Used for determining whether the xdta chunk is necessary.
  */
 
 /**
@@ -33,7 +43,8 @@ const DEFAULT_WRITE_OPTIONS = {
     compress: false,
     compressionQuality: 0.5,
     compressionFunction: undefined,
-    writeDefaultModulators: true
+    writeDefaultModulators: true,
+    writeExtendedLimits: true
 };
 
 /**
@@ -146,7 +157,6 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
             )));
         }
     }
-    const infoChunk = writeRIFFOddSize("INFO", combineArrays(infoArrays), false, true);
     
     SpessaSynthInfo(
         "%cWriting SDTA...",
@@ -213,24 +223,53 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         consoleColors.info
     );
     const phdrChunk = getPHDR.call(this);
+    /**
+     * @type {ReturnedExtendedSf2Chunks[]}
+     */
+    const chunks = [phdrChunk, pbagChunk, pmodChunk, pgenChunk, instChunk, ibagChunk, imodChunk, igenChunk, shdrChunk];
     // combine in the sfspec order
-    const pdtadata = combineArrays([
+    const pdtaData = combineArrays([
         new IndexedByteArray([112, 100, 116, 97]), // "pdta"
-        phdrChunk,
-        pbagChunk,
-        pmodChunk,
-        pgenChunk,
-        instChunk,
-        ibagChunk,
-        imodChunk,
-        igenChunk,
-        shdrChunk
+        ...chunks.map(c => c.pdta)
     ]);
     const pdtaChunk = writeRIFFChunk(new RiffChunk(
         "LIST",
-        pdtadata.length,
-        pdtadata
+        pdtaData.length,
+        pdtaData
     ));
+    const maxIndex = Math.max(
+        ...chunks.map(c => c.highestIndex)
+    );
+    
+    const writeXdta = options.writeExtendedLimits && (
+        maxIndex > 0xFFF
+        || this.presets.some(p => p.presetName.length > 20)
+        || this.instruments.some(i => i.instrumentName.length > 20)
+        || this.samples.some(s => s.sampleName.length > 20)
+    );
+    
+    if (writeXdta)
+    {
+        SpessaSynthInfo(
+            `%cWriting the xdta chunk! Max index: %c${maxIndex}`,
+            consoleColors.info,
+            consoleColors.value
+        );
+        // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+        const xpdtaData = combineArrays([
+            new IndexedByteArray([120, 100, 116, 97]), // "xdta"
+            ...chunks.map(c => c.xdta)
+        ]);
+        
+        const xpdtaChunk = writeRIFFChunk(new RiffChunk(
+            "LIST",
+            xpdtaData.length,
+            xpdtaData
+        ));
+        infoArrays.push(xpdtaChunk);
+    }
+    
+    const infoChunk = writeRIFFOddSize("INFO", combineArrays(infoArrays), false, true);
     SpessaSynthInfo(
         "%cWriting the output file...",
         consoleColors.info
