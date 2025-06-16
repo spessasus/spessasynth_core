@@ -4,7 +4,7 @@ import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
 import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { BasicSample } from "../basic_soundfont/basic_sample.js";
+import { BasicSample, sampleTypes } from "../basic_soundfont/basic_sample.js";
 
 export const SF3_BIT_FLIT = 0x10;
 
@@ -136,7 +136,16 @@ export class SoundFontSample extends BasicSample
         {
             return;
         }
-        this.setLinkedSample(samplesArray[this.linkedSampleIndex], this.sampleType);
+        const linkedSample = samplesArray[this.linkedSampleIndex];
+        if (!linkedSample)
+        {
+            SpessaSynthWarn(`Invalid linked sample for ${this.sampleName}. Setting to mono.`);
+            this.setSampleType(sampleTypes.monoSample);
+        }
+        else
+        {
+            this.setLinkedSample(samplesArray[this.linkedSampleIndex], this.sampleType);
+        }
     }
     
     /**
