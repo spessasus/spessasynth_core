@@ -1,6 +1,6 @@
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 import { GEN_BYTE_SIZE, Generator } from "../generator.js";
 import { generatorTypes } from "../generator_types.js";
 
@@ -81,16 +81,8 @@ export function getIGEN()
     const xigenData = new IndexedByteArray(GEN_BYTE_SIZE);
     writeDword(xigenData, 0);
     
-    const igen = writeRIFFChunk(new RiffChunk(
-        "igen",
-        igenData.length,
-        igenData
-    ));
-    const xigen = writeRIFFChunk(new RiffChunk(
-        "igen",
-        xigenData.length,
-        xigenData
-    ));
+    const igen = writeRIFFChunkRaw("igen", igenData);
+    const xigen = writeRIFFChunkRaw("igen", xigenData);
     return {
         pdta: igen,
         xdta: xigen,

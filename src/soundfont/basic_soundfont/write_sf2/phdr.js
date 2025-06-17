@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 
 const PHDR_SIZE = 38;
 
@@ -49,17 +49,9 @@ export function getPHDR()
     writeWord(xphdrData, presetStart >> 16);
     xphdrData.currentIndex += 12;// library, genre, morphology
     
-    const phdr = writeRIFFChunk(new RiffChunk(
-        "phdr",
-        phdrData.length,
-        phdrData
-    ));
+    const phdr = writeRIFFChunkRaw("phdr", phdrData);
     
-    const xphdr = writeRIFFChunk(new RiffChunk(
-        "phdr",
-        xphdrData.length,
-        xphdrData
-    ));
+    const xphdr = writeRIFFChunkRaw("phdr", xphdrData);
     
     return {
         pdta: phdr,

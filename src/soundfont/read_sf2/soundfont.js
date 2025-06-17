@@ -54,7 +54,7 @@ export class SoundFont2 extends BasicSoundBank
             this.parsingError("No data provided!");
         }
         
-        // read the main read
+        // read the main chunk
         let firstChunk = readRIFFChunk(mainFileArray, false);
         this.verifyHeader(firstChunk, "riff");
         

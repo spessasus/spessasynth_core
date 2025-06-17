@@ -1,5 +1,5 @@
-import { combineArrays, IndexedByteArray } from "../../utils/indexed_array.js";
-import { writeRIFFOddSize } from "../../soundfont/basic_soundfont/riff_chunk.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../soundfont/basic_soundfont/riff_chunk.js";
 import { getStringBytes } from "../../utils/byte_functions/string.js";
 import { messageTypes, midiControllers, MIDIMessage } from "../midi_message.js";
 import { getGsOn } from "./midi_editor.js";
@@ -419,25 +419,25 @@ export function writeRMIDI(
     /**
      * @type {Uint8Array[]}
      */
-    const infoContent = [getStringBytes("INFO")];
+    const infoContent = [];
     const encoder = new TextEncoder();
     // software (SpessaSynth)
     infoContent.push(
-        writeRIFFOddSize(RMIDINFOChunks.software, encoder.encode("SpessaSynth"), true)
+        writeRIFFChunkRaw(RMIDINFOChunks.software, encoder.encode("SpessaSynth"), true)
     );
     // name
     if (metadata.name !== undefined)
     {
         
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.name, encoder.encode(metadata.name), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.name, encoder.encode(metadata.name), true)
         );
         encoding = FORCED_ENCODING;
     }
     else
     {
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.name, mid.rawMidiName, true)
+            writeRIFFChunkRaw(RMIDINFOChunks.name, mid.rawMidiName, true)
         );
     }
     // creation date
@@ -445,7 +445,7 @@ export function writeRMIDI(
     {
         encoding = FORCED_ENCODING;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.creationDate, encoder.encode(metadata.creationDate), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.creationDate, encoder.encode(metadata.creationDate), true)
         );
     }
     else
@@ -459,7 +459,7 @@ export function writeRMIDI(
             minute: "numeric"
         });
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.creationDate, getStringBytes(today, true), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.creationDate, getStringBytes(today, true), true)
         );
     }
     // comment
@@ -467,14 +467,14 @@ export function writeRMIDI(
     {
         encoding = FORCED_ENCODING;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.comment, encoder.encode(metadata.comment))
+            writeRIFFChunkRaw(RMIDINFOChunks.comment, encoder.encode(metadata.comment))
         );
     }
     // engineer
     if (metadata.engineer !== undefined)
     {
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.engineer, encoder.encode(metadata.engineer), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.engineer, encoder.encode(metadata.engineer), true)
         );
     }
     // album
@@ -483,10 +483,10 @@ export function writeRMIDI(
         // note that there are two album chunks: IPRD and IALB
         encoding = FORCED_ENCODING;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.album, encoder.encode(metadata.album), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.album, encoder.encode(metadata.album), true)
         );
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.album2, encoder.encode(metadata.album), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.album2, encoder.encode(metadata.album), true)
         );
     }
     // artist
@@ -494,7 +494,7 @@ export function writeRMIDI(
     {
         encoding = FORCED_ENCODING;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.artist, encoder.encode(metadata.artist), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.artist, encoder.encode(metadata.artist), true)
         );
     }
     // genre
@@ -502,14 +502,14 @@ export function writeRMIDI(
     {
         encoding = FORCED_ENCODING;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.genre, encoder.encode(metadata.genre), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.genre, encoder.encode(metadata.genre), true)
         );
     }
     // picture
     if (metadata.picture !== undefined)
     {
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.picture, new Uint8Array(metadata.picture))
+            writeRIFFChunkRaw(RMIDINFOChunks.picture, new Uint8Array(metadata.picture))
         );
     }
     // copyright
@@ -517,7 +517,7 @@ export function writeRMIDI(
     {
         encoding = FORCED_ENCODING;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.copyright, encoder.encode(metadata.copyright), true)
+            writeRIFFChunkRaw(RMIDINFOChunks.copyright, encoder.encode(metadata.copyright), true)
         );
     }
     else
@@ -525,43 +525,42 @@ export function writeRMIDI(
         // use midi copyright if possible
         const copyright = mid.copyright.length > 0 ? mid.copyright : DEFAULT_COPYRIGHT;
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.copyright, getStringBytes(copyright, true))
+            writeRIFFChunkRaw(RMIDINFOChunks.copyright, getStringBytes(copyright, true))
         );
     }
     
     // bank offset
     const DBNK = new IndexedByteArray(2);
     writeLittleEndian(DBNK, bankOffset, 2);
-    infoContent.push(writeRIFFOddSize(RMIDINFOChunks.bankOffset, DBNK));
+    infoContent.push(writeRIFFChunkRaw(RMIDINFOChunks.bankOffset, DBNK));
     // midi encoding
     if (metadata.midiEncoding !== undefined)
     {
         infoContent.push(
-            writeRIFFOddSize(RMIDINFOChunks.midiEncoding, encoder.encode(metadata.midiEncoding))
+            writeRIFFChunkRaw(RMIDINFOChunks.midiEncoding, encoder.encode(metadata.midiEncoding))
         );
         encoding = FORCED_ENCODING;
     }
     // encoding
-    infoContent.push(writeRIFFOddSize(RMIDINFOChunks.encoding, getStringBytes(encoding, true)));
+    infoContent.push(writeRIFFChunkRaw(RMIDINFOChunks.encoding, getStringBytes(encoding, true)));
     
     // combine and write out
-    const infodata = combineArrays(infoContent);
-    const rmiddata = combineArrays([
-        getStringBytes("RMID"),
-        writeRIFFOddSize(
-            "data",
-            newMid
-        ),
-        writeRIFFOddSize(
-            "LIST",
-            infodata
-        ),
-        soundfontBinary
-    ]);
     SpessaSynthInfo("%cFinished!", consoleColors.info);
     SpessaSynthGroupEnd();
-    return writeRIFFOddSize(
+    return writeRIFFChunkParts(
         "RIFF",
-        rmiddata
+        [
+            getStringBytes("RMID"),
+            writeRIFFChunkRaw(
+                "data",
+                newMid
+            ),
+            writeRIFFChunkParts(
+                "INFO",
+                infoContent,
+                true
+            ),
+            soundfontBinary
+        ]
     );
 }

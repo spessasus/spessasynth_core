@@ -1,6 +1,6 @@
-import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
+import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { writeRIFFOddSize } from "../riff_chunk.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
 import { writeWavesample } from "./wsmp.js";
 import { SpessaSynthInfo } from "../../../utils/loggin.js";
 import { consoleColors } from "../../../utils/other.js";
@@ -19,7 +19,7 @@ export function writeDLSSample(sample)
     writeDword(fmtData, sample.sampleRate * 2); // 16-bit samples
     writeWord(fmtData, 2); // wBlockAlign
     writeWord(fmtData, 16); // wBitsPerSample
-    const fmt = writeRIFFOddSize(
+    const fmt = writeRIFFChunkRaw(
         "fmt ",
         fmtData
     );
@@ -37,16 +37,16 @@ export function writeDLSSample(sample)
         sample.sampleLoopEndIndex,
         loop
     );
-    let data = writeRIFFOddSize(
+    let data = writeRIFFChunkRaw(
         "data",
         sample.getRawData(false) // no vorbis allowed
     );
     
-    const inam = writeRIFFOddSize(
+    const inam = writeRIFFChunkRaw(
         "INAM",
         getStringBytes(sample.sampleName, true)
     );
-    const info = writeRIFFOddSize(
+    const info = writeRIFFChunkRaw(
         "INFO",
         inam,
         false,
@@ -58,15 +58,14 @@ export function writeDLSSample(sample)
         consoleColors.value,
         consoleColors.recognized
     );
-    return writeRIFFOddSize(
+    return writeRIFFChunkParts(
         "wave",
-        combineArrays([
+        [
             fmt,
             wsmp,
             data,
             info
-        ]),
-        false,
+        ],
         true
     );
 }

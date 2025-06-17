@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 
 const BAG_SIZE = 4;
 
@@ -50,16 +50,8 @@ export function getIBAG()
     writeWord(ibagData, modulatorIndex & 0xFFFF);
     writeWord(xibagData, generatorIndex >> 16);
     writeWord(xibagData, modulatorIndex >> 16);
-    const ibag = writeRIFFChunk(new RiffChunk(
-        "ibag",
-        ibagData.length,
-        ibagData
-    ));
-    const xibag = writeRIFFChunk(new RiffChunk(
-        "ibag",
-        xibagData.length,
-        xibagData
-    ));
+    const ibag = writeRIFFChunkRaw("ibag", ibagData);
+    const xibag = writeRIFFChunkRaw("ibag", xibagData);
     return {
         pdta: ibag,
         xdta: xibag,

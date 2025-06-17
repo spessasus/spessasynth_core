@@ -52,14 +52,19 @@ export function readBytesAsString(dataArray, bytes, encoding = undefined, trimEn
 /**
  * @param string {string}
  * @param addZero {boolean} adds a zero terminator at the end
+ * @param ensureEven {boolean} ensures even byte count
  * @returns {IndexedByteArray}
  */
-export function getStringBytes(string, addZero = false)
+export function getStringBytes(string, addZero = false, ensureEven = false)
 {
     let len = string.length;
     if (addZero)
     {
-        len = len + 1;
+        len++;
+    }
+    if (ensureEven && len % 2 !== 0)
+    {
+        len++;
     }
     const arr = new IndexedByteArray(len);
     writeStringAsBytes(arr, string);

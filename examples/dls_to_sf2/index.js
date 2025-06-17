@@ -16,8 +16,11 @@ const sf2Path = args[1];
 await BasicSoundBank.isSF3DecoderReady;
 const dls = fs.readFileSync(dlsPath);
 const bank = loadSoundFont(dls);
+const start = performance.now();
 console.log(`Loaded! Name: ${bank.soundFontInfo["INAM"]}`);
 const outSF2 = bank.write();
-console.log("Converted succesfully!");
-fs.writeFileSync(sf2Path, outSF2);
-console.log(`File written to ${sf2Path}`);
+console.log(`Converted in ${Math.floor(performance.now() - start)}ms. Writing file...`);
+fs.writeFile(sf2Path, outSF2, () =>
+{
+    console.log(`File written to ${sf2Path}`);
+});

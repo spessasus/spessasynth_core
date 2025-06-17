@@ -195,7 +195,7 @@ class BasicSoundBank
         font.addPresets(preset);
         
         font.soundFontInfo["ifil"] = "2.1";
-        font.soundFontInfo["isng"] = "EMU8000";
+        font.soundFontInfo["isng"] = "E-mu 10K2";
         font.soundFontInfo["INAM"] = "Dummy";
         font.flush();
         return font.write().buffer;

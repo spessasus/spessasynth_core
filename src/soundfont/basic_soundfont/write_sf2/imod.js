@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 import { MOD_BYTE_SIZE } from "../modulator.js";
 
 /**
@@ -52,16 +52,8 @@ export function getIMOD()
     const ximodData = new IndexedByteArray(MOD_BYTE_SIZE);
     writeLittleEndian(ximodData, 0, MOD_BYTE_SIZE);
     
-    const imod = writeRIFFChunk(new RiffChunk(
-        "imod",
-        imodData.length,
-        imodData
-    ));
-    const ximod = writeRIFFChunk(new RiffChunk(
-        "imod",
-        ximodData.length,
-        ximodData
-    ));
+    const imod = writeRIFFChunkRaw("imod", imodData);
+    const ximod = writeRIFFChunkRaw("imod", ximodData);
     return {
         pdta: imod,
         xdta: ximod,

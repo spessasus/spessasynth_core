@@ -37,7 +37,6 @@ npm install --save spessasynth_core
 
 ### Easy Integration
 - **Modular design:** *Easy integration into other projects (load what you need)*
-- **[Detailed documentation:](https://github.com/spessasus/spessasynth_core/wiki/Home)** *With [examples!](https://github.com/spessasus/spessasynth_core/wiki/Getting-Started#examples)*
 - **Flexible:** *It's not just a MIDI player!*
 - **Easy to Use:** *Basic setup is just [two lines of code!](https://github.com/spessasus/spessasynth_core/wiki/Getting-Started#minimal-setup)*
 - **No dependencies:** *Batteries included!*

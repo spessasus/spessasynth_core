@@ -1,8 +1,8 @@
-import { writeRIFFOddSize } from "../riff_chunk.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
 import { writeDword } from "../../../utils/byte_functions/little_endian.js";
-import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
+import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeLins } from "./lins.js";
-import { getStringBytes, writeStringAsBytes } from "../../../utils/byte_functions/string.js";
+import { getStringBytes } from "../../../utils/byte_functions/string.js";
 import { writeWavePool } from "./wvpl.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
 import { consoleColors } from "../../../utils/other.js";
@@ -21,7 +21,7 @@ export function writeDLS()
     // write colh
     const colhNum = new IndexedByteArray(4);
     writeDword(colhNum, this.presets.length);
-    const colh = writeRIFFOddSize(
+    const colh = writeRIFFChunkRaw(
         "colh",
         colhNum
     );
@@ -54,7 +54,7 @@ export function writeDLS()
     {
         writeDword(ptblData, offset);
     }
-    const ptbl = writeRIFFOddSize(
+    const ptbl = writeRIFFChunkRaw(
         "ptbl",
         ptblData
     );
@@ -78,42 +78,31 @@ export function writeDLS()
             continue;
         }
         infos.push(
-            writeRIFFOddSize(
+            writeRIFFChunkRaw(
                 info,
-                getStringBytes(data, true),
-                true
+                getStringBytes(data, true)
             )
         );
     }
-    const info = writeRIFFOddSize(
+    const info = writeRIFFChunkParts(
         "INFO",
-        combineArrays(infos),
-        false,
+        infos,
         true
     );
-    
-    const out = new IndexedByteArray(
-        colh.length
-        + lins.length
-        + ptbl.length
-        + wvpl.length
-        + info.length
-        + 4);
-    writeStringAsBytes(out, "DLS ");
-    out.set(combineArrays([
-        colh,
-        lins,
-        ptbl,
-        wvpl,
-        info
-    ]), 4);
     SpessaSynthInfo(
         "%cSaved succesfully!",
         consoleColors.recognized
     );
     SpessaSynthGroupEnd();
-    return writeRIFFOddSize(
+    return writeRIFFChunkParts(
         "RIFF",
-        out
+        [
+            getStringBytes("DLS "),
+            colh,
+            lins,
+            ptbl,
+            wvpl,
+            info
+        ]
     );
 }

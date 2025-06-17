@@ -45,7 +45,7 @@ class DLSSoundFont extends BasicSoundBank
         
         // mandatory
         this.soundFontInfo["ifil"] = "2.1"; // always for dls
-        this.soundFontInfo["isng"] = "EMU8000";
+        this.soundFontInfo["isng"] = "E-mu 10K2";
         
         // set some defaults
         this.soundFontInfo["INAM"] = "Unnamed DLS";

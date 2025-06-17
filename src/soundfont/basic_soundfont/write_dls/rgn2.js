@@ -1,6 +1,6 @@
-import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
+import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { writeRIFFOddSize } from "../riff_chunk.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
 import { writeWavesample } from "./wsmp.js";
 import { writeArticulator } from "./art2.js";
 import { generatorTypes } from "../generator_types.js";
@@ -28,7 +28,7 @@ export function writeDLSRegion(zone, globalZone)
     writeWord(rgnhData, exclusive);
     // usLayer
     writeWord(rgnhData, 0);
-    const rgnh = writeRIFFOddSize(
+    const rgnh = writeRIFFChunkRaw(
         "rgnh",
         rgnhData
     );
@@ -88,7 +88,7 @@ export function writeDLSRegion(zone, globalZone)
     // 1 means that the first bit is on so mono/left
     writeDword(wlnkData, 1); // ulChannel
     writeDword(wlnkData, this.samples.indexOf(zone.sample)); // ulTableIndex
-    const wlnk = writeRIFFOddSize(
+    const wlnk = writeRIFFChunkRaw(
         "wlnk",
         wlnkData
     );
@@ -99,7 +99,7 @@ export function writeDLSRegion(zone, globalZone)
     {
         const art2 = writeArticulator(zone);
         
-        lar2 = writeRIFFOddSize(
+        lar2 = writeRIFFChunkRaw(
             "lar2",
             art2,
             false,
@@ -107,15 +107,14 @@ export function writeDLSRegion(zone, globalZone)
         );
     }
     
-    return writeRIFFOddSize(
+    return writeRIFFChunkParts(
         "rgn2",
-        combineArrays([
+        [
             rgnh,
             wsmp,
             wlnk,
             lar2
-        ]),
-        false,
+        ],
         true
     );
 }

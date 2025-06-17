@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 import { SF3_BIT_FLIT } from "../../read_sf2/samples.js";
 
 /**
@@ -67,16 +67,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
     // write EOS and zero everything else
     writeStringAsBytes(shdrData, "EOS", sampleLength);
     writeStringAsBytes(xshdrData, "EOS", sampleLength);
-    const shdr = writeRIFFChunk(new RiffChunk(
-        "shdr",
-        shdrData.length,
-        shdrData
-    ));
-    const xshdr = writeRIFFChunk(new RiffChunk(
-        "shdr",
-        xshdrData.length,
-        xshdrData
-    ));
+    const shdr = writeRIFFChunkRaw("shdr", shdrData);
+    const xshdr = writeRIFFChunkRaw("shdr", xshdrData);
     return {
         pdta: shdr,
         xdta: xshdr,

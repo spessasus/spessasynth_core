@@ -32,21 +32,3 @@ export class IndexedByteArray extends Uint8Array
         return a;
     }
 }
-
-
-/**
- * @param arrs {(IndexedByteArray|Uint8Array)[]}
- * @returns {IndexedByteArray|Uint8Array}
- */
-export function combineArrays(arrs)
-{
-    const length = arrs.reduce((sum, current) => sum + current.length, 0);
-    const newArr = new IndexedByteArray(length);
-    let offset = 0;
-    for (const arr of arrs)
-    {
-        newArr.set(arr, offset);
-        offset += arr.length;
-    }
-    return newArr;
-}

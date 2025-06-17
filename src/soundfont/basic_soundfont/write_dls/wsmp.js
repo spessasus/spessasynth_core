@@ -1,6 +1,6 @@
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeRIFFOddSize } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 
 const WSMP_SIZE = 20;
 
@@ -71,7 +71,7 @@ export function writeWavesample(
         writeDword(wsmpData, loopStart);
         writeDword(wsmpData, loopSize);
     }
-    return writeRIFFOddSize(
+    return writeRIFFChunkRaw(
         "wsmp",
         wsmpData
     );

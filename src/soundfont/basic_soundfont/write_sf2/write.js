@@ -1,6 +1,6 @@
-import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
-import { RiffChunk, writeRIFFChunk, writeRIFFOddSize } from "../riff_chunk.js";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
+import { IndexedByteArray } from "../../../utils/indexed_array.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
+import { getStringBytes } from "../../../utils/byte_functions/string.js";
 import { consoleColors } from "../../../utils/other.js";
 import { getIGEN } from "./igen.js";
 import { getSDTA } from "./sdta.js";
@@ -109,11 +109,7 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
             const ckdata = new IndexedByteArray(4);
             writeWord(ckdata, major);
             writeWord(ckdata, minor);
-            infoArrays.push(writeRIFFChunk(new RiffChunk(
-                type,
-                4,
-                ckdata
-            )));
+            infoArrays.push(writeRIFFChunkRaw(type, ckdata));
         }
         else if (type === "DMOD")
         {
@@ -139,22 +135,14 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
             // terminal modulator, is zero
             writeLittleEndian(dmoddata, 0, MOD_BYTE_SIZE);
             
-            infoArrays.push(writeRIFFChunk(new RiffChunk(
-                type,
-                dmoddata.length,
-                dmoddata
-            )));
+            infoArrays.push(writeRIFFChunkRaw(type, dmoddata));
         }
         else
         {
-            // pad with zero
-            const arr = new IndexedByteArray(data.length + 1);
-            writeStringAsBytes(arr, data);
-            infoArrays.push(writeRIFFChunk(new RiffChunk(
+            infoArrays.push(writeRIFFChunkRaw(
                 type,
-                arr.length,
-                arr
-            )));
+                getStringBytes(data, true, true) // pad with zero and ensure even length
+            ));
         }
     }
     
@@ -206,6 +194,10 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         consoleColors.info
     );
     const instChunk = getINST.call(this);
+    SpessaSynthInfo(
+        "%cWriting PGEN...",
+        consoleColors.info
+    );
     // presets
     const pgenChunk = getPGEN.call(this);
     SpessaSynthInfo(
@@ -228,21 +220,17 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
      */
     const chunks = [phdrChunk, pbagChunk, pmodChunk, pgenChunk, instChunk, ibagChunk, imodChunk, igenChunk, shdrChunk];
     // combine in the sfspec order
-    const pdtaData = combineArrays([
-        new IndexedByteArray([112, 100, 116, 97]), // "pdta"
-        ...chunks.map(c => c.pdta)
-    ]);
-    const pdtaChunk = writeRIFFChunk(new RiffChunk(
-        "LIST",
-        pdtaData.length,
-        pdtaData
-    ));
+    const pdtaChunk = writeRIFFChunkParts(
+        "pdta",
+        chunks.map(c => c.pdta),
+        true
+    );
     const maxIndex = Math.max(
         ...chunks.map(c => c.highestIndex)
     );
     
     const writeXdta = options.writeExtendedLimits && (
-        maxIndex > 0xFFF
+        maxIndex > 0xFFFF
         || this.presets.some(p => p.presetName.length > 20)
         || this.instruments.some(i => i.instrumentName.length > 20)
         || this.samples.some(s => s.sampleName.length > 20)
@@ -256,37 +244,20 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
             consoleColors.value
         );
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
-        const xpdtaData = combineArrays([
-            new IndexedByteArray([120, 100, 116, 97]), // "xdta"
-            ...chunks.map(c => c.xdta)
-        ]);
-        
-        const xpdtaChunk = writeRIFFChunk(new RiffChunk(
-            "LIST",
-            xpdtaData.length,
-            xpdtaData
-        ));
+        const xpdtaChunk = writeRIFFChunkParts("xdta", chunks.map(c => c.xdta), true);
         infoArrays.push(xpdtaChunk);
     }
     
-    const infoChunk = writeRIFFOddSize("INFO", combineArrays(infoArrays), false, true);
+    const infoChunk = writeRIFFChunkParts("INFO", infoArrays, true);
     SpessaSynthInfo(
         "%cWriting the output file...",
         consoleColors.info
     );
     // finally, combine everything
-    const riffdata = combineArrays([
-        new IndexedByteArray([115, 102, 98, 107]), // "sfbk"
-        infoChunk,
-        sdtaChunk,
-        pdtaChunk
-    ]);
-    
-    const main = writeRIFFChunk(new RiffChunk(
+    const main = writeRIFFChunkParts(
         "RIFF",
-        riffdata.length,
-        riffdata
-    ));
+        [getStringBytes("sfbk"), infoChunk, sdtaChunk, pdtaChunk]
+    );
     SpessaSynthInfo(
         `%cSaved succesfully! Final file size: %c${main.length}`,
         consoleColors.info,

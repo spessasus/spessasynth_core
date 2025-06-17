@@ -1,6 +1,6 @@
 import { getDLSArticulatorFromSf2Generator, getDLSArticulatorFromSf2Modulator } from "./modulator_converter.js";
-import { writeRIFFOddSize } from "../riff_chunk.js";
-import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
+import { writeRIFFChunkParts } from "../riff_chunk.js";
+import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { Generator } from "../generator.js";
 import { writeDword } from "../../../utils/byte_functions/little_endian.js";
 import { consoleColors } from "../../../utils/other.js";
@@ -167,8 +167,8 @@ export function writeArticulator(zone)
     
     
     const out = generators.map(a => a.writeArticulator());
-    return writeRIFFOddSize(
+    return writeRIFFChunkParts(
         "art2",
-        combineArrays([art2Data, ...out])
+        [art2Data, ...out]
     );
 }

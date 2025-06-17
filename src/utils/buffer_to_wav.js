@@ -6,9 +6,9 @@
  * @property {string|undefined} genre - the song's genre
  */
 
-import { combineArrays, IndexedByteArray } from "./indexed_array.js";
-import { getStringBytes, writeStringAsBytes } from "./byte_functions/string.js";
-import { writeRIFFOddSize } from "../soundfont/basic_soundfont/riff_chunk.js";
+import { IndexedByteArray } from "./indexed_array.js";
+import { writeStringAsBytes } from "./byte_functions/string.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../soundfont/basic_soundfont/riff_chunk.js";
 import { writeLittleEndian } from "./byte_functions/little_endian.js";
 
 /**
@@ -35,34 +35,33 @@ export function audioToWav(audioData, sampleRate, normalizeAudio = true, metadat
     {
         const encoder = new TextEncoder();
         const infoChunks = [
-            getStringBytes("INFO"),
-            writeRIFFOddSize("ICMT", encoder.encode("Created with SpessaSynth"), true)
+            writeRIFFChunkRaw("ICMT", encoder.encode("Created with SpessaSynth"), true)
         ];
         if (metadata.artist)
         {
             infoChunks.push(
-                writeRIFFOddSize("IART", encoder.encode(metadata.artist), true)
+                writeRIFFChunkRaw("IART", encoder.encode(metadata.artist), true)
             );
         }
         if (metadata.album)
         {
             infoChunks.push(
-                writeRIFFOddSize("IPRD", encoder.encode(metadata.album), true)
+                writeRIFFChunkRaw("IPRD", encoder.encode(metadata.album), true)
             );
         }
         if (metadata.genre)
         {
             infoChunks.push(
-                writeRIFFOddSize("IGNR", encoder.encode(metadata.genre), true)
+                writeRIFFChunkRaw("IGNR", encoder.encode(metadata.genre), true)
             );
         }
         if (metadata.title)
         {
             infoChunks.push(
-                writeRIFFOddSize("INAM", encoder.encode(metadata.title), true)
+                writeRIFFChunkRaw("INAM", encoder.encode(metadata.title), true)
             );
         }
-        infoChunk = writeRIFFOddSize("LIST", combineArrays(infoChunks));
+        infoChunk = writeRIFFChunkParts("INFO", infoChunks, true);
     }
     
     // prepare CUE chunk
@@ -89,12 +88,10 @@ export function audioToWav(audioData, sampleRate, normalizeAudio = true, metadat
         writeLittleEndian(cueEnd, 0, 4); // BlockStart, always 0
         writeLittleEndian(cueEnd, loopEndSamples, 4); // sampleOffset
         
-        const out = combineArrays([
-            new IndexedByteArray([2, 0, 0, 0]), // cue points count,
+        cueChunk = writeRIFFChunkParts("cue ", [
+            new IndexedByteArray([2, 0, 0, 0]), // cue points count
             cueStart,
-            cueEnd
-        ]);
-        cueChunk = writeRIFFOddSize("cue ", out);
+            cueEnd]);
     }
     
     // Prepare the header

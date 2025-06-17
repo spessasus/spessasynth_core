@@ -1,6 +1,5 @@
 import { writeDLSSample } from "./wave.js";
-import { writeRIFFOddSize } from "../riff_chunk.js";
-import { combineArrays } from "../../../utils/indexed_array.js";
+import { writeRIFFChunkParts } from "../riff_chunk.js";
 
 /**
  * @this {BasicSoundBank}
@@ -21,10 +20,9 @@ export function writeWavePool()
         return out;
     });
     return {
-        data: writeRIFFOddSize(
+        data: writeRIFFChunkParts(
             "wvpl",
-            combineArrays(samples),
-            false,
+            samples,
             true
         ),
         indexes: offsets

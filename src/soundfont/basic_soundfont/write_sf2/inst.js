@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 
 const INST_SIZE = 22;
 
@@ -31,17 +31,8 @@ export function getINST()
     writeWord(instData, instrumentStart & 0xFFFF);
     writeWord(xinstData, instrumentStart >> 16);
     
-    const inst = writeRIFFChunk(new RiffChunk(
-        "inst",
-        instData.length,
-        instData
-    ));
-    
-    const xinst = writeRIFFChunk(new RiffChunk(
-        "inst",
-        xinstData.length,
-        xinstData
-    ));
+    const inst = writeRIFFChunkRaw("inst", instData);
+    const xinst = writeRIFFChunkRaw("inst", xinstData);
     
     return {
         pdta: inst,

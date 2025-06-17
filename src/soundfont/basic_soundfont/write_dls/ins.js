@@ -1,6 +1,6 @@
-import { combineArrays, IndexedByteArray } from "../../../utils/indexed_array.js";
+import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { combineZones } from "./combine_zones.js";
-import { writeRIFFOddSize } from "../riff_chunk.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
 import { writeDword } from "../../../utils/byte_functions/little_endian.js";
 import { writeDLSRegion } from "./rgn2.js";
 import { writeArticulator } from "./art2.js";
@@ -40,14 +40,14 @@ export function writeIns(preset)
     writeDword(inshData, ulBank);                     // ulBank
     writeDword(inshData, preset.program & 127); // ulInstrument
     
-    const insh = writeRIFFOddSize(
+    const insh = writeRIFFChunkRaw(
         "insh",
         inshData
     );
     
     // write global zone
     const art2 = writeArticulator(global);
-    let lar2 = writeRIFFOddSize(
+    let lar2 = writeRIFFChunkRaw(
         "lar2",
         art2,
         false,
@@ -55,24 +55,22 @@ export function writeIns(preset)
     );
     
     // write the region list
-    const lrgnData = combineArrays(zones.reduce((arrs, z) =>
-    {
-        arrs.push(writeDLSRegion.apply(this, [z, global]));
-        return arrs;
-    }, []));
-    const lrgn = writeRIFFOddSize(
+    const lrgn = writeRIFFChunkParts(
         "lrgn",
-        lrgnData,
-        false,
+        zones.reduce((arrs, z) =>
+        {
+            arrs.push(writeDLSRegion.apply(this, [z, global]));
+            return arrs;
+        }, []),
         true
     );
     
     // writeINFO
-    const inam = writeRIFFOddSize(
+    const inam = writeRIFFChunkRaw(
         "INAM",
         getStringBytes(preset.presetName, true)
     );
-    const info = writeRIFFOddSize(
+    const info = writeRIFFChunkRaw(
         "INFO",
         inam,
         false,
@@ -80,10 +78,8 @@ export function writeIns(preset)
     );
     
     SpessaSynthGroupEnd();
-    return writeRIFFOddSize(
-        "ins ",
-        combineArrays([insh, lrgn, lar2, info]),
-        false,
+    return writeRIFFChunkParts(
+        "ins ", [insh, lrgn, lar2, info],
         true
     );
 }
