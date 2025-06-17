@@ -261,9 +261,13 @@ export class SoundFontSample extends BasicSample
         }
         else
         {
-            if (this.compressedData && allowVorbis)
+            if (this.compressedData)
             {
-                return this.compressedData;
+                if (allowVorbis)
+                {
+                    return this.compressedData;
+                }
+                return this.encodeS16LE();
             }
             return this.sf2FileArrayHandle.slice(this.s16leStart, this.s16leEnd);
         }

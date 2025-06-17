@@ -16,12 +16,20 @@ import { BasicPreset } from "./basic_preset.js";
 import { isXGDrums } from "../../utils/xg_hacks.js";
 import { generatorTypes } from "./generator_types.js";
 import { BasicGlobalZone } from "./basic_global_zone.js";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
  */
 class BasicSoundBank
 {
+    /**
+     * Indicates if the SF3/SF2Pack decoder is ready.
+     * @type {Promise<boolean>}
+     * @static
+     */
+    static isSF3DecoderReady = stbvorbis.isInitialized;
+    
     /**
      * Soundfont's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
      * @type {Object<string, string|IndexedByteArray>}

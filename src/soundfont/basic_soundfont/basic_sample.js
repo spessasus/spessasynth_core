@@ -341,10 +341,20 @@ export class BasicSample
     {
         const data = this.getAudioData();
         const data16 = new Int16Array(data.length);
-        
-        for (let i = 0; i < data.length; i++)
+        const len = data.length;
+        for (let i = 0; i < len; i++)
         {
-            data16[i] = data[i] * 32768;
+            let sample = data[i] * 32768;
+            // Clamp for safety (do not use Math.max/Math.min here)
+            if (sample > 32767)
+            {
+                sample = 32767;
+            }
+            else if (sample < -32768)
+            {
+                sample = -32768;
+            }
+            data16[i] = sample;
         }
         return new IndexedByteArray(data16.buffer);
     }

@@ -1,6 +1,7 @@
 // process arguments
 import fs from "fs";
 import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
+import { BasicSoundBank } from "../../src/soundfont/basic_soundfont/basic_soundbank.js";
 
 const args = process.argv.slice(2);
 if (args.length !== 2)
@@ -12,6 +13,7 @@ if (args.length !== 2)
 const dlsPath = args[0];
 const sf2Path = args[1];
 
+await BasicSoundBank.isSF3DecoderReady;
 const dls = fs.readFileSync(dlsPath);
 const bank = loadSoundFont(dls);
 console.log(`Loaded! Name: ${bank.soundFontInfo["INAM"]}`);

@@ -37,32 +37,10 @@ export function writeDLSSample(sample)
         sample.sampleLoopEndIndex,
         loop
     );
-    const audio = sample.getAudioData();
-    let data;
-    // if sample is compressed, getRawData cannot be used
-    if (sample.isCompressed)
-    {
-        const data16 = new Int16Array(audio.length);
-        
-        for (let i = 0; i < audio.length; i++)
-        {
-            // 32,767, as 32,768 may cause overflow (because vorbis can go above 1 sometimes)
-            data16[i] = audio[i] * 32767;
-        }
-        
-        
-        data = writeRIFFOddSize(
-            "data",
-            new IndexedByteArray(data16.buffer)
-        );
-    }
-    else
-    {
-        data = writeRIFFOddSize(
-            "data",
-            sample.getRawData(false) // no vorbis allowed
-        );
-    }
+    let data = writeRIFFOddSize(
+        "data",
+        sample.getRawData(false) // no vorbis allowed
+    );
     
     const inam = writeRIFFOddSize(
         "INAM",
