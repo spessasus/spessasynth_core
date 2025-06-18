@@ -8,7 +8,6 @@ import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readDLSInstrumentList } from "./read_instrument_list.js";
 import { readDLSInstrument } from "./read_instrument.js";
 import { readLart } from "./read_lart.js";
-import { readRegion } from "./read_region.js";
 import { readDLSSamples } from "./read_samples.js";
 
 class DLSSoundFont extends BasicSoundBank
@@ -178,7 +177,6 @@ class DLSSoundFont extends BasicSoundBank
 
 DLSSoundFont.prototype.readDLSInstrumentList = readDLSInstrumentList;
 DLSSoundFont.prototype.readDLSInstrument = readDLSInstrument;
-DLSSoundFont.prototype.readRegion = readRegion;
 DLSSoundFont.prototype.readLart = readLart;
 DLSSoundFont.prototype.readDLSSamples = readDLSSamples;
 

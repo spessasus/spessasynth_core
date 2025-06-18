@@ -54,6 +54,13 @@ export function readRIFFChunk(dataArray, readData = true, forceShift = false)
     let header = readBytesAsString(dataArray, 4);
     
     let size = readLittleEndian(dataArray, 4);
+    if (header === "")
+    {
+        // safeguard against evil DLS files
+        // The test case: CrysDLS v1.23.dls
+        // https://github.com/spessasus/spessasynth_core/issues/5
+        size = 0;
+    }
     /**
      * @type {IndexedByteArray}
      */

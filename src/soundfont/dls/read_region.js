@@ -2,13 +2,14 @@ import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little
 import { findRIFFListType, readRIFFChunk } from "../basic_soundfont/riff_chunk.js";
 import { Generator } from "../basic_soundfont/generator.js";
 import { generatorTypes } from "../basic_soundfont/generator_types.js";
+import { SpessaSynthWarn } from "../../utils/loggin.js";
 
 /**
  * @this {DLSSoundFont}
  * @param chunk {RiffChunk}
- * @param zone {DLSZone}
+ * @param instrument {DLSInstrument}
  */
-export function readRegion(chunk, zone)
+export function readRegion(chunk, instrument)
 {
     // regions are essentially instrument zones
     
@@ -24,6 +25,12 @@ export function readRegion(chunk, zone)
     
     // region header
     const regionHeader = regionChunks.find(c => c.header === "rgnh");
+    
+    if (!regionHeader)
+    {
+        SpessaSynthWarn("Invalid DLS region: missing 'rgnh' chunk! Discarding...");
+        return;
+    }
     // key range
     let keyMin = readLittleEndian(regionHeader.chunkData, 2);
     let keyMax = readLittleEndian(regionHeader.chunkData, 2);
@@ -38,7 +45,8 @@ export function readRegion(chunk, zone)
         velMin = 0;
     }
     // cannot do the same to key zones sadly
-    
+    // create zone
+    const zone = instrument.createZone();
     // apply ranges
     zone.keyRange = { min: keyMin, max: keyMax };
     zone.velRange = { min: velMin, max: velMax };

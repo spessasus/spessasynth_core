@@ -7,6 +7,7 @@ import { consoleColors } from "../../utils/other.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
 import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./dls_sources.js";
 import { generatorLimits, generatorTypes } from "../basic_soundfont/generator_types.js";
+import { readRegion } from "./read_region.js";
 
 /**
  * @this {DLSSoundFont}
@@ -40,7 +41,7 @@ export function readDLSInstrument(chunk)
     const preset = new DLSPreset(this, ulBank, ulInstrument);
     
     // read preset name in INFO
-    let presetName = "unnamedPreset";
+    let presetName = ``;
     const infoChunk = findRIFFListType(chunks, "INFO");
     if (infoChunk)
     {
@@ -50,6 +51,10 @@ export function readDLSInstrument(chunk)
             info = readRIFFChunk(infoChunk.chunkData);
         }
         presetName = readBytesAsString(info.chunkData, info.chunkData.length).trim();
+    }
+    if (presetName.length < 1)
+    {
+        presetName = `unnamed ${(ulBank >> 8) & 127}:${ulInstrument & 127}`;
     }
     preset.presetName = presetName;
     preset.dlsInstrument.instrumentName = presetName;
@@ -105,8 +110,7 @@ export function readDLSInstrument(chunk)
         }
         
         
-        const zone = preset.dlsInstrument.createZone();
-        this.readRegion(chunk, zone);
+        readRegion.call(this, chunk, preset.dlsInstrument);
     }
     this.addPresets(preset);
     this.addInstruments(preset.dlsInstrument);
