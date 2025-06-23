@@ -42,16 +42,4 @@ export class BasicInstrumentZone extends BasicZone
     {
         this.sample.unlinkFrom(this.parentInstrument);
     }
-    
-    /**
-     * @param zone {BasicZone}
-     */
-    copyFrom(zone)
-    {
-        super.copyFrom(zone);
-        if (zone instanceof BasicInstrumentZone)
-        {
-            this.sample = zone.sample;
-        }
-    }
 }

@@ -5,6 +5,7 @@
  */
 import { generatorTypes } from "./generator_types.js";
 import { Generator } from "./generator.js";
+import { Modulator } from "./modulator.js";
 
 export class BasicZone
 {
@@ -136,7 +137,7 @@ export class BasicZone
     copyFrom(zone)
     {
         this.generators = [...zone.generators];
-        this.modulators = [...zone.modulators];
+        this.modulators = zone.modulators.map(m => Modulator.copy(m));
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };
     }

@@ -36,16 +36,4 @@ export class BasicPresetZone extends BasicZone
         this.instrument = instrument;
         this.instrument.linkTo(this.parentPreset);
     }
-    
-    /**
-     * @param zone {BasicZone}
-     */
-    copyFrom(zone)
-    {
-        super.copyFrom(zone);
-        if (zone instanceof BasicPresetZone)
-        {
-            this.instrument = zone.instrument;
-        }
-    }
 }

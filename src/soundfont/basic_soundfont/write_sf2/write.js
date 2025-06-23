@@ -84,7 +84,7 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
      */
     const infoArrays = [];
     this.soundFontInfo["ISFT"] = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
-    if (options?.compress)
+    if (options?.compress || this.samples.some(s => s.isCompressed))
     {
         this.soundFontInfo["ifil"] = "3.0"; // set version to 3
     }
@@ -113,7 +113,6 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
         }
         else if (type === "DMOD")
         {
-            
             const mods = this.defaultModulators;
             SpessaSynthInfo(
                 `%cWriting %c${mods.length}%c default modulators...`,

@@ -1,10 +1,6 @@
-/**
- * samples.js
- * purpose: parses soundfont samples, resamples if needed.
- * loads sample data, handles async loading of sf3 compressed samples
- */
 import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
 
 // should be reasonable for most cases
 const RESAMPLE_RATE = 48000;
@@ -87,7 +83,7 @@ export class BasicSample
      * Indicates if the sample is compressed using vorbis SF3
      * @type {boolean}
      */
-    isCompressed;
+    isCompressed = false;
     
     /**
      * The compressed sample data if the sample has been compressed
@@ -102,7 +98,7 @@ export class BasicSample
     linkedInstruments = [];
     /**
      * The sample's audio data
-     * @type {Float32Array}
+     * @type {Float32Array|undefined}
      */
     sampleData = undefined;
     
@@ -169,6 +165,10 @@ export class BasicSample
      */
     getRawData(allowVorbis = true)
     {
+        if (this.isCompressed && allowVorbis && !this.dataOverriden)
+        {
+            return this.compressedData;
+        }
         return this.encodeS16LE();
     }
     
@@ -210,11 +210,8 @@ export class BasicSample
                 this.resampleData(RESAMPLE_RATE);
                 audioData = this.getAudioData();
             }
-            this.compressedData = encodeVorbis([audioData], 1, this.sampleRate, quality);
-            // flag as compressed
-            this.isCompressed = true;
-            // allow the data to be copied from the compressedData chunk during the write operation
-            this.dataOverriden = false;
+            const compressed = encodeVorbis([audioData], 1, this.sampleRate, quality);
+            this.setCompressedData(compressed);
         }
         catch (e)
         {
@@ -320,17 +317,69 @@ export class BasicSample
         this.linkedInstruments.splice(index, 1);
     }
     
+    
     /**
+     * @private
+     * Decode binary vorbis into a float32 pcm
      * @returns {Float32Array}
-     * @virtual
+     */
+    decodeVorbis()
+    {
+        if (this.sampleData)
+        {
+            return this.sampleData;
+        }
+        // get the compressed byte stream
+        // reset array and being decoding
+        try
+        {
+            /**
+             * @type {{data: Float32Array[], error: (string|null), sampleRate: number, eof: boolean}}
+             */
+            const vorbis = stbvorbis.decode(this.compressedData);
+            const decoded = vorbis.data[0];
+            if (decoded === undefined)
+            {
+                SpessaSynthWarn(`Error decoding sample ${this.sampleName}: Vorbis decode returned undefined.`);
+                return new Float32Array(0);
+            }
+            // clip
+            // because vorbis can go above 1 sometimes
+            for (let i = 0; i < decoded.length; i++)
+            {
+                // magic number is 32,767 / 32,768
+                decoded[i] = Math.max(-1, Math.min(decoded[i], 0.999969482421875));
+            }
+            return decoded;
+        }
+        catch (e)
+        {
+            // do not error out, fill with silence
+            SpessaSynthWarn(`Error decoding sample ${this.sampleName}: ${e}`);
+            return new Float32Array(this.sampleLoopEndIndex + 1);
+        }
+    }
+    
+    /**
+     * Get the float32 audio data.
+     * Note that this either decodes the compressed data or passes the ready sampleData.
+     * If neither are set then it will throw an error!
+     * @returns {Float32Array}
      */
     getAudioData()
     {
-        if (!this.sampleData)
+        if (this.sampleData)
         {
-            throw new Error("Error! Sample data is undefined. Is the method overriden properly?");
+            return this.sampleData;
         }
-        return this.sampleData;
+        if (this.isCompressed)
+        {
+            // SF3
+            // if compressed, decode
+            this.sampleData = this.decodeVorbis();
+            return this.sampleData;
+        }
+        throw new Error("Sample data is undefined for a BasicSample instance.");
     }
     
     /**
@@ -371,5 +420,17 @@ export class BasicSample
         delete this.compressedData;
         this.sampleData = audioData;
         this.dataOverriden = true;
+    }
+    
+    /**
+     * Replaces the audio with a compressed data sample
+     * @param data {Uint8Array}
+     */
+    setCompressedData(data)
+    {
+        this.sampleData = undefined;
+        this.compressedData = data;
+        this.isCompressed = true;
+        this.dataOverriden = false;
     }
 }

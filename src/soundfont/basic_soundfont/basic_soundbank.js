@@ -39,18 +39,21 @@ class BasicSoundBank
     /**
      * The soundfont's presets
      * @type {BasicPreset[]}
+     * @readonly
      */
     presets = [];
     
     /**
      * The soundfont's samples
      * @type {BasicSample[]}
+     * @readonly
      */
     samples = [];
     
     /**
      * The soundfont's instruments
      * @type {BasicInstrument[]}
+     * @readonly
      */
     instruments = [];
     
@@ -202,11 +205,124 @@ class BasicSoundBank
     }
     
     /**
-     * @param preset {BasicPreset}
+     * @param presets {BasicPreset}
      */
-    addPresets(...preset)
+    addPresets(...presets)
     {
-        this.presets.push(...preset);
+        this.presets.push(...presets);
+    }
+    
+    /**
+     * @param instruments {BasicInstrument}
+     */
+    addInstruments(...instruments)
+    {
+        this.instruments.push(...instruments);
+    }
+    
+    /**
+     * @param samples {BasicSample}
+     */
+    addSamples(...samples)
+    {
+        this.samples.push(...samples);
+    }
+    
+    /**
+     * Clones samples into this bank
+     * @param sample {BasicSample} samples to copy
+     * @returns {BasicSample} copied sample, if a sample exists with that name, it is returned instead
+     */
+    cloneSample(sample)
+    {
+        const duplicate = this.samples.find(s => s.sampleName === sample.sampleName);
+        if (duplicate)
+        {
+            return duplicate;
+        }
+        const newSample = new BasicSample(
+            sample.sampleName,
+            sample.sampleRate,
+            sample.samplePitch,
+            sample.samplePitchCorrection,
+            sample.sampleType,
+            sample.sampleLoopStartIndex,
+            sample.sampleLoopEndIndex
+        );
+        if (sample.isCompressed)
+        {
+            newSample.setCompressedData(sample.compressedData.slice());
+            console.log(sample.compressedData.length);
+        }
+        else
+        {
+            newSample.setAudioData(sample.getAudioData());
+        }
+        this.addSamples(newSample);
+        if (sample.linkedSample)
+        {
+            const clonedLinked = this.cloneSample(sample.linkedSample);
+            newSample.setLinkedSample(clonedLinked, newSample.sampleType);
+        }
+        return newSample;
+    }
+    
+    
+    /**
+     * Clones an instruments into this bank
+     * @param instrument {BasicInstrument}
+     * @returns {BasicInstrument} the copied instrument, if an instrument exists with that name, it is returned instead
+     */
+    cloneInstrument(instrument)
+    {
+        const duplicate = this.instruments.find(i => i.instrumentName === instrument.instrumentName);
+        if (duplicate)
+        {
+            return duplicate;
+        }
+        const newInstrument = new BasicInstrument();
+        newInstrument.instrumentName = instrument.instrumentName;
+        newInstrument.globalZone.copyFrom(instrument.globalZone);
+        for (const zone of instrument.instrumentZones)
+        {
+            const copiedZone = newInstrument.createZone();
+            copiedZone.copyFrom(zone);
+            copiedZone.setSample(this.cloneSample(zone.sample));
+        }
+        this.addInstruments(newInstrument);
+        return newInstrument;
+    }
+    
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Clones presets into this sound bank
+     * @param preset {BasicPreset}
+     * @returns {BasicPreset} the copied preset, if a preset exists with that name, it is returned instead
+     */
+    clonePreset(preset)
+    {
+        const duplicate = this.presets.find(p => p.presetName === preset.presetName);
+        if (duplicate)
+        {
+            return duplicate;
+        }
+        const newPreset = new BasicPreset(this);
+        newPreset.presetName = preset.presetName;
+        newPreset.bank = preset.bank;
+        newPreset.program = preset.program;
+        newPreset.library = preset.library;
+        newPreset.genre = preset.genre;
+        newPreset.morphology = preset.morphology;
+        newPreset.globalZone.copyFrom(preset.globalZone);
+        for (const zone of preset.presetZones)
+        {
+            const copiedZone = newPreset.createZone();
+            copiedZone.copyFrom(zone);
+            copiedZone.setInstrument(this.cloneInstrument(zone.instrument));
+        }
+        
+        this.addPresets(newPreset);
+        return newPreset;
     }
     
     flush()
@@ -220,22 +336,6 @@ class BasicSoundBank
             return a.program - b.program;
         });
         this._parseInternal();
-    }
-    
-    /**
-     * @param instrument {BasicInstrument}
-     */
-    addInstruments(...instrument)
-    {
-        this.instruments.push(...instrument);
-    }
-    
-    /**
-     * @param sample {BasicSample}
-     */
-    addSamples(...sample)
-    {
-        this.samples.push(...sample);
     }
     
     /**

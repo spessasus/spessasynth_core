@@ -223,21 +223,15 @@ export class DLSSample extends BasicSample
     
     getRawData(allowVorbis = true)
     {
-        if (this.dataOverriden)
+        if (this.dataOverriden || this.isCompressed)
         {
-            return this.encodeS16LE();
+            return super.getRawData();
         }
-        else
+        if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2)
         {
-            if (this.compressedData && allowVorbis)
-            {
-                return this.compressedData;
-            }
-            if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2)
-            {
-                return this.rawData;
-            }
-            return this.encodeS16LE();
+            // copy straight away
+            return this.rawData;
         }
+        return this.encodeS16LE();
     }
 }
