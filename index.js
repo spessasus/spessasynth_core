@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { SpessaSynthProcessor } from "./src/synthetizer/audio_engine/main_processor.js";
 import { SpessaSynthSequencer } from "./src/sequencer/sequencer_engine.js";
 import {
@@ -25,6 +27,8 @@ import { BasicInstrument } from "./src/soundfont/basic_soundfont/basic_instrumen
 import { BasicPreset } from "./src/soundfont/basic_soundfont/basic_preset.js";
 import { Generator } from "./src/soundfont/basic_soundfont/generator.js";
 import { Modulator, modulatorCurveTypes, modulatorSources } from "./src/soundfont/basic_soundfont/modulator.js";
+import { BasicZone } from "./src/soundfont/basic_soundfont/basic_zone.js";
+import { BasicGlobalZone } from "./src/soundfont/basic_soundfont/basic_global_zone.js";
 import { loadSoundFont } from "./src/soundfont/load_soundfont.js";
 
 import { MIDI } from "./src/midi/midi_loader.js";
@@ -89,14 +93,16 @@ export {
     
     // sound banks
     loadSoundFont,
-    BasicSoundBank,
+    Generator,
+    Modulator,
+    BasicZone,
+    BasicGlobalZone,
     BasicSample,
     BasicInstrumentZone,
     BasicInstrument,
     BasicPreset,
     BasicPresetZone,
-    Generator,
-    Modulator,
+    BasicSoundBank,
     
     modulatorSources,
     modulatorCurveTypes,
