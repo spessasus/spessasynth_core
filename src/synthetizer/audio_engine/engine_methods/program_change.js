@@ -1,3 +1,6 @@
+import { SpessaSynthWarn } from "../../../utils/loggin.js";
+import { BasicPreset } from "../../../soundfont/basic_soundfont/basic_preset.js";
+
 /**
  * executes a program change
  * @param programNumber {number}
@@ -14,7 +17,13 @@ export function programChange(programNumber)
     
     const isXG = this.isXGChannel;
     const p = this.synth.soundfontManager.getPreset(bank, programNumber, isXG);
-    const preset = p.preset;
+    let preset = p.preset;
+    if (!preset)
+    {
+        SpessaSynthWarn("No presets! Using empty fallback.");
+        preset = new BasicPreset(this.synth.soundfontManager.soundfontList[0].soundfont);
+        preset.presetName = "SPESSA EMPTY FALLBACK PRESET";
+    }
     this.setPreset(preset);
     this.sentBank = Math.min(128, preset.bank + p.bankOffset);
     this.synth.callEvent("programchange", {

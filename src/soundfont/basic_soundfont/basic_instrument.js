@@ -1,5 +1,6 @@
 import { BasicGlobalZone } from "./basic_global_zone.js";
 import { BasicInstrumentZone } from "./basic_instrument_zone.js";
+import { SpessaSynthWarn } from "../../utils/loggin.js";
 
 export class BasicInstrument
 {
@@ -64,7 +65,8 @@ export class BasicInstrument
         const index = this.linkedPresets.indexOf(preset);
         if (index < 0)
         {
-            throw new Error(`Cannot unlink ${preset.presetName} from ${this.instrumentName}: not linked.`);
+            SpessaSynthWarn(`Cannot unlink ${preset.presetName} from ${this.instrumentName}: not linked.`);
+            return;
         }
         this.linkedPresets.splice(index, 1);
         this.instrumentZones.forEach(z => z.useCount--);
@@ -87,7 +89,7 @@ export class BasicInstrument
     {
         if (this.useCount > 0)
         {
-            throw new Error(`Cannot delete an instrument that has ${this.useCount} usages.`);
+            throw new Error(`Cannot delete an instrument that is used by: ${this.linkedPresets.map(p => p.presetName)}.`);
         }
         this.instrumentZones.forEach(z => z.deleteZone());
         this.instrumentZones.length = 0;

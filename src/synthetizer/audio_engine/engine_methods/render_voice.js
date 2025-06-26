@@ -66,7 +66,7 @@ export function renderVoice(
     let semitones = voice.modulatedGenerators[generatorTypes.coarseTune];  // soundfont coarse tuning
     
     // midi tuning standard
-    const tuning = this.synth.tunings[this.preset.program]?.[voice.realKey];
+    const tuning = this.synth.tunings[this.preset?.program]?.[voice.realKey];
     if (tuning !== undefined && tuning?.midiNote >= 0)
     {
         // override key

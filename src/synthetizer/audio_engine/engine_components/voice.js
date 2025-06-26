@@ -491,7 +491,14 @@ export function getVoices(channel, midiNote, velocity, realKey)
     const overridePatch = this.keyModifierManager.hasOverridePatch(channel, midiNote);
     
     let bank = channelObject.getBankSelect();
-    let program = channelObject.preset.program;
+    
+    let preset = channelObject.preset;
+    if (!preset)
+    {
+        SpessaSynthWarn(`No preset for channel ${channel}!`);
+        return [];
+    }
+    let program = preset.program;
     if (overridePatch)
     {
         const override = this.keyModifierManager.getPatch(channel, midiNote);
@@ -507,7 +514,6 @@ export function getVoices(channel, midiNote, velocity, realKey)
     }
     
     // not cached...
-    let preset = channelObject.preset;
     if (overridePatch)
     {
         preset = this.getPreset(bank, program);

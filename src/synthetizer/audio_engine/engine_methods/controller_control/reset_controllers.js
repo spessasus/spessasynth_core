@@ -29,13 +29,17 @@ export function resetAllControllers(log = true)
     this.setSystem(DEFAULT_SYNTH_MODE);
     for (let channelNumber = 0; channelNumber < this.midiAudioChannels.length; channelNumber++)
     {
-        this.midiAudioChannels[channelNumber].resetControllers();
-        
         /**
          * @type {MidiAudioChannel}
          **/
         const ch = this.midiAudioChannels[channelNumber];
         
+        ch.resetControllers();
+        // safety net
+        if (!ch.preset)
+        {
+            continue;
+        }
         // if preset is unlocked, switch to non-drums and call event
         if (!ch.lockPreset)
         {
@@ -67,11 +71,11 @@ export function resetAllControllers(log = true)
             });
         }
         
-        const presetBank = ch.preset.bank;
+        const presetBank = ch.preset?.bank;
         // call program change
         this.callEvent("programchange", {
             channel: channelNumber,
-            program: ch.preset.program,
+            program: ch.preset?.program,
             bank: presetBank
         });
         

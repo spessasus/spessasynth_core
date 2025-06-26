@@ -166,7 +166,7 @@ class MidiAudioChannel
     
     /**
      * The preset currently assigned to the channel.
-     * @type {BasicPreset}
+     * @type {?BasicPreset}
      */
     preset = undefined;
     
@@ -364,7 +364,6 @@ class MidiAudioChannel
         {
             return;
         }
-        delete this.preset;
         this.preset = preset;
     }
     
@@ -464,7 +463,7 @@ class MidiAudioChannel
             isDrum: this.drumChannel,
             transposition: this.channelTransposeKeyShift + this.customControllers[customControllers.channelTransposeFine] / 100,
             bank: this.sentBank,
-            program: this.preset.program
+            program: this.preset?.program
         };
         this.synth?.onChannelPropertyChange?.(data, this.channelNumber);
     }

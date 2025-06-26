@@ -4,6 +4,7 @@ import { customControllers } from "../engine_components/controller_tables.js";
 import { Modulator } from "../../../soundfont/basic_soundfont/modulator.js";
 import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../../synth_constants.js";
 import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
+import { SpessaSynthWarn } from "../../../utils/loggin.js";
 
 /**
  * sends a "MIDI Note on message"
@@ -29,6 +30,12 @@ export function noteOn(midiNote, velocity)
         return;
     }
     
+    if (!this.preset)
+    {
+        SpessaSynthWarn(`No preset for channel ${this.channelNumber}!`);
+        return;
+    }
+    
     const realKey = midiNote + this.channelTransposeKeyShift + this.customControllers[customControllers.channelKeyShift];
     let internalMidiNote = realKey;
     
@@ -36,7 +43,7 @@ export function noteOn(midiNote, velocity)
     {
         return;
     }
-    const program = this.preset.program;
+    const program = this.preset?.program;
     const tune = this.synth.tunings[program]?.[realKey]?.midiNote;
     if (tune >= 0)
     {

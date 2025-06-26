@@ -249,7 +249,7 @@ export class BasicSample
     {
         if (this.useCount > 0)
         {
-            throw new Error(`Cannot delete sample that has ${this.useCount} usages.`);
+            throw new Error(`Cannot delete sample used by: ${this.linkedInstruments.map(i => i.instrumentName)}.`);
         }
         this.unlinkSample();
     }
@@ -310,7 +310,8 @@ export class BasicSample
         const index = this.linkedInstruments.indexOf(instrument);
         if (index < 0)
         {
-            throw new Error(`Cannot unlink ${instrument.instrumentName} from ${this.sampleName}: not linked.`);
+            SpessaSynthWarn(`Cannot unlink ${instrument.instrumentName} from ${this.sampleName}: not linked.`);
+            return;
         }
         this.linkedInstruments.splice(index, 1);
     }
