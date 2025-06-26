@@ -35,11 +35,6 @@ export function resetAllControllers(log = true)
         const ch = this.midiAudioChannels[channelNumber];
         
         ch.resetControllers();
-        // safety net
-        if (!ch.preset)
-        {
-            continue;
-        }
         // if preset is unlocked, switch to non-drums and call event
         if (!ch.lockPreset)
         {
@@ -70,7 +65,11 @@ export function resetAllControllers(log = true)
                 isDrumChannel: ch.drumChannel
             });
         }
-        
+        // safety net
+        if (!ch.preset)
+        {
+            continue;
+        }
         const presetBank = ch.preset?.bank;
         // call program change
         this.callEvent("programchange", {
