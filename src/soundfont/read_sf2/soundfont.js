@@ -378,7 +378,7 @@ export class SoundFont2 extends BasicSoundBank
                 // adjust zone counts
                 presets.forEach((preset, i) =>
                 {
-                    if (i < instruments.length - 1)
+                    if (i < presets.length - 1)
                     {
                         preset.zonesCount = presets[i + 1].zoneStartIndex - preset.zoneStartIndex;
                     }
