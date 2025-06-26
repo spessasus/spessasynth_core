@@ -148,9 +148,9 @@ class BasicSoundBank
     
     /**
      * Creates a simple soundfont with one saw wave preset.
-     * @returns {ArrayBufferLike}
+     * @returns {Promise<ArrayBufferLike>}
      */
-    static getDummySoundfontFile()
+    static async getDummySoundfontFile()
     {
         const font = new BasicSoundBank();
         const sample = new BasicSample(
@@ -162,11 +162,12 @@ class BasicSoundBank
             0,
             127
         );
-        sample.sampleData = new Float32Array(128);
+        const sampleData = new Float32Array(128);
         for (let i = 0; i < 128; i++)
         {
-            sample.sampleData[i] = (i / 128) * 2 - 1;
+            sampleData[i] = (i / 128) * 2 - 1;
         }
+        sample.setAudioData(sampleData);
         font.addSamples(sample);
         
         const gZone = new BasicGlobalZone();
@@ -201,7 +202,8 @@ class BasicSoundBank
         font.soundFontInfo["isng"] = "E-mu 10K2";
         font.soundFontInfo["INAM"] = "Dummy";
         font.flush();
-        return font.write().buffer;
+        const f = await font.write();
+        return f.buffer;
     }
     
     /**
@@ -252,7 +254,6 @@ class BasicSoundBank
         if (sample.isCompressed)
         {
             newSample.setCompressedData(sample.compressedData.slice());
-            console.log(sample.compressedData.length);
         }
         else
         {

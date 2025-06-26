@@ -175,6 +175,7 @@ export class DLSSample extends BasicSample
             loopEnd
         );
         this.sampleDbAttenuation = sampleDbAttenuation;
+        this.dataOverriden = false;
         /**
          * @type {IndexedByteArray}
          */
@@ -221,11 +222,11 @@ export class DLSSample extends BasicSample
         super.setAudioData(audioData);
     }
     
-    getRawData(allowVorbis = true)
+    getRawData(allowVorbis)
     {
         if (this.dataOverriden || this.isCompressed)
         {
-            return super.getRawData();
+            return super.getRawData(allowVorbis);
         }
         if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2)
         {

@@ -16,16 +16,25 @@ import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/litt
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
 import { MOD_BYTE_SIZE } from "../modulator.js";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
+
+/**
+ * @typedef {function} ProgressFunction
+ * @param {string} sampleName - the written sample name.
+ * @param {number} sampleIndex - the sample's index.
+ * @param {number} sampleCount - the total sample count for progress displaying.
+ */
+
 /**
  * @typedef {Object} SoundFont2WriteOptions
- * @property {boolean|undefined} compress - if the soundfont should be compressed with the Ogg Vorbis codec
- * @property {number|undefined} compressionQuality - the vorbis compression quality, from -0.1 to 1
- * @property {EncodeVorbisFunction|undefined} compressionFunction -
- * the encode vorbis function. Can be undefined if not compressed.
+ * @property {boolean|undefined} compress - if the soundfont should be compressed with a given function.
+ * @property {SampleEncodingFunction|undefined} compressionFunction -
+ * the encode vorbis function. It can be undefined if not compressed.
+ * @property {ProgressFunction|undefined} progressFunction - a function to show progress for writing large banks. It can be undefined.
  * @property {boolean|undefined} writeDefaultModulators - if the DMOD chunk should be written.
  * Recommended.
  * @property {boolean|undefined} writeExtendedLimits - if the xdta chunk should be written to allow virtually infinite parameters.
  * Recommended.
+ * @property {boolean|undefined} decompress - if an sf3 bank should be decompressed back to sf2. Not recommended.
  */
 
 
@@ -43,8 +52,10 @@ const DEFAULT_WRITE_OPTIONS = {
     compress: false,
     compressionQuality: 0.5,
     compressionFunction: undefined,
+    progressFunction: undefined,
     writeDefaultModulators: true,
-    writeExtendedLimits: true
+    writeExtendedLimits: true,
+    decompress: false
 };
 
 /**
@@ -53,14 +64,18 @@ const DEFAULT_WRITE_OPTIONS = {
  * @param {SoundFont2WriteOptions} options
  * @returns {Uint8Array}
  */
-export function write(options = DEFAULT_WRITE_OPTIONS)
+export async function write(options = DEFAULT_WRITE_OPTIONS)
 {
     options = fillWithDefaults(options, DEFAULT_WRITE_OPTIONS);
-    if (options.compress)
+    if (options?.compress)
     {
-        if (typeof options.compressionFunction !== "function")
+        if (typeof options?.compressionFunction !== "function")
         {
-            throw new TypeError("No compression function supplied but compression enabled.");
+            throw new Error("No compression function supplied but compression enabled.");
+        }
+        if (options?.decompress)
+        {
+            throw new Error("Decompressed and compressed at the same time.");
         }
     }
     SpessaSynthGroupCollapsed(
@@ -87,6 +102,10 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
     if (options?.compress || this.samples.some(s => s.isCompressed))
     {
         this.soundFontInfo["ifil"] = "3.0"; // set version to 3
+    }
+    if (options?.decompress)
+    {
+        this.soundFontInfo["ifil"] = "2.4"; // set version to 2.04
     }
     
     if (options?.writeDefaultModulators)
@@ -152,13 +171,14 @@ export function write(options = DEFAULT_WRITE_OPTIONS)
     // write sdta
     const smplStartOffsets = [];
     const smplEndOffsets = [];
-    const sdtaChunk = getSDTA.call(
+    const sdtaChunk = await getSDTA.call(
         this,
         smplStartOffsets,
         smplEndOffsets,
-        options?.compress,
-        options?.compressionQuality ?? 0.5,
-        options.compressionFunction
+        options.compress,
+        options.decompress,
+        options?.compressionFunction,
+        options?.progressFunction
     );
     
     SpessaSynthInfo(

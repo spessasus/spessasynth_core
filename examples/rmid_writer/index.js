@@ -7,7 +7,7 @@ import { MIDI } from "../../src/midi/midi_loader.js";
 const args = process.argv.slice(2);
 if (args.length !== 3)
 {
-    console.log("Usage: node index.js <sf2/dls input path> <mid input path> <rmi output path>");
+    console.info("Usage: node index.js <sf2/dls input path> <mid input path> <rmi output path>");
     process.exit();
 }
 
@@ -27,9 +27,9 @@ console.info("Loaded bank and MIDI!");
 bank.trimSoundBank(midi);
 
 // write rmidi
-const rmidi = midi.writeRMIDI(bank.write(), bank);
+const rmidi = midi.writeRMIDI(await bank.write(), bank);
 fs.writeFileSync(outPath, rmidi);
 fs.writeFile(outPath, rmidi, () =>
 {
-    console.log(`File written to ${outPath}`);
+    console.info(`File written to ${outPath}`);
 });

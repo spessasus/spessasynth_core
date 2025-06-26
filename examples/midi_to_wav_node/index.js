@@ -9,7 +9,7 @@ import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
 const args = process.argv.slice(2);
 if (args.length !== 3)
 {
-    console.log("Usage: node index.js <soundfont path> <midi path> <wav output path>");
+    console.info("Usage: node index.js <soundfont path> <midi path> <wav output path>");
     process.exit();
 }
 const sf = fs.readFileSync(args[0]);
@@ -50,11 +50,11 @@ while (filledSamples + bufSize < sampleCount)
     // log progress
     if (i % 100 === 0)
     {
-        console.log("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", midi.duration, synth.totalVoicesAmount);
+        console.info("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", midi.duration, synth.totalVoicesAmount);
     }
 }
 const rendered = Math.floor(performance.now() - start);
-console.log("Rendered in", rendered, `ms (${Math.floor((midi.duration * 1000 / rendered) * 100) / 100}x)`);
+console.info("Rendered in", rendered, `ms (${Math.floor((midi.duration * 1000 / rendered) * 100) / 100}x)`);
 const wave = audioToWav(
     [outLeft, outRight],
     sampleRate

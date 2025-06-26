@@ -1,8 +1,8 @@
-import { SpessaSynthInfo } from "../../../utils/loggin.js";
-import { consoleColors } from "../../../utils/other.js";
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeLittleEndian } from "../../../utils/byte_functions/little_endian.js";
+import { SpessaSynthInfo } from "../../../utils/loggin.js";
+import { consoleColors } from "../../../utils/other.js";
 
 /*
 Sdta structure:
@@ -26,25 +26,45 @@ const SDTA_TO_DATA_OFFSET =
  * @param smplStartOffsets {number[]}
  * @param smplEndOffsets {number[]}
  * @param compress {boolean}
- * @param quality {number}
- * @param vorbisFunc {EncodeVorbisFunction}
+ * @param decompress {boolean}
+ * @param vorbisFunc {SampleEncodingFunction}
+ * @param progressFunc {ProgressFunction|undefined}
  * @returns {Uint8Array}
  */
-export function getSDTA(smplStartOffsets, smplEndOffsets, compress, quality, vorbisFunc)
+export async function getSDTA(smplStartOffsets,
+                              smplEndOffsets,
+                              compress,
+                              decompress,
+                              vorbisFunc,
+                              progressFunc
+)
 {
     // write smpl: write int16 data of each sample linearly
     // get size (calling getAudioData twice doesn't matter since it gets cached)
+    let writtenCount = 0;
     let smplChunkSize = 0;
-    const sampleDatas = this.samples.map((s, i) =>
+    const sampleDatas = [];
+    
+    // linear async is faster here as the writing function usually uses a single wasm instance
+    for (const s of this.samples)
     {
         if (compress)
         {
-            s.compressSample(quality, vorbisFunc);
+            await s.compressSample(vorbisFunc);
         }
+        if (decompress)
+        {
+            s.setAudioData(s.getAudioData());
+        }
+        
         // raw data: either copy s16le or encoded vorbis or encode manually if overridden
-        const r = s.getRawData();
+        // use set timeout so the thread doesn't die
+        const r = s.getRawData(true);
+        writtenCount++;
+        progressFunc?.(s.sampleName, writtenCount, this.samples.length);
+        
         SpessaSynthInfo(
-            `%cEncoded sample %c${i}. ${s.sampleName}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
+            `%cEncoded sample %c${writtenCount}. ${s.sampleName}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
@@ -53,15 +73,16 @@ export function getSDTA(smplStartOffsets, smplEndOffsets, compress, quality, vor
             s.isCompressed ? consoleColors.recognized : consoleColors.unrecognized,
             consoleColors.info
         );
+        
         /* 6.1 Sample Data Format in the smpl Sub-chunk
         Each sample is followed by a minimum of forty-six zero
         valued sample data points. These zero valued data points are necessary to guarantee that any reasonable upward pitch shift
         using any reasonable interpolator can loop on zero data at the end of the sound.
         This doesn't apply to sf3 tho
          */
-        smplChunkSize += r.length + (s.isCompressed ? 0 : 92); // 92 = 46 sample data points
-        return r;
-    });
+        smplChunkSize += r.length + (s.isCompressed ? 0 : 92);
+        sampleDatas.push(r);
+    }
     
     if (smplChunkSize % 2 !== 0)
     {

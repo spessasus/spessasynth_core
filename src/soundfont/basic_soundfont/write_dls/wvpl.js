@@ -3,22 +3,27 @@ import { writeRIFFChunkParts } from "../riff_chunk.js";
 
 /**
  * @this {BasicSoundBank}
- * @returns {{data: IndexedByteArray, indexes: number[] }}
+ * @param {ProgressFunction|undefined} progressFunction
+ * @returns {Promise<{data: IndexedByteArray, indexes: number[] }>}
  */
-export function writeWavePool()
+export async function writeWavePool(progressFunction)
 {
     let currentIndex = 0;
     const offsets = [];
     /**
      * @type {IndexedByteArray[]}
      */
-    const samples = this.samples.map(s =>
+    const samples = [];
+    let written = 0;
+    for (const s of this.samples)
     {
         const out = writeDLSSample(s);
+        await progressFunction?.(s.sampleName, written, this.samples.length);
         offsets.push(currentIndex);
         currentIndex += out.length;
-        return out;
-    });
+        samples.push(out);
+        written++;
+    }
     return {
         data: writeRIFFChunkParts(
             "wvpl",

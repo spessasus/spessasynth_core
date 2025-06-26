@@ -20,11 +20,10 @@ export const sampleTypes = {
 };
 
 /**
- * @typedef {function} EncodeVorbisFunction
- * @param channelAudioData {Float32Array[]}
+ * @typedef {function} SampleEncodingFunction
+ * @async
+ * @param audioData {Float32Array}
  * @param sampleRate {number}
- * @param channels {number}
- * @param quality {number} -0.1 to 1
  * @returns {Uint8Array}
  */
 
@@ -106,7 +105,7 @@ export class BasicSample
      * Indicates if the data was overriden, so it cannot be copied back unchanged
      * @type {boolean}
      */
-    dataOverriden = false;
+    dataOverriden = true;
     
     /**
      * The basic representation of a sample
@@ -163,7 +162,7 @@ export class BasicSample
      * @return {Uint8Array} either s16 or vorbis data
      * @virtual
      */
-    getRawData(allowVorbis = true)
+    getRawData(allowVorbis)
     {
         if (this.isCompressed && allowVorbis && !this.dataOverriden)
         {
@@ -190,10 +189,9 @@ export class BasicSample
     }
     
     /**
-     * @param quality {number}
-     * @param encodeVorbis {EncodeVorbisFunction}
+     * @param encodeVorbis {SampleEncodingFunction}
      */
-    compressSample(quality, encodeVorbis)
+    async compressSample(encodeVorbis)
     {
         // no need to compress
         if (this.isCompressed)
@@ -210,12 +208,12 @@ export class BasicSample
                 this.resampleData(RESAMPLE_RATE);
                 audioData = this.getAudioData();
             }
-            const compressed = encodeVorbis([audioData], 1, this.sampleRate, quality);
+            const compressed = await encodeVorbis(audioData, this.sampleRate);
             this.setCompressedData(compressed);
         }
         catch (e)
         {
-            SpessaSynthWarn(`Failed to compress ${this.sampleName}. Leaving as uncompressed!`);
+            SpessaSynthWarn(`Failed to compress ${this.sampleName}. Leaving as uncompressed!`, e);
             delete this.compressedData;
             // flag as uncompressed
             this.isCompressed = false;

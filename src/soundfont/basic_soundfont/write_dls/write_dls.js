@@ -6,14 +6,30 @@ import { getStringBytes } from "../../../utils/byte_functions/string.js";
 import { writeWavePool } from "./wvpl.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
 import { consoleColors } from "../../../utils/other.js";
+import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
+
+/**
+ * @typedef {Object} DLSWriteOptions
+ * @property {ProgressFunction|undefined} progressFunction - a function to show progress for writing large banks. It can be undefined.
+ */
+
+
+/**
+ * @type {DLSWriteOptions}
+ */
+const DEFAULT_DLS_OPTIONS = {
+    progressFunction: undefined
+};
 
 /**
  * Write the soundfont as a .dls file. Experimental
  * @this {BasicSoundBank}
+ * @param {DLSWriteOptions|undefined} options - options for writing the file.
  * @returns {Uint8Array}
  */
-export function writeDLS()
+export async function writeDLS(options = DEFAULT_DLS_OPTIONS)
 {
+    options = fillWithDefaults(options, DEFAULT_DLS_OPTIONS);
     SpessaSynthGroupCollapsed(
         "%cSaving DLS...",
         consoleColors.info
@@ -40,7 +56,7 @@ export function writeDLS()
         "%cWriting WAVE samples...",
         consoleColors.info
     );
-    const wavepool = writeWavePool.apply(this);
+    const wavepool = await writeWavePool.call(this, options.progressFunction);
     const wvpl = wavepool.data;
     const ptblOffsets = wavepool.indexes;
     SpessaSynthInfo("%cSucceeded!", consoleColors.recognized);

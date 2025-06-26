@@ -22,21 +22,10 @@ export class SoundFontSample extends BasicSample
     linkedSampleIndex;
     
     /**
-     * The handle to the core sf2 file for dynamic sample reading
+     * The sliced sample from the smpl chunk
      * @type {Uint8Array}
      */
-    sf2FileArrayHandle;
-    
-    /**
-     * Start index of the sample in the file byte array
-     * @type {number}
-     */
-    s16leStart = 0;
-    /**
-     * End index of the sample in the file byte array
-     * @type {number}
-     */
-    s16leEnd = 0;
+    s16leData;
     
     /**
      * Creates a sample
@@ -83,6 +72,7 @@ export class SoundFontSample extends BasicSample
             sampleLoopStartIndex - (sampleStartIndex / 2),
             sampleLoopEndIndex - (sampleStartIndex / 2)
         );
+        this.dataOverriden = false;
         this.isCompressed = compressed;
         this.sampleName = sampleName;
         // in bytes
@@ -116,13 +106,15 @@ export class SoundFontSample extends BasicSample
                     this.startByteOffset / 2,
                     this.endByteOffset / 2
                 );
+                this.dataOverriden = true;
             }
             else
             {
                 // regular sf2 s16le
-                this.s16leStart = smplStart + this.startByteOffset;
-                this.s16leEnd = smplStart + this.endByteOffset;
-                this.sf2FileArrayHandle = sampleDataArray;
+                this.s16leData = sampleDataArray.slice(
+                    smplStart + this.startByteOffset,
+                    smplStart + this.endByteOffset
+                );
             }
             
         }
@@ -189,7 +181,7 @@ export class SoundFontSample extends BasicSample
         // read the sample data
         let audioData = new Float32Array(byteLength / 2);
         let convertedSigned16 = new Int16Array(
-            this.sf2FileArrayHandle.buffer.slice(this.s16leStart, this.s16leEnd)
+            this.s16leData.buffer
         );
         
         // convert to float
@@ -207,15 +199,15 @@ export class SoundFontSample extends BasicSample
      * @param allowVorbis
      * @returns {Uint8Array}
      */
-    getRawData(allowVorbis = true)
+    getRawData(allowVorbis)
     {
         if (this.dataOverriden || this.compressedData)
         {
             // return vorbis or encode manually
-            return super.getRawData();
+            return super.getRawData(allowVorbis);
         }
         // copy the smpl directly
-        return this.sf2FileArrayHandle.slice(this.s16leStart, this.s16leEnd);
+        return this.s16leData;
     }
 }
 

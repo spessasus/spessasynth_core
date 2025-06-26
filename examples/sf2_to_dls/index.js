@@ -6,7 +6,7 @@ import { BasicSoundBank } from "../../src/soundfont/basic_soundfont/basic_soundb
 const args = process.argv.slice(2);
 if (args.length !== 2)
 {
-    console.log("Usage: node index.js <sf2 input path> <dls output path>");
+    console.info("Usage: node index.js <sf2 input path> <dls output path>");
     process.exit();
 }
 
@@ -16,12 +16,14 @@ const dlsPath = args[1];
 await BasicSoundBank.isSF3DecoderReady;
 console.warn("DLS conversion may lose data.");
 const sf2 = fs.readFileSync(sf2Path);
+console.time("Loaded in");
 const bank = loadSoundFont(sf2);
-console.log(`Loaded! Name: ${bank.soundFontInfo["INAM"]}`);
-const start = performance.now();
-const outDLS = bank.writeDLS();
-console.log(`Converted in ${Math.floor(performance.now() - start)}ms. Writing file...`);
+console.timeEnd("Loaded in");
+console.time("Converted in");
+const outDLS = await bank.writeDLS();
+console.timeEnd("Converted in");
+console.info(`Writing file...`);
 fs.writeFile(dlsPath, outDLS, () =>
 {
-    console.log(`File written to ${dlsPath}`);
+    console.info(`File written to ${dlsPath}`);
 });

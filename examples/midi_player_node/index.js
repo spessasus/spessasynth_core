@@ -11,7 +11,7 @@ import { SpessaSynthLogging } from "../../src/utils/loggin.js";
 const args = process.argv.slice(2);
 if (args.length !== 2)
 {
-    console.log("Usage: node index.js <soundfont path> <midi path>");
+    console.info("Usage: node index.js <soundfont path> <midi path>");
     process.exit();
 }
 const sfPath = args[0];

@@ -7,7 +7,7 @@ import { BasicSoundBank } from "../../src/soundfont/basic_soundfont/basic_soundb
 const args = process.argv.slice(2);
 if (args.length !== 1)
 {
-    console.log("Usage: node index.js <sf2/dls input path>");
+    console.info("Usage: node index.js <sf2/dls input path>");
     process.exit();
 }
 
