@@ -26,15 +26,15 @@ import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
 
 /**
  * @typedef {Object} SoundFont2WriteOptions
- * @property {boolean|undefined} compress - if the soundfont should be compressed with a given function.
- * @property {SampleEncodingFunction|undefined} compressionFunction -
+ * @property {boolean} compress - if the soundfont should be compressed with a given function.
+ * @property {SampleEncodingFunction} compressionFunction -
  * the encode vorbis function. It can be undefined if not compressed.
- * @property {ProgressFunction|undefined} progressFunction - a function to show progress for writing large banks. It can be undefined.
- * @property {boolean|undefined} writeDefaultModulators - if the DMOD chunk should be written.
+ * @property {ProgressFunction} progressFunction - a function to show progress for writing large banks. It can be undefined.
+ * @property {boolean} writeDefaultModulators - if the DMOD chunk should be written.
  * Recommended.
- * @property {boolean|undefined} writeExtendedLimits - if the xdta chunk should be written to allow virtually infinite parameters.
+ * @property {boolean} writeExtendedLimits - if the xdta chunk should be written to allow virtually infinite parameters.
  * Recommended.
- * @property {boolean|undefined} decompress - if an sf3 bank should be decompressed back to sf2. Not recommended.
+ * @property {boolean} decompress - if an sf3 bank should be decompressed back to sf2. Not recommended.
  */
 
 
@@ -61,7 +61,7 @@ const DEFAULT_WRITE_OPTIONS = {
 /**
  * Write the soundfont as an .sf2 file
  * @this {BasicSoundBank}
- * @param {SoundFont2WriteOptions} options
+ * @param {Partial<SoundFont2WriteOptions>} options
  * @returns {Uint8Array}
  */
 export async function write(options = DEFAULT_WRITE_OPTIONS)

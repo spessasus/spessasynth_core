@@ -1,9 +1,9 @@
 /**
  * @typedef {Object} WaveMetadata
- * @property {string|undefined} title - the song's title
- * @property {string|undefined} artist - the song's artist
- * @property {string|undefined} album - the song's album
- * @property {string|undefined} genre - the song's genre
+ * @property {string} title - the song's title
+ * @property {string} artist - the song's artist
+ * @property {string} album - the song's album
+ * @property {string} genre - the song's genre
  */
 
 import { IndexedByteArray } from "./indexed_array.js";
@@ -16,7 +16,7 @@ import { writeLittleEndian } from "./byte_functions/little_endian.js";
  * @param audioData {Float32Array[]} channels
  * @param sampleRate {number}
  * @param normalizeAudio {boolean} find the max sample point and set it to 1, and scale others with it
- * @param metadata {WaveMetadata}
+ * @param metadata {Partial<WaveMetadata>}
  * @param loop {{start: number, end: number}} loop start and end points in seconds. Undefined if no loop
  * @returns {ArrayBuffer}
  */

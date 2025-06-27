@@ -35,16 +35,16 @@ const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
 /**
  * @typedef {Object} RMIDMetadata
- * @property {string|undefined} name - the name of the file
- * @property {string|undefined} engineer - the engineer who worked on the file
- * @property {string|undefined} artist - the artist
- * @property {string|undefined} album - the album
- * @property {string|undefined} genre - the genre of the song
- * @property {ArrayBuffer|undefined} picture - the image for the file (album cover)
- * @property {string|undefined} comment - the coment of the file
- * @property {string|undefined} creationDate - the creation date of the file
- * @property {string|undefined} copyright - the copyright of the file
- * @property {string|unescape} midiEncoding - the encoding of the inner MIDI file
+ * @property {string} name - the name of the file
+ * @property {string} engineer - the engineer who worked on the file
+ * @property {string} artist - the artist
+ * @property {string} album - the album
+ * @property {string} genre - the genre of the song
+ * @property {ArrayBuffer} picture - the image for the file (album cover)
+ * @property {string} comment - the coment of the file
+ * @property {string} creationDate - the creation date of the file
+ * @property {string} copyright - the copyright of the file
+ * @property {string} midiEncoding - the encoding of the inner MIDI file
  */
 
 /**
@@ -54,7 +54,7 @@ const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
  * @param soundfont {BasicSoundBank}
  * @param bankOffset {number} the bank offset for RMIDI
  * @param encoding {string} the encoding of the RMIDI info chunk
- * @param metadata {RMIDMetadata} the metadata of the file. Optional. If provided, the encoding is forced to utf-8/
+ * @param metadata {Partial<RMIDMetadata>} the metadata of the file. Optional. If provided, the encoding is forced to utf-8/
  * @param correctBankOffset {boolean}
  * @returns {IndexedByteArray}
  */

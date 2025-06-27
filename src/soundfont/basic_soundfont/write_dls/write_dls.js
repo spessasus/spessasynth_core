@@ -10,7 +10,7 @@ import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
 
 /**
  * @typedef {Object} DLSWriteOptions
- * @property {ProgressFunction|undefined} progressFunction - a function to show progress for writing large banks. It can be undefined.
+ * @property {ProgressFunction} progressFunction - a function to show progress for writing large banks. It can be undefined.
  */
 
 
@@ -24,7 +24,7 @@ const DEFAULT_DLS_OPTIONS = {
 /**
  * Write the soundfont as a .dls file. Experimental
  * @this {BasicSoundBank}
- * @param {DLSWriteOptions|undefined} options - options for writing the file.
+ * @param {Partial<DLSWriteOptions>} options - options for writing the file.
  * @returns {Uint8Array}
  */
 export async function writeDLS(options = DEFAULT_DLS_OPTIONS)
