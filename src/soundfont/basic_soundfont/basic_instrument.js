@@ -85,6 +85,7 @@ export class BasicInstrument
         });
     }
     
+    // unlinks everything from this instrument
     deleteInstrument()
     {
         if (this.useCount > 0)
@@ -92,7 +93,6 @@ export class BasicInstrument
             throw new Error(`Cannot delete an instrument that is used by: ${this.linkedPresets.map(p => p.presetName)}.`);
         }
         this.instrumentZones.forEach(z => z.deleteZone());
-        this.instrumentZones.length = 0;
     }
     
     /**

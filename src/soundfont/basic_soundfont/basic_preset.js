@@ -91,10 +91,10 @@ export class BasicPreset
         );
     }
     
+    // unlinks everything from this preset
     deletePreset()
     {
         this.presetZones.forEach(z => z.deleteZone());
-        this.presetZones.length = 0;
     }
     
     /**
