@@ -271,6 +271,11 @@ export class BasicSample
      */
     setLinkedSample(sample, type)
     {
+        // sanity check
+        if (sample.linkedSample)
+        {
+            throw new Error(`${sample.sampleName} is linked tp ${sample.linkedSample.sampleName}. Unlink it first.`);
+        }
         this.linkedSample = sample;
         sample.linkedSample = this;
         if (type === sampleTypes.leftSample)

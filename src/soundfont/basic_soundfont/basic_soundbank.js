@@ -263,7 +263,11 @@ class BasicSoundBank
         if (sample.linkedSample)
         {
             const clonedLinked = this.cloneSample(sample.linkedSample);
-            newSample.setLinkedSample(clonedLinked, newSample.sampleType);
+            // sanity check
+            if (!clonedLinked.linkedSample)
+            {
+                newSample.setLinkedSample(clonedLinked, newSample.sampleType);
+            }
         }
         return newSample;
     }

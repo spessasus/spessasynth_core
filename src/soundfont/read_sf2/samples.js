@@ -3,7 +3,7 @@ import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { BasicSample, sampleTypes } from "../basic_soundfont/basic_sample.js";
+import { BasicSample } from "../basic_soundfont/basic_sample.js";
 import { consoleColors } from "../../utils/other.js";
 
 /**
@@ -130,16 +130,28 @@ export class SoundFontSample extends BasicSample
         {
             return;
         }
-        const linkedSample = samplesArray[this.linkedSampleIndex];
-        if (!linkedSample)
+        const linked = samplesArray[this.linkedSampleIndex];
+        if (!linked)
         {
             // log as info because it's common and not really dangerous
             SpessaSynthInfo(`%cInvalid linked sample for ${this.sampleName}. Setting to mono.`, consoleColors.warn);
-            this.setSampleType(sampleTypes.monoSample);
+            this.unlinkSample();
         }
         else
         {
-            this.setLinkedSample(samplesArray[this.linkedSampleIndex], this.sampleType);
+            // check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
+            if (linked.linkedSample)
+            {
+                SpessaSynthInfo(
+                    `%cInvalid linked sample for ${this.sampleName}: Already linked to ${linked.linkedSample.sampleName}`,
+                    consoleColors.warn
+                );
+                this.unlinkSample();
+            }
+            else
+            {
+                this.setLinkedSample(linked, this.sampleType);
+            }
         }
     }
     
