@@ -97,13 +97,14 @@ export class BasicInstrument
     
     /**
      * @param index {number}
+     * @param force {boolean} ignore use count
      * @returns {boolean} if deleted
      */
-    deleteZone(index)
+    deleteZone(index, force = false)
     {
         const zone = this.instrumentZones[index];
         zone.useCount -= 1;
-        if (zone.useCount < 1)
+        if (zone.useCount < 1 || force)
         {
             zone.deleteZone();
             this.instrumentZones.splice(index, 1);
