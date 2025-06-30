@@ -20,7 +20,9 @@ npm install --save spessasynth_core
 
 ### [Project site (consider giving it a star!)](https://github.com/spessasus/SpessaSynth)
 
-### [Demo (using the spessasynth_lib wrapper)](https://spessasus.github.io/SpessaSynth)
+### Made with spessasynth_core
+- [SpessaSynth Online MIDI Player](https://spessasus.github.io/SpessaSynth)
+- [SpessaFont Online SoundFont/DLS Editor](https://spessasus.github.io/SpessaFont)
 
 ### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
 
