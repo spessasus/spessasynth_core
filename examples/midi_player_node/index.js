@@ -21,7 +21,9 @@ const sf = fs.readFileSync(sfPath);
 const mid = fs.readFileSync(midPath);
 
 const sampleRate = 44100;
-const synth = new SpessaSynthProcessor(sampleRate);
+const synth = new SpessaSynthProcessor(sampleRate, {
+    effectsEnabled: false
+});
 SpessaSynthLogging(true, true, true, true);
 synth.soundfontManager.reloadManager(loadSoundFont(sf));
 await synth.processorInitialized;
@@ -38,7 +40,7 @@ const audioStream = new Readable({
         const right = new Float32Array(bufSize);
         const arr = [left, right];
         seq.processTick();
-        synth.renderAudio(arr, arr, arr);
+        synth.renderAudio(arr, [], []);
         
         
         const interleaved = new Float32Array(left.length * 2);

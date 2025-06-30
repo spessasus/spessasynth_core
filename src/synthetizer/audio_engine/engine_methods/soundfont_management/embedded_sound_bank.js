@@ -24,7 +24,6 @@ export function setEmbeddedSoundFont(font, offset)
 {
     // the embedded bank is set as the first bank in the manager,
     // with a special ID that does not clear when reloadManager is performed.
-    this.soundfontBankOffset = offset;
     const loadedFont = loadSoundFont(font);
     this.soundfontManager.addNewSoundFont(loadedFont, EMBEDDED_SOUND_BANK_ID, offset);
     // rearrange so the embedded is first (most important as it overrides all others)

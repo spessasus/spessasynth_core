@@ -41,7 +41,7 @@ while (filledSamples + bufSize < sampleCount)
     seq.processTick();
     const arr = [bufLeft, bufRight];
     // render
-    synth.renderAudio(arr, arr, arr);
+    synth.renderAudio(arr, [], []);
     // write out
     outLeft.set(bufLeft, filledSamples);
     outRight.set(bufRight, filledSamples);

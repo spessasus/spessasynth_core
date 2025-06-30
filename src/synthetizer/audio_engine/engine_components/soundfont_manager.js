@@ -125,7 +125,7 @@ export class SoundFontManager
     
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Adds a new soundfont with a given ID
+     * Adds a new soundfont with a given ID, or replaces an existing one.
      * @param font {BasicSoundBank}
      * @param id {string}
      * @param bankOffset {number}
