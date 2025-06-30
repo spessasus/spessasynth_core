@@ -6,7 +6,11 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js"
 const RESAMPLE_RATE = 48000;
 
 /**
- * @enum {number}
+ * @typedef {1|2|4|8|32769|32770|32772|32776} sampleTypes
+ */
+
+/**
+ * @enum {sampleTypes}
  */
 export const sampleTypes = {
     monoSample: 1,
@@ -113,7 +117,7 @@ export class BasicSample
      * @param sampleRate {number} The sample's rate in Hz
      * @param samplePitch {number} The sample's pitch as a MIDI note number
      * @param samplePitchCorrection {number} The sample's pitch correction in cents
-     * @param sampleType {sampleTypes|number} The sample's type, an enum that can indicate SF3
+     * @param sampleType {sampleTypes} The sample's type, an enum that can indicate SF3
      * @param loopStart {number} The sample's loop start relative to the sample start in sample points
      * @param loopEnd {number} The sample's loop end relative to the sample start in sample points
      */
