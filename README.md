@@ -18,7 +18,7 @@ It allows you to:
 npm install --save spessasynth_core
 ```
 
-### [Project site (consider giving it a star!)](https://github.com/spessasus/SpessaSynth)
+### [Project site (consider giving it a star!)](https://github.com/spessasus/spessasynth_core)
 
 ### Made with spessasynth_core
 - [SpessaSynth Online SF2/DLS MIDI Player](https://spessasus.github.io/SpessaSynth)
