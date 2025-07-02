@@ -6,10 +6,10 @@
 **A powerful SF2/DLS/MIDI JavaScript library. It works with any modern JS environment that supports WebAssembly.**
 
 It allows you to:
-- Play MIDI files using SF2/SF3/DLS files
-- Write MIDI files
-- Write SF2/SF3 files
-- Convert DLS to SF2 (and back!)
+- Play MIDI files using SF2/SF3/DLS files!
+- Read and write MIDI files!
+- Write SF2/SF3 files!
+- Convert DLS to SF2! (and back!)
 - [and more!](https://github.com/spessasus/spessasynth_core?tab=readme-ov-file#current-features)
 > **TIP:**
 > Looking for an easy-to-use WebAudioAPI browser wrapper? Try [spessasynth_lib](https://github.com/spessasus/spessasynth_lib)!
@@ -21,7 +21,7 @@ npm install --save spessasynth_core
 ### [Project site (consider giving it a star!)](https://github.com/spessasus/SpessaSynth)
 
 ### Made with spessasynth_core
-- [SpessaSynth Online MIDI Player](https://spessasus.github.io/SpessaSynth)
+- [SpessaSynth Online SF2/DLS MIDI Player](https://spessasus.github.io/SpessaSynth)
 - [SpessaFont Online SoundFont/DLS Editor](https://spessasus.github.io/SpessaFont)
 
 ### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
@@ -29,11 +29,12 @@ npm install --save spessasynth_core
 
 > Note: This is the new heart of the SpessaSynth library, after the repository has been split.
 
-**Project index**
+**SpessaSynth Project index**
 
-- spessasynth_core (you are here) - SF2/DLS/MIDI library
+- [spessasynth_core](https://github.com/spessasus/spessasynth_core) (you are here) - SF2/DLS/MIDI library
 - [spessasynth_lib](https://github.com/spessasus/spessasynth_lib) - spessasynth_core wrapper optimized for browsers and WebAudioAPI
-- [SpessaSynth](https://github.com/spessasus/SpessaSynth) - online/local web player/editor application
+- [SpessaSynth](https://github.com/spessasus/SpessaSynth) - online/local MIDI player/editor application
+- [SpessaFont](https://github.com/spessasus/SpessaFont) - online SF2/DLS editor
 
 ## Current Features
 
