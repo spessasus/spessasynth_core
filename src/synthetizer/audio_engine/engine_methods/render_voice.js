@@ -18,6 +18,8 @@ import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_typ
  * @param reverbOutputRight {Float32Array} right output for reverb
  * @param chorusOutputLeft {Float32Array} left output for chorus
  * @param chorusOutputRight {Float32Array} right output for chorus
+ * @param startIndex {number}
+ * @param sampleCount {number}
  * @this {MidiAudioChannel}
  * @returns {boolean} true if the voice is finished
  */
@@ -25,7 +27,8 @@ export function renderVoice(
     voice, timeNow,
     outputLeft, outputRight,
     reverbOutputLeft, reverbOutputRight,
-    chorusOutputLeft, chorusOutputRight
+    chorusOutputLeft, chorusOutputRight,
+    startIndex, sampleCount
 )
 {
     // check if release
@@ -168,7 +171,7 @@ export function renderVoice(
     
     
     // SYNTHESIS
-    const bufferOut = new Float32Array(outputLeft.length);
+    const bufferOut = new Float32Array(sampleCount);
     
     // wave table oscillator
     switch (this.synth.interpolationType)
@@ -191,14 +194,20 @@ export function renderVoice(
     LowpassFilter.apply(voice, bufferOut, lowpassExcursion, this.synth.filterSmoothingFactor);
     
     // vol env
-    VolumeEnvelope.apply(voice, bufferOut, volumeExcursionCentibels, this.synth.volumeEnvelopeSmoothingFactor);
+    VolumeEnvelope.apply(
+        voice,
+        bufferOut,
+        volumeExcursionCentibels,
+        this.synth.volumeEnvelopeSmoothingFactor
+    );
     
-    this.panVoice(
+    this.panAndMixVoice(
         voice,
         bufferOut,
         outputLeft, outputRight,
         reverbOutputLeft, reverbOutputRight,
-        chorusOutputLeft, chorusOutputRight
+        chorusOutputLeft, chorusOutputRight,
+        startIndex
     );
     return voice.finished;
 }

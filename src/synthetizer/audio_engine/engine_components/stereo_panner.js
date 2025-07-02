@@ -38,13 +38,15 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++)
  * @param reverbRight {Float32Array} right reverb input
  * @param chorusLeft {Float32Array} left chorus buffer
  * @param chorusRight {Float32Array} right chorus buffer
+ * @param startIndex {number}
  * @this {MidiAudioChannel}
  */
-export function panVoice(voice,
-                         inputBuffer,
-                         outputLeft, outputRight,
-                         reverbLeft, reverbRight,
-                         chorusLeft, chorusRight)
+export function panAndMixVoice(voice,
+                               inputBuffer,
+                               outputLeft, outputRight,
+                               reverbLeft, reverbRight,
+                               chorusLeft, chorusRight,
+                               startIndex)
 {
     if (isNaN(inputBuffer[0]))
     {
@@ -82,10 +84,10 @@ export function panVoice(voice,
             const reverbGain = this.synth.reverbGain * this.synth.reverbSend * gain * (reverbSend / REVERB_DIVIDER);
             for (let i = 0; i < inputBuffer.length; i++)
             {
-                reverbLeft[i] += reverbGain * inputBuffer[i];
+                const idx = i + startIndex;
+                reverbLeft[idx] += reverbGain * inputBuffer[i];
+                reverbRight[idx] += reverbGain * inputBuffer[i];
             }
-            // copy as its mono
-            reverbRight.set(reverbLeft);
         }
         
         const chorusSend = voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
@@ -97,8 +99,9 @@ export function panVoice(voice,
             const chorusRightGain = gainRight * chorusGain;
             for (let i = 0; i < inputBuffer.length; i++)
             {
-                chorusLeft[i] += chorusLeftGain * inputBuffer[i];
-                chorusRight[i] += chorusRightGain * inputBuffer[i];
+                const idx = i + startIndex;
+                chorusLeft[idx] += chorusLeftGain * inputBuffer[i];
+                chorusRight[idx] += chorusRightGain * inputBuffer[i];
             }
         }
     }
@@ -108,14 +111,14 @@ export function panVoice(voice,
     {
         for (let i = 0; i < inputBuffer.length; i++)
         {
-            outputLeft[i] += gainLeft * inputBuffer[i];
+            outputLeft[i + startIndex] += gainLeft * inputBuffer[i];
         }
     }
     if (gainRight > 0)
     {
         for (let i = 0; i < inputBuffer.length; i++)
         {
-            outputRight[i] += gainRight * inputBuffer[i];
+            outputRight[i + startIndex] += gainRight * inputBuffer[i];
         }
     }
 }

@@ -11,7 +11,7 @@ import {
     resetParameters
 } from "../engine_methods/controller_control/reset_controllers.js";
 import { renderVoice } from "../engine_methods/render_voice.js";
-import { panVoice } from "./stereo_panner.js";
+import { panAndMixVoice } from "./stereo_panner.js";
 import { killNote } from "../engine_methods/stopping_notes/kill_note.js";
 import { setTuning } from "../engine_methods/tuning_control/set_tuning.js";
 import { setModulationDepth } from "../engine_methods/tuning_control/set_modulation_depth.js";
@@ -273,18 +273,22 @@ class MidiAudioChannel
      * @param reverbOutputRight {Float32Array} right output for reverb
      * @param chorusOutputLeft {Float32Array} left output for chorus
      * @param chorusOutputRight {Float32Array} right output for chorus
+     * @param startIndex {number}
+     * @param sampleCount {number}
      */
     renderAudio(
         outputLeft, outputRight,
         reverbOutputLeft, reverbOutputRight,
-        chorusOutputLeft, chorusOutputRight
+        chorusOutputLeft, chorusOutputRight,
+        startIndex, sampleCount
     )
     {
         this.voices = this.voices.filter(v => !this.renderVoice(
             v, this.synth.currentSynthTime,
             outputLeft, outputRight,
             reverbOutputLeft, reverbOutputRight,
-            chorusOutputLeft, chorusOutputRight
+            chorusOutputLeft, chorusOutputRight,
+            startIndex, sampleCount
         ));
     }
     
@@ -516,7 +520,7 @@ class MidiAudioChannel
 
 // voice
 MidiAudioChannel.prototype.renderVoice = renderVoice;
-MidiAudioChannel.prototype.panVoice = panVoice;
+MidiAudioChannel.prototype.panAndMixVoice = panAndMixVoice;
 MidiAudioChannel.prototype.killNote = killNote;
 MidiAudioChannel.prototype.stopAllNotes = stopAllNotes;
 MidiAudioChannel.prototype.muteChannel = muteChannel;

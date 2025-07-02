@@ -442,3 +442,36 @@ export class BasicSample
         this.dataOverriden = false;
     }
 }
+
+
+export class CreatedSample extends BasicSample
+{
+    /**
+     * A simplified class for creating samples
+     * @param name
+     * @param sampleRate
+     * @param sampleData
+     */
+    constructor(name, sampleRate, sampleData)
+    {
+        super(name, sampleRate, 60, 0, sampleTypes.monoSample, 0, sampleData.length - 1);
+        this.setAudioData(sampleData);
+    }
+    
+    /**
+     * @param allowVorbis {boolean}
+     * @returns {Uint8Array}
+     */
+    getRawData(allowVorbis)
+    {
+        return super.getRawData(allowVorbis);
+    }
+    
+    /**
+     * @param audioData {Float32Array}
+     */
+    setAudioData(audioData)
+    {
+        super.setAudioData(audioData);
+    }
+}

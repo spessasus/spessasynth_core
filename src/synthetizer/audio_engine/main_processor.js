@@ -491,10 +491,17 @@ class SpessaSynthProcessor
      * @param outputs {Float32Array[]} output stereo channels (L, R)
      * @param reverb {Float32Array[]} reverb stereo channels (L, R)
      * @param chorus {Float32Array[]} chorus stereo channels (L, R)
+     * @param startIndex {number} start offset of the passed arrays, rendering starts at this index, defaults to 0
+     * @param sampleCount {number} the length of the rendered buffer, defaults to float32array length - startOffset
      */
-    renderAudio(outputs, reverb, chorus)
+    renderAudio(outputs,
+                reverb,
+                chorus,
+                startIndex = 0,
+                sampleCount = 0
+    )
     {
-        this.renderAudioSplit(reverb, chorus, Array(16).fill(outputs));
+        this.renderAudioSplit(reverb, chorus, Array(16).fill(outputs), startIndex, sampleCount);
     }
     
     /**
@@ -503,8 +510,15 @@ class SpessaSynthProcessor
      * @param reverbChannels {Float32Array[]} reverb stereo channels (L, R)
      * @param chorusChannels {Float32Array[]} chorus stereo channels (L, R)
      * @param separateChannels {Float32Array[][]} a total of 16 stereo pairs (L, R) for each MIDI channel
+     * @param startIndex {number} start offset of the passed arrays, rendering starts at this index, defaults to 0
+     * @param sampleCount {number} the length of the rendered buffer, defaults to float32array length - startOffset
      */
-    renderAudioSplit(reverbChannels, chorusChannels, separateChannels)
+    renderAudioSplit(reverbChannels,
+                     chorusChannels,
+                     separateChannels,
+                     startIndex = 0,
+                     sampleCount = 0
+    )
     {
         // process event queue
         const time = this.currentSynthTime;
@@ -516,6 +530,10 @@ class SpessaSynthProcessor
         const revR = reverbChannels[1];
         const chrL = chorusChannels[0];
         const chrR = chorusChannels[1];
+        
+        // validate
+        startIndex = Math.max(startIndex, 0);
+        const quantumSize = sampleCount || separateChannels[0][0].length - startIndex;
         
         // for every channel
         this.totalVoicesAmount = 0;
@@ -533,7 +551,8 @@ class SpessaSynthProcessor
             channel.renderAudio(
                 separateChannels[ch][0], separateChannels[ch][1],
                 revL, revR,
-                chrL, chrR
+                chrL, chrR,
+                startIndex, quantumSize
             );
             
             this.totalVoicesAmount += channel.voices.length;
@@ -545,7 +564,7 @@ class SpessaSynthProcessor
         });
         
         // advance the time appropriately
-        this.currentSynthTime += separateChannels[0][0].length * this.sampleTime;
+        this.currentSynthTime += quantumSize * this.sampleTime;
     }
     
     // noinspection JSUnusedGlobalSymbols

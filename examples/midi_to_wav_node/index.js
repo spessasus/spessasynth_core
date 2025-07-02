@@ -16,7 +16,7 @@ const sf = fs.readFileSync(args[0]);
 const mid = fs.readFileSync(args[1]);
 const midi = new MIDI(mid);
 const sampleRate = 44100;
-const sampleCount = 44100 * (midi.duration + 2);
+const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
@@ -31,26 +31,23 @@ const outRight = new Float32Array(sampleCount);
 const start = performance.now();
 let filledSamples = 0;
 // note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
-const bufSize = 128;
+const BUFFER_SIZE = 128;
 let i = 0;
-while (filledSamples + bufSize < sampleCount)
+const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
+const outputArray = [outLeft, outRight];
+while (filledSamples < sampleCount)
 {
-    const bufLeft = new Float32Array(bufSize);
-    const bufRight = new Float32Array(bufSize);
     // process sequencer
     seq.processTick();
-    const arr = [bufLeft, bufRight];
     // render
-    synth.renderAudio(arr, [], []);
-    // write out
-    outLeft.set(bufLeft, filledSamples);
-    outRight.set(bufRight, filledSamples);
-    filledSamples += bufSize;
+    const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
+    synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+    filledSamples += bufferSize;
     i++;
     // log progress
     if (i % 100 === 0)
     {
-        console.info("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", midi.duration, synth.totalVoicesAmount);
+        console.info("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", durationRounded);
     }
 }
 const rendered = Math.floor(performance.now() - start);

@@ -21,7 +21,7 @@ import { SynthesizerSnapshot } from "./src/synthetizer/audio_engine/snapshot/syn
 import { ChannelSnapshot } from "./src/synthetizer/audio_engine/snapshot/channel_snapshot.js";
 
 import { BasicSoundBank } from "./src/soundfont/basic_soundfont/basic_soundbank.js";
-import { BasicSample, sampleTypes } from "./src/soundfont/basic_soundfont/basic_sample.js";
+import { BasicSample, CreatedSample, sampleTypes } from "./src/soundfont/basic_soundfont/basic_sample.js";
 import { BasicPresetZone } from "./src/soundfont/basic_soundfont/basic_preset_zone.js";
 import { BasicInstrument } from "./src/soundfont/basic_soundfont/basic_instrument.js";
 import { BasicPreset } from "./src/soundfont/basic_soundfont/basic_preset.js";
@@ -98,6 +98,7 @@ export {
     BasicZone,
     BasicGlobalZone,
     BasicSample,
+    CreatedSample,
     BasicInstrumentZone,
     BasicInstrument,
     BasicPreset,
