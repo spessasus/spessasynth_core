@@ -75,7 +75,7 @@ function readPCM(data, bytesPerSample)
  */
 function readALAW(data, bytesPerSample)
 {
-    const sampleLength = data / bytesPerSample;
+    const sampleLength = data.length / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
     for (let i = 0; i < sampleData.length; i++)
     {
