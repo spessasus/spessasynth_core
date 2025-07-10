@@ -70,3 +70,5 @@ examples/package-lock.json
 examples/package.json
 /test.js
 unused/
+/unused/chorus.js
+/unused/reverb.js

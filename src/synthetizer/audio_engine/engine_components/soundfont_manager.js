@@ -116,9 +116,6 @@ export class SoundFontManager
             SpessaSynthInfo(`No soundfont with id of "${id}" found. Aborting!`);
             return;
         }
-        delete this.soundfontList[index].soundfont.presets;
-        delete this.soundfontList[index].soundfont.instruments;
-        delete this.soundfontList[index].soundfont.samples;
         this.soundfontList.splice(index, 1);
         this.generatePresetList();
     }

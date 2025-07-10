@@ -5,7 +5,6 @@ import { absCentsToHz, timecentsToSeconds } from "../engine_components/unit_conv
 import { getLFOValue } from "../engine_components/lfo.js";
 import { WavetableOscillator } from "../engine_components/wavetable_oscillator.js";
 import { LowpassFilter } from "../engine_components/lowpass_filter.js";
-import { interpolationTypes } from "../engine_components/enums.js";
 import { generatorTypes } from "../../../soundfont/basic_soundfont/generator_types.js";
 
 /**
@@ -174,21 +173,7 @@ export function renderVoice(
     const bufferOut = new Float32Array(sampleCount);
     
     // wave table oscillator
-    switch (this.synth.interpolationType)
-    {
-        case interpolationTypes.fourthOrder:
-            WavetableOscillator.getSampleCubic(voice, bufferOut);
-            break;
-        
-        case interpolationTypes.linear:
-        default:
-            WavetableOscillator.getSampleLinear(voice, bufferOut);
-            break;
-        
-        case interpolationTypes.nearestNeighbor:
-            WavetableOscillator.getSampleNearest(voice, bufferOut);
-            break;
-    }
+    WavetableOscillator.getSample(voice, bufferOut, this.synth.interpolationType);
     
     // low pass filter
     LowpassFilter.apply(voice, bufferOut, lowpassExcursion, this.synth.filterSmoothingFactor);
