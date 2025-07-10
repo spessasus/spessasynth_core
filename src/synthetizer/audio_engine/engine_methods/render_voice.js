@@ -172,6 +172,19 @@ export function renderVoice(
     // SYNTHESIS
     const bufferOut = new Float32Array(sampleCount);
     
+    
+    // looping mode 2: start on release. process only volEnv
+    if (voice.sample.loopingMode === 2 && !voice.isInRelease)
+    {
+        VolumeEnvelope.apply(
+            voice,
+            bufferOut,
+            volumeExcursionCentibels,
+            this.synth.volumeEnvelopeSmoothingFactor
+        );
+        return voice.finished;
+    }
+    
     // wave table oscillator
     WavetableOscillator.getSample(voice, bufferOut, this.synth.interpolationType);
     
