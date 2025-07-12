@@ -160,6 +160,9 @@ export function renderVoice(
         cents += modEnv * modEnvPitchDepth;
     }
     
+    // default resonant modulator: it does not affect the filter gain (neither XG nor GS did that)
+    volumeExcursionCentibels -= voice.resonanceOffset;
+    
     // finally, calculate the playback rate
     const centsTotal = ~~(cents + semitones * 100);
     if (centsTotal !== voice.currentTuningCents)

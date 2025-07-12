@@ -113,6 +113,13 @@ export function computeModulator(controllerTable, modulator, voice)
         computedValue = Math.abs(computedValue);
     }
     
+    // resonant modulator: take its value and ensure that it won't change the final gain
+    if (modulator.isDefaultResonanceModulator)
+    {
+        // half the gain, negates the filter
+        voice.resonanceOffset = Math.max(0, computedValue / 2);
+    }
+    
     modulator.currentValue = computedValue;
     return computedValue;
 }

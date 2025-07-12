@@ -74,6 +74,13 @@ export class Modulator
     isEffectModulator = false;
     
     /**
+     * The default resonant modulator does not affect the filter gain.
+     * Neither XG nor GS responded to cc #74 in that way.
+     * @type {boolean}
+     */
+    isDefaultResonanceModulator = false;
+    
+    /**
      * 1 if the source is bipolar (min is -1, max is 1)
      * otherwise min is 0 and max is 1
      * @type {0|1}
@@ -198,7 +205,7 @@ export class Modulator
      */
     static copy(modulator)
     {
-        return new Modulator(
+        const m = new Modulator(
             modulator.sourceIndex,
             modulator.sourceCurveType,
             modulator.sourceUsesCC,
@@ -214,6 +221,8 @@ export class Modulator
             modulator.transformType,
             modulator.isEffectModulator
         );
+        m.isDefaultResonanceModulator = modulator.isDefaultResonanceModulator;
+        return m;
     }
     
     /**
@@ -313,7 +322,7 @@ export class Modulator
      */
     sumTransform(modulator)
     {
-        return new Modulator(
+        const m = new Modulator(
             this.sourceIndex,
             this.sourceCurveType,
             this.sourceUsesCC,
@@ -329,6 +338,8 @@ export class Modulator
             this.transformType,
             this.isEffectModulator
         );
+        m.isDefaultResonanceModulator = modulator.isDefaultResonanceModulator;
+        return m;
     }
 }
 
@@ -531,23 +542,26 @@ const customModulators = [
         generatorTypes.initialFilterFc,
         6000,
         0
-    ),
-    
-    // cc 71 (filter Q) to filter Q
-    new DecodedModulator(
-        getModSourceEnum(
-            modulatorCurveTypes.linear,
-            1,
-            0,
-            1,
-            midiControllers.filterResonance
-        ), // linear forwards bipolar cc 74
-        0x0, // no controller
-        generatorTypes.initialFilterQ,
-        250,
-        0
     )
+
 ];
+// cc 71 (filter Q) to filter Q
+const resonanceModulator = new DecodedModulator(
+    getModSourceEnum(
+        modulatorCurveTypes.linear,
+        1,
+        0,
+        1,
+        midiControllers.filterResonance
+    ), // linear forwards bipolar cc 74
+    0x0, // no controller
+    generatorTypes.initialFilterQ,
+    250,
+    0
+);
+
+resonanceModulator.isDefaultResonanceModulator = true;
+customModulators.push(resonanceModulator);
 
 /**
  * @type {Modulator[]}
