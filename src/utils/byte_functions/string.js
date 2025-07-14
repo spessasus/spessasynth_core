@@ -3,50 +3,39 @@ import { IndexedByteArray } from "../indexed_array.js";
 /**
  * @param dataArray {IndexedByteArray}
  * @param bytes {number}
- * @param encoding {string} the textElement encoding
  * @param trimEnd {boolean} if we should trim once we reach an invalid byte
  * @returns {string}
  */
-export function readBytesAsString(dataArray, bytes, encoding = undefined, trimEnd = true)
+export function readBytesAsString(dataArray, bytes, trimEnd = true)
 {
-    if (!encoding)
+    let finished = false;
+    let string = "";
+    for (let i = 0; i < bytes; i++)
     {
-        let finished = false;
-        let string = "";
-        for (let i = 0; i < bytes; i++)
+        let byte = dataArray[dataArray.currentIndex++];
+        if (finished)
         {
-            let byte = dataArray[dataArray.currentIndex++];
-            if (finished)
+            continue;
+        }
+        if ((byte < 32 || byte > 127) && byte !== 10) // 10 is "\n"
+        {
+            if (trimEnd)
             {
+                finished = true;
                 continue;
             }
-            if ((byte < 32 || byte > 127) && byte !== 10) // 10 is "\n"
+            else
             {
-                if (trimEnd)
+                if (byte === 0)
                 {
                     finished = true;
                     continue;
                 }
-                else
-                {
-                    if (byte === 0)
-                    {
-                        finished = true;
-                        continue;
-                    }
-                }
             }
-            string += String.fromCharCode(byte);
         }
-        return string;
+        string += String.fromCharCode(byte);
     }
-    else
-    {
-        let byteBuffer = dataArray.slice(dataArray.currentIndex, dataArray.currentIndex + bytes);
-        dataArray.currentIndex += bytes;
-        let decoder = new TextDecoder(encoding.replace(/[^\x20-\x7E]/g, ""));
-        return decoder.decode(byteBuffer.buffer);
-    }
+    return string;
 }
 
 /**

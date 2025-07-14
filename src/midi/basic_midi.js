@@ -217,7 +217,6 @@ class BasicMIDI extends MIDISequenceData
                             copyrightComponents.push(readBytesAsString(
                                 e.messageData,
                                 e.messageData.length,
-                                undefined,
                                 false
                             ));
                             e.messageData.currentIndex = 0;
@@ -466,7 +465,7 @@ class BasicMIDI extends MIDISequenceData
                     {
                         this.rawMidiName = name.messageData;
                         name.messageData.currentIndex = 0;
-                        this.midiName = readBytesAsString(name.messageData, name.messageData.length, undefined, false);
+                        this.midiName = readBytesAsString(name.messageData, name.messageData.length, false);
                     }
                 }
             }
@@ -478,7 +477,7 @@ class BasicMIDI extends MIDISequenceData
                 {
                     this.rawMidiName = name.messageData;
                     name.messageData.currentIndex = 0;
-                    this.midiName = readBytesAsString(name.messageData, name.messageData.length, undefined, false);
+                    this.midiName = readBytesAsString(name.messageData, name.messageData.length, false);
                 }
             }
         }

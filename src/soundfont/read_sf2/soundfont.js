@@ -101,7 +101,7 @@ export class SoundFont2 extends BasicSoundBank
                     break;
                 
                 case "icmt":
-                    text = readBytesAsString(chunk.chunkData, chunk.chunkData.length, undefined, false);
+                    text = readBytesAsString(chunk.chunkData, chunk.chunkData.length, false);
                     this.soundFontInfo[chunk.header] = text;
                     break;
                 

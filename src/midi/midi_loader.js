@@ -45,7 +45,7 @@ class MIDI extends BasicMIDI
             // possibly an RMID file (https://github.com/spessasus/sf2-rmidi-specification#readme)
             // skip size
             binaryData.currentIndex += 8;
-            const rmid = readBytesAsString(binaryData, 4, undefined, false);
+            const rmid = readBytesAsString(binaryData, 4, false);
             if (rmid !== "RMID")
             {
                 SpessaSynthGroupEnd();
@@ -101,18 +101,15 @@ class MIDI extends BasicMIDI
                             this.copyright = readBytesAsString(
                                 this.RMIDInfo["ICOP"],
                                 this.RMIDInfo["ICOP"].length,
-                                undefined,
                                 false
                             ).replaceAll("\n", " ");
                         }
                         if (this.RMIDInfo["INAM"])
                         {
                             this.rawMidiName = this.RMIDInfo[RMIDINFOChunks.name];
-                            // noinspection JSCheckFunctionSignatures
                             this.midiName = readBytesAsString(
-                                this.rawMidiName,
+                                /** @type {IndexedByteArray}*/this.rawMidiName,
                                 this.rawMidiName.length,
-                                undefined,
                                 false
                             ).replaceAll("\n", " ");
                         }

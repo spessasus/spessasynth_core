@@ -12,7 +12,7 @@ export function loadSoundFont(buffer)
 {
     const check = buffer.slice(8, 12);
     const a = new IndexedByteArray(check);
-    const id = readBytesAsString(a, 4, undefined, false).toLowerCase();
+    const id = readBytesAsString(a, 4, false).toLowerCase();
     if (id === "dls ")
     {
         return new DLSSoundFont(buffer);
