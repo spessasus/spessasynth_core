@@ -34,6 +34,20 @@ export const modulatorCurveTypes = {
     switch: 3
 };
 
+
+export function getModSourceEnum(curveType, polarity, direction, isCC, index)
+{
+    return (curveType << 10) | (polarity << 9) | (direction << 8) | (isCC << 7) | index;
+}
+
+const defaultResonantModSource = getModSourceEnum(
+    modulatorCurveTypes.linear,
+    1,
+    0,
+    1,
+    midiControllers.filterResonance
+); // linear forwards bipolar cc 74
+
 export class Modulator
 {
     /**
@@ -70,6 +84,7 @@ export class Modulator
      * - still can be disabled if the soundfont has its own modulator curve
      * - this fixes the very low amount of reverb by default and doesn't break soundfonts
      * @type {boolean}
+     * @readonly
      */
     isEffectModulator = false;
     
@@ -77,8 +92,9 @@ export class Modulator
      * The default resonant modulator does not affect the filter gain.
      * Neither XG nor GS responded to cc #74 in that way.
      * @type {boolean}
+     * @readonly
      */
-    isDefaultResonanceModulator = false;
+    isDefaultResonantModulator = false;
     
     /**
      * 1 if the source is bipolar (min is -1, max is 1)
@@ -158,6 +174,7 @@ export class Modulator
      * @param amount {number}
      * @param transformType {0|2}
      * @param isEffectModulator {boolean}
+     * @param isDefaultResonantModulator {boolean}
      */
     constructor(sourceIndex,
                 sourceCurveType,
@@ -172,7 +189,8 @@ export class Modulator
                 destination,
                 amount,
                 transformType,
-                isEffectModulator = false)
+                isEffectModulator = false,
+                isDefaultResonantModulator = false)
     {
         this.sourcePolarity = sourcePolarity;
         this.sourceDirection = sourceDirection;
@@ -190,6 +208,7 @@ export class Modulator
         this.transformAmount = amount;
         this.transformType = transformType;
         this.isEffectModulator = isEffectModulator;
+        this.isDefaultResonantModulator = isDefaultResonantModulator;
         
         
         if (this.modulatorDestination > MAX_GENERATOR)
@@ -205,7 +224,7 @@ export class Modulator
      */
     static copy(modulator)
     {
-        const m = new Modulator(
+        return new Modulator(
             modulator.sourceIndex,
             modulator.sourceCurveType,
             modulator.sourceUsesCC,
@@ -219,10 +238,9 @@ export class Modulator
             modulator.modulatorDestination,
             modulator.transformAmount,
             modulator.transformType,
-            modulator.isEffectModulator
+            modulator.isEffectModulator,
+            modulator.isDefaultResonantModulator
         );
-        m.isDefaultResonanceModulator = modulator.isDefaultResonanceModulator;
-        return m;
     }
     
     /**
@@ -322,7 +340,7 @@ export class Modulator
      */
     sumTransform(modulator)
     {
-        const m = new Modulator(
+        return new Modulator(
             this.sourceIndex,
             this.sourceCurveType,
             this.sourceUsesCC,
@@ -336,10 +354,9 @@ export class Modulator
             this.modulatorDestination,
             this.transformAmount + modulator.transformAmount,
             this.transformType,
-            this.isEffectModulator
+            this.isEffectModulator,
+            this.isDefaultResonantModulator
         );
-        m.isDefaultResonanceModulator = modulator.isDefaultResonanceModulator;
-        return m;
     }
 }
 
@@ -396,16 +413,19 @@ export class DecodedModulator extends Modulator
                 this.modulatorDestination === generatorTypes.reverbEffectsSend
                 || this.modulatorDestination === generatorTypes.chorusEffectsSend
             );
+        
+        
+        this.isDefaultResonantModulator = (
+            sourceEnum === defaultResonantModSource
+            && secondarySourceEnum === 0x0
+            && this.modulatorDestination === generatorTypes.initialFilterQ
+        );
     }
 }
 
 export const DEFAULT_ATTENUATION_MOD_AMOUNT = 960;
 export const DEFAULT_ATTENUATION_MOD_CURVE_TYPE = modulatorCurveTypes.concave;
 
-export function getModSourceEnum(curveType, polarity, direction, isCC, index)
-{
-    return (curveType << 10) | (polarity << 9) | (direction << 8) | (isCC << 7) | index;
-}
 
 const soundFontModulators = [
     // vel to attenuation
@@ -542,26 +562,18 @@ const customModulators = [
         generatorTypes.initialFilterFc,
         6000,
         0
+    ),
+    
+    // cc 71 (filter Q) to filter Q (default resonant modulator)
+    new DecodedModulator(
+        defaultResonantModSource,
+        0x0, // no controller
+        generatorTypes.initialFilterQ,
+        250,
+        0
     )
 
 ];
-// cc 71 (filter Q) to filter Q
-const resonanceModulator = new DecodedModulator(
-    getModSourceEnum(
-        modulatorCurveTypes.linear,
-        1,
-        0,
-        1,
-        midiControllers.filterResonance
-    ), // linear forwards bipolar cc 74
-    0x0, // no controller
-    generatorTypes.initialFilterQ,
-    250,
-    0
-);
-
-resonanceModulator.isDefaultResonanceModulator = true;
-customModulators.push(resonanceModulator);
 
 /**
  * @type {Modulator[]}
