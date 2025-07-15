@@ -147,7 +147,7 @@ export function loadNewSongList(midiBuffers, autoPlay = true)
      * parse the MIDIs (only the array buffers, MIDI is unchanged)
      * @type {BasicMIDI[]}
      */
-    this.songs = midiBuffers.map(m => BasicMIDI.copyFrom(m));
+    this.songs = midiBuffers;
     if (this.songs.length < 1)
     {
         return;

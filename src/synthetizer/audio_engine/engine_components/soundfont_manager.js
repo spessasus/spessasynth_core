@@ -33,7 +33,7 @@ export class SoundFontManager
     {
         /**
          * <"bank-program", "presetName">
-         * @type {Object<string, string>}
+         * @type {Record<string, string>}
          */
         const presetList = {};
         // gather the presets in reverse and replace if necessary

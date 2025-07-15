@@ -32,7 +32,7 @@ class BasicSoundBank
     
     /**
      * Soundfont's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
-     * @type {Object<string, string|IndexedByteArray>}
+     * @type {Record<string, string|IndexedByteArray>}
      */
     soundFontInfo = {};
     
@@ -77,7 +77,7 @@ class BasicSoundBank
     
     /**
      * Creates a new basic soundfont template (or copies)
-     * @param data {undefined|{presets: BasicPreset[], info: Object<string, string>}}
+     * @param data {undefined|{presets: BasicPreset[], info: Record<string, string>}}
      */
     constructor(data = undefined)
     {

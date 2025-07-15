@@ -180,7 +180,7 @@ export function modifyMIDI(
     const midiPorts = midi.midiPorts.slice();
     /**
      * midi port: channel offset
-     * @type {Object<number, number>}
+     * @type {Record<number, number>}
      */
     const midiPortChannelOffsets = {};
     let midiPortChannelOffset = 0;

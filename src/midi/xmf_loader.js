@@ -90,7 +90,7 @@ class XMFNode
     metadataLength;
     
     /**
-     * @type {Object<string, any>}
+     * @type {Record<string, any>}
      */
     metadata = {};
     

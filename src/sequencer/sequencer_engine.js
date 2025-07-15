@@ -111,8 +111,8 @@ class SpessaSynthSequencer
     midiPortChannelOffset = 0;
     /**
      * stored as:
-     * Object<midi port, channel offset>
-     * @type {Object<number, number>}
+     * Record<midi port, channel offset>
+     * @type {Record<number, number>}
      */
     midiPortChannelOffsets = {};
     

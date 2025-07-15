@@ -1,3 +1,5 @@
+import { IndexedByteArray } from "../utils/indexed_array.js";
+
 /**
  * This is the base type for MIDI files. It contains all the "metadata" and information.
  * It extends to:
@@ -133,7 +135,7 @@ class MIDISequenceData
      * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
      * Otherwise, this field is undefined.
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
-     * @type {Object<string, IndexedByteArray>}
+     * @type {Record<string, IndexedByteArray>}
      */
     RMIDInfo = {};
     
@@ -217,7 +219,11 @@ class MIDISequenceData
         // copying objects
         this.loop = { ...sequence.loop };
         this.keyRange = { ...sequence.keyRange };
-        this.RMIDInfo = { ...sequence.RMIDInfo };
+        this.RMIDInfo = {};
+        for (const [key, value] of Object.entries(sequence.RMIDInfo))
+        {
+            this.RMIDInfo[key] = new IndexedByteArray(value);
+        }
     }
 }
 

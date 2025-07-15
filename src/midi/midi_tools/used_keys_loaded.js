@@ -10,7 +10,7 @@ import { SoundFontManager } from "../../synthetizer/audio_engine/engine_componen
  * Gets the used programs and keys for this MIDI file with a given sound bank
  * @this {BasicMIDI}
  * @param soundfont {SoundFontManager|BasicSoundBank} - the sound bank
- * @returns {Object<string, Set<string>>} Object<bank:program, Set<key-velocity>>
+ * @returns {Record<string, Set<string>>} Record<bank:program, Set<key-velocity>>
  */
 export function getUsedProgramsAndKeys(soundfont)
 {
@@ -81,7 +81,7 @@ export function getUsedProgramsAndKeys(soundfont)
     /**
      * find all programs used and key-velocity combos in them
      * bank:program each has a set of midiNote-velocity
-     * @type {Object<string, Set<string>>}
+     * @type {Record<string, Set<string>>}
      */
     const usedProgramsAndKeys = {};
     

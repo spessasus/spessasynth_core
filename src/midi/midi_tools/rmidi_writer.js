@@ -48,7 +48,7 @@ const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
  */
 
 /**
- * Writes an RMIDI file
+ * Writes an RMIDI file. Note that this method modifies the MIDI file in-place.
  * @this {BasicMIDI}
  * @param soundfontBinary {Uint8Array}
  * @param soundfont {BasicSoundBank}

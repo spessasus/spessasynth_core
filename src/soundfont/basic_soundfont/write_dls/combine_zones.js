@@ -234,7 +234,7 @@ export function combineZones(preset, globalize = true)
                 continue;
             }
             /**
-             * @type {Object<string, number>}
+             * @type {Record<string, number>}
              */
             let occurencesForValues = {};
             const defaultForChecked = generatorLimits[checkedType]?.def || 0;
