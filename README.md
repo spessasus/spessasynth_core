@@ -66,7 +66,7 @@ npm install --save spessasynth_core
 - **Soundfont manager:** Stack multiple soundfonts!
 - **Unlimited channel count:** Your CPU is the limit!
 - **Excellent MIDI Standards Support:**
-  - **MIDI Controller Support:** Default supported controllers [here](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#supported-controllers)
+  - **MIDI Controller Support:** Default supported controllers [here](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#default-supported-controllers)
   - **Portamento Support:** Glide the notes!
   - **Sound Controllers:** Real-time filter and envelope control!
   - **MIDI Tuning Standard Support:** [more info here](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#midi-tuning-standard)
@@ -110,7 +110,7 @@ npm install --save spessasynth_core
   - **Easy info access:** Just an [object of strings!](https://github.com/spessasus/spessasynth_core/wiki/SoundFont2-Class#soundfontinfo)
   - **Smart trimming:** Trim the SoundFont to only include samples used in the MIDI *(down to key and velocity!)*
   - **sf3 conversion:** Compress SoundFont2 files to SoundFont3 with variable quality!
-  - **Easy saving:** Also just [one function!](https://github.com/spessasus/spessasynth_core/wiki/SoundFont2-Class#write)
+  - **Easy saving:** Also just [one function!](https://github.com/spessasus/spessasynth_core/wiki/Sound-Bank-Parser#write)
 
 #### Read and write SoundFont3 files
   - Same features as SoundFont2 but with now with **Ogg Vorbis compression!**
@@ -119,7 +119,8 @@ npm install --save spessasynth_core
 
 #### Read and write DLS Level One or Two files
   - Read DLS (DownLoadable Sounds) files as SF2 files!
-  - **Works like a normal soundfont:** *Saving it as sf2 is still [just one function!](https://github.com/spessasus/spessasynth_core/wiki/SoundFont2-Class#write)*
+  - **Works like a normal soundfont:** *Saving it as sf2 is still [just one function!](https://github.com/spessasus/spessasynth_core/wiki/Sound-Bank-Parser#write)*
+  - *That's right, saving as DLS is also [just one function!](https://github.com/spessasus/spessasynth_core/wiki/Sound-Bank-Parser#writedls)*
   - Converts articulators to both **modulators** and **generators**!
   - Works with both unsigned 8-bit samples and signed 16-bit samples!
   - A-Law encoding support
