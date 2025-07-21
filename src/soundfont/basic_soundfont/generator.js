@@ -69,5 +69,8 @@ export function addAndClampGenerator(generatorType, presetGens, instrumentGens)
     }
     
     // limits are applied in the compute_modulator function
-    return instruValue + presetValue;
+    // clamp to prevent short from overflowing
+    // testcase: Sega Genesis soundfont (spessasynth/#169) adds 20,999 and the default 13,500 to initialFilterFc
+    // which is more than 32k
+    return Math.max(-32767, Math.min(32767, instruValue + presetValue));
 }
