@@ -56,6 +56,12 @@ export function noteOn(midiNote, velocity)
         velocity = this.velocityOverride;
     }
     
+    // monophonic retrigger
+    if (this.synth._monophonicRetriggerMode)
+    {
+        this.killNote(midiNote, -7200);
+    }
+    
     // key velocity override
     const keyVel = this.synth.keyModifierManager.getVelocity(this.channelNumber, realKey);
     if (keyVel > -1)

@@ -342,7 +342,12 @@ class SpessaSynthProcessor
      * are the chorus and reverb effects enabled?
      * @type {boolean}
      */
-    effectsEnabled;
+    effectsEnabled = true;
+    
+    /**
+     * one voice per note and track (issue #7)
+     */
+    _monophonicRetriggerMode = false;
     
     
     /**
