@@ -1,0 +1,390 @@
+import { SpessaSynthWarn } from "../../utils/loggin.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { stbvorbis } from "stbvorbis_sync";
+import { sampleTypes } from "../enums.ts";
+import type { BasicInstrument } from "./basic_instrument.ts";
+import type { SampleEncodingFunction } from "../types.ts";
+
+// should be reasonable for most cases
+const RESAMPLE_RATE = 48000;
+
+export class BasicSample {
+    /**
+     * The sample's name
+     */
+    sampleName: string;
+
+    /**
+     * Sample rate in Hz
+     */
+    sampleRate: number;
+
+    /**
+     * Original pitch of the sample as a MIDI note number
+     */
+    samplePitch: number;
+
+    /**
+     * Pitch correction, in cents. Can be negative
+     */
+    samplePitchCorrection: number;
+
+    /**
+     * Linked sample, unused if mono
+     */
+    linkedSample: BasicSample | undefined;
+
+    /**
+     * The type of the sample
+     */
+    sampleType: sampleTypes;
+
+    /**
+     * Relative to the start of the sample in sample points
+     */
+    sampleLoopStartIndex: number;
+
+    /**
+     * Relative to the start of the sample in sample points
+     */
+    sampleLoopEndIndex: number;
+    /**
+     * The compressed sample data if the sample has been compressed
+     */
+    compressedData: Uint8Array | undefined;
+    /**
+     * Sample's linked instruments (the instruments that use it)
+     * note that duplicates are allowed since one instrument can use the same sample multiple times
+     */
+    linkedInstruments: BasicInstrument[] = [];
+    /**
+     * The sample's audio data
+     * @type {Float32Array|undefined}
+     */
+    sampleData: Float32Array | undefined;
+    /**
+     * Indicates if the data was overridden, so it cannot be copied back unchanged
+     */
+    dataOverridden: boolean = true;
+
+    /**
+     * The basic representation of a sample
+     * @param sampleName The sample's name
+     * @param sampleRate The sample's rate in Hz
+     * @param samplePitch The sample's pitch as a MIDI note number
+     * @param samplePitchCorrection The sample's pitch correction in cents
+     * @param sampleType The sample's type, an enum that can indicate SF3
+     * @param loopStart The sample's loop start relative to the sample start in sample points
+     * @param loopEnd The sample's loop end relative to the sample start in sample points
+     */
+    constructor(
+        sampleName: string,
+        sampleRate: number,
+        samplePitch: number,
+        samplePitchCorrection: number,
+        sampleType: sampleTypes,
+        loopStart: number,
+        loopEnd: number
+    ) {
+        this.sampleName = sampleName;
+        this.sampleRate = sampleRate;
+        this.samplePitch = samplePitch;
+        this.samplePitchCorrection = samplePitchCorrection;
+        this.sampleLoopStartIndex = loopStart;
+        this.sampleLoopEndIndex = loopEnd;
+        this.sampleType = sampleType;
+    }
+
+    /**
+     * Indicates if the sample is compressed using vorbis SF3
+     */
+    get isCompressed(): boolean {
+        return this.compressedData !== undefined;
+    }
+
+    /**
+     * If the sample is linked to another sample
+     */
+    get isLinked(): boolean {
+        return (
+            this.sampleType === sampleTypes.rightSample ||
+            this.sampleType === sampleTypes.leftSample ||
+            this.sampleType === sampleTypes.linkedSample
+        );
+    }
+
+    /**
+     * The sample's use count
+     */
+    get useCount() {
+        return this.linkedInstruments.length;
+    }
+
+    /**
+     * Get raw data for writing the file
+     * @param allowVorbis if vorbis file data is allowed
+     * @return either s16 or vorbis data
+     * @virtual
+     */
+    getRawData(allowVorbis: boolean): Uint8Array {
+        if (this.compressedData && allowVorbis && !this.dataOverridden) {
+            return this.compressedData;
+        }
+        return this.encodeS16LE();
+    }
+
+    // resamples the audio data to a given sample rate
+    resampleData(newSampleRate: number) {
+        let audioData = this.getAudioData();
+        const ratio = newSampleRate / this.sampleRate;
+        const resampled = new Float32Array(
+            Math.floor(audioData.length * ratio)
+        );
+        for (let i = 0; i < resampled.length; i++) {
+            resampled[i] = audioData[Math.floor(i * (1 / ratio))];
+        }
+        audioData = resampled;
+        this.sampleRate = newSampleRate;
+        // adjust loop points
+        this.sampleLoopStartIndex = Math.floor(
+            this.sampleLoopStartIndex * ratio
+        );
+        this.sampleLoopEndIndex = Math.floor(this.sampleLoopEndIndex * ratio);
+        this.sampleData = audioData;
+    }
+
+    /**
+     * Compresses the audio data
+     * @param encodeVorbis the compression function to use when compressing
+     */
+    async compressSample(encodeVorbis: SampleEncodingFunction) {
+        // no need to compress
+        if (this.isCompressed) {
+            return;
+        }
+        // compress, always mono!
+        try {
+            // if the sample rate is too low or too high, resample
+            let audioData = this.getAudioData();
+            if (this.sampleRate < 8000 || this.sampleRate > 96000) {
+                this.resampleData(RESAMPLE_RATE);
+                audioData = this.getAudioData();
+            }
+            const compressed = await encodeVorbis(audioData, this.sampleRate);
+            this.setCompressedData(compressed);
+        } catch (e) {
+            SpessaSynthWarn(
+                `Failed to compress ${this.sampleName}. Leaving as uncompressed!`,
+                e
+            );
+            delete this.compressedData;
+        }
+    }
+
+    /**
+     * Sets the sample type and unlinks if needed
+     * @param type the type to use
+     */
+    setSampleType(type: sampleTypes) {
+        this.sampleType = type;
+        if (!this.isLinked) {
+            // unlink the other sample
+            if (this.linkedSample) {
+                this.linkedSample.linkedSample = undefined;
+                this.linkedSample.sampleType = type;
+            }
+
+            this.linkedSample = undefined;
+        }
+        if ((type & 0x8000) > 0) {
+            throw new Error("ROM samples are not supported.");
+        }
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Unlinks a sample from its link
+     */
+    unlinkSample() {
+        this.setSampleType(sampleTypes.monoSample);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Links a stereo sample
+     * @param sample the sample to link to
+     * @param type either left, right or linked
+     */
+    setLinkedSample(sample: BasicSample, type: sampleTypes) {
+        // sanity check
+        if (sample.linkedSample) {
+            throw new Error(
+                `${sample.sampleName} is linked tp ${sample.linkedSample.sampleName}. Unlink it first.`
+            );
+        }
+        this.linkedSample = sample;
+        sample.linkedSample = this;
+        if (type === sampleTypes.leftSample) {
+            this.setSampleType(sampleTypes.leftSample);
+            sample.setSampleType(sampleTypes.rightSample);
+        } else if (type === sampleTypes.rightSample) {
+            this.setSampleType(sampleTypes.rightSample);
+            sample.setSampleType(sampleTypes.leftSample);
+        } else if (type === sampleTypes.linkedSample) {
+            this.setSampleType(sampleTypes.linkedSample);
+            sample.setSampleType(sampleTypes.linkedSample);
+        } else {
+            throw new Error("Invalid sample type: " + type);
+        }
+    }
+
+    /**
+     * Links the sample to a given instrument
+     * @param instrument the instrument to link to
+     */
+    linkTo(instrument: BasicInstrument) {
+        this.linkedInstruments.push(instrument);
+    }
+
+    /**
+     * Unlinks the sample from a given instrument
+     * @param instrument the instrument to unlink from
+     */
+    unlinkFrom(instrument: BasicInstrument) {
+        const index = this.linkedInstruments.indexOf(instrument);
+        if (index < 0) {
+            SpessaSynthWarn(
+                `Cannot unlink ${instrument.instrumentName} from ${this.sampleName}: not linked.`
+            );
+            return;
+        }
+        this.linkedInstruments.splice(index, 1);
+    }
+
+    /**
+     * Get the float32 audio data.
+     * Note that this either decodes the compressed data or passes the ready sampleData.
+     * If neither are set then it will throw an error!
+     * @returns the audio data
+     */
+    getAudioData(): Float32Array {
+        if (this.sampleData) {
+            return this.sampleData;
+        }
+        if (this.isCompressed) {
+            // SF3
+            // if compressed, decode
+            this.sampleData = this.decodeVorbis();
+            return this.sampleData;
+        }
+        throw new Error("Sample data is undefined for a BasicSample instance.");
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * REPLACES the audio data in place!
+     * @param audioData the new audio data
+     * @virtual
+     */
+    setAudioData(audioData: Float32Array) {
+        delete this.compressedData;
+        this.sampleData = audioData;
+        this.dataOverridden = true;
+    }
+
+    /**
+     * Replaces the audio with a compressed data sample and flags the sample as compressed
+     * @param data the new compressed data
+     */
+    setCompressedData(data: Uint8Array) {
+        this.sampleData = undefined;
+        this.compressedData = data;
+        this.dataOverridden = false;
+    }
+
+    /**
+     * Encodes s16le sample
+     * @return the encoded data
+     */
+    protected encodeS16LE(): IndexedByteArray {
+        const data = this.getAudioData();
+        const data16 = new Int16Array(data.length);
+        const len = data.length;
+        for (let i = 0; i < len; i++) {
+            let sample = data[i] * 32768;
+            // Clamp for safety (do not use Math.max/Math.min here)
+            if (sample > 32767) {
+                sample = 32767;
+            } else if (sample < -32768) {
+                sample = -32768;
+            }
+            data16[i] = sample;
+        }
+        return new IndexedByteArray(data16.buffer);
+    }
+
+    /**
+     * Decode binary vorbis into a float32 pcm
+     */
+    private decodeVorbis(): Float32Array {
+        if (this.sampleData) {
+            return this.sampleData;
+        }
+        if (!this.compressedData) {
+            throw new Error("Compressed data is missing.");
+        }
+        try {
+            const vorbis = stbvorbis.decode(this.compressedData);
+            const decoded = vorbis.data[0];
+            if (decoded === undefined) {
+                SpessaSynthWarn(
+                    `Error decoding sample ${this.sampleName}: Vorbis decode returned undefined.`
+                );
+                return new Float32Array(0);
+            }
+            // clip
+            // because vorbis can go above 1 sometimes
+            for (let i = 0; i < decoded.length; i++) {
+                // magic number is 32,767 / 32,768
+                decoded[i] = Math.max(
+                    -1,
+                    Math.min(decoded[i], 0.999969482421875)
+                );
+            }
+            return decoded;
+        } catch (e) {
+            // do not error out, fill with silence
+            SpessaSynthWarn(`Error decoding sample ${this.sampleName}: ${e}`);
+            return new Float32Array(this.sampleLoopEndIndex + 1);
+        }
+    }
+}
+
+export class CreatedSample extends BasicSample {
+    /**
+     * A simplified class for creating samples
+     * @param name sample's name
+     * @param sampleRate sample's rate in HZ
+     * @param sampleData sample's data
+     */
+    constructor(name: string, sampleRate: number, sampleData: Float32Array) {
+        super(
+            name,
+            sampleRate,
+            60,
+            0,
+            sampleTypes.monoSample,
+            0,
+            sampleData.length - 1
+        );
+        this.setAudioData(sampleData);
+    }
+
+    getRawData(allowVorbis: boolean): Uint8Array {
+        return super.getRawData(allowVorbis);
+    }
+
+    setAudioData(audioData: Float32Array) {
+        super.setAudioData(audioData);
+    }
+}

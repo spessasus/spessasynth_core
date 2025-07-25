@@ -1,11 +1,10 @@
 // process arguments
 import fs from "fs";
-import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
-import { BasicSoundBank } from "../../src/soundfont/basic_soundfont/basic_soundbank.js";
+import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
+import { BasicSoundBank } from "../../src/soundbank/basic_soundbank/basic_soundbank.js";
 
 const args = process.argv.slice(2);
-if (args.length !== 2)
-{
+if (args.length !== 2) {
     console.info("Usage: node index.js <dls input path> <sf2 output path>");
     process.exit();
 }
@@ -23,7 +22,6 @@ console.info(`Name: ${bank.soundFontInfo["INAM"]}`);
 const outSF2 = await bank.write();
 console.timeEnd("Converted in");
 console.info(`Writing file...`);
-fs.writeFile(sf2Path, outSF2, () =>
-{
+fs.writeFile(sf2Path, outSF2, () => {
     console.info(`File written to ${sf2Path}`);
 });

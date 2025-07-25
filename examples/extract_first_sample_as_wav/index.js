@@ -1,12 +1,11 @@
 import fs from "node:fs";
-import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
+import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
 import { audioToWav } from "../../src/utils/buffer_to_wav.js";
 
 // process arguments
 const args = process.argv.slice(2);
-if (args.length !== 2)
-{
-    console.info("Usage: node index.js <soundfont path> <wav output path>");
+if (args.length !== 2) {
+    console.info("Usage: node index.js <soundbank path> <wav output path>");
     process.exit();
 }
 

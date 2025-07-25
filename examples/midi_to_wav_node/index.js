@@ -3,13 +3,14 @@ import { MIDI } from "../../src/midi/midi_loader.js";
 import { SpessaSynthProcessor } from "../../src/synthetizer/audio_engine/main_processor.js";
 import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
 import { audioToWav } from "../../src/utils/buffer_to_wav.js";
-import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
+import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
 
 // process arguments
 const args = process.argv.slice(2);
-if (args.length !== 3)
-{
-    console.info("Usage: node index.js <soundfont path> <midi path> <wav output path>");
+if (args.length !== 3) {
+    console.info(
+        "Usage: node index.js <soundbank path> <midi path> <wav output path>"
+    );
     process.exit();
 }
 const sf = fs.readFileSync(args[0]);
@@ -35,8 +36,7 @@ const BUFFER_SIZE = 128;
 let i = 0;
 const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
 const outputArray = [outLeft, outRight];
-while (filledSamples < sampleCount)
-{
+while (filledSamples < sampleCount) {
     // process sequencer
     seq.processTick();
     // render
@@ -45,16 +45,21 @@ while (filledSamples < sampleCount)
     filledSamples += bufferSize;
     i++;
     // log progress
-    if (i % 100 === 0)
-    {
-        console.info("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", durationRounded);
+    if (i % 100 === 0) {
+        console.info(
+            "Rendered",
+            Math.floor(seq.currentTime * 100) / 100,
+            "/",
+            durationRounded
+        );
     }
 }
 const rendered = Math.floor(performance.now() - start);
-console.info("Rendered in", rendered, `ms (${Math.floor((midi.duration * 1000 / rendered) * 100) / 100}x)`);
-const wave = audioToWav(
-    [outLeft, outRight],
-    sampleRate
+console.info(
+    "Rendered in",
+    rendered,
+    `ms (${Math.floor(((midi.duration * 1000) / rendered) * 100) / 100}x)`
 );
+const wave = audioToWav([outLeft, outRight], sampleRate);
 fs.writeFileSync(args[2], new Buffer(wave));
 process.exit();

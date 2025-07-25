@@ -167,7 +167,7 @@ import { MIDI, SpessaSynthProcessor, SpessaSynthSequencer, audioToWav, loadSound
 const args = process.argv.slice(2);
 if (args.length !== 3)
 {
-    console.log("Usage: node index.js <soundfont path> <midi path> <wav output path>");
+    console.log("Usage: node index.js <soundbank path> <midi path> <wav output path>");
     process.exit();
 }
 const sf = fs.readFileSync(args[0]);
