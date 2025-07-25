@@ -32,7 +32,6 @@ export function setMasterParameter(type, value)
         
         case masterParameterType.mainVolume:
             this.masterGain = value * SYNTHESIZER_GAIN;
-            this.setMasterParameter(masterParameterType.masterPan, this.pan);
             break;
         
         case masterParameterType.voicesCap:

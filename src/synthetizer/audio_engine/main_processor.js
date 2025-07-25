@@ -756,7 +756,6 @@ class SpessaSynthProcessor
         // GM2 specification, section 4.1: volume is squared.
         // though, according to my own testing, Math.E seems like a better choice
         this.midiVolume = Math.pow(volume, Math.E);
-        this.setMasterParameter(masterParameterType.masterPan, this.pan);
     }
     
     /**

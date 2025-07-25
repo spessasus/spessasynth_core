@@ -67,7 +67,7 @@ export class SynthesizerSnapshot
         // key mappings
         snapshot.keyMappings = spessaSynthProcessor.keyModifierManager.getMappings();
         // pan and volume
-        snapshot.mainVolume = spessaSynthProcessor.midiVolume;
+        snapshot.mainVolume = spessaSynthProcessor.masterGain;
         snapshot.pan = spessaSynthProcessor.pan;
         
         // others
