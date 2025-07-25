@@ -72,3 +72,5 @@ examples/package.json
 unused/
 /unused/chorus.js
 /unused/reverb.js
+dist/
+/node_modules/
