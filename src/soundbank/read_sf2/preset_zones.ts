@@ -1,10 +1,10 @@
-import { BasicPresetZone } from "../basic_soundbank/basic_preset_zone.js";
-import { Generator } from "../basic_soundbank/generator.js";
-import { Modulator } from "../basic_soundbank/modulator.js";
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
-import type { BasicPreset } from "../basic_soundbank/basic_preset.ts";
-import type { BasicInstrument } from "../basic_soundbank/basic_instrument.ts";
-import type { SoundFontPreset } from "./presets.ts";
+import { BasicPresetZone } from "../basic_soundbank/basic_preset_zone";
+import { Generator } from "../basic_soundbank/generator";
+import { Modulator } from "../basic_soundbank/modulator";
+import { generatorTypes } from "../basic_soundbank/generator_types";
+import type { BasicPreset } from "../basic_soundbank/basic_preset";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
+import type { SoundFontPreset } from "./presets";
 
 /**
  * preset_zones.js
@@ -15,20 +15,24 @@ export class SoundFontPresetZone extends BasicPresetZone {
     /**
      * Creates a zone (preset)
      */
-    constructor(preset: BasicPreset) {
-        super(preset);
-    }
-
-    /**
-     * grab the instrument
-     */
-    getInstrument(instruments: BasicInstrument[]) {
-        const instrumentID = this.generators.find(
+    constructor(
+        preset: BasicPreset,
+        modulators: Modulator[],
+        generators: Generator[],
+        instruments: BasicInstrument[]
+    ) {
+        const instrumentID = generators.find(
             (g) => g.generatorType === generatorTypes.instrument
         );
+        let instrument = undefined;
         if (instrumentID) {
-            this.setInstrument(instruments[instrumentID.generatorValue]);
+            instrument = instruments[instrumentID.generatorValue];
+        } else {
+            throw new Error("No instrument ID found in preset zone.");
         }
+        super(preset, instrument);
+        this.addGenerators(...generators);
+        this.addModulators(...modulators);
     }
 }
 
@@ -62,10 +66,7 @@ export function applyPresetZones(
                 ) !== undefined
             ) {
                 // regular zone
-                const zone = preset.createZone();
-                zone.addGenerators(...gens);
-                zone.addModulators(...mods);
-                zone.getInstrument(instruments);
+                preset.createSoundFontZone(mods, gens, instruments);
             } else {
                 // global zone
                 preset.globalZone.addGenerators(...gens);

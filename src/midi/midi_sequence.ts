@@ -1,8 +1,8 @@
-import { IndexedByteArray } from "../utils/indexed_array.js";
-import type { RMIDINFOChunks } from "./enums.ts";
-import type { MIDIFormat, MIDILoop, TempoChange } from "./types.ts";
+import { IndexedByteArray } from "../utils/indexed_array";
+import type { RMIDINFOChunks } from "./enums";
+import type { MIDIFormat, MIDILoop, TempoChange } from "./types";
 
-import type { KeyRange } from "../utils/global_types.ts";
+import type { KeyRange } from "../utils/global_types";
 
 /**
  * This is the base type for MIDI files. It contains all the "metadata" and information.

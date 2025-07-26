@@ -1,24 +1,30 @@
-import { arrayToHexString, consoleColors } from "../../../utils/other.js";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin.js";
-import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../synth_constants.js";
-import { isSystemXG } from "../../../utils/xg_hacks.js";
-import { masterParameterType } from "./controller_control/master_parameters.js";
-import { readBytesAsString } from "../../../utils/byte_functions/string.js";
-import { synthDisplayTypes } from "../../enums.ts";
-import { customControllers, NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables.js";
-import { modulatorSources } from "../../../soundbank/enums.ts";
+import { arrayToHexString, consoleColors } from "../../../utils/other";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
+import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../synth_constants";
+import { isSystemXG } from "../../../utils/xg_hacks";
+import { readStringOffset } from "../../../utils/byte_functions/string";
+import { customControllers, synthDisplayTypes } from "../../enums";
+import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
+import { modulatorSources } from "../../../soundbank/enums";
 
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
-import { midiControllers } from "../../../midi/enums.ts";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import { midiControllers } from "../../../midi/enums";
+import type { SpessaSynthProcessor } from "../main_processor";
+import type { ModulatorSourceIndex } from "../../../soundbank/types";
+import type { IndexedByteArray } from "../../../utils/indexed_array";
 
 /**
- * Calculates freqency for MIDI Tuning Standard
- * @param byte1 {number}
- * @param byte2 {number}
- * @param byte3 {number}
- * @return {{midiNote: number, centTuning: number|null}}
+ * Calculates frequency for MIDI Tuning Standard.
+ * @param byte1 The first byte (midi note).
+ * @param byte2 The second byte (most significant bits).
+ * @param byte3 The third byte (the least significant bits).
+ * @return An object containing the MIDI note and the cent tuning value.
  */
-function getTuning(byte1, byte2, byte3) {
+function getTuning(
+    byte1: number,
+    byte2: number,
+    byte3: number
+): { midiNote: number; centTuning: number | null } {
     const midiNote = byte1;
     const fraction = (byte2 << 7) | byte3; // Combine byte2 and byte3 into a 14-bit number
 
@@ -31,22 +37,48 @@ function getTuning(byte1, byte2, byte3) {
     return { midiNote: midiNote, centTuning: fraction * 0.0061 };
 }
 
+type TypedArray =
+    | Uint8Array
+    | Int8Array
+    | Uint16Array
+    | Int16Array
+    | Uint32Array
+    | Int32Array
+    | Uint8ClampedArray
+    | Float32Array
+    | Float64Array;
+
 /**
- * Executes a system exclusive
- * @param syx {number[]|IndexedByteArray} - the message data without f0
- * @param channelOffset {number}
- * @this {SpessaSynthProcessor}
+ * Executes a system exclusive message for the synthesizer.
+ * @param syx The system exclusive message as an array of bytes.
+ * @param channelOffset The channel offset to apply (default is 0).
+ * @remarks
+ * This is a rather extensive method that handles various system exclusive messages,
+ * including Roland GS, MIDI Tuning Standard, and other non-realtime messages.
  */
-export function systemExclusive(syx, channelOffset = 0) {
+export function systemExclusive(
+    this: SpessaSynthProcessor,
+    syx: Array<number> | IndexedByteArray | TypedArray,
+    channelOffset: number = 0
+) {
     const type = syx[0];
-    if (this.deviceID !== ALL_CHANNELS_OR_DIFFERENT_ACTION && syx[1] !== 0x7f) {
-        if (this.deviceID !== syx[1]) {
+    if (
+        this.privateProps.deviceID !== ALL_CHANNELS_OR_DIFFERENT_ACTION &&
+        syx[1] !== 0x7f
+    ) {
+        if (this.privateProps.deviceID !== syx[1]) {
             // not our device ID
             return;
         }
     }
 
-    function niceLogging(channel, value, what, units) {
+    // a helper function to log nicely
+    function niceLogging(
+        channel: number,
+        value: number | string,
+        what: string,
+        units: string
+    ) {
         SpessaSynthInfo(
             `%cChannel %c${channel}%c ${what}. %c${value} ${units}%c, with %c${arrayToHexString(syx)}`,
             consoleColors.info,
@@ -82,11 +114,11 @@ export function systemExclusive(syx, channelOffset = 0) {
         case 0x7e:
         case 0x7f:
             switch (syx[2]) {
-                case 0x04:
+                case 0x04: {
                     let cents;
                     // device control
                     switch (syx[3]) {
-                        case 0x01:
+                        case 0x01: {
                             // main volume
                             const vol = (syx[5] << 7) | syx[4];
                             this.setMIDIVolume(vol / 16384);
@@ -96,24 +128,23 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.value
                             );
                             break;
+                        }
 
-                        case 0x02:
+                        case 0x02: {
                             // main balance
                             // midi spec page 62
                             const balance = (syx[5] << 7) | syx[4];
                             const pan = (balance - 8192) / 8192;
-                            this.setMasterParameter(
-                                masterParameterType.masterPan,
-                                pan
-                            );
+                            this.setMasterParameter("masterPan", pan);
                             SpessaSynthInfo(
                                 `%cMaster Pan. Pan: %c${pan}`,
                                 consoleColors.info,
                                 consoleColors.value
                             );
                             break;
+                        }
 
-                        case 0x03:
+                        case 0x03: {
                             // fine-tuning
                             const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
                             cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
@@ -124,8 +155,9 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.value
                             );
                             break;
+                        }
 
-                        case 0x04:
+                        case 0x04: {
                             // coarse tuning
                             // lsb is ignored
                             const semitones = syx[5] - 64;
@@ -137,6 +169,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.value
                             );
                             break;
+                        }
 
                         default:
                             SpessaSynthWarn(
@@ -146,35 +179,39 @@ export function systemExclusive(syx, channelOffset = 0) {
                             );
                     }
                     break;
+                }
 
                 case 0x09:
                     // gm system related
                     if (syx[3] === 0x01) {
                         SpessaSynthInfo("%cGM1 system on", consoleColors.info);
-                        this.setSystem("gm");
+                        this.setMasterParameter("midiSystem", "gm");
                     } else if (syx[3] === 0x03) {
                         SpessaSynthInfo("%cGM2 system on", consoleColors.info);
-                        this.setSystem("gm2");
+                        this.setMasterParameter("midiSystem", "gm2");
                     } else {
                         SpessaSynthInfo(
                             "%cGM system off, defaulting to GS",
                             consoleColors.info
                         );
-                        this.setSystem("gs");
+                        this.setMasterParameter("midiSystem", "gs");
                     }
                     break;
 
                 // MIDI Tuning standard
                 // https://midi.org/midi-tuning-updated-specification
-                case 0x08:
+                case 0x08: {
                     let currentMessageIndex = 4;
                     switch (syx[3]) {
                         // bulk tuning dump: all 128 notes
-                        case 0x01:
+                        case 0x01: {
                             const program = syx[currentMessageIndex++];
                             // read the name
-                            syx.currentIndex = currentMessageIndex;
-                            const tuningName = readBytesAsString(syx, 16);
+                            const tuningName = readStringOffset(
+                                syx,
+                                16,
+                                currentMessageIndex
+                            );
                             currentMessageIndex += 16;
                             if (syx.length < 384) {
                                 SpessaSynthWarn(
@@ -185,11 +222,12 @@ export function systemExclusive(syx, channelOffset = 0) {
                             // 128 frequencies follow
                             for (let i = 0; i < 128; i++) {
                                 // set the given tuning to the program
-                                this.tunings[program][i] = getTuning(
-                                    syx[currentMessageIndex++],
-                                    syx[currentMessageIndex++],
-                                    syx[currentMessageIndex++]
-                                );
+                                this.privateProps.tunings[program][i] =
+                                    getTuning(
+                                        syx[currentMessageIndex++],
+                                        syx[currentMessageIndex++],
+                                        syx[currentMessageIndex++]
+                                    );
                             }
                             SpessaSynthInfo(
                                 `%cBulk Tuning Dump %c${tuningName}%c Program: %c${program}`,
@@ -199,11 +237,12 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.recognized
                             );
                             break;
+                        }
 
                         // single note change
                         // single note change bank
                         case 0x02:
-                        case 0x07:
+                        case 0x07: {
                             if (syx[3] === 0x07) {
                                 // skip the bank
                                 currentMessageIndex++;
@@ -213,7 +252,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                             const numberOfChanges = syx[currentMessageIndex++];
                             for (let i = 0; i < numberOfChanges; i++) {
                                 // set the given tuning to the program
-                                this.tunings[tuningProgram][
+                                this.privateProps.tunings[tuningProgram][
                                     syx[currentMessageIndex++]
                                 ] = getTuning(
                                     syx[currentMessageIndex++],
@@ -229,11 +268,12 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.recognized
                             );
                             break;
+                        }
 
                         // octave tuning (1 byte)
                         // and octave tuning (2 bytes)
                         case 0x09:
-                        case 0x08:
+                        case 0x08: {
                             // get tuning:
                             const newOctaveTuning = new Int8Array(12);
                             // start from bit 7
@@ -255,12 +295,12 @@ export function systemExclusive(syx, channelOffset = 0) {
                             // apply to channels (ordered from 0)
                             // bit 1: 14 and 15
                             if ((syx[4] & 1) === 1) {
-                                this.midiAudioChannels[
+                                this.midiChannels[
                                     14 + channelOffset
                                 ].setOctaveTuning(newOctaveTuning);
                             }
                             if (((syx[4] >> 1) & 1) === 1) {
-                                this.midiAudioChannels[
+                                this.midiChannels[
                                     15 + channelOffset
                                 ].setOctaveTuning(newOctaveTuning);
                             }
@@ -269,7 +309,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                             for (let i = 0; i < 7; i++) {
                                 const bit = (syx[5] >> i) & 1;
                                 if (bit === 1) {
-                                    this.midiAudioChannels[
+                                    this.midiChannels[
                                         7 + i + channelOffset
                                     ].setOctaveTuning(newOctaveTuning);
                                 }
@@ -279,7 +319,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                             for (let i = 0; i < 7; i++) {
                                 const bit = (syx[6] >> i) & 1;
                                 if (bit === 1) {
-                                    this.midiAudioChannels[
+                                    this.midiChannels[
                                         i + channelOffset
                                     ].setOctaveTuning(newOctaveTuning);
                                 }
@@ -293,6 +333,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.value
                             );
                             break;
+                        }
 
                         default:
                             SpessaSynthWarn(
@@ -303,6 +344,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                             break;
                     }
                     break;
+                }
 
                 default:
                     SpessaSynthWarn(
@@ -334,16 +376,17 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 14, 15
                             ][syx[5] & 0x0f] + channelOffset;
                         // for example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
-                        const channelObject = this.midiAudioChannels[channel];
+                        const channelObject = this.midiChannels[channel];
                         switch (syx[6]) {
                             default:
                                 // this is some other GS sysex...
                                 notRecognized();
                                 break;
 
-                            case 0x15:
+                            case 0x15: {
                                 // this is the Use for Drum Part sysex (multiple drums)
-                                const isDrums = messageValue > 0 && syx[5] >> 4; // if set to other than 0, is a drum channel
+                                const isDrums =
+                                    messageValue > 0 && syx[5] >> 4 > 0; // if set to other than 0, is a drum channel
                                 channelObject.setDrums(isDrums);
                                 SpessaSynthInfo(
                                     `%cChannel %c${channel}%c ${
@@ -358,8 +401,9 @@ export function systemExclusive(syx, channelOffset = 0) {
                                     consoleColors.value
                                 );
                                 return;
+                            }
 
-                            case 0x16:
+                            case 0x16: {
                                 // this is the pitch key shift sysex
                                 const keyShift = messageValue - 64;
                                 channelObject.setCustomController(
@@ -373,12 +417,13 @@ export function systemExclusive(syx, channelOffset = 0) {
                                     "keys"
                                 );
                                 return;
+                            }
 
                             // pan position
-                            case 0x1c:
+                            case 0x1c: {
                                 // 0 is random
-                                const panpot = messageValue;
-                                if (panpot === 0) {
+                                const panPosition = messageValue;
+                                if (panPosition === 0) {
                                     channelObject.randomPan = true;
                                     SpessaSynthInfo(
                                         `%cRandom pan is set to %cON%c for %c${channel}`,
@@ -391,10 +436,11 @@ export function systemExclusive(syx, channelOffset = 0) {
                                     channelObject.randomPan = false;
                                     channelObject.controllerChange(
                                         midiControllers.pan,
-                                        panpot
+                                        panPosition
                                     );
                                 }
                                 break;
+                            }
 
                             // chorus send
                             case 0x21:
@@ -423,7 +469,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                             case 0x48:
                             case 0x49:
                             case 0x4a:
-                            case 0x4b:
+                            case 0x4b: {
                                 // scale tuning: up to 12 bytes
                                 const tuningBytes = syx.length - 9; // data starts at 7, minus checksum and f7
                                 // read em bytes
@@ -441,6 +487,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 );
                                 channelObject.setTuning(cents);
                                 break;
+                            }
                         }
                         return;
                     } else if ((syx[5] & 0x20) > 0) {
@@ -453,15 +500,15 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 14, 15
                             ][syx[5] & 0x0f] + channelOffset;
                         // for example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
-                        const channelObject = this.midiAudioChannels[channel];
+                        const channelObject = this.midiChannels[channel];
                         const centeredValue = messageValue - 64;
                         const normalizedValue = centeredValue / 64;
                         const normalizedNotCentered = messageValue / 128;
 
                         // setup receivers for cc to parameter (sc-88 manual page 198)
                         const setupReceivers = (
-                            source,
-                            sourceName,
+                            source: number,
+                            sourceName: string,
                             bipolar = false
                         ) => {
                             switch (syx[6] & 0x0f) {
@@ -490,7 +537,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                         );
                                     } else {
                                         channelObject.sysExModulators.setModulator(
-                                            source,
+                                            source as ModulatorSourceIndex,
                                             generatorTypes.fineTune,
                                             centeredValue * 100,
                                             bipolar
@@ -507,7 +554,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x01:
                                     // cutoff
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.initialFilterFc,
                                         normalizedValue * 9600,
                                         bipolar
@@ -523,7 +570,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x02:
                                     // amplitude
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.initialAttenuation,
                                         normalizedValue * 960, // spec says "100%" so 960cB in sf2
                                         bipolar
@@ -541,7 +588,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x04:
                                     // LFO1 pitch depth
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.vibLfoToPitch,
                                         normalizedNotCentered * 600,
                                         bipolar
@@ -557,7 +604,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x05:
                                     // LFO1 filter depth
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.vibLfoToFilterFc,
                                         normalizedNotCentered * 2400,
                                         bipolar
@@ -573,7 +620,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x06:
                                     // LFO1 amplitude depth
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.vibLfoToVolume,
                                         normalizedValue * 960,
                                         bipolar
@@ -591,7 +638,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x08:
                                     // LFO2 pitch depth
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.modLfoToPitch,
                                         normalizedNotCentered * 600,
                                         bipolar
@@ -607,7 +654,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x09:
                                     // LFO2 filter depth
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.modLfoToFilterFc,
                                         normalizedNotCentered * 2400,
                                         bipolar
@@ -623,7 +670,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 case 0x0a:
                                     // LFO2 amplitude depth
                                     channelObject.sysExModulators.setModulator(
-                                        source,
+                                        source as ModulatorSourceIndex,
                                         generatorTypes.modLfoToVolume,
                                         normalizedValue * 960,
                                         bipolar
@@ -699,7 +746,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                         consoleColors.info
                                     );
                                     this.resetAllControllers(false);
-                                    this.setSystem("gs");
+                                    this.setMasterParameter("midiSystem", "gs");
                                 } else if (messageValue === 0x7f) {
                                     // GS mode off
                                     SpessaSynthInfo(
@@ -707,7 +754,10 @@ export function systemExclusive(syx, channelOffset = 0) {
                                         consoleColors.info
                                     );
                                     this.resetAllControllers(false);
-                                    this.setSystem("gm2");
+                                    this.setMasterParameter(
+                                        "midiSystem",
+                                        "gm2"
+                                    );
                                 }
                                 break;
 
@@ -723,7 +773,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                     consoleColors.value
                                 );
                                 this.setMasterParameter(
-                                    masterParameterType.masterPan,
+                                    "masterPan",
                                     (messageValue - 64) / 64
                                 );
                                 break;
@@ -742,7 +792,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 this.setMIDIVolume(messageValue / 127);
                                 break;
 
-                            case 0x05:
+                            case 0x05: {
                                 // roland master key shift (transpose)
                                 const transpose = messageValue - 64;
                                 SpessaSynthInfo(
@@ -756,6 +806,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 );
                                 this.setMasterTuning(transpose * 100);
                                 break;
+                            }
                         }
                         return;
                     } else if (syx[5] === 0x01) {
@@ -765,16 +816,17 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 notRecognized();
                                 break;
 
-                            case 0x00:
+                            case 0x00: {
                                 // patch name. cool!
-                                syx.currentIndex = 7;
-                                const patchName = readBytesAsString(syx, 16);
+                                // not sure what to do with it, but let's log it!
+                                const patchName = readStringOffset(syx, 16, 7);
                                 SpessaSynthInfo(
                                     `%cGS Patch name: %c${patchName}`,
                                     consoleColors.info,
                                     consoleColors.value
                                 );
                                 break;
+                            }
 
                             case 0x33:
                                 // reverb level
@@ -784,7 +836,8 @@ export function systemExclusive(syx, channelOffset = 0) {
                                     consoleColors.value
                                 );
                                 // 64 is the default
-                                this.reverbSend = messageValue / 64;
+                                this.privateProps.reverbSend =
+                                    messageValue / 64;
                                 break;
 
                             // unsupported reverb params
@@ -809,7 +862,8 @@ export function systemExclusive(syx, channelOffset = 0) {
                                     consoleColors.value
                                 );
                                 // 64 is the default
-                                this.chorusSend = messageValue / 64;
+                                this.privateProps.chorusSend =
+                                    messageValue / 64;
                                 break;
 
                             // unsupported chorus params
@@ -850,7 +904,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                         const text = new Uint8Array(
                             syx.slice(7, syx.length - 2)
                         );
-                        this.callEvent("synthdisplay", {
+                        this.privateProps.callEvent("synthdisplay", {
                             displayData: text,
                             displayType: synthDisplayTypes.SoundCanvasText
                         });
@@ -861,7 +915,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                         const dotMatrixData = new Uint8Array(
                             syx.slice(7, syx.length - 3)
                         );
-                        this.callEvent("synthdisplay", {
+                        this.privateProps.callEvent("synthdisplay", {
                             displayData: dotMatrixData,
                             displayType: synthDisplayTypes.SoundCanvasDotDisplay
                         });
@@ -910,7 +964,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                 if (syx[3] === 0x00 && syx[4] === 0x00) {
                     switch (syx[5]) {
                         // master volume
-                        case 0x04:
+                        case 0x04: {
                             const vol = syx[6];
                             this.setMIDIVolume(vol / 127);
                             SpessaSynthInfo(
@@ -919,17 +973,19 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.recognized
                             );
                             break;
+                        }
 
                         // master transpose
-                        case 0x06:
+                        case 0x06: {
                             const transpose = syx[6] - 64;
-                            this.transposeAllChannels(transpose);
+                            this.setMasterParameter("transposition", transpose);
                             SpessaSynthInfo(
                                 `%cXG master transpose. Volume: %c${transpose}`,
                                 consoleColors.info,
                                 consoleColors.recognized
                             );
                             break;
+                        }
 
                         // XG on
                         case 0x7e:
@@ -938,20 +994,20 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 consoleColors.info
                             );
                             this.resetAllControllers(false);
-                            this.setSystem("xg");
+                            this.setMasterParameter("midiSystem", "xg");
                             break;
                     }
                 } else if (syx[3] === 0x08) {
                     // XG part parameter
-                    if (!isSystemXG(this.system)) {
+                    if (!isSystemXG(this.privateProps.system)) {
                         return;
                     }
                     const channel = syx[4] + channelOffset;
-                    if (channel >= this.midiAudioChannels.length) {
+                    if (channel >= this.midiChannels.length) {
                         // invalid channel
                         return;
                     }
-                    const channelObject = this.midiAudioChannels[channel];
+                    const channelObject = this.midiChannels[channel];
                     const value = syx[6];
                     switch (syx[5]) {
                         // bank-select MSB
@@ -976,13 +1032,13 @@ export function systemExclusive(syx, channelOffset = 0) {
                             break;
 
                         // note shift
-                        case 0x08:
+                        case 0x08: {
                             if (channelObject.drumChannel) {
                                 return;
                             }
-                            const semitones = value - 64;
-                            channelObject.channelTransposeKeyShift = semitones;
+                            channelObject.channelTransposeKeyShift = value - 64;
                             break;
+                        }
 
                         // volume
                         case 0x0b:
@@ -993,7 +1049,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                             break;
 
                         // pan position
-                        case 0x0e:
+                        case 0x0e: {
                             const pan = value;
                             if (pan === 0) {
                                 // 0 means random
@@ -1012,6 +1068,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                                 );
                             }
                             break;
+                        }
 
                         // reverb
                         case 0x13:
@@ -1047,11 +1104,11 @@ export function systemExclusive(syx, channelOffset = 0) {
                     const textData = new Uint8Array(
                         syx.slice(5, syx.length - 1)
                     );
-                    this.callEvent("synthdisplay", {
+                    this.privateProps.callEvent("synthdisplay", {
                         displayData: textData,
                         displayType: synthDisplayTypes.XGText
                     });
-                } else if (isSystemXG(this.system)) {
+                } else if (isSystemXG(this.privateProps.system)) {
                     SpessaSynthWarn(
                         `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
@@ -1059,7 +1116,7 @@ export function systemExclusive(syx, channelOffset = 0) {
                     );
                 }
             } else {
-                if (isSystemXG(this.system)) {
+                if (isSystemXG(this.privateProps.system)) {
                     SpessaSynthWarn(
                         `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,

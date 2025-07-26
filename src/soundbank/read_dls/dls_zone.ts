@@ -1,12 +1,12 @@
-import { Generator } from "../basic_soundbank/generator.js";
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
-import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone.js";
-import type { BasicInstrument } from "../basic_soundbank/basic_instrument.ts";
-import type { BasicSample } from "../basic_soundbank/basic_sample.ts";
+import { Generator } from "../basic_soundbank/generator";
+import { generatorTypes } from "../basic_soundbank/generator_types";
+import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
 
 export class DLSZone extends BasicInstrumentZone {
-    constructor(inst: BasicInstrument) {
-        super(inst);
+    constructor(inst: BasicInstrument, sample: BasicSample) {
+        super(inst, sample);
     }
 
     /**
@@ -92,7 +92,6 @@ export class DLSZone extends BasicInstrumentZone {
                 new Generator(generatorTypes.overridingRootKey, sampleKey)
             );
         }
-        // add sample
-        this.setSample(sample);
+        // sample is already added
     }
 }

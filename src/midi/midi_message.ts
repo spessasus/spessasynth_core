@@ -2,8 +2,8 @@
  * midi_message.js
  * purpose: contains enums for midi events and controllers and functions to parse them
  */
-import type { IndexedByteArray } from "../utils/indexed_array.ts";
-import type { messageTypes } from "./enums.ts";
+import type { IndexedByteArray } from "../utils/indexed_array";
+import type { messageTypes } from "./enums";
 
 export class MIDIMessage {
     /**

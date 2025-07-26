@@ -1,12 +1,12 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { writeStringAsBytes } from "../../../utils/byte_functions/string";
 import {
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian.js";
-import { writeRIFFChunkRaw } from "../riff_chunk.js";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { ReturnedExtendedSf2Chunks } from "../../types.ts";
+} from "../../../utils/byte_functions/little_endian";
+import { writeRIFFChunkRaw } from "../riff_chunk";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { ReturnedExtendedSf2Chunks } from "../../types";
 
 const PHDR_SIZE = 38;
 

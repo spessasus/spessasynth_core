@@ -1,33 +1,33 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
-import { getStringBytes } from "../../../utils/byte_functions/string.js";
-import { consoleColors } from "../../../utils/other.js";
-import { getIGEN } from "./igen.js";
-import { getSDTA } from "./sdta.js";
-import { getSHDR } from "./shdr.js";
-import { getIMOD } from "./imod.js";
-import { getIBAG } from "./ibag.js";
-import { getINST } from "./inst.js";
-import { getPGEN } from "./pgen.js";
-import { getPMOD } from "./pmod.js";
-import { getPBAG } from "./pbag.js";
-import { getPHDR } from "./phdr.js";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { getStringBytes } from "../../../utils/byte_functions/string";
+import { consoleColors } from "../../../utils/other";
+import { getIGEN } from "./igen";
+import { getSDTA } from "./sdta";
+import { getSHDR } from "./shdr";
+import { getIMOD } from "./imod";
+import { getIBAG } from "./ibag";
+import { getINST } from "./inst";
+import { getPGEN } from "./pgen";
+import { getPMOD } from "./pmod";
+import { getPBAG } from "./pbag";
+import { getPHDR } from "./phdr";
 import {
     writeLittleEndian,
     writeWord
-} from "../../../utils/byte_functions/little_endian.js";
+} from "../../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
-} from "../../../utils/loggin.js";
-import { MOD_BYTE_SIZE } from "../modulator.js";
-import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
+} from "../../../utils/loggin";
+import { MOD_BYTE_SIZE } from "../modulator";
+import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
     ReturnedExtendedSf2Chunks,
     SoundFont2WriteOptions
-} from "../../types.ts";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
+} from "../../types";
+import type { BasicSoundBank } from "../basic_soundbank";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     compress: false,

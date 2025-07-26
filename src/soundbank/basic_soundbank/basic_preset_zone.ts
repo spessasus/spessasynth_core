@@ -1,6 +1,6 @@
-import { BasicZone } from "./basic_zone.js";
-import type { BasicPreset } from "./basic_preset.ts";
-import type { BasicInstrument } from "./basic_instrument.ts";
+import { BasicZone } from "./basic_zone";
+import type { BasicPreset } from "./basic_preset";
+import type { BasicInstrument } from "./basic_instrument";
 
 export class BasicPresetZone extends BasicZone {
     /**
@@ -11,22 +11,28 @@ export class BasicPresetZone extends BasicZone {
     /**
      * Zone's instrument.
      */
-    instrument: BasicInstrument | undefined;
+    instrument: BasicInstrument;
 
     /**
-     * Creates a new preset zone
-     * @param preset the preset this zone belongs to
+     * Creates a new preset zone.
+     * @param preset the preset this zone belongs to.
+     * @param instrument the instrument to use in this zone.
      */
-    constructor(preset: BasicPreset) {
+    constructor(preset: BasicPreset, instrument: BasicInstrument) {
         super();
         this.parentPreset = preset;
+        this.instrument = instrument;
+        this.instrument.linkTo(this.parentPreset);
     }
 
     /**
-     * Sets an instrument for this zone
-     * @param instrument the instrument to use
+     * Sets an instrument for this zone.
+     * @param instrument the instrument to use.
      */
     setInstrument(instrument: BasicInstrument) {
+        if (this.instrument) {
+            this.instrument.unlinkFrom(this.parentPreset);
+        }
         this.instrument = instrument;
         this.instrument.linkTo(this.parentPreset);
     }

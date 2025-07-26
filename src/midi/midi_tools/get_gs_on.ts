@@ -1,6 +1,6 @@
-import { MIDIMessage } from "../midi_message.ts";
-import { messageTypes } from "../enums.ts";
-import { IndexedByteArray } from "../../utils/indexed_array.ts";
+import { MIDIMessage } from "../midi_message";
+import { messageTypes } from "../enums";
+import { IndexedByteArray } from "../../utils/indexed_array";
 
 export function getGsOn(ticks: number): MIDIMessage {
     return new MIDIMessage(

@@ -1,56 +1,52 @@
-import { SpessaSynthWarn } from "../../../../utils/loggin.js";
-import { customControllers } from "../../engine_components/controller_tables.js";
+import { SpessaSynthWarn } from "../../../../utils/loggin";
+import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import { customControllers } from "../../../enums";
 
 /**
- * Release a note
- * @param midiNote {number}
- * @this {MidiAudioChannel}
+ * Releases a note by its MIDI note number.
+ * If the note is in high performance mode and the channel is not a drum channel,
+ * it kills the note instead of releasing it.
+ * @param midiNote The MIDI note number to release (0-127).
  */
-export function noteOff(midiNote)
-{
-    if (midiNote > 127 || midiNote < 0)
-    {
+export function noteOff(this: MIDIChannel, midiNote: number) {
+    if (midiNote > 127 || midiNote < 0) {
         SpessaSynthWarn(`Received a noteOn for note`, midiNote, "Ignoring.");
         return;
     }
-    
-    let realKey = midiNote + this.channelTransposeKeyShift + this.customControllers[customControllers.channelKeyShift];
-    
+
+    // adjust the midi note with the channel transpose key shift
+    const realKey =
+        midiNote +
+        this.channelTransposeKeyShift +
+        this.customControllers[customControllers.channelKeyShift];
+
     // if high performance mode, kill notes instead of stopping them
-    if (this.synth.highPerformanceMode)
-    {
+    if (this.synthProps.highPerformanceMode) {
         // if the channel is percussion channel, do not kill the notes
-        if (!this.drumChannel)
-        {
+        if (!this.drumChannel) {
             this.killNote(realKey, -6950);
-            this.synth.callEvent("noteoff", {
+            this.synthProps.callEvent("noteoff", {
                 midiNote: midiNote,
                 channel: this.channelNumber
             });
             return;
         }
     }
-    
+
     const channelVoices = this.voices;
-    channelVoices.forEach(v =>
-    {
-        if (v.realKey !== realKey || v.isInRelease === true)
-        {
+    channelVoices.forEach((v) => {
+        if (v.realKey !== realKey || v.isInRelease) {
             return;
         }
         // if hold pedal, move to sustain
-        if (this.holdPedal)
-        {
+        if (this.holdPedal) {
             this.sustainedVoices.push(v);
-        }
-        else
-        {
+        } else {
             v.release(this.synth.currentSynthTime);
         }
     });
-    this.synth.callEvent("noteoff", {
+    this.synthProps.callEvent("noteoff", {
         midiNote: midiNote,
         channel: this.channelNumber
     });
 }
-

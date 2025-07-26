@@ -1,5 +1,5 @@
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk";
 
 /**
  * @param zonesChunk both pbag and ibag work

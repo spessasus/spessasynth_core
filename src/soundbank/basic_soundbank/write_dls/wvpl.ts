@@ -1,8 +1,8 @@
-import { writeDLSSample } from "./wave.js";
-import { writeRIFFChunkParts } from "../riff_chunk.js";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { ProgressFunction } from "../../types.ts";
-import type { IndexedByteArray } from "../../../utils/indexed_array.ts";
+import { writeDLSSample } from "./wave";
+import { writeRIFFChunkParts } from "../riff_chunk";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { ProgressFunction } from "../../types";
+import type { IndexedByteArray } from "../../../utils/indexed_array";
 
 export async function writeWavePool(
     bank: BasicSoundBank,

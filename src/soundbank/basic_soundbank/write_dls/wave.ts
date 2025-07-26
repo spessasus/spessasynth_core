@@ -1,11 +1,14 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
-import { writeWavesample } from "./wsmp.js";
-import { SpessaSynthInfo } from "../../../utils/loggin.js";
-import { consoleColors } from "../../../utils/other.js";
-import { getStringBytes } from "../../../utils/byte_functions/string.js";
-import type { BasicSample } from "../basic_sample.ts";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import {
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { writeWavesample } from "./wsmp";
+import { SpessaSynthInfo } from "../../../utils/loggin";
+import { consoleColors } from "../../../utils/other";
+import { getStringBytes } from "../../../utils/byte_functions/string";
+import type { BasicSample } from "../basic_sample";
 
 /**
  * Writes a DLS sample.

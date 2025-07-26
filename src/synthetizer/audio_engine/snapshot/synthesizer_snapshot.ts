@@ -1,11 +1,10 @@
-import { SpessaSynthInfo } from "../../../utils/loggin.js";
-import { consoleColors } from "../../../utils/other.js";
-import { ChannelSnapshot } from "./channel_snapshot.js";
-import { masterParameterType } from "../engine_methods/controller_control/master_parameters.js";
-import type { KeyModifier } from "../engine_components/key_modifier_manager.ts";
-import type { SpessaSynthProcessor } from "../main_processor.ts";
-import type { interpolationTypes } from "../../enums.ts";
-import type { SynthSystem } from "../../types.ts";
+import { SpessaSynthInfo } from "../../../utils/loggin";
+import { consoleColors } from "../../../utils/other";
+import { ChannelSnapshot } from "./channel_snapshot";
+import { type KeyModifier } from "../engine_components/key_modifier_manager";
+import { type SpessaSynthProcessor } from "../main_processor";
+import type { interpolationTypes } from "../../enums";
+import type { SynthSystem } from "../../types";
 
 /**
  * Represents a snapshot of the synthesizer's state.
@@ -19,7 +18,7 @@ export class SynthesizerSnapshot {
     /**
      * Key modifiers.
      */
-    keyMappings: KeyModifier[][];
+    keyMappings: (KeyModifier | undefined)[][];
 
     /**
      * Main synth volume (set by MIDI), from 0 to 1.
@@ -47,40 +46,74 @@ export class SynthesizerSnapshot {
      */
     transposition: number;
 
+    constructor(
+        channelSnapshots: ChannelSnapshot[],
+        keyMappings: (KeyModifier | undefined)[][],
+        mainVolume: number,
+        pan: number,
+        interpolation: interpolationTypes,
+        system: SynthSystem,
+        transposition: number
+    ) {
+        this.channelSnapshots = channelSnapshots;
+        this.keyMappings = keyMappings;
+        this.mainVolume = mainVolume;
+        this.pan = pan;
+        this.interpolation = interpolation;
+        this.system = system;
+        this.transposition = transposition;
+    }
+
     /**
-     * Creates a new synthesizer snapshot.
+     * Creates a new synthesizer snapshot from the given SpessaSynthProcessor.
      * @param spessaSynthProcessor the processor to take a snapshot of.
+     * @returns The snapshot.
      */
-    constructor(spessaSynthProcessor: SpessaSynthProcessor) {
+    static create(
+        spessaSynthProcessor: SpessaSynthProcessor
+    ): SynthesizerSnapshot {
         // channel snapshots
-        this.channelSnapshots = spessaSynthProcessor.midiAudioChannels.map(
-            (_, i) =>
-                ChannelSnapshot.getChannelSnapshot(spessaSynthProcessor, i)
+        const channelSnapshots = spessaSynthProcessor.midiChannels.map((_, i) =>
+            ChannelSnapshot.create(spessaSynthProcessor, i)
         );
 
         // key mappings
-        this.keyMappings =
+        const keyMappings =
             spessaSynthProcessor.keyModifierManager.getMappings();
+
         // pan and volume
-        this.mainVolume = spessaSynthProcessor.masterGain;
-        this.pan = spessaSynthProcessor.pan;
+        const mainVolume =
+            spessaSynthProcessor.getMasterParameter("masterGain");
+        const pan = spessaSynthProcessor.getMasterParameter("masterPan");
 
         // others
-        this.system = spessaSynthProcessor.system;
-        this.interpolation = spessaSynthProcessor.interpolationType;
-        this.transposition = spessaSynthProcessor.transposition;
+        const system = spessaSynthProcessor.getMasterParameter("midiSystem");
+        const interpolation =
+            spessaSynthProcessor.getMasterParameter("interpolationType");
+        const transposition =
+            spessaSynthProcessor.getMasterParameter("transposition");
+
+        return new SynthesizerSnapshot(
+            channelSnapshots,
+            keyMappings,
+            mainVolume,
+            pan,
+            interpolation,
+            system,
+            transposition
+        );
     }
 
     /**
      * Creates a snapshot of the synthesizer's state.
      * @param spessaSynthProcessor the processor to take a snapshot of.
      * @returns the snapshot.
-     * @deprecated use a non-static version instead
+     * @deprecated use a 'create' instead
      */
     static createSynthesizerSnapshot(
         spessaSynthProcessor: SpessaSynthProcessor
     ): SynthesizerSnapshot {
-        return new SynthesizerSnapshot(spessaSynthProcessor);
+        return SynthesizerSnapshot.create(spessaSynthProcessor);
     }
 
     /**
@@ -93,47 +126,41 @@ export class SynthesizerSnapshot {
         spessaSynthProcessor: SpessaSynthProcessor,
         snapshot: SynthesizerSnapshot
     ) {
-        snapshot.applySnapshot(spessaSynthProcessor);
+        snapshot.apply(spessaSynthProcessor);
     }
 
     /**
      * Applies the snapshot to the synthesizer.
      * @param spessaSynthProcessor the processor to apply the snapshot to.
      */
-    applySnapshot(spessaSynthProcessor: SpessaSynthProcessor) {
+    apply(spessaSynthProcessor: SpessaSynthProcessor) {
         // restore system
-        spessaSynthProcessor.setSystem(this.system);
+        spessaSynthProcessor.setMasterParameter("midiSystem", this.system);
 
         // restore pan and volume
+        spessaSynthProcessor.setMasterParameter("masterGain", this.mainVolume);
+        spessaSynthProcessor.setMasterParameter("masterPan", this.pan);
         spessaSynthProcessor.setMasterParameter(
-            masterParameterType.mainVolume,
-            this.mainVolume
+            "transposition",
+            this.transposition
         );
         spessaSynthProcessor.setMasterParameter(
-            masterParameterType.masterPan,
-            this.pan
+            "interpolationType",
+            this.interpolation
         );
-        spessaSynthProcessor.transposeAllChannels(this.transposition);
-        spessaSynthProcessor.interpolationType = this.interpolation;
-        spessaSynthProcessor.keyModifierManager.setMappings(
-            this.keyMappings
-        );
+        spessaSynthProcessor.keyModifierManager.setMappings(this.keyMappings);
 
         // add channels if more needed
         while (
-            spessaSynthProcessor.midiAudioChannels.length <
+            spessaSynthProcessor.midiChannels.length <
             this.channelSnapshots.length
-            ) {
+        ) {
             spessaSynthProcessor.createMidiChannel();
         }
 
         // restore channels
-        this.channelSnapshots.forEach((channelSnapshot, index) => {
-            ChannelSnapshot.applyChannelSnapshot(
-                spessaSynthProcessor,
-                index,
-                channelSnapshot
-            );
+        this.channelSnapshots.forEach((channelSnapshot) => {
+            channelSnapshot.apply(spessaSynthProcessor);
         });
 
         SpessaSynthInfo(

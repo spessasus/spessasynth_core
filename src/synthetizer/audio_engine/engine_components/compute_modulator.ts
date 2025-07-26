@@ -1,18 +1,12 @@
-import {
-    getModulatorCurveValue,
-    MOD_PRECOMPUTED_LENGTH
-} from "./modulator_curves.js";
-import { VolumeEnvelope } from "./volume_envelope.js";
-import { ModulationEnvelope } from "./modulation_envelope.js";
-import {
-    Modulator,
-    modulatorSources
-} from "../../../soundbank/basic_soundbank/modulator.js";
-import { NON_CC_INDEX_OFFSET } from "./controller_tables.js";
-import {
-    generatorLimits,
-    generatorTypes
-} from "../../../soundbank/basic_soundbank/generator_types.js";
+import { getModulatorCurveValue, MOD_PRECOMPUTED_LENGTH } from "./modulator_curves";
+import { VolumeEnvelope } from "./volume_envelope";
+import { ModulationEnvelope } from "./modulation_envelope";
+import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
+import { type modulatorCurveTypes, modulatorSources } from "../../../soundbank/enums";
+import { NON_CC_INDEX_OFFSET } from "./controller_tables";
+import { generatorLimits, generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { MIDIChannel } from "./midi_audio_channel";
+import type { Voice } from "./voice";
 
 /**
  * compute_modulator.js
@@ -23,12 +17,16 @@ const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
 
 /**
  * Computes a given modulator
- * @param controllerTable {Int16Array} all midi controllers as 14bit values + the non-controller indexes, starting at 128
- * @param modulator {Modulator} the modulator to compute
- * @param voice {Voice} the voice belonging to the modulator
- * @returns {number} the computed value
+ * @param controllerTable all midi controllers as 14bit values + the non-controller indexes, starting at 128
+ * @param modulator the modulator to compute
+ * @param voice the voice belonging to the modulator
+ * @returns the computed value
  */
-export function computeModulator(controllerTable, modulator, voice) {
+export function computeModulator(
+    controllerTable: Int16Array,
+    modulator: Modulator,
+    voice: Voice
+): number {
     if (modulator.transformAmount === 0) {
         modulator.currentValue = 0;
         return 0;
@@ -125,13 +123,17 @@ export function computeModulator(controllerTable, modulator, voice) {
 }
 
 /**
- * Computes modulators of a given voice. Source and index indicate what modulators shall be computed
- * @param voice {Voice} the voice to compute modulators for
- * @param sourceUsesCC {number} what modulators should be computed, -1 means all, 0 means modulator source enum 1 means midi controller
- * @param sourceIndex {number} enum for the source
- * @this {MidiAudioChannel}
+ * Computes modulators of a given voice. Source and index indicate what modulators shall be computed.
+ * @param voice the voice to compute modulators for.
+ * @param sourceUsesCC what modulators should be computed, -1 means all, 0 means modulator source enum 1 means midi controller.
+ * @param sourceIndex enum for the source.
  */
-export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0) {
+export function computeModulators(
+    this: MIDIChannel,
+    voice: Voice,
+    sourceUsesCC: number = -1,
+    sourceIndex: number = 0
+) {
     const modulators = voice.modulators;
     let generators = voice.generators;
     // apply offsets if enabled
@@ -171,7 +173,7 @@ export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0) {
     }
 
     // Optimized mode: calculate only modulators that use the given source
-    const volenvNeedsRecalculation = new Set([
+    const volumeEnvelopeNeedsRecalculation = new Set<generatorTypes>([
         generatorTypes.initialAttenuation,
         generatorTypes.delayVolEnv,
         generatorTypes.attackVolEnv,
@@ -183,7 +185,7 @@ export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0) {
         generatorTypes.keyNumToVolEnvDecay
     ]);
 
-    const computedDestinations = new Set();
+    const computedDestinations = new Set<generatorTypes>();
 
     modulators.forEach((mod) => {
         if (
@@ -218,7 +220,7 @@ export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0) {
     // Recalculate volume envelope if necessary
     if (
         [...computedDestinations].some((dest) =>
-            volenvNeedsRecalculation.has(dest)
+            volumeEnvelopeNeedsRecalculation.has(dest)
         )
     ) {
         VolumeEnvelope.recalculate(voice);
@@ -229,11 +231,14 @@ export function computeModulators(voice, sourceUsesCC = -1, sourceIndex = 0) {
 
 /**
  * as follows: transforms[curveType][polarity][direction] is an array
- * @type {Float32Array[][][]}
  */
-const transforms = [];
+const transforms: [
+    [Float32Array, Float32Array],
+    [Float32Array, Float32Array]
+][] = [];
 
-for (let curve = 0; curve < 4; curve++) {
+for (let c = 0; c < 4; c++) {
+    const curve = c as modulatorCurveTypes;
     transforms[curve] = [
         [
             new Float32Array(MOD_PRECOMPUTED_LENGTH),

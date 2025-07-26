@@ -1,7 +1,7 @@
-import { writeVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity.js";
-import { writeBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian.js";
-import { messageTypes } from "../enums.ts";
-import type { BasicMIDI } from "../basic_midi.ts";
+import { writeVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
+import { writeBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian";
+import { messageTypes } from "../enums";
+import type { BasicMIDI } from "../basic_midi";
 
 /**
  * Exports the midi as a standard MIDI file

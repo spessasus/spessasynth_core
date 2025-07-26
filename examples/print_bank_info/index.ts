@@ -1,18 +1,17 @@
 // process arguments
-import fs from "fs";
-import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
-import { BasicSoundBank } from "../../src/soundbank/basic_soundbank/basic_soundbank.js";
+import * as fs from "fs";
+import { BasicSoundBank } from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 1) {
-    console.info("Usage: node index.js <sf2/dls input path>");
+    console.info("Usage: tsx index.ts <sf2/dls input path>");
     process.exit();
 }
 
 const filePath = args[0];
 const file = fs.readFileSync(filePath);
 await BasicSoundBank.isSF3DecoderReady;
-const bank = loadSoundFont(file);
+const bank = BasicSoundBank.fromArrayBuffer(file.buffer);
 console.info("Loaded bank:", bank.soundFontInfo["INAM"]);
 
 console.group("Bank information");
@@ -37,7 +36,7 @@ bank.presets.forEach((preset) => {
     console.info("Velocity range:", preset.globalZone.velRange);
 
     preset.presetZones.forEach((zone) => {
-        console.info(`\n--- ${zone.instrument.instrumentName} ---`);
+        console.info(`\n--- ${zone?.instrument?.instrumentName} ---`);
         console.info("Key range:", zone.keyRange);
         console.info("Velocity range:", zone.velRange);
     });

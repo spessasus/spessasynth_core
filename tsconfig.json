@@ -4,37 +4,37 @@
     "target": "esnext",
     "useDefineForClassFields": true,
     "lib": [
-      "esnext",
+      "ESNext",
       "ES2020",
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ESNext",
+    "module": "CommonJS",
     "skipLibCheck": true,
     "allowJs": true,
     /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
     "moduleDetection": "force",
-    "noEmit": true,
     /* Linting */
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "alwaysStrict": true,
+    "noImplicitThis": true,
+    "strictBindCallApply": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "typeRoots": [
-      "./src/types"
-    ]
+    "isolatedModules": true
   },
   "include": [
     "src"
   ],
-  "paths": {
-    "stbvorbis_sync": [
-      "src/externals/stbvorbis_sync/stbvorbis_sync.min.js"
-    ]
-  }
+  "exclude": [
+    "node_modules",
+    "dist",
+    "examples"
+  ]
 }

@@ -3,7 +3,7 @@
 <img src='https://raw.githubusercontent.com/spessasus/SpessaSynth/refs/heads/master/src/website/spessasynth_logo_rounded.png' width='300' alt='SpessaSynth logo'>
 </p>
 
-**A powerful SF2/DLS/MIDI JavaScript library. It works with any modern JS environment that supports WebAssembly.**
+**A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports WebAssembly.**
 
 It allows you to:
 - Play MIDI files using SF2/SF3/DLS files!
@@ -26,8 +26,7 @@ npm install --save spessasynth_core
 
 ### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
 
-
-> Note: This is the new heart of the SpessaSynth library, after the repository has been split.
+**TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
 
 **SpessaSynth Project index**
 
@@ -159,27 +158,34 @@ npm install --save spessasynth_core
 **If you like this project, consider giving it a star. It really helps out!**
 
 ### Short example: MIDI to wav converter
-```js
+```ts
 import * as fs from "node:fs";
-import { MIDI, SpessaSynthProcessor, SpessaSynthSequencer, audioToWav, loadSoundFont } from "spessasynth_core";
+import {
+    audioToWav,
+    BasicMIDI,
+    BasicSoundBank,
+    SpessaSynthProcessor,
+    SpessaSynthSequencer
+} from "spessasynth_core";
 
 // process arguments
 const args = process.argv.slice(2);
-if (args.length !== 3)
-{
-    console.log("Usage: node index.js <soundbank path> <midi path> <wav output path>");
+if (args.length !== 3) {
+    console.info(
+        "Usage: tsx index.ts <soundbank path> <midi path> <wav output path>"
+    );
     process.exit();
 }
 const sf = fs.readFileSync(args[0]);
 const mid = fs.readFileSync(args[1]);
-const midi = new MIDI(mid);
+const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const sampleRate = 44100;
-const sampleCount = 44100 * (midi.duration + 2);
+const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
 });
-synth.soundfontManager.reloadManager(loadSoundFont(sf));
+synth.soundfontManager.reloadManager(BasicSoundBank.fromArrayBuffer(sf.buffer));
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
@@ -189,39 +195,51 @@ const outRight = new Float32Array(sampleCount);
 const start = performance.now();
 let filledSamples = 0;
 // note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
-const bufSize = 128;
+const BUFFER_SIZE = 128;
 let i = 0;
-while (filledSamples + bufSize < sampleCount)
-{
-    const bufLeft = new Float32Array(bufSize);
-    const bufRight = new Float32Array(bufSize);
+const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
+const outputArray = [outLeft, outRight];
+while (filledSamples < sampleCount) {
     // process sequencer
     seq.processTick();
-    const arr = [bufLeft, bufRight];
     // render
-    synth.renderAudio(arr, arr, arr);
-    // write out
-    outLeft.set(bufLeft, filledSamples);
-    outRight.set(bufRight, filledSamples);
-    filledSamples += bufSize;
+    const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
+    synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+    filledSamples += bufferSize;
     i++;
     // log progress
-    if (i % 100 === 0)
-    {
-        console.log("Rendered", seq.currentTime, "/", midi.duration);
+    if (i % 100 === 0) {
+        console.info(
+            "Rendered",
+            Math.floor(seq.currentTime * 100) / 100,
+            "/",
+            durationRounded
+        );
     }
 }
-console.log("Rendered in", Math.floor(performance.now() - start), "ms");
-const wave = audioToWav({
-    leftChannel: outLeft,
-    rightChannel: outRight,
-    sampleRate: sampleRate
+const rendered = Math.floor(performance.now() - start);
+console.info(
+    "Rendered in",
+    rendered,
+    `ms (${Math.floor(((midi.duration * 1000) / rendered) * 100) / 100}x)`
+);
+const wave = audioToWav([outLeft, outRight], sampleRate);
+fs.writeFile(args[2], new Uint8Array(wave), () => {
+    console.log(`File written to ${args[2]}`);
 });
-fs.writeFileSync(args[2], new Buffer(wave));
-process.exit();
+
 ```
 
-# License
+### Building
+
+To build the NPM package, do:
+```bash
+npm install
+npm run build
+```
+The files will be placed in the `dist` folder.
+
+## License
 Copyright © 2025 Spessasus
 Licensed under the Apache-2.0 License.
 

@@ -1,9 +1,9 @@
 import {
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian.js";
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeRIFFChunkRaw } from "../riff_chunk.js";
+} from "../../../utils/byte_functions/little_endian";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { writeRIFFChunkRaw } from "../riff_chunk";
 
 const WSMP_SIZE = 20;
 

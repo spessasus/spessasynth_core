@@ -1,28 +1,28 @@
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { DLSPreset } from "./dls_preset.js";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { DLSPreset } from "./dls_preset";
 import {
     findRIFFListType,
     readRIFFChunk,
     RiffChunk
-} from "../basic_soundbank/riff_chunk.js";
+} from "../basic_soundbank/riff_chunk";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
-import { Modulator } from "../basic_soundbank/modulator.js";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { Modulator } from "../basic_soundbank/modulator";
 import {
     DEFAULT_DLS_CHORUS,
     DEFAULT_DLS_REVERB
-} from "./default_dls_modulators.js";
+} from "./default_dls_modulators";
 import {
     generatorLimits,
     generatorTypes
-} from "../basic_soundbank/generator_types.js";
-import { readRegion } from "./read_region.js";
-import type { DownloadableSounds } from "./dls_soundfont.ts";
-import { readLart } from "./read_lart.ts";
+} from "../basic_soundbank/generator_types";
+import { readRegion } from "./read_region";
+import type { DownloadableSounds } from "./dls_soundfont";
+import { readLart } from "./read_lart";
 
 export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {
     dls.verifyHeader(chunk, "LIST");

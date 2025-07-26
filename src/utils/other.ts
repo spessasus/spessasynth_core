@@ -37,7 +37,7 @@ export function formatTitle(fileName: string): string {
 /**
  * Does what it says
  */
-export function arrayToHexString(arr: number[] | Uint8Array): string {
+export function arrayToHexString(arr: ArrayLike<number>): string {
     let hexString = "";
 
     for (let i = 0; i < arr.length; i++) {

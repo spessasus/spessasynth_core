@@ -1,19 +1,11 @@
-import { IndexedByteArray } from "../utils/indexed_array.js";
-import { readBytesAsString } from "../utils/byte_functions/string.js";
-import { DownloadableSounds } from "./dls/dls_soundfont.js";
-import { SoundFont2 } from "./read_sf2/soundfont.js";
+import { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 
 /**
- * Loads a soundfont or dls file
- * @param buffer {ArrayBuffer} the binary file to load
+ * Loads a soundfont or dls file.
+ * @param buffer {ArrayBuffer} the binary file to load.
  * @returns {BasicSoundBank}
+ * @deprecated use BasicSoundBank.fromArrayBuffer instead.
  */
-export function loadSoundFont(buffer) {
-    const check = buffer.slice(8, 12);
-    const a = new IndexedByteArray(check);
-    const id = readBytesAsString(a, 4, false).toLowerCase();
-    if (id === "dls ") {
-        return new DownloadableSounds(buffer);
-    }
-    return new SoundFont2(buffer, false);
+export function loadSoundFont(buffer: ArrayBuffer): BasicSoundBank {
+    return BasicSoundBank.fromArrayBuffer(buffer);
 }

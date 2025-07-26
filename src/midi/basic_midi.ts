@@ -1,49 +1,46 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { MIDISequenceData } from "./midi_sequence.js";
+import { MIDISequenceData } from "./midi_sequence";
 import {
     getStringBytes,
     readBytesAsString
-} from "../utils/byte_functions/string.js";
-import { MIDIMessage } from "./midi_message.js";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian.js";
+} from "../utils/byte_functions/string";
+import { MIDIMessage } from "./midi_message";
+import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
-} from "../utils/loggin.js";
-import {
-    consoleColors,
-    formatTitle,
-    sanitizeKarLyrics
-} from "../utils/other.js";
-import { writeMIDIInternal } from "./midi_tools/midi_writer.js";
-import { writeRMIDIInternal } from "./midi_tools/rmidi_writer.js";
-import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded.js";
-import { IndexedByteArray } from "../utils/indexed_array.js";
-import { getNoteTimesInternal } from "./midi_tools/get_note_times.js";
-import { messageTypes } from "./enums.ts";
-import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank.ts";
+} from "../utils/loggin";
+import { consoleColors, formatTitle, sanitizeKarLyrics } from "../utils/other";
+import { writeMIDIInternal } from "./midi_tools/midi_writer";
+import { writeRMIDIInternal } from "./midi_tools/rmidi_writer";
+import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
+import { IndexedByteArray } from "../utils/indexed_array";
+import { getNoteTimesInternal } from "./midi_tools/get_note_times";
+import { messageTypes } from "./enums";
+import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import type {
     DesiredChannelTranspose,
     DesiredControllerChange,
     DesiredProgramChange,
     NoteTime,
     RMIDMetadata
-} from "./types.ts";
+} from "./types";
 import {
     applySnapshotInternal,
     modifyMIDIInternal
-} from "./midi_tools/midi_editor.ts";
-import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot.ts";
-import { SoundFontManager } from "../synthetizer/audio_engine/engine_components/soundfont_manager.ts";
+} from "./midi_tools/midi_editor";
+import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
+import { SoundFontManager } from "../synthetizer/audio_engine/engine_components/soundfont_manager";
+import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 
 /**
  * BasicMIDI is the base of a complete MIDI file, used by the sequencer internally.
  * BasicMIDI is not available on the main thread, as it contains the actual track data which can be large.
  * It can be accessed by calling getMIDI() on the Sequencer.
  */
-class BasicMIDI extends MIDISequenceData {
+export class BasicMIDI extends MIDISequenceData {
     /**
      * The embedded soundfont in the MIDI file, represented as an ArrayBuffer, if available.
      */
@@ -59,6 +56,20 @@ class BasicMIDI extends MIDISequenceData {
      * If the MIDI file is a DLS RMIDI file.
      */
     isDLSRMIDI: boolean = false;
+
+    /**
+     * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
+     * @param arrayBuffer The ArrayBuffer containing the binary file data.
+     * @param fileName The optional name of the file, will be used if the MIDI file does not have a name.
+     */
+    static fromArrayBuffer(
+        arrayBuffer: ArrayBuffer,
+        fileName: string = ""
+    ): BasicMIDI {
+        const mid = new BasicMIDI();
+        loadMIDIFromArrayBufferInternal(mid, arrayBuffer, fileName);
+        return mid;
+    }
 
     /**
      * Copies a MIDI (tracks are shallowly copied!)
@@ -115,13 +126,16 @@ class BasicMIDI extends MIDISequenceData {
 
     /**
      * Updates all internal values of the MIDI.
+     * @param sortEvents if the events should be sorted by ticks. Recommended to be true.
      */
-    flush() {
-        for (const t of this.tracks) {
-            // sort the track by ticks
-            t.sort((e1, e2) => e1.ticks - e2.ticks);
+    flush(sortEvents = true) {
+        if (sortEvents) {
+            for (const t of this.tracks) {
+                // sort the track by ticks
+                t.sort((e1, e2) => e1.ticks - e2.ticks);
+            }
         }
-        this._parseInternal();
+        this.parseInternal();
     }
 
     /**
@@ -205,7 +219,7 @@ class BasicMIDI extends MIDISequenceData {
     /**
      * Parses internal MIDI values
      */
-    protected _parseInternal() {
+    protected parseInternal() {
         SpessaSynthGroup("%cInterpreting MIDI events...", consoleColors.info);
         /**
          * For karaoke files, text events starting with @T are considered titles,
@@ -361,8 +375,8 @@ class BasicMIDI extends MIDISequenceData {
                             e.messageData.currentIndex = 0;
                         }
                         break;
+                    // fallthrough
 
-                    // @ts-expect-error Fallthrough
                     case messageTypes.lyric:
                         // note here: .kar files sometimes just use...
                         // lyrics instead of text because why not (of course)
@@ -665,7 +679,7 @@ class BasicMIDI extends MIDISequenceData {
         if (!this.tracks.some((t) => t[0].ticks === 0)) {
             const track = this.tracks[0];
             // can copy
-            const b: ArrayBuffer = this.rawMidiName.buffer;
+            const b: ArrayBuffer = this.rawMidiName.buffer as ArrayBuffer;
             track.unshift(
                 new MIDIMessage(
                     0,
@@ -685,5 +699,3 @@ class BasicMIDI extends MIDISequenceData {
         SpessaSynthGroupEnd();
     }
 }
-
-export { BasicMIDI };

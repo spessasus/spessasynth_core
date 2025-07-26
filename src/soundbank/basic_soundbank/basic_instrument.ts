@@ -1,7 +1,8 @@
-import { BasicGlobalZone } from "./basic_global_zone.js";
-import { BasicInstrumentZone } from "./basic_instrument_zone.js";
-import { SpessaSynthWarn } from "../../utils/loggin.js";
-import type { BasicPreset } from "./basic_preset.ts";
+import { BasicGlobalZone } from "./basic_global_zone";
+import { BasicInstrumentZone } from "./basic_instrument_zone";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import type { BasicPreset } from "./basic_preset";
+import type { BasicSample } from "./basic_sample";
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -34,9 +35,22 @@ export class BasicInstrument {
         return this.linkedPresets.length;
     }
 
-    // Creates a new instrument zone and returns it
-    createZone(): BasicInstrumentZone {
-        const zone = new BasicInstrumentZone(this);
+    // The instrument's name.
+    get name(): string {
+        return this.instrumentName;
+    }
+
+    // The instrument's name.
+    set name(value: string) {
+        this.instrumentName = value;
+    }
+
+    /**
+     * Creates a new instrument zone and returns it.
+     * @param sample The sample to use in the zone.
+     */
+    createZone(sample: BasicSample): BasicInstrumentZone {
+        const zone = new BasicInstrumentZone(this, sample);
         this.instrumentZones.push(zone);
         return zone;
     }
@@ -71,7 +85,7 @@ export class BasicInstrument {
         this.instrumentZones = this.instrumentZones.filter((z) => {
             const stays = z.useCount > 0;
             if (!stays) {
-                z.sample?.unlinkFrom(this);
+                z.sample.unlinkFrom(this);
             }
             return stays;
         });
@@ -84,7 +98,7 @@ export class BasicInstrument {
                 `Cannot delete an instrument that is used by: ${this.linkedPresets.map((p) => p.presetName)}.`
             );
         }
-        this.instrumentZones.forEach((z) => z.sample?.unlinkFrom(this));
+        this.instrumentZones.forEach((z) => z.sample.unlinkFrom(this));
     }
 
     /**
@@ -97,7 +111,7 @@ export class BasicInstrument {
         const zone = this.instrumentZones[index];
         zone.useCount -= 1;
         if (zone.useCount < 1 || force) {
-            zone.sample?.unlinkFrom(this);
+            zone.sample.unlinkFrom(this);
             this.instrumentZones.splice(index, 1);
             return true;
         }

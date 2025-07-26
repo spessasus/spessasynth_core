@@ -1,23 +1,23 @@
 import {
     getDLSArticulatorFromSf2Generator,
     getDLSArticulatorFromSf2Modulator
-} from "./modulator_converter.js";
-import { writeRIFFChunkParts } from "../riff_chunk.js";
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { Generator } from "../generator.js";
-import { writeDword } from "../../../utils/byte_functions/little_endian.js";
-import { consoleColors } from "../../../utils/other.js";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin.js";
-import { Modulator } from "../modulator.js";
+} from "./modulator_converter";
+import { writeRIFFChunkParts } from "../riff_chunk";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { Generator } from "../generator";
+import { writeDword } from "../../../utils/byte_functions/little_endian";
+import { consoleColors } from "../../../utils/other";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
+import { Modulator } from "../modulator";
 import {
     DEFAULT_DLS_CHORUS,
     DEFAULT_DLS_REVERB,
     DLS_1_NO_VIBRATO_MOD,
     DLS_1_NO_VIBRATO_PRESSURE
-} from "../../dls/default_dls_modulators.js";
-import { generatorTypes } from "../generator_types.js";
-import type { BasicZone } from "../basic_zone.ts";
-import type { Articulator } from "./articulator.ts";
+} from "../../read_dls/default_dls_modulators";
+import { generatorTypes } from "../generator_types";
+import type { BasicZone } from "../basic_zone";
+import type { Articulator } from "./articulator";
 
 const invalidGeneratorTypes = new Set([
     generatorTypes.sampleModes,

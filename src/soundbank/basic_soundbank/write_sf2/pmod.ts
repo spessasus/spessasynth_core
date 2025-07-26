@@ -1,13 +1,13 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
+import { IndexedByteArray } from "../../../utils/indexed_array";
 import {
     writeLittleEndian,
     writeWord
-} from "../../../utils/byte_functions/little_endian.js";
-import { writeRIFFChunkRaw } from "../riff_chunk.js";
-import { MOD_BYTE_SIZE } from "../modulator.js";
-import type { ReturnedExtendedSf2Chunks } from "../../types.ts";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { BasicZone } from "../basic_zone.ts";
+} from "../../../utils/byte_functions/little_endian";
+import { writeRIFFChunkRaw } from "../riff_chunk";
+import { MOD_BYTE_SIZE } from "../modulator";
+import type { ReturnedExtendedSf2Chunks } from "../../types";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { BasicZone } from "../basic_zone";
 
 export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // very similar to imod,

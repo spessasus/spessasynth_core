@@ -1,15 +1,22 @@
-import { findRIFFListType, readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
+import {
+    findRIFFListType,
+    readRIFFChunk,
+    RiffChunk
+} from "../basic_soundbank/riff_chunk";
+import { readBytesAsString } from "../../utils/byte_functions/string";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
     SpessaSynthWarn
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
-import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
-import { DLSSample } from "./dls_sample.js";
-import type { DownloadableSounds } from "./dls_soundfont.ts";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import {
+    readLittleEndian,
+    signedInt16
+} from "../../utils/byte_functions/little_endian";
+import { DLSSample } from "./dls_sample";
+import type { DownloadableSounds } from "./dls_soundfont";
 
 export function readDLSSamples(
     dls: DownloadableSounds,
@@ -22,7 +29,7 @@ export function readDLSSamples(
     let sampleID = 0;
     while (
         waveListChunk.chunkData.currentIndex < waveListChunk.chunkData.length
-        ) {
+    ) {
         const waveChunk = readRIFFChunk(waveListChunk.chunkData);
         dls.verifyHeader(waveChunk, "LIST");
         dls.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
@@ -67,7 +74,7 @@ export function readDLSSamples(
             while (
                 infoChunk.header !== "INAM" &&
                 waveInfo.chunkData.currentIndex < waveInfo.chunkData.length
-                ) {
+            ) {
                 infoChunk = readRIFFChunk(waveInfo.chunkData);
             }
             if (infoChunk.header === "INAM") {

@@ -1,17 +1,18 @@
-import { SpessaSynthProcessor } from "../../src/synthetizer/audio_engine/main_processor.js";
+import {
+    BasicMIDI,
+    BasicSoundBank,
+    SpessaSynthLogging,
+    SpessaSynthProcessor,
+    SpessaSynthSequencer
+} from "../../src";
 import * as fs from "node:fs";
-import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
-import { MIDI } from "../../src/midi/midi_loader.js";
 import { Readable } from "node:stream";
-import Speaker from "speaker";
-import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
-import { SpessaSynthLogging } from "../../src/utils/loggin.js";
-import { masterParameterType } from "../../src/synthetizer/audio_engine/engine_methods/controller_control/master_parameters.js";
+import * as Speaker from "speaker";
 
 // process arguments
 const args = process.argv.slice(2);
 if (args.length !== 2) {
-    console.info("Usage: node index.js <soundbank path> <midi path>");
+    console.info("Usage: tsx index.ts <soundbank path> <midi path>");
     process.exit();
 }
 const sfPath = args[0];
@@ -24,13 +25,12 @@ const sampleRate = 44100;
 const synth = new SpessaSynthProcessor(sampleRate, {
     effectsEnabled: false
 });
-SpessaSynthLogging(true, true, true, true);
-synth.soundfontManager.reloadManager(loadSoundFont(sf));
+SpessaSynthLogging(true, true, true);
+synth.soundfontManager.reloadManager(BasicSoundBank.fromArrayBuffer(sf.buffer));
 await synth.processorInitialized;
-synth.setMasterParameter(masterParameterType.monophonicRetriggerMode, true);
 
 const seq = new SpessaSynthSequencer(synth);
-seq.loadNewSongList([new MIDI(mid)]);
+seq.loadNewSongList([BasicMIDI.fromArrayBuffer(mid.buffer)]);
 
 const bufSize = 128;
 
@@ -56,10 +56,9 @@ const audioStream = new Readable({
     }
 });
 
-const speaker = new Speaker({
+const speaker: Speaker = new Speaker({
     sampleRate: 44100,
     channels: 2,
-    bitDepth: 32,
-    float: true
+    bitDepth: 32
 });
 audioStream.pipe(speaker);

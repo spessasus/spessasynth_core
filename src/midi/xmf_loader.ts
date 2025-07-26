@@ -1,20 +1,20 @@
 import {
     getStringBytes,
     readBytesAsString
-} from "../utils/byte_functions/string.js";
+} from "../utils/byte_functions/string";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
     SpessaSynthWarn
-} from "../utils/loggin.js";
-import { consoleColors } from "../utils/other.js";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian.js";
-import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity.js";
-import { RMIDINFOChunks } from "./enums.ts";
-import { inflateSync } from "../externals/fflate/fflate_wrapper.ts";
-import { IndexedByteArray } from "../utils/indexed_array.js";
-import type { BasicMIDI } from "./basic_midi.ts";
+} from "../utils/loggin";
+import { consoleColors } from "../utils/other";
+import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
+import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
+import { RMIDINFOChunks } from "./enums";
+import { inflateSync } from "../externals/fflate/fflate_wrapper";
+import { IndexedByteArray } from "../utils/indexed_array";
+import type { BasicMIDI } from "./basic_midi";
 
 const metadataTypes = {
     XMFFileType: 0,

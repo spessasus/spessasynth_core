@@ -1,9 +1,12 @@
-import { RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { BasicPreset } from "../basic_soundbank/basic_preset.js";
-import { SoundFontPresetZone } from "./preset_zones.js";
-import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank.ts";
+import { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { BasicPreset } from "../basic_soundbank/basic_preset";
+import { SoundFontPresetZone } from "./preset_zones";
+import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
+import type { Modulator } from "../basic_soundbank/modulator";
+import type { Generator } from "../basic_soundbank/generator";
 
 /**
  * parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
@@ -33,8 +36,17 @@ export class SoundFontPreset extends BasicPreset {
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
     }
 
-    createZone(): SoundFontPresetZone {
-        const z = new SoundFontPresetZone(this);
+    createSoundFontZone(
+        modulators: Modulator[],
+        generators: Generator[],
+        instruments: BasicInstrument[]
+    ): SoundFontPresetZone {
+        const z = new SoundFontPresetZone(
+            this,
+            modulators,
+            generators,
+            instruments
+        );
         this.presetZones.push(z);
         return z;
     }

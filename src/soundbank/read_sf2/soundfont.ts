@@ -1,22 +1,26 @@
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { readSamples } from "./samples.js";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readGenerators } from "./generators.js";
-import { applyPresetZones } from "./preset_zones.js";
-import { readPresets, SoundFontPreset } from "./presets.js";
-import { readInstruments, SoundFontInstrument } from "./instruments.js";
-import { readModulators } from "./modulators.js";
-import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { consoleColors } from "../../utils/other.js";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper.ts";
-import { BasicSoundBank } from "../basic_soundbank/basic_soundbank.js";
-import { applyInstrumentZones } from "./instrument_zones.js";
-import { readZoneIndexes } from "./zones.js";
-import type { SoundFontInfoFourCC } from "../types.ts";
-import type { Generator } from "../basic_soundbank/generator.ts";
-import type { Modulator } from "../basic_soundbank/modulator.ts";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { readSamples } from "./samples";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readGenerators } from "./generators";
+import { applyPresetZones } from "./preset_zones";
+import { readPresets, SoundFontPreset } from "./presets";
+import { readInstruments, SoundFontInstrument } from "./instruments";
+import { readModulators } from "./modulators";
+import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk";
+import { consoleColors } from "../../utils/other";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
+import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
+import { applyInstrumentZones } from "./instrument_zones";
+import { readZoneIndexes } from "./zones";
+import type { SoundFontInfoFourCC } from "../types";
+import type { Generator } from "../basic_soundbank/generator";
+import type { Modulator } from "../basic_soundbank/modulator";
 
 /**
  * soundfont.js

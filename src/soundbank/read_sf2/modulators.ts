@@ -1,7 +1,10 @@
-import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
-import { DecodedModulator, Modulator } from "../basic_soundbank/modulator.js";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
-import type { generatorTypes } from "../basic_soundbank/generator_types.ts";
+import {
+    readLittleEndian,
+    signedInt16
+} from "../../utils/byte_functions/little_endian";
+import { DecodedModulator, Modulator } from "../basic_soundbank/modulator";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import type { generatorTypes } from "../basic_soundbank/generator_types";
 
 /**
  * Reads the modulator read

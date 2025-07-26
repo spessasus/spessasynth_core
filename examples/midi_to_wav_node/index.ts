@@ -1,28 +1,30 @@
 import * as fs from "node:fs";
-import { MIDI } from "../../src/midi/midi_loader.js";
-import { SpessaSynthProcessor } from "../../src/synthetizer/audio_engine/main_processor.js";
-import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
-import { audioToWav } from "../../src/utils/buffer_to_wav.js";
-import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
+import {
+    audioToWav,
+    BasicMIDI,
+    BasicSoundBank,
+    SpessaSynthProcessor,
+    SpessaSynthSequencer
+} from "../../src";
 
 // process arguments
 const args = process.argv.slice(2);
 if (args.length !== 3) {
     console.info(
-        "Usage: node index.js <soundbank path> <midi path> <wav output path>"
+        "Usage: tsx index.ts <soundbank path> <midi path> <wav output path>"
     );
     process.exit();
 }
 const sf = fs.readFileSync(args[0]);
 const mid = fs.readFileSync(args[1]);
-const midi = new MIDI(mid);
+const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const sampleRate = 44100;
 const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
 });
-synth.soundfontManager.reloadManager(loadSoundFont(sf));
+synth.soundfontManager.reloadManager(BasicSoundBank.fromArrayBuffer(sf.buffer));
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
@@ -61,5 +63,6 @@ console.info(
     `ms (${Math.floor(((midi.duration * 1000) / rendered) * 100) / 100}x)`
 );
 const wave = audioToWav([outLeft, outRight], sampleRate);
-fs.writeFileSync(args[2], new Buffer(wave));
-process.exit();
+fs.writeFile(args[2], new Uint8Array(wave), () => {
+    console.log(`File written to ${args[2]}`);
+});

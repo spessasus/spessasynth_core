@@ -4,21 +4,25 @@ import {
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
     SpessaSynthWarn
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
-import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write.js";
-import { defaultModulators, Modulator } from "./modulator.js";
-import { writeDLS } from "./write_dls/write_dls.js";
-import { BasicSample, CreatedSample } from "./basic_sample.js";
-import { Generator } from "./generator.js";
-import { BasicInstrument } from "./basic_instrument.js";
-import { BasicPreset } from "./basic_preset.js";
-import { isXGDrums } from "../../utils/xg_hacks.js";
-import { generatorTypes } from "./generator_types.js";
-import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper.ts";
-import type { BasicMIDI } from "../../midi/basic_midi.ts";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
+import { defaultModulators, Modulator } from "./modulator";
+import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
+import { BasicSample, CreatedSample } from "./basic_sample";
+import { Generator } from "./generator";
+import { BasicInstrument } from "./basic_instrument";
+import { BasicPreset } from "./basic_preset";
+import { isXGDrums } from "../../utils/xg_hacks";
+import { generatorTypes } from "./generator_types";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
+import type { BasicMIDI } from "../../midi/basic_midi";
 
-import type { SoundBankInfo, SoundFont2WriteOptions } from "../types.ts";
+import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from "../types";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { DownloadableSounds } from "../read_dls/dls_soundfont";
+import { SoundFont2 } from "../read_sf2/soundfont";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -61,7 +65,6 @@ export class BasicSoundBank {
      * If the bank has custom default modulators (DMOD).
      */
     customDefaultModulators: boolean = false;
-    writeDLS = writeDLS.bind(this);
 
     /**
      * Creates a new basic soundfont template (or copies)
@@ -167,19 +170,15 @@ export class BasicSoundBank {
             new Generator(generatorTypes.sampleModes, 1)
         );
 
-        const zone1 = inst.createZone();
-        zone1.setSample(sample);
-
-        const zone2 = inst.createZone();
-        zone2.setSample(sample);
+        inst.createZone(sample);
+        const zone2 = inst.createZone(sample);
         zone2.addGenerators(new Generator(generatorTypes.fineTune, -9));
 
         font.addInstruments(inst);
 
         const preset = new BasicPreset(font);
         preset.presetName = "Saw Wave";
-        const pZone = preset.createZone();
-        pZone.setInstrument(inst);
+        preset.createZone(inst);
 
         font.addPresets(preset);
 
@@ -189,6 +188,32 @@ export class BasicSoundBank {
         font.flush();
         const f = await font.write();
         return f.buffer;
+    }
+
+    /**
+     * Loads a sound bank from a file buffer.
+     * @param buffer The binary file buffer to load.
+     * @returns {BasicSoundBank} The loaded sound bank, either a DownloadableSounds or SoundFont2 instance.
+     */
+    static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
+        const check = buffer.slice(8, 12);
+        const a = new IndexedByteArray(check);
+        const id = readBytesAsString(a, 4, false).toLowerCase();
+        if (id === "dls ") {
+            return new DownloadableSounds(buffer);
+        }
+        return new SoundFont2(buffer, false);
+    }
+
+    /**
+     * Write the soundfont as a .dls file. This may not be 100% accurate.
+     * @param {Partial<DLSWriteOptions>} options - options for writing the file.
+     * @returns the binary file.
+     */
+    async writeDLS(
+        options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        return writeDLSInternal(this, options);
     }
 
     /**
@@ -266,11 +291,10 @@ export class BasicSoundBank {
         newInstrument.instrumentName = instrument.instrumentName;
         newInstrument.globalZone.copyFrom(instrument.globalZone);
         for (const zone of instrument.instrumentZones) {
-            const copiedZone = newInstrument.createZone();
+            const copiedZone = newInstrument.createZone(
+                this.cloneSample(zone.sample)
+            );
             copiedZone.copyFrom(zone);
-            if (zone.sample) {
-                copiedZone.setSample(this.cloneSample(zone.sample));
-            }
         }
         this.addInstruments(newInstrument);
         return newInstrument;
@@ -297,11 +321,10 @@ export class BasicSoundBank {
         newPreset.morphology = preset.morphology;
         newPreset.globalZone.copyFrom(preset.globalZone);
         for (const zone of preset.presetZones) {
-            const copiedZone = newPreset.createZone();
+            const copiedZone = newPreset.createZone(
+                this.cloneInstrument(zone.instrument)
+            );
             copiedZone.copyFrom(zone);
-            if (zone.instrument) {
-                copiedZone.setInstrument(this.cloneInstrument(zone.instrument));
-            }
         }
 
         this.addPresets(newPreset);
@@ -315,14 +338,14 @@ export class BasicSoundBank {
             }
             return a.program - b.program;
         });
-        this._parseInternal();
+        this.parseInternal();
     }
 
     /**
      * Trims a sound bank to only contain samples in a given MIDI file
      * @param mid {BasicMIDI} - the MIDI file
      */
-    public trimSoundBank(mid: BasicMIDI) {
+    trimSoundBank(mid: BasicMIDI) {
         const trimInstrumentZones = (
             instrument: BasicInstrument,
             combos: { key: number; velocity: number }[]
@@ -655,7 +678,7 @@ export class BasicSoundBank {
      * parses the bank after loading is done
      * @protected
      */
-    protected _parseInternal() {
+    protected parseInternal() {
         this._isXGBank = false;
         // definitions for XG:
         // at least one preset with bank 127, 126 or 120

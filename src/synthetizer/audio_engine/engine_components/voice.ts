@@ -2,17 +2,23 @@
  * voice.js
  * purpose: prepares Voices from sample and generator data
  */
-import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "../main_processor.js";
-import { SpessaSynthWarn } from "../../../utils/loggin.js";
-import { LowpassFilter } from "./lowpass_filter.js";
-import { VolumeEnvelope } from "./volume_envelope.js";
-import { ModulationEnvelope } from "./modulation_envelope.js";
-import { addAndClampGenerator } from "../../../soundbank/basic_soundbank/generator.js";
-import { Modulator } from "../../../soundbank/basic_soundbank/modulator.js";
+import {
+    MIN_EXCLUSIVE_LENGTH,
+    MIN_NOTE_LENGTH,
+    SpessaSynthProcessor
+} from "../main_processor";
+import { SpessaSynthWarn } from "../../../utils/loggin";
+import { LowpassFilter } from "./lowpass_filter";
+import { VolumeEnvelope } from "./volume_envelope";
+import { ModulationEnvelope } from "./modulation_envelope";
+import { addAndClampGenerator } from "../../../soundbank/basic_soundbank/generator";
+import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import {
     GENERATORS_AMOUNT,
     generatorTypes
-} from "../../../soundbank/basic_soundbank/generator_types.js";
+} from "../../../soundbank/basic_soundbank/generator_types";
+import type { SampleLoopingMode, VoiceList } from "../../types";
+import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans
@@ -20,73 +26,64 @@ const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans
 class AudioSample {
     /**
      * the sample's audio data
-     * @type {Float32Array}
      */
-    sampleData;
+    sampleData: Float32Array;
     /**
      * Current playback step (rate)
-     * @type {number}
      */
-    playbackStep = 0;
+    playbackStep: number = 0;
     /**
      * Current position in the sample
-     * @type {number}
      */
-    cursor = 0;
+    cursor: number = 0;
     /**
      * MIDI root key of the sample
-     * @type {number}
      */
-    rootKey = 0;
+    rootKey: number = 0;
     /**
      * Start position of the loop
-     * @type {number}
      */
-    loopStart = 0;
+    loopStart: number = 0;
     /**
      * End position of the loop
-     * @type {number}
      */
-    loopEnd = 0;
+    loopEnd: number = 0;
     /**
      * End position of the sample
-     * @type {number}
      */
-    end = 0;
+    end: number = 0;
     /**
      * Looping mode of the sample:
      * 0 - no loop
      * 1 - loop
      * 2 - UNOFFICIAL: polyphone 2.4 added start on release
      * 3 - loop then play when released
-     * @type {0|1|2|3}
      */
-    loopingMode = 0;
+    loopingMode: SampleLoopingMode = 0;
     /**
      * Indicates if the sample is currently looping
-     * @type {boolean}
      */
-    isLooping = false;
+    isLooping: boolean = false;
 
     /**
-     * @param data {Float32Array}
-     * @param playbackStep {number} the playback step, a single increment
-     * @param cursorStart {number} the sample id which starts the playback
-     * @param rootKey {number} MIDI root key
-     * @param loopStart {number} loop start index
-     * @param loopEnd {number} loop end index
-     * @param endIndex {number} sample end index (for end offset)
-     * @param loopingMode {number} sample looping mode
+     * @param data
+     * @param playbackStep the playback step, a single increment
+     * @param cursorStart the sample id which starts the playback
+     * @param rootKey MIDI root key
+     * @param loopStart loop start index
+     * @param loopEnd loop end index
+     * @param endIndex sample end index (for end offset)
+     * @param loopingMode sample looping mode
      */
     constructor(
-        data,
-        playbackStep,
-        cursorStart,
-        rootKey,
-        loopStart,
-        loopEnd,
-        endIndex,
-        loopingMode
+        data: Float32Array,
+        playbackStep: number,
+        cursorStart: number,
+        rootKey: number,
+        loopStart: number,
+        loopEnd: number,
+        endIndex: number,
+        loopingMode: SampleLoopingMode
     ) {
         this.sampleData = data;
         this.playbackStep = playbackStep;
@@ -111,182 +108,149 @@ class AudioSample {
  * Modulators (modulators)
  * And MIDI params such as channel, MIDI note, velocity
  */
-class Voice {
+export class Voice {
     /**
      * The sample of the voice.
-     * @type {AudioSample}
      */
-    sample;
+    sample: AudioSample;
 
     /**
      * Lowpass filter applied to the voice.
-     * @type {LowpassFilter}
      */
-    filter;
+    filter: LowpassFilter;
 
     /**
      * Linear gain of the voice. Used with Key Modifiers.
-     * @type {number}
      */
-    gain = 1;
+    gain: number = 1;
 
     /**
      * The unmodulated (copied to) generators of the voice.
-     * @type {Int16Array}
      */
-    generators;
+    generators: Int16Array;
 
     /**
      * The voice's modulators.
-     * @type {Modulator[]}
      */
-    modulators = [];
+    modulators: Modulator[] = [];
 
     /**
      * Resonance offset, it is affected by the default resonant modulator
-     * @type {number}
      */
-    resonanceOffset = 0;
+    resonanceOffset: number = 0;
 
     /**
      * The generators in real-time, affected by modulators.
      * This is used during rendering.
-     * @type {Int16Array}
      */
-    modulatedGenerators;
+    modulatedGenerators: Int16Array;
 
     /**
      * Indicates if the voice is finished.
-     * @type {boolean}
      */
-    finished = false;
+    finished: boolean = false;
 
     /**
      * Indicates if the voice is in the release phase.
-     * @type {boolean}
      */
-    isInRelease = false;
+    isInRelease: boolean = false;
 
     /**
      * Velocity of the note.
-     * @type {number}
      */
-    velocity = 0;
+    velocity: number = 0;
 
     /**
      * MIDI note number.
-     * @type {number}
      */
-    midiNote = 0;
+    midiNote: number = 0;
 
     /**
      * The pressure of the voice
-     * @type {number}
      */
-    pressure = 0;
+    pressure: number = 0;
 
     /**
      * Target key for the note.
-     * @type {number}
      */
-    targetKey = 0;
+    targetKey: number = 0;
 
     /**
      * Modulation envelope.
-     * @type {ModulationEnvelope}
      */
-    modulationEnvelope = new ModulationEnvelope();
+    modulationEnvelope: ModulationEnvelope = new ModulationEnvelope();
 
     /**
      * Volume envelope.
-     * @type {VolumeEnvelope}
      */
-    volumeEnvelope;
+    volumeEnvelope: VolumeEnvelope;
 
     /**
      * Start time of the voice, absolute.
-     * @type {number}
      */
-    startTime = 0;
+    startTime: number = 0;
 
     /**
      * Start time of the release phase, absolute.
-     * @type {number}
      */
-    releaseStartTime = Infinity;
+    releaseStartTime: number = Infinity;
 
     /**
      * Current tuning in cents.
-     * @type {number}
      */
-    currentTuningCents = 0;
+    currentTuningCents: number = 0;
 
     /**
      * Current calculated tuning. (as in ratio)
-     * @type {number}
      */
-    currentTuningCalculated = 1;
+    currentTuningCalculated: number = 1;
 
     /**
      * From -500 to 500.
-     * @param {number}
      */
-    currentPan = 0;
+    currentPan: number = 0;
 
     /**
      * If MIDI Tuning Standard is already applied (at note-on time),
      * this will be used to take the values at real-time tuning as "midiNote"
      * property contains the tuned number.
      * see #29 comment by @paulikaro
-     * @type {number}
      */
-    realKey;
+    realKey: number;
 
     /**
      * @type {number} Initial key to glide from, MIDI Note number. If -1, the portamento is OFF.
      */
-    portamentoFromKey = -1;
+    portamentoFromKey: number = -1;
 
     /**
      * Duration of the linear glide, in seconds.
-     * @type {number}
      */
-    portamentoDuration = 0;
+    portamentoDuration: number = 0;
 
     /**
      * From -500 to 500, where zero means disabled (use the channel pan). Used for random pan.
-     * @type {number}
      */
-    overridePan = 0;
+    overridePan: number = 0;
 
     /**
      * Exclusive class number for hi-hats etc.
-     * @type {number}
      */
-    exclusiveClass = 0;
+    exclusiveClass: number = 0;
 
     /**
-     * Creates a Voice
-     * @param sampleRate {number}
-     * @param audioSample {AudioSample}
-     * @param midiNote {number}
-     * @param velocity {number}
-     * @param currentTime {number}
-     * @param targetKey {number}
-     * @param realKey {number}
-     * @param generators {Int16Array}
-     * @param modulators {Modulator[]}
+     * Creates a Voice.
      */
     constructor(
-        sampleRate,
-        audioSample,
-        midiNote,
-        velocity,
-        currentTime,
-        targetKey,
-        realKey,
-        generators,
-        modulators
+        sampleRate: number,
+        audioSample: AudioSample,
+        midiNote: number,
+        velocity: number,
+        currentTime: number,
+        targetKey: number,
+        realKey: number,
+        generators: Int16Array,
+        modulators: Modulator[]
     ) {
         this.sample = audioSample;
         this.generators = generators;
@@ -306,13 +270,9 @@ class Voice {
     }
 
     /**
-     * copies the voice
-     * @param voice {Voice}
-     * @param currentTime {number}
-     * @param realKey {number}
-     * @returns Voice
+     * Copies a voice.
      */
-    static copy(voice, currentTime, realKey) {
+    static copy(voice: Voice, currentTime: number, realKey: number) {
         const sampleToCopy = voice.sample;
         const sample = new AudioSample(
             sampleToCopy.sampleData,
@@ -338,10 +298,9 @@ class Voice {
     }
 
     /**
-     * Releases the voice as exclusiveClass
-     * @param currentTime {number}
+     * Releases the voice as exclusiveClass.
      */
-    exclusiveRelease(currentTime) {
+    exclusiveRelease(currentTime: number) {
         this.release(currentTime, MIN_EXCLUSIVE_LENGTH);
         this.modulatedGenerators[generatorTypes.releaseVolEnv] =
             EXCLUSIVE_CUTOFF_TIME; // make the release nearly instant
@@ -353,10 +312,10 @@ class Voice {
 
     /**
      * Stops the voice
-     * @param currentTime {number}
-     * @param minNoteLength {number} minimum note length in seconds
+     * @param currentTime
+     * @param minNoteLength minimum note length in seconds
      */
-    release(currentTime, minNoteLength = MIN_NOTE_LENGTH) {
+    release(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {
         this.releaseStartTime = currentTime;
         // check if the note is shorter than the min note time, if so, extend it
         if (this.releaseStartTime - this.startTime < minNoteLength) {
@@ -366,29 +325,26 @@ class Voice {
 }
 
 /**
- * @param preset {BasicPreset} the preset to get voices for
- * @param bank {number} the bank to cache the voices in
- * @param program {number} program to cache the voices in
- * @param midiNote {number} the MIDI note to use
- * @param velocity {number} the velocity to use
- * @param realKey {number} the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
- * @this {SpessaSynthProcessor}
- * @returns {Voice[]} output is an array of Voices
+ * @param preset the preset to get voices for
+ * @param bank the bank to cache the voices in
+ * @param program program to cache the voices in
+ * @param midiNote the MIDI note to use
+ * @param velocity the velocity to use
+ * @param realKey the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
+ * @returns output is an array of Voices
  */
 export function getVoicesForPreset(
-    preset,
-    bank,
-    program,
-    midiNote,
-    velocity,
-    realKey
-) {
-    /**
-     * @type {Voice[]}
-     */
-    const voices = preset
+    this: SpessaSynthProcessor,
+    preset: BasicPreset,
+    bank: number,
+    program: number,
+    midiNote: number,
+    velocity: number,
+    realKey: number
+): VoiceList {
+    const voices: VoiceList = preset
         .getSamplesAndGenerators(midiNote, velocity)
-        .reduce((voices, sampleAndGenerators) => {
+        .reduce((voices: VoiceList, sampleAndGenerators) => {
             if (sampleAndGenerators.sample.getAudioData() === undefined) {
                 SpessaSynthWarn(
                     `Discarding invalid sample: ${sampleAndGenerators.sample.sampleName}`
@@ -427,14 +383,16 @@ export function getVoicesForPreset(
             // determine looping mode now. if the loop is too small, disable
             const loopStart = sampleAndGenerators.sample.sampleLoopStartIndex;
             const loopEnd = sampleAndGenerators.sample.sampleLoopEndIndex;
-            const loopingMode = generators[generatorTypes.sampleModes];
+            const loopingMode = generators[
+                generatorTypes.sampleModes
+            ] as SampleLoopingMode;
             /**
              * create the sample
              * offsets are calculated at note on time (to allow for modulation of them)
-             * @type {AudioSample}
              */
-            const audioSample = new AudioSample(
-                sampleAndGenerators.sample.sampleData,
+            const sampleData = sampleAndGenerators.sample.getAudioData();
+            const audioSample: AudioSample = new AudioSample(
+                sampleData,
                 (sampleAndGenerators.sample.sampleRate / this.sampleRate) *
                     Math.pow(
                         2,
@@ -444,7 +402,7 @@ export function getVoicesForPreset(
                 rootKey,
                 loopStart,
                 loopEnd,
-                Math.floor(sampleAndGenerators.sample.sampleData.length) - 1,
+                Math.floor(sampleData.length) - 1,
                 loopingMode
             );
             // velocity override
@@ -483,15 +441,20 @@ export function getVoicesForPreset(
 }
 
 /**
- * @param channel {number} a hint for the processor to recalculate sample cursors when sample dumping
- * @param midiNote {number} the MIDI note to use
- * @param velocity {number} the velocity to use
- * @param realKey {number} the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
- * @this {SpessaSynthProcessor}
- * @returns {Voice[]} output is an array of Voices
+ * @param channel channel to get voices for
+ * @param midiNote the MIDI note to use
+ * @param velocity the velocity to use
+ * @param realKey the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
+ * @returns output is an array of Voices
  */
-export function getVoices(channel, midiNote, velocity, realKey) {
-    const channelObject = this.midiAudioChannels[channel];
+export function getVoices(
+    this: SpessaSynthProcessor,
+    channel: number,
+    midiNote: number,
+    velocity: number,
+    realKey: number
+): VoiceList {
+    const channelObject = this.midiChannels[channel];
 
     // override patch
     const overridePatch = this.keyModifierManager.hasOverridePatch(

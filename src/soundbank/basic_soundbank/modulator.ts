@@ -1,7 +1,11 @@
-import { generatorTypes, MAX_GENERATOR } from "./generator_types.js";
-import type { ModulatorNumericBool } from "../types.ts";
-import { modulatorCurveTypes, modulatorSources, type modulatorTransformTypes } from "../enums.ts";
-import { midiControllers } from "../../midi/enums.ts";
+import { generatorTypes, MAX_GENERATOR } from "./generator_types";
+import type { ModulatorNumericBool, ModulatorSourceIndex } from "../types";
+import {
+    modulatorCurveTypes,
+    modulatorSources,
+    type modulatorTransformTypes
+} from "../enums";
+import { midiControllers } from "../../midi/enums";
 
 /**
  * modulators.js
@@ -15,7 +19,7 @@ export function getModSourceEnum(
     polarity: ModulatorNumericBool,
     direction: ModulatorNumericBool,
     isCC: ModulatorNumericBool,
-    index: modulatorSources | midiControllers
+    index: ModulatorSourceIndex
 ): number {
     return (
         (curveType << 10) |
@@ -90,10 +94,9 @@ export class Modulator {
     sourceUsesCC: ModulatorNumericBool;
 
     /**
-     * source index/CC number
-     * @type {modulatorSources|midiControllers}
+     * source index/CC number.
      */
-    sourceIndex: modulatorSources | midiControllers;
+    sourceIndex: ModulatorSourceIndex;
 
     /**
      * source curve type
@@ -119,7 +122,7 @@ export class Modulator {
     /**
      * secondary source index/CC number
      */
-    secSrcIndex: modulatorSources | midiControllers;
+    secSrcIndex: ModulatorSourceIndex;
 
     /**
      * secondary source curve type
@@ -130,12 +133,12 @@ export class Modulator {
      * Creates a new SF2 Modulator
      */
     constructor(
-        sourceIndex: modulatorSources | midiControllers,
+        sourceIndex: ModulatorSourceIndex,
         sourceCurveType: modulatorCurveTypes,
         sourceUsesCC: ModulatorNumericBool,
         sourcePolarity: ModulatorNumericBool,
         sourceDirection: ModulatorNumericBool,
-        secSrcIndex: modulatorSources | midiControllers,
+        secSrcIndex: ModulatorSourceIndex,
         secSrcCurveType: modulatorCurveTypes,
         secSrcUsesCC: ModulatorNumericBool,
         secSrcPolarity: ModulatorNumericBool,
@@ -291,7 +294,7 @@ export class DecodedModulator extends Modulator {
         const sourcePolarity = ((sourceEnum >> 9) & 1) as ModulatorNumericBool;
         const sourceDirection = ((sourceEnum >> 8) & 1) as ModulatorNumericBool;
         const sourceUsesCC = ((sourceEnum >> 7) & 1) as ModulatorNumericBool;
-        const sourceIndex = (sourceEnum & 127) as modulatorSources;
+        const sourceIndex = (sourceEnum & 127) as ModulatorSourceIndex;
         const sourceCurveType = ((sourceEnum >> 10) & 3) as modulatorCurveTypes;
 
         // decode the secondary source
@@ -301,7 +304,7 @@ export class DecodedModulator extends Modulator {
             1) as ModulatorNumericBool;
         const secSrcUsesCC = ((secondarySourceEnum >> 7) &
             1) as ModulatorNumericBool;
-        const secSrcIndex = (secondarySourceEnum & 127) as modulatorSources;
+        const secSrcIndex = (secondarySourceEnum & 127) as ModulatorSourceIndex;
         const secSrcCurveType = ((secondarySourceEnum >> 10) &
             3) as modulatorCurveTypes;
 

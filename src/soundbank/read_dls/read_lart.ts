@@ -1,7 +1,7 @@
-import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { readArticulation } from "./read_articulation.js";
-import type { DownloadableSounds } from "./dls_soundfont.ts";
-import type { BasicZone } from "../basic_soundbank/basic_zone.ts";
+import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk";
+import { readArticulation } from "./read_articulation";
+import type { DownloadableSounds } from "./dls_soundfont";
+import type { BasicZone } from "../basic_soundbank/basic_zone";
 
 export function readLart(
     dls: DownloadableSounds,

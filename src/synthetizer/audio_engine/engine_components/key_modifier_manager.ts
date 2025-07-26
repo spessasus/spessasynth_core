@@ -2,33 +2,34 @@
  * A manager for custom key overrides for channels
  */
 
-export class KeyModifier
-{
-    
+export class KeyModifier {
     /**
-     * The new override velocity. -1 means unchanged
-     * @type {number}
+     * The new override velocity. -1 means unchanged.
      */
-    velocity = -1;
+    velocity: number = -1;
     /**
-     * The patch this key uses. -1 on either means default
-     * @type {{bank: number, program: number}}
+     * The patch this key uses. -1 on either means default.
      */
-    patch = { bank: -1, program: -1 };
-    
+    patch: { bank: number; program: number } = { bank: -1, program: -1 };
+
     /**
-     * Linear gain override for the voice
+     * Linear gain override for the voice.
      */
     gain = 1;
-    
+
     /**
-     * @param velocity {number}
-     * @param bank {number}
-     * @param program {number}
-     * @param gain {number}
+     * Creates a new KeyModifier.
+     * @param velocity -1 means unchanged.
+     * @param bank -1 means default.
+     * @param program -1 means default.
+     * @param gain linear gain, 1 is default.
      */
-    constructor(velocity = -1, bank = -1, program = -1, gain = 1)
-    {
+    constructor(
+        velocity: number = -1,
+        bank: number = -1,
+        program: number = -1,
+        gain: number = 1
+    ) {
         this.velocity = velocity;
         this.patch = {
             bank: bank,
@@ -38,114 +39,109 @@ export class KeyModifier
     }
 }
 
-export class KeyModifierManager
-{
+export class KeyModifierManager {
     /**
      * The velocity override mappings for MIDI keys
-     * stored as [channelNumber][midiNote]
-     * @type {KeyModifier[][]}
-     * @private
+     * stored as [channelNumber][midiNote].
      */
-    _keyMappings = [];
-    
+    private keyMappings: (KeyModifier | undefined)[][] = [];
+
     // noinspection JSUnusedGlobalSymbols
     /**
-     * @param channel {number}
-     * @param midiNote {number}
-     * @param mapping {KeyModifier}
+     * Add a mapping for a MIDI key to a KeyModifier.
+     * @param channel The MIDI channel number.
+     * @param midiNote The MIDI note number (0-127).
+     * @param mapping The KeyModifier to apply for this key.
      */
-    addMapping(channel, midiNote, mapping)
-    {
-        if (this._keyMappings[channel] === undefined)
-        {
-            this._keyMappings[channel] = [];
+    public addMapping(channel: number, midiNote: number, mapping: KeyModifier) {
+        if (this.keyMappings[channel] === undefined) {
+            this.keyMappings[channel] = [];
         }
-        this._keyMappings[channel][midiNote] = mapping;
+        this.keyMappings[channel][midiNote] = mapping;
     }
-    
+
     // noinspection JSUnusedGlobalSymbols
     /**
-     * @param channel {number}
-     * @param midiNote {number}
+     * Delete a mapping for a MIDI key.
+     * @param channel The MIDI channel number.
+     * @param midiNote The MIDI note number (0-127).
      */
-    deleteMapping(channel, midiNote)
-    {
-        if (this._keyMappings[channel]?.[midiNote] === undefined)
-        {
+    deleteMapping(channel: number, midiNote: number) {
+        if (this.keyMappings[channel]?.[midiNote] === undefined) {
             return;
         }
-        this._keyMappings[channel][midiNote] = undefined;
+        this.keyMappings[channel][midiNote] = undefined;
     }
-    
+
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Clear all mappings
+     * Clear all key mappings.
      */
-    clearMappings()
-    {
-        this._keyMappings = [];
+    clearMappings() {
+        this.keyMappings = [];
     }
-    
+
     /**
-     * @param mappings {KeyModifier[][]}
+     * Sets the key mappings to a new array.
+     * @param mappings A 2D array where the first dimension is the channel number and the second dimension is the MIDI note number.
      */
-    setMappings(mappings)
-    {
-        this._keyMappings = mappings;
+    setMappings(mappings: (KeyModifier | undefined)[][]) {
+        this.keyMappings = mappings;
     }
-    
+
     /**
-     * @returns {KeyModifier[][]}
+     * Returns the current key mappings.
      */
-    getMappings()
-    {
-        return this._keyMappings;
+    getMappings(): (KeyModifier | undefined)[][] {
+        return this.keyMappings;
     }
-    
+
     /**
-     * @param channel {number}
-     * @param midiNote {number}
-     * @returns {number} velocity, -1 if unchanged
+     * Gets the velocity override for a MIDI key.
+     * @param channel The MIDI channel number.
+     * @param midiNote The MIDI note number (0-127).
+     * @returns The velocity override, or -1 if no override is set.
      */
-    getVelocity(channel, midiNote)
-    {
-        return this._keyMappings[channel]?.[midiNote]?.velocity ?? -1;
+    getVelocity(channel: number, midiNote: number): number {
+        return this.keyMappings[channel]?.[midiNote]?.velocity ?? -1;
     }
-    
+
     /**
-     * @param channel {number}
-     * @param midiNote {number}
-     * @returns {number} linear gain
+     * Gets the gain override for a MIDI key.
+     * @param channel The MIDI channel number.
+     * @param midiNote The MIDI note number (0-127).
+     * @returns The gain override, or 1 if no override is set.
      */
-    getGain(channel, midiNote)
-    {
-        return this._keyMappings[channel]?.[midiNote]?.gain ?? 1;
+    getGain(channel: number, midiNote: number): number {
+        return this.keyMappings[channel]?.[midiNote]?.gain ?? 1;
     }
-    
+
     /**
-     * @param channel {number}
-     * @param midiNote {number}
-     * @returns {boolean}
+     * Checks if a MIDI key has an override for the patch.
+     * @param channel The MIDI channel number.
+     * @param midiNote The MIDI note number (0-127).
+     * @returns  True if the key has an override patch, false otherwise.
      */
-    hasOverridePatch(channel, midiNote)
-    {
-        const bank = this._keyMappings[channel]?.[midiNote]?.patch?.bank;
+    hasOverridePatch(channel: number, midiNote: number): boolean {
+        const bank = this.keyMappings[channel]?.[midiNote]?.patch?.bank;
         return bank !== undefined && bank >= 0;
     }
-    
+
     /**
-     * @param channel {number}
-     * @param midiNote {number}
-     * @returns {{bank: number, program: number}} -1 if unchanged
+     * Gets the patch override for a MIDI key.
+     * @param channel The MIDI channel number.
+     * @param midiNote The MIDI note number (0-127).
+     * @returns An object containing the bank and program numbers.
+     * @throws Error if no modifier is set for the key.
      */
-    getPatch(channel, midiNote)
-    {
-        const modifier = this._keyMappings[channel]?.[midiNote];
-        if (modifier)
-        {
+    getPatch(
+        channel: number,
+        midiNote: number
+    ): { bank: number; program: number } {
+        const modifier = this.keyMappings[channel]?.[midiNote];
+        if (modifier) {
             return modifier.patch;
         }
         throw new Error("No modifier.");
     }
-    
 }

@@ -3,13 +3,13 @@ import {
     DLSSources,
     modulatorCurveTypes,
     modulatorSources
-} from "../../enums.ts";
-import { Articulator } from "./articulator.js";
-import { SpessaSynthWarn } from "../../../utils/loggin.js";
-import { generatorTypes } from "../generator_types.js";
-import { midiControllers } from "../../../midi/enums.ts";
-import type { Generator } from "../generator.ts";
-import type { Modulator } from "../modulator.ts";
+} from "../../enums";
+import { Articulator } from "./articulator";
+import { SpessaSynthWarn } from "../../../utils/loggin";
+import { generatorTypes } from "../generator_types";
+import { midiControllers } from "../../../midi/enums";
+import type { Generator } from "../generator";
+import type { Modulator } from "../modulator";
 
 function getDLSSourceFromSf2Source(cc: 0 | 1, index: number) {
     if (cc) {

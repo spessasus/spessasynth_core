@@ -1,6 +1,6 @@
-import { BasicPreset } from "../basic_soundbank/basic_preset.js";
-import { DLSInstrument } from "./dls_instrument.js";
-import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank.ts";
+import { BasicPreset } from "../basic_soundbank/basic_preset";
+import { DLSInstrument } from "./dls_instrument";
+import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 
 export class DLSPreset extends BasicPreset {
     dlsInstrument: DLSInstrument = new DLSInstrument();
@@ -26,7 +26,6 @@ export class DLSPreset extends BasicPreset {
             this.bank = 128;
         }
 
-        const zone = this.createZone();
-        zone.setInstrument(this.dlsInstrument);
+        this.createZone(this.dlsInstrument);
     }
 }

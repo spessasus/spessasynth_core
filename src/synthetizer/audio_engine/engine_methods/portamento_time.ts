@@ -21,72 +21,67 @@ CC 5 value  Portamento time
    127        480.000 s
 */
 
-const portamentoLookup = {
-    0: 0.000,
+const portamentoLookup: Record<number, number> = {
+    0: 0.0,
     1: 0.006,
     2: 0.023,
-    4: 0.050,
-    8: 0.110,
-    16: 0.250,
-    32: 0.500,
-    64: 2.060,
-    80: 4.200,
-    96: 8.400,
-    112: 19.500,
-    116: 26.700,
-    120: 40.000,
-    124: 80.000,
-    127: 480.000
-};
+    4: 0.05,
+    8: 0.11,
+    16: 0.25,
+    32: 0.5,
+    64: 2.06,
+    80: 4.2,
+    96: 8.4,
+    112: 19.5,
+    116: 26.7,
+    120: 40.0,
+    124: 80.0,
+    127: 480.0
+} as const;
 
-/**
- * @param value {number}
- * @returns {number}
- */
-function getLookup(value)
-{
-    if (portamentoLookup[value] !== undefined)
-    {
+function getLookup(value: number): number {
+    if (portamentoLookup[value] !== undefined) {
         return portamentoLookup[value];
     }
     // get the nearest lower and upper points from the lookup table
     let lower = null;
     let upper = null;
-    
-    for (let key of Object.keys(portamentoLookup))
-    {
-        key = parseInt(key);
-        if (key < value && (lower === null || key > lower))
-        {
+
+    for (const k of Object.keys(portamentoLookup)) {
+        const key = parseInt(k);
+        if (key < value && (lower === null || key > lower)) {
             lower = key;
         }
-        if (key > value && (upper === null || key < upper))
-        {
+        if (key > value && (upper === null || key < upper)) {
             upper = key;
         }
     }
-    
+
     // if we have found both lower and upper points, perform linear interpolation
-    if (lower !== null && upper !== null)
-    {
-        let lowerTime = portamentoLookup[lower];
-        let upperTime = portamentoLookup[upper];
-        
+    if (lower !== null && upper !== null) {
+        const lowerTime = portamentoLookup[lower];
+        const upperTime = portamentoLookup[upper];
+
         // linear interpolation
-        return lowerTime + ((value - lower) * (upperTime - lowerTime)) / (upper - lower);
+        return (
+            lowerTime +
+            ((value - lower) * (upperTime - lowerTime)) / (upper - lower)
+        );
     }
     return 0;
 }
 
-
 /**
- * Converts portamento time to seconds
- * @param time {number} 0 - 127
- * @param distance {number} distance in keys
- * @returns {number} seconds
+ * Converts portamento time to seconds.
+ * @param time MIDI portamento time (CC 5 value) (0-127)
+ * @param distance Distance in semitones (keys) to slide over.
+ * @returns The portamento time in seconds.
  */
-export function portamentoTimeToSeconds(time, distance)
-{
-    // this seems to work fine for the MIDIs I have
+export function portamentoTimeToSeconds(
+    time: number,
+    distance: number
+): number {
+    // this seems to work fine for the MIDIs I have.
+    // why? No idea, but it does. :-)
     return getLookup(time) * (distance / 30);
 }

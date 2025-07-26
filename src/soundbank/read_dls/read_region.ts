@@ -1,12 +1,19 @@
-import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
-import { findRIFFListType, readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { Generator } from "../basic_soundbank/generator.js";
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
-import { SpessaSynthWarn } from "../../utils/loggin.js";
-import type { DownloadableSounds } from "./dls_soundfont.js";
-import type { DLSInstrument } from "./dls_instrument.ts";
-import { readLart } from "./read_lart.ts";
-import type { DLSSample } from "./dls_sample.ts";
+import {
+    readLittleEndian,
+    signedInt16
+} from "../../utils/byte_functions/little_endian";
+import {
+    findRIFFListType,
+    readRIFFChunk,
+    RiffChunk
+} from "../basic_soundbank/riff_chunk";
+import { Generator } from "../basic_soundbank/generator";
+import { generatorTypes } from "../basic_soundbank/generator_types";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import type { DownloadableSounds } from "./dls_soundfont";
+import type { DLSInstrument } from "./dls_instrument";
+import { readLart } from "./read_lart";
+import type { DLSSample } from "./dls_sample";
 
 export function readRegion(
     dls: DownloadableSounds,
@@ -45,8 +52,30 @@ export function readRegion(
         velMin = 0;
     }
     // cannot do the same to key zones sadly
+
+    // wave link
+    const waveLinkChunk = regionChunks.find((c) => c.header === "wlnk");
+    if (waveLinkChunk === undefined) {
+        // No wave link means no sample. What? Why is it even here then?
+        return undefined;
+    }
+
+    // flags
+    readLittleEndian(waveLinkChunk.chunkData, 2);
+    // phase group
+    readLittleEndian(waveLinkChunk.chunkData, 2);
+    // channel
+    readLittleEndian(waveLinkChunk.chunkData, 4);
+    // sampleID
+    const sampleID = readLittleEndian(waveLinkChunk.chunkData, 4);
+    // hacky cast, but works
+    const sample: DLSSample = dls.samples[sampleID] as DLSSample;
+    if (sample === undefined) {
+        throw new Error("Invalid sample ID!");
+    }
+
     // create zone
-    const zone = instrument.createZone();
+    const zone = instrument.createZone(sample);
     // apply ranges
     zone.keyRange = { min: keyMin, max: keyMax };
     zone.velRange = { min: velMin, max: velMax };
@@ -112,27 +141,6 @@ export function readRegion(
         loop.start = readLittleEndian(waveSampleChunk.chunkData, 4);
         const loopLength = readLittleEndian(waveSampleChunk.chunkData, 4);
         loop.end = loop.start + loopLength;
-    }
-
-    // wave link
-    const waveLinkChunk = regionChunks.find((c) => c.header === "wlnk");
-    if (waveLinkChunk === undefined) {
-        // No wave link means no sample. What? Why is it even here then?
-        return undefined;
-    }
-
-    // flags
-    readLittleEndian(waveLinkChunk.chunkData, 2);
-    // phase group
-    readLittleEndian(waveLinkChunk.chunkData, 2);
-    // channel
-    readLittleEndian(waveLinkChunk.chunkData, 4);
-    // sampleID
-    const sampleID = readLittleEndian(waveLinkChunk.chunkData, 4);
-    // hacky cast, but works
-    const sample: DLSSample = dls.samples[sampleID] as DLSSample;
-    if (sample === undefined) {
-        throw new Error("Invalid sample ID!");
     }
 
     // this correction overrides the sample gain correction

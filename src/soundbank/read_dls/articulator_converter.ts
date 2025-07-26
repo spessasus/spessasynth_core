@@ -3,20 +3,20 @@ import {
     DLSSources,
     modulatorCurveTypes,
     modulatorSources
-} from "../enums.ts";
+} from "../enums";
 import {
     DecodedModulator,
     getModSourceEnum,
     Modulator
-} from "../basic_soundbank/modulator.js";
+} from "../basic_soundbank/modulator";
 
-import { SpessaSynthWarn } from "../../utils/loggin.js";
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
-import { midiControllers } from "../../midi/enums.ts";
-import type { ModulatorNumericBool } from "../types.ts";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import { generatorTypes } from "../basic_soundbank/generator_types";
+import { midiControllers } from "../../midi/enums";
+import type { ModulatorNumericBool, ModulatorSourceIndex } from "../types";
 
 function getSF2SourceFromDLS(source: number) {
-    let sourceEnum = undefined;
+    let sourceEnum: ModulatorSourceIndex | undefined = undefined;
     let isCC = false;
     switch (source) {
         default:
@@ -300,7 +300,7 @@ export function getSF2ModulatorFromArticulator(
             sourceIsBipolar as ModulatorNumericBool,
             sourceIsNegative as ModulatorNumericBool,
             sf2Source.isCC ? 1 : 0,
-            sf2Source.enum as modulatorSources
+            sf2Source.enum as ModulatorSourceIndex
         );
     }
 
@@ -319,7 +319,7 @@ export function getSF2ModulatorFromArticulator(
         secSourceIsBipolar as ModulatorNumericBool,
         secSourceIsNegative as ModulatorNumericBool,
         sf2SecondSource.isCC ? 1 : 0,
-        sf2SecondSource.enum as modulatorSources
+        sf2SecondSource.enum as ModulatorSourceIndex
     );
 
     if (swapSources) {

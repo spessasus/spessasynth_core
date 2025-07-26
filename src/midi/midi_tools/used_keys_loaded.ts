@@ -2,20 +2,17 @@ import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants.js";
-import {
-    chooseBank,
-    isSystemXG,
-    parseBankSelect
-} from "../../utils/xg_hacks.js";
-import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector.js";
-import { SoundFontManager } from "../../synthetizer/audio_engine/engine_components/soundfont_manager.js";
-import { messageTypes, midiControllers } from "../enums.ts";
-import type { BasicMIDI } from "../basic_midi.ts";
-import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank.ts";
-import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset.ts";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
+import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
+import { SoundFontManager } from "../../synthetizer/audio_engine/engine_components/soundfont_manager";
+import { messageTypes, midiControllers } from "../enums";
+import type { BasicMIDI } from "../basic_midi";
+import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
+import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
+import type { SynthSystem } from "../../synthetizer/types";
 
 type InternalChannelType = {
     program: number;
@@ -60,7 +57,7 @@ export function getUsedProgramsAndKeys(
     }
 
     // check for xg
-    let system = "gs";
+    let system: SynthSystem = "gs";
 
     function updateString(ch: InternalChannelType) {
         const bank = chooseBank(

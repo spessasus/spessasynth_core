@@ -1,63 +1,65 @@
-import { consoleColors } from "../../../../utils/other.js";
-import { SpessaSynthInfo } from "../../../../utils/loggin.js";
-import { modulatorSources } from "../../../../soundbank/basic_soundbank/modulator.js";
+import { consoleColors } from "../../../../utils/other";
+import { SpessaSynthInfo } from "../../../../utils/loggin";
 import {
-    customControllers,
     customResetArray,
-    dataEntryStates,
     NON_CC_INDEX_OFFSET,
     PORTAMENTO_CONTROL_UNSET,
     resetArray
-} from "../../engine_components/controller_tables.js";
-import {
-    DEFAULT_PERCUSSION,
-    DEFAULT_SYNTH_MODE
-} from "../../synth_constants.js";
-import { getDefaultBank } from "../../../../utils/xg_hacks.js";
-import { midiControllers } from "../../../../midi/enums.ts";
+} from "../../engine_components/controller_tables";
+import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../synth_constants";
+import { getDefaultBank } from "../../../../utils/xg_hacks";
+import { midiControllers } from "../../../../midi/enums";
+import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import type { SpessaSynthProcessor } from "../../main_processor";
+import { modulatorSources } from "../../../../soundbank/enums";
+import { customControllers, dataEntryStates } from "../../../enums";
 
 /**
- * Full system reset
- * @this {SpessaSynthProcessor}
- * @param log {boolean}
+ * Executes a full system reset of all controllers.
+ * This will reset all controllers to their default values,
+ * except for the locked controllers.
  */
-export function resetAllControllers(log = true) {
+export function resetAllControllers(
+    this: SpessaSynthProcessor,
+    log: boolean = true
+) {
     if (log) {
         SpessaSynthInfo("%cResetting all controllers!", consoleColors.info);
     }
-    this.callEvent("allcontrollerreset", undefined);
-    this.setSystem(DEFAULT_SYNTH_MODE);
+    this.privateProps.callEvent("allcontrollerreset", undefined);
+    this.setMasterParameter("midiSystem", DEFAULT_SYNTH_MODE);
     for (
         let channelNumber = 0;
-        channelNumber < this.midiAudioChannels.length;
+        channelNumber < this.midiChannels.length;
         channelNumber++
     ) {
-        /**
-         * @type {MidiAudioChannel}
-         **/
-        const ch = this.midiAudioChannels[channelNumber];
+        const ch: MIDIChannel = this.midiChannels[channelNumber];
 
         ch.resetControllers();
         // if preset is unlocked, switch to non-drums and call event
-        if (!ch.lockPreset) {
-            ch.setBankSelect(getDefaultBank(this.system));
+        if (
+            !ch.lockPreset &&
+            this.privateProps.drumPreset &&
+            this.privateProps.defaultPreset
+        ) {
+            ch.setBankSelect(getDefaultBank(this.privateProps.system));
             if (channelNumber % 16 === DEFAULT_PERCUSSION) {
-                ch.setPreset(this.drumPreset);
+                ch.setPreset(this.privateProps.drumPreset);
                 ch.drumChannel = true;
-                this.callEvent("drumchange", {
+                this.privateProps.callEvent("drumchange", {
                     channel: channelNumber,
                     isDrumChannel: true
                 });
             } else {
                 ch.drumChannel = false;
-                ch.setPreset(this.defaultPreset);
-                this.callEvent("drumchange", {
+                ch.setPreset(this.privateProps.defaultPreset);
+                this.privateProps.callEvent("drumchange", {
                     channel: channelNumber,
                     isDrumChannel: false
                 });
             }
         } else {
-            this.callEvent("drumchange", {
+            this.privateProps.callEvent("drumchange", {
                 channel: channelNumber,
                 isDrumChannel: ch.drumChannel
             });
@@ -68,22 +70,20 @@ export function resetAllControllers(log = true) {
         }
         const presetBank = ch.preset?.bank;
         // call program change
-        this.callEvent("programchange", {
+        this.privateProps.callEvent("programchange", {
             channel: channelNumber,
             program: ch.preset?.program,
             bank: presetBank
         });
 
         for (let ccNum = 0; ccNum < 128; ccNum++) {
-            if (
-                this.midiAudioChannels[channelNumber].lockedControllers[ccNum]
-            ) {
+            if (this.midiChannels[channelNumber].lockedControllers[ccNum]) {
                 // was not reset so restore the value
-                this.callEvent("controllerchange", {
+                this.privateProps.callEvent("controllerchange", {
                     channel: channelNumber,
                     controllerNumber: ccNum,
                     controllerValue:
-                        this.midiAudioChannels[channelNumber].midiControllers[
+                        this.midiChannels[channelNumber].midiControllers[
                             ccNum
                         ] >> 7
                 });
@@ -92,17 +92,17 @@ export function resetAllControllers(log = true) {
 
         // restore pitch wheel
         if (
-            this.midiAudioChannels[channelNumber].lockedControllers[
+            !this.midiChannels[channelNumber].lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-            ] === false
+            ]
         ) {
             const val =
-                this.midiAudioChannels[channelNumber].midiControllers[
+                this.midiChannels[channelNumber].midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
                 ];
             const msb = val >> 7;
             const lsb = val & 0x7f;
-            this.callEvent("pitchwheel", {
+            this.privateProps.callEvent("pitchwheel", {
                 channel: channelNumber,
                 MSB: msb,
                 LSB: lsb
@@ -111,34 +111,35 @@ export function resetAllControllers(log = true) {
 
         // restore channel pressure
         if (
-            this.midiAudioChannels[channelNumber].lockedControllers[
+            !this.midiChannels[channelNumber].lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
-            ] === false
+            ]
         ) {
             const val =
-                this.midiAudioChannels[channelNumber].midiControllers[
+                this.midiChannels[channelNumber].midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
                 ] >> 7;
-            this.callEvent("channelpressure", {
+            this.privateProps.callEvent("channelpressure", {
                 channel: channelNumber,
                 pressure: val
             });
         }
     }
-    this.tunings = [];
-    this.tunings = [];
+    this.privateProps.tunings = [];
+    this.privateProps.tunings = [];
     for (let i = 0; i < 128; i++) {
-        this.tunings.push([]);
+        this.privateProps.tunings.push([]);
     }
 
     this.setMIDIVolume(1);
 }
 
 /**
- * Resets all controllers for channel
- * @this {MidiAudioChannel}
+ * Reset all controllers for channel.
+ * This will reset all controllers to their default values,
+ * except for the locked controllers.
  */
-export function resetControllers() {
+export function resetControllers(this: MIDIChannel) {
     this.channelOctaveTuning.fill(0);
 
     // reset the array
@@ -173,10 +174,7 @@ export function resetControllers() {
     this.resetParameters();
 }
 
-/**
- * @type {Set<midiControllers|number>}
- */
-export const nonResetableCCs = new Set([
+export const nonResettableCCs = new Set<midiControllers>([
     midiControllers.bankSelect,
     midiControllers.lsbForControl0BankSelect,
     midiControllers.mainVolume,
@@ -198,14 +196,13 @@ export const nonResetableCCs = new Set([
     midiControllers.vibratoDepth,
     midiControllers.vibratoDelay,
     midiControllers.soundController10
-]);
+] as const);
 
 /**
- * Reset all controllers for channel, but RP-15 compliant
- *  https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
- *  @this {MidiAudioChannel}
+ * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
+ * Reset controllers according to RP-15 Recommended Practice.
  */
-export function resetControllersRP15Compliant() {
+export function resetControllersRP15Compliant(this: MIDIChannel) {
     // reset tunings
     this.channelOctaveTuning.fill(0);
 
@@ -216,7 +213,10 @@ export function resetControllersRP15Compliant() {
 
     for (let i = 0; i < 128; i++) {
         const resetValue = resetArray[i];
-        if (!nonResetableCCs.has(i) && resetValue !== this.midiControllers[i]) {
+        if (
+            !nonResettableCCs.has(i as midiControllers) &&
+            resetValue !== this.midiControllers[i]
+        ) {
             if (i === midiControllers.portamentoControl) {
                 this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
             } else {
@@ -229,9 +229,11 @@ export function resetControllersRP15Compliant() {
 }
 
 /**
- * @this {MidiAudioChannel}
+ * Reset all parameters to their default values.
+ * This includes NRPN and RPN controllers, data entry state,
+ * and generator overrides and offsets.
  */
-export function resetParameters() {
+export function resetParameters(this: MIDIChannel) {
     /**
      * reset the state machine to idle
      */

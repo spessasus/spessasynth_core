@@ -1,9 +1,9 @@
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { readBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian.js";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants.js";
-import type { BasicMIDI } from "../basic_midi.ts";
-import type { MIDIMessage } from "../midi_message.ts";
-import type { NoteTime } from "../types.ts";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { readBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import type { BasicMIDI } from "../basic_midi";
+import type { MIDIMessage } from "../midi_message";
+import type { NoteTime } from "../types";
 
 /**
  * Calculates all note times in seconds.

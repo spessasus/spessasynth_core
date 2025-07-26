@@ -1,9 +1,9 @@
-import { SpessaSynthWarn } from "../../utils/loggin.js";
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper.ts";
-import { sampleTypes } from "../enums.ts";
-import type { BasicInstrument } from "./basic_instrument.ts";
-import type { SampleEncodingFunction } from "../types.ts";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
+import { sampleTypes } from "../enums";
+import type { BasicInstrument } from "./basic_instrument";
+import type { SampleEncodingFunction } from "../types";
 
 // should be reasonable for most cases
 const RESAMPLE_RATE = 48000;
@@ -118,6 +118,16 @@ export class BasicSample {
      */
     get useCount() {
         return this.linkedInstruments.length;
+    }
+
+    // The sample's name.
+    get name(): string {
+        return this.sampleName;
+    }
+
+    // The sample's name.
+    set name(value: string) {
+        this.sampleName = value;
     }
 
     /**

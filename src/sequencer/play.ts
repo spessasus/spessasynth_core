@@ -1,38 +1,46 @@
-import { getEvent } from "../midi/midi_message.js";
-import { resetArray } from "../synthetizer/audio_engine/engine_components/controller_tables.js";
-import { nonResetableCCs } from "../synthetizer/audio_engine/engine_methods/controller_control/reset_controllers.js";
-import { messageTypes, midiControllers } from "../midi/enums.ts";
+import { getEvent, MIDIMessage } from "../midi/midi_message";
+import { resetArray } from "../synthetizer/audio_engine/engine_components/controller_tables";
+import { nonResettableCCs } from "../synthetizer/audio_engine/engine_methods/controller_control/reset_controllers";
+import { messageTypes, midiControllers } from "../midi/enums";
+import type { SpessaSynthSequencer } from "./sequencer_engine";
 
 // an array with preset default values
 const defaultControllerArray = resetArray.slice(0, 128);
 
 /**
- * plays from start to the target time, excluding note messages (to get the synth to the correct state)
- * @private
- * @param time {number} in seconds
- * @param ticks {number} optional MIDI ticks, when given is used instead of time
- * @returns {boolean} true if the midi file is not finished
- * @this {SpessaSynthSequencer}
+ * Plays the MIDI file to a specific time or ticks.
+ * @param time in seconds.
+ * @param ticks optional MIDI ticks, when given is used instead of time.
+ * @returns true if the MIDI file is not finished.
  */
-export function _playTo(time, ticks = undefined) {
+export function playToInternal(
+    this: SpessaSynthSequencer,
+    time: number,
+    ticks: number | undefined = undefined
+): boolean {
+    if (!this.midiData) {
+        throw new Error("Unexpected lack of MIDI data in sequencer!");
+    }
     this.oneTickToSeconds = 60 / (120 * this.midiData.timeDivision);
     // reset
     this.synth.resetAllControllers();
     this.sendMIDIReset();
-    this._resetTimers();
+    this.resetTimers();
 
-    const channelsToSave = this.synth.midiAudioChannels.length;
+    // we save the pitch bends, programs and controllers here
+    // to only send them once after going through the events
+
+    const channelsToSave = this.synth.midiChannels.length;
     /**
      * save pitch bends here and send them only after
-     * @type {number[]}
      */
-    const pitchBends = Array(channelsToSave).fill(8192);
+    const pitchBends: number[] = Array(channelsToSave).fill(8192);
 
     /**
      * Save programs here and send them only after
-     * @type {{program: number, bank: number, actualBank: number}[]}
      */
-    const programs = [];
+    const programs: { program: number; bank: number; actualBank: number }[] =
+        [];
     for (let i = 0; i < channelsToSave; i++) {
         programs.push({
             program: -1,
@@ -41,51 +49,53 @@ export function _playTo(time, ticks = undefined) {
         });
     }
 
-    const isCCNonSkippable = (controllerNumber) =>
-        controllerNumber === midiControllers.dataDecrement ||
-        controllerNumber === midiControllers.dataIncrement ||
-        controllerNumber === midiControllers.dataEntryMsb ||
-        controllerNumber === midiControllers.dataDecrement ||
-        controllerNumber === midiControllers.lsbForControl6DataEntry ||
-        controllerNumber === midiControllers.RPNLsb ||
-        controllerNumber === midiControllers.RPNMsb ||
-        controllerNumber === midiControllers.NRPNLsb ||
-        controllerNumber === midiControllers.NRPNMsb ||
-        controllerNumber === midiControllers.bankSelect ||
-        controllerNumber === midiControllers.lsbForControl0BankSelect ||
-        controllerNumber === midiControllers.resetAllControllers;
+    const isCCNonSkippable = (cc: midiControllers) =>
+        cc === midiControllers.dataDecrement ||
+        cc === midiControllers.dataIncrement ||
+        cc === midiControllers.dataEntryMsb ||
+        cc === midiControllers.lsbForControl6DataEntry ||
+        cc === midiControllers.RPNLsb ||
+        cc === midiControllers.RPNMsb ||
+        cc === midiControllers.NRPNLsb ||
+        cc === midiControllers.NRPNMsb ||
+        cc === midiControllers.bankSelect ||
+        cc === midiControllers.lsbForControl0BankSelect ||
+        cc === midiControllers.resetAllControllers;
 
     /**
      * Save controllers here and send them only after
-     * @type {number[][]}
      */
-    const savedControllers = [];
+    const savedControllers: number[][] = [];
     for (let i = 0; i < channelsToSave; i++) {
-        savedControllers.push(Array.from(defaultControllerArray));
+        savedControllers.push(
+            Array.from(defaultControllerArray) as midiControllers[]
+        );
     }
 
     /**
      * RP-15 compliant reset
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
-     * @param chan {number}
      */
-    function resetAllControlllers(chan) {
+    function resetAllControlllers(chan: number) {
         // reset pitch bend
         pitchBends[chan] = 8192;
         if (savedControllers?.[chan] === undefined) {
             return;
         }
         for (let i = 0; i < defaultControllerArray.length; i++) {
-            if (!nonResetableCCs.has(i)) {
-                savedControllers[chan][i] = defaultControllerArray[i];
+            if (!nonResettableCCs.has(i as midiControllers)) {
+                savedControllers[chan][i] = defaultControllerArray[
+                    i
+                ] as midiControllers;
             }
         }
     }
 
     while (true) {
         // find the next event
-        let trackIndex = this._findFirstEventIndex();
-        const event = this.tracks[trackIndex][this.eventIndex[trackIndex]];
+        let trackIndex = this.findFirstEventIndex();
+        const event: MIDIMessage =
+            this.midiData.tracks[trackIndex][this.eventIndex[trackIndex]];
         if (ticks !== undefined) {
             if (event.ticks >= ticks) {
                 break;
@@ -109,10 +119,10 @@ export function _playTo(time, ticks = undefined) {
                 if (savedControllers[channel] === undefined) {
                     savedControllers[channel] = Array.from(
                         defaultControllerArray
-                    );
+                    ) as midiControllers[];
                 }
                 savedControllers[channel][midiControllers.portamentoControl] =
-                    event.messageData[0];
+                    event.messageData[0] as midiControllers;
                 break;
 
             case messageTypes.noteOff:
@@ -124,7 +134,7 @@ export function _playTo(time, ticks = undefined) {
                     (event.messageData[1] << 7) | event.messageData[0];
                 break;
 
-            case messageTypes.programChange:
+            case messageTypes.programChange: {
                 // empty tracks cannot program change
                 if (
                     this.midiData.isMultiPort &&
@@ -136,8 +146,9 @@ export function _playTo(time, ticks = undefined) {
                 p.program = event.messageData[0];
                 p.actualBank = p.bank;
                 break;
+            }
 
-            case messageTypes.controllerChange:
+            case messageTypes.controllerChange: {
                 // empty tracks cannot controller change
                 if (
                     this.midiData.isMultiPort &&
@@ -146,7 +157,8 @@ export function _playTo(time, ticks = undefined) {
                     break;
                 }
                 // do not skip data entries
-                const controllerNumber = event.messageData[0];
+                const controllerNumber = event
+                    .messageData[0] as midiControllers;
                 if (isCCNonSkippable(controllerNumber)) {
                     const ccV = event.messageData[1];
                     if (controllerNumber === midiControllers.bankSelect) {
@@ -171,22 +183,24 @@ export function _playTo(time, ticks = undefined) {
                     if (savedControllers[channel] === undefined) {
                         savedControllers[channel] = Array.from(
                             defaultControllerArray
-                        );
+                        ) as midiControllers[];
                     }
-                    savedControllers[channel][controllerNumber] =
-                        event.messageData[1];
+                    savedControllers[channel][controllerNumber] = event
+                        .messageData[1] as midiControllers;
                 }
                 break;
+            }
 
             default:
-                this._processEvent(event, trackIndex);
+                this.processEvent(event, trackIndex);
                 break;
         }
 
         this.eventIndex[trackIndex]++;
         // find the next event
-        trackIndex = this._findFirstEventIndex();
-        const nextEvent = this.tracks[trackIndex][this.eventIndex[trackIndex]];
+        trackIndex = this.findFirstEventIndex();
+        const nextEvent =
+            this.midiData.tracks[trackIndex][this.eventIndex[trackIndex]];
         if (nextEvent === undefined) {
             this.stop();
             return false;
@@ -215,7 +229,7 @@ export function _playTo(time, ticks = undefined) {
                 savedControllers[channelNumber].forEach((value, index) => {
                     if (
                         value !== defaultControllerArray[index] &&
-                        !isCCNonSkippable(index)
+                        !isCCNonSkippable(index as midiControllers)
                     ) {
                         this.sendMIDICC(channelNumber, index, value);
                     }
@@ -258,7 +272,7 @@ export function _playTo(time, ticks = undefined) {
                 savedControllers[channelNumber].forEach((value, index) => {
                     if (
                         value !== defaultControllerArray[index] &&
-                        !isCCNonSkippable(index)
+                        !isCCNonSkippable(index as midiControllers)
                     ) {
                         this.synth.controllerChange(
                             channelNumber,
@@ -291,71 +305,4 @@ export function _playTo(time, ticks = undefined) {
         }
     }
     return true;
-}
-
-/**
- * Starts the playback
- * @param resetTime {boolean} If true, time is set to 0 s
- * @this {SpessaSynthSequencer}
- */
-export function play(resetTime = false) {
-    if (this.midiData === undefined) {
-        return;
-    }
-
-    // reset the time if necessary
-    if (resetTime) {
-        this.pausedTime = undefined;
-        this.currentTime = 0;
-        return;
-    }
-
-    if (this.currentTime >= this.duration) {
-        this.pausedTime = undefined;
-        this.currentTime = 0;
-        return;
-    }
-
-    // unpause if paused
-    if (this.paused) {
-        // adjust the start time
-        this._recalculateStartTime(this.pausedTime);
-        this.pausedTime = undefined;
-    }
-    if (!this.sendMIDIMessages) {
-        this.playingNotes.forEach((n) => {
-            this.synth.noteOn(n.channel, n.midiNote, n.velocity);
-        });
-    }
-    this.setProcessHandler();
-}
-
-/**
- * @this {SpessaSynthSequencer}
- * @param ticks {number}
- */
-export function setTimeTicks(ticks) {
-    if (!this.midiData) {
-        return;
-    }
-    this.stop();
-    this.playingNotes = [];
-    this.pausedTime = undefined;
-    this?.onTimeChange?.(this.midiData.MIDIticksToSeconds(ticks));
-    const isNotFinished = this._playTo(0, ticks);
-    this._recalculateStartTime(this.playedTime);
-    if (!isNotFinished) {
-        return;
-    }
-    this.play();
-}
-
-/**
- * @param time
- * @private
- * @this {SpessaSynthSequencer}
- */
-export function _recalculateStartTime(time) {
-    this.absoluteStartTime =
-        this.synth.currentSynthTime - time / this._playbackRate;
 }

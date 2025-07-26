@@ -1,6 +1,6 @@
-import { DecodedModulator } from "../basic_soundbank/modulator.js";
+import { DecodedModulator } from "../basic_soundbank/modulator";
 
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
+import { generatorTypes } from "../basic_soundbank/generator_types";
 
 export const DEFAULT_DLS_REVERB = new DecodedModulator(
     0x00db,

@@ -1,13 +1,16 @@
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators.js";
-import { DLSDestinations, DLSSources } from "../enums.ts";
-import { getSF2ModulatorFromArticulator } from "./articulator_converter.js";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
-import { Generator } from "../basic_soundbank/generator.js";
-import { Modulator } from "../basic_soundbank/modulator.js";
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import {
+    DLS_1_NO_VIBRATO_MOD,
+    DLS_1_NO_VIBRATO_PRESSURE
+} from "./default_dls_modulators";
+import { DLSDestinations, DLSSources } from "../enums";
+import { getSF2ModulatorFromArticulator } from "./articulator_converter";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { Generator } from "../basic_soundbank/generator";
+import { Modulator } from "../basic_soundbank/modulator";
+import { generatorTypes } from "../basic_soundbank/generator_types";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk";
 
 /**
  * Reads the articulator chunk
@@ -193,7 +196,8 @@ export function readArticulation(
                         value
                     );
                     break;
-                case DLSDestinations.pitch: { // split it up
+                case DLSDestinations.pitch: {
+                    // split it up
                     const semi = Math.floor(value / 100);
                     const cents = Math.floor(value - semi * 100);
                     generator = new Generator(generatorTypes.fineTune, cents);

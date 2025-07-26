@@ -1,5 +1,6 @@
-import { absCentsToHz, decibelAttenuationToGain } from "./unit_converter.js";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
+import { absCentsToHz, decibelAttenuationToGain } from "./unit_converter";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { Voice } from "./voice";
 
 /**
  * lowpass_filter.js
@@ -13,129 +14,116 @@ import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_typ
 
 export const FILTER_SMOOTHING_FACTOR = 0.1;
 
-/**
- * @typedef {Object} CachedCoefficient
- * @property {number} a0 - Filter coefficient 1
- * @property {number} a1 - Filter coefficient 2
- * @property {number} a2 - Filter coefficient 3
- * @property {number} a3 - Filter coefficient 4
- * @property {number} a4 - Filter coefficient 5
- */
+// Represents a single cached coefficient.
+type CachedCoefficient = {
+    // Filter coefficient 1.
+    a0: number;
+    // Filter coefficient 2.
+    a1: number;
+    // Filter coefficient 3.
+    a2: number;
+    // Filter coefficient 4.
+    a3: number;
+    // Filter coefficient 5.
+    a4: number;
+};
 
 export class LowpassFilter {
     /**
-     * Cached coefficient calculations
-     * stored as cachedCoefficients[resonanceCb][currentInitialFc]
-     * @type {CachedCoefficient[][]}
-     * @private
+     * Cached coefficient calculations.
+     * stored as cachedCoefficients[resonanceCb][currentInitialFc].
      */
-    static cachedCoefficients = [];
+    private static cachedCoefficients: CachedCoefficient[][] = [];
     /**
-     * Filter coefficient 1
-     * @type {number}
-     */
-    a0 = 0;
-
-    /**
-     * Filter coefficient 2
-     * @type {number}
-     */
-    a1 = 0;
-
-    /**
-     * Filter coefficient 3
-     * @type {number}
-     */
-    a2 = 0;
-
-    /**
-     * Filter coefficient 4
-     * @type {number}
-     */
-    a3 = 0;
-
-    /**
-     * Filter coefficient 5
-     * @type {number}
-     */
-    a4 = 0;
-
-    /**
-     * Input history 1
-     * @type {number}
-     */
-    x1 = 0;
-
-    /**
-     * Input history 2
-     * @type {number}
-     */
-    x2 = 0;
-
-    /**
-     * Output history 1
-     * @type {number}
-     */
-    y1 = 0;
-
-    /**
-     * Output history 2
-     * @type {number}
-     */
-    y2 = 0;
-
-    /**
-     * Resonance in centibels
-     * @type {number}
+     * Resonance in centibels.
      */
     resonanceCb = 0;
-
     /**
-     * Cutoff frequency in absolute cents
-     * @type {number}
+     * Current cutoff frequency in absolute cents.
      */
     currentInitialFc = 13500;
+    /**
+     * Filter coefficient 1.
+     */
+    private a0 = 0;
+    /**
+     * Filter coefficient 2.
+     */
+    private a1 = 0;
+    /**
+     * Filter coefficient 3.
+     */
+    private a2 = 0;
+    /**
+     * Filter coefficient 4.
+     */
+    private a3 = 0;
+    /**
+     * Filter coefficient 5.
+     */
+    private a4 = 0;
+    /**
+     * Input history 1.
+     */
+    private x1 = 0;
+    /**
+     * Input history 2.
+     */
+    private x2 = 0;
+    /**
+     * Output history 1.
+     */
+    private y1 = 0;
+    /**
+     * Output history 2.
+     */
+    private y2 = 0;
+    /**
+     * For tracking the last cutoff frequency in the apply method, absolute cents.
+     * Set to infinity to force recalculation.
+     */
+    private lastTargetCutoff = Infinity;
 
     /**
-     * For tracking the last cutoff frequency in the apply method, absolute cents
-     * Set to infinity to force recalculation
-     * @type {number}
+     * Used for tracking if the filter has been initialized.
      */
-    lastTargetCutoff = Infinity;
+    private initialized = false;
+    /**
+     * Filter's sample rate in Hz.
+     */
+    private sampleRate;
 
     /**
-     * used for tracking if the filter has been initialized
-     * @type {boolean}
+     * Maximum cutoff frequency in Hz.
+     * This is used to prevent aliasing and ensure the filter operates within the valid frequency range.
      */
-    initialized = false;
-    /**
-     * Hertz
-     * @type {number}
-     */
-    sampleRate;
+    private maxCutoff: number;
 
     /**
-     * @param sampleRate {number}
+     * Initializes a new instance of the filter.
+     * @param sampleRate the sample rate of the audio engine in Hz.
      */
-    constructor(sampleRate) {
+    constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
-        /**
-         * @type {number}
-         */
         this.maxCutoff = sampleRate * 0.45;
     }
 
     /**
-     * Applies a low-pass filter to the given buffer
-     * @param voice {Voice} the voice we are working on
-     * @param outputBuffer {Float32Array} the buffer to apply the filter to
-     * @param fcExcursion {number} the addition of modenv and mod lfo in cents to the filter
-     * @param smoothingFactor {number} filter's cutoff frequency smoothing factor
+     * Applies the lowpass filter to the output buffer of a voice.
+     * @param voice The voice to apply the filter to.
+     * @param outputBuffer The output buffer to filter.
+     * @param fcExcursion The frequency excursion in cents to apply to the filter.
+     * @param smoothingFactor The smoothing factor for the filter as determined by the parent synthesizer.
      */
-    static apply(voice, outputBuffer, fcExcursion, smoothingFactor) {
+    static apply(
+        voice: Voice,
+        outputBuffer: Float32Array,
+        fcExcursion: number,
+        smoothingFactor: number
+    ) {
         const initialFc =
             voice.modulatedGenerators[generatorTypes.initialFilterFc];
-        const filter = voice.filter;
+        const filter: LowpassFilter = voice.filter;
 
         if (!filter.initialized) {
             // filter initialization, set the current fc to target
@@ -201,10 +189,11 @@ export class LowpassFilter {
     }
 
     /**
-     * @param filter {LowpassFilter}
-     * @param cutoffCents {number}
+     * Calculates the filter coefficients based on the current resonance and cutoff frequency and caches them.
+     * @param filter The lowpass filter instance to calculate coefficients for.
+     * @param cutoffCents The cutoff frequency in cents.
      */
-    static calculateCoefficients(filter, cutoffCents) {
+    static calculateCoefficients(filter: LowpassFilter, cutoffCents: number) {
         cutoffCents = ~~cutoffCents; // Math.floor
         const qCb = filter.resonanceCb;
         // check if these coefficients were already cached
@@ -228,12 +217,12 @@ export class LowpassFilter {
         // -1 because it's attenuation, and we don't want attenuation
         const resonanceGain = decibelAttenuationToGain(-(qDb - 3.01));
 
-        // the sfspec asks for a reduction in gain based on the Q value.
+        // the sf spec asks for a reduction in gain based on the Q value.
         // note that we calculate it again,
         // without the 3.01-peak offset as it only applies to the coefficients, not the gain.
         const qGain = 1 / Math.sqrt(decibelAttenuationToGain(-qDb));
 
-        // note: no sin or cos tables here as the coefficients are cached
+        // note: no sin or cos tables are used here as the coefficients are cached
         const w = (2 * Math.PI * cutoffHz) / filter.sampleRate;
         const cosw = Math.cos(w);
         const alpha = Math.sin(w) / (2 * resonanceGain);
@@ -245,16 +234,13 @@ export class LowpassFilter {
         const a1 = -2 * cosw;
         const a2 = 1 - alpha;
 
-        /**
-         * set coefficients
-         * @type {CachedCoefficient}
-         */
-        const toCache = {};
-        toCache.a0 = b0 / a0;
-        toCache.a1 = b1 / a0;
-        toCache.a2 = b2 / a0;
-        toCache.a3 = a1 / a0;
-        toCache.a4 = a2 / a0;
+        const toCache: CachedCoefficient = {
+            a0: b0 / a0,
+            a1: b1 / a0,
+            a2: b2 / a0,
+            a3: a1 / a0,
+            a4: a2 / a0
+        };
         filter.a0 = toCache.a0;
         filter.a1 = toCache.a1;
         filter.a2 = toCache.a2;
@@ -264,6 +250,7 @@ export class LowpassFilter {
         if (LowpassFilter.cachedCoefficients[qCb] === undefined) {
             LowpassFilter.cachedCoefficients[qCb] = [];
         }
+        // cache the coefficients
         LowpassFilter.cachedCoefficients[qCb][cutoffCents] = toCache;
     }
 }
@@ -271,7 +258,7 @@ export class LowpassFilter {
 // precompute all the cutoffs for 0q (most common)
 const dummy = new LowpassFilter(44100);
 dummy.resonanceCb = 0;
-// sfspec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
+// sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
 for (let i = 1500; i < 13500; i++) {
     dummy.currentInitialFc = i;
     LowpassFilter.calculateCoefficients(dummy, i);

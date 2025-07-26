@@ -1,13 +1,11 @@
 // process arguments
-import fs from "fs";
-import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
-import { BasicSoundBank } from "../../src/soundbank/basic_soundbank/basic_soundbank.js";
-import { MIDI } from "../../src/midi/midi_loader.js";
+import * as fs from "fs";
+import { BasicMIDI, BasicSoundBank } from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 3) {
     console.info(
-        "Usage: node index.js <sf2/dls input path> <mid input path> <rmi output path>"
+        "Usage: tsx index.ts <sf2/dls input path> <mid input path> <rmi output path>"
     );
     process.exit();
 }
@@ -20,8 +18,8 @@ const outPath = args[2];
 await BasicSoundBank.isSF3DecoderReady;
 
 // load bank and MIDI
-const bank = loadSoundFont(fs.readFileSync(sfPath));
-const midi = new MIDI(fs.readFileSync(midPath));
+const bank = BasicSoundBank.fromArrayBuffer(fs.readFileSync(sfPath).buffer);
+const midi = BasicMIDI.fromArrayBuffer(fs.readFileSync(midPath).buffer);
 console.info("Loaded bank and MIDI!");
 
 // trim sf2 for midi

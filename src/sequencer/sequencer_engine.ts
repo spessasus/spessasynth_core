@@ -1,211 +1,219 @@
-import { _addNewMidiPort, _processEvent } from "./process_event.js";
-import { _findFirstEventIndex, processTick } from "./process_tick.js";
+import { processEventInternal } from "./process_event";
+import { processTick } from "./process_tick";
 import {
-    assignMIDIPort,
-    loadNewSequence,
-    loadNewSongList,
-    nextSong,
-    previousSong
-} from "./song_control.js";
-import { _playTo, _recalculateStartTime, play, setTimeTicks } from "./play.js";
-import {
-    sendMIDICC,
-    sendMIDIMessage,
-    sendMIDIPitchWheel,
-    sendMIDIProgramChange,
-    sendMIDIReset
-} from "./events.js";
-import { SpessaSynthWarn } from "../utils/loggin.js";
+    assingMIDIPortInternal,
+    loadNewSequenceInternal
+} from "./song_control";
+import { playToInternal } from "./play";
+import { SpessaSynthWarn } from "../utils/loggin";
 
-import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/synth_constants.js";
-import { messageTypes, midiControllers } from "../midi/enums.ts";
+import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/synth_constants";
+import { messageTypes, midiControllers } from "../midi/enums";
+import { BasicMIDI } from "../midi/basic_midi";
+import type { SpessaSynthProcessor } from "../synthetizer/audio_engine/main_processor";
+import type { MIDIMessage } from "../midi/midi_message";
 
-class SpessaSynthSequencer {
+export class SpessaSynthSequencer {
     /**
-     * All the sequencer's songs
-     * @type {BasicMIDI[]}
+     * Sequencer's song list.
      */
-    songs = [];
+    public songs: BasicMIDI[] = [];
 
     /**
-     * Current song index
-     * @type {number}
+     * The current song index in the song list.
+     * If shuffleMode is enabled, this is the index of the shuffled song list.
      */
-    songIndex = 0;
+    public songIndex: number = 0;
 
     /**
-     * shuffled song indexes
-     * @type {number[]}
+     * The shuffled song indexes.
+     * This is used when shuffleMode is enabled.
      */
-    shuffledSongIndexes = [];
+    public shuffledSongIndexes: number[] = [];
 
     /**
-     * the synth to use
-     * @type {SpessaSynthProcessor}
+     * The synthesizer connected to the sequencer.
      */
-    synth;
-
+    public synth: SpessaSynthProcessor;
     /**
-     * if the sequencer is active
-     * @type {boolean}
+     * If the MIDI messages should be sent to an event instead of the synth.
+     * This is used by spessasynth_lib to pass them over to Web MIDI API.
      */
-    isActive = false;
-
+    public sendMIDIMessages: boolean = false;
     /**
-     * If the event should instead be sent back to the main thread instead of synth
-     * @type {boolean}
+     * The loop count of the sequencer.
+     * If infinite, it will loop forever.
      */
-    sendMIDIMessages = false;
-
+    public loopCount: number = Infinity;
     /**
-     * sequencer's loop count
-     * @type {number}
+     * The length of the current sequence in seconds.
      */
-    loopCount = Infinity;
-
+    public duration: number = 0;
     /**
-     * event's number in this.events
-     * @type {number[]}
+     * Controls if the sequencer loops (defaults to true).
      */
-    eventIndex = [];
-
+    public loop: boolean = true;
     /**
-     * tracks the time that has already been played
-     * @type {number}
+     * Controls if the sequencer should shuffle the songs in the song list.
+     * If true, the sequencer will play the songs in a random order.
      */
-    playedTime = 0;
-
+    public shuffleMode: boolean = false;
     /**
-     * The (relative) time when the sequencer was paused. If it's not paused, then it's undefined.
-     * @type {number}
+     * The currently loaded MIDI data.
      */
-    pausedTime = undefined;
-
+    public midiData: BasicMIDI = new BasicMIDI();
     /**
-     * Absolute playback startTime, bases on the synth's time
-     * @type {number}
+     * Indicates if the sequencer should skip to the first note on event.
+     * Defaults to true.
      */
-    absoluteStartTime = 0;
+    public skipToFirstNoteOn: boolean = true;
+    /**
+     * Indicates if the sequencer should stay paused when seeking to a new time.
+     * Defaults to false.
+     */
+    public preservePlaybackState: boolean = false;
+    /**
+     * Called when a MIDI message is sent and sendMIDIMessages is true.
+     * @param message the binary MIDI message.
+     */
+    public onMIDIMessage: ((message: number[]) => unknown) | undefined;
+    /**
+     * Called when the time is changed.
+     * It also gets called when a song gets changed.
+     * @param newTime the new time in seconds.
+     */
+    public onTimeChange: ((newTime: number) => unknown) | undefined;
+    /**
+     * Called when the playback stops.
+     * @param isFinished true if the playback stopped because it finished playing the song, false if it was stopped manually.
+     */
+    public onPlaybackStop: ((isFinished: boolean) => unknown) | undefined;
+    /**
+     * Called when the song list is changed.
+     * @param newSongList the new song list.
+     * This is called when the sequencer finishes loading a new song list.
+     */
+    public onSongListChange:
+        | ((newSongList: BasicMIDI[]) => unknown)
+        | undefined;
+    /**
+     * Called when the song changes.
+     * @param songIndex the index of the new song in the song list.
+     * @param autoPlay true if the next song will be played automatically, false if it will not.
+     */
+    public onSongChange:
+        | ((songIndex: number, autoPlay: boolean) => unknown)
+        | undefined;
+    /**
+     * Called when a MIDI Meta event is encountered.
+     * @param e the MIDI message of the meta event.
+     * @param trackIndex the index of the track where the meta event was encountered.
+     */
+    public onMetaEvent:
+        | ((e: MIDIMessage, trackIndex: number) => unknown)
+        | undefined;
+    /**
+     * Called when the loop count changes (decreases).
+     * @param count the new loop count.
+     */
+    public onLoopCountChange: ((count: number) => unknown) | undefined;
+    /**
+     * Processes a single MIDI tick.
+     * Call this every rendering quantum to process the sequencer events in real-time.
+     */
+    public processTick: typeof processTick = processTick.bind(
+        this
+    ) as typeof processTick;
+    /**
+     * The time of the first note in seconds.
+     */
+    protected firstNoteTime: number = 0;
+    /**
+     * How long a single MIDI tick currently lasts in seconds.
+     */
+    protected oneTickToSeconds: number = 0;
+    /**
+     * If the sequencer is currently active (playing or paused)
+     * If there are no songs loaded, this is false.
+     */
+    protected isActive: boolean = false;
+    /**
+     * The current event index for each track.
+     * This is used to track which event is currently being processed for each track.
+     */
+    protected eventIndex: number[] = [];
+    /**
+     * The time that has already been played in the current song.
+     */
+    protected playedTime: number = 0;
+    /**
+     * The paused time of the sequencer.
+     * If the sequencer is not paused, this is undefined.
+     */
+    protected pausedTime: number | undefined = undefined;
+    /**
+     * Absolute time of the sequencer when it started playing.
+     * It is based on the synth's current time.
+     */
+    protected absoluteStartTime: number = 0;
     /**
      * Currently playing notes (for pausing and resuming)
-     * @type {{
-     *     midiNote: number,
-     *     channel: number,
-     *     velocity: number
-     * }[]}
      */
-    playingNotes = [];
-
+    protected playingNotes: {
+        midiNote: number;
+        channel: number;
+        velocity: number;
+    }[] = [];
     /**
-     * controls if the sequencer loops (defaults to true)
-     * @type {boolean}
+     * MIDI Port number for each of the MIDI tracks in the current sequence.
      */
-    loop = true;
-
+    protected midiPorts: number[] = [];
     /**
-     * controls if the songs are ordered randomly
-     * @type {boolean}
+     * This is used to assign new MIDI port offsets to new ports.
      */
-    shuffleMode = false;
-
+    protected midiPortChannelOffset = 0;
     /**
-     * the current track data
-     * @type {BasicMIDI}
-     */
-    midiData = undefined;
-
-    /**
-     * midi port number for the corresponding track
-     * @type {number[]}
-     */
-    midiPorts = [];
-    midiPortChannelOffset = 0;
-    /**
-     * stored as:
+     * Channel offsets for each MIDI port.
+     * Stored as:
      * Record<midi port, channel offset>
-     * @type {Record<number, number>}
      */
-    midiPortChannelOffsets = {};
+    protected midiPortChannelOffsets: Record<number, number> = {};
+    protected assignMIDIPort = assingMIDIPortInternal.bind(this);
+    protected loadNewSequence = loadNewSequenceInternal.bind(this);
+    protected processEvent = processEventInternal.bind(this);
+    protected playTo = playToInternal.bind(this);
 
     /**
-     * @type {boolean}
+     * Initializes a new Sequencer without any songs loaded.
+     * @param spessasynthProcessor the synthesizer processor to use with this sequencer.
      */
-    skipToFirstNoteOn = true;
-
-    /**
-     * If true, seq will stay paused when seeking or changing the playback rate
-     * @type {boolean}
-     */
-    preservePlaybackState = false;
-
-    /**
-     * Called on a MIDI message if sending MIDI messages is enabled
-     * @type {function(message: number[])}
-     */
-    onMIDIMessage;
-
-    /**
-     * Called when the time changes
-     * @type {function(newTime: number)}
-     */
-    onTimeChange;
-
-    /**
-     * Calls when sequencer stops the playback
-     * @type {function(isFinished: boolean)}
-     */
-    onPlaybackStop;
-
-    /**
-     * Calls after the songs have been processed but before the playback begins
-     * @type {function(newSongList: BasicMIDI[])}
-     */
-    onSongListChange;
-
-    /**
-     * Calls when the song is changed (for example, in a playlist)
-     * @type {function(songIndex: number, autoPlay: boolean)}
-     */
-    onSongChange;
-
-    /**
-     * Calls when a meta-event occurs
-     * @type {function(e: MIDIMessage, trackIndex: number)}
-     */
-    onMetaEvent;
-
-    /**
-     * Calls when the loop count changes (usually decreases)
-     * @type {function(count: number)}
-     */
-    onLoopCountChange;
-
-    /**
-     * @param spessasynthProcessor {SpessaSynthProcessor}
-     */
-    constructor(spessasynthProcessor) {
+    constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
         this.absoluteStartTime = this.synth.currentSynthTime;
     }
 
     /**
-     * Controls the playback's rate
-     * @type {number}
-     * @private
+     * Internal playback rate.
      */
-    _playbackRate = 1;
+    protected _playbackRate: number = 1;
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * @param value {number}
+     * The sequencer's playback rate.
+     * This is the rate at which the sequencer plays back the MIDI data.
+     * @param value the playback rate to set.
      */
-    set playbackRate(value) {
+    public set playbackRate(value: number) {
         const time = this.currentTime;
         this._playbackRate = value;
         this.currentTime = time;
     }
 
-    get currentTime() {
+    /**
+     * The current time of the sequencer.
+     * This is the time in seconds since the sequencer started playing.
+     */
+    public get currentTime() {
         // return the paused time if it's set to something other than undefined
         if (this.pausedTime !== undefined) {
             return this.pausedTime;
@@ -217,10 +225,12 @@ class SpessaSynthSequencer {
         );
     }
 
-    set currentTime(time) {
-        if (!this.midiData) {
-            return;
-        }
+    /**
+     * The current time of the sequencer.
+     * This is the time in seconds since the sequencer started playing.
+     * @param time the time to set in seconds.
+     */
+    public set currentTime(time) {
         if (time > this.duration || time < 0) {
             // time is 0
             if (this.skipToFirstNoteOn) {
@@ -246,8 +256,8 @@ class SpessaSynthSequencer {
             this?.onPlaybackStop?.(true);
             return;
         }
-        this._playTo(time);
-        this._recalculateStartTime(time);
+        this.playTo(time);
+        this.recalculateStartTime(time);
         if (wasPaused) {
             this.pause();
         } else {
@@ -257,17 +267,64 @@ class SpessaSynthSequencer {
 
     /**
      * true if paused, false if playing or stopped
-     * @returns {boolean}
      */
-    get paused() {
-        return this.pausedTime !== undefined;
+    public get paused() {
+        return typeof this.pausedTime === "number";
     }
 
     /**
-     * Pauses the playback
-     * @param isFinished {boolean}
+     * Returns true if there are any songs loaded in the sequencer.
      */
-    pause(isFinished = false) {
+    protected get hasSongs(): boolean {
+        return this.songs.length > 0;
+    }
+
+    /**
+     * Starts or resumes the playback of the sequencer.
+     * If the sequencer is paused, it will resume from the paused time.
+     * @param resetTime if true, the current time should be reset to 0.
+     */
+    public play(this: SpessaSynthSequencer, resetTime: boolean = false) {
+        if (this.isActive) {
+            SpessaSynthWarn("Already playing");
+            return;
+        }
+
+        if (!this.hasSongs) {
+            throw new Error("No songs loaded in the sequencer!");
+        }
+
+        // reset the time if necessary
+        if (resetTime) {
+            this.pausedTime = undefined;
+            this.currentTime = 0;
+            return;
+        }
+
+        if (this.currentTime >= this.duration) {
+            this.pausedTime = undefined;
+            this.currentTime = 0;
+            return;
+        }
+
+        // unpause if paused
+        if (this.paused) {
+            // adjust the start time
+            this.recalculateStartTime(this.pausedTime || 0);
+            this.pausedTime = undefined;
+        }
+        if (!this.sendMIDIMessages) {
+            this.playingNotes.forEach((n) => {
+                this.synth.noteOn(n.channel, n.midiNote, n.velocity);
+            });
+        }
+        this.setProcessHandler();
+    }
+
+    /**
+     * Pauses the playback.
+     */
+    public pause(isFinished = false) {
         if (this.paused) {
             SpessaSynthWarn("Already paused");
             return;
@@ -278,9 +335,63 @@ class SpessaSynthSequencer {
     }
 
     /**
+     * Switches to the next song in the song list.
+     * If the song list has only one song, it will reset the current time to 0.
+     */
+    public nextSong() {
+        if (this.songs.length === 1) {
+            this.currentTime = 0;
+            return;
+        }
+        this.songIndex++;
+        this.songIndex %= this.songs.length;
+        this.loadCurrentSong();
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Switches to the previous song in the song list.
+     * If the song list has only one song, it will reset the current time to 0.
+     */
+    public previousSong() {
+        if (this.songs.length === 1) {
+            this.currentTime = 0;
+            return;
+        }
+        this.songIndex--;
+        if (this.songIndex < 0) {
+            this.songIndex = this.songs.length - 1;
+        }
+        this.loadCurrentSong();
+    }
+
+    /**
+     * Loads a new song list into the sequencer.
+     * @param midiBuffers the list of songs to load.
+     * @param autoPlay whether to automatically play the first song after loading.
+     */
+    public loadNewSongList(midiBuffers: BasicMIDI[], autoPlay: boolean = true) {
+        /**
+         * parse the MIDIs (only the array buffers, MIDI is unchanged)
+         * @type {BasicMIDI[]}
+         */
+        this.songs = midiBuffers;
+        if (this.songs.length < 1) {
+            return;
+        }
+        this.songIndex = 0;
+        if (this.songs.length > 1) {
+            this.loop = false;
+        }
+        this.shuffleSongIndexes();
+        this?.onSongListChange?.(this.songs);
+        this.loadCurrentSong(autoPlay);
+    }
+
+    /**
      * Stops the playback
      */
-    stop() {
+    protected stop() {
         this.clearProcessHandler();
         // disable sustain
         for (let i = 0; i < 16; i++) {
@@ -300,7 +411,65 @@ class SpessaSynthSequencer {
         }
     }
 
-    loadCurrentSong(autoPlay = true) {
+    protected resetTimers() {
+        this.playedTime = 0;
+        this.eventIndex = Array(this.midiData.tracks.length).fill(0);
+    }
+
+    /**
+     * @returns the index of the first to the current played time
+     */
+    protected findFirstEventIndex() {
+        let index = 0;
+        let ticks = Infinity;
+        this.midiData.tracks.forEach((track, i) => {
+            if (this.eventIndex[i] >= track.length) {
+                return;
+            }
+            if (track[this.eventIndex[i]].ticks < ticks) {
+                index = i;
+                ticks = track[this.eventIndex[i]].ticks;
+            }
+        });
+        return index;
+    }
+
+    /**
+     * Adds a new port (16 channels) to the synth.
+     */
+    protected addNewMIDIPort() {
+        for (let i = 0; i < 16; i++) {
+            this.synth.createMidiChannel();
+        }
+    }
+
+    protected sendMIDIMessage(message: number[]) {
+        if (!this.sendMIDIMessages) {
+            return;
+        }
+        this?.onMIDIMessage?.(message);
+    }
+
+    protected sendMIDIReset() {
+        if (!this.sendMIDIMessages) {
+            return;
+        }
+        this.sendMIDIMessage([messageTypes.reset]);
+        for (let ch = 0; ch < MIDI_CHANNEL_COUNT; ch++) {
+            this.sendMIDIMessage([
+                messageTypes.controllerChange | ch,
+                midiControllers.allSoundOff,
+                0
+            ]);
+            this.sendMIDIMessage([
+                messageTypes.controllerChange | ch,
+                midiControllers.resetAllControllers,
+                0
+            ]);
+        }
+    }
+
+    protected loadCurrentSong(autoPlay = true) {
         let index = this.songIndex;
         if (this.shuffleMode) {
             index = this.shuffledSongIndexes[this.songIndex];
@@ -308,20 +477,15 @@ class SpessaSynthSequencer {
         this.loadNewSequence(this.songs[index], autoPlay);
     }
 
-    _resetTimers() {
-        this.playedTime = 0;
-        this.eventIndex = Array(this.tracks.length).fill(0);
-    }
-
-    setProcessHandler() {
+    protected setProcessHandler() {
         this.isActive = true;
     }
 
-    clearProcessHandler() {
+    protected clearProcessHandler() {
         this.isActive = false;
     }
 
-    shuffleSongIndexes() {
+    protected shuffleSongIndexes() {
         const indexes = this.songs.map((_, i) => i);
         this.shuffledSongIndexes = [];
         while (indexes.length > 0) {
@@ -330,29 +494,64 @@ class SpessaSynthSequencer {
             indexes.splice(indexes.indexOf(index), 1);
         }
     }
+
+    protected sendMIDICC(channel: number, type: number, value: number) {
+        channel %= 16;
+        if (!this.sendMIDIMessages) {
+            return;
+        }
+        this.sendMIDIMessage([
+            messageTypes.controllerChange | channel,
+            type,
+            value
+        ]);
+    }
+
+    protected sendMIDIProgramChange(channel: number, program: number) {
+        channel %= 16;
+        if (!this.sendMIDIMessages) {
+            return;
+        }
+        this.sendMIDIMessage([messageTypes.programChange | channel, program]);
+    }
+
+    /**
+     * Sets the pitch of the given channel
+     * @param channel usually 0-15: the channel to change pitch
+     * @param MSB SECOND byte of the MIDI pitchWheel message
+     * @param LSB FIRST byte of the MIDI pitchWheel message
+     */
+    protected sendMIDIPitchWheel(channel: number, MSB: number, LSB: number) {
+        channel %= 16;
+        if (!this.sendMIDIMessages) {
+            return;
+        }
+        this.sendMIDIMessage([messageTypes.pitchBend | channel, LSB, MSB]);
+    }
+
+    /**
+     * Sets the time in MIDI ticks.
+     * @param ticks the MIDI ticks to set the time to.
+     */
+    protected setTimeTicks(ticks: number) {
+        this.stop();
+        this.playingNotes = [];
+        this.pausedTime = undefined;
+        this?.onTimeChange?.(this.midiData.MIDIticksToSeconds(ticks));
+        const isNotFinished = this.playTo(0, ticks);
+        this.recalculateStartTime(this.playedTime);
+        if (!isNotFinished) {
+            return;
+        }
+        this.play();
+    }
+
+    /**
+     * Recalculates the absolute start time of the sequencer.
+     * @param time the time in seconds to recalculate the start time for.
+     */
+    protected recalculateStartTime(time: number) {
+        this.absoluteStartTime =
+            this.synth.currentSynthTime - time / this._playbackRate;
+    }
 }
-
-// Web MIDI sending
-SpessaSynthSequencer.prototype.sendMIDIMessage = sendMIDIMessage;
-SpessaSynthSequencer.prototype.sendMIDIReset = sendMIDIReset;
-SpessaSynthSequencer.prototype.sendMIDICC = sendMIDICC;
-SpessaSynthSequencer.prototype.sendMIDIProgramChange = sendMIDIProgramChange;
-SpessaSynthSequencer.prototype.sendMIDIPitchWheel = sendMIDIPitchWheel;
-SpessaSynthSequencer.prototype.assignMIDIPort = assignMIDIPort;
-
-SpessaSynthSequencer.prototype._processEvent = _processEvent;
-SpessaSynthSequencer.prototype._addNewMidiPort = _addNewMidiPort;
-SpessaSynthSequencer.prototype.processTick = processTick;
-SpessaSynthSequencer.prototype._findFirstEventIndex = _findFirstEventIndex;
-
-SpessaSynthSequencer.prototype.loadNewSequence = loadNewSequence;
-SpessaSynthSequencer.prototype.loadNewSongList = loadNewSongList;
-SpessaSynthSequencer.prototype.nextSong = nextSong;
-SpessaSynthSequencer.prototype.previousSong = previousSong;
-
-SpessaSynthSequencer.prototype.play = play;
-SpessaSynthSequencer.prototype._playTo = _playTo;
-SpessaSynthSequencer.prototype.setTimeTicks = setTimeTicks;
-SpessaSynthSequencer.prototype._recalculateStartTime = _recalculateStartTime;
-
-export { SpessaSynthSequencer };

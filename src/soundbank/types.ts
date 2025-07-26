@@ -1,10 +1,12 @@
-import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank.ts";
-import type { Generator } from "./basic_soundbank/generator.ts";
-import { Modulator } from "./basic_soundbank/modulator.ts";
-import type { BasicSample } from "./basic_soundbank/basic_sample.ts";
-import type { IndexedByteArray } from "../utils/indexed_array.ts";
+import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
+import type { Generator } from "./basic_soundbank/generator";
+import { Modulator } from "./basic_soundbank/modulator";
+import type { BasicSample } from "./basic_soundbank/basic_sample";
+import type { IndexedByteArray } from "../utils/indexed_array";
+import type { modulatorSources } from "./enums";
+import type { midiControllers } from "../midi/enums";
 
-export type SoundFontType = {
+export type SoundBankManagerListEntry = {
     id: string;
     soundfont: BasicSoundBank;
     bankOffset: number;
@@ -40,6 +42,7 @@ export type SampleEncodingFunction = (
 ) => Promise<Uint8Array>;
 
 export type ModulatorNumericBool = 0 | 1;
+export type ModulatorSourceIndex = modulatorSources | midiControllers;
 
 // A function to track progress during writing.
 export type ProgressFunction = (

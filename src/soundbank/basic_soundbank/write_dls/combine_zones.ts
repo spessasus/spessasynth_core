@@ -1,9 +1,9 @@
-import { Modulator } from "../modulator.js";
-import { Generator } from "../generator.js";
-import { generatorLimits, generatorTypes } from "../generator_types.js";
-import { BasicInstrument } from "../basic_instrument.js";
-import type { BasicPreset } from "../basic_preset.ts";
-import type { KeyRange } from "../../../utils/global_types.ts";
+import { Modulator } from "../modulator";
+import { Generator } from "../generator";
+import { generatorLimits, generatorTypes } from "../generator_types";
+import { BasicInstrument } from "../basic_instrument";
+import type { BasicPreset } from "../basic_preset";
+import type { KeyRange } from "../../../utils/global_types";
 
 const notGlobalizedTypes = new Set([
     generatorTypes.velRange,
@@ -211,7 +211,7 @@ export function combineZones(
             );
 
             // create the zone and copy over values
-            const zone = outputInstrument.createZone();
+            const zone = outputInstrument.createZone(instZone.sample);
             zone.keyRange = instZoneKeyRange;
             zone.velRange = instZoneVelRange;
             if (zone.keyRange.min === 0 && zone.keyRange.max === 127) {
@@ -220,7 +220,6 @@ export function combineZones(
             if (zone.velRange.min === 0 && zone.velRange.max === 127) {
                 zone.velRange.min = -1;
             }
-            zone.setSample(instZone.sample);
             zone.addGenerators(...finalGenList);
             zone.addModulators(...finalModList);
         }

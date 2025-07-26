@@ -1,6 +1,6 @@
-import { BasicZone } from "./basic_zone.js";
-import type { BasicInstrument } from "./basic_instrument.ts";
-import type { BasicSample } from "./basic_sample.ts";
+import { BasicZone } from "./basic_zone";
+import type { BasicInstrument } from "./basic_instrument";
+import type { BasicSample } from "./basic_sample";
 
 export class BasicInstrumentZone extends BasicZone {
     /**
@@ -11,7 +11,7 @@ export class BasicInstrumentZone extends BasicZone {
     /**
      * Zone's sample.
      */
-    sample: BasicSample | undefined;
+    sample: BasicSample;
     /**
      * For tracking on the individual zone level, since multiple presets can refer to the same instrument.
      * @type {number}
@@ -19,11 +19,15 @@ export class BasicInstrumentZone extends BasicZone {
     useCount: number;
 
     /**
-     * @param instrument
+     * Creates a new instrument zone.
+     * @param instrument The parent instrument.
+     * @param sample The sample to use in this zone.
      */
-    constructor(instrument: BasicInstrument) {
+    constructor(instrument: BasicInstrument, sample: BasicSample) {
         super();
         this.parentInstrument = instrument;
+        this.sample = sample;
+        sample.linkTo(this.parentInstrument);
         this.useCount = instrument.useCount;
     }
 
@@ -32,6 +36,9 @@ export class BasicInstrumentZone extends BasicZone {
      * @param sample the sample to set
      */
     setSample(sample: BasicSample) {
+        if (this.sample) {
+            this.sample.unlinkFrom(this.parentInstrument);
+        }
         this.sample = sample;
         sample.linkTo(this.parentInstrument);
     }

@@ -2,31 +2,36 @@
  * instrument_zones.js
  * purpose: reads instrument zones from soundfont and gets their respective samples and generators and modulators
  */
-import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone.js";
-import { generatorTypes } from "../basic_soundbank/generator_types.js";
-import type { SoundFontInstrument } from "./instruments.ts";
-import type { BasicSample } from "../basic_soundbank/basic_sample.ts";
-import type { Modulator } from "../basic_soundbank/modulator.ts";
-import type { Generator } from "../basic_soundbank/generator.ts";
+import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
+import { generatorTypes } from "../basic_soundbank/generator_types";
+import type { SoundFontInstrument } from "./instruments";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
+import type { Modulator } from "../basic_soundbank/modulator";
+import type { Generator } from "../basic_soundbank/generator";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
 
 export class SoundFontInstrumentZone extends BasicInstrumentZone {
     /**
      * Creates a zone (instrument)
      */
-    constructor(inst: SoundFontInstrument) {
-        super(inst);
-    }
-
-    /**
-     * Loads the zone's sample
-     */
-    getSample(samples: BasicSample[]) {
-        const sampleID = this.generators.find(
+    constructor(
+        inst: BasicInstrument,
+        modulators: Modulator[],
+        generators: Generator[],
+        samples: BasicSample[]
+    ) {
+        const sampleID = generators.find(
             (g) => g.generatorType === generatorTypes.sampleID
         );
+        let sample = undefined;
         if (sampleID) {
-            this.setSample(samples[sampleID.generatorValue]);
+            sample = samples[sampleID.generatorValue];
+        } else {
+            throw new Error("No sample ID found in instrument zone.");
         }
+        super(inst, sample);
+        this.addGenerators(...generators);
+        this.addModulators(...modulators);
     }
 }
 
@@ -56,10 +61,7 @@ export function applyInstrumentZones(
             // check for global zone
             if (gens.find((g) => g.generatorType === generatorTypes.sampleID)) {
                 // regular zone
-                const zone = instrument.createZone();
-                zone.addGenerators(...gens);
-                zone.addModulators(...mods);
-                zone.getSample(samples);
+                instrument.createSoundFontZone(mods, gens, samples);
             } else {
                 // global zone
                 instrument.globalZone.addGenerators(...gens);

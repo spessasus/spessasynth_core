@@ -1,4 +1,4 @@
-import type { IndexedByteArray } from "../indexed_array.ts";
+import type { IndexedByteArray } from "../indexed_array";
 
 /**
  * Reads the number as little endian.

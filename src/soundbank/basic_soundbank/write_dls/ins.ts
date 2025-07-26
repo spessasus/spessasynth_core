@@ -1,14 +1,17 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { combineZones } from "./combine_zones.js";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
-import { writeDword } from "../../../utils/byte_functions/little_endian.js";
-import { writeDLSRegion } from "./rgn2.js";
-import { writeArticulator } from "./art2.js";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin.js";
-import { consoleColors } from "../../../utils/other.js";
-import { getStringBytes } from "../../../utils/byte_functions/string.js";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { BasicPreset } from "../basic_preset.ts";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { combineZones } from "./combine_zones";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { writeDword } from "../../../utils/byte_functions/little_endian";
+import { writeDLSRegion } from "./rgn2";
+import { writeArticulator } from "./art2";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd
+} from "../../../utils/loggin";
+import { consoleColors } from "../../../utils/other";
+import { getStringBytes } from "../../../utils/byte_functions/string";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { BasicPreset } from "../basic_preset";
 
 /**
  * @param bank {BasicSoundBank}

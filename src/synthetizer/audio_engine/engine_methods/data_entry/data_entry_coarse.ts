@@ -1,12 +1,11 @@
-import {
-    customControllers,
-    dataEntryStates,
-    NON_CC_INDEX_OFFSET
-} from "../../engine_components/controller_tables.js";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin.js";
-import { consoleColors } from "../../../../utils/other.js";
-import { modulatorSources } from "../../../../soundbank/basic_soundbank/modulator.js";
-import { midiControllers } from "../../../../midi/enums.ts";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin";
+import { consoleColors } from "../../../../utils/other";
+import { midiControllers } from "../../../../midi/enums";
+import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import type { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import { customControllers, dataEntryStates } from "../../../enums";
+import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
+import { modulatorSources } from "../../../../soundbank/enums";
 
 /**
  * @enum {number}
@@ -46,12 +45,10 @@ const nonRegisteredGSLSB = {
 };
 
 /**
- * Executes a data entry for an NRP for a sc88pro NRP (because touhou yes) and RPN tuning
- * @param dataValue {number} dataEntryCoarse MSB
- * @this {MidiAudioChannel}
- * @private
+ * Executes a data entry coarse (MSB) change for the current channel.
+ * @param dataValue The value to set for the data entry coarse controller (0-127).
  */
-export function dataEntryCoarse(dataValue) {
+export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
     // store in cc table
     this.midiControllers[midiControllers.dataEntryMsb] = dataValue << 7;
     /*
@@ -60,6 +57,8 @@ export function dataEntryCoarse(dataValue) {
     It is disabled by default,
     only being enabled when one of the NPRN messages changing it is received
     and stays on until the next system-reset.
+    It was implemented very early in SpessaSynth's development,
+    because I wanted support for Touhou MIDIs :-)
      */
     const addDefaultVibrato = () => {
         if (
@@ -73,7 +72,8 @@ export function dataEntryCoarse(dataValue) {
         }
     };
 
-    const coolInfo = (what, value, type) => {
+    // A helper function to log info in a nice way
+    const coolInfo = (what: string, value: string | number, type: string) => {
         if (type.length > 0) {
             type = " " + type;
         }
@@ -92,18 +92,12 @@ export function dataEntryCoarse(dataValue) {
             break;
 
         // process GS NRPNs
-        case dataEntryStates.NRPFine:
+        case dataEntryStates.NRPFine: {
             if (this.lockGSNRPNParams) {
                 return;
             }
-            /**
-             * @type {number}
-             */
             const NRPNCoarse =
                 this.midiControllers[midiControllers.NRPNMsb] >> 7;
-            /**
-             * @type {number}
-             */
             const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
             const dataEntryFine =
                 this.midiControllers[midiControllers.lsbForControl6DataEntry] >>
@@ -236,28 +230,26 @@ export function dataEntryCoarse(dataValue) {
                     break;
 
                 // SF2 NRPN
-                case nonRegisteredMSB.SF2:
+                case nonRegisteredMSB.SF2: {
                     if (NRPNFine > 100) {
-                        // sfspec:
+                        // sf spec:
                         // Note that NRPN Select LSB greater than 100 are for setup only, and should not be used on their own to select a
                         // generator parameter.
                         break;
                     }
-                    const gen =
-                        this.customControllers[
-                            customControllers.sf2NPRNGeneratorLSB
-                        ];
+                    const gen = this.customControllers[
+                        customControllers.sf2NPRNGeneratorLSB
+                    ] as generatorTypes;
                     const offset = ((dataValue << 7) | dataEntryFine) - 8192;
                     this.setGeneratorOffset(gen, offset);
                     break;
+                }
             }
             break;
+        }
 
         case dataEntryStates.RPCoarse:
-        case dataEntryStates.RPFine:
-            /**
-             * @type {number}
-             */
+        case dataEntryStates.RPFine: {
             const rpnValue =
                 this.midiControllers[midiControllers.RPNMsb] |
                 (this.midiControllers[midiControllers.RPNLsb] >> 7);
@@ -287,7 +279,7 @@ export function dataEntryCoarse(dataValue) {
                     break;
 
                 // coarse tuning
-                case registeredParameterTypes.coarseTuning:
+                case registeredParameterTypes.coarseTuning: {
                     // semitones
                     const semitones = dataValue - 64;
                     this.setCustomController(
@@ -300,6 +292,7 @@ export function dataEntryCoarse(dataValue) {
                         "semitones"
                     );
                     break;
+                }
 
                 // fine-tuning
                 case registeredParameterTypes.fineTuning:
@@ -317,5 +310,6 @@ export function dataEntryCoarse(dataValue) {
                     this.resetParameters();
                     break;
             }
+        }
     }
 }

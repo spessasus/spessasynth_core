@@ -1,18 +1,23 @@
-import { consoleColors, formatTime } from "../utils/other.js";
+import { consoleColors, formatTime } from "../utils/other";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
     SpessaSynthWarn
-} from "../utils/loggin.js";
-import { BasicMIDI } from "../midi/basic_midi.js";
+} from "../utils/loggin";
+import { BasicMIDI } from "../midi/basic_midi";
+import type { SpessaSynthSequencer } from "./sequencer_engine";
 
 /**
- * @param trackNum {number}
- * @param port {number}
- * @this {SpessaSynthSequencer}
+ * Assigns a MIDI port channel offset to a track.
+ * @param trackNum The track number to assign the port to.
+ * @param port The MIDI port number to assign.
  */
-export function assignMIDIPort(trackNum, port) {
+export function assingMIDIPortInternal(
+    this: SpessaSynthSequencer,
+    trackNum: number,
+    port: number
+) {
     // do not assign ports to empty tracks
     if (this.midiData.usedChannelsOnTrack[trackNum].size === 0) {
         return;
@@ -25,11 +30,8 @@ export function assignMIDIPort(trackNum, port) {
     }
 
     if (this.midiPortChannelOffsets[port] === undefined) {
-        if (
-            this.synth.midiAudioChannels.length <
-            this.midiPortChannelOffset + 15
-        ) {
-            this._addNewMidiPort();
+        if (this.synth.midiChannels.length < this.midiPortChannelOffset + 15) {
+            this.addNewMIDIPort();
         }
         this.midiPortChannelOffsets[port] = this.midiPortChannelOffset;
         this.midiPortChannelOffset += 16;
@@ -39,13 +41,15 @@ export function assignMIDIPort(trackNum, port) {
 }
 
 /**
- * Loads a new sequence
- * @param parsedMidi {BasicMIDI}
- * @param autoPlay {boolean}
- * @this {SpessaSynthSequencer}
- * @private
+ * Loads a new sequence internally.
+ * @param parsedMidi The parsed MIDI data to load.
+ * @param autoPlay Whether to automatically play the sequence after loading.
  */
-export function loadNewSequence(parsedMidi, autoPlay = true) {
+export function loadNewSequenceInternal(
+    this: SpessaSynthSequencer,
+    parsedMidi: BasicMIDI,
+    autoPlay: boolean = true
+) {
     this.stop();
     if (!parsedMidi.tracks) {
         throw new Error("This MIDI has no tracks!");
@@ -67,7 +71,7 @@ export function loadNewSequence(parsedMidi, autoPlay = true) {
             "%cEmbedded soundbank detected! Using it.",
             consoleColors.recognized
         );
-        this.synth.setEmbeddedSoundFont(
+        this.synth.setEmbeddedSoundBank(
             this.midiData.embeddedSoundFont,
             this.midiData.bankOffset
         );
@@ -100,12 +104,6 @@ export function loadNewSequence(parsedMidi, autoPlay = true) {
         }
     }
     SpessaSynthGroupEnd();
-
-    /**
-     * the midi track data
-     * @type {MIDIMessage[][]}
-     */
-    this.tracks = this.midiData.tracks;
 
     // copy over the port data
     this.midiPorts = this.midiData.midiPorts.slice();
@@ -149,55 +147,4 @@ export function loadNewSequence(parsedMidi, autoPlay = true) {
         this.setTimeTicks(targetTime);
         this.pause();
     }
-}
-
-/**
- * @param midiBuffers {BasicMIDI[]}
- * @param autoPlay {boolean}
- * @this {SpessaSynthSequencer}
- */
-export function loadNewSongList(midiBuffers, autoPlay = true) {
-    /**
-     * parse the MIDIs (only the array buffers, MIDI is unchanged)
-     * @type {BasicMIDI[]}
-     */
-    this.songs = midiBuffers;
-    if (this.songs.length < 1) {
-        return;
-    }
-    this.songIndex = 0;
-    if (this.songs.length > 1) {
-        this.loop = false;
-    }
-    this.shuffleSongIndexes();
-    this?.onSongListChange?.(this.songs);
-    this.loadCurrentSong(autoPlay);
-}
-
-/**
- * @this {SpessaSynthSequencer}
- */
-export function nextSong() {
-    if (this.songs.length === 1) {
-        this.currentTime = 0;
-        return;
-    }
-    this.songIndex++;
-    this.songIndex %= this.songs.length;
-    this.loadCurrentSong();
-}
-
-/**
- * @this {SpessaSynthSequencer}
- */
-export function previousSong() {
-    if (this.songs.length === 1) {
-        this.currentTime = 0;
-        return;
-    }
-    this.songIndex--;
-    if (this.songIndex < 0) {
-        this.songIndex = this.songs.length - 1;
-    }
-    this.loadCurrentSong();
 }

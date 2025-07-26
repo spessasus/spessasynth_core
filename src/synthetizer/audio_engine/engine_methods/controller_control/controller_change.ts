@@ -1,21 +1,28 @@
-import {
-    channelConfiguration,
-    customControllers,
-    dataEntryStates
-} from "../../engine_components/controller_tables.js";
-import { nonRegisteredMSB } from "../data_entry/data_entry_coarse.js";
-import { midiControllers } from "../../../../midi/enums.ts";
+import { channelConfiguration } from "../../engine_components/controller_tables";
+import { nonRegisteredMSB } from "../data_entry/data_entry_coarse";
+import { midiControllers } from "../../../../midi/enums";
+import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import { customControllers, dataEntryStates } from "../../../enums";
 
 /**
- * @param controllerNumber {number}
- * @param controllerValue {number}
- * @param force {boolean}
- * @this {MidiAudioChannel}
+ * Handles MIDI controller changes for a channel.
+ * @param controllerNumber The MIDI controller number (0-127).
+ * @param controllerValue The value of the controller (0-127).
+ * @param force If true, allows changes to channel configuration controllers (128+).
+ * @remarks
+ * This function processes MIDI controller changes, updating the channel's
+ * midiControllers table and handling special cases like bank select,
+ * data entry, and sustain pedal. It also computes modulators for all voices
+ * in the channel based on the controller change.
+ * If the controller number is greater than 127, it is treated as a channel
+ * configuration controller, and the `force` parameter must be set to true
+ * to allow changes.
  */
 export function controllerChange(
-    controllerNumber,
-    controllerValue,
-    force = false
+    this: MIDIChannel,
+    controllerNumber: number,
+    controllerValue: number,
+    force: boolean = false
 ) {
     if (controllerNumber > 127) {
         // channel configuration. force must be set to true
@@ -162,7 +169,7 @@ export function controllerChange(
                 break;
         }
     }
-    this.synth.callEvent("controllerchange", {
+    this.synthProps.callEvent("controllerchange", {
         channel: this.channelNumber,
         controllerNumber: controllerNumber,
         controllerValue: controllerValue

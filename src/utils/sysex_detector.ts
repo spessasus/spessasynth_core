@@ -1,4 +1,4 @@
-import type { MIDIMessage } from "../midi/midi_message.ts";
+import type { MIDIMessage } from "../midi/midi_message";
 
 /**
  * Checks if this is a XG ON system exclusive

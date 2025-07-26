@@ -1,10 +1,10 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
-import { writeLittleEndian } from "../../../utils/byte_functions/little_endian.js";
-import { SpessaSynthInfo } from "../../../utils/loggin.js";
-import { consoleColors } from "../../../utils/other.js";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { ProgressFunction, SampleEncodingFunction } from "../../types.ts";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { writeStringAsBytes } from "../../../utils/byte_functions/string";
+import { writeLittleEndian } from "../../../utils/byte_functions/little_endian";
+import { SpessaSynthInfo } from "../../../utils/loggin";
+import { consoleColors } from "../../../utils/other";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { ProgressFunction, SampleEncodingFunction } from "../../types";
 
 /*
 Sdta structure:

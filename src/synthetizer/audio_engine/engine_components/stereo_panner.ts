@@ -1,4 +1,6 @@
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { MIDIChannel } from "./midi_audio_channel";
+import type { Voice } from "./voice";
 
 /**
  * stereo_panner.js
@@ -29,51 +31,53 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
 
 /**
  * Pans the voice to the given output buffers
- * @param voice {Voice} the voice to pan
- * @param inputBuffer {Float32Array} the input buffer in mono
- * @param outputLeft {Float32Array} left output buffer
- * @param outputRight {Float32Array} right output buffer
- * @param reverbLeft {Float32Array} left reverb input
- * @param reverbRight {Float32Array} right reverb input
- * @param chorusLeft {Float32Array} left chorus buffer
- * @param chorusRight {Float32Array} right chorus buffer
- * @param startIndex {number}
- * @this {MidiAudioChannel}
+ * @param voice The voice to pan.
+ * @param inputBuffer The input buffer containing the audio data for the voice (mono).
+ * @param outputLeft The left output buffer to mix the voice into.
+ * @param outputRight The right output buffer to mix the voice into.
+ * @param reverbLeft The left reverb output buffer.
+ * @param reverbRight The right reverb output buffer.
+ * @param chorusLeft The left chorus output buffer.
+ * @param chorusRight The right chorus output buffer.
+ * @param startIndex The start index offset in the output buffers where the voice's audio data should be mixed in.
  */
 export function panAndMixVoice(
-    voice,
-    inputBuffer,
-    outputLeft,
-    outputRight,
-    reverbLeft,
-    reverbRight,
-    chorusLeft,
-    chorusRight,
-    startIndex
+    this: MIDIChannel,
+    voice: Voice,
+    inputBuffer: Float32Array,
+    outputLeft: Float32Array,
+    outputRight: Float32Array,
+    reverbLeft: Float32Array,
+    reverbRight: Float32Array,
+    chorusLeft: Float32Array,
+    chorusRight: Float32Array,
+    startIndex: number
 ) {
     if (isNaN(inputBuffer[0])) {
         return;
     }
     /**
      * clamp -500 to 500
-     * @type {number}
      */
-    let pan;
+    let pan: number;
     if (voice.overridePan) {
         pan = voice.overridePan;
     } else {
         // smooth out pan to prevent clicking
         voice.currentPan +=
             (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
-            this.synth.panSmoothingFactor;
+            this.synthProps.panSmoothingFactor;
         pan = voice.currentPan;
     }
 
-    const gain = this.synth.currentGain * voice.gain;
+    const gain =
+        this.synthProps.masterParameters.masterGain *
+        this.synthProps.midiVolume *
+        voice.gain;
     const index = ~~(pan + 500);
     // get voice's gain levels for each channel
-    const gainLeft = panTableLeft[index] * gain * this.synth.panLeft;
-    const gainRight = panTableRight[index] * gain * this.synth.panRight;
+    const gainLeft = panTableLeft[index] * gain * this.synthProps.panLeft;
+    const gainRight = panTableRight[index] * gain * this.synthProps.panRight;
 
     // disable reverb and chorus if necessary
     if (this.synth.effectsEnabled) {
@@ -82,8 +86,8 @@ export function panAndMixVoice(
         if (reverbSend > 0) {
             // reverb is mono so we need to multiply by gain
             const reverbGain =
-                this.synth.reverbGain *
-                this.synth.reverbSend *
+                this.synthProps.masterParameters.reverbGain *
+                this.synthProps.reverbSend *
                 gain *
                 (reverbSend / REVERB_DIVIDER);
             for (let i = 0; i < inputBuffer.length; i++) {
@@ -98,8 +102,8 @@ export function panAndMixVoice(
         if (chorusSend > 0) {
             // chorus is stereo so we do not need to
             const chorusGain =
-                this.synth.chorusGain *
-                this.synth.chorusSend *
+                this.synthProps.masterParameters.chorusGain *
+                this.synthProps.chorusSend *
                 (chorusSend / CHORUS_DIVIDER);
             const chorusLeftGain = gainLeft * chorusGain;
             const chorusRightGain = gainRight * chorusGain;

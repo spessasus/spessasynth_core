@@ -1,12 +1,15 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
-import { writeWavesample } from "./wsmp.js";
-import { writeArticulator } from "./art2.js";
-import { generatorTypes } from "../generator_types.js";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { BasicInstrumentZone } from "../basic_instrument_zone.ts";
-import type { BasicGlobalZone } from "../basic_global_zone.ts";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import {
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { writeWavesample } from "./wsmp";
+import { writeArticulator } from "./art2";
+import { generatorTypes } from "../generator_types";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { BasicInstrumentZone } from "../basic_instrument_zone";
+import type { BasicGlobalZone } from "../basic_global_zone";
 
 /**
  * @param bank {BasicSoundBank}
@@ -43,7 +46,7 @@ export function writeDLSRegion(
 
     let rootKey = zone.getGeneratorValue(
         generatorTypes.overridingRootKey,
-        zone?.sample?.samplePitch || 60
+        zone.sample.samplePitch || 60
     );
 
     // a lot of soundfonts like to set scale tuning to 0 in drums and keep the key at 60

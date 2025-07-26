@@ -1,17 +1,23 @@
-import { getEvent } from "../midi/midi_message.js";
-import { consoleColors } from "../utils/other.js";
-import { SpessaSynthWarn } from "../utils/loggin.js";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian.js";
-import { messageTypes } from "../midi/enums.ts";
+import { getEvent, MIDIMessage } from "../midi/midi_message";
+import { consoleColors } from "../utils/other";
+import { SpessaSynthWarn } from "../utils/loggin";
+import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
+import { messageTypes } from "../midi/enums";
+import type { SpessaSynthSequencer } from "./sequencer_engine";
 
 /**
- * Processes a single event
- * @param event {MIDIMessage}
- * @param trackIndex {number}
- * @this {SpessaSynthSequencer}
- * @private
+ * Processes a MIDI event.
+ * @param event The MIDI event to process.
+ * @param trackIndex The index of the track the event belongs to.
  */
-export function _processEvent(event, trackIndex) {
+export function processEventInternal(
+    this: SpessaSynthSequencer,
+    event: MIDIMessage,
+    trackIndex: number
+) {
+    if (!this.midiData) {
+        throw new Error("Unexpected lack of MIDI data in sequencer!");
+    }
     if (this.sendMIDIMessages) {
         if (event.messageStatusByte >= 0x80) {
             this.sendMIDIMessage([
@@ -26,7 +32,7 @@ export function _processEvent(event, trackIndex) {
     statusByteData.channel += offset;
     // process the event
     switch (statusByteData.status) {
-        case messageTypes.noteOn:
+        case messageTypes.noteOn: {
             const velocity = event.messageData[1];
             if (velocity > 0) {
                 this.synth.noteOn(
@@ -54,8 +60,9 @@ export function _processEvent(event, trackIndex) {
                 }
             }
             break;
+        }
 
-        case messageTypes.noteOff:
+        case messageTypes.noteOff: {
             this.synth.noteOff(statusByteData.channel, event.messageData[0]);
             const toDelete = this.playingNotes.findIndex(
                 (n) =>
@@ -66,6 +73,7 @@ export function _processEvent(event, trackIndex) {
                 this.playingNotes.splice(toDelete, 1);
             }
             break;
+        }
 
         case messageTypes.pitchBend:
             this.synth.pitchWheel(
@@ -123,7 +131,7 @@ export function _processEvent(event, trackIndex) {
             this.synth.systemExclusive(event.messageData, offset);
             break;
 
-        case messageTypes.setTempo:
+        case messageTypes.setTempo: {
             event.messageData.currentIndex = 0;
             let tempoBPM =
                 60000000 / readBytesAsUintBigEndian(event.messageData, 3);
@@ -135,6 +143,7 @@ export function _processEvent(event, trackIndex) {
                 tempoBPM = 120;
             }
             break;
+        }
 
         // recognized but ignored
         case messageTypes.timeSignature:
@@ -168,7 +177,11 @@ export function _processEvent(event, trackIndex) {
             SpessaSynthWarn(
                 `%cUnrecognized Event: %c${event.messageStatusByte}%c status byte: %c${Object.keys(
                     messageTypes
-                ).find((k) => messageTypes[k] === statusByteData.status)}`,
+                ).find(
+                    (k) =>
+                        messageTypes[k as keyof typeof messageTypes] ===
+                        statusByteData.status
+                )}`,
                 consoleColors.warn,
                 consoleColors.unrecognized,
                 consoleColors.warn,
@@ -178,16 +191,5 @@ export function _processEvent(event, trackIndex) {
     }
     if (statusByteData.status >= 0 && statusByteData.status < 0x80) {
         this?.onMetaEvent?.(event, trackIndex);
-    }
-}
-
-/**
- * Adds 16 channels to the synth
- * @this {SpessaSynthSequencer}
- * @private
- */
-export function _addNewMidiPort() {
-    for (let i = 0; i < 16; i++) {
-        this.synth.createMidiChannel(true);
     }
 }

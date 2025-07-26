@@ -1,16 +1,20 @@
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
-import { writeDword } from "../../../utils/byte_functions/little_endian.js";
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { getStringBytes } from "../../../utils/byte_functions/string.js";
-import { writeWavePool } from "./wvpl.js";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
-import { consoleColors } from "../../../utils/other.js";
-import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
-import type { DLSWriteOptions } from "../../types.ts";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import { writeIns } from "./ins.ts";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { writeDword } from "../../../utils/byte_functions/little_endian";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { getStringBytes } from "../../../utils/byte_functions/string";
+import { writeWavePool } from "./wvpl";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../../utils/loggin";
+import { consoleColors } from "../../../utils/other";
+import { fillWithDefaults } from "../../../utils/fill_with_defaults";
+import type { DLSWriteOptions } from "../../types";
+import type { BasicSoundBank } from "../basic_soundbank";
+import { writeIns } from "./ins";
 
-const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
+export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
     progressFunction: undefined
 };
 
@@ -20,7 +24,7 @@ const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
  * @param {Partial<DLSWriteOptions>} options - options for writing the file.
  * @returns the binary file.
  */
-export async function writeDLS(
+export async function writeDLSInternal(
     targetSoundBank: BasicSoundBank,
     options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
 ): Promise<Uint8Array<ArrayBuffer>> {

@@ -1,6 +1,12 @@
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { readLittleEndian, writeDword } from "../../utils/byte_functions/little_endian.js";
-import { readBytesAsString, writeStringAsBytes } from "../../utils/byte_functions/string.js";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import {
+    readLittleEndian,
+    writeDword
+} from "../../utils/byte_functions/little_endian";
+import {
+    readBytesAsString,
+    writeStringAsBytes
+} from "../../utils/byte_functions/string";
 
 /**
  * riff_chunk.js

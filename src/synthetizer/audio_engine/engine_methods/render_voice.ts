@@ -1,42 +1,44 @@
-import { VolumeEnvelope } from "../engine_components/volume_envelope.js";
-import { ModulationEnvelope } from "../engine_components/modulation_envelope.js";
-import { customControllers } from "../engine_components/controller_tables.js";
+import { VolumeEnvelope } from "../engine_components/volume_envelope";
+import { ModulationEnvelope } from "../engine_components/modulation_envelope";
 import {
     absCentsToHz,
     timecentsToSeconds
-} from "../engine_components/unit_converter.js";
-import { getLFOValue } from "../engine_components/lfo.js";
-import { WavetableOscillator } from "../engine_components/wavetable_oscillator.js";
-import { LowpassFilter } from "../engine_components/lowpass_filter.js";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
+} from "../engine_components/unit_converter";
+import { getLFOValue } from "../engine_components/lfo";
+import { WavetableOscillator } from "../engine_components/wavetable_oscillator";
+import { LowpassFilter } from "../engine_components/lowpass_filter";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { Voice } from "../engine_components/voice";
+import type { MIDIChannel } from "../engine_components/midi_audio_channel";
+import { customControllers } from "../../enums";
 
 /**
  * Renders a voice to the stereo output buffer
- * @param voice {Voice} the voice to render
- * @param timeNow {number} current time in seconds
- * @param outputLeft {Float32Array} the left output buffer
- * @param outputRight {Float32Array} the right output buffer
- * @param reverbOutputLeft {Float32Array} left output for reverb
- * @param reverbOutputRight {Float32Array} right output for reverb
- * @param chorusOutputLeft {Float32Array} left output for chorus
- * @param chorusOutputRight {Float32Array} right output for chorus
- * @param startIndex {number}
- * @param sampleCount {number}
- * @this {MidiAudioChannel}
- * @returns {boolean} true if the voice is finished
+ * @param voice the voice to render
+ * @param timeNow current time in seconds
+ * @param outputLeft the left output buffer
+ * @param outputRight the right output buffer
+ * @param reverbOutputLeft left output for reverb
+ * @param reverbOutputRight right output for reverb
+ * @param chorusOutputLeft left output for chorus
+ * @param chorusOutputRight right output for chorus
+ * @param startIndex
+ * @param sampleCount
+ * @returns true if the voice is finished
  */
 export function renderVoice(
-    voice,
-    timeNow,
-    outputLeft,
-    outputRight,
-    reverbOutputLeft,
-    reverbOutputRight,
-    chorusOutputLeft,
-    chorusOutputRight,
-    startIndex,
-    sampleCount
-) {
+    this: MIDIChannel,
+    voice: Voice,
+    timeNow: number,
+    outputLeft: Float32Array,
+    outputRight: Float32Array,
+    reverbOutputLeft: Float32Array,
+    reverbOutputRight: Float32Array,
+    chorusOutputLeft: Float32Array,
+    chorusOutputRight: Float32Array,
+    startIndex: number,
+    sampleCount: number
+): boolean {
     // check if release
     if (!voice.isInRelease) {
         // if not in release, check if the release time is
@@ -70,8 +72,9 @@ export function renderVoice(
     let semitones = voice.modulatedGenerators[generatorTypes.coarseTune]; // soundfont coarse tuning
 
     // midi tuning standard
-    const tuning = this.synth.tunings[this.preset?.program]?.[voice.realKey];
-    if (tuning !== undefined && tuning?.midiNote >= 0) {
+    const tuning =
+        this.synthProps.tunings[this.preset?.program || 0]?.[voice.realKey];
+    if (tuning !== undefined && tuning?.centTuning) {
         // override key
         targetKey = tuning.midiNote;
         // add micro-tonal tuning
@@ -205,7 +208,7 @@ export function renderVoice(
             voice,
             bufferOut,
             volumeExcursionCentibels,
-            this.synth.volumeEnvelopeSmoothingFactor
+            this.synthProps.volumeEnvelopeSmoothingFactor
         );
         return voice.finished;
     }
@@ -214,7 +217,7 @@ export function renderVoice(
     WavetableOscillator.getSample(
         voice,
         bufferOut,
-        this.synth.interpolationType
+        this.synthProps.interpolationType
     );
 
     // low pass filter
@@ -222,7 +225,7 @@ export function renderVoice(
         voice,
         bufferOut,
         lowpassExcursion,
-        this.synth.filterSmoothingFactor
+        this.synthProps.filterSmoothingFactor
     );
 
     // vol env
@@ -230,7 +233,7 @@ export function renderVoice(
         voice,
         bufferOut,
         volumeExcursionCentibels,
-        this.synth.volumeEnvelopeSmoothingFactor
+        this.synthProps.volumeEnvelopeSmoothingFactor
     );
 
     this.panAndMixVoice(

@@ -1,35 +1,32 @@
-import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { IndexedByteArray } from "../../utils/indexed_array";
 import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
-} from "../../soundbank/basic_soundbank/riff_chunk.js";
-import { getStringBytes } from "../../utils/byte_functions/string.js";
-import { MIDIMessage } from "../midi_message.js";
+} from "../../soundbank/basic_soundbank/riff_chunk";
+import { getStringBytes } from "../../utils/byte_functions/string";
+import { MIDIMessage } from "../midi_message";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
-import { writeLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants.js";
-import {
-    chooseBank,
-    isSystemXG,
-    parseBankSelect
-} from "../../utils/xg_hacks.js";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { writeLittleEndian } from "../../utils/byte_functions/little_endian";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import {
     isGM2On,
     isGMOn,
     isGSDrumsOn,
     isGSOn,
     isXGOn
-} from "../../utils/sysex_detector.js";
-import { messageTypes, midiControllers, RMIDINFOChunks } from "../enums.ts";
-import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank.ts";
-import type { RMIDMetadata } from "../types.ts";
-import type { BasicMIDI } from "../basic_midi.ts";
-import { getGsOn } from "./get_gs_on.ts";
+} from "../../utils/sysex_detector";
+import { messageTypes, midiControllers, RMIDINFOChunks } from "../enums";
+import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
+import type { RMIDMetadata } from "../types";
+import type { BasicMIDI } from "../basic_midi";
+import { getGsOn } from "./get_gs_on";
+import type { SynthSystem } from "../../synthetizer/types";
 
 const FORCED_ENCODING = "utf-8";
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
@@ -69,7 +66,7 @@ export function writeRMIDIInternal(
         // See https://github.com/spessasus/sf2-rmidi-specification#readme
         // also fix presets that don't exist
         // since midi player6 doesn't seem to default to 0 when non-existent...
-        let system = "gm";
+        let system: SynthSystem = "gm";
         /**
          * The unwanted system messages such as gm/gm2 on
          */

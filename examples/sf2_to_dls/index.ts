@@ -1,11 +1,10 @@
 // process arguments
-import fs from "fs";
-import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
-import { BasicSoundBank } from "../../src/soundbank/basic_soundbank/basic_soundbank.js";
+import * as fs from "fs";
+import { BasicSoundBank } from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {
-    console.info("Usage: node index.js <sf2 input path> <dls output path>");
+    console.info("Usage: tsx index.ts <sf2 input path> <dls output path>");
     process.exit();
 }
 
@@ -16,7 +15,7 @@ await BasicSoundBank.isSF3DecoderReady;
 console.warn("DLS conversion may lose data.");
 const sf2 = fs.readFileSync(sf2Path);
 console.time("Loaded in");
-const bank = loadSoundFont(sf2);
+const bank = BasicSoundBank.fromArrayBuffer(sf2.buffer);
 console.timeEnd("Loaded in");
 console.time("Converted in");
 const outDLS = await bank.writeDLS();

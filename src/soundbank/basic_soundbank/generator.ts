@@ -1,4 +1,4 @@
-import { generatorLimits, generatorTypes } from "./generator_types.js";
+import { generatorLimits, generatorTypes } from "./generator_types";
 
 export const GEN_BYTE_SIZE = 4;
 

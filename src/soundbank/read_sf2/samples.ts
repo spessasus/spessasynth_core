@@ -1,11 +1,14 @@
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian.js";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { BasicSample } from "../basic_soundbank/basic_sample.js";
-import { consoleColors } from "../../utils/other.js";
-import type { sampleTypes } from "../enums.ts";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import {
+    readLittleEndian,
+    signedInt8
+} from "../../utils/byte_functions/little_endian";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { BasicSample } from "../basic_soundbank/basic_sample";
+import { consoleColors } from "../../utils/other";
+import type { sampleTypes } from "../enums";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk";
 
 /**
  * samples.js

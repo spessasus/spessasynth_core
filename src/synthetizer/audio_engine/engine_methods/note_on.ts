@@ -1,18 +1,18 @@
-import { portamentoTimeToSeconds } from "./portamento_time.js";
-import { customControllers } from "../engine_components/controller_tables.js";
-import { Modulator } from "../../../soundbank/basic_soundbank/modulator.js";
-import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants.js";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
-import { SpessaSynthWarn } from "../../../utils/loggin.js";
-import { midiControllers } from "../../../midi/enums.ts";
+import { portamentoTimeToSeconds } from "./portamento_time";
+import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
+import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import { SpessaSynthWarn } from "../../../utils/loggin";
+import { midiControllers } from "../../../midi/enums";
+import type { MIDIChannel } from "../engine_components/midi_audio_channel";
+import { customControllers } from "../../enums";
 
 /**
- * sends a "MIDI Note on message"
- * @param midiNote {number}
- * @param velocity {number}
- * @this {MidiAudioChannel}
+ * sends a "MIDI Note on" message and starts a note.
+ * @param midiNote The MIDI note number (0-127).
+ * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
  */
-export function noteOn(midiNote, velocity) {
+export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     if (velocity < 1) {
         this.noteOff(midiNote);
         return;
@@ -20,10 +20,10 @@ export function noteOn(midiNote, velocity) {
     velocity = Math.min(127, velocity);
 
     if (
-        (this.synth.highPerformanceMode &&
+        (this.synthProps.masterParameters.blackMIDIMode &&
             this.synth.totalVoicesAmount > 200 &&
             velocity < 40) ||
-        (this.synth.highPerformanceMode && velocity < 10) ||
+        (this.synthProps.masterParameters.blackMIDIMode && velocity < 10) ||
         this.isMuted
     ) {
         return;
@@ -44,7 +44,7 @@ export function noteOn(midiNote, velocity) {
         return;
     }
     const program = this.preset?.program;
-    const tune = this.synth.tunings[program]?.[realKey]?.midiNote;
+    const tune = this.synthProps.tunings[program]?.[realKey]?.midiNote;
     if (tune >= 0) {
         internalMidiNote = tune;
     }
@@ -55,7 +55,7 @@ export function noteOn(midiNote, velocity) {
     }
 
     // monophonic retrigger
-    if (this.synth._monophonicRetriggerMode) {
+    if (this.synthProps.masterParameters.monophonicRetriggerMode) {
         this.killNote(midiNote, -7200);
     }
 
@@ -101,7 +101,7 @@ export function noteOn(midiNote, velocity) {
         );
     }
     // get voices
-    const voices = this.synth.getVoices(
+    const voices = this.synthProps.getVoices(
         this.channelNumber,
         internalMidiNote,
         velocity,
@@ -186,7 +186,7 @@ export function noteOn(midiNote, velocity) {
                 32768;
         const sm = voice.sample;
         // apply them
-        const clamp = (num) =>
+        const clamp = (num: number) =>
             Math.max(0, Math.min(sm.sampleData.length - 1, num));
         sm.cursor = clamp(sm.cursor + cursorStartOffset);
         sm.end = clamp(sm.end + endOffset);
@@ -215,12 +215,14 @@ export function noteOn(midiNote, velocity) {
 
     this.synth.totalVoicesAmount += voices.length;
     // cap the voices
-    if (this.synth.totalVoicesAmount > this.synth.voiceCap) {
-        this.synth.voiceKilling(voices.length);
+    if (
+        this.synth.totalVoicesAmount > this.synthProps.masterParameters.voiceCap
+    ) {
+        this.synthProps.voiceKilling(voices.length);
     }
     channelVoices.push(...voices);
     this.sendChannelProperty();
-    this.synth.callEvent("noteon", {
+    this.synthProps.callEvent("noteon", {
         midiNote: midiNote,
         channel: this.channelNumber,
         velocity: velocity

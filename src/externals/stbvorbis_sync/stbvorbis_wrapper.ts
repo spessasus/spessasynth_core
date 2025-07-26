@@ -1,4 +1,4 @@
-import { stbvorbis } from "./stbvorbis_sync.min.js";
+import { stbvorbis } from "./stbvorbis_sync.min";
 
 type DecodedData = {
     data: Float32Array[];
@@ -8,7 +8,7 @@ type DecodedData = {
 };
 
 type stbvorbisType = {
-    decode: (buffer: Uint8Array<ArrayBuffer> | ArrayBuffer) => DecodedData;
+    decode: (buffer: Uint8Array | ArrayBuffer) => DecodedData;
     isInitialized: Promise<boolean>;
 };
 

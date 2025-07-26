@@ -1,14 +1,14 @@
 import {
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian.js";
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeRIFFChunkRaw } from "../riff_chunk.js";
-import { GEN_BYTE_SIZE, Generator } from "../generator.js";
-import { generatorTypes } from "../generator_types.js";
-import type { BasicSoundBank } from "../basic_soundbank.ts";
-import type { ReturnedExtendedSf2Chunks } from "../../types.ts";
-import type { BasicZone } from "../basic_zone.ts";
+} from "../../../utils/byte_functions/little_endian";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { writeRIFFChunkRaw } from "../riff_chunk";
+import { GEN_BYTE_SIZE, Generator } from "../generator";
+import { generatorTypes } from "../generator_types";
+import type { BasicSoundBank } from "../basic_soundbank";
+import type { ReturnedExtendedSf2Chunks } from "../../types";
+import type { BasicZone } from "../basic_zone";
 
 export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // go through all instruments -> zones and write generators sequentially (add 4 for terminal)

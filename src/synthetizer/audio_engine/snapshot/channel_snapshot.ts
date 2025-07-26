@@ -1,183 +1,223 @@
+import type { SynthSystem } from "../../types";
+import { type SpessaSynthProcessor } from "../main_processor";
+
 /**
  * Represents a snapshot of a single channel's state in the synthesizer.
  */
 export class ChannelSnapshot {
     /**
      * The channel's MIDI program number.
-     * @type {number}
      */
-    program;
+    program: number;
 
     /**
      * The channel's bank number.
-     * @type {number}
      */
-    bank;
+    bank: number;
 
     /**
      * If the bank is LSB. For restoring.
-     * @type {boolean}
      */
-    isBankLSB;
+    isBankLSB: boolean;
 
     /**
      * The name of the patch currently loaded in the channel.
-     * @type {string}
      */
-    patchName;
+    patchName: string;
 
     /**
      * Indicates whether the channel's program change is disabled.
-     * @type {boolean}
      */
-    lockPreset;
+    lockPreset: boolean;
 
     /**
      * Indicates the MIDI system when the preset was locked
-     * @type {SynthSystem}
      */
-    lockedSystem;
+    lockedSystem: SynthSystem;
 
     /**
      * The array of all MIDI controllers (in 14-bit values) with the modulator sources at the end.
-     * @type {Int16Array}
      */
-    midiControllers;
+    midiControllers: Int16Array;
 
     /**
      * An array of booleans, indicating if the controller with a current index is locked.
-     * @type {boolean[]}
      */
     lockedControllers: boolean[];
 
     /**
      * Array of custom (not SF2) control values such as RPN pitch tuning, transpose, modulation depth, etc.
-     * @type {Float32Array}
      */
-    customControllers;
+    customControllers: Float32Array;
 
     /**
      * Indicates whether the channel vibrato is locked.
-     * @type {boolean}
      */
-    lockVibrato;
+    lockVibrato: boolean;
 
     /**
      * The channel's vibrato settings.
-     * @type {Object}
-     * @property {number} depth - Vibrato depth, in gain.
-     * @property {number} delay - Vibrato delay from note on in seconds.
-     * @property {number} rate - Vibrato rate in Hz.
+     * @property depth Vibrato depth, in gain.
+     * @property delay Vibrato delay from note on in seconds.
+     * @property rate Vibrato rate in Hz.
      */
-    channelVibrato;
+    channelVibrato: { depth: number; delay: number; rate: number };
 
     /**
      * Key shift for the channel.
-     * @type {number}
      */
-    channelTransposeKeyShift;
+    channelTransposeKeyShift: number;
 
     /**
      * The channel's octave tuning in cents.
-     * @type {Int8Array}
      */
-    channelOctaveTuning;
+    channelOctaveTuning: Int8Array;
 
     /**
      * Indicates whether the channel is muted.
-     * @type {boolean}
      */
-    isMuted;
+    isMuted: boolean;
 
     /**
      * Overrides velocity if greater than 0, otherwise disabled.
-     * @type {number}
      */
-    velocityOverride;
+    velocityOverride: number;
 
     /**
      * Indicates whether the channel is a drum channel.
-     * @type {boolean}
      */
-    drumChannel;
+    drumChannel: boolean;
 
     /**
-     * Creates a snapshot of a single channel's state in the synthesizer.
-     * @param spessaSynthProcessor {SpessaSynthProcessor}
-     * @param channelNumber {number}
-     * @returns {ChannelSnapshot}
+     * The channel number this snapshot represents.
      */
-    static getChannelSnapshot(spessaSynthProcessor, channelNumber) {
-        const channelObject =
-            spessaSynthProcessor.midiAudioChannels[channelNumber];
-        const channelSnapshot = new ChannelSnapshot();
-        // program data
-        channelSnapshot.program = channelObject.preset.program;
-        channelSnapshot.bank = channelObject.getBankSelect();
-        channelSnapshot.isBankLSB = channelSnapshot.bank !== channelObject.bank;
-        channelSnapshot.lockPreset = channelObject.lockPreset;
-        channelSnapshot.lockedSystem = channelObject.lockedSystem;
-        channelSnapshot.patchName = channelObject.preset.presetName;
+    channelNumber: number;
 
-        // controller data
-        channelSnapshot.midiControllers = channelObject.midiControllers;
-        channelSnapshot.lockedControllers = channelObject.lockedControllers;
-        channelSnapshot.customControllers = channelObject.customControllers;
+    // Creates a new channel snapshot.
+    constructor(
+        program: number,
+        bank: number,
+        isBankLSB: boolean,
+        patchName: string,
+        lockPreset: boolean,
+        lockedSystem: SynthSystem,
+        midiControllers: Int16Array,
+        lockedControllers: boolean[],
+        customControllers: Float32Array,
+        lockVibrato: boolean,
+        channelVibrato: {
+            delay: number;
+            depth: number;
+            rate: number;
+        },
+        channelTransposeKeyShift: number,
+        channelOctaveTuning: Int8Array,
+        isMuted: boolean,
+        velocityOverride: number,
+        drumChannel: boolean,
+        channelNumber: number
+    ) {
+        this.program = program;
+        this.bank = bank;
+        this.isBankLSB = isBankLSB;
+        this.patchName = patchName;
+        this.lockPreset = lockPreset;
+        this.lockedSystem = lockedSystem;
+        this.midiControllers = midiControllers;
+        this.lockedControllers = lockedControllers;
+        this.customControllers = customControllers;
+        this.lockVibrato = lockVibrato;
+        this.channelVibrato = channelVibrato;
+        this.channelTransposeKeyShift = channelTransposeKeyShift;
+        this.channelOctaveTuning = channelOctaveTuning;
+        this.isMuted = isMuted;
+        this.velocityOverride = velocityOverride;
+        this.drumChannel = drumChannel;
+        this.channelNumber = channelNumber;
+    }
 
-        // vibrato data
-        channelSnapshot.channelVibrato = channelObject.channelVibrato;
-        channelSnapshot.lockVibrato = channelObject.lockGSNRPNParams;
+    /**
+     * Creates a snapshot of the channel's state.
+     * @param spessaSynthProcessor The synthesizer processor containing the channel.
+     * @param channelNumber The channel number to snapshot.
+     */
+    static create(
+        spessaSynthProcessor: SpessaSynthProcessor,
+        channelNumber: number
+    ) {
+        const channelObject = spessaSynthProcessor.midiChannels[channelNumber];
 
-        // tuning and transpose data
-        channelSnapshot.channelTransposeKeyShift =
-            channelObject.channelTransposeKeyShift;
-        channelSnapshot.channelOctaveTuning = channelObject.channelOctaveTuning;
+        return new ChannelSnapshot(
+            channelObject.preset?.program || 0,
+            channelObject.getBankSelect(),
+            channelObject.bank !== channelObject.getBankSelect(),
+            channelObject.preset?.presetName || "undefined",
+            channelObject.lockPreset,
+            channelObject.lockedSystem,
+            channelObject.midiControllers,
+            channelObject.lockedControllers,
+            channelObject.customControllers,
+            channelObject.lockGSNRPNParams,
+            { ...channelObject.channelVibrato },
+            channelObject.channelTransposeKeyShift,
+            new Int8Array(channelObject.channelOctaveTuning),
+            channelObject.isMuted,
+            channelObject.velocityOverride,
+            channelObject.drumChannel,
+            channelNumber
+        );
+    }
 
-        // other data
-        channelSnapshot.isMuted = channelObject.isMuted;
-        channelSnapshot.velocityOverride = channelObject.velocityOverride;
-        channelSnapshot.drumChannel = channelObject.drumChannel;
-        return channelSnapshot;
+    static copyFrom(sourceSnapshot: ChannelSnapshot): ChannelSnapshot {
+        return new ChannelSnapshot(
+            sourceSnapshot.program,
+            sourceSnapshot.bank,
+            sourceSnapshot.isBankLSB,
+            sourceSnapshot.patchName,
+            sourceSnapshot.lockPreset,
+            sourceSnapshot.lockedSystem,
+            new Int16Array(sourceSnapshot.midiControllers),
+            [...sourceSnapshot.lockedControllers],
+            new Float32Array(sourceSnapshot.customControllers),
+            sourceSnapshot.lockVibrato,
+            { ...sourceSnapshot.channelVibrato },
+            sourceSnapshot.channelTransposeKeyShift,
+            new Int8Array(sourceSnapshot.channelOctaveTuning),
+            sourceSnapshot.isMuted,
+            sourceSnapshot.velocityOverride,
+            sourceSnapshot.drumChannel,
+            sourceSnapshot.channelNumber
+        );
     }
 
     /**
      * Applies the snapshot to the specified channel.
-     * @param spessaSynthProcessor {SpessaSynthProcessor}
-     * @param channelNumber {number}
-     * @param channelSnapshot {ChannelSnapshot}
+     * @param spessaSynthProcessor The processor containing the channel.
      */
-    static applyChannelSnapshot(
-        spessaSynthProcessor,
-        channelNumber,
-        channelSnapshot
-    ) {
+    apply(spessaSynthProcessor: SpessaSynthProcessor) {
         const channelObject =
-            spessaSynthProcessor.midiAudioChannels[channelNumber];
-        channelObject.muteChannel(channelSnapshot.isMuted);
-        channelObject.setDrums(channelSnapshot.drumChannel);
+            spessaSynthProcessor.midiChannels[this.channelNumber];
+        channelObject.muteChannel(this.isMuted);
+        channelObject.setDrums(this.drumChannel);
 
         // restore controllers
-        channelObject.midiControllers = channelSnapshot.midiControllers;
-        channelObject.lockedControllers = channelSnapshot.lockedControllers;
-        channelObject.customControllers = channelSnapshot.customControllers;
+        channelObject.midiControllers = this.midiControllers;
+        channelObject.lockedControllers = this.lockedControllers;
+        channelObject.customControllers = this.customControllers;
         channelObject.updateChannelTuning();
 
         // restore vibrato and transpose
-        channelObject.channelVibrato = channelSnapshot.channelVibrato;
-        channelObject.lockGSNRPNParams = channelSnapshot.lockVibrato;
-        channelObject.channelTransposeKeyShift =
-            channelSnapshot.channelTransposeKeyShift;
-        channelObject.channelOctaveTuning = channelSnapshot.channelOctaveTuning;
-        channelObject.velocityOverride = channelSnapshot.velocityOverride;
+        channelObject.channelVibrato = this.channelVibrato;
+        channelObject.lockGSNRPNParams = this.lockVibrato;
+        channelObject.channelTransposeKeyShift = this.channelTransposeKeyShift;
+        channelObject.channelOctaveTuning = this.channelOctaveTuning;
+        channelObject.velocityOverride = this.velocityOverride;
 
         // restore preset and lock
         channelObject.setPresetLock(false);
-        channelObject.setBankSelect(
-            channelSnapshot.bank,
-            channelSnapshot.isBankLSB
-        );
-        channelObject.programChange(channelSnapshot.program);
-        channelObject.setPresetLock(channelSnapshot.lockPreset);
-        channelObject.lockedSystem = channelSnapshot.lockedSystem;
+        channelObject.setBankSelect(this.bank, this.isBankLSB);
+        channelObject.programChange(this.program);
+        channelObject.setPresetLock(this.lockPreset);
+        channelObject.lockedSystem = this.lockedSystem;
     }
 }

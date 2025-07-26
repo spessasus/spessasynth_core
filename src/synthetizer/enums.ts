@@ -5,10 +5,43 @@ export const interpolationTypes = {
 } as const;
 export type interpolationTypes =
     (typeof interpolationTypes)[keyof typeof interpolationTypes];
+// Types of synthesizer message displays.
 export const synthDisplayTypes = {
+    // This message type is used to display text on the SoundCanvas display.
     SoundCanvasText: 0,
+    // This message type is used to display text on a Yamaha XG synthesizer.
     XGText: 1,
+    // This message type is used to display a dot matrix display (pixelated graphics) on a SoundCanvas synthesizer.
     SoundCanvasDotDisplay: 2
 } as const;
 export type synthDisplayTypes =
     (typeof synthDisplayTypes)[keyof typeof synthDisplayTypes];
+
+// Data entry states for the MIDI data entry system.
+// These states are used to track the current state of data entry for MIDI controllers.
+export const dataEntryStates = {
+    Idle: 0,
+    RPCoarse: 1,
+    RPFine: 2,
+    NRPCoarse: 3,
+    NRPFine: 4,
+    DataCoarse: 5,
+    DataFine: 6
+} as const;
+
+export type dataEntryStates =
+    (typeof dataEntryStates)[keyof typeof dataEntryStates];
+
+export const customControllers = {
+    channelTuning: 0, // cents, RPN for fine tuning
+    channelTransposeFine: 1, // cents, only the decimal tuning, (e.g., transpose is 4.5,
+    // then shift by 4 keys + tune by 50 cents)
+    modulationMultiplier: 2, // cents, set by modulation depth RPN
+    masterTuning: 3, // cents, set by system exclusive
+    channelTuningSemitones: 4, // semitones, for RPN coarse tuning
+    channelKeyShift: 5, // key shift: for system exclusive
+    sf2NPRNGeneratorLSB: 6 // sf2 NPRN LSB for selecting a generator value
+} as const;
+
+export type customControllers =
+    (typeof customControllers)[keyof typeof customControllers];

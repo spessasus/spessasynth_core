@@ -1,12 +1,13 @@
-import { Modulator } from "./modulator.js";
-import { isXGDrums } from "../../utils/xg_hacks.js";
+import { Modulator } from "./modulator";
+import { isXGDrums } from "../../utils/xg_hacks";
 
-import { BasicGlobalZone } from "./basic_global_zone.js";
-import { BasicPresetZone } from "./basic_preset_zone.js";
-import type { BasicSoundBank } from "./basic_soundbank.ts";
-import type { Generator } from "./generator.ts";
-import type { SampleAndGenerators } from "../types.ts";
-import type { KeyRange } from "../../utils/global_types.ts";
+import { BasicGlobalZone } from "./basic_global_zone";
+import { BasicPresetZone } from "./basic_preset_zone";
+import type { BasicSoundBank } from "./basic_soundbank";
+import type { Generator } from "./generator";
+import type { SampleAndGenerators } from "../types";
+import type { KeyRange } from "../../utils/global_types";
+import type { BasicInstrument } from "./basic_instrument";
 
 export class BasicPreset {
     /**
@@ -54,11 +55,26 @@ export class BasicPreset {
     morphology: number = 0;
 
     /**
-     * Creates a new preset representation
-     * @param parentSoundBank the sound bank this preset belongs to
+     * Creates a new preset representation.
+     * @param parentSoundBank the sound bank this preset belongs to.
      */
     constructor(parentSoundBank: BasicSoundBank) {
         this.parentSoundBank = parentSoundBank;
+    }
+
+    // Note: these getters and setters are used for convenience to have a `.name` on all SF elements.
+    // my old self didn't think about this, so they are named like `presetName`,
+    // `instrumentName`, etc. instead of just `name`.
+    // very clever, Spessasus, very clever indeed.
+
+    // The preset's name.
+    get name(): string {
+        return this.presetName;
+    }
+
+    // The preset's name.
+    set name(value: string) {
+        this.presetName = value;
     }
 
     /**
@@ -90,10 +106,11 @@ export class BasicPreset {
     }
 
     /**
-     * Creates a new preset zone and returns it
+     * Creates a new preset zone and returns it.
+     * @param instrument the instrument to use in the zone.
      */
-    createZone(): BasicPresetZone {
-        const z = new BasicPresetZone(this);
+    createZone(instrument: BasicInstrument): BasicPresetZone {
+        const z = new BasicPresetZone(this, instrument);
         this.presetZones.push(z);
         return z;
     }

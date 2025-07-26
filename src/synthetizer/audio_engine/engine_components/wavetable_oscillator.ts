@@ -1,4 +1,5 @@
-import { interpolationTypes } from "../../enums.ts";
+import { interpolationTypes } from "../../enums";
+import type { Voice } from "./voice";
 
 /**
  * wavetable_oscillator.js
@@ -7,12 +8,16 @@ import { interpolationTypes } from "../../enums.ts";
 
 export class WavetableOscillator {
     /**
-     * Fills the output buffer with raw sample data using a given interpolation
-     * @param voice {Voice} the voice we're working on
-     * @param outputBuffer {Float32Array} the output buffer to write to
-     * @param interpolation {interpolationTypes} the interpolation type
+     * Fills the output buffer with raw sample data using a given interpolation.
+     * @param voice The voice we're working on.
+     * @param outputBuffer The output buffer to write to.
+     * @param interpolation The interpolation type.
      */
-    static getSample(voice, outputBuffer, interpolation) {
+    static getSample(
+        voice: Voice,
+        outputBuffer: Float32Array,
+        interpolation: interpolationTypes
+    ) {
         const step = voice.currentTuningCalculated * voice.sample.playbackStep;
         // why not?
         if (step === 1) {
@@ -36,12 +41,16 @@ export class WavetableOscillator {
     }
 
     /**
-     * Fills the output buffer with raw sample data using linear interpolation
-     * @param voice {Voice} the voice we're working on
-     * @param outputBuffer {Float32Array} the output buffer to write to
-     * @param step {number} the step to advance every sample
+     * Fills the output buffer with raw sample data using linear interpolation.
+     * @param voice The voice we're working on.
+     * @param outputBuffer The output buffer to write to.
+     * @param step The step to advance every sample (playback rate).
      */
-    static getSampleLinear(voice, outputBuffer, step) {
+    static getSampleLinear(
+        voice: Voice,
+        outputBuffer: Float32Array,
+        step: number
+    ) {
         const sample = voice.sample;
         let cur = sample.cursor;
         const sampleData = sample.sampleData;
@@ -97,12 +106,16 @@ export class WavetableOscillator {
     }
 
     /**
-     * Fills the output buffer with raw sample data using no interpolation (nearest neighbor)
-     * @param voice {Voice} the voice we're working on
-     * @param outputBuffer {Float32Array} the output buffer to write to
-     * @param step {number} the step to advance every sample
+     * Fills the output buffer with raw sample data using no interpolation (nearest neighbor).
+     * @param voice The voice we're working on.
+     * @param outputBuffer The output buffer to write to.
+     * @param step The step to advance every sample (playback rate).
      */
-    static getSampleNearest(voice, outputBuffer, step) {
+    static getSampleNearest(
+        voice: Voice,
+        outputBuffer: Float32Array,
+        step: number
+    ) {
         const sample = voice.sample;
         let cur = sample.cursor;
         const sampleData = sample.sampleData;
@@ -144,12 +157,16 @@ export class WavetableOscillator {
     }
 
     /**
-     * Fills the output buffer with raw sample data using Hermite interpolation
-     * @param voice {Voice} the voice we're working on
-     * @param outputBuffer {Float32Array} the output buffer to write to
-     * @param step {number} the step to advance every sample
+     * Fills the output buffer with raw sample data using Hermite interpolation.
+     * @param voice The voice we're working on.
+     * @param outputBuffer The output buffer to write to.
+     * @param step The step to advance every sample (playback rate).
      */
-    static getSampleHermite(voice, outputBuffer, step) {
+    static getSampleHermite(
+        voice: Voice,
+        outputBuffer: Float32Array,
+        step: number
+    ) {
         const sample = voice.sample;
         let cur = sample.cursor;
         const sampleData = sample.sampleData;

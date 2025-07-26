@@ -1,12 +1,12 @@
-import { SpessaSynthWarn } from "../../../utils/loggin.js";
-import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset.js";
+import { SpessaSynthWarn } from "../../../utils/loggin";
+import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import type { MIDIChannel } from "../engine_components/midi_audio_channel";
 
 /**
- * executes a program change
- * @param programNumber {number}
- * @this {MidiAudioChannel}
+ * Changes the program (preset) of the channel.
+ * @param programNumber The program number (0-127) to change to.
  */
-export function programChange(programNumber) {
+export function programChange(this: MIDIChannel, programNumber: number) {
     if (this.lockPreset) {
         return;
     }
@@ -19,13 +19,14 @@ export function programChange(programNumber) {
     if (!preset) {
         SpessaSynthWarn("No presets! Using empty fallback.");
         preset = new BasicPreset(
-            this.synth.soundfontManager.soundfontList[0].soundfont
+            this.synth.soundfontManager.soundBankList[0].soundfont
         );
+        // fallback preset, make it scream so it's easy to notice :-)
         preset.presetName = "SPESSA EMPTY FALLBACK PRESET";
     }
     this.setPreset(preset);
     this.sentBank = Math.min(128, preset.bank + p.bankOffset);
-    this.synth.callEvent("programchange", {
+    this.synthProps.callEvent("programchange", {
         channel: this.channelNumber,
         program: preset.program,
         bank: this.sentBank

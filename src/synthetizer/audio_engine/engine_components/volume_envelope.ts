@@ -1,9 +1,7 @@
-import {
-    decibelAttenuationToGain,
-    timecentsToSeconds
-} from "./unit_converter.js";
+import { decibelAttenuationToGain, timecentsToSeconds } from "./unit_converter";
 
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { Voice } from "./voice";
 
 /**
  * volume_envelope.js
@@ -26,119 +24,103 @@ const PERCEIVED_GAIN_SILENCE = 0.000015; // can't go lower than that (see #50)
  * 4 - sustain
  * release indicates by isInRelease property
  */
+type VolumeEnvelopeState = 0 | 1 | 2 | 3 | 4;
 
 export class VolumeEnvelope {
     /**
-     * The envelope's current time in samples
-     * @type {number}
+     * The envelope's current time in samples.
      */
-    currentSampleTime = 0;
+    currentSampleTime: number = 0;
     /**
-     * The sample rate in Hz
-     * @type {number}
+     * The sample rate in Hz.
      */
-    sampleRate;
+    sampleRate: number;
     /**
-     * The current attenuation of the envelope in dB
-     * @type {number}
+     * The current attenuation of the envelope in dB.
      */
-    currentAttenuationDb = DB_SILENCE;
+    currentAttenuationDb: number = DB_SILENCE;
     /**
-     * The current stage of the volume envelope
-     * @type {0|1|2|3|4}
+     * The current stage of the volume envelope.
      */
-    state = 0;
+    state: VolumeEnvelopeState = 0;
     /**
-     * The dB attenuation of the envelope when it entered the release stage
-     * @type {number}
+     * The dB attenuation of the envelope when it entered the release stage.
      */
-    releaseStartDb = DB_SILENCE;
+    releaseStartDb: number = DB_SILENCE;
     /**
-     * The time in samples relative to the start of the envelope
-     * @type {number}
+     * The time in samples relative to the start of the envelope.
      */
-    releaseStartTimeSamples = 0;
+    releaseStartTimeSamples: number = 0;
     /**
-     * The current gain applied to the voice in the release stage
-     * @type {number}
+     * The current gain applied to the voice in the release stage.
      */
-    currentReleaseGain = 1;
+    currentReleaseGain: number = 1;
     /**
-     * The attack duration in samples
-     * @type {number}
+     * The attack duration in samples.
      */
-    attackDuration = 0;
+    attackDuration: number = 0;
     /**
-     * The decay duration in samples
-     * @type {number}
+     * The decay duration in samples.
      */
-    decayDuration = 0;
+    decayDuration: number = 0;
     /**
-     * The release duration in samples
-     * @type {number}
+     * The release duration in samples.
      */
-    releaseDuration = 0;
+    releaseDuration: number = 0;
     /**
-     * The voice's absolute attenuation as linear gain
-     * @type {number}
+     * The voice's absolute attenuation as linear gain.
      */
-    attenuation = 0;
+    attenuation: number = 0;
     /**
-     * The attenuation target, which the "attenuation" property is linearly interpolated towards (gain)
-     * @type {number}
+     * The attenuation target, which the "attenuation" property is linearly interpolated towards (gain).
      */
-    attenuationTargetGain = 0;
+    attenuationTargetGain: number = 0;
     /**
-     * The attenuation target, which the "attenuation" property is linearly interpolated towards (dB)
-     * @type {number}
+     * The attenuation target, which the "attenuation" property is linearly interpolated towards (dB).
      */
-    attenuationTarget = 0;
+    attenuationTarget: number = 0;
     /**
-     * The voice's sustain amount in dB, relative to attenuation
-     * @type {number}
+     * The voice's sustain amount in dB, relative to attenuation.
      */
-    sustainDbRelative = 0;
+    sustainDbRelative: number = 0;
     /**
-     * The time in samples to the end of delay stage, relative to the start of the envelope
-     * @type {number}
+     * The time in samples to the end of delay stage, relative to the start of the envelope.
      */
-    delayEnd = 0;
+    delayEnd: number = 0;
     /**
-     * The time in samples to the end of attack stage, relative to the start of the envelope
-     * @type {number}
+     * The time in samples to the end of attack stage, relative to the start of the envelope.
      */
-    attackEnd = 0;
+    attackEnd: number = 0;
     /**
-     * The time in samples to the end of hold stage, relative to the start of the envelope
-     * @type {number}
+     * The time in samples to the end of hold stage, relative to the start of the envelope.
      */
-    holdEnd = 0;
+    holdEnd: number = 0;
     /**
-     * The time in samples to the end of decay stage, relative to the start of the envelope
-     * @type {number}
+     * The time in samples to the end of decay stage, relative to the start of the envelope.
      */
-    decayEnd = 0;
+    decayEnd: number = 0;
 
     /**
-     * @param sampleRate {number} Hz
-     * @param initialDecay {number} cb
+     * if sustain stage is silent,
+     * then we can turn off the voice when it is silent.
+     * We can't do that with modulated as it can silence the volume and then raise it again, and the voice must keep playing.
      */
-    constructor(sampleRate, initialDecay) {
+    canEndOnSilentSustain: boolean;
+
+    /**
+     * @param sampleRate Hz
+     * @param initialDecay cb
+     */
+    constructor(sampleRate: number, initialDecay: number) {
         this.sampleRate = sampleRate;
-        /**
-         * if sustain stge is silent,
-         * then we can turn off the voice when it is silent.
-         * We can't do that with modulated as it can silence the volume and then raise it again, and the voice must keep playing
-         * @type {boolean}
-         */
         this.canEndOnSilentSustain = initialDecay / 10 >= PERCEIVED_DB_SILENCE;
     }
 
     /**
-     * Starts the release phase in the envelope
-     * @param voice {Voice} the voice this envelope belongs to
+     * Starts the release phase in the envelope.
+     * @param voice the voice this envelope belongs to.
      */
-    static startRelease(voice) {
+    static startRelease(voice: Voice) {
         voice.volumeEnvelope.releaseStartTimeSamples =
             voice.volumeEnvelope.currentSampleTime;
         voice.volumeEnvelope.currentReleaseGain = decibelAttenuationToGain(
@@ -149,11 +131,11 @@ export class VolumeEnvelope {
 
     /**
      * Recalculates the envelope
-     * @param voice {Voice} the voice this envelope belongs to
+     * @param voice the voice this envelope belongs to
      */
-    static recalculate(voice) {
+    static recalculate(voice: Voice) {
         const env = voice.volumeEnvelope;
-        const timecentsToSamples = (tc) => {
+        const timecentsToSamples = (tc: number) => {
             return Math.max(
                 0,
                 Math.floor(timecentsToSeconds(tc) * env.sampleRate)
@@ -184,7 +166,7 @@ export class VolumeEnvelope {
             voice.modulatedGenerators[generatorTypes.attackVolEnv]
         );
 
-        // decay: sfspec page 35: the time is for change from attenuation to -100dB,
+        // decay: sf spec page 35: the time is for change from attenuation to -100dB,
         // therefore, we need to calculate the real time
         // (changing from attenuation to sustain instead of -100dB)
         const fullChange =
@@ -241,7 +223,7 @@ export class VolumeEnvelope {
                     env.releaseStartDb = DB_SILENCE;
                     break;
 
-                case 1:
+                case 1: {
                     // attack phase: get linear gain of the attack phase when release started
                     // and turn it into db as we're ramping the db up linearly
                     // (to make volume go down exponentially)
@@ -254,6 +236,7 @@ export class VolumeEnvelope {
                     // turn that into db
                     env.releaseStartDb = 20 * Math.log10(elapsed) * -1;
                     break;
+                }
 
                 case 2:
                     env.releaseStartDb = 0;
@@ -282,7 +265,7 @@ export class VolumeEnvelope {
                 env.releaseStartDb
             );
 
-            // release: sfspec page 35: the time is for change from attenuation to -100dB,
+            // release: sf spec page 35: the time is for change from attenuation to -100dB,
             // therefore, we need to calculate the real time
             // (changing from release start to -100dB instead of from peak to -100dB)
             const releaseFraction =
@@ -292,14 +275,19 @@ export class VolumeEnvelope {
     }
 
     /**
-     * Applies volume envelope gain to the given output buffer
-     * @param voice {Voice} the voice we're working on
-     * @param audioBuffer {Float32Array} the audio buffer to modify
-     * @param centibelOffset {number} the centibel offset of volume, for modLFOtoVolume
-     * @param smoothingFactor {number} the adjusted smoothing factor for the envelope
-     * @description essentially we use approach of 100dB is silence, 0dB is peak, and always add attenuation to that (which is interpolated)
+     * Applies volume envelope gain to the given output buffer.
+     * Essentially we use approach of 100dB is silence, 0dB is peak, and always add attenuation to that (which is interpolated).
+     * @param voice the voice we're working on
+     * @param audioBuffer the audio buffer to modify
+     * @param centibelOffset the centibel offset of volume, for modLFOtoVolume
+     * @param smoothingFactor the adjusted smoothing factor for the envelope
      */
-    static apply(voice, audioBuffer, centibelOffset, smoothingFactor) {
+    static apply(
+        voice: Voice,
+        audioBuffer: Float32Array,
+        centibelOffset: number,
+        smoothingFactor: number
+    ) {
         const env = voice.volumeEnvelope;
         const decibelOffset = centibelOffset / 10;
 

@@ -2,13 +2,20 @@
   "name": "spessasynth_core",
   "version": "3.27.7",
   "description": "MIDI and SoundFont2/DLS library with no compromises",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
   "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./types": "./dist/types/index.d.ts"
+  },
   "scripts": {
-    "test": "node examples/midi_to_wav_node/index.js",
-    "build": "tsup src/index.ts --tsconfig tsconfig.json --dts --format esm,cjs",
+    "test": "node examples/midi_to_wav_node/index.ts",
+    "build": "rimraf -rf dist && tsc -b tsconfig.cjs.json && tsc -b tsconfig.esm.json && tsc -b tsconfig.dts.json",
     "test:types": "tsc --noEmit"
   },
   "repository": {
@@ -44,10 +51,9 @@
     "email": "spesekspesek@gmail.com"
   },
   "files": [
-    "src",
+    "dist",
     "README.md",
     "LICENSE",
-    "src/index.js",
     "package.json"
   ],
   "homepage": "https://github.com/spessasus/spessasynth_core#readme",
@@ -56,7 +62,7 @@
     "eslint": "^9.32.0",
     "globals": "^16.3.0",
     "prettier": "^3.6.2",
-    "tsup": "^8.5.0",
+    "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0"
   }

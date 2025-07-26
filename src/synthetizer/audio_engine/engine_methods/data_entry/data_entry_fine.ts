@@ -1,25 +1,21 @@
-import { consoleColors } from "../../../../utils/other.js";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin.js";
-import { modulatorSources } from "../../../../soundbank/basic_soundbank/modulator.js";
-import {
-    customControllers,
-    dataEntryStates,
-    NON_CC_INDEX_OFFSET
-} from "../../engine_components/controller_tables.js";
+import { consoleColors } from "../../../../utils/other";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin";
+import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
 import {
     nonRegisteredMSB,
     registeredParameterTypes
-} from "./data_entry_coarse.js";
-import { handleAWE32NRPN } from "./awe32.js";
-import { midiControllers } from "../../../../midi/enums.ts";
+} from "./data_entry_coarse";
+import { handleAWE32NRPN } from "./awe32";
+import { midiControllers } from "../../../../midi/enums";
+import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import { customControllers, dataEntryStates } from "../../../enums";
+import { modulatorSources } from "../../../../soundbank/enums";
 
 /**
- * Executes a data entry for an RPN tuning
- * @param dataValue {number} dataEntry LSB
- * @this {MidiAudioChannel}
- * @private
+ * Executes a data entry fine (LSB) change for the current channel.
+ * @param dataValue The value to set for the data entry fine controller (0-127).
  */
-export function dataEntryFine(dataValue) {
+export function dataEntryFine(this: MIDIChannel, dataValue: number) {
     // store in cc table
     this.midiControllers[midiControllers.lsbForControl6DataEntry] =
         dataValue << 7;
@@ -28,7 +24,7 @@ export function dataEntryFine(dataValue) {
             break;
 
         case dataEntryStates.RPCoarse:
-        case dataEntryStates.RPFine:
+        case dataEntryStates.RPFine: {
             const rpnValue =
                 this.midiControllers[midiControllers.RPNMsb] |
                 (this.midiControllers[midiControllers.RPNLsb] >> 7);
@@ -37,7 +33,7 @@ export function dataEntryFine(dataValue) {
                     break;
 
                 // pitch bend range fine tune
-                case registeredParameterTypes.pitchBendRange:
+                case registeredParameterTypes.pitchBendRange: {
                     if (dataValue === 0) {
                         break;
                     }
@@ -58,18 +54,20 @@ export function dataEntryFine(dataValue) {
                         consoleColors.value
                     );
                     break;
+                }
 
                 // fine-tuning
-                case registeredParameterTypes.fineTuning:
+                case registeredParameterTypes.fineTuning: {
                     // grab the data and shift
                     const coarse =
                         this.customControllers[customControllers.channelTuning];
                     const finalTuning = (coarse << 7) | dataValue;
                     this.setTuning(finalTuning * 0.01220703125); // multiply by 8192 / 100 (cent increments)
                     break;
+                }
 
                 // modulation depth
-                case registeredParameterTypes.modulationDepth:
+                case registeredParameterTypes.modulationDepth: {
                     const currentModulationDepthCents =
                         this.customControllers[
                             customControllers.modulationMultiplier
@@ -78,22 +76,18 @@ export function dataEntryFine(dataValue) {
                         currentModulationDepthCents + (dataValue / 128) * 100;
                     this.setModulationDepth(cents);
                     break;
+                }
 
                 case 0x3fff:
                     this.resetParameters();
                     break;
             }
             break;
+        }
 
-        case dataEntryStates.NRPFine:
-            /**
-             * @type {number}
-             */
+        case dataEntryStates.NRPFine: {
             const NRPNCoarse =
                 this.midiControllers[midiControllers.NRPNMsb] >> 7;
-            /**
-             * @type {number}
-             */
             const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
             if (NRPNCoarse === nonRegisteredMSB.SF2) {
                 return;
@@ -124,5 +118,6 @@ export function dataEntryFine(dataValue) {
                     );
                     break;
             }
+        }
     }
 }

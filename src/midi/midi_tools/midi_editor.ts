@@ -1,25 +1,26 @@
-import { MIDIMessage } from "../midi_message.js";
-import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { MIDIMessage } from "../midi_message";
+import { IndexedByteArray } from "../../utils/indexed_array";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
 
-import { customControllers } from "../../synthetizer/audio_engine/engine_components/controller_tables.js";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants.js";
-import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector.js";
-import { isSystemXG, isXGDrums, XG_SFX_VOICE } from "../../utils/xg_hacks.js";
-import { messageTypes, midiControllers } from "../enums.ts";
-import { getGsOn } from "./get_gs_on.ts";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
+import { isSystemXG, isXGDrums, XG_SFX_VOICE } from "../../utils/xg_hacks";
+import { messageTypes, midiControllers } from "../enums";
+import { getGsOn } from "./get_gs_on";
 import type {
     DesiredChannelTranspose,
     DesiredControllerChange,
     DesiredProgramChange
-} from "../types.ts";
-import type { BasicMIDI } from "../basic_midi.ts";
-import type { SynthesizerSnapshot } from "../../synthetizer/audio_engine/snapshot/synthesizer_snapshot.ts";
+} from "../types";
+import type { BasicMIDI } from "../basic_midi";
+import type { SynthesizerSnapshot } from "../../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
+import type { SynthSystem } from "../../synthetizer/types";
+import { customControllers } from "../../synthetizer/enums";
 
 function getControllerChange(
     channel: number,
@@ -97,7 +98,7 @@ export function modifyMIDIInternal(
     });
 
     // go through all events one by one
-    let system = "gs";
+    let system: SynthSystem = "gs";
     let addedGs = false;
     /**
      * indexes for tracks

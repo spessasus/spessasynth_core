@@ -1,9 +1,12 @@
-import { RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { BasicInstrument } from "../basic_soundbank/basic_instrument.js";
+import { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { BasicInstrument } from "../basic_soundbank/basic_instrument";
 
-import { SoundFontInstrumentZone } from "./instrument_zones.js";
+import { SoundFontInstrumentZone } from "./instrument_zones";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
+import type { Modulator } from "../basic_soundbank/modulator";
+import type { Generator } from "../basic_soundbank/generator";
 
 /**
  * instrument.js
@@ -24,8 +27,17 @@ export class SoundFontInstrument extends BasicInstrument {
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
 
-    createZone(): SoundFontInstrumentZone {
-        const z = new SoundFontInstrumentZone(this);
+    createSoundFontZone(
+        modulators: Modulator[],
+        generators: Generator[],
+        samples: BasicSample[]
+    ): SoundFontInstrumentZone {
+        const z = new SoundFontInstrumentZone(
+            this,
+            modulators,
+            generators,
+            samples
+        );
         this.instrumentZones.push(z);
         return z;
     }

@@ -1,8 +1,8 @@
-import { generatorTypes } from "./generator_types.js";
-import { Generator } from "./generator.js";
-import { Modulator } from "./modulator.js";
+import { generatorTypes } from "./generator_types";
+import { Generator } from "./generator";
+import { Modulator } from "./modulator";
 
-import type { KeyRange } from "../../utils/global_types.ts";
+import type { KeyRange } from "../../utils/global_types";
 
 export class BasicZone {
     /**

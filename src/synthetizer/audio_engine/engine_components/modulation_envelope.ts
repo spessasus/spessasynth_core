@@ -1,7 +1,8 @@
-import { timecentsToSeconds } from "./unit_converter.js";
-import { getModulatorCurveValue } from "./modulator_curves.js";
-import { modulatorCurveTypes } from "../../../soundbank/basic_soundbank/modulator.js";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
+import { timecentsToSeconds } from "./unit_converter";
+import { getModulatorCurveValue } from "./modulator_curves";
+import { modulatorCurveTypes } from "../../../soundbank/enums";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { Voice } from "./voice";
 
 /**
  * modulation_envelope.js
@@ -23,79 +24,68 @@ for (let i = 0; i < CONVEX_ATTACK.length; i++) {
 
 export class ModulationEnvelope {
     /**
-     * The attack duration, in seconds
-     * @type {number}
+     * The attack duration, in seconds.
      */
-    attackDuration = 0;
+    attackDuration: number = 0;
     /**
-     * The decay duration, in seconds
-     * @type {number}
+     * The decay duration, in seconds.
      */
-    decayDuration = 0;
+    decayDuration: number = 0;
 
     /**
-     * The hold duration, in seconds
-     * @type {number}
+     * The hold duration, in seconds.
      */
-    holdDuration = 0;
+    holdDuration: number = 0;
 
     /**
-     * Release duration, in seconds
-     * @type {number}
+     * Release duration, in seconds.
      */
-    releaseDuration = 0;
+    releaseDuration: number = 0;
 
     /**
-     * The sustain level 0-1
-     * @type {number}
+     * The sustain level 0-1.
      */
-    sustainLevel = 0;
+    sustainLevel: number = 0;
 
     /**
-     * Delay phase end time in seconds, absolute (audio context time)
-     * @type {number}
+     * Delay phase end time in seconds, absolute (audio context time).
      */
-    delayEnd = 0;
+    delayEnd: number = 0;
     /**
-     * Attack phase end time in seconds, absolute (audio context time)
-     * @type {number}
+     * Attack phase end time in seconds, absolute (audio context time).
      */
-    attackEnd = 0;
+    attackEnd: number = 0;
     /**
-     * Hold phase end time in seconds, absolute (audio context time)
-     * @type {number}
+     * Hold phase end time in seconds, absolute (audio context time).
      */
-    holdEnd = 0;
+    holdEnd: number = 0;
     /**
-     * Decay phase end time in seconds, absolute (audio context time)
-     * @type {number}
+     * Decay phase end time in seconds, absolute (audio context time).
      */
-    decayEnd = 0;
+    decayEnd: number = 0;
 
     /**
-     * The level of the envelope when the release phase starts
-     * @type {number}
+     * The level of the envelope when the release phase starts.
      */
-    releaseStartLevel = 0;
+    releaseStartLevel: number = 0;
 
     /**
-     * The current modulation envelope value
-     * @type {number}
+     * The current modulation envelope value.
      */
-    currentValue = 0;
+    currentValue: number = 0;
 
     /**
-     * Starts the release phase in the envelope
-     * @param voice {Voice} the voice this envelope belongs to
+     * Starts the release phase in the envelope.
+     * @param voice the voice this envelope belongs to.
      */
-    static startRelease(voice) {
+    static startRelease(voice: Voice) {
         ModulationEnvelope.recalculate(voice);
     }
 
     /**
-     * @param voice {Voice} the voice to recalculate
+     * @param voice the voice to recalculate.
      */
-    static recalculate(voice) {
+    static recalculate(voice: Voice) {
         const env = voice.modulationEnvelope;
 
         // in release? Might need to recalculate the value as it can be modulated
@@ -152,13 +142,17 @@ export class ModulationEnvelope {
     }
 
     /**
-     * Calculates the current modulation envelope value for the given time and voice
-     * @param voice {Voice} the voice we are working on
-     * @param currentTime {number} in seconds
-     * @param ignoreRelease {boolean} if true, it will compute the value as if the voice was not released
-     * @returns {number} modenv value, from 0 to 1
+     * Calculates the current modulation envelope value for the given time and voice.
+     * @param voice the voice we are working on.
+     * @param currentTime in seconds.
+     * @param ignoreRelease if true, it will compute the value as if the voice was not released.
+     * @returns  mod env value, from 0 to 1.
      */
-    static getValue(voice, currentTime, ignoreRelease = false) {
+    static getValue(
+        voice: Voice,
+        currentTime: number,
+        ignoreRelease: boolean = false
+    ): number {
         const env = voice.modulationEnvelope;
         if (voice.isInRelease && !ignoreRelease) {
             // if the voice is still in the delay phase,

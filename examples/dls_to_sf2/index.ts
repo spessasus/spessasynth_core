@@ -1,11 +1,10 @@
 // process arguments
-import fs from "fs";
-import { loadSoundFont } from "../../src/soundbank/load_soundfont.js";
-import { BasicSoundBank } from "../../src/soundbank/basic_soundbank/basic_soundbank.js";
+import * as fs from "node:fs";
+import { BasicSoundBank } from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {
-    console.info("Usage: node index.js <dls input path> <sf2 output path>");
+    console.info("Usage: tsx index.ts <dls input path> <sf2 output path>");
     process.exit();
 }
 
@@ -15,7 +14,7 @@ const sf2Path = args[1];
 await BasicSoundBank.isSF3DecoderReady;
 const dls = fs.readFileSync(dlsPath);
 console.time("Loaded in");
-const bank = loadSoundFont(dls);
+const bank = BasicSoundBank.fromArrayBuffer(dls.buffer);
 console.timeEnd("Loaded in");
 console.time("Converted in");
 console.info(`Name: ${bank.soundFontInfo["INAM"]}`);

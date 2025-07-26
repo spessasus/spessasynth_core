@@ -1,239 +1,256 @@
 import {
     CONTROLLER_TABLE_SIZE,
     CUSTOM_CONTROLLER_TABLE_SIZE,
-    customControllers,
-    dataEntryStates,
     NON_CC_INDEX_OFFSET
-} from "./controller_tables.js";
+} from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
     resetParameters
-} from "../engine_methods/controller_control/reset_controllers.js";
-import { renderVoice } from "../engine_methods/render_voice.js";
-import { panAndMixVoice } from "./stereo_panner.js";
-import { killNote } from "../engine_methods/stopping_notes/kill_note.js";
-import { setTuning } from "../engine_methods/tuning_control/set_tuning.js";
-import { setModulationDepth } from "../engine_methods/tuning_control/set_modulation_depth.js";
-import { dataEntryFine } from "../engine_methods/data_entry/data_entry_fine.js";
-import { controllerChange } from "../engine_methods/controller_control/controller_change.js";
-import { stopAllNotes } from "../engine_methods/stopping_notes/stop_all_notes.js";
-import { muteChannel } from "../engine_methods/mute_channel.js";
-import { transposeChannel } from "../engine_methods/tuning_control/transpose_channel.js";
-import { dataEntryCoarse } from "../engine_methods/data_entry/data_entry_coarse.js";
-import { noteOn } from "../engine_methods/note_on.js";
-import { noteOff } from "../engine_methods/stopping_notes/note_off.js";
-import { polyPressure } from "../engine_methods/tuning_control/poly_pressure.js";
-import { channelPressure } from "../engine_methods/tuning_control/channel_pressure.js";
-import { pitchWheel } from "../engine_methods/tuning_control/pitch_wheel.js";
-import { setOctaveTuning } from "../engine_methods/tuning_control/set_octave_tuning.js";
-import { programChange } from "../engine_methods/program_change.js";
-import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks.js";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants.js";
-import { modulatorSources } from "../../../soundbank/enums.ts";
-import { DynamicModulatorSystem } from "./dynamic_modulator_system.js";
-import { computeModulators } from "./compute_modulator.js";
-import { generatorLimits, GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types.js";
+} from "../engine_methods/controller_control/reset_controllers";
+import { renderVoice } from "../engine_methods/render_voice";
+import { panAndMixVoice } from "./stereo_panner";
+import { dataEntryFine } from "../engine_methods/data_entry/data_entry_fine";
+import { controllerChange } from "../engine_methods/controller_control/controller_change";
+import { dataEntryCoarse } from "../engine_methods/data_entry/data_entry_coarse";
+import { noteOn } from "../engine_methods/note_on";
+import { noteOff } from "../engine_methods/stopping_notes/note_off";
+import { programChange } from "../engine_methods/program_change";
+import {
+    chooseBank,
+    isSystemXG,
+    parseBankSelect
+} from "../../../utils/xg_hacks";
+import {
+    DEFAULT_PERCUSSION,
+    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
+} from "../synth_constants";
+import { modulatorSources } from "../../../soundbank/enums";
+import { DynamicModulatorSystem } from "./dynamic_modulator_system";
+import { computeModulators } from "./compute_modulator";
+import {
+    generatorLimits,
+    GENERATORS_AMOUNT,
+    generatorTypes
+} from "../../../soundbank/basic_soundbank/generator_types";
+import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
+import type { SpessaSynthProcessor } from "../main_processor";
+import { customControllers, dataEntryStates } from "../../enums";
+import { SpessaSynthInfo } from "../../../utils/loggin";
+import { consoleColors } from "../../../utils/other";
+import { midiControllers } from "../../../midi/enums";
+import type { ProtectedSynthValues } from "../internal_synth_values";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
  */
-class MidiAudioChannel {
-    /**
-     * An array of MIDI controller values and values used by modulators as the source (e.g., pitch bend, bend range, etc.).
-     * These are stored as 14-bit values.
-     * Refer to controller_tables.js for the index definitions.
-     * @type {Int16Array}
+class MIDIChannel {
+    /*
+     * An array of MIDI controllers for the channel.
+     * This array is used to store the state of various MIDI controllers
+     * such as volume, pan, modulation, etc.
+     * @remarks
+     * A bit of an explanation:
+     * The controller table is stored as an int16 array, it stores 14-bit values.
+     * This controller table is then extended with the modulatorSources section,
+     * for example, pitch range and pitch range depth.
+     * This allows us for precise control range and supports full pitch-wheel resolution.
      */
-    midiControllers = new Int16Array(CONTROLLER_TABLE_SIZE);
+    midiControllers: Int16Array = new Int16Array(CONTROLLER_TABLE_SIZE);
 
     /**
      * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
      * (i.e., not allowed changing).
      * A locked controller cannot be modified.
-     * @type {boolean[]}
      */
-    lockedControllers = Array(CONTROLLER_TABLE_SIZE).fill(false);
+    lockedControllers: boolean[] = Array(CONTROLLER_TABLE_SIZE).fill(false);
 
     /**
      * An array of custom (non-SF2) control values such as RPN pitch tuning, transpose, modulation depth, etc.
      * Refer to controller_tables.js for the index definitions.
-     * @type {Float32Array}
      */
-    customControllers = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);
+    customControllers: Float32Array = new Float32Array(
+        CUSTOM_CONTROLLER_TABLE_SIZE
+    );
 
     /**
      * The key shift of the channel (in semitones).
-     * @type {number}
      */
-    channelTransposeKeyShift = 0;
+    channelTransposeKeyShift: number = 0;
 
     /**
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
-     * Note: Repeaded every 12 notes
-     * @type {Int8Array}
+     * Note: Repeated every 12 notes.
      */
-    channelOctaveTuning = new Int8Array(128);
+    channelOctaveTuning: Int8Array = new Int8Array(128);
 
     /**
      * Will be updated every time something tuning-related gets changed.
      * This is used to avoid a big addition for every voice rendering call.
-     * @type {number}
      */
-    channelTuningCents = 0;
+    channelTuningCents: number = 0;
 
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
-     * @type {DynamicModulatorSystem}
      */
-    sysExModulators = new DynamicModulatorSystem();
+    sysExModulators: DynamicModulatorSystem = new DynamicModulatorSystem();
 
     /**
      * An array of offsets generators for SF2 nrpn support.
      * A value of 0 means no change; -10 means 10 lower, etc.
-     * @type {Int16Array}
      */
-    generatorOffsets = new Int16Array(GENERATORS_AMOUNT);
+    generatorOffsets: Int16Array = new Int16Array(GENERATORS_AMOUNT);
 
     /**
      * A small optimization that disables applying offsets until at least one is set.
-     * @type {boolean}
      */
-    generatorOffsetsEnabled = false;
+    generatorOffsetsEnabled: boolean = false;
 
     /**
      * An array of override generators for AWE32 support.
      * A value of 32,767 means unchanged, as it is not allowed anywhere.
-     * @type {Int16Array}
      */
-    generatorOverrides = new Int16Array(GENERATORS_AMOUNT);
+    generatorOverrides: Int16Array = new Int16Array(GENERATORS_AMOUNT);
 
     /**
      * A small optimization that disables applying overrides until at least one is set.
-     * @type {boolean}
      */
-    generatorOverridesEnabled = false;
+    generatorOverridesEnabled: boolean = false;
 
     /**
      * Indicates whether the sustain (hold) pedal is active.
-     * @type {boolean}
      */
-    holdPedal = false;
+    holdPedal: boolean = false;
 
     /**
      * Indicates whether this channel is a drum channel.
-     * @type {boolean}
      */
-    drumChannel = false;
+    drumChannel: boolean = false;
 
     /**
      * If greater than 0, overrides the velocity value for the channel, otherwise it's disabled.
-     * @type {number}
      */
-    velocityOverride = 0;
+    velocityOverride: number = 0;
 
     /**
      * Enables random panning for every note played on this channel.
-     * @type {boolean}
      */
-    randomPan = false;
+    randomPan: boolean = false;
 
     /**
      * The current state of the data entry for the channel.
-     * @type {dataEntryStates}
      */
-    dataEntryState = dataEntryStates.Idle;
+    dataEntryState: dataEntryStates = dataEntryStates.Idle;
 
     /**
      * The bank number of the channel (used for patch changes).
-     * @type {number}
      */
-    bank = 0;
+    bank: number = 0;
 
     /**
      * The bank number sent as channel properties.
-     * @type {number}
      */
-    sentBank = 0;
+    sentBank: number = 0;
 
     /**
      * The bank LSB number of the channel (used for patch changes in XG mode).
-     * @type {number}
      */
-    bankLSB = 0;
+    bankLSB: number = 0;
 
     /**
      * The preset currently assigned to the channel.
-     * @type {?BasicPreset}
      */
-    preset = undefined;
+    preset: BasicPreset | undefined = undefined;
 
     /**
      * Indicates whether the program on this channel is locked.
-     * @type {boolean}
      */
-    lockPreset = false;
+    lockPreset: boolean = false;
 
     /**
      * Indicates the MIDI system when the preset was locked.
-     * @type {SynthSystem}
      */
-    lockedSystem = "gs";
+    lockedSystem: SynthSystem = "gs";
 
     /**
      * Indicates whether the GS NRPN parameters are enabled for this channel.
-     * @type {boolean}
      */
-    lockGSNRPNParams = false;
+    lockGSNRPNParams: boolean = false;
 
     /**
      * The vibrato settings for the channel.
-     * @type {Object}
-     * @property {number} depth - Depth of the vibrato effect in cents.
-     * @property {number} delay - Delay before the vibrato effect starts (in seconds).
-     * @property {number} rate - Rate of the vibrato oscillation (in Hz).
+     * @property depth - Depth of the vibrato effect in cents.
+     * @property delay - Delay before the vibrato effect starts (in seconds).
+     * @property rate - Rate of the vibrato oscillation (in Hz).
      */
-    channelVibrato = { delay: 0, depth: 0, rate: 0 };
+    channelVibrato: { delay: number; depth: number; rate: number } = {
+        delay: 0,
+        depth: 0,
+        rate: 0
+    };
 
     /**
      * Indicates whether the channel is muted.
-     * @type {boolean}
      */
-    isMuted = false;
+    isMuted: boolean = false;
 
     /**
      * An array of voices currently active on the channel.
-     * @type {Voice[]}
      */
-    voices = [];
+    voices: VoiceList = [];
 
     /**
      * An array of voices that are sustained on the channel.
-     * @type {Voice[]}
      */
-    sustainedVoices = [];
+    sustainedVoices: VoiceList = [];
 
     /**
      * The channel's number (0-based index)
-     * @type {number}
      */
-    channelNumber;
+    channelNumber: number;
 
     /**
      * Parent processor instance.
-     * @type {SpessaSynthProcessor}
      */
-    synth;
+    synth: SpessaSynthProcessor;
 
     /**
-     * Constructs a new MIDI channel
-     * @param synth {SpessaSynthProcessor}
-     * @param preset {BasicPreset}
-     * @param channelNumber {number}
+     * Grants access to protected synth values.
      */
-    constructor(synth, preset, channelNumber) {
+    synthProps: ProtectedSynthValues;
+
+    // Bind all methods to the instance
+    // (A hacky way to split the class into multiple files)
+    // Voice rendering methods
+    renderVoice = renderVoice.bind(this);
+    panAndMixVoice = panAndMixVoice.bind(this);
+    computeModulators = computeModulators.bind(this);
+    // MIDI messages
+    noteOn = noteOn.bind(this);
+    noteOff = noteOff.bind(this);
+    programChange = programChange.bind(this);
+    // Tuning
+    // CC (Continuous Controller)
+    controllerChange = controllerChange.bind(this);
+    resetControllers = resetControllers.bind(this);
+    resetControllersRP15Compliant = resetControllersRP15Compliant.bind(this);
+    resetParameters = resetParameters.bind(this);
+    dataEntryFine = dataEntryFine.bind(this);
+    dataEntryCoarse = dataEntryCoarse.bind(this);
+
+    /**
+     * Constructs a new MIDI channel.
+     */
+    constructor(
+        synth: SpessaSynthProcessor,
+        synthProps: ProtectedSynthValues,
+        preset: BasicPreset,
+        channelNumber: number
+    ) {
         this.synth = synth;
+        this.synthProps = synthProps;
         this.preset = preset;
         this.channelNumber = channelNumber;
         this.resetGeneratorOverrides();
@@ -242,16 +259,174 @@ class MidiAudioChannel {
 
     get isXGChannel() {
         return (
-            isSystemXG(this.synth.system) ||
+            isSystemXG(this.synthProps.system) ||
             (this.lockPreset && isSystemXG(this.lockedSystem))
         );
     }
 
     /**
-     * @param type {customControllers|number}
-     * @param value {number}
+     * Transposes the channel by given amount of semitones.
+     * @param semitones The number of semitones to transpose the channel by. Can be decimal.
+     * @param force Defaults to false, if true, it will force the transpose even if the channel is a drum channel.
      */
-    setCustomController(type, value) {
+    transposeChannel(semitones: number, force: boolean = false) {
+        if (!this.drumChannel) {
+            semitones += this.synthProps.masterParameters.transposition;
+        }
+        const keyShift = Math.trunc(semitones);
+        const currentTranspose =
+            this.channelTransposeKeyShift +
+            this.customControllers[customControllers.channelTransposeFine] /
+                100;
+        if ((this.drumChannel && !force) || semitones === currentTranspose) {
+            return;
+        }
+        if (keyShift !== this.channelTransposeKeyShift) {
+            // stop all (and emit cc change)
+            this.controllerChange(midiControllers.allNotesOff, 127);
+        }
+        // apply transpose
+        this.channelTransposeKeyShift = keyShift;
+        this.setCustomController(
+            customControllers.channelTransposeFine,
+            (semitones - keyShift) * 100
+        );
+        this.sendChannelProperty();
+    }
+
+    /**
+     * Sets the octave tuning for a given channel.
+     * @param tuning The tuning array of 12 values, each representing the tuning for a note in the octave.
+     * @remarks
+     * Cent tunings are relative.
+     */
+    setOctaveTuning(tuning: Int8Array) {
+        if (tuning.length !== 12) {
+            throw new Error("Tuning is not the length of 12.");
+        }
+        this.channelOctaveTuning = new Int8Array(128);
+        for (let i = 0; i < 128; i++) {
+            this.channelOctaveTuning[i] = tuning[i % 12];
+        }
+    }
+
+    /**
+     * Sets the modulation depth for the channel.
+     * @param cents The modulation depth in cents to set.
+     * @remarks
+     * This method sets the modulation depth for the channel by converting the given cents value into a
+     * multiplier. The MIDI specification assumes the default modulation depth is 50 cents,
+     * but it may vary for different soundfonts.
+     * For example, if you want a modulation depth of 100 cents,
+     * the multiplier will be 2,
+     * which, for a preset with a depth of 50,
+     * will create a total modulation depth of 100 cents.
+     *
+     */
+    setModulationDepth(cents: number) {
+        cents = Math.round(cents);
+        SpessaSynthInfo(
+            `%cChannel ${this.channelNumber} modulation depth. Cents: %c${cents}`,
+            consoleColors.info,
+            consoleColors.value
+        );
+        this.setCustomController(
+            customControllers.modulationMultiplier,
+            cents / 50
+        );
+    }
+
+    /**
+     * Sets the channel's tuning.
+     * @param cents The tuning in cents to set.
+     * @param log If true, logs the change to the console.
+     */
+    setTuning(cents: number, log: boolean = true) {
+        cents = Math.round(cents);
+        this.setCustomController(customControllers.channelTuning, cents);
+        if (!log) {
+            return;
+        }
+        SpessaSynthInfo(
+            `%cFine tuning for %c${this.channelNumber}%c is now set to %c${cents}%c cents.`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info,
+            consoleColors.value,
+            consoleColors.info
+        );
+    }
+
+    /**
+     * Sets the pitch of the given channel.
+     * @param MSB The SECOND byte of the MIDI pitchWheel message.
+     * @param LSB The FIRST byte of the MIDI pitchWheel message.
+     */
+    pitchWheel(MSB: number, LSB: number) {
+        if (
+            this.lockedControllers[
+                NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
+            ]
+        ) {
+            return;
+        }
+        const bend = LSB | (MSB << 7);
+        this.synthProps.callEvent("pitchwheel", {
+            channel: this.channelNumber,
+            MSB: MSB,
+            LSB: LSB
+        });
+        this.midiControllers[
+            NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
+        ] = bend;
+        this.voices.forEach((v) =>
+            // compute pitch modulators
+            this.computeModulators(v, 0, modulatorSources.pitchWheel)
+        );
+        this.sendChannelProperty();
+    }
+
+    /**
+     * Sets the channel pressure (MIDI Aftertouch).
+     * @param pressure the pressure of the channel.
+     */
+    channelPressure(pressure: number) {
+        this.midiControllers[
+            NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
+        ] = pressure << 7;
+        this.updateChannelTuning();
+        this.voices.forEach((v) =>
+            this.computeModulators(v, 0, modulatorSources.channelPressure)
+        );
+        this.synthProps.callEvent("channelpressure", {
+            channel: this.channelNumber,
+            pressure: pressure
+        });
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Sets the pressure of the given note on a specific channel.
+     * This is used for polyphonic pressure (aftertouch).
+     * @param midiNote 0 - 127, the MIDI note number to set the pressure for.
+     * @param pressure 0 - 127, the pressure value to set for the note.
+     */
+    polyPressure(midiNote: number, pressure: number) {
+        this.voices.forEach((v) => {
+            if (v.midiNote !== midiNote) {
+                return;
+            }
+            v.pressure = pressure;
+            this.computeModulators(v, 0, modulatorSources.polyPressure);
+        });
+        this.synthProps.callEvent("polypressure", {
+            channel: this.channelNumber,
+            midiNote: midiNote,
+            pressure: pressure
+        });
+    }
+
+    setCustomController(type: customControllers, value: number) {
         this.customControllers[type] = value;
         this.updateChannelTuning();
     }
@@ -266,24 +441,25 @@ class MidiAudioChannel {
     }
 
     /**
-     * @param outputLeft {Float32Array} the left output buffer
-     * @param outputRight {Float32Array} the right output buffer
-     * @param reverbOutputLeft {Float32Array} left output for reverb
-     * @param reverbOutputRight {Float32Array} right output for reverb
-     * @param chorusOutputLeft {Float32Array} left output for chorus
-     * @param chorusOutputRight {Float32Array} right output for chorus
-     * @param startIndex {number}
-     * @param sampleCount {number}
+     * Renders Float32 audio for this channel.
+     * @param outputLeft the left output buffer.
+     * @param outputRight the right output buffer.
+     * @param reverbOutputLeft left output for reverb.
+     * @param reverbOutputRight right output for reverb.
+     * @param chorusOutputLeft left output for chorus.
+     * @param chorusOutputRight right output for chorus.
+     * @param startIndex start index offset.
+     * @param sampleCount sample count to render.
      */
     renderAudio(
-        outputLeft,
-        outputRight,
-        reverbOutputLeft,
-        reverbOutputRight,
-        chorusOutputLeft,
-        chorusOutputRight,
-        startIndex,
-        sampleCount
+        outputLeft: Float32Array,
+        outputRight: Float32Array,
+        reverbOutputLeft: Float32Array,
+        reverbOutputRight: Float32Array,
+        chorusOutputLeft: Float32Array,
+        chorusOutputRight: Float32Array,
+        startIndex: number,
+        sampleCount: number
     ) {
         this.voices = this.voices.filter(
             (v) =>
@@ -302,21 +478,14 @@ class MidiAudioChannel {
         );
     }
 
-    /**
-     * @param locked {boolean}
-     */
-    setPresetLock(locked) {
+    setPresetLock(locked: boolean) {
         this.lockPreset = locked;
         if (locked) {
-            this.lockedSystem = this.synth.system;
+            this.lockedSystem = this.synthProps.system;
         }
     }
 
-    /**
-     * @param bank {number}
-     * @param isLSB {boolean}
-     */
-    setBankSelect(bank, isLSB = false) {
+    setBankSelect(bank: number, isLSB: boolean = false) {
         if (this.lockPreset) {
             return;
         }
@@ -327,7 +496,7 @@ class MidiAudioChannel {
             const bankLogic = parseBankSelect(
                 this.getBankSelect(),
                 bank,
-                this.synth.system,
+                this.synthProps.system,
                 false,
                 this.drumChannel,
                 this.channelNumber
@@ -351,10 +520,7 @@ class MidiAudioChannel {
         }
     }
 
-    /**
-     * @returns {number}
-     */
-    getBankSelect() {
+    getBankSelect(): number {
         return chooseBank(
             this.bank,
             this.bankLSB,
@@ -364,10 +530,9 @@ class MidiAudioChannel {
     }
 
     /**
-     * Changes a preset of this channel
-     * @param preset {BasicPreset}
+     * Changes a preset of this channel.
      */
-    setPreset(preset) {
+    setPreset(preset: BasicPreset) {
         if (this.lockPreset) {
             return;
         }
@@ -376,10 +541,9 @@ class MidiAudioChannel {
 
     /**
      * Sets drums on channel.
-     * @param isDrum {boolean}
      */
-    setDrums(isDrum) {
-        if (this.lockPreset) {
+    setDrums(isDrum: boolean) {
+        if (this.lockPreset || !this.preset) {
             return;
         }
         if (this.drumChannel === isDrum) {
@@ -392,7 +556,7 @@ class MidiAudioChannel {
         } else {
             this.drumChannel = false;
         }
-        this.synth.callEvent("drumchange", {
+        this.synthProps.callEvent("drumchange", {
             channel: this.channelNumber,
             isDrumChannel: this.drumChannel
         });
@@ -402,12 +566,12 @@ class MidiAudioChannel {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Sets a custom vibrato
-     * @param depth {number} cents
-     * @param rate {number} Hz
-     * @param delay {number} seconds
+     * Sets a custom vibrato.
+     * @param depth cents.
+     * @param rate Hz.
+     * @param delay seconds.
      */
-    setVibrato(depth, rate, delay) {
+    setVibrato(depth: number, rate: number, delay: number) {
         if (this.lockGSNRPNParams) {
             return;
         }
@@ -418,7 +582,7 @@ class MidiAudioChannel {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Yes
+     * Yes.
      */
     disableAndLockGSNRPN() {
         this.lockGSNRPNParams = true;
@@ -428,28 +592,13 @@ class MidiAudioChannel {
     }
 
     /**
-     * @typedef {Object} ChannelProperty
-     * @property {number} voicesAmount - the channel's current voice amount
-     * @property {number} pitchBend - the channel's current pitch bend from -8192 do 8192
-     * @property {number} pitchBendRangeSemitones - the pitch bend's range, in semitones
-     * @property {boolean} isMuted - indicates whether the channel is muted
-     * @property {boolean} isDrum - indicates whether the channel is a drum channel
-     * @property {number} transposition - the channel's transposition, in semitones
-     * @property {number} bank - the bank number of the current preset
-     * @property {number} program - the MIDI program number of the current preset
-     */
-
-    /**
      * Sends this channel's property
      */
     sendChannelProperty() {
         if (!this.synth.enableEventSystem) {
             return;
         }
-        /**
-         * @type {ChannelProperty}
-         */
-        const data = {
+        const data: ChannelProperty = {
             voicesAmount: this.voices.length,
             pitchBend:
                 this.midiControllers[
@@ -466,7 +615,7 @@ class MidiAudioChannel {
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
             bank: this.sentBank,
-            program: this.preset?.program
+            program: this.preset?.program || 0
         };
         this.synth?.onChannelPropertyChange?.(data, this.channelNumber);
     }
@@ -476,12 +625,11 @@ class MidiAudioChannel {
         this.generatorOverridesEnabled = false;
     }
 
-    /**
-     * @param gen {generatorTypes}
-     * @param value {number}
-     * @param realtime {boolean}
-     */
-    setGeneratorOverride(gen, value, realtime = false) {
+    setGeneratorOverride(
+        gen: generatorTypes,
+        value: number,
+        realtime: boolean = false
+    ) {
         this.generatorOverrides[gen] = value;
         this.generatorOverridesEnabled = true;
         if (realtime) {
@@ -497,48 +645,66 @@ class MidiAudioChannel {
         this.generatorOffsetsEnabled = false;
     }
 
-    /**
-     * @param gen {generatorTypes}
-     * @param value {number}
-     */
-    setGeneratorOffset(gen, value) {
+    setGeneratorOffset(gen: generatorTypes, value: number) {
         this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
         this.generatorOffsetsEnabled = true;
         this.voices.forEach((v) => {
             this.computeModulators(v);
         });
     }
+
+    /**
+     * Stops a note nearly instantly.
+     * @param midiNote The note to stop.
+     * @param releaseTime in timecents, defaults to -12000 (very short release).
+     */
+    killNote(midiNote: number, releaseTime: number = -12000) {
+        // adjust midiNote by channel key shift
+        midiNote += this.customControllers[customControllers.channelKeyShift];
+
+        this.voices.forEach((v) => {
+            if (v.realKey !== midiNote) {
+                return;
+            }
+            v.modulatedGenerators[generatorTypes.releaseVolEnv] = releaseTime; // set release to be very short
+            v.release(this.synth.currentSynthTime);
+        });
+    }
+
+    /**
+     * Stops all notes on the channel.
+     * @param force If true, stops all notes immediately, otherwise applies release time.
+     */
+    stopAllNotes(force: boolean = false) {
+        if (force) {
+            // force stop all
+            this.voices.length = 0;
+            this.sustainedVoices.length = 0;
+            this.sendChannelProperty();
+        } else {
+            this.voices.forEach((v) => {
+                if (v.isInRelease) {
+                    return;
+                }
+                v.release(this.synth.currentSynthTime);
+            });
+            this.sustainedVoices.forEach((v) => {
+                v.release(this.synth.currentSynthTime);
+            });
+        }
+    }
+
+    muteChannel(isMuted: boolean) {
+        if (isMuted) {
+            this.stopAllNotes(true);
+        }
+        this.isMuted = isMuted;
+        this.sendChannelProperty();
+        this.synthProps.callEvent("mutechannel", {
+            channel: this.channelNumber,
+            isMuted: isMuted
+        });
+    }
 }
 
-// voice
-MidiAudioChannel.prototype.renderVoice = renderVoice;
-MidiAudioChannel.prototype.panAndMixVoice = panAndMixVoice;
-MidiAudioChannel.prototype.killNote = killNote;
-MidiAudioChannel.prototype.stopAllNotes = stopAllNotes;
-MidiAudioChannel.prototype.muteChannel = muteChannel;
-MidiAudioChannel.prototype.computeModulators = computeModulators;
-
-// MIDI messages
-MidiAudioChannel.prototype.noteOn = noteOn;
-MidiAudioChannel.prototype.noteOff = noteOff;
-MidiAudioChannel.prototype.polyPressure = polyPressure;
-MidiAudioChannel.prototype.channelPressure = channelPressure;
-MidiAudioChannel.prototype.pitchWheel = pitchWheel;
-MidiAudioChannel.prototype.programChange = programChange;
-
-// Tuning
-MidiAudioChannel.prototype.setTuning = setTuning;
-MidiAudioChannel.prototype.setOctaveTuning = setOctaveTuning;
-MidiAudioChannel.prototype.setModulationDepth = setModulationDepth;
-MidiAudioChannel.prototype.transposeChannel = transposeChannel;
-
-// CC
-MidiAudioChannel.prototype.controllerChange = controllerChange;
-MidiAudioChannel.prototype.resetControllers = resetControllers;
-MidiAudioChannel.prototype.resetControllersRP15Compliant =
-    resetControllersRP15Compliant;
-MidiAudioChannel.prototype.resetParameters = resetParameters;
-MidiAudioChannel.prototype.dataEntryFine = dataEntryFine;
-MidiAudioChannel.prototype.dataEntryCoarse = dataEntryCoarse;
-
-export { MidiAudioChannel };
+export { MIDIChannel };

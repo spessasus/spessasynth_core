@@ -1,9 +1,9 @@
-import { modulatorCurveTypes } from "../../../soundbank/basic_soundbank/modulator.js";
-
 /**
  * modulator_curves.js
- * precomputes modulator concave and conves curves and calculates a curve value for a given polarity, direction and type
+ * precomputes modulator concave and convex curves and calculates a curve value for a given polarity, direction and type
  */
+import type { ModulatorNumericBool } from "../../../soundbank/types";
+import { modulatorCurveTypes } from "../../../soundbank/enums";
 
 // the length of the precomputed curve tables
 export const MOD_PRECOMPUTED_LENGTH = 16384;
@@ -27,13 +27,18 @@ for (let i = 1; i < MOD_PRECOMPUTED_LENGTH - 1; i++) {
 
 /**
  * Transforms a value with a given curve type
- * @param polarity {number} 0 or 1
- * @param direction {number} 0 or 1
- * @param curveType {number} see modulatorCurveTypes in modulators.js
- * @param value {number} the linear value, 0 to 1
- * @returns {number} the transformed value, 0 to 1, or -1 to 1
+ * @param polarity 0 or 1
+ * @param direction 0 or 1
+ * @param curveType enumeration of curve types
+ * @param value the linear value, 0 to 1
+ * @returns the transformed value, 0 to 1, or -1 to 1
  */
-export function getModulatorCurveValue(direction, curveType, value, polarity) {
+export function getModulatorCurveValue(
+    direction: ModulatorNumericBool,
+    curveType: modulatorCurveTypes,
+    value: number,
+    polarity: ModulatorNumericBool
+): number {
     // inverse the value if needed
     if (direction) {
         value = 1 - value;

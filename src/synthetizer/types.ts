@@ -1,4 +1,5 @@
-import { synthDisplayTypes } from "./enums.ts";
+import type { Voice } from "./audio_engine/engine_components/voice";
+import type { synthDisplayTypes } from "./enums";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 export type NoteOnCallback = {
@@ -62,7 +63,8 @@ export type PresetListChangeCallbackSingle = {
     /** The program number. */
     program: number;
 };
-export type PresetListChangeCallback = PresetListChangeCallbackSingle[]; // A list of preset objects.
+// A list of preset changes, each with a name, bank, and program number.
+export type PresetListChangeCallback = PresetListChangeCallbackSingle[];
 export type SynthDisplayCallback = {
     /** The data to display. */
     displayData: Uint8Array;
@@ -87,6 +89,17 @@ export type ChannelPressureCallback = {
     /** The pressure value. */
     pressure: number;
 };
+export type PolyPressureCallback = {
+    /** The MIDI channel number. */
+    channel: number;
+
+    /** The MIDI note number. */
+    midiNote: number;
+
+    /** The pressure value. */
+    pressure: number;
+};
+
 export type SoundfontErrorCallback = Error; // The error message for soundfont errors.
 export type EventCallbackData =
     | NoteOnCallback
@@ -100,23 +113,39 @@ export type EventCallbackData =
     | SoundfontErrorCallback
     | ChannelPressureCallback
     | SynthDisplayCallback
-    | undefined; // Includes undefined as a possible type.
-export type EventTypes =
-    | "noteon"
-    | "noteoff"
-    | "pitchwheel"
-    | "controllerchange"
-    | "programchange"
-    | "channelpressure"
-    | "polypressure"
-    | "drumchange"
-    | "stopall"
-    | "newchannel"
-    | "mutechannel"
-    | "presetlistchange"
-    | "allcontrollerreset"
-    | "soundfonterror"
-    | "synthdisplay";
+    | undefined; // Includes undefined as a possible type (no data).
+export type EventType = {
+    // This event fires when a note is played.
+    noteon: NoteOnCallback;
+    // This event fires when a note is released.
+    noteoff: NoteOffCallback;
+    // This event fires when a pitch wheel is changed.
+    pitchwheel: PitchWheelCallback;
+    // This event fires when a controller is changed.
+    controllerchange: ControllerChangeCallback;
+    // This event fires when a program is changed.
+    programchange: ProgramChangeCallback;
+    // This event fires when a channel pressure is changed.
+    channelpressure: ChannelPressureCallback;
+    // This event fires when a polyphonic pressure is changed.
+    polypressure: PolyPressureCallback;
+    // This event fires when a drum channel is changed.
+    drumchange: DrumChangeCallback;
+    // This event fires when all notes on a channel are stopped. There is no data for this event.
+    stopall: undefined;
+    // This event fires when a new channel is created. There is no data for this event.
+    newchannel: undefined;
+    // This event fires when a channel is muted or unmuted.
+    mutechannel: MuteChannelCallback;
+    // This event fires when the preset list is changed.
+    presetlistchange: PresetListChangeCallback;
+    // This event fires when all controllers on all channels are reset. There is no data for this event.
+    allcontrollerreset: undefined;
+    // This event fires when a sound bank parsing error occurs.
+    soundfonterror: SoundfontErrorCallback;
+    // This event fires when the synthesizer receives a display message.
+    synthdisplay: SynthDisplayCallback;
+};
 export type SynthMethodOptions = {
     // The audio context time when the event should execute, in seconds.
     time: number;
@@ -130,5 +159,48 @@ export type MTSNoteTuning = {
     midiNote: number;
 
     // Additional tuning.
-    centTuning: number;
+    centTuning: number | null;
+};
+
+/**
+ * Looping mode of the sample.
+ * 0 - no loop.
+ * 1 - loop.
+ * 2 - UNOFFICIAL: polyphone 2.4 added start on release.
+ * 3 - loop then play when released.
+ */
+export type SampleLoopingMode = 0 | 1 | 2 | 3;
+
+// A list of voices for a given key:velocity.
+export type VoiceList = Voice[];
+
+// Represents a channel property in real-time.
+export type ChannelProperty = {
+    // The channel's current voice amount.
+    voicesAmount: number;
+    // The channel's current pitch bend from -8192 do 8192.
+    pitchBend: number;
+    // The pitch bend's range, in semitones.
+    pitchBendRangeSemitones: number;
+    // Indicates whether the channel is muted.
+    isMuted: boolean;
+    // Indicates whether the channel is a drum channel.
+    isDrum: boolean;
+    // The channel's transposition, in semitones.
+    transposition: number;
+    // The bank number of the current preset.
+    bank: number;
+    // The MIDI program number of the current preset.
+    program: number;
+};
+
+export type SynthProcessorOptions = {
+    // Indicates if the event system is enabled.
+    enableEventSystem: boolean;
+    // The initial time of the synth, in seconds.
+    initialTime: number;
+    // Indicates if the effects are enabled.
+    effectsEnabled: boolean;
+    // The number of MIDI channels.
+    midiChannels: number;
 };

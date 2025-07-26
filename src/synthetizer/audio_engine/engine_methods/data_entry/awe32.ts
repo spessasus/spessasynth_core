@@ -1,13 +1,14 @@
-import { SpessaSynthWarn } from "../../../../utils/loggin.js";
-import { consoleColors } from "../../../../utils/other.js";
-import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types.js";
+import { SpessaSynthWarn } from "../../../../utils/loggin";
+import { consoleColors } from "../../../../utils/other";
+import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
 
 /**
+ * SoundBlaster AWE32 NRPN generator mappings.
  * http://archive.gamedev.net/archive/reference/articles/article445.html
  * https://github.com/user-attachments/files/15757220/adip301.pdf
- * @type {generatorTypes[]}
  */
-const AWE_NRPN_GENERATOR_MAPPINGS = [
+const AWE_NRPN_GENERATOR_MAPPINGS: generatorTypes[] = [
     generatorTypes.delayModLFO,
     generatorTypes.freqModLFO,
 
@@ -43,7 +44,7 @@ const AWE_NRPN_GENERATOR_MAPPINGS = [
 
     generatorTypes.chorusEffectsSend,
     generatorTypes.reverbEffectsSend
-];
+] as const;
 
 /**
  * Function that emulates AWE32 similarly to fluidsynth
@@ -54,16 +55,19 @@ const AWE_NRPN_GENERATOR_MAPPINGS = [
  *
  * The excellent test files are available here, also collected and converted by mrbumpy409:
  * https://github.com/mrbumpy409/AWE32-midi-conversions
- * @this {MidiAudioChannel}
- * @param aweGen {number}
- * @param dataLSB {number}
- * @param dataMSB {number}
  */
-export function handleAWE32NRPN(aweGen, dataLSB, dataMSB) {
-    const clip = (v, min, max) => Math.max(min, Math.min(max, v));
-    const msecToTimecents = (ms) =>
+export function handleAWE32NRPN(
+    this: MIDIChannel,
+    aweGen: number,
+    dataLSB: number,
+    dataMSB: number
+) {
+    // helper functions
+    const clip = (v: number, min: number, max: number) =>
+        Math.max(min, Math.min(max, v));
+    const msecToTimecents = (ms: number) =>
         Math.max(-32768, 1200 * Math.log2(ms / 1000));
-    const hzToCents = (hz) => 6900 + 1200 * Math.log2(hz / 440);
+    const hzToCents = (hz: number) => 6900 + 1200 * Math.log2(hz / 440);
 
     let dataValue = (dataMSB << 7) | dataLSB;
     // center the value
@@ -161,11 +165,12 @@ export function handleAWE32NRPN(aweGen, dataLSB, dataMSB) {
             break;
 
         // filter fc
-        case generatorTypes.initialFilterFc:
+        case generatorTypes.initialFilterFc: {
             // minimum: 100 Hz -> 4335 cents
             const fcCents = 4335 + 59 * dataLSB;
             this.setGeneratorOverride(generator, fcCents, true);
             break;
+        }
 
         // filter Q
         case generatorTypes.initialFilterQ:

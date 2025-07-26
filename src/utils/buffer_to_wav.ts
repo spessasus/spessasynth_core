@@ -1,7 +1,10 @@
-import { IndexedByteArray } from "./indexed_array.js";
-import { writeStringAsBytes } from "./byte_functions/string.js";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../soundbank/basic_soundbank/riff_chunk.js";
-import { writeLittleEndian } from "./byte_functions/little_endian.js";
+import { IndexedByteArray } from "./indexed_array";
+import { writeStringAsBytes } from "./byte_functions/string";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../soundbank/basic_soundbank/riff_chunk";
+import { writeLittleEndian } from "./byte_functions/little_endian";
 
 type WaveMetadata = {
     // the song's title.

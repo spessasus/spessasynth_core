@@ -1,8 +1,8 @@
-import { BasicMIDI } from "./basic_midi.js";
-import { MIDIMessage } from "./midi_message.js";
-import { IndexedByteArray } from "../utils/indexed_array.js";
-import { SpessaSynthWarn } from "../utils/loggin.js";
-import { messageTypes } from "./enums.ts";
+import { BasicMIDI } from "./basic_midi";
+import { MIDIMessage } from "./midi_message";
+import { IndexedByteArray } from "../utils/indexed_array";
+import { SpessaSynthWarn } from "../utils/loggin";
+import { messageTypes } from "./enums";
 
 /**
  * A class that helps to build a MIDI file from scratch.
@@ -129,10 +129,12 @@ export class MIDIBuilder extends BasicMIDI {
         channel %= 16;
         midiNote %= 128;
         velocity %= 128;
-        this.addEvent(ticks, track, (messageTypes.noteOn | channel) as messageTypes, [
-            midiNote,
-            velocity
-        ]);
+        this.addEvent(
+            ticks,
+            track,
+            (messageTypes.noteOn | channel) as messageTypes,
+            [midiNote, velocity]
+        );
     }
 
     /**
@@ -152,10 +154,12 @@ export class MIDIBuilder extends BasicMIDI {
     ) {
         channel %= 16;
         midiNote %= 128;
-        this.addEvent(ticks, track, (messageTypes.noteOff | channel) as messageTypes, [
-            midiNote,
-            velocity
-        ]);
+        this.addEvent(
+            ticks,
+            track,
+            (messageTypes.noteOff | channel) as messageTypes,
+            [midiNote, velocity]
+        );
     }
 
     /**
@@ -173,9 +177,12 @@ export class MIDIBuilder extends BasicMIDI {
     ) {
         channel %= 16;
         programNumber %= 128;
-        this.addEvent(ticks, track, (messageTypes.programChange | channel) as messageTypes, [
-            programNumber
-        ]);
+        this.addEvent(
+            ticks,
+            track,
+            (messageTypes.programChange | channel) as messageTypes,
+            [programNumber]
+        );
     }
 
     /**
@@ -196,10 +203,12 @@ export class MIDIBuilder extends BasicMIDI {
         channel %= 16;
         controllerNumber %= 128;
         controllerValue %= 128;
-        this.addEvent(ticks, track, (messageTypes.controllerChange | channel) as messageTypes, [
-            controllerNumber,
-            controllerValue
-        ]);
+        this.addEvent(
+            ticks,
+            track,
+            (messageTypes.controllerChange | channel) as messageTypes,
+            [controllerNumber, controllerValue]
+        );
     }
 
     /**
@@ -220,9 +229,11 @@ export class MIDIBuilder extends BasicMIDI {
         channel %= 16;
         MSB %= 128;
         LSB %= 128;
-        this.addEvent(ticks, track, (messageTypes.pitchBend | channel) as messageTypes, [
-            LSB,
-            MSB
-        ]);
+        this.addEvent(
+            ticks,
+            track,
+            (messageTypes.pitchBend | channel) as messageTypes,
+            [LSB, MSB]
+        );
     }
 }

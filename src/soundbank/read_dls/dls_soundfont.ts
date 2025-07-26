@@ -1,22 +1,22 @@
-import { BasicSoundBank } from "../basic_soundbank/basic_soundbank.js";
-import { IndexedByteArray } from "../../utils/indexed_array.js";
+import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
+import { IndexedByteArray } from "../../utils/indexed_array";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
-} from "../../utils/loggin.js";
-import { consoleColors } from "../../utils/other.js";
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
 import {
     findRIFFListType,
     readRIFFChunk,
     RiffChunk
-} from "../basic_soundbank/riff_chunk.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readDLSInstrument } from "./read_instrument.js";
-import { readDLSSamples } from "./read_samples.js";
-import type { SoundFontInfoFourCC } from "../types.ts";
+} from "../basic_soundbank/riff_chunk";
+import { readBytesAsString } from "../../utils/byte_functions/string";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readDLSInstrument } from "./read_instrument";
+import { readDLSSamples } from "./read_samples";
+import type { SoundFontInfoFourCC } from "../types";
 
 class DownloadableSounds extends BasicSoundBank {
     // main array that we read from

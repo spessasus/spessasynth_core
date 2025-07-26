@@ -1,6 +1,9 @@
-import { IndexedByteArray } from "../../../utils/indexed_array.js";
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
-import type { DLSDestinations, DLSSources } from "../../enums.ts";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import {
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
+import type { DLSDestinations, DLSSources } from "../../enums";
 
 export class Articulator {
     source: DLSSources;

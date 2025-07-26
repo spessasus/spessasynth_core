@@ -1,8 +1,8 @@
-import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { RiffChunk } from "../basic_soundbank/riff_chunk.js";
-import { signedInt16 } from "../../utils/byte_functions/little_endian.js";
-import { Generator } from "../basic_soundbank/generator.js";
-import type { generatorTypes } from "../basic_soundbank/generator_types.ts";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { signedInt16 } from "../../utils/byte_functions/little_endian";
+import { Generator } from "../basic_soundbank/generator";
+import type { generatorTypes } from "../basic_soundbank/generator_types";
 
 export class ReadGenerator extends Generator {
     /**

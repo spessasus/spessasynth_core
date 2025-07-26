@@ -1,4 +1,42 @@
-import { IndexedByteArray } from "../indexed_array.js";
+import { IndexedByteArray } from "../indexed_array";
+
+/**
+ * Reads bytes as an ASCII string. This version works with any numeric array.
+ * @param dataArray the array to read from.
+ * @param bytes the amount of bytes to read.
+ * @param offset the offset in the array to start reading from.
+ * @param trimEnd if we should trim once we reach an invalid byte.
+ * @returns the string.
+ */
+export function readStringOffset(
+    dataArray: number[] | ArrayLike<number>,
+    bytes: number,
+    offset: number = 0,
+    trimEnd: boolean = true
+) {
+    let finished = false;
+    let string = "";
+    for (let i = 0; i < bytes; i++) {
+        const byte = dataArray[offset + i];
+        if (finished) {
+            continue;
+        }
+        if ((byte < 32 || byte > 127) && byte !== 10) {
+            // 10 is "\n"
+            if (trimEnd) {
+                finished = true;
+                continue;
+            } else {
+                if (byte === 0) {
+                    finished = true;
+                    continue;
+                }
+            }
+        }
+        string += String.fromCharCode(byte);
+    }
+    return string;
+}
 
 /**
  * Reads bytes as an ASCII string.
