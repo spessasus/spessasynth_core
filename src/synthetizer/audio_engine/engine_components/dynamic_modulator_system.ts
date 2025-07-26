@@ -1,8 +1,5 @@
-import {
-    Modulator,
-    modulatorCurveTypes,
-    modulatorSources
-} from "../../../soundbank/basic_soundbank/modulator.js";
+import { Modulator } from "../../../soundbank/basic_soundbank/modulator.js";
+import { modulatorCurveTypes, modulatorSources } from "../../../soundbank/enums.ts";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables.js";
 
 /**

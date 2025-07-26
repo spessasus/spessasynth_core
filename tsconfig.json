@@ -31,5 +31,10 @@
   },
   "include": [
     "src"
-  ]
+  ],
+  "paths": {
+    "stbvorbis_sync": [
+      "src/externals/stbvorbis_sync/stbvorbis_sync.min.js"
+    ]
+  }
 }

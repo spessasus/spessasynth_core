@@ -1,17 +1,17 @@
-import { DLSSources } from "../../dls/dls_sources.js";
-import { modulatorCurveTypes, modulatorSources } from "../modulator.js";
-import { DLSDestinations } from "../../dls/dls_destinations.js";
+import {
+    DLSDestinations,
+    DLSSources,
+    modulatorCurveTypes,
+    modulatorSources
+} from "../../enums.ts";
 import { Articulator } from "./articulator.js";
 import { SpessaSynthWarn } from "../../../utils/loggin.js";
 import { generatorTypes } from "../generator_types.js";
 import { midiControllers } from "../../../midi/enums.ts";
+import type { Generator } from "../generator.ts";
+import type { Modulator } from "../modulator.ts";
 
-/**
- * @param cc {0|1}
- * @param index {number}
- * @returns {number|undefined}
- */
-function getDLSSourceFromSf2Source(cc, index) {
+function getDLSSourceFromSf2Source(cc: 0 | 1, index: number) {
     if (cc) {
         switch (index) {
             default:
@@ -55,12 +55,10 @@ function getDLSSourceFromSf2Source(cc, index) {
     }
 }
 
-/**
- * @param dest {number}
- * @param amount {number}
- * @returns {number|undefined|{dest: number, amount: number}}
- */
-function getDLSDestinationFromSf2(dest, amount) {
+function getDLSDestinationFromSf2(
+    dest: number,
+    amount: number
+): number | undefined | { dest: number; amount: number } {
     switch (dest) {
         default:
             return undefined;
@@ -130,12 +128,7 @@ function getDLSDestinationFromSf2(dest, amount) {
     }
 }
 
-/**
- * @param dest {number}
- * @param amt {number}
- * @returns {{source: DLSSources, dest: DLSDestinations, amt: number, isBipolar: boolean}|undefined}
- */
-function checkSF2SpecialCombos(dest, amt) {
+function checkSF2SpecialCombos(dest: number, amt: number) {
     switch (dest) {
         default:
             return undefined;
@@ -231,11 +224,9 @@ function checkSF2SpecialCombos(dest, amt) {
     }
 }
 
-/**
- * @param gen {Generator}
- * @returns {Articulator|undefined}
- */
-export function getDLSArticulatorFromSf2Generator(gen) {
+export function getDLSArticulatorFromSf2Generator(
+    gen: Generator
+): Articulator | undefined {
     const dest = getDLSDestinationFromSf2(
         gen.generatorType,
         gen.generatorValue
@@ -243,7 +234,7 @@ export function getDLSArticulatorFromSf2Generator(gen) {
     let destination = dest;
     let source = 0;
     let amount = gen.generatorValue;
-    if (dest?.amount !== undefined) {
+    if (typeof dest === "object") {
         amount = dest.amount;
         destination = dest.dest;
     }
@@ -257,19 +248,26 @@ export function getDLSArticulatorFromSf2Generator(gen) {
         SpessaSynthWarn(`Invalid generator type: ${gen.generatorType}`);
         return undefined;
     }
-    return new Articulator(source, 0, destination, amount, 0);
+    return new Articulator(
+        source as DLSSources,
+        0,
+        destination as DLSDestinations,
+        amount,
+        0
+    );
 }
 
-/**
- * @param mod {Modulator}
- * @returns {Articulator|undefined}
- */
-export function getDLSArticulatorFromSf2Modulator(mod) {
+export function getDLSArticulatorFromSf2Modulator(
+    mod: Modulator
+): Articulator | undefined {
     if (mod.transformType !== 0) {
         SpessaSynthWarn("Other transform types are not supported.");
         return undefined;
     }
-    let source = getDLSSourceFromSf2Source(mod.sourceUsesCC, mod.sourceIndex);
+    let source: number | undefined = getDLSSourceFromSf2Source(
+        mod.sourceUsesCC,
+        mod.sourceIndex
+    );
     let sourceTransformType = mod.sourceCurveType;
     let sourceBipolar = mod.sourcePolarity;
     let sourceDirection = mod.sourceDirection;
@@ -283,7 +281,10 @@ export function getDLSArticulatorFromSf2Modulator(mod) {
     if (mod.modulatorDestination === generatorTypes.initialAttenuation) {
         sourceDirection = sourceDirection === 1 ? 0 : 1;
     }
-    let control = getDLSSourceFromSf2Source(mod.secSrcUsesCC, mod.secSrcIndex);
+    let control: number | undefined = getDLSSourceFromSf2Source(
+        mod.secSrcUsesCC,
+        mod.secSrcIndex
+    );
     let controlTransformType = mod.secSrcCurveType;
     let controlBipolar = mod.secSrcPolarity;
     let controlDirection = mod.secSrcDirection;
@@ -299,7 +300,7 @@ export function getDLSArticulatorFromSf2Modulator(mod) {
     );
     let destination = dlsDestinationFromSf2;
     let amt = mod.transformAmount;
-    if (dlsDestinationFromSf2?.dest !== undefined) {
+    if (typeof dlsDestinationFromSf2 === "object") {
         destination = dlsDestinationFromSf2.dest;
         amt = dlsDestinationFromSf2.amount;
     }
@@ -326,7 +327,7 @@ export function getDLSArticulatorFromSf2Modulator(mod) {
         return undefined;
     }
 
-    // source curve type maps to a desfont curve type in section 2.10, table 9
+    // source curve type maps to a soundfont curve type in section 2.10, table 9
     let transform = 0;
     transform |= controlTransformType << 4;
     transform |= controlBipolar << 8;
@@ -336,5 +337,11 @@ export function getDLSArticulatorFromSf2Modulator(mod) {
     transform |= sourceTransformType;
     transform |= sourceBipolar << 14;
     transform |= sourceDirection << 15;
-    return new Articulator(source, control, destination, amt, transform);
+    return new Articulator(
+        source as DLSSources,
+        control as DLSSources,
+        destination as DLSDestinations,
+        amt,
+        transform
+    );
 }

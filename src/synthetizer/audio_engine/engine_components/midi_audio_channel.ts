@@ -28,22 +28,12 @@ import { channelPressure } from "../engine_methods/tuning_control/channel_pressu
 import { pitchWheel } from "../engine_methods/tuning_control/pitch_wheel.js";
 import { setOctaveTuning } from "../engine_methods/tuning_control/set_octave_tuning.js";
 import { programChange } from "../engine_methods/program_change.js";
-import {
-    chooseBank,
-    isSystemXG,
-    parseBankSelect
-} from "../../../utils/xg_hacks.js";
-import {
-    DEFAULT_PERCUSSION,
-    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
-} from "../synth_constants.js";
-import { modulatorSources } from "../../../soundbank/basic_soundbank/modulator.js";
+import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks.js";
+import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants.js";
+import { modulatorSources } from "../../../soundbank/enums.ts";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system.js";
 import { computeModulators } from "./compute_modulator.js";
-import {
-    generatorLimits,
-    GENERATORS_AMOUNT
-} from "../../../soundbank/basic_soundbank/generator_types.js";
+import { generatorLimits, GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types.js";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.

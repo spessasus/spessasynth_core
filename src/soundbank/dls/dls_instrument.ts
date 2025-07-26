@@ -6,10 +6,7 @@ export class DLSInstrument extends BasicInstrument {
         super();
     }
 
-    /**
-     * @returns {DLSZone}
-     */
-    createZone() {
+    createZone(): DLSZone {
         const z = new DLSZone(this);
         this.instrumentZones.push(z);
         return z;

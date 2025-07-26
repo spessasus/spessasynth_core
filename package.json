@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "test": "node examples/midi_to_wav_node/index.js",
-    "build": "tsup src/index.ts --sourcemap --dts --format esm,cjs",
+    "build": "tsup src/index.ts --tsconfig tsconfig.json --dts --format esm,cjs",
     "test:types": "tsc --noEmit"
   },
   "repository": {

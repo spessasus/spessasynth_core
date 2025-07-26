@@ -1,4 +1,4 @@
-import { findRIFFListType, readRIFFChunk } from "../basic_soundbank/riff_chunk.js";
+import { findRIFFListType, readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import {
     SpessaSynthGroupCollapsed,
@@ -9,12 +9,12 @@ import {
 import { consoleColors } from "../../utils/other.js";
 import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
 import { DLSSample } from "./dls_sample.js";
+import type { DownloadableSounds } from "./dls_soundfont.ts";
 
-/**
- * @this {DLSSoundFont}
- * @param waveListChunk {RiffChunk}
- */
-export function readDLSSamples(waveListChunk) {
+export function readDLSSamples(
+    dls: DownloadableSounds,
+    waveListChunk: RiffChunk
+) {
     SpessaSynthGroupCollapsed(
         "%cLoading Wave samples...",
         consoleColors.recognized
@@ -22,15 +22,12 @@ export function readDLSSamples(waveListChunk) {
     let sampleID = 0;
     while (
         waveListChunk.chunkData.currentIndex < waveListChunk.chunkData.length
-    ) {
+        ) {
         const waveChunk = readRIFFChunk(waveListChunk.chunkData);
-        this.verifyHeader(waveChunk, "LIST");
-        this.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
+        dls.verifyHeader(waveChunk, "LIST");
+        dls.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
 
-        /**
-         * @type {RiffChunk[]}
-         */
-        const waveChunks = [];
+        const waveChunks: RiffChunk[] = [];
         while (waveChunk.chunkData.currentIndex < waveChunk.chunkData.length) {
             waveChunks.push(readRIFFChunk(waveChunk.chunkData));
         }
@@ -58,7 +55,8 @@ export function readDLSSamples(waveListChunk) {
 
         const dataChunk = waveChunks.find((c) => c.header === "data");
         if (!dataChunk) {
-            this.parsingError("No data chunk in the WAVE chunk!");
+            dls.parsingError("No data chunk in the WAVE chunk!");
+            return;
         }
 
         // read sample name
@@ -69,7 +67,7 @@ export function readDLSSamples(waveListChunk) {
             while (
                 infoChunk.header !== "INAM" &&
                 waveInfo.chunkData.currentIndex < waveInfo.chunkData.length
-            ) {
+                ) {
                 infoChunk = readRIFFChunk(waveInfo.chunkData);
             }
             if (infoChunk.header === "INAM") {
@@ -124,7 +122,7 @@ export function readDLSSamples(waveListChunk) {
             SpessaSynthWarn("No wsmp chunk in wave... using sane defaults.");
         }
 
-        this.samples.push(
+        dls.addSamples(
             new DLSSample(
                 sampleName,
                 sampleRate,

@@ -1,32 +1,30 @@
 import { SpessaSynthInfo } from "./loggin.js";
 import { consoleColors } from "./other.js";
 import { DEFAULT_PERCUSSION } from "../synthetizer/audio_engine/synth_constants.js";
+import type { SynthSystem } from "../synthetizer/types.ts";
 
 export const XG_SFX_VOICE = 64;
 
 const GM2_DEFAULT_BANK = 121;
 
 /**
- * @param sys {SynthSystem}
- * @returns {number}
+ * GM2 has a different default bank number
  */
-export function getDefaultBank(sys) {
+export function getDefaultBank(sys: SynthSystem): number {
     return sys === "gm2" ? GM2_DEFAULT_BANK : 0;
 }
 
 /**
- * @param bankNr {number}
- * @returns {boolean}
+ * Checks if this bank number is XG drums
  */
-export function isXGDrums(bankNr) {
+export function isXGDrums(bankNr: number): boolean {
     return bankNr === 120 || bankNr === 126 || bankNr === 127;
 }
 
 /**
- * @param bank {number}
- * @returns {boolean}
+ * Checks if this MSB is a valid XG MSB
  */
-export function isValidXGMSB(bank) {
+export function isValidXGMSB(bank: number): boolean {
     return (
         isXGDrums(bank) || bank === XG_SFX_VOICE || bank === GM2_DEFAULT_BANK
     );
@@ -34,25 +32,25 @@ export function isValidXGMSB(bank) {
 
 /**
  * Bank select hacks abstracted here
- * @param bankBefore {number} the current bank number
- * @param bank {number} the cc change bank number
- * @param system {SynthSystem} MIDI system
- * @param isLSB {boolean} is bank LSB?
- * @param isDrums {boolean} is drum channel?
- * @param channelNumber {number} channel number
- * @returns {{
- *     newBank: number,
- *     drumsStatus: 0|1|2
- * }} 0 - unchanged, 1 - OFF, 2 - ON
+ * @param bankBefore the current bank number
+ * @param bank the cc change bank number
+ * @param system MIDI system
+ * @param isLSB is bank LSB?
+ * @param isDrums is drum channel?
+ * @param channelNumber channel number
+ * @returns drum status: 0 - unchanged, 1 - OFF, 2 - ON
  */
 export function parseBankSelect(
-    bankBefore,
-    bank,
-    system,
-    isLSB,
-    isDrums,
-    channelNumber
-) {
+    bankBefore: number,
+    bank: number,
+    system: SynthSystem,
+    isLSB: boolean,
+    isDrums: boolean,
+    channelNumber: number
+): {
+    newBank: number;
+    drumsStatus: 0 | 1 | 2;
+} {
     // 64 means SFX in MSB, so it is allowed
     let out = bankBefore;
     let drumsStatus = 0;
@@ -61,8 +59,6 @@ export function parseBankSelect(
             if (!isValidXGMSB(bank)) {
                 out = bank;
             }
-        } else if (system === "gm2") {
-            out = bank;
         }
     } else {
         let canSetBankSelect = true;
@@ -113,7 +109,7 @@ export function parseBankSelect(
     }
     return {
         newBank: out,
-        drumsStatus: drumsStatus
+        drumsStatus: drumsStatus as 0 | 1 | 2
     };
 }
 
@@ -121,14 +117,19 @@ export function parseBankSelect(
  * Chooses a bank number according to spessasynth logic
  * That is:
  * for GS, bank MSB if not drum, otherwise 128
- * for XG: bank MSB if drum and MSB is valid, 128 othewise, bank MSB if it is SFX voice, LSB otherwise
- * @param msb {number}
- * @param lsb {number}
- * @param isDrums {boolean}
- * @param isXG {boolean}
- * @returns {number}
+ * for XG: bank MSB if drum and MSB is valid, 128 otherwise, bank MSB if it is SFX voice, LSB otherwise
+ * @param msb bank MSB
+ * @param lsb bank LSB
+ * @param isDrums if the channel is drums
+ * @param isXG if the synth is in XG mode
+ * @returns the new bank
  */
-export function chooseBank(msb, lsb, isDrums, isXG) {
+export function chooseBank(
+    msb: number,
+    lsb: number,
+    isDrums: boolean,
+    isXG: boolean
+): number {
     if (isXG) {
         if (isDrums) {
             if (isXGDrums(msb)) {
@@ -155,10 +156,6 @@ export function chooseBank(msb, lsb, isDrums, isXG) {
     }
 }
 
-/**
- * @param system {SynthSystem}
- * @returns boolean
- */
-export function isSystemXG(system) {
+export function isSystemXG(system: SynthSystem) {
     return system === "gm2" || system === "xg";
 }

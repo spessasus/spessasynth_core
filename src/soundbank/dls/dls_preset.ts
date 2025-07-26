@@ -1,19 +1,14 @@
 import { BasicPreset } from "../basic_soundbank/basic_preset.js";
 import { DLSInstrument } from "./dls_instrument.js";
+import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank.ts";
 
 export class DLSPreset extends BasicPreset {
-    /**
-     * @type {DLSInstrument}
-     */
-    dlsInstrument = new DLSInstrument();
+    dlsInstrument: DLSInstrument = new DLSInstrument();
 
     /**
      * Creates a new DLS preset
-     * @param dls {BasicSoundBank}
-     * @param ulBank {number}
-     * @param ulInstrument {number}
      */
-    constructor(dls, ulBank, ulInstrument) {
+    constructor(dls: BasicSoundBank, ulBank: number, ulInstrument: number) {
         // use stock default modulators, dls won't ever have DMOD chunk
         super(dls);
         this.program = ulInstrument & 127;

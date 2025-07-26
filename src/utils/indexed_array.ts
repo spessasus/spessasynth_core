@@ -1,6 +1,6 @@
 /**
  * indexed_array.js
- * purpose: exteds Uint8Array with a currentIndex property
+ * purpose: extends Uint8Array with a currentIndex property.
  */
 
 export class IndexedByteArray extends Uint8Array {

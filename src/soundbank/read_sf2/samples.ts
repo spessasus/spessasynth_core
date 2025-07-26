@@ -1,10 +1,11 @@
-import { RiffChunk } from "../basic_soundbank/riff_chunk.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicSample } from "../basic_soundbank/basic_sample.js";
 import { consoleColors } from "../../utils/other.js";
+import type { sampleTypes } from "../enums.ts";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
 
 /**
  * samples.js
@@ -16,45 +17,49 @@ export const SF3_BIT_FLIT = 0x10;
 export class SoundFontSample extends BasicSample {
     /**
      * Linked sample index for retrieving linked samples in sf2
-     * @type {number}
      */
-    linkedSampleIndex;
+    linkedSampleIndex: number;
 
     /**
      * The sliced sample from the smpl chunk
-     * @type {Uint8Array}
      */
-    s16leData;
+    s16leData: Uint8Array | undefined = undefined;
+
+    startByteOffset: number;
+
+    endByteOffset: number;
+
+    sampleID: number;
 
     /**
      * Creates a sample
-     * @param sampleName {string}
-     * @param sampleStartIndex {number}
-     * @param sampleEndIndex {number}
-     * @param sampleLoopStartIndex {number}
-     * @param sampleLoopEndIndex {number}
-     * @param sampleRate {number}
-     * @param samplePitch {number}
-     * @param samplePitchCorrection {number}
-     * @param linkedSampleIndex {number}
-     * @param sampleType {number}
-     * @param sampleDataArray {IndexedByteArray|Float32Array}
-     * @param sampleIndex {number} initial sample index when loading the sfont
+     * @param sampleName
+     * @param sampleStartIndex
+     * @param sampleEndIndex
+     * @param sampleLoopStartIndex
+     * @param sampleLoopEndIndex
+     * @param sampleRate
+     * @param samplePitch
+     * @param samplePitchCorrection
+     * @param linkedSampleIndex
+     * @param sampleType
+     * @param sampleDataArray
+     * @param sampleIndex initial sample index when loading the sfont
      * Used for SF2Pack support
      */
     constructor(
-        sampleName,
-        sampleStartIndex,
-        sampleEndIndex,
-        sampleLoopStartIndex,
-        sampleLoopEndIndex,
-        sampleRate,
-        samplePitch,
-        samplePitchCorrection,
-        linkedSampleIndex,
-        sampleType,
-        sampleDataArray,
-        sampleIndex
+        sampleName: string,
+        sampleStartIndex: number,
+        sampleEndIndex: number,
+        sampleLoopStartIndex: number,
+        sampleLoopEndIndex: number,
+        sampleRate: number,
+        samplePitch: number,
+        samplePitchCorrection: number,
+        linkedSampleIndex: number,
+        sampleType: sampleTypes,
+        sampleDataArray: IndexedByteArray | Float32Array,
+        sampleIndex: number
     ) {
         // read sf3
         // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
@@ -66,41 +71,36 @@ export class SoundFontSample extends BasicSample {
             sampleRate,
             samplePitch,
             samplePitchCorrection,
-            sampleType,
+            sampleType as sampleTypes,
             sampleLoopStartIndex - sampleStartIndex / 2,
             sampleLoopEndIndex - sampleStartIndex / 2
         );
         this.dataOverridden = false;
-        this.isCompressed = compressed;
         this.sampleName = sampleName;
         // in bytes
         this.startByteOffset = sampleStartIndex;
         this.endByteOffset = sampleEndIndex;
         this.sampleID = sampleIndex;
-        const smplStart = sampleDataArray.currentIndex;
+        const smplStart =
+            sampleDataArray instanceof IndexedByteArray
+                ? sampleDataArray.currentIndex
+                : 0;
 
         // three data types in:
         // SF2 (s16le)
         // SF3 (vorbis)
-        // SF2Pack (
-        if (this.isCompressed) {
-            // correct loop points
-            this.sampleLoopStartIndex += this.startByteOffset / 2;
-            this.sampleLoopEndIndex += this.startByteOffset / 2;
+        // SF2Pack (entire smpl vorbis)
+        if (sampleDataArray instanceof IndexedByteArray) {
+            if (compressed) {
+                // correct loop points
+                this.sampleLoopStartIndex += this.startByteOffset / 2;
+                this.sampleLoopEndIndex += this.startByteOffset / 2;
 
-            // copy the compressed data, it can be preserved during writing
-            this.compressedData = sampleDataArray.slice(
-                this.startByteOffset / 2 + smplStart,
-                this.endByteOffset / 2 + smplStart
-            );
-        } else {
-            if (sampleDataArray instanceof Float32Array) {
-                // float32 array from SF2pack, copy directly
-                this.sampleData = sampleDataArray.slice(
-                    this.startByteOffset / 2,
-                    this.endByteOffset / 2
+                // copy the compressed data, it can be preserved during writing
+                this.compressedData = sampleDataArray.slice(
+                    this.startByteOffset / 2 + smplStart,
+                    this.endByteOffset / 2 + smplStart
                 );
-                this.dataOverridden = true;
             } else {
                 // regular sf2 s16le
                 this.s16leData = sampleDataArray.slice(
@@ -108,14 +108,19 @@ export class SoundFontSample extends BasicSample {
                     smplStart + this.endByteOffset
                 );
             }
+
+            this.dataOverridden = true;
+        } else {
+            // float32 array from SF2pack, copy directly
+            this.sampleData = sampleDataArray.slice(
+                this.startByteOffset / 2,
+                this.endByteOffset / 2
+            );
         }
         this.linkedSampleIndex = linkedSampleIndex;
     }
 
-    /**
-     * @param samplesArray {BasicSample[]}
-     */
-    getLinkedSample(samplesArray) {
+    getLinkedSample(samplesArray: BasicSample[]) {
         if (this.linkedSample || !this.isLinked) {
             return;
         }
@@ -141,18 +146,15 @@ export class SoundFontSample extends BasicSample {
         }
     }
 
-    /**
-     * @param audioData {Float32Array}
-     */
-    setAudioData(audioData) {
+    setAudioData(audioData: Float32Array) {
         super.setAudioData(audioData);
     }
 
     /**
      * Loads the audio data and stores it for reuse
-     * @returns {Float32Array} The audioData
+     * @returns  The audio data
      */
-    getAudioData() {
+    getAudioData(): Float32Array {
         if (this.sampleData) {
             return this.sampleData;
         }
@@ -160,6 +162,9 @@ export class SoundFontSample extends BasicSample {
         // SF3 is decoded in BasicSample
         if (this.isCompressed) {
             return super.getAudioData();
+        }
+        if (!this.s16leData) {
+            throw new Error("Unexpected lack of audio data.");
         }
 
         // start loading data if it is not loaded
@@ -185,36 +190,25 @@ export class SoundFontSample extends BasicSample {
         return audioData;
     }
 
-    /**
-     * @param allowVorbis
-     * @returns {Uint8Array}
-     */
-    getRawData(allowVorbis) {
+    getRawData(allowVorbis: boolean): Uint8Array {
         if (this.dataOverridden || this.compressedData) {
             // return vorbis or encode manually
             return super.getRawData(allowVorbis);
         }
         // copy the smpl directly
-        return this.s16leData;
+        return this.s16leData || new Uint8Array(0);
     }
 }
 
 /**
- * Reads the generatorTranslator from the shdr read
- * @param sampleHeadersChunk {RiffChunk}
- * @param smplChunkData {IndexedByteArray|Float32Array}
- * @param linkSamples {boolean}
- * @returns {SoundFontSample[]}
+ * Reads the samples from the shdr chunk
  */
 export function readSamples(
-    sampleHeadersChunk,
-    smplChunkData,
-    linkSamples = true
-) {
-    /**
-     * @type {SoundFontSample[]}
-     */
-    const samples = [];
+    sampleHeadersChunk: RiffChunk,
+    smplChunkData: IndexedByteArray | Float32Array,
+    linkSamples: boolean = true
+): SoundFontSample[] {
+    const samples: SoundFontSample[] = [];
     let index = 0;
     while (
         sampleHeadersChunk.chunkData.length >
@@ -241,12 +235,12 @@ export function readSamples(
 
 /**
  * Reads it into a sample
- * @param index {number}
- * @param sampleHeaderData {IndexedByteArray}
- * @param smplArrayData {IndexedByteArray|Float32Array}
- * @returns {SoundFontSample}
  */
-function readSample(index, sampleHeaderData, smplArrayData) {
+function readSample(
+    index: number,
+    sampleHeaderData: IndexedByteArray,
+    smplArrayData: IndexedByteArray | Float32Array
+): SoundFontSample {
     // read the sample name
     const sampleName = readBytesAsString(sampleHeaderData, 20);
 
@@ -279,7 +273,7 @@ function readSample(index, sampleHeaderData, smplArrayData) {
 
     // read the link to the other channel
     const sampleLink = readLittleEndian(sampleHeaderData, 2);
-    const sampleType = readLittleEndian(sampleHeaderData, 2);
+    const sampleType = readLittleEndian(sampleHeaderData, 2) as sampleTypes;
 
     return new SoundFontSample(
         sampleName,

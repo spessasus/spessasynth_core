@@ -1,21 +1,14 @@
 /**
- * Fills the object with default values
- * @param obj {Object}
- * @param defObj {Object}
- * @returns {Object}
+ * Fills the object with default values.
+ * @param obj object to fill.
+ * @param defObj object to fill with.
  */
-export function fillWithDefaults(obj, defObj)
-{
-    if (obj === undefined)
-    {
-        obj = {};
-    }
-    for (const key in defObj)
-    {
-        if (defObj.hasOwnProperty(key) && !(key in obj))
-        {
-            obj[key] = defObj[key];
-        }
-    }
-    return obj;
+export function fillWithDefaults<T extends Record<string, unknown>>(
+    obj: Partial<T> | undefined,
+    defObj: T
+): T {
+    return {
+        ...defObj,
+        ...(obj ?? {})
+    };
 }

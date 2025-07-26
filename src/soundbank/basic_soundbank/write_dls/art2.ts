@@ -1,4 +1,7 @@
-import { getDLSArticulatorFromSf2Generator, getDLSArticulatorFromSf2Modulator } from "./modulator_converter.js";
+import {
+    getDLSArticulatorFromSf2Generator,
+    getDLSArticulatorFromSf2Modulator
+} from "./modulator_converter.js";
 import { writeRIFFChunkParts } from "../riff_chunk.js";
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { Generator } from "../generator.js";
@@ -11,8 +14,10 @@ import {
     DEFAULT_DLS_REVERB,
     DLS_1_NO_VIBRATO_MOD,
     DLS_1_NO_VIBRATO_PRESSURE
-} from "../../dls/dls_sources.js";
+} from "../../dls/default_dls_modulators.js";
 import { generatorTypes } from "../generator_types.js";
+import type { BasicZone } from "../basic_zone.ts";
+import type { Articulator } from "./articulator.ts";
 
 const invalidGeneratorTypes = new Set([
     generatorTypes.sampleModes,
@@ -32,21 +37,19 @@ const invalidGeneratorTypes = new Set([
     generatorTypes.endloopAddrsCoarseOffset,
     generatorTypes.overridingRootKey,
     generatorTypes.exclusiveClass
-]);
+] as const);
+
+type invalidGeneratorTypes =
+    typeof invalidGeneratorTypes extends Set<infer T> ? T : never;
 
 /**
- * @param zone {BasicZone}
- * @returns {IndexedByteArray}
+ * Writes a DLS articulator chunk.
  */
-export function writeArticulator(zone)
-{
-    
-    
+export function writeArticulator(zone: BasicZone): IndexedByteArray {
     // envelope generators are limited to 40 seconds
     // in timecents, this is 1200 * log2(10) = 6386
-    
-    for (let i = 0; i < zone.generators.length; i++)
-    {
+
+    for (let i = 0; i < zone.generators.length; i++) {
         const g = zone.generators[i];
         if (
             g.generatorType === generatorTypes.delayVolEnv ||
@@ -58,28 +61,28 @@ export function writeArticulator(zone)
             g.generatorType === generatorTypes.attackModEnv ||
             g.generatorType === generatorTypes.holdModEnv ||
             g.generatorType === generatorTypes.decayModEnv
-        )
-        {
-            zone.generators[i] = new Generator(g.generatorType, Math.min(g.generatorValue, 6386), false);
+        ) {
+            zone.generators[i] = new Generator(
+                g.generatorType,
+                Math.min(g.generatorValue, 6386),
+                false
+            );
         }
     }
-    
-    
+
     // read_articulation.js:
     // according to viena and another strange (with modulators) rendition of gm.dls in sf2,
     // it shall be divided by -128,
     // and a strange correction needs to be applied to the real value:
     // real + (60 / 128) * scale
     // we invert this here
-    for (let i = 0; i < zone.generators.length; i++)
-    {
+    for (let i = 0; i < zone.generators.length; i++) {
         const relativeGenerator = zone.generators[i];
         let absoluteCounterpart = undefined;
-        switch (relativeGenerator.generatorType)
-        {
+        switch (relativeGenerator.generatorType) {
             default:
                 continue;
-            
+
             case generatorTypes.keyNumToVolEnvDecay:
                 absoluteCounterpart = generatorTypes.decayVolEnv;
                 break;
@@ -92,83 +95,84 @@ export function writeArticulator(zone)
             case generatorTypes.keyNumToModEnvHold:
                 absoluteCounterpart = generatorTypes.holdModEnv;
         }
-        let absoluteGenerator = zone.generators.find(g => g.generatorType === absoluteCounterpart);
-        if (absoluteGenerator === undefined)
-        {
+        const absoluteGenerator = zone.generators.find(
+            (g) => g.generatorType === absoluteCounterpart
+        );
+        if (absoluteGenerator === undefined) {
             // there's no absolute generator here.
             continue;
         }
         const dlsRelative = relativeGenerator.generatorValue * -128;
         const subtraction = (60 / 128) * dlsRelative;
         const newAbsolute = absoluteGenerator.generatorValue - subtraction;
-        
+
         const iR = zone.generators.indexOf(relativeGenerator);
         const iA = zone.generators.indexOf(absoluteGenerator);
-        zone.generators[iA] =
-            new Generator(absoluteCounterpart, newAbsolute, false);
-        zone.generators[iR] =
-            new Generator(relativeGenerator.generatorType, dlsRelative, false);
+        zone.generators[iA] = new Generator(
+            absoluteCounterpart,
+            newAbsolute,
+            false
+        );
+        zone.generators[iR] = new Generator(
+            relativeGenerator.generatorType,
+            dlsRelative,
+            false
+        );
     }
-    /**
-     * @type {Articulator[]}
-     */
-    const generators = zone.generators.reduce((arrs, g) =>
-    {
-        if (invalidGeneratorTypes.has(g.generatorType))
-        {
-            return arrs;
-        }
-        const art = getDLSArticulatorFromSf2Generator(g);
-        if (art !== undefined)
-        {
-            arrs.push(art);
-            SpessaSynthInfo("%cSucceeded converting to DLS Articulator!", consoleColors.recognized);
-            
-        }
-        else
-        {
-            SpessaSynthWarn("Failed converting to DLS Articulator!");
-        }
-        return arrs;
-    }, []);
-    /**
-     * @type {Articulator[]}
-     */
-    const modulators = zone.modulators.reduce((arrs, m) =>
-    {
-        // do not write the default DLS modulators
-        if (
-            Modulator.isIdentical(m, DEFAULT_DLS_CHORUS, true) ||
-            Modulator.isIdentical(m, DEFAULT_DLS_REVERB, true) ||
-            Modulator.isIdentical(m, DLS_1_NO_VIBRATO_MOD, true) ||
-            Modulator.isIdentical(m, DLS_1_NO_VIBRATO_PRESSURE, true)
-        )
-        {
-            return arrs;
-        }
-        const art = getDLSArticulatorFromSf2Modulator(m);
-        if (art !== undefined)
-        {
-            arrs.push(art);
-            SpessaSynthInfo("%cSucceeded converting to DLS Articulator!", consoleColors.recognized);
-            
-        }
-        else
-        {
-            SpessaSynthWarn("Failed converting to DLS Articulator!");
-        }
-        return arrs;
-    }, []);
+    const generators: Articulator[] = zone.generators.reduce(
+        (articulators: Articulator[], g) => {
+            if (
+                invalidGeneratorTypes.has(
+                    g.generatorType as invalidGeneratorTypes
+                )
+            ) {
+                return articulators;
+            }
+            const art = getDLSArticulatorFromSf2Generator(g);
+            if (art !== undefined) {
+                articulators.push(art);
+                SpessaSynthInfo(
+                    "%cSucceeded converting to DLS Articulator!",
+                    consoleColors.recognized
+                );
+            } else {
+                SpessaSynthWarn("Failed converting to DLS Articulator!");
+            }
+            return articulators;
+        },
+        []
+    );
+    const modulators: Articulator[] = zone.modulators.reduce(
+        (articulators: Articulator[], m) => {
+            // do not write the default DLS modulators
+            if (
+                Modulator.isIdentical(m, DEFAULT_DLS_CHORUS, true) ||
+                Modulator.isIdentical(m, DEFAULT_DLS_REVERB, true) ||
+                Modulator.isIdentical(m, DLS_1_NO_VIBRATO_MOD, true) ||
+                Modulator.isIdentical(m, DLS_1_NO_VIBRATO_PRESSURE, true)
+            ) {
+                return articulators;
+            }
+            const art = getDLSArticulatorFromSf2Modulator(m);
+            if (art !== undefined) {
+                articulators.push(art);
+                SpessaSynthInfo(
+                    "%cSucceeded converting to DLS Articulator!",
+                    consoleColors.recognized
+                );
+            } else {
+                SpessaSynthWarn("Failed converting to DLS Articulator!");
+            }
+            return articulators;
+        },
+        []
+    );
     generators.push(...modulators);
-    
+
     const art2Data = new IndexedByteArray(8);
     writeDword(art2Data, 8); // cbSize
     writeDword(art2Data, generators.length); // cbConnectionBlocks
-    
-    
-    const out = generators.map(a => a.writeArticulator());
-    return writeRIFFChunkParts(
-        "art2",
-        [art2Data, ...out]
-    );
+
+    const out = generators.map((a) => a.writeArticulator());
+    return writeRIFFChunkParts("art2", [art2Data, ...out]);
 }

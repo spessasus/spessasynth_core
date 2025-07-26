@@ -1,35 +1,35 @@
-/**
- * @typedef {Object} WaveMetadata
- * @property {string} title - the song's title
- * @property {string} artist - the song's artist
- * @property {string} album - the song's album
- * @property {string} genre - the song's genre
- */
-
 import { IndexedByteArray } from "./indexed_array.js";
 import { writeStringAsBytes } from "./byte_functions/string.js";
-import {
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../soundbank/basic_soundbank/riff_chunk.js";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../soundbank/basic_soundbank/riff_chunk.js";
 import { writeLittleEndian } from "./byte_functions/little_endian.js";
 
+type WaveMetadata = {
+    // the song's title.
+    title: string;
+    // the song's artist.
+    artist: string;
+    // the song's album.
+    album: string;
+    // the song's genre.
+    genre: string;
+};
+
 /**
- *
- * @param audioData {Float32Array[]} channels
- * @param sampleRate {number}
- * @param normalizeAudio {boolean} find the max sample point and set it to 1, and scale others with it
- * @param metadata {Partial<WaveMetadata>}
- * @param loop {{start: number, end: number}} loop start and end points in seconds. Undefined if no loop
- * @returns {ArrayBuffer}
+ * Writes an audio into a valid WAV file.
+ * @param audioData the audio data channels.
+ * @param sampleRate the sample rate, in Hertz.
+ * @param normalizeAudio this will find the max sample point and set it to 1, and scale others with it. Recommended
+ * @param metadata the metadata to write into the file.
+ * @param loop the loop start and end points in seconds. Undefined if no loop should be written.
+ * @returns the binary file.
  */
 export function audioToWav(
-    audioData,
-    sampleRate,
-    normalizeAudio = true,
-    metadata = {},
-    loop = undefined
-) {
+    audioData: Float32Array[],
+    sampleRate: number,
+    normalizeAudio: boolean = true,
+    metadata: Partial<WaveMetadata> = {},
+    loop: { start: number; end: number } | undefined = undefined
+): ArrayBuffer {
     const length = audioData[0].length;
     const numChannels = audioData.length;
 

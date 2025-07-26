@@ -1,22 +1,24 @@
 import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
-import { findRIFFListType, readRIFFChunk } from "../basic_soundbank/riff_chunk.js";
+import { findRIFFListType, readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk.js";
 import { Generator } from "../basic_soundbank/generator.js";
 import { generatorTypes } from "../basic_soundbank/generator_types.js";
 import { SpessaSynthWarn } from "../../utils/loggin.js";
+import type { DownloadableSounds } from "./dls_soundfont.js";
+import type { DLSInstrument } from "./dls_instrument.ts";
+import { readLart } from "./read_lart.ts";
+import type { DLSSample } from "./dls_sample.ts";
 
-/**
- * @this {DLSSoundFont}
- * @param chunk {RiffChunk}
- * @param instrument {DLSInstrument}
- */
-export function readRegion(chunk, instrument) {
+export function readRegion(
+    dls: DownloadableSounds,
+    chunk: RiffChunk,
+    instrument: DLSInstrument
+) {
     // regions are essentially instrument zones
 
     /**
      * read chunks in the region
-     * @type {RiffChunk[]}
      */
-    const regionChunks = [];
+    const regionChunks: RiffChunk[] = [];
     while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
         regionChunks.push(readRIFFChunk(chunk.chunkData));
     }
@@ -63,10 +65,14 @@ export function readRegion(chunk, instrument) {
     // lart
     const lart = findRIFFListType(regionChunks, "lart");
     const lar2 = findRIFFListType(regionChunks, "lar2");
-    this.readLart(lart, lar2, zone);
+    readLart(dls, lart, lar2, zone);
 
     // wsmp: wave sample chunk
     const waveSampleChunk = regionChunks.find((c) => c.header === "wsmp");
+    if (!waveSampleChunk) {
+        dls.parsingError("No wavesample chunk in region.");
+        return;
+    }
     // cbSize
     readLittleEndian(waveSampleChunk.chunkData, 4);
     const originalKey = readLittleEndian(waveSampleChunk.chunkData, 2);
@@ -123,11 +129,8 @@ export function readRegion(chunk, instrument) {
     readLittleEndian(waveLinkChunk.chunkData, 4);
     // sampleID
     const sampleID = readLittleEndian(waveLinkChunk.chunkData, 4);
-    // noinspection JSValidateTypes
-    /**
-     * @type {DLSSample}
-     */
-    const sample = this.samples[sampleID];
+    // hacky cast, but works
+    const sample: DLSSample = dls.samples[sampleID] as DLSSample;
     if (sample === undefined) {
         throw new Error("Invalid sample ID!");
     }
@@ -143,7 +146,6 @@ export function readRegion(chunk, instrument) {
         loop,
         originalKey,
         sample,
-        sampleID,
         pitchCorrection
     );
 }

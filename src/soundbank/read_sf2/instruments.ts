@@ -3,38 +3,29 @@ import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicInstrument } from "../basic_soundbank/basic_instrument.js";
 
-import { InstrumentZone } from "./instrument_zones.js";
+import { SoundFontInstrumentZone } from "./instrument_zones.js";
 
 /**
  * instrument.js
  * purpose: parses soundfont instrument and stores them as a class
  */
 
-export class Instrument extends BasicInstrument {
-    /**
-     * @type {number}
-     */
-    zoneStartIndex;
-    /**
-     * @type {number}
-     */
-    zonesCount = 0;
+export class SoundFontInstrument extends BasicInstrument {
+    zoneStartIndex: number;
+
+    zonesCount: number = 0;
 
     /**
      * Creates an instrument
-     * @param instrumentChunk {RiffChunk}
      */
-    constructor(instrumentChunk) {
+    constructor(instrumentChunk: RiffChunk) {
         super();
         this.instrumentName = readBytesAsString(instrumentChunk.chunkData, 20);
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
 
-    /**
-     * @returns {InstrumentZone}
-     */
-    createZone() {
-        const z = new InstrumentZone(this);
+    createZone(): SoundFontInstrumentZone {
+        const z = new SoundFontInstrumentZone(this);
         this.instrumentZones.push(z);
         return z;
     }
@@ -42,19 +33,16 @@ export class Instrument extends BasicInstrument {
 
 /**
  * Reads the instruments
- * @param instrumentChunk {RiffChunk}
- * @returns {Instrument[]}
  */
-export function readInstruments(instrumentChunk) {
-    /**
-     * @type {Instrument[]}
-     */
-    const instruments = [];
+export function readInstruments(
+    instrumentChunk: RiffChunk
+): SoundFontInstrument[] {
+    const instruments: SoundFontInstrument[] = [];
     while (
         instrumentChunk.chunkData.length >
         instrumentChunk.chunkData.currentIndex
     ) {
-        const instrument = new Instrument(instrumentChunk);
+        const instrument = new SoundFontInstrument(instrumentChunk);
 
         if (instruments.length > 0) {
             const previous = instruments[instruments.length - 1];

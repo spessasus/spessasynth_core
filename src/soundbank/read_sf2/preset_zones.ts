@@ -2,26 +2,27 @@ import { BasicPresetZone } from "../basic_soundbank/basic_preset_zone.js";
 import { Generator } from "../basic_soundbank/generator.js";
 import { Modulator } from "../basic_soundbank/modulator.js";
 import { generatorTypes } from "../basic_soundbank/generator_types.js";
+import type { BasicPreset } from "../basic_soundbank/basic_preset.ts";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument.ts";
+import type { SoundFontPreset } from "./presets.ts";
 
 /**
  * preset_zones.js
  * purpose: reads preset zones from soundfont and gets their respective samples and generators and modulators
  */
 
-export class PresetZone extends BasicPresetZone {
+export class SoundFontPresetZone extends BasicPresetZone {
     /**
      * Creates a zone (preset)
-     * @param preset {BasicPreset}
      */
-    constructor(preset) {
+    constructor(preset: BasicPreset) {
         super(preset);
     }
 
     /**
      * grab the instrument
-     * @param instruments {BasicInstrument[]}
      */
-    getInstrument(instruments) {
+    getInstrument(instruments: BasicInstrument[]) {
         const instrumentID = this.generators.find(
             (g) => g.generatorType === generatorTypes.instrument
         );
@@ -33,18 +34,13 @@ export class PresetZone extends BasicPresetZone {
 
 /**
  * Reads the given preset zone
- * @param indexes {{mod: number[], gen: number[]}}
- * @param presetGens {Generator[]}
- * @param instruments {BasicInstrument[]}
- * @param presetMods {Modulator[]}
- * @param presets {Preset[]}
  */
 export function applyPresetZones(
-    indexes,
-    presetGens,
-    presetMods,
-    instruments,
-    presets
+    indexes: { mod: number[]; gen: number[] },
+    presetGens: Generator[],
+    presetMods: Modulator[],
+    instruments: BasicInstrument[],
+    presets: SoundFontPreset[]
 ) {
     const genStartIndexes = indexes.gen;
     const modStartIndexes = indexes.mod;

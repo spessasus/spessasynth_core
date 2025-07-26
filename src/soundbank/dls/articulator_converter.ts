@@ -1,23 +1,21 @@
-import { DLSSources } from "./dls_sources.js";
+import {
+    DLSDestinations,
+    DLSSources,
+    modulatorCurveTypes,
+    modulatorSources
+} from "../enums.ts";
 import {
     DecodedModulator,
     getModSourceEnum,
-    Modulator,
-    modulatorCurveTypes,
-    modulatorSources
+    Modulator
 } from "../basic_soundbank/modulator.js";
-import { DLSDestinations } from "./dls_destinations.js";
 
-import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { generatorTypes } from "../basic_soundbank/generator_types.js";
 import { midiControllers } from "../../midi/enums.ts";
+import type { ModulatorNumericBool } from "../types.ts";
 
-/**
- * @param source {number}
- * @returns {{enum: number, isCC: boolean}|undefined}
- */
-function getSF2SourceFromDLS(source) {
+function getSF2SourceFromDLS(source: number) {
     let sourceEnum = undefined;
     let isCC = false;
     switch (source) {
@@ -82,11 +80,14 @@ function getSF2SourceFromDLS(source) {
 }
 
 /**
- * @param destination {number}
- * @param amount {number}
- * @returns {generatorTypes|{gen: generatorTypes, newAmount: number}} // transform amount to sf2 units
+ * @param destination
+ * @param amount
+ * @returns  transform amount to sf2 units
  */
-function getSF2GeneratorFromDLS(destination, amount) {
+function getSF2GeneratorFromDLS(
+    destination: number,
+    amount: number
+): generatorTypes | undefined | { gen: generatorTypes; newAmount: number } {
     switch (destination) {
         default:
         case DLSDestinations.none:
@@ -160,11 +161,14 @@ function getSF2GeneratorFromDLS(destination, amount) {
 
 /**
  * checks for combos such as mod lfo as source and pitch as destination which results in modLfoToPitch
- * @param source {number}
- * @param destination {number}
- * @returns {generatorTypes} real destination
+ * @param source
+ * @param destination
+ * @returns real destination
  */
-function checkForSpecialDLSCombo(source, destination) {
+function checkForSpecialDLSCombo(
+    source: number,
+    destination: number
+): generatorTypes | undefined {
     if (
         source === DLSSources.vibratoLfo &&
         destination === DLSDestinations.pitch
@@ -206,71 +210,13 @@ function checkForSpecialDLSCombo(source, destination) {
     }
 }
 
-// noinspection JSUnusedGlobalSymbols
-/**
- * @param source {number}
- * @param control {number}
- * @param destination {number}
- * @param value {number}
- * @param transform {number}
- * @param msg {string}
- */
-export function modulatorConverterDebug(
-    source,
-    control,
-    destination,
-    value,
-    transform,
-    msg = "Attempting to convert the following DLS Articulator to SF2 Modulator:"
-) {
-    const type = Object.keys(DLSDestinations).find(
-        (k) => DLSDestinations[k] === destination
-    );
-    const srcType = Object.keys(DLSSources).find(
-        (k) => DLSSources[k] === source
-    );
-    const ctrlType = Object.keys(DLSSources).find(
-        (k) => DLSSources[k] === control
-    );
-    const typeString = type ? type : destination.toString(16);
-    const srcString = srcType ? srcType : source.toString(16);
-    const ctrlString = ctrlType ? ctrlType : control.toString(16);
-    console.debug(
-        `%c${msg}
-        Source: %c${srcString}%c
-        Control: %c${ctrlString}%c
-        Destination: %c${typeString}%c
-        Amount: %c${value}%c
-        Transform: %c${transform}%c...`,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info
-    );
-}
-
-/**
- * @param source {number}
- * @param control {number}
- * @param destination {number}
- * @param transform {number}
- * @param value {number}
- * @returns {Modulator|undefined}
- */
 export function getSF2ModulatorFromArticulator(
-    source,
-    control,
-    destination,
-    transform,
-    value
-) {
+    source: number,
+    control: number,
+    destination: number,
+    transform: number,
+    value: number
+): Modulator | undefined {
     // modulatorConverterDebug(
     //     source,
     //     control,
@@ -280,14 +226,8 @@ export function getSF2ModulatorFromArticulator(
     // );
     // check for special combinations
     const specialDestination = checkForSpecialDLSCombo(source, destination);
-    /**
-     * @type {generatorTypes}
-     */
-    let destinationGenerator;
-    /**
-     * @type {{enum: number, isCC: boolean}}
-     */
-    let sf2Source;
+    let destinationGenerator: generatorTypes;
+    let sf2Source: { enum: number; isCC: boolean } | undefined;
     let swapSources = false;
     let isSourceNoController = false;
     let newValue = value;
@@ -299,13 +239,11 @@ export function getSF2ModulatorFromArticulator(
             SpessaSynthWarn(`Invalid destination: ${destination}`);
             return undefined;
         }
-        /**
-         * @type {generatorTypes}
-         */
-        destinationGenerator = sf2GenDestination;
-        if (sf2GenDestination.newAmount !== undefined) {
+        if (typeof sf2GenDestination === "object") {
             newValue = sf2GenDestination.newAmount;
             destinationGenerator = sf2GenDestination.gen;
+        } else {
+            destinationGenerator = sf2GenDestination;
         }
         sf2Source = getSF2SourceFromDLS(source);
         if (sf2Source === undefined) {
@@ -335,10 +273,10 @@ export function getSF2ModulatorFromArticulator(
         // the result is the same and bipolar controller is technically 0
         sourceEnumFinal = 0x0;
     } else {
-        // output transform is ignored as it's not a thing in sfont format
+        // output transform is ignored as it's not a thing in soundfont format
         // unless the curve type of source is linear, then output is copied
         const outputTransform = transform & 0b1111;
-        // source curve type maps to a desfont curve type in section 2.10, table 9
+        // source curve type maps to a soundfont curve type in section 2.10, table 9
         let sourceTransform = (transform >> 10) & 0b1111;
         if (
             sourceTransform === modulatorCurveTypes.linear &&
@@ -358,11 +296,11 @@ export function getSF2ModulatorFromArticulator(
             }
         }
         sourceEnumFinal = getModSourceEnum(
-            sourceTransform,
-            sourceIsBipolar,
-            sourceIsNegative,
-            sf2Source.isCC,
-            sf2Source.enum
+            sourceTransform as modulatorCurveTypes,
+            sourceIsBipolar as ModulatorNumericBool,
+            sourceIsNegative as ModulatorNumericBool,
+            sf2Source.isCC ? 1 : 0,
+            sf2Source.enum as modulatorSources
         );
     }
 
@@ -377,11 +315,11 @@ export function getSF2ModulatorFromArticulator(
     const secSourceIsBipolar = (transform >> 8) & 1;
     const secSourceIsNegative = (transform >> 9) & 1;
     let secSourceEnumFinal = getModSourceEnum(
-        secSourceTransform,
-        secSourceIsBipolar,
-        secSourceIsNegative,
-        sf2SecondSource.isCC,
-        sf2SecondSource.enum
+        secSourceTransform as modulatorCurveTypes,
+        secSourceIsBipolar as ModulatorNumericBool,
+        secSourceIsNegative as ModulatorNumericBool,
+        sf2SecondSource.isCC ? 1 : 0,
+        sf2SecondSource.enum as modulatorSources
     );
 
     if (swapSources) {

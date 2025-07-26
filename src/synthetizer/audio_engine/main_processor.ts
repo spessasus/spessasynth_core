@@ -6,7 +6,7 @@ import {
     EMBEDDED_SOUND_BANK_ID,
     VOICE_CAP
 } from "./synth_constants.js";
-import { stbvorbis } from "stbvorbis_sync";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper.ts";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/volume_envelope.js";
 import { masterParameterType, setMasterParameter } from "./engine_methods/controller_control/master_parameters.js";
 import { SoundFontManager } from "./engine_components/soundfont_manager.js";

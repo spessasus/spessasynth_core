@@ -2,28 +2,21 @@ import { RiffChunk } from "../basic_soundbank/riff_chunk.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicPreset } from "../basic_soundbank/basic_preset.js";
-import { PresetZone } from "./preset_zones.js";
+import { SoundFontPresetZone } from "./preset_zones.js";
+import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank.ts";
 
 /**
  * parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
  */
 
-export class Preset extends BasicPreset {
-    /**
-     * @type {number}
-     */
-    zoneStartIndex;
-    /**
-     * @type {number}
-     */
-    zonesCount = 0;
+export class SoundFontPreset extends BasicPreset {
+    zoneStartIndex: number;
+    zonesCount: number = 0;
 
     /**
      * Creates a preset
-     * @param presetChunk {RiffChunk}
-     * @param sf2 {BasicSoundBank}
      */
-    constructor(presetChunk, sf2) {
+    constructor(presetChunk: RiffChunk, sf2: BasicSoundBank) {
         super(sf2);
         this.presetName = readBytesAsString(presetChunk.chunkData, 20).replace(
             /\d{3}:\d{3}/,
@@ -40,11 +33,8 @@ export class Preset extends BasicPreset {
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
     }
 
-    /**
-     * @returns {PresetZone}
-     */
-    createZone() {
-        const z = new PresetZone(this);
+    createZone(): SoundFontPresetZone {
+        const z = new SoundFontPresetZone(this);
         this.presetZones.push(z);
         return z;
     }
@@ -52,17 +42,14 @@ export class Preset extends BasicPreset {
 
 /**
  * Reads the presets
- * @param presetChunk {RiffChunk}
- * @param parent {BasicSoundBank}
- * @returns {Preset[]}
  */
-export function readPresets(presetChunk, parent) {
-    /**
-     * @type {Preset[]}
-     */
-    const presets = [];
+export function readPresets(
+    presetChunk: RiffChunk,
+    parent: BasicSoundBank
+): SoundFontPreset[] {
+    const presets: SoundFontPreset[] = [];
     while (presetChunk.chunkData.length > presetChunk.chunkData.currentIndex) {
-        const preset = new Preset(presetChunk, parent);
+        const preset = new SoundFontPreset(presetChunk, parent);
         if (presets.length > 0) {
             const previous = presets[presets.length - 1];
             previous.zonesCount =

@@ -5,27 +5,24 @@
 
 /**
  * Formats the given seconds to nice readable time
- * @param totalSeconds {number} time in seconds
- * @return {{seconds: number, minutes: number, time: string}}
+ * @param totalSeconds time in seconds
  */
-export function formatTime(totalSeconds)
-{
+export function formatTime(totalSeconds: number): {
+    seconds: number;
+    minutes: number;
+    time: string;
+} {
     totalSeconds = Math.floor(totalSeconds);
-    let minutes = Math.floor(totalSeconds / 60);
-    let seconds = Math.round(totalSeconds - (minutes * 60));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.round(totalSeconds - minutes * 60);
     return {
-        "minutes": minutes,
-        "seconds": seconds,
-        "time": `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+        minutes: minutes,
+        seconds: seconds,
+        time: `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
     };
 }
 
-/**
- * @param fileName {string}
- * @returns {string}
- */
-export function formatTitle(fileName)
-{
+export function formatTitle(fileName: string): string {
     return fileName
         .trim()
         .replaceAll(".mid", "")
@@ -39,29 +36,23 @@ export function formatTitle(fileName)
 
 /**
  * Does what it says
- * @param arr {number[]|Uint8Array}
- * @returns {string}
  */
-export function arrayToHexString(arr)
-{
+export function arrayToHexString(arr: number[] | Uint8Array): string {
     let hexString = "";
-    
-    for (let i = 0; i < arr.length; i++)
-    {
+
+    for (let i = 0; i < arr.length; i++) {
         const hex = arr[i].toString(16).padStart(2, "0").toUpperCase();
         hexString += hex;
         hexString += " ";
     }
-    
+
     return hexString;
 }
 
 /**
- * @param eventData {Uint8Array}
- * @returns {Uint8Array}
+ * Sanitizes KAR lyrics
  */
-export function sanitizeKarLyrics(eventData)
-{
+export function sanitizeKarLyrics(eventData: Uint8Array): Uint8Array {
     // for KAR files:
     // https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
     // "/" is the newline character
@@ -70,10 +61,8 @@ export function sanitizeKarLyrics(eventData)
     // "/" ASCII code is 47
     // newline ASCII code is 10
     const sanitized = [];
-    for (let byte of eventData)
-    {
-        if (byte === 47 || byte === 92)
-        {
+    for (let byte of eventData) {
+        if (byte === 47 || byte === 92) {
             byte = 10;
         }
         sanitized.push(byte);
@@ -88,5 +77,3 @@ export const consoleColors = {
     recognized: "color: lime",
     value: "color: yellow; background-color: black;"
 };
-
-

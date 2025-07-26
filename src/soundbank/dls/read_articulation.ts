@@ -1,29 +1,27 @@
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { DLSDestinations } from "./dls_destinations.js";
-import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE, DLSSources } from "./dls_sources.js";
+import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators.js";
+import { DLSDestinations, DLSSources } from "../enums.ts";
 import { getSF2ModulatorFromArticulator } from "./articulator_converter.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
 import { Generator } from "../basic_soundbank/generator.js";
 import { Modulator } from "../basic_soundbank/modulator.js";
 import { generatorTypes } from "../basic_soundbank/generator_types.js";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
 
 /**
  * Reads the articulator chunk
- * @param chunk {RiffChunk}
- * @param disableVibrato {boolean} it seems that dls 1 does not have vibrato lfo, so we shall disable it
- * @returns {{modulators: Modulator[], generators: Generator[]}}
+ * @param chunk
+ * @param disableVibrato it seems that dls 1 does not have vibrato lfo, so we shall disable it
+ * @returns
  */
-export function readArticulation(chunk, disableVibrato) {
+export function readArticulation(
+    chunk: RiffChunk,
+    disableVibrato: boolean
+): { modulators: Modulator[]; generators: Generator[] } {
     const artData = chunk.chunkData;
-    /**
-     * @type {Generator[]}
-     */
-    const generators = [];
-    /**
-     * @type {Modulator[]}
-     */
-    const modulators = [];
+    const generators: Generator[] = [];
+    const modulators: Modulator[] = [];
 
     // cbSize (ignore)
     readLittleEndian(artData, 4);
@@ -48,10 +46,7 @@ export function readArticulation(chunk, disableVibrato) {
         // interpret this somehow...
         // if source and control are both zero, it's a generator
         if (source === 0 && control === 0 && transform === 0) {
-            /**
-             * @type {Generator}
-             */
-            let generator;
+            let generator: Generator | undefined;
             switch (destination) {
                 case DLSDestinations.pan:
                     generator = new Generator(generatorTypes.pan, value); // turn percent into tenths of percent
@@ -132,11 +127,13 @@ export function readArticulation(chunk, disableVibrato) {
                     break;
                 case DLSDestinations.volEnvSustain:
                     // gain seems to be (1000 - value) / 10 = sustain dB
-                    const sustainCb = 1000 - value;
-                    generator = new Generator(
-                        generatorTypes.sustainVolEnv,
-                        sustainCb
-                    );
+                    {
+                        const sustainCb = 1000 - value;
+                        generator = new Generator(
+                            generatorTypes.sustainVolEnv,
+                            sustainCb
+                        );
+                    }
                     break;
 
                 // mod env
@@ -174,14 +171,15 @@ export function readArticulation(chunk, disableVibrato) {
                         value
                     );
                     break;
-                case DLSDestinations.modEnvSustain:
-                    // dls uses 1%, desfont uses 0.1%
+                case DLSDestinations.modEnvSustain: {
+                    // dls uses 1%, soundfont uses 0.1%
                     const percentageSustain = 1000 - value;
                     generator = new Generator(
                         generatorTypes.sustainModEnv,
                         percentageSustain
                     );
                     break;
+                }
 
                 case DLSDestinations.reverbSend:
                     generator = new Generator(
@@ -195,8 +193,7 @@ export function readArticulation(chunk, disableVibrato) {
                         value
                     );
                     break;
-                case DLSDestinations.pitch:
-                    // split it up
+                case DLSDestinations.pitch: { // split it up
                     const semi = Math.floor(value / 100);
                     const cents = Math.floor(value - semi * 100);
                     generator = new Generator(generatorTypes.fineTune, cents);
@@ -204,6 +201,7 @@ export function readArticulation(chunk, disableVibrato) {
                         new Generator(generatorTypes.coarseTune, semi)
                     );
                     break;
+                }
             }
             if (generator) {
                 generators.push(generator);
@@ -213,7 +211,11 @@ export function readArticulation(chunk, disableVibrato) {
         else {
             let isGenerator = true;
 
-            const applyKeyToCorrection = (value, keyToGen, realGen) => {
+            const applyKeyToCorrection = (
+                value: number,
+                keyToGen: generatorTypes,
+                realGen: generatorTypes
+            ) => {
                 // according to viena and another strange (with modulators) rendition of gm.dls in sf2,
                 // it shall be divided by -128
                 // and a strange correction needs to be applied to the real value:
@@ -337,7 +339,7 @@ export function readArticulation(chunk, disableVibrato) {
             } else {
                 isGenerator = false;
             }
-            if (isGenerator === false) {
+            if (!isGenerator) {
                 // UNCOMMENT TO ENABLE DEBUG
                 // modulatorConverterDebug(source, control, destination, value, transform)
                 // convert it to modulator

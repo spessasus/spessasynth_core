@@ -42,11 +42,8 @@ import { BasicMIDI } from "./midi/basic_midi.js";
 import { MIDISequenceData } from "./midi/midi_sequence.js";
 import { MIDIBuilder } from "./midi/midi_builder.js";
 import { MIDIMessage } from "./midi/midi_message.js";
-import {
-    interpolationTypes,
-    synthDisplayTypes
-} from "./synthetizer/audio_engine/engine_components/enums.js";
-import { RMIDINFOChunks } from "./midi/midi_tools/rmidi_writer.js";
+import { interpolationTypes, synthDisplayTypes } from "./synthetizer/enums.ts";
+import { messageTypes, midiControllers, RMIDINFOChunks } from "./midi/enums.ts";
 import { IndexedByteArray } from "./utils/indexed_array.js";
 import { audioToWav } from "./utils/buffer_to_wav.js";
 import {
@@ -61,12 +58,11 @@ import { readLittleEndian } from "./utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "./utils/byte_functions/string.js";
 import { readVariableLengthQuantity } from "./utils/byte_functions/variable_length_quantity.js";
 import { consoleColors } from "./utils/other.js";
-import { inflateSync } from "./externals/fflate/fflate.min.js";
-import { DLSDestinations } from "./soundbank/dls/dls_destinations.js";
-import { DLSSources } from "./soundbank/dls/dls_sources.js";
+import { inflateSync } from "./externals/fflate/fflate_wrapper.ts";
+import { DLSSources } from "./soundbank/dls/default_dls_modulators.js";
 import { generatorTypes } from "./soundbank/basic_soundbank/generator_types.js";
 import { BasicInstrumentZone } from "./soundbank/basic_soundbank/basic_instrument_zone.js";
-import { messageTypes, midiControllers } from "./midi/enums.ts";
+import { DLSDestinations } from "./soundbank/enums.ts";
 // you shouldn't use these...
 const SpessaSynthCoreUtils = {
     consoleColors,

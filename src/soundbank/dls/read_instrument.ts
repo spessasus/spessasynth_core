@@ -1,25 +1,33 @@
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { DLSPreset } from "./dls_preset.js";
-import { findRIFFListType, readRIFFChunk } from "../basic_soundbank/riff_chunk.js";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../utils/loggin.js";
+import {
+    findRIFFListType,
+    readRIFFChunk,
+    RiffChunk
+} from "../basic_soundbank/riff_chunk.js";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd
+} from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
 import { Modulator } from "../basic_soundbank/modulator.js";
-import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./dls_sources.js";
-import { generatorLimits, generatorTypes } from "../basic_soundbank/generator_types.js";
+import {
+    DEFAULT_DLS_CHORUS,
+    DEFAULT_DLS_REVERB
+} from "./default_dls_modulators.js";
+import {
+    generatorLimits,
+    generatorTypes
+} from "../basic_soundbank/generator_types.js";
 import { readRegion } from "./read_region.js";
+import type { DownloadableSounds } from "./dls_soundfont.ts";
+import { readLart } from "./read_lart.ts";
 
-/**
- * @this {DLSSoundFont}
- * @param chunk {RiffChunk}
- */
-export function readDLSInstrument(chunk) {
-    this.verifyHeader(chunk, "LIST");
-    this.verifyText(readBytesAsString(chunk.chunkData, 4), "ins ");
-    /**
-     * @type {RiffChunk[]}
-     */
-    const chunks = [];
+export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {
+    dls.verifyHeader(chunk, "LIST");
+    dls.verifyText(readBytesAsString(chunk.chunkData, 4), "ins ");
+    const chunks: RiffChunk[] = [];
     while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
         chunks.push(readRIFFChunk(chunk.chunkData));
     }
@@ -34,7 +42,7 @@ export function readDLSInstrument(chunk) {
     const regions = readLittleEndian(instrumentHeader.chunkData, 4);
     const ulBank = readLittleEndian(instrumentHeader.chunkData, 4);
     const ulInstrument = readLittleEndian(instrumentHeader.chunkData, 4);
-    const preset = new DLSPreset(this, ulBank, ulInstrument);
+    const preset = new DLSPreset(dls, ulBank, ulInstrument);
 
     // read preset name in INFO
     let presetName = ``;
@@ -75,7 +83,7 @@ export function readDLSInstrument(chunk) {
     const globalLart = findRIFFListType(chunks, "lart");
     const globalLar2 = findRIFFListType(chunks, "lar2");
     if (globalLar2 !== undefined || globalLart !== undefined) {
-        this.readLart(globalLart, globalLar2, globalZone);
+        readLart(dls, globalLart, globalLar2, globalZone);
     }
     // remove generators with default values
     globalZone.generators = globalZone.generators.filter(
@@ -102,18 +110,18 @@ export function readDLSInstrument(chunk) {
     // read regions
     for (let i = 0; i < regions; i++) {
         const chunk = readRIFFChunk(regionListChunk.chunkData);
-        this.verifyHeader(chunk, "LIST");
+        dls.verifyHeader(chunk, "LIST");
         const type = readBytesAsString(chunk.chunkData, 4);
         if (type !== "rgn " && type !== "rgn2") {
             SpessaSynthGroupEnd();
-            this.parsingError(
+            dls.parsingError(
                 `Invalid DLS region! Expected "rgn " or "rgn2" got "${type}"`
             );
         }
 
-        readRegion.call(this, chunk, preset.dlsInstrument);
+        readRegion(dls, chunk, preset.dlsInstrument);
     }
-    this.addPresets(preset);
-    this.addInstruments(preset.dlsInstrument);
+    dls.addPresets(preset);
+    dls.addInstruments(preset.dlsInstrument);
     SpessaSynthGroupEnd();
 }

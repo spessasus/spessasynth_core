@@ -1,25 +1,26 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
+import {
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian.js";
 import { writeRIFFChunkRaw } from "../riff_chunk.js";
 import { SF3_BIT_FLIT } from "../../read_sf2/samples.js";
+import type { BasicSoundBank } from "../basic_soundbank.ts";
+import type { ReturnedExtendedSf2Chunks } from "../../types.ts";
 
-/**
- * @this {BasicSoundBank}
- * @param smplStartOffsets {number[]}
- * @param smplEndOffsets {number[]}
- * @returns {ReturnedExtendedSf2Chunks}
- */
-export function getSHDR(smplStartOffsets, smplEndOffsets)
-{
+export function getSHDR(
+    bank: BasicSoundBank,
+    smplStartOffsets: number[],
+    smplEndOffsets: number[]
+): ReturnedExtendedSf2Chunks {
     const sampleLength = 46;
-    const shdrSize = sampleLength * (this.samples.length + 1); // +1 because EOP
+    const shdrSize = sampleLength * (bank.samples.length + 1); // +1 because EOP
     const shdrData = new IndexedByteArray(shdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
     let maxSampleLink = 0;
-    this.samples.forEach((sample, index) =>
-    {
+    bank.samples.forEach((sample, index) => {
         // sample name
         writeStringAsBytes(shdrData, sample.sampleName.substring(0, 20), 20);
         writeStringAsBytes(xshdrData, sample.sampleName.substring(20), 20);
@@ -34,8 +35,7 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
         // loop is stored as relative in sample points, change it to absolute sample points here
         let loopStart = sample.sampleLoopStartIndex + dwStart;
         let loopEnd = sample.sampleLoopEndIndex + dwStart;
-        if (sample.isCompressed)
-        {
+        if (sample.isCompressed) {
             // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
             loopStart -= dwStart;
             loopEnd -= dwStart;
@@ -50,20 +50,21 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
         // skip all those for xshdr
         xshdrData.currentIndex += 14;
         // sample link
-        const sampleLinkIndex = this.samples.indexOf(sample.linkedSample);
-        writeWord(shdrData, Math.max(0, sampleLinkIndex) & 0xFFFF);
+        const sampleLinkIndex = sample.linkedSample
+            ? bank.samples.indexOf(sample.linkedSample)
+            : 0;
+        writeWord(shdrData, Math.max(0, sampleLinkIndex) & 0xffff);
         writeWord(xshdrData, Math.max(0, sampleLinkIndex) >> 16);
         maxSampleLink = Math.max(maxSampleLink, sampleLinkIndex);
         // sample type: add byte if compressed
         let type = sample.sampleType;
-        if (sample.isCompressed)
-        {
+        if (sample.isCompressed) {
             type |= SF3_BIT_FLIT;
         }
         writeWord(shdrData, type);
         xshdrData.currentIndex += 2;
     });
-    
+
     // write EOS and zero everything else
     writeStringAsBytes(shdrData, "EOS", sampleLength);
     writeStringAsBytes(xshdrData, "EOS", sampleLength);

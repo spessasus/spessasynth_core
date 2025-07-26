@@ -1,19 +1,16 @@
-import { BasicSample, sampleTypes } from "../basic_soundbank/basic_sample.js";
+import { BasicSample } from "../basic_soundbank/basic_sample.js";
 import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
+import type { RiffChunk } from "../basic_soundbank/riff_chunk.ts";
+import { sampleTypes } from "../enums.ts";
 
 const W_FORMAT_TAG = {
     PCM: 0x01,
     ALAW: 0x6
-};
+} as const;
 
-/**
- * @param data {IndexedByteArray}
- * @param bytesPerSample {number}
- * @returns {Float32Array}
- */
-function readPCM(data, bytesPerSample) {
+function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     const maxSampleValue = Math.pow(2, bytesPerSample * 8 - 1); // Max value for the sample
     const maxUnsigned = Math.pow(2, bytesPerSample * 8);
 
@@ -54,12 +51,10 @@ function readPCM(data, bytesPerSample) {
     return sampleData;
 }
 
-/**
- * @param data {IndexedByteArray}
- * @param bytesPerSample {number}
- * @returns {Float32Array}
- */
-function readALAW(data, bytesPerSample) {
+function readALAW(
+    data: IndexedByteArray,
+    bytesPerSample: number
+): Float32Array {
     const sampleLength = data.length / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
     for (let i = 0; i < sampleData.length; i++) {
@@ -96,54 +91,40 @@ function readALAW(data, bytesPerSample) {
 
 export class DLSSample extends BasicSample {
     /**
-     * in decibels of attenuation, WITHOUT EMU CORRECTION
-     * @type {number}
+     * in decibels of attenuation, WITHOUT E-MU CORRECTION
      */
-    sampleDbAttenuation;
-    /**
-     * @type {Float32Array}
-     */
-    sampleData;
-
-    /**
-     * @type {number}
-     */
-    wFormatTag;
-
-    /**
-     * @type {number}
-     */
-    bytesPerSample;
+    sampleDbAttenuation: number;
+    wFormatTag: number;
+    bytesPerSample: number;
 
     /**
      * Sample's raw data before decoding it, for faster writing
-     * @type {IndexedByteArray}
      */
-    rawData;
+    rawData: IndexedByteArray;
 
     /**
-     * @param name {string}
-     * @param rate {number}
-     * @param pitch {number}
-     * @param pitchCorrection {number}
-     * @param loopStart {number} sample data points
-     * @param loopEnd {number} sample data points
-     * @param sampleDbAttenuation {number} in db
-     * @param dataChunk {RiffChunk}
-     * @param wFormatTag {number}
-     * @param bytesPerSample {number}
+     * @param name
+     * @param rate
+     * @param pitch
+     * @param pitchCorrection
+     * @param loopStart sample data points
+     * @param loopEnd sample data points
+     * @param sampleDbAttenuation in db
+     * @param dataChunk
+     * @param wFormatTag
+     * @param bytesPerSample
      */
     constructor(
-        name,
-        rate,
-        pitch,
-        pitchCorrection,
-        loopStart,
-        loopEnd,
-        sampleDbAttenuation,
-        dataChunk,
-        wFormatTag,
-        bytesPerSample
+        name: string,
+        rate: number,
+        pitch: number,
+        pitchCorrection: number,
+        loopStart: number,
+        loopEnd: number,
+        sampleDbAttenuation: number,
+        dataChunk: RiffChunk,
+        wFormatTag: number,
+        bytesPerSample: number
     ) {
         super(
             name,
@@ -156,16 +137,13 @@ export class DLSSample extends BasicSample {
         );
         this.sampleDbAttenuation = sampleDbAttenuation;
         this.dataOverridden = false;
-        /**
-         * @type {IndexedByteArray}
-         */
         this.rawData = dataChunk.chunkData;
         this.wFormatTag = wFormatTag;
         this.bytesPerSample = bytesPerSample;
     }
 
-    getAudioData() {
-        if (!(this.rawData instanceof Uint8Array)) {
+    getAudioData(): Float32Array {
+        if (!this.rawData) {
             return new Float32Array(0);
         }
         if (!this.sampleData) {
@@ -190,17 +168,14 @@ export class DLSSample extends BasicSample {
             }
             this.setAudioData(sampleData);
         }
-        return this.sampleData;
+        return this.sampleData || new Float32Array(0);
     }
 
-    /**
-     * @param audioData {Float32Array}
-     */
-    setAudioData(audioData) {
+    setAudioData(audioData: Float32Array) {
         super.setAudioData(audioData);
     }
 
-    getRawData(allowVorbis) {
+    getRawData(allowVorbis: boolean) {
         if (this.dataOverridden || this.isCompressed) {
             return super.getRawData(allowVorbis);
         }

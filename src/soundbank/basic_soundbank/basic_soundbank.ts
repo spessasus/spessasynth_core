@@ -6,7 +6,7 @@ import {
     SpessaSynthWarn
 } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
-import { write } from "./write_sf2/write.js";
+import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write.js";
 import { defaultModulators, Modulator } from "./modulator.js";
 import { writeDLS } from "./write_dls/write_dls.js";
 import { BasicSample, CreatedSample } from "./basic_sample.js";
@@ -15,10 +15,10 @@ import { BasicInstrument } from "./basic_instrument.js";
 import { BasicPreset } from "./basic_preset.js";
 import { isXGDrums } from "../../utils/xg_hacks.js";
 import { generatorTypes } from "./generator_types.js";
-import { stbvorbis } from "stbvorbis_sync";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper.ts";
 import type { BasicMIDI } from "../../midi/basic_midi.ts";
 
-import type { SoundBankInfo } from "../types.ts";
+import type { SoundBankInfo, SoundFont2WriteOptions } from "../types.ts";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -61,12 +61,6 @@ export class BasicSoundBank {
      * If the bank has custom default modulators (DMOD).
      */
     customDefaultModulators: boolean = false;
-
-    /**
-     * Checks for XG drum sets and considers if this soundfont is XG.
-     */
-    isXGBank: boolean = false;
-    write = write.bind(this);
     writeDLS = writeDLS.bind(this);
 
     /**
@@ -107,6 +101,15 @@ export class BasicSoundBank {
             }
             this.addSamples(...sampleList);
         }
+    }
+
+    private _isXGBank: boolean = false;
+
+    /**
+     * Checks for XG drum sets and considers if this soundfont is XG.
+     */
+    get isXGBank() {
+        return this._isXGBank;
     }
 
     /**
@@ -186,6 +189,17 @@ export class BasicSoundBank {
         font.flush();
         const f = await font.write();
         return f.buffer;
+    }
+
+    /**
+     * Writes the sound bank as an SF2 file.
+     * @param writeOptions the options for writing.
+     * @returns the binary file data.
+     */
+    async write(
+        writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        return writeSF2Internal(this, writeOptions);
     }
 
     addPresets(...presets: BasicPreset[]) {
@@ -642,7 +656,7 @@ export class BasicSoundBank {
      * @protected
      */
     protected _parseInternal() {
-        this.isXGBank = false;
+        this._isXGBank = false;
         // definitions for XG:
         // at least one preset with bank 127, 126 or 120
         // MUST be a valid XG bank.
@@ -656,10 +670,10 @@ export class BasicSoundBank {
         ]);
         for (const preset of this.presets) {
             if (isXGDrums(preset.bank)) {
-                this.isXGBank = true;
+                this._isXGBank = true;
                 if (!allowedPrograms.has(preset.program)) {
                     // not valid!
-                    this.isXGBank = false;
+                    this._isXGBank = false;
                     SpessaSynthInfo(
                         `%cThis bank is not valid XG. Preset %c${preset.bank}:${preset.program}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
                         consoleColors.info,

@@ -4,21 +4,23 @@
  */
 import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone.js";
 import { generatorTypes } from "../basic_soundbank/generator_types.js";
+import type { SoundFontInstrument } from "./instruments.ts";
+import type { BasicSample } from "../basic_soundbank/basic_sample.ts";
+import type { Modulator } from "../basic_soundbank/modulator.ts";
+import type { Generator } from "../basic_soundbank/generator.ts";
 
-export class InstrumentZone extends BasicInstrumentZone {
+export class SoundFontInstrumentZone extends BasicInstrumentZone {
     /**
      * Creates a zone (instrument)
-     * @param inst {Instrument}
      */
-    constructor(inst) {
+    constructor(inst: SoundFontInstrument) {
         super(inst);
     }
 
     /**
      * Loads the zone's sample
-     * @param samples {BasicSample[]}
      */
-    getSample(samples) {
+    getSample(samples: BasicSample[]) {
         const sampleID = this.generators.find(
             (g) => g.generatorType === generatorTypes.sampleID
         );
@@ -30,18 +32,13 @@ export class InstrumentZone extends BasicInstrumentZone {
 
 /**
  * Reads the given instrument zone
- * @param indexes {{mod: number[], gen: number[]}}
- * @param instrumentGenerators {Generator[]}
- * @param instrumentModulators {Modulator[]}
- * @param samples {BasicSample[]}
- * @param instruments {Instrument[]}
  */
 export function applyInstrumentZones(
-    indexes,
-    instrumentGenerators,
-    instrumentModulators,
-    samples,
-    instruments
+    indexes: { mod: number[]; gen: number[] },
+    instrumentGenerators: Generator[],
+    instrumentModulators: Modulator[],
+    samples: BasicSample[],
+    instruments: SoundFontInstrument[]
 ) {
     const genStartIndexes = indexes.gen;
     const modStartIndexes = indexes.mod;

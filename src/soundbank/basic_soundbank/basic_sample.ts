@@ -1,6 +1,6 @@
 import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { stbvorbis } from "stbvorbis_sync";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper.ts";
 import { sampleTypes } from "../enums.ts";
 import type { BasicInstrument } from "./basic_instrument.ts";
 import type { SampleEncodingFunction } from "../types.ts";

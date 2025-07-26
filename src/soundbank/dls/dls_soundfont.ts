@@ -2,27 +2,30 @@ import { BasicSoundBank } from "../basic_soundbank/basic_soundbank.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import {
     SpessaSynthGroup,
+    SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
 } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
 import {
     findRIFFListType,
-    readRIFFChunk
+    readRIFFChunk,
+    RiffChunk
 } from "../basic_soundbank/riff_chunk.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readDLSInstrumentList } from "./read_instrument_list.js";
 import { readDLSInstrument } from "./read_instrument.js";
-import { readLart } from "./read_lart.js";
 import { readDLSSamples } from "./read_samples.js";
+import type { SoundFontInfoFourCC } from "../types.ts";
 
-class DLSSoundFont extends BasicSoundBank {
+class DownloadableSounds extends BasicSoundBank {
+    // main array that we read from
+    dataArray: IndexedByteArray;
+
     /**
      * Loads a new DLS (Downloadable sounds) soundfont
-     * @param buffer {ArrayBuffer}
      */
-    constructor(buffer) {
+    constructor(buffer: ArrayBuffer) {
         super();
         this.dataArray = new IndexedByteArray(buffer);
         SpessaSynthGroup("%cParsing DLS...", consoleColors.info);
@@ -41,9 +44,8 @@ class DLSSoundFont extends BasicSoundBank {
 
         /**
          * Read the list
-         * @type {RiffChunk[]}
          */
-        const chunks = [];
+        const chunks: RiffChunk[] = [];
         while (this.dataArray.currentIndex < this.dataArray.length) {
             chunks.push(readRIFFChunk(this.dataArray));
         }
@@ -65,10 +67,8 @@ class DLSSoundFont extends BasicSoundBank {
                 infoChunk.chunkData.currentIndex < infoChunk.chunkData.length
             ) {
                 const infoPart = readRIFFChunk(infoChunk.chunkData);
-                this.soundFontInfo[infoPart.header] = readBytesAsString(
-                    infoPart.chunkData,
-                    infoPart.size
-                );
+                this.soundFontInfo[infoPart.header as SoundFontInfoFourCC] =
+                    readBytesAsString(infoPart.chunkData, infoPart.size);
             }
         }
         this.soundFontInfo["ICMT"] =
@@ -94,10 +94,11 @@ class DLSSoundFont extends BasicSoundBank {
         if (!colhChunk) {
             SpessaSynthGroupEnd();
             this.parsingError("No colh chunk!");
+            return;
         }
-        this.instrumentAmount = readLittleEndian(colhChunk.chunkData, 4);
+        const instrumentAmount = readLittleEndian(colhChunk.chunkData, 4);
         SpessaSynthInfo(
-            `%cInstruments amount: %c${this.instrumentAmount}`,
+            `%cInstruments amount: %c${instrumentAmount}`,
             consoleColors.info,
             consoleColors.recognized
         );
@@ -107,16 +108,28 @@ class DLSSoundFont extends BasicSoundBank {
         if (!waveListChunk) {
             SpessaSynthGroupEnd();
             this.parsingError("No wvpl chunk!");
+            return;
         }
-        this.readDLSSamples(waveListChunk);
+        readDLSSamples(this, waveListChunk);
 
         // read the instrument list
         const instrumentListChunk = findRIFFListType(chunks, "lins");
         if (!instrumentListChunk) {
             SpessaSynthGroupEnd();
             this.parsingError("No lins chunk!");
+            return;
         }
-        this.readDLSInstrumentList(instrumentListChunk);
+        SpessaSynthGroupCollapsed(
+            "%cLoading instruments...",
+            consoleColors.info
+        );
+        for (let i = 0; i < instrumentAmount; i++) {
+            readDLSInstrument(
+                this,
+                readRIFFChunk(instrumentListChunk.chunkData)
+            );
+        }
+        SpessaSynthGroupEnd();
 
         // sort presets
         this.flush();
@@ -137,10 +150,11 @@ class DLSSoundFont extends BasicSoundBank {
     }
 
     /**
-     * @param chunk {RiffChunk}
-     * @param expected {string}
+     * @param chunk
+     * @param expected
+     * @throws error if the check doesn't pass
      */
-    verifyHeader(chunk, ...expected) {
+    verifyHeader(chunk: RiffChunk, ...expected: string[]) {
         for (const expect of expected) {
             if (chunk.header.toLowerCase() === expect.toLowerCase()) {
                 return;
@@ -155,8 +169,9 @@ class DLSSoundFont extends BasicSoundBank {
     /**
      * @param text {string}
      * @param expected {string}
+     * @throws error if the check doesn't pass
      */
-    verifyText(text, expected) {
+    verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
             SpessaSynthGroupEnd();
             this.parsingError(
@@ -166,21 +181,16 @@ class DLSSoundFont extends BasicSoundBank {
     }
 
     /**
-     * @param error {string}
+     * @throws error if the check doesn't pass
      */
-    parsingError(error) {
+    parsingError(error: string) {
         throw new Error(`DLS parse error: ${error} The file may be corrupted.`);
     }
 
     destroySoundBank() {
         super.destroySoundBank();
-        delete this.dataArray;
+        this.dataArray = new IndexedByteArray(0);
     }
 }
 
-DLSSoundFont.prototype.readDLSInstrumentList = readDLSInstrumentList;
-DLSSoundFont.prototype.readDLSInstrument = readDLSInstrument;
-DLSSoundFont.prototype.readLart = readLart;
-DLSSoundFont.prototype.readDLSSamples = readDLSSamples;
-
-export { DLSSoundFont };
+export { DownloadableSounds };

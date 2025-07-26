@@ -2,38 +2,38 @@ import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { writeRIFFChunkRaw } from "../riff_chunk.js";
+import type { BasicSoundBank } from "../basic_soundbank.ts";
+import type { ReturnedExtendedSf2Chunks } from "../../types.ts";
 
 const INST_SIZE = 22;
 
 /**
- * @this {BasicSoundBank}
+ * @param bank {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getINST()
-{
-    const instSize = this.instruments.length * INST_SIZE + INST_SIZE;
+export function getINST(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
+    const instSize = bank.instruments.length * INST_SIZE + INST_SIZE;
     const instData = new IndexedByteArray(instSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xinstData = new IndexedByteArray(instSize);
     // the instrument start index is adjusted in ibag, write it here
     let instrumentStart = 0;
-    for (const inst of this.instruments)
-    {
+    for (const inst of bank.instruments) {
         writeStringAsBytes(instData, inst.instrumentName.substring(0, 20), 20);
         writeStringAsBytes(xinstData, inst.instrumentName.substring(20), 20);
-        writeWord(instData, instrumentStart & 0xFFFF);
+        writeWord(instData, instrumentStart & 0xffff);
         writeWord(xinstData, instrumentStart >> 16);
         instrumentStart += inst.instrumentZones.length + 1; // global
     }
     // write EOI
     writeStringAsBytes(instData, "EOI", 20);
     writeStringAsBytes(xinstData, "EOI", 20);
-    writeWord(instData, instrumentStart & 0xFFFF);
+    writeWord(instData, instrumentStart & 0xffff);
     writeWord(xinstData, instrumentStart >> 16);
-    
+
     const inst = writeRIFFChunkRaw("inst", instData);
     const xinst = writeRIFFChunkRaw("inst", xinstData);
-    
+
     return {
         pdta: inst,
         xdta: xinst,

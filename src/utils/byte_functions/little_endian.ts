@@ -1,15 +1,18 @@
+import type { IndexedByteArray } from "../indexed_array.ts";
+
 /**
- * Reads as little endian
- * @param dataArray {IndexedByteArray}
- * @param bytesAmount {number}
- * @returns {number}
+ * Reads the number as little endian.
+ * @param dataArray the array to read from.
+ * @param bytesAmount the number of bytes to read.
+ * @returns the number.
  */
-export function readLittleEndian(dataArray, bytesAmount)
-{
+export function readLittleEndian(
+    dataArray: IndexedByteArray,
+    bytesAmount: number
+): number {
     let out = 0;
-    for (let i = 0; i < bytesAmount; i++)
-    {
-        out |= (dataArray[dataArray.currentIndex++] << i * 8);
+    for (let i = 0; i < bytesAmount; i++) {
+        out |= dataArray[dataArray.currentIndex++] << (i * 8);
     }
     // make sure it stays unsigned
     return out >>> 0;
@@ -17,60 +20,52 @@ export function readLittleEndian(dataArray, bytesAmount)
 
 /**
  * Writes a number as little endian seems to also work for negative numbers so yay?
- * @param dataArray {IndexedByteArray}
- * @param number {number}
- * @param byteTarget {number}
+ * @param dataArray the IndexedByteArray to write to.
+ * @param number the number to write.
+ * @param byteTarget the amount of bytes to use. Excess bytes will be set to zero.
+ * @returns the Big endian representation of the number.
  */
-export function writeLittleEndian(dataArray, number, byteTarget)
-{
-    for (let i = 0; i < byteTarget; i++)
-    {
-        dataArray[dataArray.currentIndex++] = (number >> (i * 8)) & 0xFF;
+export function writeLittleEndian(
+    dataArray: IndexedByteArray,
+    number: number,
+    byteTarget: number
+) {
+    for (let i = 0; i < byteTarget; i++) {
+        dataArray[dataArray.currentIndex++] = (number >> (i * 8)) & 0xff;
     }
 }
 
 /**
- * @param dataArray {IndexedByteArray}
- * @param word {number}
+ * Writes a WORD (SHORT)
  */
-export function writeWord(dataArray, word)
-{
-    dataArray[dataArray.currentIndex++] = word & 0xFF;
+export function writeWord(dataArray: IndexedByteArray, word: number) {
+    dataArray[dataArray.currentIndex++] = word & 0xff;
     dataArray[dataArray.currentIndex++] = word >> 8;
 }
 
 /**
- * @param dataArray {IndexedByteArray}
- * @param dword {number}
+ * Writes a DWORD (INT)
  */
-export function writeDword(dataArray, dword)
-{
+export function writeDword(dataArray: IndexedByteArray, dword: number) {
     writeLittleEndian(dataArray, dword, 4);
 }
 
 /**
- * @param byte1 {number}
- * @param byte2 {number}
- * @returns {number}
+ * Reads two bytes as a signed short.
  */
-export function signedInt16(byte1, byte2)
-{
-    let val = (byte2 << 8) | byte1;
-    if (val > 32767)
-    {
+export function signedInt16(byte1: number, byte2: number): number {
+    const val = (byte2 << 8) | byte1;
+    if (val > 32767) {
         return val - 65536;
     }
     return val;
 }
 
 /**
- * @param byte {number}
- * @returns {number}
+ * Reads a byte as a signed char.
  */
-export function signedInt8(byte)
-{
-    if (byte > 127)
-    {
+export function signedInt8(byte: number): number {
+    if (byte > 127) {
         return byte - 256;
     }
     return byte;

@@ -1,32 +1,29 @@
 import { Generator } from "../basic_soundbank/generator.js";
 import { generatorTypes } from "../basic_soundbank/generator_types.js";
 import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone.js";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument.ts";
+import type { BasicSample } from "../basic_soundbank/basic_sample.ts";
 
 export class DLSZone extends BasicInstrumentZone {
-    /**
-     * @param inst {BasicInstrument}
-     */
-    constructor(inst) {
+    constructor(inst: BasicInstrument) {
         super(inst);
     }
 
     /**
-     * @param attenuationCb {number} with EMU correction
-     * @param loopingMode {number} the sfont one
-     * @param loop {{start: number, end: number}}
-     * @param sampleKey {number}
-     * @param sample {BasicSample}
-     * @param sampleID {number}
-     * @param samplePitchCorrection {number} cents
+     * @param attenuationCb with EMU correction
+     * @param loopingMode the soundfont one
+     * @param loop
+     * @param sampleKey
+     * @param sample
+     * @param samplePitchCorrection cents
      */
     setWavesample(
-        attenuationCb,
-        loopingMode,
-        loop,
-        sampleKey,
-        sample,
-        sampleID,
-        samplePitchCorrection
+        attenuationCb: number,
+        loopingMode: number,
+        loop: { start: number; end: number },
+        sampleKey: number,
+        sample: BasicSample,
+        samplePitchCorrection: number
     ) {
         if (loopingMode !== 0) {
             this.addGenerators(

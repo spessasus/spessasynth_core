@@ -4,12 +4,9 @@ import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../synth_constants.js";
 import { isSystemXG } from "../../../utils/xg_hacks.js";
 import { masterParameterType } from "./controller_control/master_parameters.js";
 import { readBytesAsString } from "../../../utils/byte_functions/string.js";
-import { synthDisplayTypes } from "../engine_components/enums.js";
-import {
-    customControllers,
-    NON_CC_INDEX_OFFSET
-} from "../engine_components/controller_tables.js";
-import { modulatorSources } from "../../../soundbank/basic_soundbank/modulator.js";
+import { synthDisplayTypes } from "../../enums.ts";
+import { customControllers, NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables.js";
+import { modulatorSources } from "../../../soundbank/enums.ts";
 
 import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types.js";
 import { midiControllers } from "../../../midi/enums.ts";
