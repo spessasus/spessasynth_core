@@ -1,5 +1,5 @@
 /**
- * @enum {number}
+ * All SoundFont2 Generator enumerations.
  */
 export const generatorTypes = {
     INVALID: -1, // invalid generator
