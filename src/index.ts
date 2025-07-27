@@ -29,6 +29,7 @@ import { BasicGlobalZone } from "./soundbank/basic_soundbank/basic_global_zone";
 import { loadSoundFont } from "./soundbank/load_soundfont";
 import { SoundBankLoader } from "./soundbank/sound_bank_loader";
 
+import { MIDIMessage } from "./midi/midi_message";
 import { BasicMIDI, MIDI } from "./midi/basic_midi";
 import { MIDISequenceData } from "./midi/midi_sequence";
 import { MIDIBuilder } from "./midi/midi_builder";
@@ -100,6 +101,7 @@ export {
     SoundBankLoader,
 
     // MIDI
+    MIDIMessage,
     MIDI,
     MIDISequenceData,
     BasicMIDI,

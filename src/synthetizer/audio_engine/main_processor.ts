@@ -168,8 +168,14 @@ export class SpessaSynthProcessor {
      */
     public getVoicesForPreset: typeof getVoicesForPreset =
         getVoicesForPreset.bind(this) as typeof getVoicesForPreset;
+    /**
+     * Kills the specified number of voices based on their priority.
+     * @param amount The number of voices to remove.
+     */
+    public voiceKilling: typeof voiceKilling = voiceKilling.bind(
+        this
+    ) as typeof voiceKilling;
     // protected methods
-    protected voiceKilling = voiceKilling.bind(this);
     protected getVoices = getVoices.bind(this);
     // This contains the properties that have to be accessed from the MIDI channels.
     protected privateProps: ProtectedSynthValues;
