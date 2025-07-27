@@ -25,7 +25,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         // if the channel is percussion channel, do not kill the notes
         if (!this.drumChannel) {
             this.killNote(realKey, -6950);
-            this.synthProps.callEvent("noteoff", {
+            this.synthProps.callEvent("noteOff", {
                 midiNote: midiNote,
                 channel: this.channelNumber
             });
@@ -45,7 +45,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
             v.release(this.synth.currentSynthTime);
         }
     });
-    this.synthProps.callEvent("noteoff", {
+    this.synthProps.callEvent("noteOff", {
         midiNote: midiNote,
         channel: this.channelNumber
     });

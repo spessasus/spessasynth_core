@@ -101,37 +101,37 @@ export type PolyPressureCallback = {
 };
 // The error message for soundfont errors.
 export type SoundfontErrorCallback = Error;
-export type EventType = {
+export type ProcessorEventType = {
     // This event fires when a note is played.
-    noteon: NoteOnCallback;
+    noteOn: NoteOnCallback;
     // This event fires when a note is released.
-    noteoff: NoteOffCallback;
+    noteOff: NoteOffCallback;
     // This event fires when a pitch wheel is changed.
-    pitchwheel: PitchWheelCallback;
+    pitchWheel: PitchWheelCallback;
     // This event fires when a controller is changed.
-    controllerchange: ControllerChangeCallback;
+    controllerChange: ControllerChangeCallback;
     // This event fires when a program is changed.
-    programchange: ProgramChangeCallback;
+    programChange: ProgramChangeCallback;
     // This event fires when a channel pressure is changed.
-    channelpressure: ChannelPressureCallback;
+    channelPressure: ChannelPressureCallback;
     // This event fires when a polyphonic pressure is changed.
-    polypressure: PolyPressureCallback;
+    polyPressure: PolyPressureCallback;
     // This event fires when a drum channel is changed.
-    drumchange: DrumChangeCallback;
+    drumChange: DrumChangeCallback;
     // This event fires when all notes on a channel are stopped. There is no data for this event.
-    stopall: undefined;
+    stopAll: undefined;
     // This event fires when a new channel is created. There is no data for this event.
-    newchannel: undefined;
+    newChannel: undefined;
     // This event fires when a channel is muted or unmuted.
-    mutechannel: MuteChannelCallback;
+    muteChannel: MuteChannelCallback;
     // This event fires when the preset list is changed.
-    presetlistchange: PresetListChangeCallback;
+    presetListChange: PresetListChangeCallback;
     // This event fires when all controllers on all channels are reset. There is no data for this event.
-    allcontrollerreset: undefined;
+    allControllerReset: undefined;
     // This event fires when a sound bank parsing error occurs.
-    soundfonterror: SoundfontErrorCallback;
+    soundBankError: SoundfontErrorCallback;
     // This event fires when the synthesizer receives a display message.
-    synthdisplay: SynthDisplayCallback;
+    synthDisplay: SynthDisplayCallback;
 };
 export type SynthMethodOptions = {
     // The audio context time when the event should execute, in seconds.

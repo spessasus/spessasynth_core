@@ -4,11 +4,7 @@ import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../synth_constants";
 import { isSystemXG } from "../../../utils/xg_hacks";
 import { readStringOffset } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
-import {
-    generatorTypes,
-    type ModulatorSourceEnum,
-    modulatorSources
-} from "../../../soundbank/enums";
+import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
 import type { SpessaSynthProcessor } from "../main_processor";
 import type { IndexedByteArray } from "../../../utils/indexed_array";
 import { midiControllers } from "../../../midi/enums";
@@ -905,7 +901,7 @@ export function systemExclusive(
                         const text = new Uint8Array(
                             syx.slice(7, syx.length - 2)
                         );
-                        this.privateProps.callEvent("synthdisplay", {
+                        this.privateProps.callEvent("synthDisplay", {
                             displayData: text,
                             displayType: synthDisplayTypes.SoundCanvasText
                         });
@@ -916,7 +912,7 @@ export function systemExclusive(
                         const dotMatrixData = new Uint8Array(
                             syx.slice(7, syx.length - 3)
                         );
-                        this.privateProps.callEvent("synthdisplay", {
+                        this.privateProps.callEvent("synthDisplay", {
                             displayData: dotMatrixData,
                             displayType: synthDisplayTypes.SoundCanvasDotDisplay
                         });
@@ -1105,7 +1101,7 @@ export function systemExclusive(
                     const textData = new Uint8Array(
                         syx.slice(5, syx.length - 1)
                     );
-                    this.privateProps.callEvent("synthdisplay", {
+                    this.privateProps.callEvent("synthDisplay", {
                         displayData: textData,
                         displayType: synthDisplayTypes.XGText
                     });

@@ -26,7 +26,7 @@ export function programChange(this: MIDIChannel, programNumber: number) {
     }
     this.setPreset(preset);
     this.sentBank = Math.min(128, preset.bank + p.bankOffset);
-    this.synthProps.callEvent("programchange", {
+    this.synthProps.callEvent("programChange", {
         channel: this.channelNumber,
         program: preset.program,
         bank: this.sentBank

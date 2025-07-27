@@ -19,8 +19,8 @@ import { resetAllControllers } from "./engine_methods/controller_control/reset_c
 import { SynthesizerSnapshot } from "./snapshot/synthesizer_snapshot";
 import type {
     ChannelProperty,
-    EventType,
     MasterParameterType,
+    ProcessorEventType,
     SynthMethodOptions,
     SynthProcessorOptions,
     VoiceList
@@ -100,9 +100,9 @@ export class SpessaSynthProcessor {
      * @param eventData The event data.
      */
     public onEventCall:
-        | (<K extends keyof EventType>(
+        | (<K extends keyof ProcessorEventType>(
               eventType: K,
-              eventData: EventType[K]
+              eventData: ProcessorEventType[K]
           ) => unknown)
         | undefined;
     /**
@@ -306,7 +306,7 @@ export class SpessaSynthProcessor {
         for (let i = 0; i < this.midiChannels.length; i++) {
             this.midiChannels[i].stopAllNotes(force);
         }
-        this.privateProps.callEvent("stopall", undefined);
+        this.privateProps.callEvent("stopAll", undefined);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -635,9 +635,9 @@ export class SpessaSynthProcessor {
      * @param eventName the event name
      * @param eventData the event data
      */
-    protected callEvent<K extends keyof EventType>(
+    protected callEvent<K extends keyof ProcessorEventType>(
         eventName: K,
-        eventData: EventType[K]
+        eventData: ProcessorEventType[K]
     ) {
         this.onEventCall?.(eventName, eventData);
     }
@@ -685,7 +685,7 @@ export class SpessaSynthProcessor {
         );
         this.midiChannels.push(channel);
         if (sendEvent) {
-            this.callEvent("newchannel", undefined);
+            this.callEvent("newChannel", undefined);
             channel.sendChannelProperty();
             this.midiChannels[this.midiChannels.length - 1].setDrums(true);
         }
@@ -698,7 +698,7 @@ export class SpessaSynthProcessor {
             program: number;
         }[] = this.soundBankManager.getPresetList();
         this.clearCache();
-        this.privateProps.callEvent("presetlistchange", mainFont);
+        this.privateProps.callEvent("presetListChange", mainFont);
         this.getDefaultPresets();
         // unlock presets
         this.midiChannels.forEach((c) => {

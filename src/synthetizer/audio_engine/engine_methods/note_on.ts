@@ -222,7 +222,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
     channelVoices.push(...voices);
     this.sendChannelProperty();
-    this.synthProps.callEvent("noteon", {
+    this.synthProps.callEvent("noteOn", {
         midiNote: midiNote,
         channel: this.channelNumber,
         velocity: velocity

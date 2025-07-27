@@ -26,7 +26,7 @@ export function resetAllControllers(
     if (log) {
         SpessaSynthInfo("%cResetting all controllers!", consoleColors.info);
     }
-    this.privateProps.callEvent("allcontrollerreset", undefined);
+    this.privateProps.callEvent("allControllerReset", undefined);
     this.setMasterParameter("midiSystem", DEFAULT_SYNTH_MODE);
     for (
         let channelNumber = 0;
@@ -46,20 +46,20 @@ export function resetAllControllers(
             if (channelNumber % 16 === DEFAULT_PERCUSSION) {
                 ch.setPreset(this.privateProps.drumPreset);
                 ch.drumChannel = true;
-                this.privateProps.callEvent("drumchange", {
+                this.privateProps.callEvent("drumChange", {
                     channel: channelNumber,
                     isDrumChannel: true
                 });
             } else {
                 ch.drumChannel = false;
                 ch.setPreset(this.privateProps.defaultPreset);
-                this.privateProps.callEvent("drumchange", {
+                this.privateProps.callEvent("drumChange", {
                     channel: channelNumber,
                     isDrumChannel: false
                 });
             }
         } else {
-            this.privateProps.callEvent("drumchange", {
+            this.privateProps.callEvent("drumChange", {
                 channel: channelNumber,
                 isDrumChannel: ch.drumChannel
             });
@@ -70,7 +70,7 @@ export function resetAllControllers(
         }
         const presetBank = ch.preset?.bank;
         // call program change
-        this.privateProps.callEvent("programchange", {
+        this.privateProps.callEvent("programChange", {
             channel: channelNumber,
             program: ch.preset?.program,
             bank: presetBank
@@ -79,7 +79,7 @@ export function resetAllControllers(
         for (let ccNum = 0; ccNum < 128; ccNum++) {
             if (this.midiChannels[channelNumber].lockedControllers[ccNum]) {
                 // was not reset so restore the value
-                this.privateProps.callEvent("controllerchange", {
+                this.privateProps.callEvent("controllerChange", {
                     channel: channelNumber,
                     controllerNumber: ccNum,
                     controllerValue:
@@ -102,7 +102,7 @@ export function resetAllControllers(
                 ];
             const msb = val >> 7;
             const lsb = val & 0x7f;
-            this.privateProps.callEvent("pitchwheel", {
+            this.privateProps.callEvent("pitchWheel", {
                 channel: channelNumber,
                 MSB: msb,
                 LSB: lsb
@@ -119,7 +119,7 @@ export function resetAllControllers(
                 this.midiChannels[channelNumber].midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
                 ] >> 7;
-            this.privateProps.callEvent("channelpressure", {
+            this.privateProps.callEvent("channelPressure", {
                 channel: channelNumber,
                 pressure: val
             });

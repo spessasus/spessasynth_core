@@ -92,7 +92,7 @@ export function controllerChange(
                 break;
 
             case midiControllers.NRPNMsb:
-                // sfspec section 9.6.2
+                // sf spec section 9.6.2
                 this.customControllers[customControllers.sf2NPRNGeneratorLSB] =
                     0;
                 this.dataEntryState = dataEntryStates.NRPCoarse;
@@ -169,7 +169,7 @@ export function controllerChange(
                 break;
         }
     }
-    this.synthProps.callEvent("controllerchange", {
+    this.synthProps.callEvent("controllerChange", {
         channel: this.channelNumber,
         controllerNumber: controllerNumber,
         controllerValue: controllerValue
