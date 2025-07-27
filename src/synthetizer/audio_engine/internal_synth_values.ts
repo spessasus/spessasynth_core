@@ -1,5 +1,6 @@
 import type {
     EventType,
+    MasterParameterType,
     MTSProgramTuning,
     SynthSystem,
     VoiceList
@@ -12,7 +13,6 @@ import {
 } from "./synth_constants";
 import { interpolationTypes } from "../enums";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
-import type { MasterParameterType } from "./engine_methods/controller_control/master_parameters";
 
 // This class holds all the internal values of the synthesizer.
 // They are used by both SpessaSynthProcessor and its MIDIChannel instances.

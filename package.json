@@ -6,13 +6,6 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    },
-    "./types": "./dist/types/index.d.ts"
-  },
   "scripts": {
     "test": "node examples/midi_to_wav_node/index.ts",
     "build": "rimraf -rf dist && tsc -b tsconfig.cjs.json && tsc -b tsconfig.esm.json && tsc -b tsconfig.dts.json",

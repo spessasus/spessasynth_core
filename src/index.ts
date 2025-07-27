@@ -75,6 +75,14 @@ const SpessaSynthCoreUtils = {
     inflateSync
 };
 
+export * from "./soundbank/types";
+export * from "./soundbank/enums";
+export * from "./midi/types";
+export * from "./midi/enums";
+export * from "./synthetizer/types";
+export * from "./synthetizer/enums";
+export * from "./utils/global_types";
+
 // see All-NPN-Exports.md in the wiki
 export {
     // synth and seq

@@ -1,3 +1,4 @@
+export * from "./basic_soundbank/generator_types";
 export const sampleTypes = {
     monoSample: 1,
     rightSample: 2,

@@ -3,11 +3,7 @@ import { consoleColors } from "../../utils/other";
 import { EMBEDDED_SOUND_BANK_ID } from "./synth_constants";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/volume_envelope";
-import {
-    getMasterParameter,
-    type MasterParameterType,
-    setMasterParameter
-} from "./engine_methods/controller_control/master_parameters";
+import { getMasterParameter, setMasterParameter } from "./engine_methods/controller_control/master_parameters";
 import { SoundFontManager } from "./engine_components/soundfont_manager";
 import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner";
 import { FILTER_SMOOTHING_FACTOR } from "./engine_components/lowpass_filter";
@@ -21,7 +17,14 @@ import { getVoices, getVoicesForPreset } from "./engine_components/voice";
 import { systemExclusive } from "./engine_methods/system_exclusive";
 import { resetAllControllers } from "./engine_methods/controller_control/reset_controllers";
 import { SynthesizerSnapshot } from "./snapshot/synthesizer_snapshot";
-import type { ChannelProperty, EventType, SynthMethodOptions, SynthProcessorOptions, VoiceList } from "../types";
+import type {
+    ChannelProperty,
+    EventType,
+    MasterParameterType,
+    SynthMethodOptions,
+    SynthProcessorOptions,
+    VoiceList
+} from "../types";
 import { messageTypes } from "../../midi/enums";
 import { ProtectedSynthValues } from "./internal_synth_values";
 import { customControllers } from "../enums";

@@ -147,7 +147,7 @@ export class BasicSoundBank {
     /**
      * Creates a simple soundfont with one saw wave preset.
      */
-    static async getDummySoundfontFile(): Promise<ArrayBufferLike> {
+    static async getDummySoundfontFile(): Promise<ArrayBuffer> {
         const font = new BasicSoundBank();
         const sampleData = new Float32Array(128);
         for (let i = 0; i < 128; i++) {

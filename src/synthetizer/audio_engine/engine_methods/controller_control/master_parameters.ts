@@ -1,32 +1,5 @@
 import { SpessaSynthProcessor } from "../../main_processor";
-import type { SynthSystem } from "../../../types";
-import type { interpolationTypes } from "../../../enums";
-
-// The master parameters of the synthesizer.
-export type MasterParameterType = {
-    // The master gain, from 0 to any number. 1 is 100% volume.
-    masterGain: number;
-    // The master pan, from -1 (left) to 1 (right). 0 is center.
-    masterPan: number;
-    // The maximum number of voices that can be played at once.
-    voiceCap: number;
-    // The interpolation type used for sample playback.
-    interpolationType: interpolationTypes;
-    // The MIDI system used by the synthesizer. (GM, GM2, GS, XG)
-    midiSystem: SynthSystem;
-    // Indicates whether the synthesizer is in monophonic retrigger mode.
-    // This emulates the behavior of Microsoft GS Wavetable Synth,
-    // where a new note will kill the previous one if it is still playing.
-    monophonicRetriggerMode: boolean;
-    // The reverb gain, from 0 to any number. 1 is 100% reverb.
-    reverbGain: number;
-    // The chorus gain, from 0 to any number. 1 is 100% chorus.
-    chorusGain: number;
-    // Forces note killing instead of releasing. Improves performance in black MIDIs.
-    blackMIDIMode: boolean;
-    // The global transposition in semitones. It can be decimal.
-    transposition: number;
-};
+import type { MasterParameterType } from "../../../types";
 
 /**
  * Sets a master parameter of the synthesizer.
