@@ -27,6 +27,7 @@ import { Modulator } from "./soundbank/basic_soundbank/modulator";
 import { BasicZone } from "./soundbank/basic_soundbank/basic_zone";
 import { BasicGlobalZone } from "./soundbank/basic_soundbank/basic_global_zone";
 import { loadSoundFont } from "./soundbank/load_soundfont";
+import { SoundBankLoader } from "./soundbank/sound_bank_loader";
 
 import { BasicMIDI, MIDI } from "./midi/basic_midi";
 import { MIDISequenceData } from "./midi/midi_sequence";
@@ -96,6 +97,7 @@ export {
     BasicPreset,
     BasicPresetZone,
     BasicSoundBank,
+    SoundBankLoader,
 
     // MIDI
     MIDI,

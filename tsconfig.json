@@ -30,7 +30,7 @@
     "noUncheckedSideEffectImports": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "noEmitOnError": true
+    "noEmit": true
   },
   "include": [
     "src"

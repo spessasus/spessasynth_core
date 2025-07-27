@@ -91,10 +91,10 @@ export class BasicZone {
         this.modulators.push(...modulators);
     }
 
-    getGeneratorValue(
+    getGeneratorValue<K>(
         generatorType: GeneratorType,
-        notFoundValue: number
-    ): number {
+        notFoundValue: number | K
+    ): number | K {
         return (
             this.generators.find((g) => g.generatorType === generatorType)
                 ?.generatorValue ?? notFoundValue

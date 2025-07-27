@@ -22,8 +22,8 @@ export function playToInternal(
     time: number,
     ticks: number | undefined = undefined
 ): boolean {
-    if (!this.midiData) {
-        throw new Error("Unexpected lack of MIDI data in sequencer!");
+    if (!this.hasSongs) {
+        return false;
     }
     this.oneTickToSeconds = 60 / (120 * this.midiData.timeDivision);
     // reset

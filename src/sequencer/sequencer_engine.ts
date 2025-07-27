@@ -231,6 +231,9 @@ export class SpessaSynthSequencer {
      * @param time the time to set in seconds.
      */
     public set currentTime(time) {
+        if (!this.hasSongs) {
+            return;
+        }
         if (time > this.duration || time < 0) {
             // time is 0
             if (this.skipToFirstNoteOn) {
@@ -537,6 +540,9 @@ export class SpessaSynthSequencer {
      * @param ticks the MIDI ticks to set the time to.
      */
     protected setTimeTicks(ticks: number) {
+        if (!this.hasSongs) {
+            return;
+        }
         this.stop();
         this.playingNotes = [];
         this.pausedTime = undefined;

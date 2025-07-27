@@ -15,9 +15,6 @@ export function processEventInternal(
     event: MIDIMessage,
     trackIndex: number
 ) {
-    if (!this.midiData) {
-        throw new Error("Unexpected lack of MIDI data in sequencer!");
-    }
     if (this.sendMIDIMessages) {
         if (event.messageStatusByte >= 0x80) {
             this.sendMIDIMessage([
