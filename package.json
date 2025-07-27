@@ -1,6 +1,6 @@
 {
   "name": "spessasynth_core",
-  "version": "3.27.7",
+  "version": "3.28.0",
   "description": "MIDI and SoundFont2/DLS library with no compromises",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -8,6 +8,7 @@
   "types": "./dist/types/index.d.ts",
   "scripts": {
     "test": "node examples/midi_to_wav_node/index.ts",
+    "local-build": "npm run build && npm pack",
     "build": "rimraf -rf dist && tsc -b tsconfig.cjs.json && tsc -b tsconfig.esm.json && tsc -b tsconfig.dts.json",
     "test:types": "tsc --noEmit"
   },
