@@ -10,7 +10,7 @@ export const sampleTypes = {
     romLinkedSample: 32776
 } as const;
 
-export type sampleTypes = (typeof sampleTypes)[keyof typeof sampleTypes];
+export type SampleType = (typeof sampleTypes)[keyof typeof sampleTypes];
 
 export const modulatorSources = {
     noController: 0,
@@ -23,7 +23,7 @@ export const modulatorSources = {
     link: 127
 } as const;
 
-export type modulatorSources =
+export type ModulatorSourceEnum =
     (typeof modulatorSources)[keyof typeof modulatorSources];
 
 export const modulatorCurveTypes = {
@@ -33,7 +33,7 @@ export const modulatorCurveTypes = {
     switch: 3
 } as const;
 
-export type modulatorCurveTypes =
+export type ModulatorCurveType =
     (typeof modulatorCurveTypes)[keyof typeof modulatorCurveTypes];
 
 export const modulatorTransformTypes = {
@@ -41,7 +41,7 @@ export const modulatorTransformTypes = {
     absolute: 2
 } as const;
 
-export type modulatorTransformTypes =
+export type ModulatorTransformType =
     (typeof modulatorTransformTypes)[keyof typeof modulatorTransformTypes];
 
 export const DLSSources = {
@@ -69,7 +69,7 @@ export const DLSSources = {
     coarseTune: 0x102
 } as const;
 
-export type DLSSources = (typeof DLSSources)[keyof typeof DLSSources];
+export type DLSSource = (typeof DLSSources)[keyof typeof DLSSources];
 
 export const DLSDestinations = {
     none: 0x0, // no destination
@@ -106,5 +106,5 @@ export const DLSDestinations = {
     filterQ: 0x501 // low pass filter resonance
 } as const;
 
-export type DLSDestinations =
+export type DLSDestination =
     (typeof DLSDestinations)[keyof typeof DLSDestinations];

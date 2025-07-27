@@ -4,7 +4,10 @@ import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
 import { writeDword } from "../../../utils/byte_functions/little_endian";
 import { writeDLSRegion } from "./rgn2";
 import { writeArticulator } from "./art2";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd
+} from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import type { BasicSoundBank } from "../basic_soundbank";

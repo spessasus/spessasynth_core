@@ -1,7 +1,10 @@
 import {
     DLSDestinations,
     DLSSources,
+    generatorTypes,
+    type ModulatorCurveType,
     modulatorCurveTypes,
+    type ModulatorSourceEnum,
     modulatorSources
 } from "../enums";
 import {
@@ -11,12 +14,12 @@ import {
 } from "../basic_soundbank/modulator";
 
 import { SpessaSynthWarn } from "../../utils/loggin";
-import { generatorTypes } from "../basic_soundbank/generator_types";
+import { type GeneratorType } from "../basic_soundbank/generator_types";
+import type { ModulatorNumericBool, ModulatorSource } from "../types";
 import { midiControllers } from "../../midi/enums";
-import type { ModulatorNumericBool, ModulatorSourceIndex } from "../types";
 
 function getSF2SourceFromDLS(source: number) {
-    let sourceEnum: ModulatorSourceIndex | undefined = undefined;
+    let sourceEnum: ModulatorSource | undefined = undefined;
     let isCC = false;
     switch (source) {
         default:
@@ -87,7 +90,7 @@ function getSF2SourceFromDLS(source: number) {
 function getSF2GeneratorFromDLS(
     destination: number,
     amount: number
-): generatorTypes | undefined | { gen: generatorTypes; newAmount: number } {
+): GeneratorType | undefined | { gen: GeneratorType; newAmount: number } {
     switch (destination) {
         default:
         case DLSDestinations.none:
@@ -168,7 +171,7 @@ function getSF2GeneratorFromDLS(
 function checkForSpecialDLSCombo(
     source: number,
     destination: number
-): generatorTypes | undefined {
+): GeneratorType | undefined {
     if (
         source === DLSSources.vibratoLfo &&
         destination === DLSDestinations.pitch
@@ -226,7 +229,7 @@ export function getSF2ModulatorFromArticulator(
     // );
     // check for special combinations
     const specialDestination = checkForSpecialDLSCombo(source, destination);
-    let destinationGenerator: generatorTypes;
+    let destinationGenerator: GeneratorType;
     let sf2Source: { enum: number; isCC: boolean } | undefined;
     let swapSources = false;
     let isSourceNoController = false;
@@ -296,11 +299,11 @@ export function getSF2ModulatorFromArticulator(
             }
         }
         sourceEnumFinal = getModSourceEnum(
-            sourceTransform as modulatorCurveTypes,
+            sourceTransform as ModulatorCurveType,
             sourceIsBipolar as ModulatorNumericBool,
             sourceIsNegative as ModulatorNumericBool,
             sf2Source.isCC ? 1 : 0,
-            sf2Source.enum as ModulatorSourceIndex
+            sf2Source.enum as ModulatorSourceEnum
         );
     }
 
@@ -315,11 +318,11 @@ export function getSF2ModulatorFromArticulator(
     const secSourceIsBipolar = (transform >> 8) & 1;
     const secSourceIsNegative = (transform >> 9) & 1;
     let secSourceEnumFinal = getModSourceEnum(
-        secSourceTransform as modulatorCurveTypes,
+        secSourceTransform as ModulatorCurveType,
         secSourceIsBipolar as ModulatorNumericBool,
         secSourceIsNegative as ModulatorNumericBool,
         sf2SecondSource.isCC ? 1 : 0,
-        sf2SecondSource.enum as ModulatorSourceIndex
+        sf2SecondSource.enum as ModulatorSourceEnum
     );
 
     if (swapSources) {

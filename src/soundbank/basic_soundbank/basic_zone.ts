@@ -1,8 +1,8 @@
-import { generatorTypes } from "./generator_types";
+import { type GeneratorType, generatorTypes } from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
-import type { KeyRange } from "../../utils/global_types";
+import type { KeyRange } from "../types";
 
 export class BasicZone {
     /**
@@ -45,7 +45,7 @@ export class BasicZone {
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */
-    setGenerator(type: generatorTypes, value: number) {
+    setGenerator(type: GeneratorType, value: number) {
         switch (type) {
             case generatorTypes.sampleID:
                 throw new Error("Use setSample()");
@@ -92,7 +92,7 @@ export class BasicZone {
     }
 
     getGeneratorValue(
-        generatorType: generatorTypes,
+        generatorType: GeneratorType,
         notFoundValue: number
     ): number {
         return (

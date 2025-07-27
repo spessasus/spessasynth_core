@@ -3,8 +3,8 @@ import type { Generator } from "./basic_soundbank/generator";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { IndexedByteArray } from "../utils/indexed_array";
-import type { modulatorSources } from "./enums";
-import type { midiControllers } from "../midi/enums";
+import type { MIDIController } from "../midi/enums";
+import type { ModulatorSourceEnum } from "./enums";
 
 export type SoundBankManagerListEntry = {
     id: string;
@@ -42,7 +42,7 @@ export type SampleEncodingFunction = (
 ) => Promise<Uint8Array>;
 
 export type ModulatorNumericBool = 0 | 1;
-export type ModulatorSourceIndex = modulatorSources | midiControllers;
+export type ModulatorSource = ModulatorSourceEnum | MIDIController;
 
 // A function to track progress during writing.
 export type ProgressFunction = (
@@ -94,4 +94,8 @@ export type ReturnedExtendedSf2Chunks = {
 export type DLSWriteOptions = {
     // A function to show progress for writing large banks. It can be undefined.
     progressFunction?: ProgressFunction;
+};
+export type KeyRange = {
+    min: number;
+    max: number;
 };

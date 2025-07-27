@@ -8,7 +8,11 @@ import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
 import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk";
 import { consoleColors } from "../../utils/other";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";

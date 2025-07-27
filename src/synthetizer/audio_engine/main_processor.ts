@@ -25,13 +25,13 @@ import type {
     SynthProcessorOptions,
     VoiceList
 } from "../types";
-import { messageTypes } from "../../midi/enums";
+import { type MIDIMessageType, midiMessageTypes } from "../../midi/enums";
 import { ProtectedSynthValues } from "./internal_synth_values";
-import { customControllers } from "../enums";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import { MIDIChannel } from "./engine_components/midi_audio_channel";
 import { SoundBankLoader } from "../../soundbank/sound_bank_loader";
+import { customControllers } from "../enums";
 
 /**
  * main_processor.js
@@ -512,12 +512,12 @@ export class SpessaSynthProcessor {
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
         const call = () => {
-            const statusByteData = getEvent(message[0] as messageTypes);
+            const statusByteData = getEvent(message[0] as MIDIMessageType);
 
             const channel = statusByteData.channel + channelOffset;
             // process the event
-            switch (statusByteData.status as messageTypes) {
-                case messageTypes.noteOn: {
+            switch (statusByteData.status as MIDIMessageType) {
+                case midiMessageTypes.noteOn: {
                     const velocity = message[2];
                     if (velocity > 0) {
                         this.noteOn(channel, message[1], velocity);
@@ -527,7 +527,7 @@ export class SpessaSynthProcessor {
                     break;
                 }
 
-                case messageTypes.noteOff:
+                case midiMessageTypes.noteOff:
                     if (force) {
                         this.midiChannels[channel].killNote(message[1]);
                     } else {
@@ -535,11 +535,11 @@ export class SpessaSynthProcessor {
                     }
                     break;
 
-                case messageTypes.pitchBend:
+                case midiMessageTypes.pitchBend:
                     this.pitchWheel(channel, message[2], message[1]);
                     break;
 
-                case messageTypes.controllerChange:
+                case midiMessageTypes.controllerChange:
                     this.controllerChange(
                         channel,
                         message[1],
@@ -548,26 +548,26 @@ export class SpessaSynthProcessor {
                     );
                     break;
 
-                case messageTypes.programChange:
+                case midiMessageTypes.programChange:
                     this.programChange(channel, message[1]);
                     break;
 
-                case messageTypes.polyPressure:
+                case midiMessageTypes.polyPressure:
                     this.polyPressure(channel, message[0], message[1]);
                     break;
 
-                case messageTypes.channelPressure:
+                case midiMessageTypes.channelPressure:
                     this.channelPressure(channel, message[1]);
                     break;
 
-                case messageTypes.systemExclusive:
+                case midiMessageTypes.systemExclusive:
                     this.systemExclusive(
                         new IndexedByteArray(message.slice(1)),
                         channelOffset
                     );
                     break;
 
-                case messageTypes.reset:
+                case midiMessageTypes.reset:
                     this.stopAllChannels(true);
                     this.resetAllControllers();
                     break;

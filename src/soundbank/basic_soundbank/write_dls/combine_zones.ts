@@ -1,9 +1,14 @@
 import { Modulator } from "../modulator";
 import { Generator } from "../generator";
-import { generatorLimits, generatorTypes } from "../generator_types";
+import {
+    generatorLimits,
+    type GeneratorType,
+    generatorTypes
+} from "../generator_types";
 import { BasicInstrument } from "../basic_instrument";
 import type { BasicPreset } from "../basic_preset";
-import type { KeyRange } from "../../../utils/global_types";
+
+import type { KeyRange } from "../../types";
 
 const notGlobalizedTypes = new Set([
     generatorTypes.velRange,
@@ -298,10 +303,7 @@ export function combineZones(
                 // if the global value is the default value just remove it, no need to add it
                 if (targetValue !== defaultForChecked) {
                     globalZone.addGenerators(
-                        new Generator(
-                            checkedType as generatorTypes,
-                            targetValue
-                        )
+                        new Generator(checkedType as GeneratorType, targetValue)
                     );
                 }
                 // remove from the zones
@@ -320,7 +322,7 @@ export function combineZones(
                         if (targetValue !== defaultForChecked) {
                             z.addGenerators(
                                 new Generator(
-                                    checkedType as generatorTypes,
+                                    checkedType as GeneratorType,
                                     defaultForChecked
                                 )
                             );

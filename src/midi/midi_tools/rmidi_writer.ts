@@ -21,7 +21,12 @@ import {
     isGSOn,
     isXGOn
 } from "../../utils/sysex_detector";
-import { messageTypes, midiControllers, RMIDINFOChunks } from "../enums";
+import {
+    midiControllers,
+    type MIDIMessageType,
+    midiMessageTypes,
+    RMIDINFOChunks
+} from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDMetadata } from "../types";
 import type { BasicMIDI } from "../basic_midi";
@@ -126,20 +131,20 @@ export function writeRMIDIInternal(
             eventIndexes[trackNum]++;
 
             const portOffset = mid.midiPortChannelOffsets[ports[trackNum]];
-            if (e.messageStatusByte === messageTypes.midiPort) {
+            if (e.messageStatusByte === midiMessageTypes.midiPort) {
                 ports[trackNum] = e.messageData[0];
                 continue;
             }
             const status = e.messageStatusByte & 0xf0;
             if (
-                status !== messageTypes.controllerChange &&
-                status !== messageTypes.programChange &&
-                status !== messageTypes.systemExclusive
+                status !== midiMessageTypes.controllerChange &&
+                status !== midiMessageTypes.programChange &&
+                status !== midiMessageTypes.systemExclusive
             ) {
                 continue;
             }
 
-            if (status === messageTypes.systemExclusive) {
+            if (status === midiMessageTypes.systemExclusive) {
                 // check for drum sysex
                 if (!isGSDrumsOn(e)) {
                     // check for XG
@@ -178,7 +183,7 @@ export function writeRMIDIInternal(
                 lastBankLSB: MIDIMessage | undefined;
                 hasBankSelect: boolean;
             } = channelsInfo[chNum];
-            if (status === messageTypes.programChange) {
+            if (status === midiMessageTypes.programChange) {
                 const isXG = isSystemXG(system);
                 // check if the preset for this program exists
                 const initialProgram = e.messageData[0];
@@ -327,7 +332,7 @@ export function writeRMIDIInternal(
             }
             // find the first program change (for the given channel)
             const midiChannel = ch % 16;
-            const status = messageTypes.programChange | midiChannel;
+            const status = midiMessageTypes.programChange | midiChannel;
             // find track with this channel being used
             const portOffset = Math.floor(ch / 16) * 16;
             const port = mid.midiPortChannelOffsets.indexOf(portOffset);
@@ -364,8 +369,8 @@ export function writeRMIDIInternal(
                     0,
                     new MIDIMessage(
                         programTicks,
-                        (messageTypes.programChange |
-                            midiChannel) as messageTypes,
+                        (midiMessageTypes.programChange |
+                            midiChannel) as MIDIMessageType,
                         new IndexedByteArray([targetProgram])
                     )
                 );
@@ -385,8 +390,8 @@ export function writeRMIDIInternal(
                 0,
                 new MIDIMessage(
                     ticks,
-                    (messageTypes.controllerChange |
-                        midiChannel) as messageTypes,
+                    (midiMessageTypes.controllerChange |
+                        midiChannel) as MIDIMessageType,
                     new IndexedByteArray([
                         midiControllers.bankSelect,
                         targetBank
@@ -401,7 +406,10 @@ export function writeRMIDIInternal(
                 mid.tracks[m.tNum].splice(mid.tracks[m.tNum].indexOf(m.e), 1);
             }
             let index = 0;
-            if (mid.tracks[0][0].messageStatusByte === messageTypes.trackName) {
+            if (
+                mid.tracks[0][0].messageStatusByte ===
+                midiMessageTypes.trackName
+            ) {
                 index++;
             }
             mid.tracks[0].splice(index, 0, getGsOn(0));

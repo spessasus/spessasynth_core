@@ -3,7 +3,7 @@
  * purpose: contains enums for midi events and controllers and functions to parse them
  */
 import type { IndexedByteArray } from "../utils/indexed_array";
-import type { messageTypes } from "./enums";
+import type { MIDIMessageType } from "./enums";
 
 export class MIDIMessage {
     /**
@@ -14,7 +14,7 @@ export class MIDIMessage {
     /**
      * The MIDI message status byte. Note that for meta events, it is the second byte. (not 0xFF)
      */
-    messageStatusByte: messageTypes;
+    messageStatusByte: MIDIMessageType;
 
     /**
      * Message's binary data
@@ -27,7 +27,7 @@ export class MIDIMessage {
      * @param byte the message status byte
      * @param data the message's binary data
      */
-    constructor(ticks: number, byte: messageTypes, data: IndexedByteArray) {
+    constructor(ticks: number, byte: MIDIMessageType, data: IndexedByteArray) {
         this.ticks = ticks;
         this.messageStatusByte = byte;
         this.messageData = data;
@@ -39,7 +39,7 @@ export class MIDIMessage {
  * @param statusByte the MIDI status byte
  * @returns channel is -1 for system messages -2 for meta and -3 for sysex
  */
-export function getChannel(statusByte: messageTypes): number {
+export function getChannel(statusByte: MIDIMessageType): number {
     const eventType = statusByte & 0xf0;
     const channel = statusByte & 0x0f;
 
@@ -97,7 +97,7 @@ export function getChannel(statusByte: messageTypes): number {
  * @param statusByte the status byte
  * @returns channel will be -1 for sysex and meta
  */
-export function getEvent(statusByte: messageTypes): {
+export function getEvent(statusByte: MIDIMessageType): {
     channel: number;
     status: number;
 } {
@@ -109,7 +109,7 @@ export function getEvent(statusByte: messageTypes): {
 
     if (status >= 0x80 && status <= 0xe0) {
         eventChannel = channel;
-        eventStatus = status as messageTypes;
+        eventStatus = status as MIDIMessageType;
     }
 
     return {

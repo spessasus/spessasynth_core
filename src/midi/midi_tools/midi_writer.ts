@@ -1,7 +1,7 @@
 import { writeVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
 import { writeBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian";
-import { messageTypes } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
+import { midiMessageTypes } from "../enums";
 
 /**
  * Exports the midi as a standard MIDI file
@@ -21,7 +21,7 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
             const deltaTicks = event.ticks - currentTick;
             let messageData: number[];
             // determine the message
-            if (event.messageStatusByte <= messageTypes.sequenceSpecific) {
+            if (event.messageStatusByte <= midiMessageTypes.sequenceSpecific) {
                 // this is a meta-message
                 // syntax is FF<type><length><data>
                 messageData = [
@@ -34,7 +34,7 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
                 // Sysex events and meta-events cancel any running status which was in effect.
                 runningByte = undefined;
             } else if (
-                event.messageStatusByte === messageTypes.systemExclusive
+                event.messageStatusByte === midiMessageTypes.systemExclusive
             ) {
                 // this is a system exclusive message
                 // syntax is F0<length><data>

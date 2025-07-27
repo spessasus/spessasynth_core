@@ -3,15 +3,16 @@ import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../synth_constants";
 import { isSystemXG } from "../../../utils/xg_hacks";
 import { readStringOffset } from "../../../utils/byte_functions/string";
-import { customControllers, synthDisplayTypes } from "../../enums";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
-import { modulatorSources } from "../../../soundbank/enums";
-
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
-import { midiControllers } from "../../../midi/enums";
+import {
+    generatorTypes,
+    type ModulatorSourceEnum,
+    modulatorSources
+} from "../../../soundbank/enums";
 import type { SpessaSynthProcessor } from "../main_processor";
-import type { ModulatorSourceIndex } from "../../../soundbank/types";
 import type { IndexedByteArray } from "../../../utils/indexed_array";
+import { midiControllers } from "../../../midi/enums";
+import { customControllers, synthDisplayTypes } from "../../enums";
 
 /**
  * Calculates frequency for MIDI Tuning Standard.
@@ -537,7 +538,7 @@ export function systemExclusive(
                                         );
                                     } else {
                                         channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceIndex,
+                                            source as ModulatorSourceEnum,
                                             generatorTypes.fineTune,
                                             centeredValue * 100,
                                             bipolar
@@ -554,7 +555,7 @@ export function systemExclusive(
                                 case 0x01:
                                     // cutoff
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.initialFilterFc,
                                         normalizedValue * 9600,
                                         bipolar
@@ -570,7 +571,7 @@ export function systemExclusive(
                                 case 0x02:
                                     // amplitude
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.initialAttenuation,
                                         normalizedValue * 960, // spec says "100%" so 960cB in sf2
                                         bipolar
@@ -588,7 +589,7 @@ export function systemExclusive(
                                 case 0x04:
                                     // LFO1 pitch depth
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.vibLfoToPitch,
                                         normalizedNotCentered * 600,
                                         bipolar
@@ -604,7 +605,7 @@ export function systemExclusive(
                                 case 0x05:
                                     // LFO1 filter depth
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.vibLfoToFilterFc,
                                         normalizedNotCentered * 2400,
                                         bipolar
@@ -620,7 +621,7 @@ export function systemExclusive(
                                 case 0x06:
                                     // LFO1 amplitude depth
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.vibLfoToVolume,
                                         normalizedValue * 960,
                                         bipolar
@@ -638,7 +639,7 @@ export function systemExclusive(
                                 case 0x08:
                                     // LFO2 pitch depth
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.modLfoToPitch,
                                         normalizedNotCentered * 600,
                                         bipolar
@@ -654,7 +655,7 @@ export function systemExclusive(
                                 case 0x09:
                                     // LFO2 filter depth
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.modLfoToFilterFc,
                                         normalizedNotCentered * 2400,
                                         bipolar
@@ -670,7 +671,7 @@ export function systemExclusive(
                                 case 0x0a:
                                     // LFO2 amplitude depth
                                     channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceIndex,
+                                        source as ModulatorSourceEnum,
                                         generatorTypes.modLfoToVolume,
                                         normalizedValue * 960,
                                         bipolar

@@ -3,12 +3,12 @@
  * purpose: reads instrument zones from soundfont and gets their respective samples and generators and modulators
  */
 import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
-import { generatorTypes } from "../basic_soundbank/generator_types";
 import type { SoundFontInstrument } from "./instruments";
 import type { BasicSample } from "../basic_soundbank/basic_sample";
 import type { Modulator } from "../basic_soundbank/modulator";
 import type { Generator } from "../basic_soundbank/generator";
 import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
+import { generatorTypes } from "../basic_soundbank/generator_types";
 
 export class SoundFontInstrumentZone extends BasicInstrumentZone {
     /**

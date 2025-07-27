@@ -5,8 +5,7 @@ import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
 import type { Generator } from "./generator";
-import type { SampleAndGenerators } from "../types";
-import type { KeyRange } from "../../utils/global_types";
+import type { KeyRange, SampleAndGenerators } from "../types";
 import type { BasicInstrument } from "./basic_instrument";
 
 export class BasicPreset {

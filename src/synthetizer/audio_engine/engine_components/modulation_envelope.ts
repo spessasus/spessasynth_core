@@ -1,8 +1,8 @@
 import { timecentsToSeconds } from "./unit_converter";
 import { getModulatorCurveValue } from "./modulator_curves";
-import { modulatorCurveTypes } from "../../../soundbank/enums";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import type { Voice } from "./voice";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import { modulatorCurveTypes } from "../../../soundbank/enums";
 
 /**
  * modulation_envelope.js

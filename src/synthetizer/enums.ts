@@ -3,7 +3,7 @@ export const interpolationTypes = {
     nearestNeighbor: 1,
     fourthOrder: 2
 } as const;
-export type interpolationTypes =
+export type InterpolationType =
     (typeof interpolationTypes)[keyof typeof interpolationTypes];
 // Types of synthesizer message displays.
 export const synthDisplayTypes = {
@@ -14,7 +14,7 @@ export const synthDisplayTypes = {
     // This message type is used to display a dot matrix display (pixelated graphics) on a SoundCanvas synthesizer.
     SoundCanvasDotDisplay: 2
 } as const;
-export type synthDisplayTypes =
+export type SynthDisplayType =
     (typeof synthDisplayTypes)[keyof typeof synthDisplayTypes];
 
 // Data entry states for the MIDI data entry system.
@@ -29,7 +29,7 @@ export const dataEntryStates = {
     DataFine: 6
 } as const;
 
-export type dataEntryStates =
+export type DataEntryState =
     (typeof dataEntryStates)[keyof typeof dataEntryStates];
 
 export const customControllers = {
@@ -43,5 +43,5 @@ export const customControllers = {
     sf2NPRNGeneratorLSB: 6 // sf2 NPRN LSB for selecting a generator value
 } as const;
 
-export type customControllers =
+export type CustomController =
     (typeof customControllers)[keyof typeof customControllers];

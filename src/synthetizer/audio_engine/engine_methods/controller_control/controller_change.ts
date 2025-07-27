@@ -1,7 +1,7 @@
 import { channelConfiguration } from "../../engine_components/controller_tables";
 import { nonRegisteredMSB } from "../data_entry/data_entry_coarse";
-import { midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import { midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
 
 /**

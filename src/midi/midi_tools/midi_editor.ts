@@ -10,7 +10,11 @@ import { consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
 import { isSystemXG, isXGDrums, XG_SFX_VOICE } from "../../utils/xg_hacks";
-import { messageTypes, midiControllers } from "../enums";
+import {
+    midiControllers,
+    type MIDIMessageType,
+    midiMessageTypes
+} from "../enums";
 import { getGsOn } from "./get_gs_on";
 import type {
     DesiredChannelTranspose,
@@ -30,7 +34,7 @@ function getControllerChange(
 ): MIDIMessage {
     return new MIDIMessage(
         ticks,
-        (messageTypes.controllerChange | channel % 16) as messageTypes,
+        (midiMessageTypes.controllerChange | channel % 16) as MIDIMessageType,
         new IndexedByteArray([cc, value])
     );
 }
@@ -57,7 +61,7 @@ function getDrumChange(channel: number, ticks: number): MIDIMessage {
     // add system exclusive to enable drums
     return new MIDIMessage(
         ticks,
-        messageTypes.systemExclusive,
+        midiMessageTypes.systemExclusive,
         new IndexedByteArray([...sysexData, checksum, 0xf7])
     );
 }
@@ -199,14 +203,14 @@ export function modifyMIDIInternal(
         };
 
         const portOffset = midiPortChannelOffsets[midiPorts[trackNum]] || 0;
-        if (e.messageStatusByte === messageTypes.midiPort) {
+        if (e.messageStatusByte === midiMessageTypes.midiPort) {
             assignMIDIPort(trackNum, e.messageData[0]);
             continue;
         }
         // don't clear meta
         if (
-            e.messageStatusByte <= messageTypes.sequenceSpecific &&
-            e.messageStatusByte >= messageTypes.sequenceNumber
+            e.messageStatusByte <= midiMessageTypes.sequenceSpecific &&
+            e.messageStatusByte >= midiMessageTypes.sequenceNumber
         ) {
             continue;
         }
@@ -219,7 +223,7 @@ export function modifyMIDIInternal(
             continue;
         }
         switch (status) {
-            case messageTypes.noteOn:
+            case midiMessageTypes.noteOn:
                 // is it first?
                 if (isFirstNoteOn[channel]) {
                     isFirstNoteOn[channel] = false;
@@ -304,8 +308,8 @@ export function modifyMIDIInternal(
                         // add program change
                         const programChange = new MIDIMessage(
                             e.ticks,
-                            (messageTypes.programChange |
-                                midiChannel) as messageTypes,
+                            (midiMessageTypes.programChange |
+                                midiChannel) as MIDIMessageType,
                             new IndexedByteArray([desiredProgram])
                         );
                         addEventBefore(programChange);
@@ -372,11 +376,11 @@ export function modifyMIDIInternal(
                 e.messageData[0] += coarseTranspose[channel];
                 break;
 
-            case messageTypes.noteOff:
+            case midiMessageTypes.noteOff:
                 e.messageData[0] += coarseTranspose[channel];
                 break;
 
-            case messageTypes.programChange:
+            case midiMessageTypes.programChange:
                 // do we delete it?
                 if (channelsToChangeProgram.has(channel)) {
                     // this channel has program change. BEGONE!
@@ -385,7 +389,7 @@ export function modifyMIDIInternal(
                 }
                 break;
 
-            case messageTypes.controllerChange:
+            case midiMessageTypes.controllerChange:
                 {
                     const ccNum = e.messageData[0];
                     const changes = desiredControllerChanges.find(
@@ -411,7 +415,7 @@ export function modifyMIDIInternal(
                 }
                 break;
 
-            case messageTypes.systemExclusive:
+            case midiMessageTypes.systemExclusive:
                 // check for xg on
                 if (isXGOn(e)) {
                     SpessaSynthInfo(
@@ -461,7 +465,9 @@ export function modifyMIDIInternal(
     if (!addedGs && desiredProgramChanges.length > 0) {
         // gs is not on, add it on the first track at index 0 (or 1 if track name is first)
         let index = 0;
-        if (midi.tracks[0][0].messageStatusByte === messageTypes.trackName) {
+        if (
+            midi.tracks[0][0].messageStatusByte === midiMessageTypes.trackName
+        ) {
             index++;
         }
         midi.tracks[0].splice(index, 0, getGsOn(0));

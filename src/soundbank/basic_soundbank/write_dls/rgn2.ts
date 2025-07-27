@@ -3,10 +3,10 @@ import { writeDword, writeWord } from "../../../utils/byte_functions/little_endi
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
 import { writeWavesample } from "./wsmp";
 import { writeArticulator } from "./art2";
-import { generatorTypes } from "../generator_types";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { BasicInstrumentZone } from "../basic_instrument_zone";
 import type { BasicGlobalZone } from "../basic_global_zone";
+import { generatorTypes } from "../generator_types";
 
 /**
  * @param bank {BasicSoundBank}

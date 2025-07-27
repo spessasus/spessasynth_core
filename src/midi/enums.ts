@@ -1,5 +1,5 @@
 // all the midi statuses dictionary
-export const messageTypes = {
+export const midiMessageTypes = {
     noteOff: 0x80,
     noteOn: 0x90,
     polyPressure: 0xa0,
@@ -37,7 +37,8 @@ export const messageTypes = {
     sequenceSpecific: 0x7f
 } as const;
 
-export type messageTypes = (typeof messageTypes)[keyof typeof messageTypes];
+export type MIDIMessageType =
+    (typeof midiMessageTypes)[keyof typeof midiMessageTypes];
 
 // all midi controllers dictionary
 export const midiControllers = {
@@ -171,7 +172,7 @@ export const midiControllers = {
     polyModeOn: 127
 } as const;
 
-export type midiControllers =
+export type MIDIController =
     (typeof midiControllers)[keyof typeof midiControllers];
 
 export const RMIDINFOChunks = {
@@ -191,5 +192,5 @@ export const RMIDINFOChunks = {
     bankOffset: "DBNK"
 } as const;
 
-export type RMIDINFOChunks =
+export type RMIDINFOChunk =
     (typeof RMIDINFOChunks)[keyof typeof RMIDINFOChunks];

@@ -1,4 +1,4 @@
-import { midiControllers } from "../../../midi/enums";
+import { type MIDIController, midiControllers } from "../../../midi/enums";
 import { customControllers } from "../../enums";
 import { modulatorSources } from "../../../soundbank/enums";
 
@@ -14,7 +14,7 @@ export const CONTROLLER_TABLE_SIZE = 147;
 
 // an array with preset default values, so we can quickly use set() to reset the controllers
 export const resetArray = new Int16Array(CONTROLLER_TABLE_SIZE).fill(0);
-export const setResetValue = (i: midiControllers, v: number) =>
+export const setResetValue = (i: MIDIController, v: number) =>
     (resetArray[i] = v << 7);
 
 // values come from Falcosoft MidiPlayer 6
@@ -51,11 +51,11 @@ resetArray[midiControllers.portamentoControl] = PORTAMENTO_CONTROL_UNSET;
 
 // pitch wheel
 setResetValue(
-    (NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel) as midiControllers,
+    (NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel) as MIDIController,
     64
 );
 setResetValue(
-    (NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange) as midiControllers,
+    (NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange) as MIDIController,
     2
 );
 

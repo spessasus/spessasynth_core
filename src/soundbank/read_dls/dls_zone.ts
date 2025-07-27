@@ -1,8 +1,8 @@
 import { Generator } from "../basic_soundbank/generator";
-import { generatorTypes } from "../basic_soundbank/generator_types";
 import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
 import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
 import type { BasicSample } from "../basic_soundbank/basic_sample";
+import { generatorTypes } from "../basic_soundbank/generator_types";
 
 export class DLSZone extends BasicInstrumentZone {
     constructor(inst: BasicInstrument, sample: BasicSample) {

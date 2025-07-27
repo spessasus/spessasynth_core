@@ -1,16 +1,13 @@
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
-import {
-    DLS_1_NO_VIBRATO_MOD,
-    DLS_1_NO_VIBRATO_PRESSURE
-} from "./default_dls_modulators";
-import { DLSDestinations, DLSSources } from "../enums";
+import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
 import { getSF2ModulatorFromArticulator } from "./articulator_converter";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { Generator } from "../basic_soundbank/generator";
 import { Modulator } from "../basic_soundbank/modulator";
-import { generatorTypes } from "../basic_soundbank/generator_types";
+import { type GeneratorType, generatorTypes } from "../basic_soundbank/generator_types";
 import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { DLSDestinations, DLSSources } from "../enums";
 
 /**
  * Reads the articulator chunk
@@ -217,8 +214,8 @@ export function readArticulation(
 
             const applyKeyToCorrection = (
                 value: number,
-                keyToGen: generatorTypes,
-                realGen: generatorTypes
+                keyToGen: GeneratorType,
+                realGen: GeneratorType
             ) => {
                 // according to viena and another strange (with modulators) rendition of gm.dls in sf2,
                 // it shall be divided by -128

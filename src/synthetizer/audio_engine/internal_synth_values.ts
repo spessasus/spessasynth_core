@@ -11,7 +11,7 @@ import {
     DEFAULT_SYNTH_MODE,
     VOICE_CAP
 } from "./synth_constants";
-import { interpolationTypes } from "../enums";
+import { type InterpolationType, interpolationTypes } from "../enums";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 
 // This class holds all the internal values of the synthesizer.
@@ -82,7 +82,7 @@ export class ProtectedSynthValues {
     /**
      * Interpolation type used.
      */
-    interpolationType: interpolationTypes = interpolationTypes.fourthOrder;
+    interpolationType: InterpolationType = interpolationTypes.fourthOrder;
     /**
      * Global transposition in semitones.
      */

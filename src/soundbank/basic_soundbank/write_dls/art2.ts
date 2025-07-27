@@ -15,9 +15,9 @@ import {
     DLS_1_NO_VIBRATO_MOD,
     DLS_1_NO_VIBRATO_PRESSURE
 } from "../../read_dls/default_dls_modulators";
-import { generatorTypes } from "../generator_types";
 import type { BasicZone } from "../basic_zone";
 import type { Articulator } from "./articulator";
+import { generatorTypes } from "../generator_types";
 
 const invalidGeneratorTypes = new Set([
     generatorTypes.sampleModes,

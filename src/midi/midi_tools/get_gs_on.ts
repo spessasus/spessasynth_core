@@ -1,11 +1,11 @@
 import { MIDIMessage } from "../midi_message";
-import { messageTypes } from "../enums";
 import { IndexedByteArray } from "../../utils/indexed_array";
+import { midiMessageTypes } from "../enums";
 
 export function getGsOn(ticks: number): MIDIMessage {
     return new MIDIMessage(
         ticks,
-        messageTypes.systemExclusive,
+        midiMessageTypes.systemExclusive,
         new IndexedByteArray([
             0x41, // Roland
             0x10, // Device ID (defaults to 16 on roland)

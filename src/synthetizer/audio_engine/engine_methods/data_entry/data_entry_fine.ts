@@ -6,8 +6,8 @@ import {
     registeredParameterTypes
 } from "./data_entry_coarse";
 import { handleAWE32NRPN } from "./awe32";
-import { midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import { midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { modulatorSources } from "../../../../soundbank/enums";
 

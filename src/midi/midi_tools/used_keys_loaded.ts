@@ -8,11 +8,11 @@ import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constan
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
 import { SoundBankManager } from "../../synthetizer/audio_engine/engine_components/sound_bank_manager";
-import { messageTypes, midiControllers } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import type { SynthSystem } from "../../synthetizer/types";
+import { midiControllers, midiMessageTypes } from "../enums";
 
 type InternalChannelType = {
     program: number;
@@ -137,16 +137,16 @@ export function getUsedProgramsAndKeys(
         const event = track[eventIndexes[trackNum]];
         eventIndexes[trackNum]++;
 
-        if (event.messageStatusByte === messageTypes.midiPort) {
+        if (event.messageStatusByte === midiMessageTypes.midiPort) {
             ports[trackNum] = event.messageData[0];
             continue;
         }
         const status = event.messageStatusByte & 0xf0;
         if (
-            status !== messageTypes.noteOn &&
-            status !== messageTypes.controllerChange &&
-            status !== messageTypes.programChange &&
-            status !== messageTypes.systemExclusive
+            status !== midiMessageTypes.noteOn &&
+            status !== midiMessageTypes.controllerChange &&
+            status !== midiMessageTypes.programChange &&
+            status !== midiMessageTypes.systemExclusive
         ) {
             continue;
         }
@@ -155,12 +155,12 @@ export function getUsedProgramsAndKeys(
                 mid.midiPortChannelOffsets[ports[trackNum]] || 0;
         let ch = channelPresets[channel];
         switch (status) {
-            case messageTypes.programChange:
+            case midiMessageTypes.programChange:
                 ch.program = event.messageData[0];
                 updateString(ch);
                 break;
 
-            case messageTypes.controllerChange:
+            case midiMessageTypes.controllerChange:
                 {
                     const isLSB =
                         event.messageData[0] ===
@@ -214,7 +214,7 @@ export function getUsedProgramsAndKeys(
                 }
                 break;
 
-            case messageTypes.noteOn:
+            case midiMessageTypes.noteOn:
                 if (event.messageData[1] === 0) {
                     // that's a note off
                     continue;
@@ -224,7 +224,7 @@ export function getUsedProgramsAndKeys(
                 );
                 break;
 
-            case messageTypes.systemExclusive:
+            case midiMessageTypes.systemExclusive:
                 // check for drum sysex
                 {
                     if (!isGSDrumsOn(event)) {

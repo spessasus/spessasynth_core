@@ -1,4 +1,8 @@
-import { generatorLimits, generatorTypes } from "./generator_types";
+import {
+    generatorLimits,
+    type GeneratorType,
+    generatorTypes
+} from "./generator_types";
 
 export const GEN_BYTE_SIZE = 4;
 
@@ -6,7 +10,7 @@ export class Generator {
     /**
      * The generator's SF2 type.
      */
-    generatorType: generatorTypes = generatorTypes.INVALID;
+    generatorType: GeneratorType = generatorTypes.INVALID;
     /**
      * The generator's 16-bit value.
      */
@@ -19,7 +23,7 @@ export class Generator {
      * @param validate if the limits should be validated
      */
     constructor(
-        type: generatorTypes = generatorTypes.INVALID,
+        type: GeneratorType = generatorTypes.INVALID,
         value: number = 0,
         validate: boolean = true
     ) {

@@ -1,7 +1,7 @@
 import { SpessaSynthWarn } from "../../utils/loggin";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { sampleTypes } from "../enums";
+import { type SampleType, sampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
 import type { SampleEncodingFunction } from "../types";
 
@@ -37,7 +37,7 @@ export class BasicSample {
     /**
      * The type of the sample
      */
-    sampleType: sampleTypes;
+    sampleType: SampleType;
 
     /**
      * Relative to the start of the sample in sample points
@@ -82,7 +82,7 @@ export class BasicSample {
         sampleRate: number,
         samplePitch: number,
         samplePitchCorrection: number,
-        sampleType: sampleTypes,
+        sampleType: SampleType,
         loopStart: number,
         loopEnd: number
     ) {
@@ -182,7 +182,7 @@ export class BasicSample {
      * Sets the sample type and unlinks if needed
      * @param type the type to use
      */
-    setSampleType(type: sampleTypes) {
+    setSampleType(type: SampleType) {
         this.sampleType = type;
         if (!this.isLinked) {
             // unlink the other sample
@@ -212,7 +212,7 @@ export class BasicSample {
      * @param sample the sample to link to
      * @param type either left, right or linked
      */
-    setLinkedSample(sample: BasicSample, type: sampleTypes) {
+    setLinkedSample(sample: BasicSample, type: SampleType) {
         // sanity check
         if (sample.linkedSample) {
             throw new Error(

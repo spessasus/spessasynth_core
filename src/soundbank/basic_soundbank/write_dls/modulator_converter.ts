@@ -1,15 +1,17 @@
 import {
+    type DLSDestination,
     DLSDestinations,
+    type DLSSource,
     DLSSources,
+    generatorTypes,
     modulatorCurveTypes,
     modulatorSources
 } from "../../enums";
 import { Articulator } from "./articulator";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import { generatorTypes } from "../generator_types";
-import { midiControllers } from "../../../midi/enums";
 import type { Generator } from "../generator";
 import type { Modulator } from "../modulator";
+import { midiControllers } from "../../../midi/enums";
 
 function getDLSSourceFromSf2Source(cc: 0 | 1, index: number) {
     if (cc) {
@@ -249,9 +251,9 @@ export function getDLSArticulatorFromSf2Generator(
         return undefined;
     }
     return new Articulator(
-        source as DLSSources,
+        source as DLSSource,
         0,
-        destination as DLSDestinations,
+        destination as DLSDestination,
         amount,
         0
     );
@@ -338,9 +340,9 @@ export function getDLSArticulatorFromSf2Modulator(
     transform |= sourceBipolar << 14;
     transform |= sourceDirection << 15;
     return new Articulator(
-        source as DLSSources,
-        control as DLSSources,
-        destination as DLSDestinations,
+        source as DLSSource,
+        control as DLSSource,
+        destination as DLSDestination,
         amt,
         transform
     );

@@ -11,7 +11,6 @@ import { writeRMIDIInternal } from "./midi_tools/rmidi_writer";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
-import { messageTypes } from "./enums";
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import type {
     DesiredChannelTranspose,
@@ -24,6 +23,7 @@ import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_edi
 import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
 import { SoundBankManager } from "../synthetizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
+import { midiMessageTypes } from "./enums";
 
 /**
  * BasicMIDI is the base of a complete MIDI file, used by the sequencer internally.
@@ -261,7 +261,7 @@ export class BasicMIDI extends MIDISequenceData {
                     // interpret the voice message
                     switch (e.messageStatusByte & 0xf0) {
                         // cc change: loop points
-                        case messageTypes.controllerChange:
+                        case midiMessageTypes.controllerChange:
                             switch (e.messageData[0]) {
                                 case 2:
                                 case 116:
@@ -297,7 +297,7 @@ export class BasicMIDI extends MIDISequenceData {
                             break;
 
                         // note on: used notes tracking and key range
-                        case messageTypes.noteOn: {
+                        case midiMessageTypes.noteOn: {
                             usedChannels.add(e.messageStatusByte & 0x0f);
                             const note = e.messageData[0];
                             this.keyRange.min = Math.min(
@@ -320,7 +320,7 @@ export class BasicMIDI extends MIDISequenceData {
                 e.messageData.currentIndex = 0;
                 // interpret the message
                 switch (e.messageStatusByte) {
-                    case messageTypes.setTempo:
+                    case midiMessageTypes.setTempo:
                         // add the tempo change
                         e.messageData.currentIndex = 0;
                         this.tempoChanges.push({
@@ -332,7 +332,7 @@ export class BasicMIDI extends MIDISequenceData {
                         e.messageData.currentIndex = 0;
                         break;
 
-                    case messageTypes.marker:
+                    case midiMessageTypes.marker:
                         // check for loop markers
                         {
                             const text = eventText.trim().toLowerCase();
@@ -352,7 +352,7 @@ export class BasicMIDI extends MIDISequenceData {
                         }
                         break;
 
-                    case messageTypes.copyright:
+                    case midiMessageTypes.copyright:
                         if (!copyrightDetected) {
                             e.messageData.currentIndex = 0;
                             copyrightComponents.push(
@@ -367,7 +367,7 @@ export class BasicMIDI extends MIDISequenceData {
                         break;
                     // fallthrough
 
-                    case messageTypes.lyric:
+                    case midiMessageTypes.lyric:
                         // note here: .kar files sometimes just use...
                         // lyrics instead of text because why not (of course)
                         // perform the same check for @KMIDI KARAOKE FILE
@@ -383,7 +383,7 @@ export class BasicMIDI extends MIDISequenceData {
 
                         if (this.isKaraokeFile) {
                             // replace the type of the message with text
-                            e.messageStatusByte = messageTypes.text;
+                            e.messageStatusByte = midiMessageTypes.text;
                         } else {
                             // add lyrics like a regular midi file
                             this.lyrics.push(e.messageData);
@@ -392,7 +392,7 @@ export class BasicMIDI extends MIDISequenceData {
 
                     // kar: treat the same as text
                     // fallthrough
-                    case messageTypes.text: {
+                    case midiMessageTypes.text: {
                         // possibly Soft Karaoke MIDI file
                         // it has a text event at the start of the file
                         // "@KMIDI KARAOKE FILE"
@@ -439,7 +439,7 @@ export class BasicMIDI extends MIDISequenceData {
                         break;
                     }
 
-                    case messageTypes.trackName:
+                    case midiMessageTypes.trackName:
                         break;
                 }
             }
@@ -449,7 +449,7 @@ export class BasicMIDI extends MIDISequenceData {
             // track name
             this.trackNames[i] = "";
             const trackName = track.find(
-                (e) => e.messageStatusByte === messageTypes.trackName
+                (e) => e.messageStatusByte === midiMessageTypes.trackName
             );
             if (trackName) {
                 trackName.messageData.currentIndex = 0;
@@ -478,7 +478,7 @@ export class BasicMIDI extends MIDISequenceData {
         const firstNoteOns = [];
         for (const t of this.tracks) {
             const firstNoteOn = t.find(
-                (e) => (e.messageStatusByte & 0xf0) === messageTypes.noteOn
+                (e) => (e.messageStatusByte & 0xf0) === midiMessageTypes.noteOn
             );
             if (firstNoteOn) {
                 firstNoteOns.push(firstNoteOn.ticks);
@@ -531,7 +531,7 @@ export class BasicMIDI extends MIDISequenceData {
                 continue;
             }
             for (const e of this.tracks[trackNum]) {
-                if (e.messageStatusByte !== messageTypes.midiPort) {
+                if (e.messageStatusByte !== midiMessageTypes.midiPort) {
                     continue;
                 }
                 const port = e.messageData[0];
@@ -593,14 +593,16 @@ export class BasicMIDI extends MIDISequenceData {
                 if (
                     this.tracks[0].find(
                         (message) =>
-                            message.messageStatusByte >= messageTypes.noteOn &&
+                            message.messageStatusByte >=
+                                midiMessageTypes.noteOn &&
                             message.messageStatusByte <
-                                messageTypes.polyPressure
+                                midiMessageTypes.polyPressure
                     ) === undefined
                 ) {
                     const name = this.tracks[0].find(
                         (message) =>
-                            message.messageStatusByte === messageTypes.trackName
+                            message.messageStatusByte ===
+                            midiMessageTypes.trackName
                     );
                     if (name) {
                         this.rawMidiName = name.messageData;
@@ -616,7 +618,7 @@ export class BasicMIDI extends MIDISequenceData {
                 // if only 1 track, find the first "track name" event
                 const name = this.tracks[0].find(
                     (message) =>
-                        message.messageStatusByte === messageTypes.trackName
+                        message.messageStatusByte === midiMessageTypes.trackName
                 );
                 if (name) {
                     this.rawMidiName = name.messageData;
@@ -673,7 +675,7 @@ export class BasicMIDI extends MIDISequenceData {
             track.unshift(
                 new MIDIMessage(
                     0,
-                    messageTypes.trackName,
+                    midiMessageTypes.trackName,
                     new IndexedByteArray(b)
                 )
             );

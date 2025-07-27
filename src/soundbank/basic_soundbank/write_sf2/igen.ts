@@ -5,10 +5,10 @@ import {
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { writeRIFFChunkRaw } from "../riff_chunk";
 import { GEN_BYTE_SIZE, Generator } from "../generator";
-import { generatorTypes } from "../generator_types";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
 import type { BasicZone } from "../basic_zone";
+import { generatorTypes } from "../generator_types";
 
 export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // go through all instruments -> zones and write generators sequentially (add 4 for terminal)

@@ -7,7 +7,7 @@ import { readVariableLengthQuantity } from "../utils/byte_functions/variable_len
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
 import { readBytesAsString } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type messageTypes, RMIDINFOChunks } from "./enums";
+import { type MIDIMessageType, type RMIDINFOChunk, RMIDINFOChunks } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
@@ -134,9 +134,8 @@ export function loadMIDIFromArrayBufferInternal(
                             currentChunk.chunkData,
                             true
                         );
-                        outputMIDI.RMIDInfo[
-                            infoChunk.header as RMIDINFOChunks
-                        ] = infoChunk.chunkData;
+                        outputMIDI.RMIDInfo[infoChunk.header as RMIDINFOChunk] =
+                            infoChunk.chunkData;
                     }
                     if (outputMIDI.RMIDInfo["ICOP"]) {
                         // special case, overwrites the copyright components array
@@ -237,7 +236,7 @@ export function loadMIDIFromArrayBufferInternal(
         /**
          * MIDI running byte
          */
-        let runningByte: messageTypes | undefined = undefined;
+        let runningByte: MIDIMessageType | undefined = undefined;
 
         let totalTicks = 0;
         // format 2 plays sequentially
@@ -254,7 +253,7 @@ export function loadMIDIFromArrayBufferInternal(
             const statusByteCheck =
                 trackChunk.data[trackChunk.data.currentIndex];
 
-            let statusByte: messageTypes;
+            let statusByte: MIDIMessageType;
             // if we have a running byte and the status byte isn't valid
             if (runningByte !== undefined && statusByteCheck < 0x80) {
                 statusByte = runningByte;
@@ -270,7 +269,7 @@ export function loadMIDIFromArrayBufferInternal(
                     // if the status byte is valid, use that
                     statusByte = trackChunk.data[
                         trackChunk.data.currentIndex++
-                    ] as messageTypes;
+                    ] as MIDIMessageType;
                 }
             }
             const statusByteChannel = getChannel(statusByte);
@@ -288,7 +287,7 @@ export function loadMIDIFromArrayBufferInternal(
                     // meta (the next is the actual status byte)
                     statusByte = trackChunk.data[
                         trackChunk.data.currentIndex++
-                    ] as messageTypes;
+                    ] as MIDIMessageType;
                     eventDataLength = readVariableLengthQuantity(
                         trackChunk.data
                     );

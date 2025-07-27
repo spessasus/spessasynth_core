@@ -8,10 +8,10 @@ import { playToInternal } from "./play";
 import { SpessaSynthWarn } from "../utils/loggin";
 
 import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/synth_constants";
-import { messageTypes, midiControllers } from "../midi/enums";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthetizer/audio_engine/main_processor";
 import type { MIDIMessage } from "../midi/midi_message";
+import { midiControllers, midiMessageTypes } from "../midi/enums";
 
 export class SpessaSynthSequencer {
     /**
@@ -401,7 +401,7 @@ export class SpessaSynthSequencer {
         if (this.sendMIDIMessages) {
             for (const note of this.playingNotes) {
                 this.sendMIDIMessage([
-                    messageTypes.noteOff | note.channel % 16,
+                    midiMessageTypes.noteOff | note.channel % 16,
                     note.midiNote
                 ]);
             }
@@ -454,15 +454,15 @@ export class SpessaSynthSequencer {
         if (!this.sendMIDIMessages) {
             return;
         }
-        this.sendMIDIMessage([messageTypes.reset]);
+        this.sendMIDIMessage([midiMessageTypes.reset]);
         for (let ch = 0; ch < MIDI_CHANNEL_COUNT; ch++) {
             this.sendMIDIMessage([
-                messageTypes.controllerChange | ch,
+                midiMessageTypes.controllerChange | ch,
                 midiControllers.allSoundOff,
                 0
             ]);
             this.sendMIDIMessage([
-                messageTypes.controllerChange | ch,
+                midiMessageTypes.controllerChange | ch,
                 midiControllers.resetAllControllers,
                 0
             ]);
@@ -501,7 +501,7 @@ export class SpessaSynthSequencer {
             return;
         }
         this.sendMIDIMessage([
-            messageTypes.controllerChange | channel,
+            midiMessageTypes.controllerChange | channel,
             type,
             value
         ]);
@@ -512,7 +512,10 @@ export class SpessaSynthSequencer {
         if (!this.sendMIDIMessages) {
             return;
         }
-        this.sendMIDIMessage([messageTypes.programChange | channel, program]);
+        this.sendMIDIMessage([
+            midiMessageTypes.programChange | channel,
+            program
+        ]);
     }
 
     /**
@@ -526,7 +529,7 @@ export class SpessaSynthSequencer {
         if (!this.sendMIDIMessages) {
             return;
         }
-        this.sendMIDIMessage([messageTypes.pitchBend | channel, LSB, MSB]);
+        this.sendMIDIMessage([midiMessageTypes.pitchBend | channel, LSB, MSB]);
     }
 
     /**

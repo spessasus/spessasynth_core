@@ -1,5 +1,8 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian";
+import {
+    writeLittleEndian,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
 import { writeRIFFChunkRaw } from "../riff_chunk";
 import { MOD_BYTE_SIZE } from "../modulator";
 import type { BasicSoundBank } from "../basic_soundbank";

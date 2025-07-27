@@ -1,6 +1,9 @@
 import { SpessaSynthWarn } from "../../../../utils/loggin";
 import { consoleColors } from "../../../../utils/other";
-import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import {
+    type GeneratorType,
+    generatorTypes
+} from "../../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
 
 /**
@@ -8,7 +11,7 @@ import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
  * http://archive.gamedev.net/archive/reference/articles/article445.html
  * https://github.com/user-attachments/files/15757220/adip301.pdf
  */
-const AWE_NRPN_GENERATOR_MAPPINGS: generatorTypes[] = [
+const AWE_NRPN_GENERATOR_MAPPINGS: GeneratorType[] = [
     generatorTypes.delayModLFO,
     generatorTypes.freqModLFO,
 

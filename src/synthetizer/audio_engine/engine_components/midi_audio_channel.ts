@@ -1,4 +1,8 @@
-import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
+import {
+    CONTROLLER_TABLE_SIZE,
+    CUSTOM_CONTROLLER_TABLE_SIZE,
+    NON_CC_INDEX_OFFSET
+} from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -12,20 +16,37 @@ import { dataEntryCoarse } from "../engine_methods/data_entry/data_entry_coarse"
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants";
-import { modulatorSources } from "../../../soundbank/enums";
+import {
+    chooseBank,
+    isSystemXG,
+    parseBankSelect
+} from "../../../utils/xg_hacks";
+import {
+    DEFAULT_PERCUSSION,
+    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
+} from "../synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
-import { generatorLimits, GENERATORS_AMOUNT, generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    generatorLimits,
+    GENERATORS_AMOUNT,
+    type GeneratorType,
+    generatorTypes
+} from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
 import type { SpessaSynthProcessor } from "../main_processor";
-import { customControllers, dataEntryStates } from "../../enums";
+import {
+    type CustomController,
+    customControllers,
+    type DataEntryState,
+    dataEntryStates
+} from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
-import { midiControllers } from "../../../midi/enums";
 import type { ProtectedSynthValues } from "../internal_synth_values";
+import { midiControllers } from "../../../midi/enums";
+import { modulatorSources } from "../../../soundbank/enums";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -127,7 +148,7 @@ class MIDIChannel {
     /**
      * The current state of the data entry for the channel.
      */
-    dataEntryState: dataEntryStates = dataEntryStates.Idle;
+    dataEntryState: DataEntryState = dataEntryStates.Idle;
 
     /**
      * The bank number of the channel (used for patch changes).
@@ -411,7 +432,7 @@ class MIDIChannel {
         });
     }
 
-    setCustomController(type: customControllers, value: number) {
+    setCustomController(type: CustomController, value: number) {
         this.customControllers[type] = value;
         this.updateChannelTuning();
     }
@@ -611,7 +632,7 @@ class MIDIChannel {
     }
 
     setGeneratorOverride(
-        gen: generatorTypes,
+        gen: GeneratorType,
         value: number,
         realtime: boolean = false
     ) {
@@ -630,7 +651,7 @@ class MIDIChannel {
         this.generatorOffsetsEnabled = false;
     }
 
-    setGeneratorOffset(gen: generatorTypes, value: number) {
+    setGeneratorOffset(gen: GeneratorType, value: number) {
         this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
         this.generatorOffsetsEnabled = true;
         this.voices.forEach((v) => {

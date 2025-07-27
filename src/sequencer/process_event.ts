@@ -2,8 +2,8 @@ import { getEvent, MIDIMessage } from "../midi/midi_message";
 import { consoleColors } from "../utils/other";
 import { SpessaSynthWarn } from "../utils/loggin";
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
-import { messageTypes } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer_engine";
+import { midiMessageTypes } from "../midi/enums";
 
 /**
  * Processes a MIDI event.
@@ -32,7 +32,7 @@ export function processEventInternal(
     statusByteData.channel += offset;
     // process the event
     switch (statusByteData.status) {
-        case messageTypes.noteOn: {
+        case midiMessageTypes.noteOn: {
             const velocity = event.messageData[1];
             if (velocity > 0) {
                 this.synth.noteOn(
@@ -62,7 +62,7 @@ export function processEventInternal(
             break;
         }
 
-        case messageTypes.noteOff: {
+        case midiMessageTypes.noteOff: {
             this.synth.noteOff(statusByteData.channel, event.messageData[0]);
             const toDelete = this.playingNotes.findIndex(
                 (n) =>
@@ -75,7 +75,7 @@ export function processEventInternal(
             break;
         }
 
-        case messageTypes.pitchBend:
+        case midiMessageTypes.pitchBend:
             this.synth.pitchWheel(
                 statusByteData.channel,
                 event.messageData[1],
@@ -83,7 +83,7 @@ export function processEventInternal(
             );
             break;
 
-        case messageTypes.controllerChange:
+        case midiMessageTypes.controllerChange:
             // empty tracks cannot cc change
             if (
                 this.midiData.isMultiPort &&
@@ -98,7 +98,7 @@ export function processEventInternal(
             );
             break;
 
-        case messageTypes.programChange:
+        case midiMessageTypes.programChange:
             // empty tracks cannot program change
             if (
                 this.midiData.isMultiPort &&
@@ -112,7 +112,7 @@ export function processEventInternal(
             );
             break;
 
-        case messageTypes.polyPressure:
+        case midiMessageTypes.polyPressure:
             this.synth.polyPressure(
                 statusByteData.channel,
                 event.messageData[0],
@@ -120,18 +120,18 @@ export function processEventInternal(
             );
             break;
 
-        case messageTypes.channelPressure:
+        case midiMessageTypes.channelPressure:
             this.synth.channelPressure(
                 statusByteData.channel,
                 event.messageData[0]
             );
             break;
 
-        case messageTypes.systemExclusive:
+        case midiMessageTypes.systemExclusive:
             this.synth.systemExclusive(event.messageData, offset);
             break;
 
-        case messageTypes.setTempo: {
+        case midiMessageTypes.setTempo: {
             event.messageData.currentIndex = 0;
             let tempoBPM =
                 60000000 / readBytesAsUintBigEndian(event.messageData, 3);
@@ -146,29 +146,29 @@ export function processEventInternal(
         }
 
         // recognized but ignored
-        case messageTypes.timeSignature:
-        case messageTypes.endOfTrack:
-        case messageTypes.midiChannelPrefix:
-        case messageTypes.songPosition:
-        case messageTypes.activeSensing:
-        case messageTypes.keySignature:
-        case messageTypes.sequenceNumber:
-        case messageTypes.sequenceSpecific:
-        case messageTypes.text:
-        case messageTypes.lyric:
-        case messageTypes.copyright:
-        case messageTypes.trackName:
-        case messageTypes.marker:
-        case messageTypes.cuePoint:
-        case messageTypes.instrumentName:
-        case messageTypes.programName:
+        case midiMessageTypes.timeSignature:
+        case midiMessageTypes.endOfTrack:
+        case midiMessageTypes.midiChannelPrefix:
+        case midiMessageTypes.songPosition:
+        case midiMessageTypes.activeSensing:
+        case midiMessageTypes.keySignature:
+        case midiMessageTypes.sequenceNumber:
+        case midiMessageTypes.sequenceSpecific:
+        case midiMessageTypes.text:
+        case midiMessageTypes.lyric:
+        case midiMessageTypes.copyright:
+        case midiMessageTypes.trackName:
+        case midiMessageTypes.marker:
+        case midiMessageTypes.cuePoint:
+        case midiMessageTypes.instrumentName:
+        case midiMessageTypes.programName:
             break;
 
-        case messageTypes.midiPort:
+        case midiMessageTypes.midiPort:
             this.assignMIDIPort(trackIndex, event.messageData[0]);
             break;
 
-        case messageTypes.reset:
+        case midiMessageTypes.reset:
             this.synth.stopAllChannels();
             this.synth.resetAllControllers();
             break;
@@ -176,10 +176,10 @@ export function processEventInternal(
         default:
             SpessaSynthWarn(
                 `%cUnrecognized Event: %c${event.messageStatusByte}%c status byte: %c${Object.keys(
-                    messageTypes
+                    midiMessageTypes
                 ).find(
                     (k) =>
-                        messageTypes[k as keyof typeof messageTypes] ===
+                        midiMessageTypes[k as keyof typeof midiMessageTypes] ===
                         statusByteData.status
                 )}`,
                 consoleColors.warn,

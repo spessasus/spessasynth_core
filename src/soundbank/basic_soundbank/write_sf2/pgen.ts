@@ -6,10 +6,10 @@ import { IndexedByteArray } from "../../../utils/indexed_array";
 import { writeRIFFChunkRaw } from "../riff_chunk";
 
 import { GEN_BYTE_SIZE, Generator } from "../generator";
-import { generatorTypes } from "../generator_types";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
 import type { BasicZone } from "../basic_zone";
+import { generatorTypes } from "../generator_types";
 
 export function getPGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // almost identical to igen, except the correct instrument instead of sample gen

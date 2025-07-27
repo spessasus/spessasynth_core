@@ -1,10 +1,10 @@
 import { portamentoTimeToSeconds } from "./portamento_time";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import { midiControllers } from "../../../midi/enums";
 import type { MIDIChannel } from "../engine_components/midi_audio_channel";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import { midiControllers } from "../../../midi/enums";
 import { customControllers } from "../../enums";
 
 /**

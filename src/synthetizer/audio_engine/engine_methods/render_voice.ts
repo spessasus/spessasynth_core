@@ -7,9 +7,9 @@ import {
 import { getLFOValue } from "../engine_components/lfo";
 import { WavetableOscillator } from "../engine_components/wavetable_oscillator";
 import { LowpassFilter } from "../engine_components/lowpass_filter";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import type { Voice } from "../engine_components/voice";
 import type { MIDIChannel } from "../engine_components/midi_audio_channel";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../enums";
 
 /**

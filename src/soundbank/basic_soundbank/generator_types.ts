@@ -70,7 +70,7 @@ export const generatorTypes = {
     vibLfoToFilterFc: 62
 } as const;
 
-export type generatorTypes =
+export type GeneratorType =
     (typeof generatorTypes)[keyof typeof generatorTypes];
 
 export const GENERATORS_AMOUNT = Object.keys(generatorTypes).length;

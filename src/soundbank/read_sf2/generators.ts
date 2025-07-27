@@ -2,7 +2,7 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { RiffChunk } from "../basic_soundbank/riff_chunk";
 import { signedInt16 } from "../../utils/byte_functions/little_endian";
 import { Generator } from "../basic_soundbank/generator";
-import type { generatorTypes } from "../basic_soundbank/generator_types";
+import type { GeneratorType } from "../basic_soundbank/generator_types";
 
 export class ReadGenerator extends Generator {
     /**
@@ -14,7 +14,7 @@ export class ReadGenerator extends Generator {
         // type, type, type, value
         const i = dataArray.currentIndex;
         this.generatorType = ((dataArray[i + 1] << 8) |
-            dataArray[i]) as generatorTypes;
+            dataArray[i]) as GeneratorType;
         this.generatorValue = signedInt16(dataArray[i + 2], dataArray[i + 3]);
         dataArray.currentIndex += 4;
     }

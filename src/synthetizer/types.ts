@@ -1,5 +1,5 @@
 import type { Voice } from "./audio_engine/engine_components/voice";
-import type { interpolationTypes, synthDisplayTypes } from "./enums";
+import type { InterpolationType, SynthDisplayType } from "./enums";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 export type NoteOnCallback = {
@@ -70,7 +70,7 @@ export type SynthDisplayCallback = {
     displayData: Uint8Array;
 
     /** The type of display. */
-    displayType: synthDisplayTypes; // The type of display (assuming 'synthDisplayTypes' is defined elsewhere).
+    displayType: SynthDisplayType; // The type of display (assuming 'synthDisplayTypes' is defined elsewhere).
 };
 export type PitchWheelCallback = {
     /** The MIDI channel number. */
@@ -200,7 +200,7 @@ export type MasterParameterType = {
     // The maximum number of voices that can be played at once.
     voiceCap: number;
     // The interpolation type used for sample playback.
-    interpolationType: interpolationTypes;
+    interpolationType: InterpolationType;
     // The MIDI system used by the synthesizer. (GM, GM2, GS, XG)
     midiSystem: SynthSystem;
     // Indicates whether the synthesizer is in monophonic retrigger mode.

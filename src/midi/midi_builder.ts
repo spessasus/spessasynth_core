@@ -2,7 +2,7 @@ import { BasicMIDI } from "./basic_midi";
 import { MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { SpessaSynthWarn } from "../utils/loggin";
-import { messageTypes } from "./enums";
+import { type MIDIMessageType, midiMessageTypes } from "./enums";
 
 /**
  * A class that helps to build a MIDI file from scratch.
@@ -46,7 +46,7 @@ export class MIDIBuilder extends BasicMIDI {
         array[1] = (tempo >> 8) & 0xff;
         array[2] = tempo & 0xff;
 
-        this.addEvent(ticks, 0, messageTypes.setTempo, array);
+        this.addEvent(ticks, 0, midiMessageTypes.setTempo, array);
     }
 
     /**
@@ -61,15 +61,21 @@ export class MIDIBuilder extends BasicMIDI {
         }
         this.tracks.push([]);
         this.tracks[this.tracksAmount - 1].push(
-            new MIDIMessage(0, messageTypes.endOfTrack, new IndexedByteArray(0))
+            new MIDIMessage(
+                0,
+                midiMessageTypes.endOfTrack,
+                new IndexedByteArray(0)
+            )
         );
         this.addEvent(
             0,
             this.tracksAmount - 1,
-            messageTypes.trackName,
+            midiMessageTypes.trackName,
             this.encoder.encode(name)
         );
-        this.addEvent(0, this.tracksAmount - 1, messageTypes.midiPort, [port]);
+        this.addEvent(0, this.tracksAmount - 1, midiMessageTypes.midiPort, [
+            port
+        ]);
     }
 
     /**
@@ -82,7 +88,7 @@ export class MIDIBuilder extends BasicMIDI {
     addEvent(
         ticks: number,
         track: number,
-        event: messageTypes,
+        event: MIDIMessageType,
         eventData: Uint8Array | Iterable<number>
     ) {
         if (!this.tracks[track]) {
@@ -90,7 +96,7 @@ export class MIDIBuilder extends BasicMIDI {
                 `Track ${track} does not exist. Add it via addTrack method.`
             );
         }
-        if (event === messageTypes.endOfTrack) {
+        if (event === midiMessageTypes.endOfTrack) {
             SpessaSynthWarn(
                 "The EndOfTrack is added automatically and does not influence the duration. Consider adding a voice event instead."
             );
@@ -105,7 +111,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.tracks[track].push(
             new MIDIMessage(
                 ticks,
-                messageTypes.endOfTrack,
+                midiMessageTypes.endOfTrack,
                 new IndexedByteArray(0)
             )
         );
@@ -132,7 +138,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (messageTypes.noteOn | channel) as messageTypes,
+            (midiMessageTypes.noteOn | channel) as MIDIMessageType,
             [midiNote, velocity]
         );
     }
@@ -157,7 +163,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (messageTypes.noteOff | channel) as messageTypes,
+            (midiMessageTypes.noteOff | channel) as MIDIMessageType,
             [midiNote, velocity]
         );
     }
@@ -180,7 +186,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (messageTypes.programChange | channel) as messageTypes,
+            (midiMessageTypes.programChange | channel) as MIDIMessageType,
             [programNumber]
         );
     }
@@ -206,7 +212,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (messageTypes.controllerChange | channel) as messageTypes,
+            (midiMessageTypes.controllerChange | channel) as MIDIMessageType,
             [controllerNumber, controllerValue]
         );
     }
@@ -232,7 +238,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (messageTypes.pitchBend | channel) as messageTypes,
+            (midiMessageTypes.pitchBend | channel) as MIDIMessageType,
             [LSB, MSB]
         );
     }

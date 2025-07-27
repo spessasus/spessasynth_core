@@ -1,7 +1,11 @@
 import { getEvent, MIDIMessage } from "../midi/midi_message";
 import { resetArray } from "../synthetizer/audio_engine/engine_components/controller_tables";
 import { nonResettableCCs } from "../synthetizer/audio_engine/engine_methods/controller_control/reset_controllers";
-import { messageTypes, midiControllers } from "../midi/enums";
+import {
+    type MIDIController,
+    midiControllers,
+    midiMessageTypes
+} from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer_engine";
 
 // an array with preset default values
@@ -49,7 +53,7 @@ export function playToInternal(
         });
     }
 
-    const isCCNonSkippable = (cc: midiControllers) =>
+    const isCCNonSkippable = (cc: MIDIController) =>
         cc === midiControllers.dataDecrement ||
         cc === midiControllers.dataIncrement ||
         cc === midiControllers.dataEntryMsb ||
@@ -68,7 +72,7 @@ export function playToInternal(
     const savedControllers: number[][] = [];
     for (let i = 0; i < channelsToSave; i++) {
         savedControllers.push(
-            Array.from(defaultControllerArray) as midiControllers[]
+            Array.from(defaultControllerArray) as MIDIController[]
         );
     }
 
@@ -83,10 +87,10 @@ export function playToInternal(
             return;
         }
         for (let i = 0; i < defaultControllerArray.length; i++) {
-            if (!nonResettableCCs.has(i as midiControllers)) {
+            if (!nonResettableCCs.has(i as MIDIController)) {
                 savedControllers[chan][i] = defaultControllerArray[
                     i
-                ] as midiControllers;
+                ] as MIDIController;
             }
         }
     }
@@ -114,27 +118,27 @@ export function playToInternal(
             (this.midiPortChannelOffsets[this.midiPorts[trackIndex]] || 0);
         switch (info.status) {
             // skip note messages
-            case messageTypes.noteOn:
+            case midiMessageTypes.noteOn:
                 // track portamento control as last note
                 if (savedControllers[channel] === undefined) {
                     savedControllers[channel] = Array.from(
                         defaultControllerArray
-                    ) as midiControllers[];
+                    ) as MIDIController[];
                 }
                 savedControllers[channel][midiControllers.portamentoControl] =
-                    event.messageData[0] as midiControllers;
+                    event.messageData[0] as MIDIController;
                 break;
 
-            case messageTypes.noteOff:
+            case midiMessageTypes.noteOff:
                 break;
 
             // skip pitch bend
-            case messageTypes.pitchBend:
+            case midiMessageTypes.pitchBend:
                 pitchBends[channel] =
                     (event.messageData[1] << 7) | event.messageData[0];
                 break;
 
-            case messageTypes.programChange: {
+            case midiMessageTypes.programChange: {
                 // empty tracks cannot program change
                 if (
                     this.midiData.isMultiPort &&
@@ -148,7 +152,7 @@ export function playToInternal(
                 break;
             }
 
-            case messageTypes.controllerChange: {
+            case midiMessageTypes.controllerChange: {
                 // empty tracks cannot controller change
                 if (
                     this.midiData.isMultiPort &&
@@ -157,8 +161,7 @@ export function playToInternal(
                     break;
                 }
                 // do not skip data entries
-                const controllerNumber = event
-                    .messageData[0] as midiControllers;
+                const controllerNumber = event.messageData[0] as MIDIController;
                 if (isCCNonSkippable(controllerNumber)) {
                     const ccV = event.messageData[1];
                     if (controllerNumber === midiControllers.bankSelect) {
@@ -183,10 +186,10 @@ export function playToInternal(
                     if (savedControllers[channel] === undefined) {
                         savedControllers[channel] = Array.from(
                             defaultControllerArray
-                        ) as midiControllers[];
+                        ) as MIDIController[];
                     }
                     savedControllers[channel][controllerNumber] = event
-                        .messageData[1] as midiControllers;
+                        .messageData[1] as MIDIController;
                 }
                 break;
             }
@@ -229,7 +232,7 @@ export function playToInternal(
                 savedControllers[channelNumber].forEach((value, index) => {
                     if (
                         value !== defaultControllerArray[index] &&
-                        !isCCNonSkippable(index as midiControllers)
+                        !isCCNonSkippable(index as MIDIController)
                     ) {
                         this.sendMIDICC(channelNumber, index, value);
                     }
@@ -272,7 +275,7 @@ export function playToInternal(
                 savedControllers[channelNumber].forEach((value, index) => {
                     if (
                         value !== defaultControllerArray[index] &&
-                        !isCCNonSkippable(index as midiControllers)
+                        !isCCNonSkippable(index as MIDIController)
                     ) {
                         this.synth.controllerChange(
                             channelNumber,

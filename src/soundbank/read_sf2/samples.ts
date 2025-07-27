@@ -1,10 +1,13 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian";
+import {
+    readLittleEndian,
+    signedInt8
+} from "../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { BasicSample } from "../basic_soundbank/basic_sample";
 import { consoleColors } from "../../utils/other";
-import type { sampleTypes } from "../enums";
+import type { SampleType } from "../enums";
 import type { RiffChunk } from "../basic_soundbank/riff_chunk";
 
 /**
@@ -57,7 +60,7 @@ export class SoundFontSample extends BasicSample {
         samplePitch: number,
         samplePitchCorrection: number,
         linkedSampleIndex: number,
-        sampleType: sampleTypes,
+        sampleType: SampleType,
         sampleDataArray: IndexedByteArray | Float32Array,
         sampleIndex: number
     ) {
@@ -71,7 +74,7 @@ export class SoundFontSample extends BasicSample {
             sampleRate,
             samplePitch,
             samplePitchCorrection,
-            sampleType as sampleTypes,
+            sampleType as SampleType,
             sampleLoopStartIndex - sampleStartIndex / 2,
             sampleLoopEndIndex - sampleStartIndex / 2
         );
@@ -269,7 +272,7 @@ function readSample(
 
     // read the link to the other channel
     const sampleLink = readLittleEndian(sampleHeaderData, 2);
-    const sampleType = readLittleEndian(sampleHeaderData, 2) as sampleTypes;
+    const sampleType = readLittleEndian(sampleHeaderData, 2) as SampleType;
 
     return new SoundFontSample(
         sampleName,

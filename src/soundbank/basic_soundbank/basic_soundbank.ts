@@ -14,11 +14,11 @@ import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
 import { isXGDrums } from "../../utils/xg_hacks";
-import { generatorTypes } from "./generator_types";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from "../types";
+import { generatorTypes } from "./generator_types";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.

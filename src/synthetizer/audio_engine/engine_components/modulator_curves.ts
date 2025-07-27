@@ -3,7 +3,10 @@
  * precomputes modulator concave and convex curves and calculates a curve value for a given polarity, direction and type
  */
 import type { ModulatorNumericBool } from "../../../soundbank/types";
-import { modulatorCurveTypes } from "../../../soundbank/enums";
+import {
+    type ModulatorCurveType,
+    modulatorCurveTypes
+} from "../../../soundbank/enums";
 
 // the length of the precomputed curve tables
 export const MOD_PRECOMPUTED_LENGTH = 16384;
@@ -35,7 +38,7 @@ for (let i = 1; i < MOD_PRECOMPUTED_LENGTH - 1; i++) {
  */
 export function getModulatorCurveValue(
     direction: ModulatorNumericBool,
-    curveType: modulatorCurveTypes,
+    curveType: ModulatorCurveType,
     value: number,
     polarity: ModulatorNumericBool
 ): number {

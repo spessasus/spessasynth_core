@@ -1,10 +1,10 @@
 import { BasicPresetZone } from "../basic_soundbank/basic_preset_zone";
 import { Generator } from "../basic_soundbank/generator";
 import { Modulator } from "../basic_soundbank/modulator";
-import { generatorTypes } from "../basic_soundbank/generator_types";
 import type { BasicPreset } from "../basic_soundbank/basic_preset";
 import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
 import type { SoundFontPreset } from "./presets";
+import { generatorTypes } from "../basic_soundbank/generator_types";
 
 /**
  * preset_zones.js

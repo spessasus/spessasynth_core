@@ -4,7 +4,7 @@ import {
 } from "../../utils/byte_functions/little_endian";
 import { DecodedModulator, Modulator } from "../basic_soundbank/modulator";
 import type { RiffChunk } from "../basic_soundbank/riff_chunk";
-import type { generatorTypes } from "../basic_soundbank/generator_types";
+import type { GeneratorType } from "../basic_soundbank/generator_types";
 
 /**
  * Reads the modulator read
@@ -27,7 +27,7 @@ export function readModulators(modulatorChunk: RiffChunk): Modulator[] {
             new DecodedModulator(
                 sourceEnum,
                 secondarySourceEnum,
-                destination as generatorTypes,
+                destination as GeneratorType,
                 amount,
                 transformType
             )

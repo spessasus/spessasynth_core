@@ -1,4 +1,4 @@
-import { interpolationTypes } from "../../enums";
+import { type InterpolationType, interpolationTypes } from "../../enums";
 import type { Voice } from "./voice";
 
 /**
@@ -16,7 +16,7 @@ export class WavetableOscillator {
     static getSample(
         voice: Voice,
         outputBuffer: Float32Array,
-        interpolation: interpolationTypes
+        interpolation: InterpolationType
     ) {
         const step = voice.currentTuningCalculated * voice.sample.playbackStep;
         // why not?

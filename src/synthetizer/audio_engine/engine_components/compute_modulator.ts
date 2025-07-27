@@ -2,9 +2,9 @@ import { getModulatorCurveValue, MOD_PRECOMPUTED_LENGTH } from "./modulator_curv
 import { VolumeEnvelope } from "./volume_envelope";
 import { ModulationEnvelope } from "./modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import { type modulatorCurveTypes, modulatorSources } from "../../../soundbank/enums";
+import { generatorTypes, type ModulatorCurveType, modulatorSources } from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";
-import { generatorLimits, generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_audio_channel";
 import type { Voice } from "./voice";
 
@@ -173,7 +173,7 @@ export function computeModulators(
     }
 
     // Optimized mode: calculate only modulators that use the given source
-    const volumeEnvelopeNeedsRecalculation = new Set<generatorTypes>([
+    const volumeEnvelopeNeedsRecalculation = new Set<GeneratorType>([
         generatorTypes.initialAttenuation,
         generatorTypes.delayVolEnv,
         generatorTypes.attackVolEnv,
@@ -185,7 +185,7 @@ export function computeModulators(
         generatorTypes.keyNumToVolEnvDecay
     ]);
 
-    const computedDestinations = new Set<generatorTypes>();
+    const computedDestinations = new Set<GeneratorType>();
 
     modulators.forEach((mod) => {
         if (
@@ -238,7 +238,7 @@ const transforms: [
 ][] = [];
 
 for (let c = 0; c < 4; c++) {
-    const curve = c as modulatorCurveTypes;
+    const curve = c as ModulatorCurveType;
     transforms[curve] = [
         [
             new Float32Array(MOD_PRECOMPUTED_LENGTH),

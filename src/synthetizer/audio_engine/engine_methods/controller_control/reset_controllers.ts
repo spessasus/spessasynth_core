@@ -8,11 +8,11 @@ import {
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../synth_constants";
 import { getDefaultBank } from "../../../../utils/xg_hacks";
-import { midiControllers } from "../../../../midi/enums";
+import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
 import type { SpessaSynthProcessor } from "../../main_processor";
-import { modulatorSources } from "../../../../soundbank/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
+import { modulatorSources } from "../../../../soundbank/enums";
 
 /**
  * Executes a full system reset of all controllers.
@@ -174,7 +174,7 @@ export function resetControllers(this: MIDIChannel) {
     this.resetParameters();
 }
 
-export const nonResettableCCs = new Set<midiControllers>([
+export const nonResettableCCs = new Set<MIDIController>([
     midiControllers.bankSelect,
     midiControllers.lsbForControl0BankSelect,
     midiControllers.mainVolume,
@@ -214,7 +214,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     for (let i = 0; i < 128; i++) {
         const resetValue = resetArray[i];
         if (
-            !nonResettableCCs.has(i as midiControllers) &&
+            !nonResettableCCs.has(i as MIDIController) &&
             resetValue !== this.midiControllers[i]
         ) {
             if (i === midiControllers.portamentoControl) {

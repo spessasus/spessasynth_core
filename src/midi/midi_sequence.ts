@@ -1,8 +1,8 @@
 import { IndexedByteArray } from "../utils/indexed_array";
-import type { RMIDINFOChunks } from "./enums";
+import type { RMIDINFOChunk } from "./enums";
 import type { MIDIFormat, MIDILoop, TempoChange } from "./types";
 
-import type { KeyRange } from "../utils/global_types";
+import type { KeyRange } from "../soundbank/types";
 
 /**
  * This is the base type for MIDI files. It contains all the "metadata" and information.
@@ -119,7 +119,7 @@ class MIDISequenceData {
      * Otherwise, this field is undefined.
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
      */
-    RMIDInfo: Partial<Record<RMIDINFOChunks, IndexedByteArray>> = {};
+    RMIDInfo: Partial<Record<RMIDINFOChunk, IndexedByteArray>> = {};
 
     /**
      * The bank offset used for RMID files.
@@ -203,7 +203,7 @@ class MIDISequenceData {
         this.keyRange = { ...sequence.keyRange };
         this.RMIDInfo = {};
         for (const [key, value] of Object.entries(sequence.RMIDInfo)) {
-            this.RMIDInfo[key as RMIDINFOChunks] = new IndexedByteArray(value);
+            this.RMIDInfo[key as RMIDINFOChunk] = new IndexedByteArray(value);
         }
     }
 }

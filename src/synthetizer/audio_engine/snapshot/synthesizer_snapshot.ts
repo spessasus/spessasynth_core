@@ -3,7 +3,7 @@ import { consoleColors } from "../../../utils/other";
 import { ChannelSnapshot } from "./channel_snapshot";
 import { type KeyModifier } from "../engine_components/key_modifier_manager";
 import { type SpessaSynthProcessor } from "../main_processor";
-import type { interpolationTypes } from "../../enums";
+import type { InterpolationType } from "../../enums";
 import type { SynthSystem } from "../../types";
 
 /**
@@ -34,7 +34,7 @@ export class SynthesizerSnapshot {
     /**
      * The synth's interpolation type.
      */
-    interpolation: interpolationTypes;
+    interpolation: InterpolationType;
 
     /**
      * The synth's system. Values can be "gs", "gm", "gm2" or "xg".
@@ -51,7 +51,7 @@ export class SynthesizerSnapshot {
         keyMappings: (KeyModifier | undefined)[][],
         mainVolume: number,
         pan: number,
-        interpolation: interpolationTypes,
+        interpolation: InterpolationType,
         system: SynthSystem,
         transposition: number
     ) {

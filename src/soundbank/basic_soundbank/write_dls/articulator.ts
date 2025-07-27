@@ -3,21 +3,21 @@ import {
     writeDword,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
-import type { DLSDestinations, DLSSources } from "../../enums";
+import type { DLSDestination, DLSSource } from "../../enums";
 
 export class Articulator {
-    source: DLSSources;
-    control: DLSSources;
-    destination: DLSDestinations;
+    source: DLSSource;
+    control: DLSSource;
+    destination: DLSDestination;
     // like SF2 amount
     scale: number;
     // like sf2 source transforms
     transform: number;
 
     constructor(
-        source: DLSSources,
-        control: DLSSources,
-        destination: DLSDestinations,
+        source: DLSSource,
+        control: DLSSource,
+        destination: DLSDestination,
         scale: number,
         transform: number
     ) {
