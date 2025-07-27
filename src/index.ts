@@ -20,7 +20,7 @@ import { ChannelSnapshot } from "./synthetizer/audio_engine/snapshot/channel_sna
 import { BasicSoundBank } from "./soundbank/basic_soundbank/basic_soundbank";
 import {
     BasicSample,
-    CreatedSample
+    EmptySample
 } from "./soundbank/basic_soundbank/basic_sample";
 import { BasicPresetZone } from "./soundbank/basic_soundbank/basic_preset_zone";
 import { BasicInstrument } from "./soundbank/basic_soundbank/basic_instrument";
@@ -100,7 +100,7 @@ export {
     BasicZone,
     BasicGlobalZone,
     BasicSample,
-    CreatedSample,
+    EmptySample,
     BasicInstrumentZone,
     BasicInstrument,
     BasicPreset,

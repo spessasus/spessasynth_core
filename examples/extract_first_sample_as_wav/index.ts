@@ -13,7 +13,7 @@ const output = args[1];
 const file = fs.readFileSync(args[0]);
 const bank = SoundBankLoader.fromArrayBuffer(file.buffer);
 const sample = bank.samples[0];
-console.info("Exporting sample:", sample.sampleName, "...");
+console.info("Exporting sample:", sample.name, "...");
 const wav = audioToWav([sample.getAudioData()], sample.sampleRate);
 fs.writeFileSync(output, new Uint8Array(wav));
 console.info("Done!");

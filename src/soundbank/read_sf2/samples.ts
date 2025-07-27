@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    readLittleEndian,
-    signedInt8
-} from "../../utils/byte_functions/little_endian";
+import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { BasicSample } from "../basic_soundbank/basic_sample";
@@ -79,7 +76,7 @@ export class SoundFontSample extends BasicSample {
             sampleLoopEndIndex - sampleStartIndex / 2
         );
         this.dataOverridden = false;
-        this.sampleName = sampleName;
+        this.name = sampleName;
         // in bytes
         this.startByteOffset = sampleStartIndex;
         this.endByteOffset = sampleEndIndex;
@@ -96,8 +93,8 @@ export class SoundFontSample extends BasicSample {
         if (sampleDataArray instanceof IndexedByteArray) {
             if (compressed) {
                 // correct loop points
-                this.sampleLoopStartIndex += this.startByteOffset / 2;
-                this.sampleLoopEndIndex += this.startByteOffset / 2;
+                this.loopStart += this.startByteOffset / 2;
+                this.loopEnd += this.startByteOffset / 2;
 
                 // copy the compressed data, it can be preserved during writing
                 this.compressedData = sampleDataArray.slice(
@@ -131,7 +128,7 @@ export class SoundFontSample extends BasicSample {
         if (!linked) {
             // log as info because it's common and not really dangerous
             SpessaSynthInfo(
-                `%cInvalid linked sample for ${this.sampleName}. Setting to mono.`,
+                `%cInvalid linked sample for ${this.name}. Setting to mono.`,
                 consoleColors.warn
             );
             this.unlinkSample();
@@ -139,7 +136,7 @@ export class SoundFontSample extends BasicSample {
             // check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
             if (linked.linkedSample) {
                 SpessaSynthInfo(
-                    `%cInvalid linked sample for ${this.sampleName}: Already linked to ${linked.linkedSample.sampleName}`,
+                    `%cInvalid linked sample for ${this.name}: Already linked to ${linked.linkedSample.name}`,
                     consoleColors.warn
                 );
                 this.unlinkSample();
@@ -147,10 +144,6 @@ export class SoundFontSample extends BasicSample {
                 this.setLinkedSample(linked, this.sampleType);
             }
         }
-    }
-
-    setAudioData(audioData: Float32Array) {
-        super.setAudioData(audioData);
     }
 
     /**
@@ -174,7 +167,7 @@ export class SoundFontSample extends BasicSample {
         const byteLength = this.endByteOffset - this.startByteOffset;
         if (byteLength < 1) {
             SpessaSynthWarn(
-                `Invalid sample ${this.sampleName}! Invalid length: ${byteLength}`
+                `Invalid sample ${this.name}! Invalid length: ${byteLength}`
             );
             return new Float32Array(1);
         }

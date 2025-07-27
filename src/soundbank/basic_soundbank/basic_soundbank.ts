@@ -9,7 +9,7 @@ import { consoleColors } from "../../utils/other";
 import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
 import { defaultModulators, Modulator } from "./modulator";
 import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
-import { BasicSample, CreatedSample } from "./basic_sample";
+import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
@@ -78,7 +78,7 @@ export class BasicSoundBank {
             this.addPresets(...data.presets);
             const instrumentList: BasicInstrument[] = [];
             for (const preset of data.presets) {
-                for (const zone of preset.presetZones) {
+                for (const zone of preset.zones) {
                     if (
                         zone.instrument &&
                         !instrumentList.includes(zone.instrument)
@@ -92,7 +92,7 @@ export class BasicSoundBank {
             const sampleList: BasicSample[] = [];
 
             for (const instrument of instrumentList) {
-                for (const zone of instrument.instrumentZones) {
+                for (const zone of instrument.zones) {
                     if (zone.sample && !sampleList.includes(zone.sample)) {
                         sampleList.push(zone.sample);
                     }
@@ -153,13 +153,15 @@ export class BasicSoundBank {
         for (let i = 0; i < 128; i++) {
             sampleData[i] = (i / 128) * 2 - 1;
         }
-        const sample = new CreatedSample("Saw", 44100, sampleData);
-        sample.samplePitch = 65;
-        sample.samplePitchCorrection = 20;
+        const sample = new EmptySample();
+        sample.name = "Saw";
+        sample.originalKey = 65;
+        sample.pitchCorrection = 20;
+        sample.setAudioData(sampleData, 44100);
         font.addSamples(sample);
 
         const inst = new BasicInstrument();
-        inst.instrumentName = "Saw Wave";
+        inst.name = "Saw Wave";
         inst.globalZone.addGenerators(
             new Generator(generatorTypes.initialAttenuation, 375),
             new Generator(generatorTypes.releaseVolEnv, -1000),
@@ -173,7 +175,7 @@ export class BasicSoundBank {
         font.addInstruments(inst);
 
         const preset = new BasicPreset(font);
-        preset.presetName = "Saw Wave";
+        preset.name = "Saw Wave";
         preset.createZone(inst);
 
         font.addPresets(preset);
@@ -226,25 +228,23 @@ export class BasicSoundBank {
      * @returns copied sample, if a sample exists with that name, it is returned instead
      */
     cloneSample(sample: BasicSample): BasicSample {
-        const duplicate = this.samples.find(
-            (s) => s.sampleName === sample.sampleName
-        );
+        const duplicate = this.samples.find((s) => s.name === sample.name);
         if (duplicate) {
             return duplicate;
         }
         const newSample = new BasicSample(
-            sample.sampleName,
+            sample.name,
             sample.sampleRate,
-            sample.samplePitch,
-            sample.samplePitchCorrection,
+            sample.originalKey,
+            sample.pitchCorrection,
             sample.sampleType,
-            sample.sampleLoopStartIndex,
-            sample.sampleLoopEndIndex
+            sample.loopStart,
+            sample.loopEnd
         );
         if (sample.isCompressed && sample.compressedData) {
             newSample.setCompressedData(sample.compressedData.slice());
         } else {
-            newSample.setAudioData(sample.getAudioData());
+            newSample.setAudioData(sample.getAudioData(), sample.sampleRate);
         }
         this.addSamples(newSample);
         if (sample.linkedSample) {
@@ -263,15 +263,15 @@ export class BasicSoundBank {
      */
     cloneInstrument(instrument: BasicInstrument): BasicInstrument {
         const duplicate = this.instruments.find(
-            (i) => i.instrumentName === instrument.instrumentName
+            (i) => i.name === instrument.name
         );
         if (duplicate) {
             return duplicate;
         }
         const newInstrument = new BasicInstrument();
-        newInstrument.instrumentName = instrument.instrumentName;
+        newInstrument.name = instrument.name;
         newInstrument.globalZone.copyFrom(instrument.globalZone);
-        for (const zone of instrument.instrumentZones) {
+        for (const zone of instrument.zones) {
             const copiedZone = newInstrument.createZone(
                 this.cloneSample(zone.sample)
             );
@@ -287,21 +287,19 @@ export class BasicSoundBank {
      * @returns the copied preset, if a preset exists with that name, it is returned instead
      */
     clonePreset(preset: BasicPreset): BasicPreset {
-        const duplicate = this.presets.find(
-            (p) => p.presetName === preset.presetName
-        );
+        const duplicate = this.presets.find((p) => p.name === preset.name);
         if (duplicate) {
             return duplicate;
         }
         const newPreset = new BasicPreset(this);
-        newPreset.presetName = preset.presetName;
+        newPreset.name = preset.name;
         newPreset.bank = preset.bank;
         newPreset.program = preset.program;
         newPreset.library = preset.library;
         newPreset.genre = preset.genre;
         newPreset.morphology = preset.morphology;
         newPreset.globalZone.copyFrom(preset.globalZone);
-        for (const zone of preset.presetZones) {
+        for (const zone of preset.zones) {
             const copiedZone = newPreset.createZone(
                 this.cloneInstrument(zone.instrument)
             );
@@ -334,10 +332,10 @@ export class BasicSoundBank {
             let trimmedIZones = 0;
             for (
                 let iZoneIndex = 0;
-                iZoneIndex < instrument.instrumentZones.length;
+                iZoneIndex < instrument.zones.length;
                 iZoneIndex++
             ) {
-                const iZone = instrument.instrumentZones[iZoneIndex];
+                const iZone = instrument.zones[iZoneIndex];
                 const iKeyRange = iZone.keyRange;
                 const iVelRange = iZone.velRange;
                 let isIZoneUsed = false;
@@ -354,7 +352,7 @@ export class BasicSoundBank {
                 }
                 if (!isIZoneUsed && iZone.sample) {
                     SpessaSynthInfo(
-                        `%c${iZone.sample.sampleName}%c removed from %c${instrument.instrumentName}%c.`,
+                        `%c${iZone.sample.name}%c removed from %c${instrument.name}%c.`,
                         consoleColors.recognized,
                         consoleColors.info,
                         consoleColors.recognized,
@@ -364,7 +362,7 @@ export class BasicSoundBank {
                         trimmedIZones++;
                         iZoneIndex--;
                         SpessaSynthInfo(
-                            `%c${iZone.sample.sampleName}%c deleted`,
+                            `%c${iZone.sample.name}%c deleted`,
                             consoleColors.recognized,
                             consoleColors.info
                         );
@@ -396,7 +394,7 @@ export class BasicSoundBank {
             const used = usedProgramsAndKeys[string];
             if (used === undefined) {
                 SpessaSynthInfo(
-                    `%cDeleting preset %c${p.presetName}%c and its zones`,
+                    `%cDeleting preset %c${p.name}%c and its zones`,
                     consoleColors.info,
                     consoleColors.recognized,
                     consoleColors.info
@@ -412,19 +410,19 @@ export class BasicSoundBank {
                     };
                 });
                 SpessaSynthGroupCollapsed(
-                    `%cTrimming %c${p.presetName}`,
+                    `%cTrimming %c${p.name}`,
                     consoleColors.info,
                     consoleColors.recognized
                 );
-                SpessaSynthInfo(`Keys for ${p.presetName}:`, combos);
+                SpessaSynthInfo(`Keys for ${p.name}:`, combos);
                 let trimmedZones = 0;
                 // clean the preset to only use zones that are used
                 for (
                     let zoneIndex = 0;
-                    zoneIndex < p.presetZones.length;
+                    zoneIndex < p.zones.length;
                     zoneIndex++
                 ) {
-                    const zone = p.presetZones[zoneIndex];
+                    const zone = p.zones[zoneIndex];
                     const keyRange = zone.keyRange;
                     const velRange = zone.velRange;
                     // check if any of the combos matches the zone
@@ -444,7 +442,7 @@ export class BasicSoundBank {
                                 combos
                             );
                             SpessaSynthInfo(
-                                `%cTrimmed off %c${trimmedIZones}%c zones from %c${zone.instrument.instrumentName}`,
+                                `%cTrimmed off %c${trimmedIZones}%c zones from %c${zone.instrument.name}`,
                                 consoleColors.info,
                                 consoleColors.recognized,
                                 consoleColors.info,
@@ -463,7 +461,7 @@ export class BasicSoundBank {
                     }
                 }
                 SpessaSynthInfo(
-                    `%cTrimmed off %c${trimmedZones}%c zones from %c${p.presetName}`,
+                    `%cTrimmed off %c${trimmedZones}%c zones from %c${p.name}`,
                     consoleColors.info,
                     consoleColors.recognized,
                     consoleColors.info,
@@ -611,7 +609,7 @@ export class BasicSoundBank {
         }
         if (preset) {
             SpessaSynthWarn(
-                `%cPreset ${bankNr}.${programNr} not found. Replaced with %c${preset.presetName} (${preset.bank}.${preset.program})`,
+                `%cPreset ${bankNr}.${programNr} not found. Replaced with %c${preset.name} (${preset.bank}.${preset.program})`,
                 consoleColors.warn,
                 consoleColors.recognized
             );
@@ -621,7 +619,7 @@ export class BasicSoundBank {
         if (!preset) {
             SpessaSynthWarn(
                 `Preset ${programNr} not found. Defaulting to`,
-                this.presets[0].presetName
+                this.presets[0].name
             );
             preset = this.presets[0];
         }
@@ -632,11 +630,11 @@ export class BasicSoundBank {
      * gets preset by name
      */
     getPresetByName(presetName: string): BasicPreset {
-        let preset = this.presets.find((p) => p.presetName === presetName);
+        let preset = this.presets.find((p) => p.name === presetName);
         if (!preset) {
             SpessaSynthWarn(
                 "Preset not found. Defaulting to:",
-                this.presets[0].presetName
+                this.presets[0].name
             );
             preset = this.presets[0];
         }

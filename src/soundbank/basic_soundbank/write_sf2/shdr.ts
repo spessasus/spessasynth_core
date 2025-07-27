@@ -22,8 +22,8 @@ export function getSHDR(
     let maxSampleLink = 0;
     bank.samples.forEach((sample, index) => {
         // sample name
-        writeStringAsBytes(shdrData, sample.sampleName.substring(0, 20), 20);
-        writeStringAsBytes(xshdrData, sample.sampleName.substring(20), 20);
+        writeStringAsBytes(shdrData, sample.name.substring(0, 20), 20);
+        writeStringAsBytes(xshdrData, sample.name.substring(20), 20);
         // start offset
         const dwStart = smplStartOffsets[index];
         writeDword(shdrData, dwStart);
@@ -33,8 +33,8 @@ export function getSHDR(
         writeDword(shdrData, dwEnd);
         xshdrData.currentIndex += 4;
         // loop is stored as relative in sample points, change it to absolute sample points here
-        let loopStart = sample.sampleLoopStartIndex + dwStart;
-        let loopEnd = sample.sampleLoopEndIndex + dwStart;
+        let loopStart = sample.loopStart + dwStart;
+        let loopEnd = sample.loopEnd + dwStart;
         if (sample.isCompressed) {
             // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
             loopStart -= dwStart;
@@ -45,8 +45,8 @@ export function getSHDR(
         // sample rate
         writeDword(shdrData, sample.sampleRate);
         // pitch and correction
-        shdrData[shdrData.currentIndex++] = sample.samplePitch;
-        shdrData[shdrData.currentIndex++] = sample.samplePitchCorrection;
+        shdrData[shdrData.currentIndex++] = sample.originalKey;
+        shdrData[shdrData.currentIndex++] = sample.pitchCorrection;
         // skip all those for xshdr
         xshdrData.currentIndex += 14;
         // sample link

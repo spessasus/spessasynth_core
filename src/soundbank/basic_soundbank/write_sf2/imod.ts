@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeLittleEndian,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian";
 import { writeRIFFChunkRaw } from "../riff_chunk";
 import { MOD_BYTE_SIZE } from "../modulator";
 import type { BasicSoundBank } from "../basic_soundbank";
@@ -20,7 +17,7 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     for (const inst of bank.instruments) {
         imodSize += inst.globalZone.modulators.length * MOD_BYTE_SIZE;
         // start with one mod for global
-        imodSize += inst.instrumentZones.reduce(
+        imodSize += inst.zones.reduce(
             (sum, z) => z.modulators.length * MOD_BYTE_SIZE + sum,
             0
         );
@@ -30,7 +27,7 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const writeZone = (z: BasicZone) => {
         for (const mod of z.modulators) {
             writeWord(imodData, mod.getSourceEnum());
-            writeWord(imodData, mod.modulatorDestination);
+            writeWord(imodData, mod.destination);
             writeWord(imodData, mod.transformAmount);
             writeWord(imodData, mod.getSecSrcEnum());
             writeWord(imodData, mod.transformType);
@@ -40,7 +37,7 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     for (const inst of bank.instruments) {
         // global
         writeZone(inst.globalZone);
-        for (const instrumentZone of inst.instrumentZones) {
+        for (const instrumentZone of inst.zones) {
             writeZone(instrumentZone);
         }
     }

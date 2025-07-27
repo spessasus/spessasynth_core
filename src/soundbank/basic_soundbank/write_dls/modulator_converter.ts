@@ -278,7 +278,7 @@ export function getDLSArticulatorFromSf2Modulator(
         return undefined;
     }
     // Attenuation is the opposite of gain. Invert.
-    if (mod.modulatorDestination === generatorTypes.initialAttenuation) {
+    if (mod.destination === generatorTypes.initialAttenuation) {
         sourceDirection = sourceDirection === 1 ? 0 : 1;
     }
     let control: number | undefined = getDLSSourceFromSf2Source(
@@ -295,7 +295,7 @@ export function getDLSArticulatorFromSf2Modulator(
         return undefined;
     }
     const dlsDestinationFromSf2 = getDLSDestinationFromSf2(
-        mod.modulatorDestination,
+        mod.destination,
         mod.transformAmount
     );
     let destination = dlsDestinationFromSf2;
@@ -305,7 +305,7 @@ export function getDLSArticulatorFromSf2Modulator(
         amt = dlsDestinationFromSf2.amount;
     }
     const specialCombo = checkSF2SpecialCombos(
-        mod.modulatorDestination,
+        mod.destination,
         mod.transformAmount
     );
     if (specialCombo !== undefined) {
@@ -323,7 +323,7 @@ export function getDLSArticulatorFromSf2Modulator(
         source = specialCombo.source;
         destination = specialCombo.dest;
     } else if (destination === undefined) {
-        SpessaSynthWarn(`Invalid destination: ${mod.modulatorDestination}`);
+        SpessaSynthWarn(`Invalid destination: ${mod.destination}`);
         return undefined;
     }
 

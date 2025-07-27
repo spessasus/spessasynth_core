@@ -12,12 +12,12 @@ export class BasicInstrument {
     /**
      * The instrument's name
      */
-    instrumentName: string = "";
+    name: string = "";
 
     /**
      * The instrument's zones
      */
-    instrumentZones: BasicInstrumentZone[] = [];
+    zones: BasicInstrumentZone[] = [];
 
     /**
      * Instrument's global zone
@@ -35,23 +35,13 @@ export class BasicInstrument {
         return this.linkedPresets.length;
     }
 
-    // The instrument's name.
-    get name(): string {
-        return this.instrumentName;
-    }
-
-    // The instrument's name.
-    set name(value: string) {
-        this.instrumentName = value;
-    }
-
     /**
      * Creates a new instrument zone and returns it.
      * @param sample The sample to use in the zone.
      */
     createZone(sample: BasicSample): BasicInstrumentZone {
         const zone = new BasicInstrumentZone(this, sample);
-        this.instrumentZones.push(zone);
+        this.zones.push(zone);
         return zone;
     }
 
@@ -61,7 +51,7 @@ export class BasicInstrument {
      */
     linkTo(preset: BasicPreset) {
         this.linkedPresets.push(preset);
-        this.instrumentZones.forEach((z) => z.useCount++);
+        this.zones.forEach((z) => z.useCount++);
     }
 
     /**
@@ -72,17 +62,17 @@ export class BasicInstrument {
         const index = this.linkedPresets.indexOf(preset);
         if (index < 0) {
             SpessaSynthWarn(
-                `Cannot unlink ${preset.presetName} from ${this.instrumentName}: not linked.`
+                `Cannot unlink ${preset.name} from ${this.name}: not linked.`
             );
             return;
         }
         this.linkedPresets.splice(index, 1);
-        this.instrumentZones.forEach((z) => z.useCount--);
+        this.zones.forEach((z) => z.useCount--);
     }
 
     // Deletes unused zones of the instrument
     deleteUnusedZones() {
-        this.instrumentZones = this.instrumentZones.filter((z) => {
+        this.zones = this.zones.filter((z) => {
             const stays = z.useCount > 0;
             if (!stays) {
                 z.sample.unlinkFrom(this);
@@ -95,10 +85,10 @@ export class BasicInstrument {
     deleteInstrument() {
         if (this.useCount > 0) {
             throw new Error(
-                `Cannot delete an instrument that is used by: ${this.linkedPresets.map((p) => p.presetName)}.`
+                `Cannot delete an instrument that is used by: ${this.linkedPresets.map((p) => p.name)}.`
             );
         }
-        this.instrumentZones.forEach((z) => z.sample.unlinkFrom(this));
+        this.zones.forEach((z) => z.sample.unlinkFrom(this));
     }
 
     /**
@@ -108,11 +98,11 @@ export class BasicInstrument {
      * @returns if the zone has been deleted
      */
     deleteZone(index: number, force: boolean = false): boolean {
-        const zone = this.instrumentZones[index];
+        const zone = this.zones[index];
         zone.useCount -= 1;
         if (zone.useCount < 1 || force) {
             zone.sample.unlinkFrom(this);
-            this.instrumentZones.splice(index, 1);
+            this.zones.splice(index, 1);
             return true;
         }
         return false;

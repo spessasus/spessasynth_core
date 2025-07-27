@@ -23,7 +23,7 @@ export class SoundFontInstrument extends BasicInstrument {
      */
     constructor(instrumentChunk: RiffChunk) {
         super();
-        this.instrumentName = readBytesAsString(instrumentChunk.chunkData, 20);
+        this.name = readBytesAsString(instrumentChunk.chunkData, 20);
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
 
@@ -38,7 +38,7 @@ export class SoundFontInstrument extends BasicInstrument {
             generators,
             samples
         );
-        this.instrumentZones.push(z);
+        this.zones.push(z);
         return z;
     }
 }

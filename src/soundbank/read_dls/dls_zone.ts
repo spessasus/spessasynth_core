@@ -35,7 +35,7 @@ export class DLSZone extends BasicInstrumentZone {
         );
 
         // correct tuning if needed
-        samplePitchCorrection -= sample.samplePitchCorrection;
+        samplePitchCorrection -= sample.pitchCorrection;
         const coarseTune = Math.trunc(samplePitchCorrection / 100);
         if (coarseTune !== 0) {
             this.addGenerators(
@@ -51,8 +51,8 @@ export class DLSZone extends BasicInstrumentZone {
 
         // correct loop if needed
         if (loopingMode !== 0) {
-            const diffStart = loop.start - sample.sampleLoopStartIndex;
-            const diffEnd = loop.end - sample.sampleLoopEndIndex;
+            const diffStart = loop.start - sample.loopStart;
+            const diffEnd = loop.end - sample.loopEnd;
             if (diffStart !== 0) {
                 const fine = diffStart % 32768;
                 this.addGenerators(
@@ -87,7 +87,7 @@ export class DLSZone extends BasicInstrumentZone {
             }
         }
         // correct the key if needed
-        if (sampleKey !== sample.samplePitch) {
+        if (sampleKey !== sample.originalKey) {
             this.addGenerators(
                 new Generator(generatorTypes.overridingRootKey, sampleKey)
             );

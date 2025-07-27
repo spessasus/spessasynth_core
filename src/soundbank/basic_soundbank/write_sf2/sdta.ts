@@ -44,17 +44,17 @@ export async function getSDTA(
             await s.compressSample(vorbisFunc);
         }
         if (decompress) {
-            s.setAudioData(s.getAudioData());
+            s.setAudioData(s.getAudioData(), s.sampleRate);
         }
 
         // raw data: either copy s16le or encoded vorbis or encode manually if overridden
         // use set timeout so the thread doesn't die
         const r = s.getRawData(true);
         writtenCount++;
-        progressFunc?.(s.sampleName, writtenCount, bank.samples.length);
+        progressFunc?.(s.name, writtenCount, bank.samples.length);
 
         SpessaSynthInfo(
-            `%cEncoded sample %c${writtenCount}. ${s.sampleName}%c of %c${bank.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
+            `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,

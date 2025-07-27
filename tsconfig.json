@@ -29,7 +29,8 @@
     "erasableSyntaxOnly": true,
     "noUncheckedSideEffectImports": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "noEmitOnError": true
   },
   "include": [
     "src"

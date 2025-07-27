@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeDword,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
 import { writeWavesample } from "./wsmp";
 import { writeArticulator } from "./art2";
@@ -46,7 +43,7 @@ export function writeDLSRegion(
 
     let rootKey = zone.getGeneratorValue(
         generatorTypes.overridingRootKey,
-        zone.sample.samplePitch || 60
+        zone.sample.originalKey || 60
     );
 
     // a lot of soundfonts like to set scale tuning to 0 in drums and keep the key at 60
@@ -65,17 +62,17 @@ export function writeDLSRegion(
         rootKey,
         zone.getGeneratorValue(generatorTypes.fineTune, 0) +
             zone.getGeneratorValue(generatorTypes.coarseTune, 0) * 100 +
-            zone.sample.samplePitchCorrection,
+            zone.sample.pitchCorrection,
         zone.getGeneratorValue(generatorTypes.initialAttenuation, 0),
         // calculate loop with offsets
-        zone.sample.sampleLoopStartIndex +
+        zone.sample.loopStart +
             zone.getGeneratorValue(generatorTypes.startloopAddrsOffset, 0) +
             zone.getGeneratorValue(
                 generatorTypes.startloopAddrsCoarseOffset,
                 0
             ) *
                 32768,
-        zone.sample.sampleLoopEndIndex +
+        zone.sample.loopEnd +
             zone.getGeneratorValue(generatorTypes.endloopAddrsOffset, 0) +
             zone.getGeneratorValue(generatorTypes.endloopAddrsCoarseOffset, 0) *
                 32768,

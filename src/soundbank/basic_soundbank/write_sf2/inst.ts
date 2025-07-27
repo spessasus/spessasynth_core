@@ -19,11 +19,11 @@ export function getINST(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // the instrument start index is adjusted in ibag, write it here
     let instrumentStart = 0;
     for (const inst of bank.instruments) {
-        writeStringAsBytes(instData, inst.instrumentName.substring(0, 20), 20);
-        writeStringAsBytes(xinstData, inst.instrumentName.substring(20), 20);
+        writeStringAsBytes(instData, inst.name.substring(0, 20), 20);
+        writeStringAsBytes(xinstData, inst.name.substring(20), 20);
         writeWord(instData, instrumentStart & 0xffff);
         writeWord(xinstData, instrumentStart >> 16);
-        instrumentStart += inst.instrumentZones.length + 1; // global
+        instrumentStart += inst.zones.length + 1; // global
     }
     // write EOI
     writeStringAsBytes(instData, "EOI", 20);

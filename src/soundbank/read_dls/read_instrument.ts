@@ -60,8 +60,8 @@ export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {
     if (presetName.length < 1) {
         presetName = `unnamed ${(ulBank >> 8) & 127}:${ulInstrument & 127}`;
     }
-    preset.presetName = presetName;
-    preset.dlsInstrument.instrumentName = presetName;
+    preset.name = presetName;
+    preset.dlsInstrument.name = presetName;
     SpessaSynthGroupCollapsed(
         `%cParsing %c"${presetName}"%c...`,
         consoleColors.info,
@@ -93,7 +93,7 @@ export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {
     // reverb
     if (
         globalZone.modulators.find(
-            (m) => m.modulatorDestination === generatorTypes.reverbEffectsSend
+            (m) => m.destination === generatorTypes.reverbEffectsSend
         ) === undefined
     ) {
         globalZone.addModulators(Modulator.copy(DEFAULT_DLS_REVERB));
@@ -101,7 +101,7 @@ export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {
     // chorus
     if (
         globalZone.modulators.find(
-            (m) => m.modulatorDestination === generatorTypes.chorusEffectsSend
+            (m) => m.destination === generatorTypes.chorusEffectsSend
         ) === undefined
     ) {
         globalZone.addModulators(Modulator.copy(DEFAULT_DLS_CHORUS));

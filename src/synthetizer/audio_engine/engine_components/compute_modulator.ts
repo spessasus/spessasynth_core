@@ -149,7 +149,7 @@ export function computeModulators(
         // All modulators mode: compute all modulators
         modulatedGenerators.set(generators);
         modulators.forEach((mod) => {
-            modulatedGenerators[mod.modulatorDestination] += computeModulator(
+            modulatedGenerators[mod.destination] += computeModulator(
                 this.midiControllers,
                 mod,
                 voice
@@ -194,7 +194,7 @@ export function computeModulators(
             (mod.secSrcUsesCC === sourceUsesCC &&
                 mod.secSrcIndex === sourceIndex)
         ) {
-            const destination = mod.modulatorDestination;
+            const destination = mod.destination;
             if (!computedDestinations.has(destination)) {
                 // Reset this destination
                 modulatedGenerators[destination] = generators[destination];
@@ -202,7 +202,7 @@ export function computeModulators(
                 computeModulator(this.midiControllers, mod, voice);
                 // sum the values of all modulators for this destination
                 modulators.forEach((m) => {
-                    if (m.modulatorDestination === destination) {
+                    if (m.destination === destination) {
                         modulatedGenerators[destination] += m.currentValue;
                     }
                 });

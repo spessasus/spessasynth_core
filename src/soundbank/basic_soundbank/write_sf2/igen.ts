@@ -15,7 +15,7 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     let igenSize = GEN_BYTE_SIZE;
     for (const inst of bank.instruments) {
         igenSize += inst.globalZone.generators.length * GEN_BYTE_SIZE;
-        igenSize += inst.instrumentZones.reduce((sum, z) => {
+        igenSize += inst.zones.reduce((sum, z) => {
             // clear sample and range generators before determining the size
             z.generators = z.generators.filter(
                 (g) =>
@@ -70,7 +70,7 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     for (const instrument of bank.instruments) {
         // global zone
         writeZone(instrument.globalZone);
-        for (const instrumentZone of instrument.instrumentZones) {
+        for (const instrumentZone of instrument.zones) {
             writeZone(instrumentZone);
         }
     }

@@ -21,7 +21,7 @@ export class SoundFontPreset extends BasicPreset {
      */
     constructor(presetChunk: RiffChunk, sf2: BasicSoundBank) {
         super(sf2);
-        this.presetName = readBytesAsString(presetChunk.chunkData, 20).replace(
+        this.name = readBytesAsString(presetChunk.chunkData, 20).replace(
             /\d{3}:\d{3}/,
             ""
         ); // remove those pesky "000:001"
@@ -47,7 +47,7 @@ export class SoundFontPreset extends BasicPreset {
             generators,
             instruments
         );
-        this.presetZones.push(z);
+        this.zones.push(z);
         return z;
     }
 }

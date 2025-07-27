@@ -6,7 +6,6 @@ import {
 } from "../../src";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
-import * as Speaker from "speaker";
 import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 // process arguments
@@ -58,9 +57,4 @@ const audioStream = new Readable({
     }
 });
 
-const speaker: Speaker = new Speaker({
-    sampleRate: 44100,
-    channels: 2,
-    bitDepth: 32
-});
-audioStream.pipe(speaker);
+audioStream.pipe(process.stdout);

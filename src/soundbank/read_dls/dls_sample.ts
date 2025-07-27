@@ -166,13 +166,9 @@ export class DLSSample extends BasicSample {
                     sampleData = readALAW(this.rawData, this.bytesPerSample);
                     break;
             }
-            this.setAudioData(sampleData);
+            this.setAudioData(sampleData, this.sampleRate);
         }
         return this.sampleData || new Float32Array(0);
-    }
-
-    setAudioData(audioData: Float32Array) {
-        super.setAudioData(audioData);
     }
 
     getRawData(allowVorbis: boolean) {

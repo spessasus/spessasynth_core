@@ -27,7 +27,7 @@ console.groupEnd();
 
 console.group("Preset data:");
 bank.presets.forEach((preset) => {
-    console.group(`\n--- ${preset.presetName} ---`);
+    console.group(`\n--- ${preset.name} ---`);
     console.info("Bank:", preset.bank);
     console.info("Program:", preset.program);
 
@@ -36,8 +36,8 @@ bank.presets.forEach((preset) => {
     console.info("Key range:", preset.globalZone.keyRange);
     console.info("Velocity range:", preset.globalZone.velRange);
 
-    preset.presetZones.forEach((zone) => {
-        console.info(`\n--- ${zone?.instrument?.instrumentName} ---`);
+    preset.zones.forEach((zone) => {
+        console.info(`\n--- ${zone?.instrument?.name} ---`);
         console.info("Key range:", zone.keyRange);
         console.info("Velocity range:", zone.velRange);
     });
@@ -48,10 +48,10 @@ console.groupEnd();
 
 console.group("Instrument data:");
 bank.instruments.forEach((inst) => {
-    console.group(`\n--- ${inst.instrumentName} ---`);
+    console.group(`\n--- ${inst.name} ---`);
     console.info(
         "Linked presets:",
-        inst.linkedPresets.map((p) => p.presetName).join(", ")
+        inst.linkedPresets.map((p) => p.name).join(", ")
     );
 
     console.group("Zones:");
@@ -59,8 +59,8 @@ bank.instruments.forEach((inst) => {
     console.info("Key range:", inst.globalZone.keyRange);
     console.info("Velocity range:", inst.globalZone.velRange);
 
-    inst.instrumentZones.forEach((zone) => {
-        console.info(`\n--- ${zone.sample.sampleName} ---`);
+    inst.zones.forEach((zone) => {
+        console.info(`\n--- ${zone.sample.name} ---`);
         console.info("Key range:", zone.keyRange);
         console.info("Velocity range:", zone.velRange);
     });
@@ -71,18 +71,18 @@ console.groupEnd();
 
 console.group("Sample data:");
 bank.samples.forEach((sample) => {
-    console.group(`\n--- ${sample.sampleName} ---`);
+    console.group(`\n--- ${sample.name} ---`);
 
-    console.info("MIDI Key:", sample.samplePitch);
-    console.info("Cent correction:", sample.samplePitchCorrection);
+    console.info("MIDI Key:", sample.originalKey);
+    console.info("Cent correction:", sample.pitchCorrection);
     console.info("Compressed:", sample.isCompressed);
     console.info(
         "Sample link",
-        sample.linkedSample ? sample.linkedSample.sampleName : "unlinked"
+        sample.linkedSample ? sample.linkedSample.name : "unlinked"
     );
     console.info(
         "Linked instruments:",
-        sample.linkedInstruments.map((i) => i.instrumentName).join(", ")
+        sample.linkedInstruments.map((i) => i.name).join(", ")
     );
     console.groupEnd();
 });

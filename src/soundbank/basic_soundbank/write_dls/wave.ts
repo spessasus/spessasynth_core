@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeDword,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
 import { writeWavesample } from "./wsmp";
 import { SpessaSynthInfo } from "../../../utils/loggin";
@@ -24,18 +21,18 @@ export function writeDLSSample(sample: BasicSample): IndexedByteArray {
     const fmt = writeRIFFChunkRaw("fmt ", fmtData);
     let loop = 1;
     if (
-        sample.sampleLoopStartIndex +
-            Math.abs(sample.getAudioData().length - sample.sampleLoopEndIndex) <
+        sample.loopStart +
+            Math.abs(sample.getAudioData().length - sample.loopEnd) <
         2
     ) {
         loop = 0;
     }
     const wsmp = writeWavesample(
-        sample.samplePitch,
-        sample.samplePitchCorrection,
+        sample.originalKey,
+        sample.pitchCorrection,
         0,
-        sample.sampleLoopStartIndex,
-        sample.sampleLoopEndIndex,
+        sample.loopStart,
+        sample.loopEnd,
         loop
     );
     const data = writeRIFFChunkRaw(
@@ -43,13 +40,10 @@ export function writeDLSSample(sample: BasicSample): IndexedByteArray {
         sample.getRawData(false) // no vorbis allowed
     );
 
-    const inam = writeRIFFChunkRaw(
-        "INAM",
-        getStringBytes(sample.sampleName, true)
-    );
+    const inam = writeRIFFChunkRaw("INAM", getStringBytes(sample.name, true));
     const info = writeRIFFChunkRaw("INFO", inam, false, true);
     SpessaSynthInfo(
-        `%cSaved %c${sample.sampleName}%c successfully!`,
+        `%cSaved %c${sample.name}%c successfully!`,
         consoleColors.recognized,
         consoleColors.value,
         consoleColors.recognized

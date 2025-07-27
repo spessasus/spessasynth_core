@@ -347,7 +347,7 @@ export function getVoicesForPreset(
         .reduce((voices: VoiceList, sampleAndGenerators) => {
             if (sampleAndGenerators.sample.getAudioData() === undefined) {
                 SpessaSynthWarn(
-                    `Discarding invalid sample: ${sampleAndGenerators.sample.sampleName}`
+                    `Discarding invalid sample: ${sampleAndGenerators.sample.name}`
                 );
                 return voices;
             }
@@ -370,7 +370,7 @@ export function getVoicesForPreset(
             );
 
             // key override
-            let rootKey = sampleAndGenerators.sample.samplePitch;
+            let rootKey = sampleAndGenerators.sample.originalKey;
             if (generators[generatorTypes.overridingRootKey] > -1) {
                 rootKey = generators[generatorTypes.overridingRootKey];
             }
@@ -381,8 +381,8 @@ export function getVoicesForPreset(
             }
 
             // determine looping mode now. if the loop is too small, disable
-            const loopStart = sampleAndGenerators.sample.sampleLoopStartIndex;
-            const loopEnd = sampleAndGenerators.sample.sampleLoopEndIndex;
+            const loopStart = sampleAndGenerators.sample.loopStart;
+            const loopEnd = sampleAndGenerators.sample.loopEnd;
             const loopingMode = generators[
                 generatorTypes.sampleModes
             ] as SampleLoopingMode;
@@ -396,7 +396,7 @@ export function getVoicesForPreset(
                 (sampleAndGenerators.sample.sampleRate / this.sampleRate) *
                     Math.pow(
                         2,
-                        sampleAndGenerators.sample.samplePitchCorrection / 1200
+                        sampleAndGenerators.sample.pitchCorrection / 1200
                     ), // cent tuning
                 0,
                 rootKey,

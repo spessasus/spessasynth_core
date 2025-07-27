@@ -224,7 +224,7 @@ export class SoundFontManager {
                     continue;
                 }
                 presets.add(presetString);
-                presetList[presetString] = p.presetName;
+                presetList[presetString] = p.name;
             }
         }
 

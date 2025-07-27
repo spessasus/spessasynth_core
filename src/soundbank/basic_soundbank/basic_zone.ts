@@ -35,7 +35,7 @@ export class BasicZone {
     }
 
     /**
-     * Adds at the start
+     * Adds a new generator at the start. Useful for prepending the range generators.
      */
     prependGenerator(generator: Generator) {
         this.generators.unshift(generator);
@@ -64,6 +64,10 @@ export class BasicZone {
         }
     }
 
+    /**
+     * Adds generators to the zone.
+     * @param generators {}
+     */
     addGenerators(...generators: Generator[]) {
         generators.forEach((g) => {
             switch (g.generatorType) {

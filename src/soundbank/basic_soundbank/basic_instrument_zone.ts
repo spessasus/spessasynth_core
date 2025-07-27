@@ -31,6 +31,7 @@ export class BasicInstrumentZone extends BasicZone {
         this.useCount = instrument.useCount;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a sample for this zone
      * @param sample the sample to set

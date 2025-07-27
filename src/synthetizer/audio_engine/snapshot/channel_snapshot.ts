@@ -151,7 +151,7 @@ export class ChannelSnapshot {
             channelObject.preset?.program || 0,
             channelObject.getBankSelect(),
             channelObject.bank !== channelObject.getBankSelect(),
-            channelObject.preset?.presetName || "undefined",
+            channelObject.preset?.name || "undefined",
             channelObject.lockPreset,
             channelObject.lockedSystem,
             channelObject.midiControllers,

@@ -19,7 +19,7 @@ export class BasicPreset {
     /**
      * The preset's name
      */
-    presetName: string = "";
+    name: string = "";
 
     /**
      * The preset's MIDI program number
@@ -34,7 +34,7 @@ export class BasicPreset {
     /**
      * The preset's zones
      */
-    presetZones: BasicPresetZone[] = [];
+    zones: BasicPresetZone[] = [];
 
     /**
      * Preset's global zone
@@ -62,21 +62,6 @@ export class BasicPreset {
         this.parentSoundBank = parentSoundBank;
     }
 
-    // Note: these getters and setters are used for convenience to have a `.name` on all SF elements.
-    // my old self didn't think about this, so they are named like `presetName`,
-    // `instrumentName`, etc. instead of just `name`.
-    // very clever, Spessasus, very clever indeed.
-
-    // The preset's name.
-    get name(): string {
-        return this.presetName;
-    }
-
-    // The preset's name.
-    set name(value: string) {
-        this.presetName = value;
-    }
-
     /**
      * Checks if this preset is a drum preset
      * @param allowXG if the Yamaha XG system is allowed
@@ -93,7 +78,7 @@ export class BasicPreset {
 
     // Unlinks everything from this preset
     deletePreset() {
-        this.presetZones.forEach((z) => z.instrument?.unlinkFrom(this));
+        this.zones.forEach((z) => z.instrument?.unlinkFrom(this));
     }
 
     /**
@@ -101,8 +86,8 @@ export class BasicPreset {
      * @param index the zone's index to delete
      */
     deleteZone(index: number) {
-        this.presetZones[index]?.instrument?.unlinkFrom(this);
-        this.presetZones.splice(index, 1);
+        this.zones[index]?.instrument?.unlinkFrom(this);
+        this.zones.splice(index, 1);
     }
 
     /**
@@ -111,7 +96,7 @@ export class BasicPreset {
      */
     createZone(instrument: BasicInstrument): BasicPresetZone {
         const z = new BasicPresetZone(this, instrument);
-        this.presetZones.push(z);
+        this.zones.push(z);
         return z;
     }
 
@@ -141,7 +126,7 @@ export class BasicPreset {
         midiNote: number,
         velocity: number
     ): SampleAndGenerators[] {
-        if (this.presetZones.length < 1) {
+        if (this.zones.length < 1) {
             return [];
         }
 
@@ -182,7 +167,7 @@ export class BasicPreset {
         const globalVelRange = this.globalZone.velRange;
 
         // find the preset zones in range
-        const presetZonesInRange = this.presetZones.filter(
+        const presetZonesInRange = this.zones.filter(
             (currentZone) =>
                 isInRange(
                     currentZone.hasKeyRange
@@ -201,7 +186,7 @@ export class BasicPreset {
         presetZonesInRange.forEach((presetZone) => {
             const instrument = presetZone.instrument;
             // the global zone is already taken into account earlier
-            if (!instrument || instrument.instrumentZones.length < 1) {
+            if (!instrument || instrument.zones.length < 1) {
                 return;
             }
             const presetGenerators = presetZone.generators;
@@ -218,7 +203,7 @@ export class BasicPreset {
             const globalKeyRange = instrument.globalZone.keyRange;
             const globalVelRange = instrument.globalZone.velRange;
 
-            const instrumentZonesInRange = instrument.instrumentZones.filter(
+            const instrumentZonesInRange = instrument.zones.filter(
                 (currentZone) =>
                     isInRange(
                         currentZone.hasKeyRange

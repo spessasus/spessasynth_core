@@ -14,7 +14,7 @@ export async function writeWavePool(
     let written = 0;
     for (const s of bank.samples) {
         const out = writeDLSSample(s);
-        await progressFunction?.(s.sampleName, written, bank.samples.length);
+        await progressFunction?.(s.name, written, bank.samples.length);
         offsets.push(currentIndex);
         currentIndex += out.length;
         samples.push(out);

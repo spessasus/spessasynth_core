@@ -3,16 +3,12 @@ import { readSamples } from "./samples";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
 import { readGenerators } from "./generators";
 import { applyPresetZones } from "./preset_zones";
-import { readPresets, SoundFontPreset } from "./presets";
-import { readInstruments, SoundFontInstrument } from "./instruments";
+import { readPresets } from "./presets";
+import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
 import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk";
 import { consoleColors } from "../../utils/other";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
@@ -28,11 +24,7 @@ import type { Modulator } from "../basic_soundbank/modulator";
  */
 
 export class SoundFont2 extends BasicSoundBank {
-    instruments: SoundFontInstrument[] = [];
-
-    presets: SoundFontPreset[] = [];
-
-    sampleDataStartIndex: number = 0;
+    protected sampleDataStartIndex: number = 0;
 
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
@@ -265,13 +257,13 @@ export class SoundFont2 extends BasicSoundBank {
             );
             if (xSamples.length === samples.length) {
                 samples.forEach((s, i) => {
-                    s.sampleName += xSamples[i].sampleName;
+                    s.name += xSamples[i].name;
                     s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
                 });
             }
         }
         // trim names
-        samples.forEach((s) => (s.sampleName = s.sampleName.trim()));
+        samples.forEach((s) => (s.name = s.name.trim()));
         this.samples.push(...samples);
 
         /**
@@ -291,7 +283,7 @@ export class SoundFont2 extends BasicSoundBank {
             const xInst = readInstruments(xChunks.inst);
             if (xInst.length === instruments.length) {
                 instruments.forEach((inst, i) => {
-                    inst.instrumentName += xInst[i].instrumentName;
+                    inst.name += xInst[i].name;
                     inst.zoneStartIndex |= xInst[i].zoneStartIndex;
                 });
                 // adjust zone counts
@@ -305,9 +297,7 @@ export class SoundFont2 extends BasicSoundBank {
             }
         }
         // trim names
-        instruments.forEach(
-            (i) => (i.instrumentName = i.instrumentName.trim())
-        );
+        instruments.forEach((i) => (i.name = i.name.trim()));
         this.instruments.push(...instruments);
 
         const ibagIndexes = readZoneIndexes(ibagChunk);
@@ -330,7 +320,7 @@ export class SoundFont2 extends BasicSoundBank {
             instrumentGenerators,
             instrumentModulators,
             this.samples,
-            this.instruments
+            instruments
         );
 
         /**
@@ -350,7 +340,7 @@ export class SoundFont2 extends BasicSoundBank {
             const xPreset = readPresets(xChunks.phdr, this);
             if (xPreset.length === presets.length) {
                 presets.forEach((pres, i) => {
-                    pres.presetName += xPreset[i].presetName;
+                    pres.name += xPreset[i].name;
                     pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
                 });
                 // adjust zone counts
@@ -365,7 +355,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
 
         // trim names
-        presets.forEach((p) => p.presetName === p.presetName.trim());
+        presets.forEach((p) => p.name === p.name.trim());
         this.addPresets(...presets);
 
         const pbagIndexes = readZoneIndexes(pbagChunk);
@@ -385,7 +375,7 @@ export class SoundFont2 extends BasicSoundBank {
             presetGenerators,
             presetModulators,
             this.instruments,
-            this.presets
+            presets
         );
         this.flush();
         SpessaSynthInfo(

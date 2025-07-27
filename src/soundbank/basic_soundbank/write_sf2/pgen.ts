@@ -17,7 +17,7 @@ export function getPGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     let pgenSize = GEN_BYTE_SIZE;
     for (const preset of bank.presets) {
         pgenSize += preset.globalZone.generators.length * GEN_BYTE_SIZE;
-        pgenSize += preset.presetZones.reduce((size, z) => {
+        pgenSize += preset.zones.reduce((size, z) => {
             // clear instrument and range generators before determining the size
             z.generators = z.generators.filter(
                 (g) =>
@@ -70,7 +70,7 @@ export function getPGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     for (const preset of bank.presets) {
         // global zone
         writeZone(preset.globalZone);
-        for (const zone of preset.presetZones) {
+        for (const zone of preset.zones) {
             writeZone(zone);
         }
     }

@@ -1,10 +1,5 @@
 import { consoleColors, formatTime } from "../utils/other";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthSequencer } from "./sequencer_engine";
 
@@ -86,7 +81,7 @@ export function loadNewSequenceInternal(
         const [bank, program] = programBank.split(":").map(Number);
         const preset = this.synth.getPreset(bank, program);
         SpessaSynthInfo(
-            `%cPreloading used samples on %c${preset.presetName}%c...`,
+            `%cPreloading used samples on %c${preset.name}%c...`,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info

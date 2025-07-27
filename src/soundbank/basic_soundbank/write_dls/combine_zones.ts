@@ -73,7 +73,7 @@ export function combineZones(
     const globalPresetKeyRange = globalPresetZone.keyRange;
     const globalPresetVelRange = globalPresetZone.velRange;
     // for each non-global preset zone
-    for (const presetZone of preset.presetZones) {
+    for (const presetZone of preset.zones) {
         if (!presetZone.instrument) {
             throw new Error("No instrument in a preset zone.");
         }
@@ -94,7 +94,7 @@ export function combineZones(
         const presetModulators = [...presetZone.modulators];
         addUniqueMods(presetModulators, globalPresetModulators);
         const instrument = presetZone.instrument;
-        const iZones = instrument.instrumentZones;
+        const iZones = instrument.zones;
 
         const globalInstGenerators: Generator[] = [];
         const globalInstModulators: Modulator[] = [];
@@ -237,7 +237,7 @@ export function combineZones(
             let occurrencesForValues: Record<number, number> = {};
             const defaultForChecked = generatorLimits[checkedType]?.def || 0;
             occurrencesForValues[defaultForChecked] = 0;
-            for (const z of outputInstrument.instrumentZones) {
+            for (const z of outputInstrument.zones) {
                 const gen = z.generators.find(
                     (g) => g.generatorType === checkedType
                 );
@@ -305,7 +305,7 @@ export function combineZones(
                     );
                 }
                 // remove from the zones
-                outputInstrument.instrumentZones.forEach((z) => {
+                outputInstrument.zones.forEach((z) => {
                     const gen = z.generators.findIndex(
                         (g) => g.generatorType === checkedType
                     );
@@ -331,11 +331,11 @@ export function combineZones(
         }
 
         // globalize only modulators that exist in all zones
-        const firstZone = outputInstrument.instrumentZones[0];
+        const firstZone = outputInstrument.zones[0];
         const modulators = firstZone.modulators.map((m) => Modulator.copy(m));
         for (const checkedModulator of modulators) {
             let existsForAllZones = true;
-            for (const zone of outputInstrument.instrumentZones) {
+            for (const zone of outputInstrument.zones) {
                 if (!existsForAllZones) {
                     continue;
                 }
@@ -352,7 +352,7 @@ export function combineZones(
             if (existsForAllZones) {
                 globalZone.addModulators(Modulator.copy(checkedModulator));
                 // delete it from local zones.
-                for (const zone of outputInstrument.instrumentZones) {
+                for (const zone of outputInstrument.zones) {
                     const modulator = zone.modulators.find((m) =>
                         Modulator.isIdentical(m, checkedModulator)
                     );

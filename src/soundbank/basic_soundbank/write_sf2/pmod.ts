@@ -15,7 +15,7 @@ export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     let pmodSize = MOD_BYTE_SIZE;
     for (const preset of bank.presets) {
         pmodSize += preset.globalZone.modulators.length * MOD_BYTE_SIZE;
-        pmodSize += preset.presetZones.reduce(
+        pmodSize += preset.zones.reduce(
             (sum, z) => z.modulators.length * MOD_BYTE_SIZE + sum,
             0
         );
@@ -25,7 +25,7 @@ export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const writeZone = (z: BasicZone) => {
         for (const mod of z.modulators) {
             writeWord(pmodData, mod.getSourceEnum());
-            writeWord(pmodData, mod.modulatorDestination);
+            writeWord(pmodData, mod.destination);
             writeWord(pmodData, mod.transformAmount);
             writeWord(pmodData, mod.getSecSrcEnum());
             writeWord(pmodData, mod.transformType);
@@ -35,7 +35,7 @@ export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     for (const preset of bank.presets) {
         // global
         writeZone(preset.globalZone);
-        for (const zone of preset.presetZones) {
+        for (const zone of preset.zones) {
             writeZone(zone);
         }
     }

@@ -4,10 +4,7 @@ import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
 import { writeDword } from "../../../utils/byte_functions/little_endian";
 import { writeDLSRegion } from "./rgn2";
 import { writeArticulator } from "./art2";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd
-} from "../../../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import type { BasicSoundBank } from "../basic_soundbank";
@@ -23,7 +20,7 @@ export function writeIns(
     preset: BasicPreset
 ): IndexedByteArray {
     SpessaSynthGroupCollapsed(
-        `%cWriting %c${preset.presetName}%c...`,
+        `%cWriting %c${preset.name}%c...`,
         consoleColors.info,
         consoleColors.recognized,
         consoleColors.info
@@ -31,7 +28,7 @@ export function writeIns(
     // combine preset and instrument zones into a single instrument zone (region) list
     const inst = combineZones(preset);
     const global = inst.globalZone;
-    const zones = inst.instrumentZones;
+    const zones = inst.zones;
 
     // insh: instrument header
     const inshData = new IndexedByteArray(12);
@@ -62,10 +59,7 @@ export function writeIns(
     );
 
     // writeINFO
-    const inam = writeRIFFChunkRaw(
-        "INAM",
-        getStringBytes(preset.presetName, true)
-    );
+    const inam = writeRIFFChunkRaw("INAM", getStringBytes(preset.name, true));
     const info = writeRIFFChunkRaw("INFO", inam, false, true);
 
     SpessaSynthGroupEnd();

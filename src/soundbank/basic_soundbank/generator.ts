@@ -4,11 +4,11 @@ export const GEN_BYTE_SIZE = 4;
 
 export class Generator {
     /**
-     * The generator's enum number
+     * The generator's SF2 type.
      */
     generatorType: generatorTypes = generatorTypes.INVALID;
     /**
-     * The generator's 16-bit value
+     * The generator's 16-bit value.
      */
     generatorValue: number = 0;
 

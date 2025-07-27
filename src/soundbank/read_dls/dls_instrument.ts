@@ -9,7 +9,7 @@ export class DLSInstrument extends BasicInstrument {
 
     createZone(sample: BasicSample): DLSZone {
         const z = new DLSZone(this, sample);
-        this.instrumentZones.push(z);
+        this.zones.push(z);
         return z;
     }
 }

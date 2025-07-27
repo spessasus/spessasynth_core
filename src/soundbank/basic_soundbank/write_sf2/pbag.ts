@@ -12,7 +12,7 @@ export function getPBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const pbagSize = bank.presets.reduce(
         (sum, i) =>
             // +1 because global zone
-            (i.presetZones.length + 1) * BAG_SIZE + sum,
+            (i.zones.length + 1) * BAG_SIZE + sum,
         BAG_SIZE
     );
     const pbagData = new IndexedByteArray(pbagSize);
@@ -33,7 +33,7 @@ export function getPBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     for (const preset of bank.presets) {
         // global
         writeZone(preset.globalZone);
-        for (const pbag of preset.presetZones) {
+        for (const pbag of preset.zones) {
             writeZone(pbag);
         }
     }

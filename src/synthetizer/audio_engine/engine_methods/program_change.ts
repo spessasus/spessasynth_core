@@ -22,7 +22,7 @@ export function programChange(this: MIDIChannel, programNumber: number) {
             this.synth.soundfontManager.soundBankList[0].soundfont
         );
         // fallback preset, make it scream so it's easy to notice :-)
-        preset.presetName = "SPESSA EMPTY FALLBACK PRESET";
+        preset.name = "SPESSA EMPTY FALLBACK PRESET";
     }
     this.setPreset(preset);
     this.sentBank = Math.min(128, preset.bank + p.bankOffset);

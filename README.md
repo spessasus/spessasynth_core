@@ -26,7 +26,7 @@ npm install --save spessasynth_core
 
 ### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
 
-**TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
+**v3.28 TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
 
 **SpessaSynth Project index**
 
@@ -42,6 +42,7 @@ npm install --save spessasynth_core
 - **Flexible:** *It's not just a MIDI player!*
 - **Easy to Use:** *Basic setup is just [two lines of code!](https://github.com/spessasus/spessasynth_core/wiki/Getting-Started#minimal-setup)*
 - **No dependencies:** *Batteries included!*
+- **TypeScript definitions:** *Autocompletion in IDEs!*
 
 ### Powerful MIDI Synthesizer
 - Suitable for both **real-time** and **offline** synthesis
@@ -163,10 +164,9 @@ import * as fs from "node:fs";
 import {
     audioToWav,
     BasicMIDI,
-    BasicSoundBank,
     SpessaSynthProcessor,
-    SpessaSynthSequencer
-} from "spessasynth_core";
+    SpessaSynthSequencer,
+    SoundBankLoader } from "spessasynth_core";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -185,7 +185,9 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
 });
-synth.soundfontManager.reloadManager(BasicSoundBank.fromArrayBuffer(sf.buffer));
+synth.soundfontManager.reloadManager(
+    SoundBankLoader.fromArrayBuffer(sf.buffer)
+);
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
@@ -227,7 +229,6 @@ const wave = audioToWav([outLeft, outRight], sampleRate);
 fs.writeFile(args[2], new Uint8Array(wave), () => {
     console.log(`File written to ${args[2]}`);
 });
-
 ```
 
 ### Building

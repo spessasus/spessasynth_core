@@ -12,7 +12,7 @@ export function getIBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const ibagSize = bank.instruments.reduce(
         (sum, i) =>
             // +1 because global zone
-            (i.instrumentZones.length + 1) * BAG_SIZE + sum,
+            (i.zones.length + 1) * BAG_SIZE + sum,
         BAG_SIZE
     );
     const ibagData = new IndexedByteArray(ibagSize);
@@ -33,7 +33,7 @@ export function getIBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
 
     for (const inst of bank.instruments) {
         writeZone(inst.globalZone);
-        for (const ibag of inst.instrumentZones) {
+        for (const ibag of inst.zones) {
             writeZone(ibag);
         }
     }

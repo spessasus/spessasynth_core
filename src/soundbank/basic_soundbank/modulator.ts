@@ -1,10 +1,6 @@
 import { generatorTypes, MAX_GENERATOR } from "./generator_types";
 import type { ModulatorNumericBool, ModulatorSourceIndex } from "../types";
-import {
-    modulatorCurveTypes,
-    modulatorSources,
-    type modulatorTransformTypes
-} from "../enums";
+import { modulatorCurveTypes, modulatorSources, type modulatorTransformTypes } from "../enums";
 import { midiControllers } from "../../midi/enums";
 
 /**
@@ -40,22 +36,22 @@ const defaultResonantModSource = getModSourceEnum(
 
 export class Modulator {
     /**
-     * The current computed value of this modulator. Only used in the synthesis engine for local voices
+     * The current computed value of this modulator. Only used in the synthesis engine for local voices.
      */
     currentValue: number = 0;
 
     /**
-     * The generator destination of this modulator
+     * The generator destination of this modulator.
      */
-    modulatorDestination: generatorTypes;
+    destination: generatorTypes;
 
     /**
-     * The transform amount for this modulator
+     * The transform amount for this modulator.
      */
     transformAmount: number;
 
     /**
-     * The transform type for this modulator
+     * The transform type for this modulator.
      */
     transformType: modulatorTransformTypes;
 
@@ -161,14 +157,14 @@ export class Modulator {
         this.secSrcIndex = secSrcIndex;
         this.secSrcCurveType = secSrcCurveType;
 
-        this.modulatorDestination = destination;
+        this.destination = destination;
         this.transformAmount = amount;
         this.transformType = transformType;
         this.isEffectModulator = isEffectModulator;
         this.isDefaultResonantModulator = isDefaultResonantModulator;
 
-        if (this.modulatorDestination > MAX_GENERATOR) {
-            this.modulatorDestination = generatorTypes.INVALID; // flag as invalid (for linked ones)
+        if (this.destination > MAX_GENERATOR) {
+            this.destination = generatorTypes.INVALID; // flag as invalid (for linked ones)
         }
     }
 
@@ -189,7 +185,7 @@ export class Modulator {
             modulator.secSrcUsesCC,
             modulator.secSrcPolarity,
             modulator.secSrcDirection,
-            modulator.modulatorDestination,
+            modulator.destination,
             modulator.transformAmount,
             modulator.transformType,
             modulator.isEffectModulator,
@@ -220,7 +216,7 @@ export class Modulator {
             mod1.secSrcPolarity === mod2.secSrcPolarity &&
             mod1.secSrcDirection === mod2.secSrcDirection &&
             mod1.secSrcCurveType === mod2.secSrcCurveType &&
-            mod1.modulatorDestination === mod2.modulatorDestination &&
+            mod1.destination === mod2.destination &&
             mod1.transformType === mod2.transformType &&
             (!checkAmount || mod1.transformAmount === mod2.transformAmount)
         );
@@ -265,7 +261,7 @@ export class Modulator {
             this.secSrcUsesCC,
             this.secSrcPolarity,
             this.secSrcDirection,
-            this.modulatorDestination,
+            this.destination,
             this.transformAmount + modulator.transformAmount,
             this.transformType,
             this.isEffectModulator,

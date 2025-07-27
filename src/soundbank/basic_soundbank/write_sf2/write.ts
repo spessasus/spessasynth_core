@@ -118,7 +118,7 @@ export async function writeSF2Internal(
             const dmoddata = new IndexedByteArray(dmodsize);
             for (const mod of mods) {
                 writeWord(dmoddata, mod.getSourceEnum());
-                writeWord(dmoddata, mod.modulatorDestination);
+                writeWord(dmoddata, mod.destination);
                 writeWord(dmoddata, mod.transformAmount);
                 writeWord(dmoddata, mod.getSecSrcEnum());
                 writeWord(dmoddata, mod.transformType);
@@ -201,11 +201,9 @@ export async function writeSF2Internal(
     const writeXdta =
         options.writeExtendedLimits &&
         (maxIndex > 0xffff ||
-            targetSoundBank.presets.some((p) => p.presetName.length > 20) ||
-            targetSoundBank.instruments.some(
-                (i) => i.instrumentName.length > 20
-            ) ||
-            targetSoundBank.samples.some((s) => s.sampleName.length > 20));
+            targetSoundBank.presets.some((p) => p.name.length > 20) ||
+            targetSoundBank.instruments.some((i) => i.name.length > 20) ||
+            targetSoundBank.samples.some((s) => s.name.length > 20));
 
     if (writeXdta) {
         SpessaSynthInfo(
