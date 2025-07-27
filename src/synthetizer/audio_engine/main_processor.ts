@@ -24,11 +24,11 @@ import { SynthesizerSnapshot } from "./snapshot/synthesizer_snapshot";
 import type { ChannelProperty, EventType, SynthMethodOptions, SynthProcessorOptions, VoiceList } from "../types";
 import { messageTypes } from "../../midi/enums";
 import { ProtectedSynthValues } from "./internal_synth_values";
-import { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import { customControllers } from "../enums";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import { MIDIChannel } from "./engine_components/midi_audio_channel";
+import { SoundBankLoader } from "../../soundbank/sound_bank_loader";
 
 /**
  * main_processor.js
@@ -255,7 +255,7 @@ export class SpessaSynthProcessor {
     setEmbeddedSoundBank(bank: ArrayBuffer, offset: number) {
         // the embedded bank is set as the first bank in the manager,
         // with a special ID that does not clear when reloadManager is performed.
-        const loadedFont = BasicSoundBank.fromArrayBuffer(bank);
+        const loadedFont = SoundBankLoader.fromArrayBuffer(bank);
         this.soundfontManager.addNewSoundFont(
             loadedFont,
             EMBEDDED_SOUND_BANK_ID,
@@ -674,11 +674,6 @@ export class SpessaSynthProcessor {
     }
 
     private createMIDIChannelInternal(sendEvent: boolean) {
-        if (!this.privateProps.defaultPreset) {
-            throw new Error(
-                "Attempted to create a MIDI channel without a default preset."
-            );
-        }
         const channel: MIDIChannel = new MIDIChannel(
             this,
             this.privateProps,

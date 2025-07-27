@@ -19,10 +19,6 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from "../types";
-import { IndexedByteArray } from "../../utils/indexed_array";
-import { readBytesAsString } from "../../utils/byte_functions/string";
-import { DownloadableSounds } from "../read_dls/dls_soundfont";
-import { SoundFont2 } from "../read_sf2/soundfont";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -188,21 +184,6 @@ export class BasicSoundBank {
         font.flush();
         const f = await font.write();
         return f.buffer;
-    }
-
-    /**
-     * Loads a sound bank from a file buffer.
-     * @param buffer The binary file buffer to load.
-     * @returns {BasicSoundBank} The loaded sound bank, either a DownloadableSounds or SoundFont2 instance.
-     */
-    static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
-        const check = buffer.slice(8, 12);
-        const a = new IndexedByteArray(check);
-        const id = readBytesAsString(a, 4, false).toLowerCase();
-        if (id === "dls ") {
-            return new DownloadableSounds(buffer);
-        }
-        return new SoundFont2(buffer, false);
     }
 
     /**

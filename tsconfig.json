@@ -9,10 +9,11 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "CommonJS",
+    "module": "esnext",
     "skipLibCheck": true,
     "allowJs": true,
     /* Bundler mode */
+    "moduleResolution": "bundler",
     "moduleDetection": "force",
     /* Linting */
     "strict": true,
@@ -27,7 +28,8 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noUncheckedSideEffectImports": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
   },
   "include": [
     "src"

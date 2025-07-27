@@ -21,7 +21,7 @@ import {
     generatorTypes
 } from "../basic_soundbank/generator_types";
 import { readRegion } from "./read_region";
-import type { DownloadableSounds } from "./dls_soundfont";
+import type { DownloadableSounds } from "./downloadable_sounds";
 import { readLart } from "./read_lart";
 
 export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {

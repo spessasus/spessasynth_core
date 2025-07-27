@@ -16,7 +16,7 @@ import {
     signedInt16
 } from "../../utils/byte_functions/little_endian";
 import { DLSSample } from "./dls_sample";
-import type { DownloadableSounds } from "./dls_soundfont";
+import type { DownloadableSounds } from "./downloadable_sounds";
 
 export function readDLSSamples(
     dls: DownloadableSounds,

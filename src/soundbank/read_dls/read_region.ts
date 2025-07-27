@@ -10,7 +10,7 @@ import {
 import { Generator } from "../basic_soundbank/generator";
 import { generatorTypes } from "../basic_soundbank/generator_types";
 import { SpessaSynthWarn } from "../../utils/loggin";
-import type { DownloadableSounds } from "./dls_soundfont";
+import type { DownloadableSounds } from "./downloadable_sounds";
 import type { DLSInstrument } from "./dls_instrument";
 import { readLart } from "./read_lart";
 import type { DLSSample } from "./dls_sample";

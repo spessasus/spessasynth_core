@@ -1,6 +1,6 @@
 import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk";
 import { readArticulation } from "./read_articulation";
-import type { DownloadableSounds } from "./dls_soundfont";
+import type { DownloadableSounds } from "./downloadable_sounds";
 import type { BasicZone } from "../basic_soundbank/basic_zone";
 
 export function readLart(

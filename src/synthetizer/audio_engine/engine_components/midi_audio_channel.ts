@@ -1,8 +1,4 @@
-import {
-    CONTROLLER_TABLE_SIZE,
-    CUSTOM_CONTROLLER_TABLE_SIZE,
-    NON_CC_INDEX_OFFSET
-} from "./controller_tables";
+import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -16,23 +12,12 @@ import { dataEntryCoarse } from "../engine_methods/data_entry/data_entry_coarse"
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import {
-    chooseBank,
-    isSystemXG,
-    parseBankSelect
-} from "../../../utils/xg_hacks";
-import {
-    DEFAULT_PERCUSSION,
-    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
-} from "../synth_constants";
+import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks";
+import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants";
 import { modulatorSources } from "../../../soundbank/enums";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
-import {
-    generatorLimits,
-    GENERATORS_AMOUNT,
-    generatorTypes
-} from "../../../soundbank/basic_soundbank/generator_types";
+import { generatorLimits, GENERATORS_AMOUNT, generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
 import type { SpessaSynthProcessor } from "../main_processor";
@@ -246,7 +231,7 @@ class MIDIChannel {
     constructor(
         synth: SpessaSynthProcessor,
         synthProps: ProtectedSynthValues,
-        preset: BasicPreset,
+        preset: BasicPreset | undefined,
         channelNumber: number
     ) {
         this.synth = synth;

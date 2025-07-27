@@ -1,17 +1,10 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { MIDISequenceData } from "./midi_sequence";
-import {
-    getStringBytes,
-    readBytesAsString
-} from "../utils/byte_functions/string";
+import { getStringBytes, readBytesAsString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../utils/loggin";
 import { consoleColors, formatTitle, sanitizeKarLyrics } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
 import { writeRMIDIInternal } from "./midi_tools/rmidi_writer";
@@ -27,10 +20,7 @@ import type {
     NoteTime,
     RMIDMetadata
 } from "./types";
-import {
-    applySnapshotInternal,
-    modifyMIDIInternal
-} from "./midi_tools/midi_editor";
+import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
 import { SoundFontManager } from "../synthetizer/audio_engine/engine_components/soundfont_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
@@ -697,5 +687,23 @@ export class BasicMIDI extends MIDISequenceData {
 
         SpessaSynthInfo("%cSuccess!", consoleColors.recognized);
         SpessaSynthGroupEnd();
+    }
+}
+
+/**
+ * The MIDI class is a MIDI file parser that reads a MIDI file and extracts all the necessary information from it.
+ * Supported formats are .mid and .rmi files.
+ * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
+ */
+export class MIDI extends BasicMIDI {
+    /**
+     * Parses a given MIDI file.
+     * @param arrayBuffer the MIDI file array buffer.
+     * @param fileName {string} optional, replaces the decoded title if empty.
+     * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
+     */
+    constructor(arrayBuffer: ArrayBuffer, fileName: string = "") {
+        super();
+        loadMIDIFromArrayBufferInternal(this, arrayBuffer, fileName);
     }
 }

@@ -1,6 +1,5 @@
 import {
     BasicMIDI,
-    BasicSoundBank,
     SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
@@ -8,6 +7,7 @@ import {
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
 import * as Speaker from "speaker";
+import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -26,7 +26,9 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     effectsEnabled: false
 });
 SpessaSynthLogging(true, true, true);
-synth.soundfontManager.reloadManager(BasicSoundBank.fromArrayBuffer(sf.buffer));
+synth.soundfontManager.reloadManager(
+    SoundBankLoader.fromArrayBuffer(sf.buffer)
+);
 await synth.processorInitialized;
 
 const seq = new SpessaSynthSequencer(synth);

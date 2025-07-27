@@ -5,6 +5,7 @@
     "moduleResolution": "node",
     "outDir": "dist/cjs",
     "removeComments": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false
   }
 }

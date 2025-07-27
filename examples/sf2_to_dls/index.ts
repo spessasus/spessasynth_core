@@ -1,6 +1,7 @@
 // process arguments
 import * as fs from "fs";
 import { BasicSoundBank } from "../../src";
+import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {
@@ -15,7 +16,7 @@ await BasicSoundBank.isSF3DecoderReady;
 console.warn("DLS conversion may lose data.");
 const sf2 = fs.readFileSync(sf2Path);
 console.time("Loaded in");
-const bank = BasicSoundBank.fromArrayBuffer(sf2.buffer);
+const bank = SoundBankLoader.fromArrayBuffer(sf2.buffer);
 console.timeEnd("Loaded in");
 console.time("Converted in");
 const outDLS = await bank.writeDLS();

@@ -1,6 +1,7 @@
 // process arguments
 import * as fs from "fs";
 import { BasicMIDI, BasicSoundBank } from "../../src";
+import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 const args = process.argv.slice(2);
 if (args.length !== 3) {
@@ -18,7 +19,7 @@ const outPath = args[2];
 await BasicSoundBank.isSF3DecoderReady;
 
 // load bank and MIDI
-const bank = BasicSoundBank.fromArrayBuffer(fs.readFileSync(sfPath).buffer);
+const bank = SoundBankLoader.fromArrayBuffer(fs.readFileSync(sfPath).buffer);
 const midi = BasicMIDI.fromArrayBuffer(fs.readFileSync(midPath).buffer);
 console.info("Loaded bank and MIDI!");
 

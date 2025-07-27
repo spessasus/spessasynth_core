@@ -38,8 +38,7 @@ import {
     sampleTypes
 } from "./soundbank/enums";
 
-import { MIDI } from "./midi/midi_loader";
-import { BasicMIDI } from "./midi/basic_midi";
+import { BasicMIDI, MIDI } from "./midi/basic_midi";
 import { MIDISequenceData } from "./midi/midi_sequence";
 import { MIDIBuilder } from "./midi/midi_builder";
 import { MIDIMessage } from "./midi/midi_message";

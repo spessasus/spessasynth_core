@@ -1,12 +1,7 @@
 import { dataBytesAmount, getChannel, MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { consoleColors } from "../utils/other";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { readRIFFChunk } from "../soundbank/basic_soundbank/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
@@ -354,22 +349,4 @@ export function loadMIDIFromArrayBufferInternal(
         consoleColors.info,
         consoleColors.recognized
     );
-}
-
-/**
- * The MIDI class is a MIDI file parser that reads a MIDI file and extracts all the necessary information from it.
- * Supported formats are .mid and .rmi files.
- * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
- */
-export class MIDI extends BasicMIDI {
-    /**
-     * Parses a given MIDI file.
-     * @param arrayBuffer the MIDI file array buffer.
-     * @param fileName {string} optional, replaces the decoded title if empty.
-     * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
-     */
-    constructor(arrayBuffer: ArrayBuffer, fileName: string = "") {
-        super();
-        loadMIDIFromArrayBufferInternal(this, arrayBuffer, fileName);
-    }
 }

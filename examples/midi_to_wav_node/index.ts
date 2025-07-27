@@ -2,10 +2,10 @@ import * as fs from "node:fs";
 import {
     audioToWav,
     BasicMIDI,
-    BasicSoundBank,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../../src";
+import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -24,7 +24,9 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
 });
-synth.soundfontManager.reloadManager(BasicSoundBank.fromArrayBuffer(sf.buffer));
+synth.soundfontManager.reloadManager(
+    SoundBankLoader.fromArrayBuffer(sf.buffer)
+);
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
