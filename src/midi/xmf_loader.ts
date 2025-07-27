@@ -443,7 +443,7 @@ export function loadXMF(
                         "%cFound embedded DLS!",
                         consoleColors.recognized
                     );
-                    midi.embeddedSoundFont = node.nodeData.buffer;
+                    midi.embeddedSoundBank = node.nodeData.buffer;
                     break;
 
                 case "StandardMIDIFile":

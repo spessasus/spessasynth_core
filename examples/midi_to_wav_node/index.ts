@@ -24,7 +24,7 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
 });
-synth.soundfontManager.reloadManager(
+synth.soundBankManager.reloadManager(
     SoundBankLoader.fromArrayBuffer(sf.buffer)
 );
 await synth.processorInitialized;

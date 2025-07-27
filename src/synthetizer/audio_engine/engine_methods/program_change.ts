@@ -14,12 +14,12 @@ export function programChange(this: MIDIChannel, programNumber: number) {
     const bank = this.getBankSelect();
 
     const isXG = this.isXGChannel;
-    const p = this.synth.soundfontManager.getPreset(bank, programNumber, isXG);
+    const p = this.synth.soundBankManager.getPreset(bank, programNumber, isXG);
     let preset = p.preset;
     if (!preset) {
         SpessaSynthWarn("No presets! Using empty fallback.");
         preset = new BasicPreset(
-            this.synth.soundfontManager.soundBankList[0].soundfont
+            this.synth.soundBankManager.soundBankList[0].soundBank
         );
         // fallback preset, make it scream so it's easy to notice :-)
         preset.name = "SPESSA EMPTY FALLBACK PRESET";

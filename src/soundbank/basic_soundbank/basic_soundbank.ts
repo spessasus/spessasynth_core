@@ -30,35 +30,35 @@ export class BasicSoundBank {
     static isSF3DecoderReady: Promise<boolean> = stbvorbis.isInitialized;
 
     /**
-     * Soundfont's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
+     * Sound bank's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
      */
-    readonly soundFontInfo: SoundBankInfo = {};
+    readonly soundBankInfo: SoundBankInfo = {};
 
     /**
-     * The soundfont's presets.
+     * The sound bank's presets.
      * @type {BasicPreset[]}
      */
     presets: BasicPreset[] = [];
 
     /**
-     * The soundfont's samples.
+     * The sound bank's samples.
      */
     samples: BasicSample[] = [];
 
     /**
-     * The soundfont's instruments.
+     * The sound bank's instruments.
      */
     instruments: BasicInstrument[] = [];
 
     /**
-     * Soundfont's default modulators.
+     * Sound bank's default modulators.
      */
     defaultModulators: Modulator[] = defaultModulators.map((m) =>
         Modulator.copy(m)
     );
 
     /**
-     * If the bank has custom default modulators (DMOD).
+     * If the sound bank has custom default modulators (DMOD).
      */
     customDefaultModulators: boolean = false;
 
@@ -74,7 +74,7 @@ export class BasicSoundBank {
               } = undefined
     ) {
         if (data?.presets) {
-            this.soundFontInfo = data.info;
+            this.soundBankInfo = data.info;
             this.addPresets(...data.presets);
             const instrumentList: BasicInstrument[] = [];
             for (const preset of data.presets) {
@@ -140,7 +140,7 @@ export class BasicSoundBank {
 
         return new BasicSoundBank({
             presets: presets,
-            info: mainSf.soundFontInfo
+            info: mainSf.soundBankInfo
         });
     }
 
@@ -180,9 +180,9 @@ export class BasicSoundBank {
 
         font.addPresets(preset);
 
-        font.soundFontInfo["ifil"] = "2.1";
-        font.soundFontInfo["isng"] = "E-mu 10K2";
-        font.soundFontInfo["INAM"] = "Dummy";
+        font.soundBankInfo["ifil"] = "2.1";
+        font.soundBankInfo["isng"] = "E-mu 10K2";
+        font.soundBankInfo["INAM"] = "Dummy";
         font.flush();
         const f = await font.write();
         return f.buffer;
@@ -472,9 +472,9 @@ export class BasicSoundBank {
         }
         this.removeUnusedElements();
 
-        this.soundFontInfo["ICMT"] =
+        this.soundBankInfo["ICMT"] =
             `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.midiName}"\n\n` +
-            this.soundFontInfo["ICMT"];
+            this.soundBankInfo["ICMT"];
 
         SpessaSynthInfo("%cSoundfont modified!", consoleColors.recognized);
         SpessaSynthGroupEnd();

@@ -18,7 +18,7 @@ console.time("Loaded in");
 const bank = SoundBankLoader.fromArrayBuffer(dls.buffer);
 console.timeEnd("Loaded in");
 console.time("Converted in");
-console.info(`Name: ${bank.soundFontInfo["INAM"]}`);
+console.info(`Name: ${bank.soundBankInfo["INAM"]}`);
 const outSF2 = await bank.write();
 console.timeEnd("Converted in");
 console.info(`Writing file...`);

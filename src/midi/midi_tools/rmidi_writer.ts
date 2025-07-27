@@ -34,8 +34,8 @@ const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 /**
  * Writes an RMIDI file. Note that this method modifies the MIDI file in-place.
  * @param mid MIDI to modify
- * @param soundfontBinary the binary sound bank to embed into the file
- * @param soundfont the sound bank instance
+ * @param soundBankBinary the binary sound bank to embed into the file
+ * @param soundBank the sound bank instance
  * @param bankOffset the bank offset for RMIDI
  * @param encoding the encoding of the RMIDI info chunk
  * @param metadata the metadata of the file. Optional. If provided, the encoding is forced to utf-8
@@ -44,8 +44,8 @@ const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
  */
 export function writeRMIDIInternal(
     mid: BasicMIDI,
-    soundfontBinary: Uint8Array,
-    soundfont: BasicSoundBank,
+    soundBankBinary: Uint8Array,
+    soundBank: BasicSoundBank,
     bankOffset: number = 0,
     encoding: string = "Shift_JIS",
     metadata: Partial<RMIDMetadata> = {},
@@ -184,7 +184,7 @@ export function writeRMIDIInternal(
                 const initialProgram = e.messageData[0];
                 if (channel.drums) {
                     if (
-                        soundfont.presets.findIndex(
+                        soundBank.presets.findIndex(
                             (p) =>
                                 p.program === initialProgram &&
                                 p.isDrumPreset(isXG, true)
@@ -192,7 +192,7 @@ export function writeRMIDIInternal(
                     ) {
                         // doesn't exist. pick any preset that has bank 128.
                         e.messageData[0] =
-                            soundfont.presets.find((p) => p.isDrumPreset(isXG))
+                            soundBank.presets.find((p) => p.isDrumPreset(isXG))
                                 ?.program || 0;
                         SpessaSynthInfo(
                             `%cNo drum preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.messageData[0]}.`,
@@ -205,7 +205,7 @@ export function writeRMIDIInternal(
                     }
                 } else {
                     if (
-                        soundfont.presets.findIndex(
+                        soundBank.presets.findIndex(
                             (p) =>
                                 p.program === initialProgram &&
                                 !p.isDrumPreset(isXG)
@@ -213,7 +213,7 @@ export function writeRMIDIInternal(
                     ) {
                         // doesn't exist. pick any preset that does not have bank 128.
                         e.messageData[0] =
-                            soundfont.presets.find((p) => !p.isDrumPreset(isXG))
+                            soundBank.presets.find((p) => !p.isDrumPreset(isXG))
                                 ?.program || 0;
                         SpessaSynthInfo(
                             `%cNo preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.messageData[0]}.`,
@@ -240,13 +240,13 @@ export function writeRMIDIInternal(
                 // adjust bank for XG
                 let bank = chooseBank(realBank, bankLSB, channel.drums, isXG);
                 if (
-                    soundfont.presets.findIndex(
+                    soundBank.presets.findIndex(
                         (p) => p.bank === bank && p.program === e.messageData[0]
                     ) === -1
                 ) {
                     // no preset with this bank. find this program with any bank
                     const targetBank =
-                        (soundfont.presets.find(
+                        (soundBank.presets.find(
                             (p) => p.program === e.messageData[0]
                         )?.bank as number) + bankOffset || bankOffset;
                     channel.lastBank.messageData[1] = targetBank;
@@ -358,7 +358,7 @@ export function writeRMIDIInternal(
                     return;
                 }
                 const programTicks = track[programIndex].ticks;
-                const targetProgram = soundfont.getPreset(0, 0).program;
+                const targetProgram = soundBank.getPreset(0, 0).program;
                 track.splice(
                     programIndex,
                     0,
@@ -378,7 +378,7 @@ export function writeRMIDIInternal(
             );
             const ticks = track[indexToAdd].ticks;
             const targetBank =
-                soundfont.getPreset(0, has.program, isSystemXG(system))?.bank +
+                soundBank.getPreset(0, has.program, isSystemXG(system))?.bank +
                     bankOffset || bankOffset;
             track.splice(
                 indexToAdd,
@@ -583,6 +583,6 @@ export function writeRMIDIInternal(
         getStringBytes("RMID"),
         writeRIFFChunkRaw("data", newMid),
         writeRIFFChunkParts("INFO", infoContent, true),
-        soundfontBinary
+        soundBankBinary
     ]);
 }

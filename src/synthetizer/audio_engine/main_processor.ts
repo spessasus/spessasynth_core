@@ -4,7 +4,7 @@ import { EMBEDDED_SOUND_BANK_ID } from "./synth_constants";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/volume_envelope";
 import { getMasterParameter, setMasterParameter } from "./engine_methods/controller_control/master_parameters";
-import { SoundFontManager } from "./engine_components/soundfont_manager";
+import { SoundBankManager } from "./engine_components/sound_bank_manager";
 import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner";
 import { FILTER_SMOOTHING_FACTOR } from "./engine_components/lowpass_filter";
 import { getEvent } from "../../midi/midi_message";
@@ -53,7 +53,7 @@ export const SYNTHESIZER_GAIN = 1.0;
 // the core synthesis engine of spessasynth.
 export class SpessaSynthProcessor {
     // The sound bank manager, which manages all sound banks and presets.
-    public soundfontManager: SoundFontManager = new SoundFontManager(
+    public soundBankManager: SoundBankManager = new SoundBankManager(
         this.updatePresetList.bind(this)
     );
 
@@ -259,16 +259,16 @@ export class SpessaSynthProcessor {
         // the embedded bank is set as the first bank in the manager,
         // with a special ID that does not clear when reloadManager is performed.
         const loadedFont = SoundBankLoader.fromArrayBuffer(bank);
-        this.soundfontManager.addNewSoundFont(
+        this.soundBankManager.addNewSoundBank(
             loadedFont,
             EMBEDDED_SOUND_BANK_ID,
             offset
         );
         // rearrange so the embedded is first (most important as it overrides all others)
-        const order = this.soundfontManager.getCurrentSoundFontOrder();
+        const order = this.soundBankManager.getSoundBankOrder();
         order.pop();
         order.unshift(EMBEDDED_SOUND_BANK_ID);
-        this.soundfontManager.rearrangeSoundFonts(order);
+        this.soundBankManager.setSoundBankOrder(order);
 
         // apply snapshot again if applicable
         if (this.savedSnapshot !== undefined) {
@@ -284,11 +284,11 @@ export class SpessaSynthProcessor {
     // Removes the embedded sound bank from the synthesizer.
     clearEmbeddedBank() {
         if (
-            this.soundfontManager.soundBankList.some(
+            this.soundBankManager.soundBankList.some(
                 (s) => s.id === EMBEDDED_SOUND_BANK_ID
             )
         ) {
-            this.soundfontManager.deleteSoundFont(EMBEDDED_SOUND_BANK_ID);
+            this.soundBankManager.deleteSoundBank(EMBEDDED_SOUND_BANK_ID);
         }
     }
 
@@ -415,7 +415,7 @@ export class SpessaSynthProcessor {
         });
         this.privateProps.cachedVoices.length = 0;
         this.midiChannels.length = 0;
-        this.soundfontManager.destroyManager();
+        this.soundBankManager.destroyManager();
     }
 
     /**
@@ -600,7 +600,7 @@ export class SpessaSynthProcessor {
      * @param program the program number of the preset.
      */
     getPreset(bank: number, program: number): BasicPreset {
-        return this.soundfontManager.getPreset(
+        return this.soundBankManager.getPreset(
             bank,
             program,
             isSystemXG(this.privateProps.system)
@@ -696,7 +696,7 @@ export class SpessaSynthProcessor {
             bank: number;
             presetName: string;
             program: number;
-        }[] = this.soundfontManager.getPresetList();
+        }[] = this.soundBankManager.getPresetList();
         this.clearCache();
         this.privateProps.callEvent("presetlistchange", mainFont);
         this.getDefaultPresets();

@@ -7,7 +7,7 @@ import { consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
-import { SoundFontManager } from "../../synthetizer/audio_engine/engine_components/soundfont_manager";
+import { SoundBankManager } from "../../synthetizer/audio_engine/engine_components/sound_bank_manager";
 import { messageTypes, midiControllers } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
@@ -31,7 +31,7 @@ type InternalChannelType = {
  */
 export function getUsedProgramsAndKeys(
     mid: BasicMIDI,
-    soundfont: SoundFontManager | BasicSoundBank
+    soundfont: SoundBankManager | BasicSoundBank
 ): Record<string, Set<string>> {
     SpessaSynthGroupCollapsed(
         "%cSearching for all used programs and keys...",
@@ -68,7 +68,7 @@ export function getUsedProgramsAndKeys(
         );
         // check if this exists in the soundfont
         let existsBank, existsProgram;
-        if (soundfont instanceof SoundFontManager) {
+        if (soundfont instanceof SoundBankManager) {
             const exists: { preset: BasicPreset; bankOffset: number } =
                 soundfont.getPreset(bank, ch.program, isSystemXG(system));
             existsBank = exists.preset.bank + exists.bankOffset;

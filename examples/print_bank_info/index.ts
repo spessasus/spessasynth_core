@@ -13,10 +13,10 @@ const filePath = args[0];
 const file = fs.readFileSync(filePath);
 await BasicSoundBank.isSF3DecoderReady;
 const bank = SoundBankLoader.fromArrayBuffer(file.buffer);
-console.info("Loaded bank:", bank.soundFontInfo["INAM"]);
+console.info("Loaded bank:", bank.soundBankInfo["INAM"]);
 
 console.group("Bank information");
-Object.entries(bank.soundFontInfo).forEach(([key, value]) => {
+Object.entries(bank.soundBankInfo).forEach(([key, value]) => {
     console.info(`${key}: ${value.toString().trim()}`);
 });
 

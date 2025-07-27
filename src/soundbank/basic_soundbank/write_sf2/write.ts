@@ -77,27 +77,27 @@ export async function writeSF2Internal(
      * @type {IndexedByteArray[]}
      */
     const infoArrays: IndexedByteArray[] = [];
-    targetSoundBank.soundFontInfo["ISFT"] = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    targetSoundBank.soundBankInfo["ISFT"] = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
     if (
         options?.compress ||
         targetSoundBank.samples.some((s) => s.isCompressed)
     ) {
-        targetSoundBank.soundFontInfo["ifil"] = "3.0"; // set version to 3
+        targetSoundBank.soundBankInfo["ifil"] = "3.0"; // set version to 3
     }
     if (options?.decompress) {
-        targetSoundBank.soundFontInfo["ifil"] = "2.4"; // set version to 2.04
+        targetSoundBank.soundBankInfo["ifil"] = "2.4"; // set version to 2.04
     }
 
     if (options?.writeDefaultModulators) {
         // trigger the DMOD write
-        targetSoundBank.soundFontInfo["DMOD"] =
+        targetSoundBank.soundBankInfo["DMOD"] =
             `${targetSoundBank.defaultModulators.length} Modulators`;
         targetSoundBank.customDefaultModulators = true;
     } else {
-        delete targetSoundBank.soundFontInfo["DMOD"];
+        delete targetSoundBank.soundBankInfo["DMOD"];
     }
 
-    for (const [type, data] of Object.entries(targetSoundBank.soundFontInfo)) {
+    for (const [type, data] of Object.entries(targetSoundBank.soundBankInfo)) {
         const isString = typeof data === "string";
         if ((type === "ifil" || type === "iver") && isString) {
             const major = parseInt(data.split(".")[0]);

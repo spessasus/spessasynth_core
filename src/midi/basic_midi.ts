@@ -22,7 +22,7 @@ import type {
 } from "./types";
 import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
-import { SoundFontManager } from "../synthetizer/audio_engine/engine_components/soundfont_manager";
+import { SoundBankManager } from "../synthetizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 
 /**
@@ -32,9 +32,9 @@ import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
  */
 export class BasicMIDI extends MIDISequenceData {
     /**
-     * The embedded soundfont in the MIDI file, represented as an ArrayBuffer, if available.
+     * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
      */
-    embeddedSoundFont: ArrayBuffer | undefined = undefined;
+    embeddedSoundBank: ArrayBuffer | undefined = undefined;
 
     /**
      * The actual track data of the MIDI file, represented as an array of tracks.
@@ -71,8 +71,8 @@ export class BasicMIDI extends MIDISequenceData {
         m._copyFromSequence(mid);
 
         m.isDLSRMIDI = mid.isDLSRMIDI;
-        m.embeddedSoundFont = mid?.embeddedSoundFont
-            ? mid.embeddedSoundFont
+        m.embeddedSoundBank = mid?.embeddedSoundBank
+            ? mid.embeddedSoundBank
             : undefined; // Shallow copy
         m.tracks = mid.tracks.map((track) => [...track]); // Shallow copy of each track array
         return m;
@@ -87,8 +87,8 @@ export class BasicMIDI extends MIDISequenceData {
         const m = new BasicMIDI();
         m._copyFromSequence(mid);
         m.isDLSRMIDI = mid.isDLSRMIDI;
-        m.embeddedSoundFont = mid.embeddedSoundFont
-            ? mid.embeddedSoundFont.slice(0)
+        m.embeddedSoundBank = mid.embeddedSoundBank
+            ? mid.embeddedSoundBank.slice(0)
             : undefined; // Deep copy
         m.tracks = mid.tracks.map((track) =>
             track.map(
@@ -109,7 +109,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @returns The output data is a key-value pair: "bank:program" -> Set<"key-velocity">
      */
     getUsedProgramsAndKeys(
-        soundbank: SoundFontManager | BasicSoundBank
+        soundbank: SoundBankManager | BasicSoundBank
     ): Record<string, Set<string>> {
         return getUsedProgramsAndKeys(this, soundbank);
     }

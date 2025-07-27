@@ -108,7 +108,7 @@ export function loadMIDIFromArrayBufferInternal(
                         "%cFound embedded soundbank!",
                         consoleColors.recognized
                     );
-                    outputMIDI.embeddedSoundFont = binaryData.slice(
+                    outputMIDI.embeddedSoundBank = binaryData.slice(
                         startIndex,
                         startIndex + currentChunk.size
                     ).buffer;
@@ -189,7 +189,7 @@ export function loadMIDIFromArrayBufferInternal(
         }
 
         // if no embedded bank, assume 0
-        if (outputMIDI.embeddedSoundFont === undefined) {
+        if (outputMIDI.embeddedSoundBank === undefined) {
             outputMIDI.bankOffset = 0;
         }
     } else if (initialString === "XMF_") {

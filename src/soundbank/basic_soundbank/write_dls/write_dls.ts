@@ -63,13 +63,13 @@ export async function writeDLSInternal(
     }
     const ptbl = writeRIFFChunkRaw("ptbl", ptblData);
 
-    targetSoundBank.soundFontInfo["ICMT"] =
-        (targetSoundBank.soundFontInfo["ICMT"] || "Soundfont") +
+    targetSoundBank.soundBankInfo["ICMT"] =
+        (targetSoundBank.soundBankInfo["ICMT"] || "Soundfont") +
         "\nConverted from SF2 to DLS using SpessaSynth";
-    targetSoundBank.soundFontInfo["ISFT"] = "SpessaSynth";
+    targetSoundBank.soundBankInfo["ISFT"] = "SpessaSynth";
     // write INFO
     const infos = [];
-    for (const [info, data] of Object.entries(targetSoundBank.soundFontInfo)) {
+    for (const [info, data] of Object.entries(targetSoundBank.soundBankInfo)) {
         if (
             info !== "ICMT" &&
             info !== "INAM" &&

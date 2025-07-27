@@ -8,10 +8,10 @@ import type { midiControllers } from "../midi/enums";
 
 export type SoundBankManagerListEntry = {
     id: string;
-    soundfont: BasicSoundBank;
+    soundBank: BasicSoundBank;
     bankOffset: number;
 };
-export type SoundFontInfoFourCC =
+export type SoundBankInfoFourCC =
     | "INAM"
     | "ICRD"
     | "IENG"
@@ -27,7 +27,7 @@ export type SoundFontInfoFourCC =
     | "DMOD"
     | "LIST";
 export type SoundBankInfo = Partial<
-    Record<SoundFontInfoFourCC, string | IndexedByteArray>
+    Record<SoundBankInfoFourCC, string | IndexedByteArray>
 >;
 export type SampleAndGenerators = {
     instrumentGenerators: Generator[];

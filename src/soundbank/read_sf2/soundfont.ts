@@ -14,7 +14,7 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
-import type { SoundFontInfoFourCC } from "../types";
+import type { SoundBankInfoFourCC } from "../types";
 import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
 
@@ -78,12 +78,12 @@ export class SoundFont2 extends BasicSoundBank {
             const chunk = readRIFFChunk(infoChunk.chunkData);
             let text;
             // special cases
-            const headerTyped = chunk.header as SoundFontInfoFourCC;
+            const headerTyped = chunk.header as SoundBankInfoFourCC;
             switch (headerTyped) {
                 case "ifil":
                 case "iver":
                     text = `${readLittleEndian(chunk.chunkData, 2)}.${readLittleEndian(chunk.chunkData, 2)}`;
-                    this.soundFontInfo[headerTyped] = text;
+                    this.soundBankInfo[headerTyped] = text;
                     break;
 
                 case "ICMT":
@@ -92,7 +92,7 @@ export class SoundFont2 extends BasicSoundBank {
                         chunk.chunkData.length,
                         false
                     );
-                    this.soundFontInfo[headerTyped] = text;
+                    this.soundBankInfo[headerTyped] = text;
                     break;
 
                 // dmod: default modulators
@@ -103,7 +103,7 @@ export class SoundFont2 extends BasicSoundBank {
                     // override default modulators
                     this.defaultModulators = newModulators;
                     this.customDefaultModulators = true;
-                    this.soundFontInfo[headerTyped] = text;
+                    this.soundBankInfo[headerTyped] = text;
                     break;
                 }
 
@@ -125,7 +125,7 @@ export class SoundFont2 extends BasicSoundBank {
                         chunk.chunkData,
                         chunk.chunkData.length
                     );
-                    this.soundFontInfo[headerTyped] = text;
+                    this.soundBankInfo[headerTyped] = text;
             }
 
             SpessaSynthInfo(
@@ -379,7 +379,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
         this.flush();
         SpessaSynthInfo(
-            `%cParsing finished! %c"${this.soundFontInfo["INAM"]}"%c has %c${this.presets.length} %cpresets,
+            `%cParsing finished! %c"${this.soundBankInfo["INAM"]}"%c has %c${this.presets.length} %cpresets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             consoleColors.info,
             consoleColors.recognized,

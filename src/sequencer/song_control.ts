@@ -61,13 +61,13 @@ export function loadNewSequenceInternal(
     this.synth.clearEmbeddedBank();
 
     // check for embedded soundfont
-    if (this.midiData.embeddedSoundFont !== undefined) {
+    if (this.midiData.embeddedSoundBank !== undefined) {
         SpessaSynthInfo(
             "%cEmbedded soundbank detected! Using it.",
             consoleColors.recognized
         );
         this.synth.setEmbeddedSoundBank(
-            this.midiData.embeddedSoundFont,
+            this.midiData.embeddedSoundBank,
             this.midiData.bankOffset
         );
     }
@@ -75,7 +75,7 @@ export function loadNewSequenceInternal(
     SpessaSynthGroupCollapsed("%cPreloading samples...", consoleColors.info);
     // smart preloading: load only samples used in the midi!
     const used = this.midiData.getUsedProgramsAndKeys(
-        this.synth.soundfontManager
+        this.synth.soundBankManager
     );
     for (const [programBank, combos] of Object.entries(used)) {
         const [bank, program] = programBank.split(":").map(Number);
