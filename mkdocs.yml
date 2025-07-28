@@ -1,4 +1,4 @@
-site_name: spessasynth_core
+site_name: spessasynth_core docs
 site_description: Documentation for the spessasynth_core JavaScript SoundFont2/DLS MIDI Library.
 site_author: spessasus
 site_url: https://spessasus.github.io/spessasynth_core
@@ -20,6 +20,7 @@ markdown_extensions:
   - smarty
   - toc
   - tables
+  - meta
 
 theme:
   name: material
@@ -51,49 +52,49 @@ theme:
     - content.code.select
     - navigation.instant
     - navigation.instant.progress
-    - navigation.instant.prefetch
     - navigation.tracking
     - navigation.tabs
     - navigation.top
     - navigation.expand
 
     - toc.follow
-    - toc.integrate
 
     - header.autohide
 
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Home: index.md
   - Issue Tracker: 'https://github.com/spessasus/spessasynth_core/issues'
   - Documentation:
-      - Getting-Started.md
+      - getting-started/index.md
       - SpessaSynthProcessor:
-          - SpessaSynthProcessor-Class.md
-          - Sound-Bank-Manager.md
-          - Key-Modifier-Manager.md
-          - Synth-Event-Types.md
-          - Synthesizer-Snapshot.md
-      - SpessaSynthSequencer: SpessaSynthSequencer-Class.md
-      - All NPM exports: All-NPM-Exports.md
+          - spessa-synth-processor/index.md
+          - spessa-synth-processor/sound-bank-manager.md
+          - spessa-synth-processor/key-modifier-manager.md
+          - spessa-synth-processor/event-types.md
+          - spessa-synth-processor/synthesizer-snapshot.md
+      - SpessaSynthSequencer: spessa-synth-sequencer/index.md
       - Sound banks:
-          - Sound-Bank.md
-          - Preset: Preset-Class.md
-          - Sample: Sample-Class.md
-          - Modulator: Modulator-Class.md
-          - Generator: Generator-Class.md
+          - sound-bank/index.md
+          - Preset: sound-bank/preset.md
+          - Sample: sound-bank/sample.md
+          - Modulator: sound-bank/modulator.md
+          - Generator: sound-bank/generator.md
       - MIDI:
-          - MIDI-Parser.md
-          - Creating-MIDI-Files.md
+          - midi/index.md
+          - midi/creating-midi-files.md
       - File Writing:
-          - Writing-Wave-Files.md
-          - Writing-MIDI-Files.md
-          - Converting-Between-Formats.md
-      - MIDI-Implementation.md
+          - writing-files/wav.md
+          - writing-files/midi.md
+          - writing-files/converting-between-formats.md
 
-  - Extra Docs:
-      - Developing.md
-      - Logging.md
-      - About-Multi-Port.md
+  - Extra Info:
+      - extra/midi-implementation.md
+      - extra/all-npm-exports.md
+      - extra/developer-docs.md
+      - extra/console-output.md
+      - extra/about-multi-port.md
       - SF2 RMIDI Extension Specification: https://github.com/spessasus/sf2-rmidi-specification#readme
-      - DLS-Conversion-Problem.md
+      - extra/dls-conversion-problem.md

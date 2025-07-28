@@ -161,7 +161,8 @@ console.log(parsedMIDI.midiPorts); // [0, 0, 0, 1, 1, 2, ...]
 
 ### midiPortChannelOffsets
 
-The channel offsets for each MIDI port, using the [SpessaSynth method](About-Multi-Port.md#spessasynth-implementation)
+The channel offsets for each MIDI port, using
+the [SpessaSynth method](../extra/about-multi-port.md#spessasynth-implementation)
 
 ```js
 console.log(parsedMIDI.midiPortChannelOffsets); // [16, 0, 48, 32, ...]
@@ -246,7 +247,7 @@ The returned value is the time in seconds from the start of the MIDI to the give
 ### writeMIDI
 
 Renders the sequence as a .mid-file.
-See [Writing MIDI files](Writing-MIDI-Files.md#writemidi) for more info.
+See [Writing MIDI files](../writing-files/midi.md#writemidi) for more info.
 
 ```js
 midi.writeMIDI();
@@ -270,17 +271,17 @@ const rmidiBinary = midi.writeRMIDI(
 );
 ```
 
-- See [Writing MIDI files](Writing-MIDI-Files.md#writermidi) for more info.
+- See [Writing MIDI files](../writing-files/midi.md#writermidi) for more info.
 
 ### modifyMIDI
 
 A function for modifying MIDI files.
-See [Writing MIDI files](Writing-MIDI-Files.md#modifymidi) for more info.
+See [Writing MIDI files](../writing-files/midi.md#modifymidi) for more info.
 
 ### applySnapshotToMIDI
 
-A function for applying a [Synthesizer snapshot](Synthesizer-Snapshot.md) to a MIDI file.
-See [Writing MIDI files](Writing-MIDI-Files.md) for more info.
+A function for applying a [Synthesizer snapshot](../spessa-synth-processor/synthesizer-snapshot.md) to a MIDI file.
+See [Writing MIDI files](../writing-files/midi.md) for more info.
 
 ### getUsedProgramsAndKeys
 

@@ -6,7 +6,7 @@ Below is a basic guide to writing .mid and .rmi files.
 
 !!! Important
 
-    Also see [Creating MIDI Files From Scratch](Creating-MIDI-Files.md)
+    Also see [Creating MIDI Files From Scratch](../midi/creating-midi-files.md)
 
 ### writeMIDI
 
@@ -68,7 +68,7 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 
 ### applySnapshot
 
-Applies a [SynthesizerSnapshot](Synthesizer-Snapshot.md) to the sequence *in place*.
+Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence *in place*.
 This means changing the programs and controllers if they are locked.
 
 ```js
@@ -185,7 +185,7 @@ Defaults to `true`.
 
 !!! Tip
 
-    use [trimSoundBank](Sound-Bank.md#trimsoundbank) to drastically reduce the file size.
+    use [trimSoundBank](../sound-bank/index.md#trimsoundbank) to drastically reduce the file size.
     consider also using compression (like shown in example) to save even more space.
     (using these both methods, I managed to cram a 1GB soundfont into a 5MB RMIDI!)
 
@@ -204,7 +204,7 @@ Below is a simple example for exporting an RMIDI file
 !!! Note
 
     This example uses soundfont3 compression.
-    Make sure you've [read this](Sound-Bank.md#compressionfunction)
+    Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
 ```js
 const sfInput = document.getElementById("soundfont_upload");

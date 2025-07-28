@@ -1,6 +1,6 @@
 # NPN Exports
 
-This is a (non-exhaustive) list of exports in the NPM package
+This is a (non-exhaustive) list of exports in the NPM package.
 
 !!! Tip
 

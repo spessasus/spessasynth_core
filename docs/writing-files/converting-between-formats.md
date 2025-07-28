@@ -16,7 +16,7 @@ and efficiently.
 !!! Note
 
     This example uses soundfont3 compression.
-    Make sure you've [read this](Sound-Bank.md#compressionfunction)
+    Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
 ```js
 const sfont = loadSoundFont(input);
@@ -35,7 +35,7 @@ const output = await sfont.write();
 
 ## SF2 To DLS
 
-Make sure to read about [the DLS conversion problem](DLS-Conversion-Problem.md)
+Make sure to read about [the DLS conversion problem](../extra/dls-conversion-problem.md)
 
 ```js
 const sfont = loadSoundFont(input);

@@ -1,4 +1,4 @@
-# Sound Bank Parser
+# Sound Bank
 
 This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
 
@@ -28,7 +28,7 @@ The returned value is the parsed `BasicSoundBank`, described below.
 
 ### getPreset
 
-Returns the matching [`Preset` class](Preset-Class.md) instance.
+Returns the matching [`Preset` class](preset.md) instance.
 
 ```js
 const preset = soundBank.getPreset(bankNr, presetNr);
@@ -42,7 +42,7 @@ If the requested bank is 128, the first preset with bank 128 will be returned (d
 
 ### getPresetByName
 
-Returns the matching [`Preset` class](Preset-Class.md) instance.
+Returns the matching [`Preset` class](preset.md) instance.
 
 ```js
 const preset = soundBank.getPresetByName(presetName);
@@ -102,7 +102,7 @@ const dls = await soundBank.writeDLS(options);
 !!! Caution
 
     This method is experimental and may produce corrupted files.
-    [See this for more info.](DLS-Conversion-Problem.md)
+    [See this for more info.](../extra/dls-conversion-problem.md)
 
 !!! Important
 
@@ -216,7 +216,7 @@ more information.
 
 ### defaultModulators
 
-All the default modulators for this bank. A list of [Modulator Objects](Modulator-Class.md)
+All the default modulators for this bank. A list of [Modulator Objects](modulator.md)
 
 ### customDefaultModulators
 
@@ -238,20 +238,20 @@ editing the sound bank.
         - `globalZone` (BasicGlobalZone) -> The global zone of this instrument.
         - `keyRange` ({min: number, max: number}) -> Key range of the zone.
         - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-        - `generators` ([Generator](Generator-Class.md)[]) -> Generators of the zone.
-        - `modulators` ([Modulator](Modulator-Class.md)[]) -> Modulators of the zone.
+        - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
+        - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
         - `linkedPresets` (BasicPreset[]) -> All the presets that are using this instrument.
           Note that there may be duplicates of the same preset if it uses the sample multiple times.
             - `instrumentZones` (InstrumentZone[]) -> All zones of the instrument.
             - `keyRange` ({min: number, max: number}) -> Key range of the zone.
             - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-            - `generators` ([Generator](Generator-Class.md)[]) -> Generators of the zone.
-            - `modulators` ([Modulator](Modulator-Class.md)) -> Modulators of the zone.
+            - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
+            - `modulators` ([Modulator](modulator.md)) -> Modulators of the zone.
             - `globalZone` (BasicZone) -> The global zone of this instrument.
             - `sample` (BasicSample) -> The sample of the zone. Undefined if global.
-            - See [Sample class](Sample-Class.md)
-- `samples` ([BasicSample](Sample-Class.md)[]) -> All samples.
-- `presets` ([BasicPreset](Preset-Class.md)[]) -> All presets.
+            - See [Sample class](sample.md)
+- `samples` ([BasicSample](sample.md)[]) -> All samples.
+- `presets` ([BasicPreset](preset.md)[]) -> All presets.
     - `presetName` (string) -> The name of the preset.
     - `program` (number) -> The preset's MIDI program.
     - `bank` (number) -> The preset's MIDI bank.
@@ -261,13 +261,13 @@ editing the sound bank.
     - `globalZone` (BasicGlobalZone) -> The global zone of this preset.
         - `keyRange` ({min: number, max: number}) -> Key range of the zone.
         - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-        - `generators` ([Generator](Generator-Class.md)[]) -> Generators of the zone.
-        - `modulators` ([Modulator](Modulator-Class.md)[]) -> Modulators of the zone.
+        - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
+        - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
     - `presetZones` (PresetZone[]) -> All zones of the preset.
         - `keyRange` ({min: number, max: number}) -> Key range of the zone.
         - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-        - `generators` ([Generator](Generator-Class.md)[]) -> Generators of the zone.
-        - `modulators` ([Modulator](Modulator-Class.md)[]) -> Modulators of the zone.
+        - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
+        - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
         - `instrument` (BasicInstrument) -> The zone's instrument. Undefined if global.
 
 ### progressFunction

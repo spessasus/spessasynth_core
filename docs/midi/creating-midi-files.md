@@ -14,8 +14,8 @@ const mid = new MIDIBuilder(name, timeDivision = 480, initialTempo = 120);
 
 The file is initialized with one track.
 
-This class inherits from `MIDI` which means it can simply be passed to [writeMIDI](Writing-MIDI-Files.md#writemidi)
-or [SpessaSynthSequencer](SpessaSynthSequencer-Class.md).
+This class inherits from `MIDI` which means it can simply be passed to [writeMIDI](../writing-files/midi.md#writemidi)
+or [SpessaSynthSequencer](../spessa-synth-sequencer/index.md).
 
 ## Methods
 
@@ -124,7 +124,9 @@ mid.addControllerChange(ticks, track, channel, controllerNumber, controllerValue
 - `ticks` - `number` - the MIDI tick time of the event.
 - `track` - `number` - the track to use.
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
-- `controllerNumber` - `number` - the [MIDI Controller Number](MIDI-Implementation.md#default-supported-controllers) to
+- `controllerNumber` - `number` -
+  the [MIDI Controller Number](../extra/midi-implementation.md#default-supported-controllers)
+  to
   change.
 - `controllerValue` - `number` - the new value of the controller. 0 to 127.
 

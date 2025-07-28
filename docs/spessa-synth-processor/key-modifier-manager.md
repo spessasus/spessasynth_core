@@ -1,9 +1,11 @@
 ## Synthesizer Key Modifier Manager
+
 This powerful tool allows modifying each key on each channel to your needs.
 
-It is accessible via the `keyModifierManager` property of the [SpessaSynthProcessor class](SpessaSynthProcessor-Class.md).
+It is accessible via the `keyModifierManager` property of the [SpessaSynthProcessor class](index.md).
 
 Currently, it supports overriding:
+
 - the velocity of that note
 - the preset used on that note
 - the key's linear gain
@@ -53,11 +55,13 @@ synth.keyModifierManager.clearModifiers();
 ```
 
 ### KeyModifier
+
 A basic class for specifying a modification for a single key.
 
 ```js
 const modifier = new KeyModifier(velocity, bank, program, gain);
 ```
+
 - velocity - the override MIDI velocity to use. Pass -1 to leave it unchanged.
 - bank - the override MIDI bank number to use. Pass -1 to leave it unchanged.
 - program - the override MIDI program number to use. Pass -1 to leave it unchanged.

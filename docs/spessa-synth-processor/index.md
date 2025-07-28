@@ -18,8 +18,8 @@ const synth = new SpessaSynthProcessor(sampleRate, options);
 
 ### Managers
 
-- [Key Modifier Manager](Key-Modifier-Manager.md)
-- [Sound Bank Manager](Sound-Bank-Manager.md)
+- [Key Modifier Manager](key-modifier-manager.md)
+- [Sound Bank Manager](sound-bank-manager.md)
 
 ### options
 
@@ -203,7 +203,7 @@ synth.systemExclusive(messageData, channelOffset = 0);
 !!! Tip
 
     Refer to 
-    [MIDI Implementation](MIDI-Implementation.md) for the list of supported System Exclusives.
+    [MIDI Implementation](../extra/midi-implementation.md) for the list of supported System Exclusives.
 
 ### controllerChange
 
@@ -275,7 +275,9 @@ Set a MIDI bank select system.
 synth.setSystem(system);
 ```
 
-- system - `gs`, `gm2`, `gm` or `xg` - refer to [MIDI implementation](MIDI-Implementation.md#supported-bank-systems) for
+- system - `gs`, `gm2`, `gm` or `xg` - refer
+  to [MIDI implementation](../extra/midi-implementation.md#supported-bank-systems)
+  for
   more info.
 
 ## Properties
@@ -289,7 +291,7 @@ Parameters:
 - eventType - string - the event type.
 - eventData - depends - the event data.
 
-[Refer to the synth event types for all events.](Synth-Event-Types.md)
+[Refer to the synth event types for all events.](event-types.md)
 
 ### onChannelPropertyChange
 

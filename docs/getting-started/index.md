@@ -63,7 +63,7 @@ for (let i = 0; i < 16; i++) {
 }
 ```
 
-Check out the [renderAudio method](SpessaSynthProcessor-Class.md#renderaudio) for more information.
+Check out the [renderAudio method](../spessa-synth-processor/index.md#renderaudio) for more information.
 
 ## Examples
 
