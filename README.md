@@ -120,7 +120,7 @@ npm install --save spessasynth_core
 - **Easy saving:** *Save with
   just [one function!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writemidi)*
 
-#### Read and write [RMID files with embedded SF2 soundfonts](https://github.com/spessasus/sf2-rmidi-specification#readme)*
+#### Read and write [RMID files with embedded sound banks](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
 - **[Level 4](https://github.com/spessasus/sf2-rmidi-specification#level-4) compliance:** Reads and writes *everything!*
 - **Compression and trimming support:** *Reduce a MIDI file with a 1GB sound bank to **as small as 5MB**!*
