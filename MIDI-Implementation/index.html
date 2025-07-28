@@ -1,0 +1,2276 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the spessasynth_core JavaScript SoundFont2/DLS MIDI Library.">
+      
+      
+        <meta name="author" content="spessasus">
+      
+      
+        <link rel="canonical" href="https://spessasus.github.io/spessasynth_core/MIDI-Implementation/">
+      
+      
+        <link rel="prev" href="../Converting-Between-Formats/">
+      
+      
+        <link rel="next" href="../Developing/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>MIDI Implementation - spessasynth_core</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.bcfcd587.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#midi-implementation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="spessasynth_core" class="md-header__button md-logo" aria-label="spessasynth_core" data-md-component="logo">
+      
+  <img src="../assets/images/favicon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spessasynth_core
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MIDI Implementation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69m-9.15 3.96h2.3L12 9l-1.15 3.65Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/spessasus/spessasynth_core" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spessasus/spessasynth_core
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/spessasus/spessasynth_core/issues" class="md-tabs__link">
+        
+  
+    
+  
+  Issue Tracker
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../Getting-Started/" class="md-tabs__link">
+          
+  
+  Documentation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../Developing/" class="md-tabs__link">
+          
+  
+  Extra Docs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="spessasynth_core" class="md-nav__button md-logo" aria-label="spessasynth_core" data-md-component="logo">
+      
+  <img src="../assets/images/favicon.png" alt="logo">
+
+    </a>
+    spessasynth_core
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/spessasus/spessasynth_core" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spessasus/spessasynth_core
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/spessasus/spessasynth_core/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issue Tracker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Documentation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Getting-Started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    SpessaSynthProcessor
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            SpessaSynthProcessor
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SpessaSynthProcessor-Class/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SpessaSynthProcessor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Sound-Bank-Manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sound Bank Manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Key-Modifier-Manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Key Modifier Manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Synth-Event-Types/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Callback Event Types
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Synthesizer-Snapshot/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Synthesizer Snapshot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SpessaSynthSequencer-Class/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SpessaSynthSequencer
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../All-NPM-Exports/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    All NPM exports
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Sound banks
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            Sound banks
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Sound-Bank/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sound Bank Parser
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Preset-Class/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Preset
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Sample-Class/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sample
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Modulator-Class/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Modulator
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Generator-Class/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Generator
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    MIDI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            MIDI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MIDI-Parser/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MIDI Loader
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Creating-MIDI-Files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating MIDI files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    File Writing
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            File Writing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Writing-Wave-Files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing Wave files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Writing-MIDI-Files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing MIDI Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Converting-Between-Formats/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Converting between various file formats
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    MIDI Implementation
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    MIDI Implementation
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-midi-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported MIDI Messages
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controllers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controllers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-supported-controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Supported Controllers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default-controller-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default controller values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter-numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameter Numbers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameter Numbers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-registered-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Registered Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-non-registered-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Non-Registered Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported Non-Registered Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-vibrato" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Vibrato
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#soundfont2-nrpn" class="md-nav__link">
+    <span class="md-ellipsis">
+      SoundFont2 NRPN
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#awe32-nrpn-compatibility-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWE32 NRPN Compatibility Layer
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-exlusives" class="md-nav__link">
+    <span class="md-ellipsis">
+      System Exlusives
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Exlusives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-system-exclusives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported System Exclusives
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-bank-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Bank systems
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported Bank systems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gm" class="md-nav__link">
+    <span class="md-ellipsis">
+      GM
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gm2" class="md-nav__link">
+    <span class="md-ellipsis">
+      GM2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gs" class="md-nav__link">
+    <span class="md-ellipsis">
+      GS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xg" class="md-nav__link">
+    <span class="md-ellipsis">
+      XG
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gs-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      GS Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xg-part-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      XG Part Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#midi-tuning-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      MIDI Tuning Standard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#portamento-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Portamento Implementation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Extra Docs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Extra Docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Developing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing to spessasynth_core
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Managing the console output
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../About-Multi-Port/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About Multi-Port MIDI Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/spessasus/sf2-rmidi-specification#readme" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SF2 RMIDI Extension Specification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DLS-Conversion-Problem/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    The DLS Conversion problem
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="midi-implementation">MIDI Implementation</h1>
+<p>This describes what messages SpessaSynth can receive.</p>
+<p><a href="https://amei.or.jp/midistandardcommittee/RP&amp;CAj.html">Here&rsquo;s a useful resource about the MIDI standard. It&rsquo;s in japanese, but all the PDFs are english.</a></p>
+<h2 id="supported-midi-messages">Supported MIDI Messages</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>⚠️NON-STANDARD!⚠️ means that this is an additional modulator that is not specified in the SF2 specification.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Supported?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Note On</td>
+<td>✔️</td>
+<td></td>
+</tr>
+<tr>
+<td>Note Off</td>
+<td>✔️</td>
+<td>Does not support note off velocity (Per SF2 specification)</td>
+</tr>
+<tr>
+<td>Note Aftertouch</td>
+<td>✔️</td>
+<td>50 cents of vibrato ⚠️NON-STANDARD!⚠️</td>
+</tr>
+<tr>
+<td>Controller Change</td>
+<td>✔️</td>
+<td><a href="#default-supported-controllers">See below</a></td>
+</tr>
+<tr>
+<td>Program Change</td>
+<td>✔️</td>
+<td>GM, GM2, GS, XG</td>
+</tr>
+<tr>
+<td>Channel Pressure</td>
+<td>✔️</td>
+<td>50 cents of vibrato</td>
+</tr>
+<tr>
+<td>Pitch Wheel</td>
+<td>✔️</td>
+<td>Controlled by Pitch Wheel range (both semitones and cents)</td>
+</tr>
+<tr>
+<td>System exclusive</td>
+<td>✔️</td>
+<td><a href="#supported-system-exclusives">See below</a></td>
+</tr>
+<tr>
+<td>Time Code</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>Song Position</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>Song Select</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>Tune Request</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>MIDI Clock</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>MIDI Start</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>MIDI Continue</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>MIDI Stop</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>Active Sense</td>
+<td>❌</td>
+<td>Not Applicable</td>
+</tr>
+<tr>
+<td>System Reset</td>
+<td>✔️</td>
+<td>Can only be received via MIDI ports as 0xFF in MIDI files means a meta message</td>
+</tr>
+</tbody>
+</table>
+<h2 id="controllers">Controllers</h2>
+<h3 id="default-supported-controllers">Default Supported Controllers</h3>
+<p>Below is the list of controllers supported by default.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Theoretically all controllers are supported as it depends on the SoundFont&rsquo;s modulators. These are the controllers that are supported by default/have default modulators.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more info, see <a href="../Modulator-Class/#default-modulators">default modulators</a></p>
+</div>
+<table>
+<thead>
+<tr>
+<th>CC</th>
+<th>Controller name</th>
+<th>Value</th>
+<th>Explanation</th>
+<th>Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Bank Select</td>
+<td>The bank number (0 - 127)</td>
+<td>Changes the bank number that is used in programChange. Note that it doesn&rsquo;t change the preset on its own. <a href="#supported-bank-systems">See this for more info</a></td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Modulation Wheel</td>
+<td>The modulation depth (0 - 127) mapped to max 50 cents of detune</td>
+<td>Controls the vibrato for the given patch.</td>
+<td>0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Portamento Time</td>
+<td>The portamento time (0 - 127)</td>
+<td>Controls the portamento time. <a href="#portamento-implementation">See portamento implementation</a> A value of 0 effectively disables portamento.</td>
+<td>0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Data Entry MSB</td>
+<td>Data entry value (0 - 127)</td>
+<td>This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values.</td>
+<td>none</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Main Volume</td>
+<td>The volume (0 - 127) 0 is silent, 127 is normal volume</td>
+<td>Changes the channel&rsquo;s volume.</td>
+<td>100</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Pan</td>
+<td>0 is left, 64 is middle, 127 is right</td>
+<td>Controls the channel&rsquo;s stereo balance</td>
+<td>64</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Expression controller</td>
+<td>The expression (0 - 127) 0 is silent, 127 is normal volume</td>
+<td>Works exactly like Main Volume, but it&rsquo;s independent.</td>
+<td>127</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Bank Select LSB</td>
+<td>The bank number (0 - 127)</td>
+<td>Changes the bank number that is used in programChange. Note that it doesn&rsquo;t change the preset on its own. <a href="#supported-bank-systems">See this for more info</a></td>
+<td>0</td>
+</tr>
+<tr>
+<td>33 - 64 excluding 38</td>
+<td>Controller LSB values</td>
+<td>The lower nibble of the value (0 - 127)</td>
+<td>Allows precise control of values such as volume, expression, pan. Extends the precision from 0 - 127 to 0 - 16384 (!)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>38</td>
+<td>Data Entry LSB</td>
+<td>Data entry value (0 - 127)</td>
+<td>This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values.</td>
+<td>none</td>
+</tr>
+<tr>
+<td>64</td>
+<td>Sustain Pedal</td>
+<td>0 - 63 is off, 64 - 127 is on</td>
+<td>Holds the noteOff messages until the pedal is off, then stops them all at once.</td>
+<td>0 (off)</td>
+</tr>
+<tr>
+<td>65</td>
+<td>Portamento On/Off</td>
+<td>0 - 63 is off, 64 - 127 is on</td>
+<td>Controls if the portamento is enabled or not.</td>
+<td>on</td>
+</tr>
+<tr>
+<td>71</td>
+<td>Filter Reasonance</td>
+<td>The resonance (0 - 127) 0 is 25 dB less, 64 is unchanged, 127 is 25 dB more          ⚠️NON-STANDARD!⚠️</td>
+<td>Controls the filter resonance of the given patch.</td>
+<td>64</td>
+</tr>
+<tr>
+<td>72</td>
+<td>Attack Time</td>
+<td>The attack time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest          ⚠️NON-STANDARD!⚠️</td>
+<td>Controls the attack time for the given patch.</td>
+<td>64</td>
+</tr>
+<tr>
+<td>73</td>
+<td>Release Time</td>
+<td>The release time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest         ⚠️NON-STANDARD!⚠️</td>
+<td>Controls the release time for the given patch.</td>
+<td>64</td>
+</tr>
+<tr>
+<td>74</td>
+<td>Brightness</td>
+<td>The brightness (0 - 127) 0 is muffled, 64 is no additional filter, 127 is most clear ⚠️NON-STANDARD!⚠️</td>
+<td>Controls the brightness (lowpass frequency) of the given patch.</td>
+<td>64</td>
+</tr>
+<tr>
+<td>84</td>
+<td>Portamento Control</td>
+<td>The key number glide should start from (0 - 127)</td>
+<td>Controls the portamento target key. <a href="#portamento-implementation">See portamento implementation</a></td>
+<td>0</td>
+</tr>
+<tr>
+<td>91</td>
+<td>Effects 1 Depth (reverb)</td>
+<td>The reverb depth (0 - 127) <a href="../Modulator-Class/#reverb-and-chorus-modulators">See important info</a></td>
+<td>Controls the reverb effect send for the given channel.</td>
+<td>0</td>
+</tr>
+<tr>
+<td>92</td>
+<td>Effects 2 Depth (tremolo)</td>
+<td>The tremolo depth (0 - 127) mapped to 25dB of loudness variation                     ⚠️NON-STANDARD!⚠️</td>
+<td>Controls the tremolo (trembling) effect for the given patch.</td>
+<td>0</td>
+</tr>
+<tr>
+<td>93</td>
+<td>Effects 3 Depth (chorus)</td>
+<td>The chorus depth (0 - 127) <a href="../Modulator-Class/#reverb-and-chorus-modulators">See important info</a></td>
+<td>Controls the chorus effect for the given channel.</td>
+<td>0</td>
+</tr>
+<tr>
+<td>99</td>
+<td>Non-Registered Parameter Number MSB</td>
+<td>Parameter number (0 - 127)</td>
+<td>Selects a Non-Registered Parameter&rsquo;s Coarse to the given value. <a href="#supported-non-registered-parameters">Here are the currently supported values.</a>.</td>
+<td>none</td>
+</tr>
+<tr>
+<td>98</td>
+<td>Non-Registered Parameter Number LSB</td>
+<td>Parameter number (0 - 127)</td>
+<td>Selects a Non-Registered Parameter&rsquo;s Fine to the given value. <a href="#supported-non-registered-parameters">Here are the currently supported values.</a>.</td>
+<td>none</td>
+</tr>
+<tr>
+<td>100</td>
+<td>Registered Parameter Number LSB</td>
+<td>Parameter number (0 - 127)</td>
+<td>Selects a Registered Parameter&rsquo;s Fine to the given value. <a href="#supported-registered-parameters">Here are the currently supported values.</a>.</td>
+<td>none</td>
+</tr>
+<tr>
+<td>101</td>
+<td>Registered Parameter Number MSB</td>
+<td>Parameter number (0 - 127)</td>
+<td>Selects a Registered Parameter&rsquo;s Coarse to the given value. <a href="#supported-registered-parameters">Here are the currently supported values.</a>.</td>
+<td>none</td>
+</tr>
+<tr>
+<td>120 or 123</td>
+<td>All Notes Off or All Sound Off</td>
+<td>Not Applicable</td>
+<td>Stops all the notes. Equivalent to MIDI &ldquo;panic&rdquo;.</td>
+<td>N.A.</td>
+</tr>
+<tr>
+<td>121</td>
+<td>Reset All Controllers</td>
+<td>Not Applicable</td>
+<td>Resets all controllers to their default values.</td>
+<td>N.A.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="default-controller-values">Default controller values</h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>&ldquo;Reset All Controllers&rdquo; (CC#121) is implemented according
+to <a href="https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf">RP-15 recommended practice.</a></p>
+</div>
+<p>Below are all the controller values which are not zero when the controllers are reset.</p>
+<table>
+<thead>
+<tr>
+<th>CC Number</th>
+<th>Name</th>
+<th>Reset Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7</td>
+<td>Main Volume</td>
+<td>100</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Balance</td>
+<td>64</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Expression Controller</td>
+<td>127</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Pan</td>
+<td>64</td>
+</tr>
+<tr>
+<td>71</td>
+<td>Timbre Harmonic Content</td>
+<td>64</td>
+</tr>
+<tr>
+<td>72</td>
+<td>Release Time</td>
+<td>64</td>
+</tr>
+<tr>
+<td>73</td>
+<td>Attack Time</td>
+<td>64</td>
+</tr>
+<tr>
+<td>74</td>
+<td>Brightness</td>
+<td>64</td>
+</tr>
+<tr>
+<td>75</td>
+<td>Sound Controller 6</td>
+<td>64</td>
+</tr>
+<tr>
+<td>76</td>
+<td>Sound Controller 7</td>
+<td>64</td>
+</tr>
+<tr>
+<td>77</td>
+<td>Sound Controller 8</td>
+<td>64</td>
+</tr>
+<tr>
+<td>78</td>
+<td>Sound Controller 9</td>
+<td>64</td>
+</tr>
+<tr>
+<td>81</td>
+<td>General Purpose Controller 6</td>
+<td>64</td>
+</tr>
+<tr>
+<td>83</td>
+<td>General Purpose Controller 8</td>
+<td>64</td>
+</tr>
+</tbody>
+</table>
+<h2 id="parameter-numbers">Parameter Numbers</h2>
+<h3 id="supported-registered-parameters">Supported Registered Parameters</h3>
+<p>Below is the list of currently implemented Registered Parameters.</p>
+<table>
+<thead>
+<tr>
+<th>RPN MSB</th>
+<th>RPN LSB</th>
+<th>Name</th>
+<th>Explanation</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>Pitch Wheel range</td>
+<td>The range in semitones of the <code>synth.pitchWheel()</code> method.</td>
+<td>2 semitones</td>
+</tr>
+<tr>
+<td>0</td>
+<td>2</td>
+<td>Channel Coarse Tuning</td>
+<td>The channel&rsquo;s tuning in semitones</td>
+<td>No tuning (0 semitones)</td>
+</tr>
+<tr>
+<td>0</td>
+<td>3</td>
+<td>Channel Fine Tuning</td>
+<td>The channel&rsquo;s tuning, like a pitch bend message (precise tuning in 2 semitones)</td>
+<td>No tuning (0 cents)</td>
+</tr>
+<tr>
+<td>0</td>
+<td>5</td>
+<td>Channel Modulation Depth</td>
+<td>The channel&rsquo;s modulation (vibrato) depth. Note that this doesn&rsquo;t set the cents directly, but rather scales the soundfont modulator value (for example if set to twice the MIDI default value, the modulator controlling vibrato depth will be multiplied by 2)</td>
+<td>default sf2 depth (50 cents)</td>
+</tr>
+<tr>
+<td>127</td>
+<td>127</td>
+<td>Reset parameters</td>
+<td>Resets all parameters</td>
+<td>N.A.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="supported-non-registered-parameters">Supported Non-Registered Parameters</h3>
+<p>Below is the list of currently implemented Non-Registered Parameters.
+Note that all these are non-standard GM.
+<strong>These only apply for GS</strong></p>
+<table>
+<thead>
+<tr>
+<th>NRPN MSB</th>
+<th>NRPN LSB</th>
+<th>Name</th>
+<th>Explanation</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x1</td>
+<td>0x8</td>
+<td>Vibrato rate</td>
+<td>Controls the vibrato rate. The calculation to hertz is as follows: <code>hz = (value / 64) * 8</code></td>
+<td>0 (disabled)</td>
+</tr>
+<tr>
+<td>0x1</td>
+<td>0x9</td>
+<td>Vibrato depth</td>
+<td>Controls the vibrato depth. Depth in cents is as calculated as follows: <code>cents = value / 2</code></td>
+<td>0 (disabled)</td>
+</tr>
+<tr>
+<td>0x1</td>
+<td>0xA</td>
+<td>Vibrato delay</td>
+<td>Controls the vibrato delay. Calculation to seconds is as follows: <code>s = (64 / value) / 3</code></td>
+<td>0 (disabled)</td>
+</tr>
+<tr>
+<td>0x1</td>
+<td>0x20</td>
+<td>TVF Filter Cutoff</td>
+<td>Controls the filter cutoff using the CC 74 (brightness)</td>
+<td>64 (no change)</td>
+</tr>
+<tr>
+<td>0x01</td>
+<td>0x66</td>
+<td>EG Release Time</td>
+<td>Controls the volume envelope release time using CC 72</td>
+<td>64 (no change)</td>
+</tr>
+<tr>
+<td>0x01</td>
+<td>0x64</td>
+<td>EG Attack Time</td>
+<td>Controls the volume envelope attack time using CC 73</td>
+<td>64 (no change)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="custom-vibrato">Custom Vibrato</h4>
+<p>The NPRN vibrato messages have special behavior.
+Any value other than 64 received for any of the states activates it with the default settings:</p>
+<ul>
+<li>depth = 50 cents</li>
+<li>rate = 8 Hz</li>
+<li>delay = 0.6s</li>
+</ul>
+<p>After which any changes received through the NRPN (including the one that triggered it) are enabled.
+This behavior has existed since the beginning of this program as a way to enhance the TH MIDI files,
+the original target of SpessaSynth.</p>
+<p><a href="https://github.com/spessasus/spessasynth_lib/blob/b0716295820fc6b2e8873a1b0871ca6a0266ea02/src/synthetizer/worklet_processor.js#L281-L292">It can be disabled.</a></p>
+<h4 id="soundfont2-nrpn">SoundFont2 NRPN</h4>
+<p>As of 3.26.15, spessasynth supports the standard SF2 NRPN implementation.</p>
+<h4 id="awe32-nrpn-compatibility-layer">AWE32 NRPN Compatibility Layer</h4>
+<p>As of 3.26.11, spessasynth supports emulation of the AWE32 NRPN generator modification.
+The parameter interpretation is similar to fluidsynth&rsquo;s emulation,
+as it has been tested and found relatively accurate to the sound cards.
+Here are some useful resources about this:</p>
+<ul>
+<li><a href="http://archive.gamedev.net/archive/reference/articles/article445.html">AWE32 Frequently Asked Questions</a></li>
+<li><a href="https://github.com/user-attachments/files/15757220/adip301.pdf">AWE32 Developer&rsquo;s Information Pack</a></li>
+<li><a href="https://github.com/mrbumpy409/AWE32-midi-conversions">S. Christian Collins&rsquo;s AWE32 MIDI Conversion Repository</a></li>
+<li><a href="https://github.com/mrbumpy409/SoundFont-Spec-Test/tree/main/NRPN%20test%20-%20filter">S. Christian Collins&rsquo;s AWE32 NRPN Filter Tests</a></li>
+<li><a href="https://github.com/FluidSynth/fluidsynth/wiki/FluidFeatures#nrpn-control-change-implementation-chart">Fluidsynth AWE32 NPRN implementation</a></li>
+</ul>
+<p>There are a few differences from fluidsynth&rsquo;s implementation:</p>
+<ul>
+<li>LSB 16 overrides the <code>fineTune</code> generator instead of emitting a pitch-wheel event</li>
+<li>Effect generators get overriden directly rather than passing through the modulator</li>
+<li>Filter cutoff and Q have been tuned slightly differently</li>
+</ul>
+<h2 id="system-exlusives">System Exlusives</h2>
+<h3 id="supported-system-exclusives">Supported System Exclusives</h3>
+<p>Below is the list of currently implemented System Exclusive messages.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GM on</td>
+<td>Turns the GM mode on. Ignores all the Bank Select controllers.</td>
+</tr>
+<tr>
+<td>GM off</td>
+<td>Turns the GM mode off. Defaults to GS</td>
+</tr>
+<tr>
+<td>GM2 on</td>
+<td>Turns the GM2 mode on.</td>
+</tr>
+<tr>
+<td>GS Reset</td>
+<td>Turns on the Roland GS mode.</td>
+</tr>
+<tr>
+<td>XG Reset</td>
+<td>Turns on the Yamaha XG mode. Changes the bank selection system to XG.</td>
+</tr>
+<tr>
+<td>Roland Master Volume</td>
+<td>Controls the overall synth&rsquo;s volume.</td>
+</tr>
+<tr>
+<td>GS Parameters</td>
+<td>See <a href="#gs-parameters">this for more info</a></td>
+</tr>
+<tr>
+<td>MIDI Master Volume</td>
+<td>Controls the overall synth&rsquo;s volume.</td>
+</tr>
+<tr>
+<td>MIDI Master Balance</td>
+<td>Controls the overall synth&rsquo;s stereo panning.</td>
+</tr>
+<tr>
+<td>Roland SC Display Text</td>
+<td>The text that SC-88 MIDIs display on the device. <code>synthdisplay</code> will be called.</td>
+</tr>
+<tr>
+<td>Roland SC Dot Matrix</td>
+<td>A dot matrix display for the Sound Canvas devices. <code>synthdisplay</code> will be called.</td>
+</tr>
+<tr>
+<td>XG Display Letters</td>
+<td>The text that XG MIDIs display on the device. <code>synthdisplay</code> will be called.</td>
+</tr>
+<tr>
+<td>XG Master Volume</td>
+<td>Controls the overall synth&rsquo;s volume.</td>
+</tr>
+<tr>
+<td>XG Master Transpose</td>
+<td>Controls the overall synth&rsquo;s transposition.</td>
+</tr>
+<tr>
+<td>XG Part Setup</td>
+<td>See <a href="#xg-part-setup">this for more info</a></td>
+</tr>
+<tr>
+<td>MIDI Tuning Standard</td>
+<td>See <a href="#midi-tuning-standard">this for more info</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="supported-bank-systems">Supported Bank systems</h3>
+<h4 id="gm">GM</h4>
+<p>Ignores all bank-selects.</p>
+<h4 id="gm2">GM2</h4>
+<p>Same as XG, except bank select defaults to 121.</p>
+<h4 id="gs">GS</h4>
+<p>Default. Bank MSB processed directly, LSB is ignored. For GS drum channels, only bank 128 is allowed.</p>
+<h4 id="xg">XG</h4>
+<p>If bank MSB is 120, 126 or 127, the channel is set to drums.
+If MSB is 64, it is used.
+Otherwise, LSB is used as the bank number.</p>
+<p>The bank will be classified as an XG bank if it only contains valid drum programs on banks 120, 126 and 127.
+If not, the bank will be forced to 128.
+Note that XG Drums (on bank 127 instead of 128) are used if available.</p>
+<h3 id="gs-parameters">GS Parameters</h3>
+<p>Below are the supported GS SysEx Parameters.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Use for drums part</td>
+<td>Can turn the desired channel into a drum channel.</td>
+</tr>
+<tr>
+<td>Master Pan</td>
+<td>Controls the overall synth&rsquo;s stereo panning.</td>
+</tr>
+<tr>
+<td>Master Volume</td>
+<td>Controls the overall synth&rsquo;s volume.</td>
+</tr>
+<tr>
+<td>Master Reverb</td>
+<td>Controls the overall synth&rsquo;s reverb level.</td>
+</tr>
+<tr>
+<td>Master Chorus</td>
+<td>Controls the overall synth&rsquo;s chorus level.</td>
+</tr>
+<tr>
+<td>Key Shift</td>
+<td>Transposes the keys by a given amount.</td>
+</tr>
+<tr>
+<td>Reverb Level</td>
+<td>Same as CC 91 (reverb depth)</td>
+</tr>
+<tr>
+<td>Chorus Level</td>
+<td>Same as CC 92 (chorus depth)</td>
+</tr>
+<tr>
+<td>Pan Position</td>
+<td>Same as CC 10 (pan position) except 0 mean random pan for every voice.</td>
+</tr>
+<tr>
+<td>Scale Tuning</td>
+<td>Similar to MTS Scale Octave Tuning.</td>
+</tr>
+<tr>
+<td>Controller to Parameter</td>
+<td>Defines how a controller affects the sound. See page 198 of the SC-88Pro Manual.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="xg-part-setup">XG Part Setup</h3>
+<p>Below are the supported part setup messages for XG.</p>
+<table>
+<thead>
+<tr>
+<th>Number (hex)</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td>Bank Select MSB</td>
+</tr>
+<tr>
+<td>02</td>
+<td>Bank Select LSB</td>
+</tr>
+<tr>
+<td>03</td>
+<td>Program change</td>
+</tr>
+<tr>
+<td>0B</td>
+<td>Volume</td>
+</tr>
+<tr>
+<td>0E</td>
+<td>Pan (0 is random for every voice)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Reverb</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Chorus</td>
+</tr>
+</tbody>
+</table>
+<h3 id="midi-tuning-standard">MIDI Tuning Standard</h3>
+<p>Below are the supported sysExes of the MTS.
+RT means realtime and NRT means non-realtime.</p>
+<ul>
+<li>Bulk Tuning Dump</li>
+<li>Scale Octave Tuning (1 byte) (RT/NRT)</li>
+<li>Scale Octave Tuning (2 bytes) (RT/NRT)</li>
+<li>Single Note Tuning change (RT)</li>
+<li>Single Note Tuning Change (RT/NRT)</li>
+</ul>
+<h3 id="portamento-implementation">Portamento Implementation</h3>
+<p>SpessaSynth attempts to mimick the old SC-55 Portamento behavior.</p>
+<p>That is:</p>
+<ul>
+<li>Portamento Time is only 7-bit.</li>
+<li>Portamento Control gets overriden with the last portamento key.</li>
+<li>Portamento Time uses
+  the <a href="https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020">following table by John Novak</a> and
+  linearly interpolates it.</li>
+<li>Portamento Time depends on the distance of the keys.
+  The final calculation is <code>portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 30</code> for now.
+  If you know a more accurate algortihm, please let me know!</li>
+<li>Portamento is <strong>experimental.</strong> It can be disabled, and it may not work correctly as I do not own an actual SC-55 to
+  test it with.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright (C) spessasus 2025, licensed under the Apache-2.0 License.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.code.select", "navigation.instant", "navigation.instant.progress", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.top", "navigation.expand", "toc.follow", "toc.integrate", "header.autohide"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>
