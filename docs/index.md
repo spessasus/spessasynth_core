@@ -7,7 +7,7 @@ This should serve as the complete documentation of the library.
 
     If you encounter any errors in this documentation, please **open an issue!**
 
-## spessasynth_core documentation
+## Documentation
 
 - [Getting started with spessasynth_core](Getting-Started.md)
 - [SpessaSynthProcessor](SpessaSynthProcessor-Class.md) - Responsible for generating sound.
