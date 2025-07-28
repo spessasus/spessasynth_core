@@ -2,10 +2,10 @@ import * as fs from "node:fs";
 import {
     audioToWav,
     BasicMIDI,
+    SoundBankLoader,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../../src";
-import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 // process arguments
 const args = process.argv.slice(2);
