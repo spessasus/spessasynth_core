@@ -1,7 +1,6 @@
 // process arguments
 import * as fs from "fs";
-import { BasicMIDI, BasicSoundBank } from "../../src";
-import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
+import { BasicMIDI, BasicSoundBank, SoundBankLoader } from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 3) {

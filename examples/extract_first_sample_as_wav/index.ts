@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
-import { audioToWav } from "../../src";
-import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
+import { audioToWav, SoundBankLoader } from "../../src";
 
 // process arguments
 const args = process.argv.slice(2);

@@ -212,9 +212,9 @@ import {
     audioToWav,
     BasicMIDI,
     SpessaSynthProcessor,
-    SpessaSynthSequencer
-} from "../../src";
-import {SoundBankLoader} from "../../src/soundbank/sound_bank_loader";
+    SpessaSynthSequencer,
+    SoundBankLoader
+} from "spessasynth_core";
 
 // process arguments
 const args = process.argv.slice(2);

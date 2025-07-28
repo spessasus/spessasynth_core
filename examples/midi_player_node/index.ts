@@ -1,12 +1,12 @@
 import {
     BasicMIDI,
+    SoundBankLoader,
     SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../../src";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
-import { SoundBankLoader } from "../../src/soundbank/sound_bank_loader";
 
 // process arguments
 const args = process.argv.slice(2);
