@@ -1,4 +1,4 @@
-name: Publish docs via GitHub Pages
+name: Publish spessasynth_core via GitHub Pages
 on:
   push:
     branches:
@@ -16,6 +16,5 @@ jobs:
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_FILE: mkdocs/mkdocs.yml
+          CONFIG_FILE: mkdocs.yml
           EXTRA_PACKAGES: build-base
-          REQUIREMENTS: mkdocs/requirements.txt
