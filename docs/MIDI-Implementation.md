@@ -1,44 +1,19 @@
 # MIDI Implementation
+
 This describes what messages SpessaSynth can receive.
 
-[Here's a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english fortunately](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
-
-## Table Of Contents
-<!-- TOC -->
-* [MIDI Implementation](#midi-implementation)
-  * [Table Of Contents](#table-of-contents)
-  * [Supported MIDI Messages](#supported-midi-messages)
-  * [Controllers](#controllers)
-    * [Default Supported Controllers](#default-supported-controllers)
-    * [Default controller values](#default-controller-values)
-  * [Parameter Numbers](#parameter-numbers)
-    * [Supported Registered Parameters](#supported-registered-parameters)
-    * [Supported Non-Registered Parameters](#supported-non-registered-parameters)
-      * [Custom Vibrato](#custom-vibrato)
-      * [SoundFont2 NRPN](#soundfont2-nrpn)
-      * [AWE32 NRPN Compatibility Layer](#awe32-nrpn-compatibility-layer)
-  * [System Exlusives](#system-exlusives)
-    * [Supported System Exclusives](#supported-system-exclusives)
-    * [Supported Bank systems](#supported-bank-systems)
-      * [GM](#gm)
-      * [GM2](#gm2)
-      * [GS](#gs)
-      * [XG](#xg)
-    * [GS Parameters](#gs-parameters)
-    * [XG Part Setup](#xg-part-setup)
-    * [MIDI Tuning Standard](#midi-tuning-standard)
-    * [Portamento Implementation](#portamento-implementation)
-<!-- TOC -->
+[Here's a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
 
 ## Supported MIDI Messages
 
-> [!NOTE]
-> ⚠️NON-STANDARD!⚠️ means that this is an additional modulator that is not specified in the SF2 specification.
+!!! Note
+
+     ⚠️NON-STANDARD!⚠️ means that this is an additional modulator that is not specified in the SF2 specification.
 
 | Message           | Supported? | Notes                                                                          |
 |-------------------|------------|--------------------------------------------------------------------------------|
 | Note On           | ✔️         |                                                                                |
- | Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                     |
+| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                     |
 | Note Aftertouch   | ✔️         | 50 cents of vibrato ⚠️NON-STANDARD!⚠️                                          |
 | Controller Change | ✔️         | [See below](#default-supported-controllers)                                    |
 | Program Change    | ✔️         | GM, GM2, GS, XG                                                                |
@@ -57,14 +32,17 @@ This describes what messages SpessaSynth can receive.
 | System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message |
 
 ## Controllers
+
 ### Default Supported Controllers
 
 Below is the list of controllers supported by default.
-> [!NOTE]
-> Theoretically all controllers are supported as it depends on the SoundFont's modulators. These are the controllers that are supported by default/have default modulators.
+!!! Note
 
-> [!TIP]
-> For more info, see [default modulators](Modulator-Class#default-modulators)
+    Theoretically all controllers are supported as it depends on the SoundFont's modulators. These are the controllers that are supported by default/have default modulators.
+
+!!! Note
+
+    For more info, see [default modulators](Modulator-Class.md#default-modulators)
 
 | CC                   | Controller name                     | Value                                                                                                  | Explanation                                                                                                                                                            | Default value |
 |----------------------|-------------------------------------|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
@@ -85,9 +63,9 @@ Below is the list of controllers supported by default.
 | 73                   | Release Time                        | The release time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest         ⚠️NON-STANDARD!⚠️ | Controls the release time for the given patch.                                                                                                                         | 64            |
 | 74                   | Brightness                          | The brightness (0 - 127) 0 is muffled, 64 is no additional filter, 127 is most clear ⚠️NON-STANDARD!⚠️ | Controls the brightness (lowpass frequency) of the given patch.                                                                                                        | 64            |
 | 84                   | Portamento Control                  | The key number glide should start from (0 - 127)                                                       | Controls the portamento target key. [See portamento implementation](#portamento-implementation)                                                                        | 0             |
-| 91                   | Effects 1 Depth (reverb)            | The reverb depth (0 - 127) [See important info](Modulator-Class#reverb-and-chorus-modulators)          | Controls the reverb effect send for the given channel.                                                                                                                 | 0             |
+| 91                   | Effects 1 Depth (reverb)            | The reverb depth (0 - 127) [See important info](Modulator-Class.md#reverb-and-chorus-modulators)       | Controls the reverb effect send for the given channel.                                                                                                                 | 0             |
 | 92                   | Effects 2 Depth (tremolo)           | The tremolo depth (0 - 127) mapped to 25dB of loudness variation                     ⚠️NON-STANDARD!⚠️ | Controls the tremolo (trembling) effect for the given patch.                                                                                                           | 0             |
-| 93                   | Effects 3 Depth (chorus)            | The chorus depth (0 - 127) [See important info](Modulator-Class#reverb-and-chorus-modulators)          | Controls the chorus effect for the given channel.                                                                                                                      | 0             |
+| 93                   | Effects 3 Depth (chorus)            | The chorus depth (0 - 127) [See important info](Modulator-Class.md#reverb-and-chorus-modulators)       | Controls the chorus effect for the given channel.                                                                                                                      | 0             |
 | 99                   | Non-Registered Parameter Number MSB | Parameter number (0 - 127)                                                                             | Selects a Non-Registered Parameter's Coarse to the given value. [Here are the currently supported values.](#supported-non-registered-parameters).                      | none          |
 | 98                   | Non-Registered Parameter Number LSB | Parameter number (0 - 127)                                                                             | Selects a Non-Registered Parameter's Fine to the given value. [Here are the currently supported values.](#supported-non-registered-parameters).                        | none          |
 | 100                  | Registered Parameter Number LSB     | Parameter number (0 - 127)                                                                             | Selects a Registered Parameter's Fine to the given value. [Here are the currently supported values.](#supported-registered-parameters).                                | none          |
@@ -97,8 +75,10 @@ Below is the list of controllers supported by default.
 
 ### Default controller values
 
-> [!IMPORTANT]
-> "Reset All Controllers" (CC#121) is implemented according to [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)
+!!! Important
+
+    "Reset All Controllers" (CC#121) is implemented according
+    to [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)
 
 Below are all the controller values which are not zero when the controllers are reset.
 
@@ -120,22 +100,23 @@ Below are all the controller values which are not zero when the controllers are 
 | 83        | General Purpose Controller 8 | 64          |
 
 ## Parameter Numbers
+
 ### Supported Registered Parameters
 
 Below is the list of currently implemented Registered Parameters.
 
-| RPN MSB | RPN LSB | Name                       | Explanation                                                                                                                                                                                                                                                    | Default                      |
-|---------|---------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
-| 0       | 0       | Pitch Wheel range          | The range in semitones of the `synth.pitchWheel()` method.                                                                                                                                                                                                     | 2 semitones                  |
-| 0       | 2       | Channel Coarse Tuning      | The channel's tuning in semitones                                                                                                                                                                                                                              | No tuning (0 semitones)      |
-| 0       | 3       | Channel Fine Tuning        | The channel's tuning, like a pitch bend message (precise tuning in 2 semitones)                                                                                                                                                                                | No tuning (0 cents)          |
-| 0       | 5       | Channel Modulation Depth   | The channel's modulation (vibrato) depth. Note that this doesn't set the cents directly, but rather scales the soundfont modulator value (for example if set to twice the MIDI default value, the modulator controlling vibrato depth will be multiplied by 2) | default sf2 depth (50 cents) |
-| 127     | 127     | Reset parameters           | Resets all parameters                                                                                                                                                                                                                                          | N.A.                         |
+| RPN MSB | RPN LSB | Name                     | Explanation                                                                                                                                                                                                                                                    | Default                      |
+|---------|---------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
+| 0       | 0       | Pitch Wheel range        | The range in semitones of the `synth.pitchWheel()` method.                                                                                                                                                                                                     | 2 semitones                  |
+| 0       | 2       | Channel Coarse Tuning    | The channel's tuning in semitones                                                                                                                                                                                                                              | No tuning (0 semitones)      |
+| 0       | 3       | Channel Fine Tuning      | The channel's tuning, like a pitch bend message (precise tuning in 2 semitones)                                                                                                                                                                                | No tuning (0 cents)          |
+| 0       | 5       | Channel Modulation Depth | The channel's modulation (vibrato) depth. Note that this doesn't set the cents directly, but rather scales the soundfont modulator value (for example if set to twice the MIDI default value, the modulator controlling vibrato depth will be multiplied by 2) | default sf2 depth (50 cents) |
+| 127     | 127     | Reset parameters         | Resets all parameters                                                                                                                                                                                                                                          | N.A.                         |
 
 ### Supported Non-Registered Parameters
 
 Below is the list of currently implemented Non-Registered Parameters.
- Note that all these are non-standard GM.
+Note that all these are non-standard GM.
 **These only apply for GS**
 
 | NRPN MSB | NRPN LSB | Name              | Explanation                                                                                 | Default        |
@@ -148,8 +129,10 @@ Below is the list of currently implemented Non-Registered Parameters.
 | 0x01     | 0x64     | EG Attack Time    | Controls the volume envelope attack time using CC 73                                        | 64 (no change) |
 
 #### Custom Vibrato
+
 The NPRN vibrato messages have special behavior.
 Any value other than 64 received for any of the states activates it with the default settings:
+
 - depth = 50 cents
 - rate = 8 Hz
 - delay = 0.6s
@@ -160,15 +143,17 @@ the original target of SpessaSynth.
 
 [It can be disabled.](https://github.com/spessasus/spessasynth_lib/blob/b0716295820fc6b2e8873a1b0871ca6a0266ea02/src/synthetizer/worklet_processor.js#L281-L292)
 
-
 #### SoundFont2 NRPN
+
 As of 3.26.15, spessasynth supports the standard SF2 NRPN implementation.
 
 #### AWE32 NRPN Compatibility Layer
+
 As of 3.26.11, spessasynth supports emulation of the AWE32 NRPN generator modification.
 The parameter interpretation is similar to fluidsynth's emulation,
 as it has been tested and found relatively accurate to the sound cards.
 Here are some useful resources about this:
+
 - [AWE32 Frequently Asked Questions](http://archive.gamedev.net/archive/reference/articles/article445.html)
 - [AWE32 Developer's Information Pack](https://github.com/user-attachments/files/15757220/adip301.pdf)
 - [S. Christian Collins's AWE32 MIDI Conversion Repository](https://github.com/mrbumpy409/AWE32-midi-conversions)
@@ -176,11 +161,13 @@ Here are some useful resources about this:
 - [Fluidsynth AWE32 NPRN implementation](https://github.com/FluidSynth/fluidsynth/wiki/FluidFeatures#nrpn-control-change-implementation-chart)
 
 There are a few differences from fluidsynth's implementation:
+
 - LSB 16 overrides the `fineTune` generator instead of emitting a pitch-wheel event
 - Effect generators get overriden directly rather than passing through the modulator
 - Filter cutoff and Q have been tuned slightly differently
 
 ## System Exlusives
+
 ### Supported System Exclusives
 
 Below is the list of currently implemented System Exclusive messages.
@@ -207,15 +194,19 @@ Below is the list of currently implemented System Exclusive messages.
 ### Supported Bank systems
 
 #### GM
+
 Ignores all bank-selects.
-                                                                                                                                                                            
+
 #### GM2
+
 Same as XG, except bank select defaults to 121.
 
 #### GS
+
 Default. Bank MSB processed directly, LSB is ignored. For GS drum channels, only bank 128 is allowed.
 
 #### XG
+
 If bank MSB is 120, 126 or 127, the channel is set to drums.
 If MSB is 64, it is used.
 Otherwise, LSB is used as the bank number.
@@ -224,8 +215,8 @@ The bank will be classified as an XG bank if it only contains valid drum program
 If not, the bank will be forced to 128.
 Note that XG Drums (on bank 127 instead of 128) are used if available.
 
-
 ### GS Parameters
+
 Below are the supported GS SysEx Parameters.
 
 | Name                    | Description                                                                      |
@@ -243,6 +234,7 @@ Below are the supported GS SysEx Parameters.
 | Controller to Parameter | Defines how a controller affects the sound. See page 198 of the SC-88Pro Manual. |
 
 ### XG Part Setup
+
 Below are the supported part setup messages for XG.
 
 | Number (hex) | Name                              |
@@ -256,6 +248,7 @@ Below are the supported part setup messages for XG.
 | 12           | Chorus                            |
 
 ### MIDI Tuning Standard
+
 Below are the supported sysExes of the MTS.
 RT means realtime and NRT means non-realtime.
 
@@ -266,13 +259,18 @@ RT means realtime and NRT means non-realtime.
 - Single Note Tuning Change (RT/NRT)
 
 ### Portamento Implementation
+
 SpessaSynth attempts to mimick the old SC-55 Portamento behavior.
 
 That is:
+
 - Portamento Time is only 7-bit.
 - Portamento Control gets overriden with the last portamento key.
-- Portamento Time uses the [following table by John Novak](https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020) and linearly interpolates it.
+- Portamento Time uses
+  the [following table by John Novak](https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020) and
+  linearly interpolates it.
 - Portamento Time depends on the distance of the keys.
-The final calculation is `portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 30` for now.
-If you know a more accurate algortihm, please let me know!
-- Portamento is **experimental.** It can be disabled, and it may not work correctly as I do not own an actual SC-55 to test it with.
+  The final calculation is `portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 30` for now.
+  If you know a more accurate algortihm, please let me know!
+- Portamento is **experimental.** It can be disabled, and it may not work correctly as I do not own an actual SC-55 to
+  test it with.

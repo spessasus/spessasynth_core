@@ -31,7 +31,7 @@ const samplesAndGenerators = [
     }
 ];
 ```
-More info about the `Generator` class is [here](Generator-Class)
+More info about the `Generator` class is [here](Generator-Class.md)
 ## Properties
 ### presetName
 The preset's name as string.

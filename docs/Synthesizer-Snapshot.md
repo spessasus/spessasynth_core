@@ -12,7 +12,7 @@ const snapshot = SynthesizerSnapshot.createSynthesizerSnapshot(synth);
 An array of [ChannelSnapshot](#channel-snapshot) instances for all the MIDI channels of the synth.
 
 ### keyMappings
-An array of arrays of [KeyModifiers](Key-Modifier-Manager).
+An array of arrays of [KeyModifiers](Key-Modifier-Manager.md).
 
 Stored as:
 ```js

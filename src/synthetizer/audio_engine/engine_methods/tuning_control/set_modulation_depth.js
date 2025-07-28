@@ -1,13 +1,12 @@
-import { SpessaSynthInfo } from "../../../../utils/loggin.js";
-import { consoleColors } from "../../../../utils/other.js";
-import { customControllers } from "../../engine_components/controller_tables.js";
+import {SpessaSynthInfo} from "../../../../utils/loggin.js";
+import {consoleColors} from "../../../../utils/other.js";
+import {customControllers} from "../../engine_components/controller_tables.js";
 
 /**
  * @this {MidiAudioChannel}
  * @param cents {number}
  */
-export function setModulationDepth(cents)
-{
+export function setModulationDepth(cents) {
     cents = Math.round(cents);
     SpessaSynthInfo(
         `%cChannel ${this.channelNumber} modulation depth. Cents: %c${cents}`,
@@ -15,7 +14,7 @@ export function setModulationDepth(cents)
         consoleColors.value
     );
     /* ==============
-        IMPORTANT
+        Important
         here we convert cents into a multiplier.
         midi spec assumes the default is 50 cents,
         but it might be different for the soundfont,

@@ -1,1 +1,0 @@
-# [This page has moved to its own repository](https://github.com/spessasus/sf2-rmidi-specification#readme)

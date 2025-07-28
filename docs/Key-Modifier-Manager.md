@@ -1,7 +1,7 @@
 ## Synthesizer Key Modifier Manager
 This powerful tool allows modifying each key on each channel to your needs.
 
-It is accessible via the `keyModifierManager` property of the [SpessaSynthProcessor class](SpessaSynthProcessor-Class).
+It is accessible via the `keyModifierManager` property of the [SpessaSynthProcessor class](SpessaSynthProcessor-Class.md).
 
 Currently, it supports overriding:
 - the velocity of that note

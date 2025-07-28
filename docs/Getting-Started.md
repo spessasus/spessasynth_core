@@ -1,33 +1,37 @@
-# Getting started with spessasynth_core
+# Getting started
 
 ## Installation
+
 ```shell
 npm install --save spessasynth_core
 ```
 
 ## Minimal Setup
+
 A minimal setup for the synthesizer involves two lines of code:
+
 ```ts
 const synth = new SpessaSynthProcessor()
 ```
 
 ## Understanding the audio loop
+
 Spessasynth_core provides very *raw* access to the audio data, outputing float PCM samples.
 These samples can then be sent to speakers, saved somewhere or processed, generally in a loop.
 
 ### Example MIDI player audio loop
+
 Here is the most basic audio loop for the synthesizer and sequencer:
 
 ```js
 const bufferSize = 128;
-while(true)
-{
+while (true) {
     sequencer.processTick();
     const samplesL = new Float32Array(bufferSize);
     const samplesR = new Float32Array(bufferSize);
     const reverbL = new Float32Array(bufferSize);
     const reverbR = new Float32Array(bufferSize);
-    const chorusL= new Float32Array(bufferSize);
+    const chorusL = new Float32Array(bufferSize);
     const chorusR = new Float32Array(bufferSize);
     processor.renderAudio(
         [samplesL, samplesR],
@@ -37,6 +41,7 @@ while(true)
     // process the audio here
 }
 ```
+
 This loop processes the sequencer before rendering the audio to the buffers.
 Note that spessasynth_core does not provide audio effects, so you will have to supply your own.
 
@@ -45,49 +50,50 @@ as the renderAudio function calculates the envelopes and LFOs once,
 so buffer size represents the shortest amount of time between those changes.
 
 To use a larger buffer, you can do:
+
 ```js
 // divisible by 128
 const dry = [new Float32Array(2048), new Float32Array(2048)];
 const reverb = [new Float32Array(2048), new Float32Array(2048)];
 const chorus = [new Float32Array(2048), new Float32Array(2048)];
 // 2048 / 128 = 16;
-for(let i = 0; i < 16; i++) 
-{
+for (let i = 0; i < 16; i++) {
     // start rendering at a given offset and render 128 samples
     processor.renderAudio(dry, reverb, chorus, i * 128, 128);
 }
 ```
 
-Check out the [renderAudio method](SpessaSynthProcessor-Class#renderaudio) for more information.
+Check out the [renderAudio method](SpessaSynthProcessor-Class.md#renderaudio) for more information.
 
 ## Examples
+
 ### MIDI to WAV converter
 
 Here is what this code does:
+
 - Import necessary modules
 - Read the files passed to the command line
 - Initalize the processor
 - Initalize the sequencer
 - Initalize the output buffers
 - Render loop:
-  - Process sequencer
-  - Initialize buffer arrays
-  - Render out
-  - Fill the output arrays
+    - Process sequencer
+    - Initialize buffer arrays
+    - Render out
+    - Fill the output arrays
 - Convert to WAV and save
 
 ```js
 import * as fs from "node:fs";
-import { MIDI } from "../../src/midi/midi_loader.js";
-import { SpessaSynthProcessor } from "../../src/synthetizer/audio_engine/main_processor.js";
-import { SpessaSynthSequencer } from "../../src/sequencer/sequencer_engine.js";
-import { audioToWav } from "../../src/utils/buffer_to_wav.js";
-import { loadSoundFont } from "../../src/soundfont/load_soundfont.js";
+import {MIDI} from "./midi_loader.js";
+import {SpessaSynthProcessor} from "./main_processor.js";
+import {SpessaSynthSequencer} from "./sequencer_engine.js";
+import {audioToWav} from "./buffer_to_wav.js";
+import {loadSoundFont} from "./load_soundfont.js";
 
 // process arguments
 const args = process.argv.slice(2);
-if (args.length !== 3)
-{
+if (args.length !== 3) {
     console.info("Usage: node index.js <soundfont path> <midi path> <wav output path>");
     process.exit();
 }
@@ -114,8 +120,7 @@ const BUFFER_SIZE = 128;
 let i = 0;
 const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
 const outputArray = [outLeft, outRight];
-while (filledSamples < sampleCount)
-{
+while (filledSamples < sampleCount) {
     // process sequencer
     seq.processTick();
     // render
@@ -124,8 +129,7 @@ while (filledSamples < sampleCount)
     filledSamples += bufferSize;
     i++;
     // log progress
-    if (i % 100 === 0)
-    {
+    if (i % 100 === 0) {
         console.info("Rendered", Math.floor(seq.currentTime * 100) / 100, "/", durationRounded);
     }
 }

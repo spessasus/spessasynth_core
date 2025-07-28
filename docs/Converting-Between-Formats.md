@@ -1,32 +1,22 @@
 # Converting between various file formats
-This guide demonstrates how to convert various file formats using `spessasynth_core`. 
-Whether you're working with SoundFont files (SF2, SF3), 
-Downloadable Sounds (DLS), or MIDI-related formats (RMI, MIDI), these examples will help you perform conversions quickly and efficiently.
 
-> [!IMPORTANT]
-> The input file binary is named `input` 
-> and the output binary file is named `output`
-> in the examples.
+This guide demonstrates how to convert various file formats using `spessasynth_core`.
+Whether you're working with SoundFont files (SF2, SF3),
+Downloadable Sounds (DLS), or MIDI-related formats (RMI, MIDI), these examples will help you perform conversions quickly
+and efficiently.
 
+!!! Important
 
-## Table of contents
-<!-- TOC -->
-* [Converting between various file formats](#converting-between-various-file-formats)
-  * [Table of contents](#table-of-contents)
-  * [SF2 To SF3](#sf2-to-sf3)
-  * [DLS to SF2](#dls-to-sf2)
-  * [SF2 To DLS](#sf2-to-dls)
-  * [RMI To MIDI](#rmi-to-midi)
-  * [RMI To SF2/SF3](#rmi-to-sf2sf3)
-  * [SF2/DLS + MIDI To RMI](#sf2dls--midi-to-rmi)
-  * [DLS RMI To SF2 RMI](#dls-rmi-to-sf2-rmi)
-<!-- TOC -->
+    The input file binary is named `input` 
+    and the output binary file is named `output`
+    in the examples.
 
 ## SF2 To SF3
 
-> [!NOTE]
-> This example uses soundfont3 compression.
-> Make sure you've [read this](Sound-Bank-Parser#compressionfunction)
+!!! Note
+
+    This example uses soundfont3 compression.
+    Make sure you've [read this](Sound-Bank.md#compressionfunction)
 
 ```js
 const sfont = loadSoundFont(input);
@@ -37,25 +27,30 @@ const output = await sfont.write({
 ```
 
 ## DLS to SF2
+
 ```js
 const sfont = loadSoundFont(input);
 const output = await sfont.write();
 ```
 
 ## SF2 To DLS
-Make sure to read about [the DLS conversion problem](DLS-Conversion-Problem)
+
+Make sure to read about [the DLS conversion problem](DLS-Conversion-Problem.md)
+
 ```js
 const sfont = loadSoundFont(input);
 const output = await sfont.writeDLS();
 ```
 
 ## RMI To MIDI
+
 ```js
 const RMID = new MIDI(input);
 const output = await RMID.writeMIDI();
 ```
 
 ## RMI To SF2/SF3
+
 ```js
 const RMID = new MIDI(input);
 const sfont = loadSoundFont(RMID.embeddedSoundFont);
@@ -63,7 +58,9 @@ const output = await sfont.write();
 ```
 
 ## SF2/DLS + MIDI To RMI
+
 This uses two inputs, `input1` for MIDI and `input2` for SoundFont.
+
 ```js
 const mid = new MIDI(input1);
 const sfont = loadSoundFont(input2);
@@ -85,6 +82,7 @@ const output = mid.writeRMIDI(
 ````
 
 ## DLS RMI To SF2 RMI
+
 ```js
 const dlsRMID = new MIDI(input);
 const sfont = loadSoundFont(dlsRMID.embeddedSoundFont);

@@ -1,34 +1,15 @@
 # Writing MIDI Files
-Below is a basic guide to writing .mid and .rmi files.
 
-## Table of Contents
-<!-- TOC -->
-* [Writing MIDI Files](#writing-midi-files)
-  * [Table of Contents](#table-of-contents)
-  * [Writing a MIDI file](#writing-a-midi-file)
-    * [writeMIDI](#writemidi)
-    * [modifyMIDI](#modifymidi)
-    * [applySnapshot](#applysnapshot)
-    * [Example](#example)
-  * [Writing an .rmi file](#writing-an-rmi-file)
-    * [writeRMIDI](#writermidi)
-    * [Parameters](#parameters)
-      * [soundfontBinary](#soundfontbinary)
-      * [midi](#midi)
-      * [soundfont](#soundfont)
-      * [bankOffset](#bankoffset)
-      * [encoding](#encoding)
-      * [metadata](#metadata)
-      * [correctBankOffset](#correctbankoffset)
-    * [Example](#example-1)
-<!-- TOC -->
+Below is a basic guide to writing .mid and .rmi files.
 
 ## Writing a MIDI file
 
-> [!IMPORTANT]
-> Also see [Creating MIDI Files From Scratch](Creating-MIDI-Files)
+!!! Important
+
+    Also see [Creating MIDI Files From Scratch](Creating-MIDI-Files.md)
 
 ### writeMIDI
+
 Renders the sequence as a Standard MIDI File. Note: makes heavy use of the running status.
 
 ```js
@@ -38,11 +19,15 @@ midi.writeMIDI();
 The returned value is an `Uint8Array` - a binary representation of the Standard MIDI File.
 
 ### modifyMIDI
+
 Allows easily modifying the sequence's programs and controllers.
+
 ```js
 midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
 ```
+
 - desiredProgramChanges - an array of objects, defined as follows:
+
 ```js
 /**
  * @typedef desiredProgramChange {Object}
@@ -52,18 +37,22 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
  * @property {boolean} isDrum - if the channel is a drum channel. Will add GS Use Drums System exclusive and GS on if needed
  */
 ```
+
 - desiredControllerChanges - an array of objects, defined as follows:
+
 ```js
 /**
  * @typedef desiredControllerChange {Object}
  * @property {number} channel - same as above.
  * @property {number} controllerNumber - the MIDI CC number to use.
  * @property {number} controllerValue - the desired value of the controller.
- * 
+ *
  */
 ```
+
 - desiredChannelsToClear - an array of numbers, indicating the channel number to effectively mute.
 - desiredChannelsToTranspose - an array of objects, defined as follows:
+
 ```js
 /**
  * @typedef desiredTranspose {Object}
@@ -72,22 +61,29 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
  */
 ```
 
-> [!WARNING]
-> Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the original midi file is lost.
+!!! Warning
+
+    Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the
+    original midi file is lost.
 
 ### applySnapshot
-Applies a [SynthesizerSnapshot](Synthesizer-Snapshot) to the sequence *in place*.
+
+Applies a [SynthesizerSnapshot](Synthesizer-Snapshot.md) to the sequence *in place*.
 This means changing the programs and controllers if they are locked.
+
 ```js
 midi.applySnapshotToMIDI(snapshot);
 ```
+
 - snapshot - the `SynthesizerSnapshot` to use.
 
 For example, if channel 1 has locked preset on `Drawbar Organ`,
 this will remove all program changes for channel 1 and add one at the start to change the program to `Drawbar organ`.
 
 ### Example
+
 Below is a basic example of writing a modified MIDI file
+
 ```js
 // create your midi and synthesizer
 const midi = new MIDI(yourBufferGoesHere);
@@ -112,39 +108,55 @@ a.click();
 ```
 
 ## Writing an .rmi file
+
 ### writeRMIDI
+
 This function writes out an RMIDI file (MIDI + SF2).
 [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
+
 ```js
 const rmidiBinary = midi.writeRMIDI(
     soundfontBinary,
-    soundfont, 
-    bankOffset = 0, 
-    encoding = "Shift_JIS", 
+    soundfont,
+    bankOffset = 0,
+    encoding = "Shift_JIS",
     metadata = {},
     correctBankOffset = true
 );
 ```
+
 ### Parameters
+
 #### soundfontBinary
-an `Uint8Array` of the soundfont to embed, created by `soundfont.write()`. 
+
+an `Uint8Array` of the soundfont to embed, created by `soundfont.write()`.
+
 #### midi
+
 `MIDI` to embed.
 
 #### soundfont
+
 `SoundFont2` - The soundfont that `soundfontBinary` contains. Used for correcting bank and program changes.
 
 #### bankOffset
-`number`, optional - The bank offset to apply to the file. A value of 0 is recommended. [See this for more info](https://github.com/spessasus/sf2-rmidi-specification#dbnk-chunk)
+
+`number`, optional - The bank offset to apply to the file. A value of 0 is
+recommended. [See this for more info](https://github.com/spessasus/sf2-rmidi-specification#dbnk-chunk)
 
 #### encoding
-`string`, optional - The encoding to add to the INFO chunk of an RMID file. Make sure to pick a value that is acceptable by the `TextDecoder`
+
+`string`, optional - The encoding to add to the INFO chunk of an RMID file. Make sure to pick a value that is acceptable
+by the `TextDecoder`
 
 #### metadata
-`Object`, optional - The metadata of the file. If left undefined, some basic metadata (like song's title) will be copied from the MIDI. 
 
-> [!IMPORTANT]
-> All the properties below are *optional*.
+`Object`, optional - The metadata of the file. If left undefined, some basic metadata (like song's title) will be copied
+from the MIDI.
+
+!!! Important
+
+    All the properties below are *optional*.
 
 - name - `string` - the name of the song.
 - engineer - `string` - the engineer of the soundfont.
@@ -155,27 +167,32 @@ an `Uint8Array` of the soundfont to embed, created by `soundfont.write()`.
 - creationDate - `string` - the creation date of the file. If not provided, current day is used.
 - copyright - `string` - the copyright string. If not provided, `midi.copyright` is copied.
 - picture - `ArrayBuffer` - the album cover of the song. Binary data of the image.
-- midiEncoding - `string` - The encoding of the inner MIDI file. Make sure to pick a value that is acceptable by the `TextDecoder`
+- midiEncoding - `string` - The encoding of the inner MIDI file. Make sure to pick a value that is acceptable by the
+  `TextDecoder`
 
-> [!CAUTION]
-> Providing *any* of the metadata fields overrides the encoding with `utf-8`.
-> This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
+!!! Caution
+
+    Providing *any* of the metadata fields overrides the encoding with `utf-8`.
+    This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
 
 #### correctBankOffset
+
 `boolean`, optional - if the function should correct all the
 program-selects, and the bank-selects in the MIDI file to reflect the embedded soundfont
 (i.e., Make it [Self-contained](https://github.com/spessasus/sf2-rmidi-specification#self-contained-file)).
 Recommended unless a specific use-case is required.
 Defaults to `true`.
 
+!!! Tip
 
-> [!TIP]
-> use [trimSoundBank](Sound-Bank-Parser#trimsoundbank) to drastically reduce the file size.
-> consider also using compression (like shown in example) to save even more space. 
-> (using these both methods, I managed to cram a 1GB soundfont into a 5MB RMIDI!)
+    use [trimSoundBank](Sound-Bank.md#trimsoundbank) to drastically reduce the file size.
+    consider also using compression (like shown in example) to save even more space.
+    (using these both methods, I managed to cram a 1GB soundfont into a 5MB RMIDI!)
 
 ### Example
+
 Below is a simple example for exporting an RMIDI file
+
 ```html
 <label for='soundfont_upload'>Upload soundfont</label>
 <input type='file' id='soundfont_upload'>
@@ -184,9 +201,10 @@ Below is a simple example for exporting an RMIDI file
 <button id='export'>Export</button>
 ```
 
-> [!NOTE]
-> This example uses soundfont3 compression.
-> Make sure you've [read this](Sound-Bank-Parser#compressionfunction)
+!!! Note
+
+    This example uses soundfont3 compression.
+    Make sure you've [read this](Sound-Bank.md#compressionfunction)
 
 ```js
 const sfInput = document.getElementById("soundfont_upload");
@@ -200,7 +218,7 @@ document.getElementById("export").onchange = async () => {
     soundfont.trimSoundBank(soundfont);
     // write out with compression to save space (0.5 is medium quality)
     const soundfontBinary = await soundfont.write({
-        compress: true, 
+        compress: true,
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
     // get the rmidi
@@ -214,7 +232,7 @@ document.getElementById("export").onchange = async () => {
     });
 
     // save the file
-    const blob = new Blob([rmidiBinary.buffer], { type: "audio/rmid" });
+    const blob = new Blob([rmidiBinary.buffer], {type: "audio/rmid"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

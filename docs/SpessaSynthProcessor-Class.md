@@ -1,78 +1,52 @@
 # SpessaSynthProcessor
+
 The core synthesis engine of SpessaSynth.
 
-
-<!-- TOC -->
-* [SpessaSynthProcessor](#spessasynthprocessor)
-    * [Example](#example)
-  * [Initialization](#initialization)
-    * [Managers](#managers)
-    * [options](#options)
-      * [enableEventSystem](#enableeventsystem)
-      * [initialTime](#initialtime)
-      * [effectsEnabled](#effectsenabled)
-      * [midiChannels](#midichannels)
-  * [MasterParameterTypes](#masterparametertypes)
-  * [Methods](#methods)
-    * [renderAudio](#renderaudio)
-    * [renderAudioSplit](#renderaudiosplit)
-    * [destroySynthProcessor](#destroysynthprocessor)
-    * [createMidiChannel](#createmidichannel)
-    * [processMessage](#processmessage)
-    * [noteOn](#noteon)
-    * [noteOff](#noteoff)
-    * [programChange](#programchange)
-    * [pitchWheel](#pitchwheel)
-    * [systemExclusive](#systemexclusive)
-    * [controllerChange](#controllerchange)
-    * [resetAllControllers](#resetallcontrollers)
-    * [channelPressure](#channelpressure)
-    * [polyPressure](#polypressure)
-    * [stopAllChannels](#stopallchannels)
-    * [setSystem](#setsystem)
-  * [Properties](#properties)
-    * [onEventCall](#oneventcall)
-    * [onChannelPropertyChange](#onchannelpropertychange)
-    * [onMasterParameterChange](#onmasterparameterchange)
-<!-- TOC -->
-
 ### Example
-A good example of the processor in use can be seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spessasynth_lib/blob/master/src/synthetizer/worklet_processor.js).
+
+A good example of the processor in use can be
+seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spessasynth_lib/blob/master/src/synthetizer/worklet_processor.js).
 
 ## Initialization
+
 ```js
 const synth = new SpessaSynthProcessor(sampleRate, options);
 ```
+
 - sampleRate - number - sample rate in Hertz, like 44,100Hz.
 - options, an object, explained below
 
 ### Managers
-- [Key Modifier Manager](Key-Modifier-Manager)
-- [Sound Bank Manager](Sound-Bank-Manager)
+
+- [Key Modifier Manager](Key-Modifier-Manager.md)
+- [Sound Bank Manager](Sound-Bank-Manager.md)
 
 ### options
+
 #### enableEventSystem
+
 Boolean, if the event system is enabled. Default is `true`.
 
 #### initialTime
+
 Number, initial internal synth time in seconds.
 Useful when synchronizing the processor with the audio thread time.
 Default is 0.
 
 #### effectsEnabled
+
 Boolean, if the effects are enabled.
 Disabling means that effect outputs will be filled with zeroes.
 Defaults to `true`.
 
 #### midiChannels
+
 Number, the default number of MIDI channels.
 Defaults to 16.
-
 
 ## MasterParameterTypes
 
 TODO
-
 
 ## Methods
 
@@ -88,18 +62,20 @@ synth.renderAudio(outputs, reverb, chorus, startIndex = 0, sampleCount = all);
 - reverb - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
 - chorus - an array of exactly two `Float32Array` - the left and right audio buffer for the chorus processor.
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
-- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from `startIndex`.
+- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
+  `startIndex`.
 
 All `Float32Array`s must be the same length.
 
-> [!CAUTION]
-> This method renders a single quantum of audio.
-> The LFOs and envelopes are only processed at the beginning.
-> The sampleCount/audio buffer should not be longer than 256 samples.
+!!! Caution
 
+    This method renders a single quantum of audio.
+    The LFOs and envelopes are only processed at the beginning.
+    The sampleCount/audio buffer should not be longer than 256 samples.
 
-> [!TIP]
-> If `effetctsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
+!!! Tip
+
+    If `effetctsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
 
 ### renderAudioSplit
 
@@ -114,29 +90,31 @@ synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIn
 - separateChannels - an array of exactly 16 pairs of `Float32Array` - one pair represents one channel,
   for example, the first pair is first channels L and R outputs and so on.
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
-- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from `startIndex`.
+- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
+  `startIndex`.
 
 All `Float32Array`s must be the same length.
 
-> [!CAUTION]
-> This method renders a single quantum of audio.
-> The LFOs and envelopes are only processed at the beginning.
-> The sampleCount/audio buffer should not be longer than 256 samples.
+!!! Caution
 
+    This method renders a single quantum of audio.
+    The LFOs and envelopes are only processed at the beginning.
+    The sampleCount/audio buffer should not be longer than 256 samples.
 
-> [!TIP]
-> If `effetctsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
+!!! Tip
+
+    If `effectsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
 
 ### destroySynthProcessor
 
 Delete all internal values and free up the memory.
-
 
 ### createMidiChannel
 
 Create a new MIDI channel.
 
 ### processMessage
+
 Send a raw MIDI message to the synthesizer. Calls noteOn, noteOff, etc. internally.
 
 ```js
@@ -146,14 +124,13 @@ synth.processMessage(message, channelOffset = 0, force, eventOptions);
 - message - `Uint8Array` - The MIDI message to process.
 - channelOffset - number, optional - adds to the channel number of the message. It defaults to 0.
 - force - boolean - forces the message. That is:
-  - kills a note instead of releasing it
-  - force sets a controller
+    - kills a note instead of releasing it
+    - force sets a controller
 - eventOptions - an object, currently defined properties are:
-  - time - number - time in seconds for when the message is executed.
-  This allows message scheduling.
-  Absolute time in synth's current time.
-  A value less than the current time causes the message to get executed immediately.
-
+    - time - number - time in seconds for when the message is executed.
+      This allows message scheduling.
+      Absolute time in synth's current time.
+      A value less than the current time causes the message to get executed immediately.
 
 ### noteOn
 
@@ -166,7 +143,7 @@ synth.noteOn(channel, midiNote, velocity);
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - midiNote - the note to play. Ranges from 0 to 127.
 - velocity - controls how loud the note is.
-Note that velocity of 0 has
+  Note that velocity of 0 has
   the same effect as using `noteOff`.
   Ranges from 0 to 127, where 127 is the loudest and 1 is the quietest.
 
@@ -191,9 +168,9 @@ synth.programChange(channel, programNumber);
 
 - channel - the MIDI channel to change. It usually ranges from 0 to 15, but it depends on the channel count.
 - programNumber - the MIDI program number to use.
-Ranges from 0 to 127.
-To use other banks, go
-  to [controllerChange](#controllerChange).
+  Ranges from 0 to 127.
+  To use other banks, go
+  to [controllerChange](#controllerchange).
 
 ### pitchWheel
 
@@ -206,8 +183,9 @@ synth.pitchWheel(channel, MSB, LSB);
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - MSB and LSB. 7-bit numbers that form a 14-bit pitch bend value calculated as: `(MSB << 7) | LSB`
 
-> [!TIP]
-> [I highly recommend this article for more info.](https://www.recordingblogs.com/wiki/midi-pitch-wheel-message)
+!!! Tip
+
+    [I highly recommend this article for more info.](https://www.recordingblogs.com/wiki/midi-pitch-wheel-message)
 
 ### systemExclusive
 
@@ -219,11 +197,13 @@ synth.systemExclusive(messageData, channelOffset = 0);
 
 - messageData - Uint8Array, the message byte data **Excluding the 0xF0 byte!**
 - channelOffset - number, the channel offset for the message as they usually can only address the first 16 channels.
-For example, to send a system exclusive on channel 16,
-send a system exclusive for channel 0 and specify the channel offset to be 16.
+  For example, to send a system exclusive on channel 16,
+  send a system exclusive for channel 0 and specify the channel offset to be 16.
 
-> [!TIP]
-> Refer to [MIDI Implementation](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#supported-system-exclusives) for the list of supported System Exclusives.
+!!! Tip
+
+    Refer to 
+    [MIDI Implementation](MIDI-Implementation.md) for the list of supported System Exclusives.
 
 ### controllerChange
 
@@ -235,14 +215,16 @@ synth.controllerChange(channel, controllerNumber, controllerValue, force = false
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - controllerNumber - the MIDI CC number of the controller to change.
-Refer
-  to [this table](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#default-supported-controllers) for the list of controllers
+  Refer
+  to [this table](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#default-supported-controllers)
+  for the list of controllers
   supported by default.
 - controllerValue - the value to set the given controller to. Ranges from 0 to 127.
 - force - boolean, if true, overrides locked controllers.
 
-> [!NOTE]
-> Note that theoretically all controllers are supported as it depends on the SoundFont's modulators.
+!!! Note
+
+    Note that theoretically all controllers are supported as it depends on the SoundFont's modulators.
 
 ### resetAllControllers
 
@@ -293,28 +275,33 @@ Set a MIDI bank select system.
 synth.setSystem(system);
 ```
 
-- system - `gs`, `gm2`, `gm` or `xg` - refer to [MIDI implementation](MIDI-Implementation#supported-bank-systems) for more info.
+- system - `gs`, `gm2`, `gm` or `xg` - refer to [MIDI implementation](MIDI-Implementation.md#supported-bank-systems) for
+  more info.
 
 ## Properties
 
 ### onEventCall
+
 A listener for events.
 
 Parameters:
+
 - eventType - string - the event type.
 - eventData - depends - the event data.
 
-[Refer to the synth event types for all events.](Synth-Event-Types)
-
+[Refer to the synth event types for all events.](Synth-Event-Types.md)
 
 ### onChannelPropertyChange
+
 A listener for channel property changes.
 
 Parameters:
+
 - newProperty - ChannelProperty - the new property.
 - channelNumber - number - the channel number that the property belongs to.
 
 The property is formatted as follows:
+
 ```js
 /**
  * @typedef {Object} ChannelProperty
@@ -330,8 +317,10 @@ The property is formatted as follows:
 ```
 
 ### onMasterParameterChange
+
 A listerer for change in master parameters.
 
 Parameters:
+
 - parameter - masterParameterType - the new parameter type.
 - value - the new value.

@@ -1,0 +1,99 @@
+site_name: spessasynth_core
+site_description: Documentation for the spessasynth_core JavaScript SoundFont2/DLS MIDI Library.
+site_author: spessasus
+site_url: https://spessasus.github.io/spessasynth_core
+copyright: Copyright (C) spessasus 2025, licensed under the Apache-2.0 License.
+repo_url: https://github.com/spessasus/spessasynth_core
+repo_name: spessasus/spessasynth_core
+
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - smarty
+  - toc
+  - tables
+
+theme:
+  name: material
+  logo: assets/images/favicon.png
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+  features:
+    - content.code.copy
+    - content.code.select
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - navigation.expand
+
+    - toc.follow
+    - toc.integrate
+
+    - header.autohide
+
+
+nav:
+  - Home: index.md
+  - Issue Tracker: 'https://github.com/spessasus/spessasynth_core/issues'
+  - Documentation:
+      - Getting-Started.md
+      - SpessaSynthProcessor:
+          - SpessaSynthProcessor-Class.md
+          - Sound-Bank-Manager.md
+          - Key-Modifier-Manager.md
+          - Synth-Event-Types.md
+          - Synthesizer-Snapshot.md
+      - SpessaSynthSequencer: SpessaSynthSequencer-Class.md
+      - All NPM exports: All-NPM-Exports.md
+      - Sound banks:
+          - Sound-Bank.md
+          - Preset: Preset-Class.md
+          - Sample: Sample-Class.md
+          - Modulator: Modulator-Class.md
+          - Generator: Generator-Class.md
+      - MIDI:
+          - MIDI-Parser.md
+          - Creating-MIDI-Files.md
+      - File Writing:
+          - Writing-Wave-Files.md
+          - Writing-MIDI-Files.md
+          - Converting-Between-Formats.md
+      - MIDI-Implementation.md
+
+  - Extra Docs:
+      - Developing.md
+      - Logging.md
+      - About-Multi-Port.md
+      - SF2 RMIDI Extension Specification: https://github.com/spessasus/sf2-rmidi-specification#readme
+      - DLS-Conversion-Problem.md
