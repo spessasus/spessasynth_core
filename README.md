@@ -3,8 +3,14 @@
 <img src='https://raw.githubusercontent.com/spessasus/SpessaSynth/refs/heads/master/src/website/spessasynth_logo_rounded.png' width='300' alt='SpessaSynth logo'>
 </p>
 
-**A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports
-WebAssembly.**
+*A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports
+WebAssembly.*
+
+
+**v3.28 TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
+
+[**Read about breaking changes here**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
+
 
 It allows you to:
 
@@ -14,13 +20,8 @@ It allows you to:
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
-### Install
-
-```shell
-npm install --save spessasynth_core
-```
-
 > **Tip:**
+> 
 > Looking for an easy-to-use WebAudioAPI browser wrapper?
 > Try [spessasynth_lib](https://github.com/spessasus/spessasynth_lib)!
 
@@ -32,12 +33,6 @@ npm install --save spessasynth_core
 - [SpessaFont Online SoundFont/DLS Editor](https://spessasus.github.io/SpessaFont)
 
 ### [Documentation](https://spessasus.github.io/spessasynth_core)
-
-### [Documentation (in progress!)](https://github.com/spessasus/spessasynth_core/wiki/Home)
-
-**v3.28 TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
-
-[**Read about breaking changes here**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
 
 **SpessaSynth Project index**
 
