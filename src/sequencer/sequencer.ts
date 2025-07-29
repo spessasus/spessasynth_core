@@ -7,9 +7,9 @@ import {
 import { playToInternal } from "./play";
 import { SpessaSynthWarn } from "../utils/loggin";
 
-import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/synth_constants";
+import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
-import type { SpessaSynthProcessor } from "../synthetizer/audio_engine/main_processor";
+import type { SpessaSynthProcessor } from "../synthetizer/audio_engine/processor";
 import type { MIDIMessage } from "../midi/midi_message";
 import { midiControllers, midiMessageTypes } from "../midi/enums";
 
@@ -76,47 +76,42 @@ export class SpessaSynthSequencer {
      * Called when a MIDI message is sent and sendMIDIMessages is true.
      * @param message the binary MIDI message.
      */
-    public onMIDIMessage: ((message: number[]) => unknown) | undefined;
+    public onMIDIMessage?: (message: number[]) => unknown;
     /**
      * Called when the time is changed.
      * It also gets called when a song gets changed.
      * @param newTime the new time in seconds.
      */
-    public onTimeChange: ((newTime: number) => unknown) | undefined;
+    public onTimeChange?: (newTime: number) => unknown;
     /**
      * Called when the playback stops.
      * @param isFinished true if the playback stopped because it finished playing the song, false if it was stopped manually.
      */
-    public onPlaybackStop: ((isFinished: boolean) => unknown) | undefined;
+    public onPlaybackStop?: (isFinished: boolean) => unknown;
     /**
      * Called when the song list is changed.
      * @param newSongList the new song list.
      * This is called when the sequencer finishes loading a new song list.
      */
-    public onSongListChange:
-        | ((newSongList: BasicMIDI[]) => unknown)
-        | undefined;
+    public onSongListChange?: (newSongList: BasicMIDI[]) => unknown;
+
     /**
      * Called when the song changes.
      * @param songIndex the index of the new song in the song list.
      * @param autoPlay true if the next song will be played automatically, false if it will not.
      */
-    public onSongChange:
-        | ((songIndex: number, autoPlay: boolean) => unknown)
-        | undefined;
+    public onSongChange?: (songIndex: number, autoPlay: boolean) => unknown;
     /**
      * Called when a MIDI Meta event is encountered.
      * @param e the MIDI message of the meta event.
      * @param trackIndex the index of the track where the meta event was encountered.
      */
-    public onMetaEvent:
-        | ((e: MIDIMessage, trackIndex: number) => unknown)
-        | undefined;
+    public onMetaEvent?: (e: MIDIMessage, trackIndex: number) => unknown;
     /**
      * Called when the loop count changes (decreases).
      * @param count the new loop count.
      */
-    public onLoopCountChange: ((count: number) => unknown) | undefined;
+    public onLoopCountChange?: (count: number) => unknown;
     /**
      * Processes a single MIDI tick.
      * Call this every rendering quantum to process the sequencer events in real-time.
@@ -442,7 +437,7 @@ export class SpessaSynthSequencer {
      */
     protected addNewMIDIPort() {
         for (let i = 0; i < 16; i++) {
-            this.synth.createMidiChannel();
+            this.synth.createMIDIChannel();
         }
     }
 

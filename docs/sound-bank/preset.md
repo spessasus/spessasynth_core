@@ -9,7 +9,7 @@ Represents a singe SoundFont2 preset.
 Returns the samples and their generators (and modulators) for the given midiNote.
 The name is kept from the time that SpessaSynth did not support modulators.
 
-```js
+```ts
 const samplesAndGenerators = preset.getSampleAndGenerators(midiNote);
 ```
 
@@ -17,7 +17,7 @@ const samplesAndGenerators = preset.getSampleAndGenerators(midiNote);
 
 The returned value is as follows:
 
-```js
+```ts
 const samplesAndGenerators = [
     {
         instrumentGenerators: [Generator, /*...*/ Generator], // only the instrument generators, local replace global
@@ -41,19 +41,19 @@ More info about the `Generator` class is [here](generator.md)
 
 ## Properties
 
-### presetName
+### name
 
 The preset's name as string.
 
-```js
-console.log(preset.presetName); // for example: "Drawbar Organ"
+```ts
+console.log(preset.name); // for example: "Drawbar Organ"
 ```
 
 ### bank
 
 The preset's bank number. Used in MIDI `Bank Select` controller.
 
-```js
+```ts
 console.log(preset.bank); // for example: 0
 ```
 
@@ -61,6 +61,6 @@ console.log(preset.bank); // for example: 0
 
 The preset's MIDI program number. Used in MIDI `Program Change` message.
 
-```js
+```ts
 console.log(preset.program); // for example: 16
 ```

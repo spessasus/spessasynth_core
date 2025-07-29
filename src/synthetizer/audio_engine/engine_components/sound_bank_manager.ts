@@ -1,6 +1,6 @@
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { isXGDrums } from "../../../utils/xg_hacks";
-import { EMBEDDED_SOUND_BANK_ID } from "../synth_constants";
+import { EMBEDDED_SOUND_BANK_ID } from "./synth_constants";
 
 import type { SoundBankManagerListEntry } from "../../../soundbank/types";
 import type { BasicSoundBank } from "../../../soundbank/basic_soundbank/basic_soundbank";
@@ -59,7 +59,9 @@ export class SoundBankManager {
         }
         const index = this.soundBankList.findIndex((s) => s.id === id);
         if (index === -1) {
-            SpessaSynthInfo(`No soundfont with id of "${id}" found. Aborting!`);
+            SpessaSynthInfo(
+                `No sound bank with id of "${id}" found. Aborting!`
+            );
             return;
         }
         this.soundBankList.splice(index, 1);
@@ -122,7 +124,7 @@ export class SoundBankManager {
         allowXGDrums: boolean = false
     ): { preset: BasicPreset; bankOffset: number } {
         if (this.soundBankList.length < 1) {
-            throw new Error("No soundfonts! Did you forget to add one?");
+            throw new Error("No sound banks! Did you forget to add one?");
         }
         const isDrum =
             bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));

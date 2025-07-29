@@ -7,6 +7,8 @@ import {
 } from "../../src";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
+// @ts-nocheck
+import Speaker from "speaker";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -57,4 +59,11 @@ const audioStream = new Readable({
     }
 });
 
-audioStream.pipe(process.stdout);
+const speaker = new Speaker({
+    sampleRate: 44100,
+    channels: 2,
+    bitDepth: 32,
+    // @ts-expect-error badly typed package (again)
+    float: true
+});
+audioStream.pipe(speaker);

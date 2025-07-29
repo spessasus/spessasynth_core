@@ -4,7 +4,7 @@ import {
     SpessaSynthInfo
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
 import { SoundBankManager } from "../../synthetizer/audio_engine/engine_components/sound_bank_manager";
@@ -26,12 +26,12 @@ type InternalChannelType = {
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank.
  * @param mid
- * @param soundfont  the sound bank.
+ * @param soundBank  the sound bank.
  * @returns  Record<bank:program, Set<key-velocity>>.
  */
 export function getUsedProgramsAndKeys(
     mid: BasicMIDI,
-    soundfont: SoundBankManager | BasicSoundBank
+    soundBank: SoundBankManager | BasicSoundBank
 ): Record<string, Set<string>> {
     SpessaSynthGroupCollapsed(
         "%cSearching for all used programs and keys...",
@@ -68,13 +68,13 @@ export function getUsedProgramsAndKeys(
         );
         // check if this exists in the soundfont
         let existsBank, existsProgram;
-        if (soundfont instanceof SoundBankManager) {
+        if (soundBank instanceof SoundBankManager) {
             const exists: { preset: BasicPreset; bankOffset: number } =
-                soundfont.getPreset(bank, ch.program, isSystemXG(system));
+                soundBank.getPreset(bank, ch.program, isSystemXG(system));
             existsBank = exists.preset.bank + exists.bankOffset;
             existsProgram = exists.preset.program;
         } else {
-            const exists = soundfont.getPreset(
+            const exists = soundBank.getPreset(
                 bank,
                 ch.program,
                 isSystemXG(system)

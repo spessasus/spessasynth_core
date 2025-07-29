@@ -117,6 +117,7 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new Note On event.
      * @param ticks the tick time of the event.
@@ -143,6 +144,7 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new Note Off event.
      * @param ticks the tick time of the event.
@@ -168,6 +170,7 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new Program Change event.
      * @param ticks the tick time of the event.
@@ -191,6 +194,7 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new Controller Change event.
      * @param ticks the tick time of the event.
@@ -217,6 +221,7 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new Pitch Wheel event.
      * @param ticks the tick time of the event.

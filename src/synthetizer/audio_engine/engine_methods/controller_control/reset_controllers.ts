@@ -6,11 +6,14 @@ import {
     PORTAMENTO_CONTROL_UNSET,
     resetArray
 } from "../../engine_components/controller_tables";
-import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../synth_constants";
+import {
+    DEFAULT_PERCUSSION,
+    DEFAULT_SYNTH_MODE
+} from "../../engine_components/synth_constants";
 import { getDefaultBank } from "../../../../utils/xg_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
-import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
-import type { SpessaSynthProcessor } from "../../main_processor";
+import type { MIDIChannel } from "../../engine_components/midi_channel";
+import type { SpessaSynthProcessor } from "../../processor";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { modulatorSources } from "../../../../soundbank/enums";
 
@@ -19,7 +22,7 @@ import { modulatorSources } from "../../../../soundbank/enums";
  * This will reset all controllers to their default values,
  * except for the locked controllers.
  */
-export function resetAllControllers(
+export function resetAllControllersInternal(
     this: SpessaSynthProcessor,
     log: boolean = true
 ) {
@@ -42,7 +45,9 @@ export function resetAllControllers(
             this.privateProps.drumPreset &&
             this.privateProps.defaultPreset
         ) {
-            ch.setBankSelect(getDefaultBank(this.privateProps.system));
+            ch.setBankSelect(
+                getDefaultBank(this.privateProps.masterParameters.midiSystem)
+            );
             if (channelNumber % 16 === DEFAULT_PERCUSSION) {
                 ch.setPreset(this.privateProps.drumPreset);
                 ch.drumChannel = true;
@@ -125,8 +130,8 @@ export function resetAllControllers(
             });
         }
     }
-    this.privateProps.tunings = [];
-    this.privateProps.tunings = [];
+    this.privateProps.tunings.length = 0;
+    this.privateProps.tunings.length = 0;
     for (let i = 0; i < 128; i++) {
         this.privateProps.tunings.push([]);
     }

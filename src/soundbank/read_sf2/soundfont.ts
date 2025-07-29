@@ -6,13 +6,9 @@ import { applyPresetZones } from "./preset_zones";
 import { readPresets } from "./presets";
 import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
-import { readRIFFChunk, RiffChunk } from "../basic_soundbank/riff_chunk";
+import { readRIFFChunk, RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { consoleColors } from "../../utils/other";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
@@ -37,11 +33,11 @@ export class SoundFont2 extends BasicSoundBank {
         super();
         if (warnDeprecated) {
             console.warn(
-                "Using the constructor directly is deprecated. Use loadSoundFont instead."
+                "Using the constructor directly is deprecated. Use SoundBankLoader.fromArrayBuffer() instead."
             );
         }
         const mainFileArray = new IndexedByteArray(arrayBuffer);
-        SpessaSynthGroup("%cParsing SoundFont...", consoleColors.info);
+        SpessaSynthGroup("%cParsing a SoundFont2 file...", consoleColors.info);
         if (!mainFileArray) {
             SpessaSynthGroupEnd();
             this.parsingError("No data provided!");
@@ -76,7 +72,7 @@ export class SoundFont2 extends BasicSoundBank {
             );
         }
 
-        let xdtaChunk: RiffChunk | undefined = undefined;
+        let xdtaChunk: RIFFChunk | undefined = undefined;
 
         while (infoChunk.chunkData.length > infoChunk.chunkData.currentIndex) {
             const chunk = readRIFFChunk(infoChunk.chunkData);
@@ -140,15 +136,15 @@ export class SoundFont2 extends BasicSoundBank {
         }
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
         const xChunks: Partial<{
-            phdr: RiffChunk;
-            pbag: RiffChunk;
-            pmod: RiffChunk;
-            pgen: RiffChunk;
-            inst: RiffChunk;
-            ibag: RiffChunk;
-            imod: RiffChunk;
-            igen: RiffChunk;
-            shdr: RiffChunk;
+            phdr: RIFFChunk;
+            pbag: RIFFChunk;
+            pmod: RIFFChunk;
+            pgen: RIFFChunk;
+            inst: RIFFChunk;
+            ibag: RIFFChunk;
+            imod: RIFFChunk;
+            igen: RIFFChunk;
+            shdr: RIFFChunk;
         }> = {};
         if (xdtaChunk !== undefined) {
             // read the hydra chunks
@@ -398,7 +394,7 @@ export class SoundFont2 extends BasicSoundBank {
         SpessaSynthGroupEnd();
     }
 
-    verifyHeader(chunk: RiffChunk, expected: string) {
+    verifyHeader(chunk: RIFFChunk, expected: string) {
         if (chunk.header.toLowerCase() !== expected.toLowerCase()) {
             SpessaSynthGroupEnd();
             this.parsingError(

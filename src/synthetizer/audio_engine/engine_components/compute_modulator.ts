@@ -5,7 +5,7 @@ import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { generatorTypes, type ModulatorCurveType, modulatorSources } from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";
 import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
-import type { MIDIChannel } from "./midi_audio_channel";
+import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
 /**

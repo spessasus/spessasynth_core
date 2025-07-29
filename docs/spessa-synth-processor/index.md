@@ -9,7 +9,7 @@ seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spess
 
 ## Initialization
 
-```js
+```ts
 const synth = new SpessaSynthProcessor(sampleRate, options);
 ```
 
@@ -54,7 +54,7 @@ TODO
 
 Render float32 audio data to the stereo outputs.
 
-```js
+```ts
 synth.renderAudio(outputs, reverb, chorus, startIndex = 0, sampleCount = all);
 ```
 
@@ -81,7 +81,7 @@ All `Float32Array`s must be the same length.
 
 Render float32 audio data of separate channels at once.
 
-```js
+```ts
 synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIndex = 0, sampleCount = all);
 ```
 
@@ -117,7 +117,7 @@ Create a new MIDI channel.
 
 Send a raw MIDI message to the synthesizer. Calls noteOn, noteOff, etc. internally.
 
-```js
+```ts
 synth.processMessage(message, channelOffset = 0, force, eventOptions);
 ```
 
@@ -136,7 +136,7 @@ synth.processMessage(message, channelOffset = 0, force, eventOptions);
 
 Play the given note.
 
-```js
+```ts
 synth.noteOn(channel, midiNote, velocity);
 ```
 
@@ -151,7 +151,7 @@ synth.noteOn(channel, midiNote, velocity);
 
 Stop the given note.
 
-```js
+```ts
 synth.noteOff(channel, midiNote);
 ```
 
@@ -162,7 +162,7 @@ synth.noteOff(channel, midiNote);
 
 Change the preset for the given channel.
 
-```js
+```ts
 synth.programChange(channel, programNumber);
 ```
 
@@ -176,7 +176,7 @@ synth.programChange(channel, programNumber);
 
 Change the channel's pitch, including the currently playing notes.
 
-```js
+```ts
 synth.pitchWheel(channel, MSB, LSB);
 ```
 
@@ -191,7 +191,7 @@ synth.pitchWheel(channel, MSB, LSB);
 
 Handle a MIDI System Exclusive message.
 
-```js
+```ts
 synth.systemExclusive(messageData, channelOffset = 0);
 ```
 
@@ -209,7 +209,7 @@ synth.systemExclusive(messageData, channelOffset = 0);
 
 Set a given MIDI controller to a given value.
 
-```js
+```ts
 synth.controllerChange(channel, controllerNumber, controllerValue, force = false);
 ```
 
@@ -230,7 +230,7 @@ synth.controllerChange(channel, controllerNumber, controllerValue, force = false
 
 Reset all controllers to their default values and all programs. Essentially a system reset
 
-```js
+```ts
 synth.resetAllControllers();
 ```
 
@@ -238,7 +238,7 @@ synth.resetAllControllers();
 
 Apply pressure to the given channel. It usually controls the vibrato amount.
 
-```js
+```ts
 synth.channelPressure(channel, pressure);
 ```
 
@@ -249,7 +249,7 @@ synth.channelPressure(channel, pressure);
 
 Apply pressure to the given note on a given channel. It usually controls the vibrato amount.
 
-```js
+```ts
 synth.polyPressure(channel, midiNote, pressure);
 ```
 
@@ -261,7 +261,7 @@ synth.polyPressure(channel, midiNote, pressure);
 
 Stop all voices on all channels.
 
-```js
+```ts
 synth.stopAllChannels(force = false);
 ```
 
@@ -271,7 +271,7 @@ synth.stopAllChannels(force = false);
 
 Set a MIDI bank select system.
 
-```js
+```ts
 synth.setSystem(system);
 ```
 
@@ -304,7 +304,7 @@ Parameters:
 
 The property is formatted as follows:
 
-```js
+```ts
 /**
  * @typedef {Object} ChannelProperty
  * @property {number} voicesAmount - the channel's current voice amount

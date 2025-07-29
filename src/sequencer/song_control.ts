@@ -6,7 +6,7 @@ import {
     SpessaSynthWarn
 } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
-import type { SpessaSynthSequencer } from "./sequencer_engine";
+import type { SpessaSynthSequencer } from "./sequencer";
 
 /**
  * Assigns a MIDI port channel offset to a track.

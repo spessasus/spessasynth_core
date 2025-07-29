@@ -3,7 +3,7 @@ Manages the sound banks of the parent `SpessaSynthProcessor` instance.
 
 ## Accessing
 Access it through the `soundfontManager` property.
-```js
+```ts
 processor.soundfontManager.doSomething();
 ```
 
@@ -25,13 +25,13 @@ Returns a complete preset list.
 That is, a list of objects:
 - `bank` - `number` - the MIDI bank number.
 - `program` - `number` - the MIDI program number.
-- `presetName` - `string` - the preset's name.
+- `name` - `string` - the preset's name.
 
 ### reloadManager
 This method clears _all_ loaded sound banks and replaces them with a new one, 
 with an ID `main` and bank offset of 0.
 
-```js
+```ts
 processor.soundfontManager.reloadManager(soundBank);
 ```
 - `soundBank` - `BasicSoundBank` - the new sound bank to replace the old list with.
@@ -39,7 +39,7 @@ processor.soundfontManager.reloadManager(soundBank);
 ### deleteSoundFont
 This method removes a sound bank with a given ID from the sound bank list.
 
-```js
+```ts
 processor.soundfontManager.deleteSoundFont(id);
 ```
 - `id` - `string` - the ID of the sound bank to remove.
@@ -48,7 +48,7 @@ processor.soundfontManager.deleteSoundFont(id);
 This method adds a new sound bank with a given ID to the list,
 or replaces an existing one.
 
-```js
+```ts
 processor.soundfontManager.addNewSoundFont(soundBank, id, bankOffset);
 ```
 - `soundBank` - `BasicSoundBank` - the new sound bank to add.
@@ -58,7 +58,7 @@ processor.soundfontManager.addNewSoundFont(soundBank, id, bankOffset);
 ### getCurrentSoundFontOrder
 This method gets the current sound bank priority order.
 
-```js
+```ts
 const order = processor.soundfontManager.getCurrentSoundFontOrder();
 ```
 The returned value is `string[]` - the sound bank IDs in the descending priority.
@@ -66,7 +66,7 @@ The returned value is `string[]` - the sound bank IDs in the descending priority
 ### rearrangeSoundFonts
 This function edits the sound bank priority.
 
-```js
+```ts
 synth.soundfontManager.rearrangeSoundFonts(newOrderedList);
 ```
 

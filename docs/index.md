@@ -9,9 +9,9 @@ hide:
 This should serve as the complete documentation of the library.
 (And my attempt to explain the program :-)
 
-!!! Tip
+!!! Important
 
-    If you encounter any errors in this documentation, please **open an issue!**
+    Coming from 3.27? Make sure to read the [3.28 migration guide](extra/3-28-migration-guide.md)!
 
 ## Documentation
 
@@ -35,3 +35,8 @@ This should serve as the complete documentation of the library.
 - [Multi-Port files explained](extra/about-multi-port.md) - Explanation of the Multi-Port MIDI feature.
 - [The DLS Conversion problem](extra/dls-conversion-problem.md) - The limits of the SF2 -> DLS conversion.
 - [NPM Exports](extra/all-npm-exports.md) - a listing of all the NPN exports in the `spessasynth_core` NPM package.
+
+
+!!! Tip
+
+    If you encounter any errors in this documentation, please **open an issue!**

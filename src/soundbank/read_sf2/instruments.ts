@@ -1,4 +1,4 @@
-import { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { BasicInstrument } from "../basic_soundbank/basic_instrument";
@@ -21,7 +21,7 @@ export class SoundFontInstrument extends BasicInstrument {
     /**
      * Creates an instrument
      */
-    constructor(instrumentChunk: RiffChunk) {
+    constructor(instrumentChunk: RIFFChunk) {
         super();
         this.name = readBytesAsString(instrumentChunk.chunkData, 20);
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
@@ -47,7 +47,7 @@ export class SoundFontInstrument extends BasicInstrument {
  * Reads the instruments
  */
 export function readInstruments(
-    instrumentChunk: RiffChunk
+    instrumentChunk: RIFFChunk
 ): SoundFontInstrument[] {
     const instruments: SoundFontInstrument[] = [];
     while (

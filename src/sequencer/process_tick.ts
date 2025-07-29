@@ -1,4 +1,4 @@
-import type { SpessaSynthSequencer } from "./sequencer_engine";
+import type { SpessaSynthSequencer } from "./sequencer";
 
 /**
  * Processes a single MIDI tick.

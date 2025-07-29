@@ -1,6 +1,6 @@
-import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import type { MIDIChannel } from "../../engine_components/midi_channel";
 import type { Voice } from "../../engine_components/voice";
-import type { SpessaSynthProcessor } from "../../main_processor";
+import type { SpessaSynthProcessor } from "../../processor";
 
 /**
  * Gets the priority of a voice based on its channel and state.
@@ -35,7 +35,7 @@ function getPriority(channel: MIDIChannel, voice: Voice): number {
  * This function will remove the least important voices from all channels.
  * @param amount The number of voices to remove.
  */
-export function voiceKilling(this: SpessaSynthProcessor, amount: number) {
+export function killVoicesIntenral(this: SpessaSynthProcessor, amount: number) {
     const allVoices: {
         channel: MIDIChannel;
         voice: Voice;

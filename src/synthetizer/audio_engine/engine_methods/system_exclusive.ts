@@ -1,11 +1,15 @@
 import { arrayToHexString, consoleColors } from "../../../utils/other";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
-import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../synth_constants";
+import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../engine_components/synth_constants";
 import { isSystemXG } from "../../../utils/xg_hacks";
 import { readStringOffset } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
-import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
-import type { SpessaSynthProcessor } from "../main_processor";
+import {
+    generatorTypes,
+    type ModulatorSourceEnum,
+    modulatorSources
+} from "../../../soundbank/enums";
+import type { SpessaSynthProcessor } from "../processor";
 import type { IndexedByteArray } from "../../../utils/indexed_array";
 import { midiControllers } from "../../../midi/enums";
 import { customControllers, synthDisplayTypes } from "../../enums";
@@ -53,17 +57,18 @@ type TypedArray =
  * This is a rather extensive method that handles various system exclusive messages,
  * including Roland GS, MIDI Tuning Standard, and other non-realtime messages.
  */
-export function systemExclusive(
+export function systemExclusiveInternal(
     this: SpessaSynthProcessor,
     syx: Array<number> | IndexedByteArray | TypedArray,
     channelOffset: number = 0
 ) {
     const type = syx[0];
     if (
-        this.privateProps.deviceID !== ALL_CHANNELS_OR_DIFFERENT_ACTION &&
+        this.privateProps.masterParameters.deviceID !==
+            ALL_CHANNELS_OR_DIFFERENT_ACTION &&
         syx[1] !== 0x7f
     ) {
-        if (this.privateProps.deviceID !== syx[1]) {
+        if (this.privateProps.masterParameters.deviceID !== syx[1]) {
             // not our device ID
             return;
         }
@@ -996,7 +1001,11 @@ export function systemExclusive(
                     }
                 } else if (syx[3] === 0x08) {
                     // XG part parameter
-                    if (!isSystemXG(this.privateProps.system)) {
+                    if (
+                        !isSystemXG(
+                            this.privateProps.masterParameters.midiSystem
+                        )
+                    ) {
                         return;
                     }
                     const channel = syx[4] + channelOffset;
@@ -1105,7 +1114,9 @@ export function systemExclusive(
                         displayData: textData,
                         displayType: synthDisplayTypes.XGText
                     });
-                } else if (isSystemXG(this.privateProps.system)) {
+                } else if (
+                    isSystemXG(this.privateProps.masterParameters.midiSystem)
+                ) {
                     SpessaSynthWarn(
                         `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
@@ -1113,7 +1124,7 @@ export function systemExclusive(
                     );
                 }
             } else {
-                if (isSystemXG(this.privateProps.system)) {
+                if (isSystemXG(this.privateProps.masterParameters.midiSystem)) {
                     SpessaSynthWarn(
                         `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,

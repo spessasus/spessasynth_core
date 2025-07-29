@@ -1,14 +1,11 @@
 import { VolumeEnvelope } from "../engine_components/volume_envelope";
 import { ModulationEnvelope } from "../engine_components/modulation_envelope";
-import {
-    absCentsToHz,
-    timecentsToSeconds
-} from "../engine_components/unit_converter";
+import { absCentsToHz, timecentsToSeconds } from "../engine_components/unit_converter";
 import { getLFOValue } from "../engine_components/lfo";
 import { WavetableOscillator } from "../engine_components/wavetable_oscillator";
 import { LowpassFilter } from "../engine_components/lowpass_filter";
 import type { Voice } from "../engine_components/voice";
-import type { MIDIChannel } from "../engine_components/midi_audio_channel";
+import type { MIDIChannel } from "../engine_components/midi_channel";
 import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../enums";
 
@@ -217,7 +214,7 @@ export function renderVoice(
     WavetableOscillator.getSample(
         voice,
         bufferOut,
-        this.synthProps.interpolationType
+        this.synthProps.masterParameters.interpolationType
     );
 
     // low pass filter

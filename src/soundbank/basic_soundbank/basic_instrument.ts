@@ -28,11 +28,11 @@ export class BasicInstrument {
      * Instrument's linked presets (the presets that use it)
      * note that duplicates are allowed since one preset can use the same instrument multiple times
      */
-    readonly linkedPresets: BasicPreset[] = [];
+    readonly linkedTo: BasicPreset[] = [];
 
     // How many presets is this instrument used by
     get useCount(): number {
-        return this.linkedPresets.length;
+        return this.linkedTo.length;
     }
 
     /**
@@ -50,7 +50,7 @@ export class BasicInstrument {
      * @param preset the preset to link to
      */
     linkTo(preset: BasicPreset) {
-        this.linkedPresets.push(preset);
+        this.linkedTo.push(preset);
         this.zones.forEach((z) => z.useCount++);
     }
 
@@ -59,14 +59,14 @@ export class BasicInstrument {
      * @param preset the preset to unlink from
      */
     unlinkFrom(preset: BasicPreset) {
-        const index = this.linkedPresets.indexOf(preset);
+        const index = this.linkedTo.indexOf(preset);
         if (index < 0) {
             SpessaSynthWarn(
                 `Cannot unlink ${preset.name} from ${this.name}: not linked.`
             );
             return;
         }
-        this.linkedPresets.splice(index, 1);
+        this.linkedTo.splice(index, 1);
         this.zones.forEach((z) => z.useCount--);
     }
 
@@ -82,10 +82,10 @@ export class BasicInstrument {
     }
 
     // Unlinks everything from this instrument
-    deleteInstrument() {
+    delete() {
         if (this.useCount > 0) {
             throw new Error(
-                `Cannot delete an instrument that is used by: ${this.linkedPresets.map((p) => p.name)}.`
+                `Cannot delete an instrument that is used by: ${this.linkedTo.map((p) => p.name)}.`
             );
         }
         this.zones.forEach((z) => z.sample.unlinkFrom(this));

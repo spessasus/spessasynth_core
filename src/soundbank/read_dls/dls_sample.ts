@@ -2,7 +2,7 @@ import { BasicSample } from "../basic_soundbank/basic_sample";
 import { SpessaSynthWarn } from "../../utils/loggin";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { sampleTypes } from "../enums";
 
 const W_FORMAT_TAG = {
@@ -122,7 +122,7 @@ export class DLSSample extends BasicSample {
         loopStart: number,
         loopEnd: number,
         sampleDbAttenuation: number,
-        dataChunk: RiffChunk,
+        dataChunk: RIFFChunk,
         wFormatTag: number,
         bytesPerSample: number
     ) {
@@ -146,7 +146,7 @@ export class DLSSample extends BasicSample {
         if (!this.rawData) {
             return new Float32Array(0);
         }
-        if (!this.sampleData) {
+        if (!this.audioData) {
             let sampleData;
             switch (this.wFormatTag) {
                 default:
@@ -168,7 +168,7 @@ export class DLSSample extends BasicSample {
             }
             this.setAudioData(sampleData, this.sampleRate);
         }
-        return this.sampleData || new Float32Array(0);
+        return this.audioData || new Float32Array(0);
     }
 
     getRawData(allowVorbis: boolean) {

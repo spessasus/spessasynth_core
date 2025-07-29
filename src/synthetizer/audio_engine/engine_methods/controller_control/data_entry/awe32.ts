@@ -1,10 +1,10 @@
-import { SpessaSynthWarn } from "../../../../utils/loggin";
-import { consoleColors } from "../../../../utils/other";
+import { SpessaSynthWarn } from "../../../../../utils/loggin";
+import { consoleColors } from "../../../../../utils/other";
 import {
     type GeneratorType,
     generatorTypes
-} from "../../../../soundbank/basic_soundbank/generator_types";
-import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+} from "../../../../../soundbank/basic_soundbank/generator_types";
+import type { MIDIChannel } from "../../../engine_components/midi_channel";
 
 /**
  * SoundBlaster AWE32 NRPN generator mappings.

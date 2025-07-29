@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { readBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
 import type { BasicMIDI } from "../basic_midi";
 import type { MIDIMessage } from "../midi_message";
 import type { NoteTime } from "../types";

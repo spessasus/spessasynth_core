@@ -50,7 +50,7 @@ bank.instruments.forEach((inst) => {
     console.group(`\n--- ${inst.name} ---`);
     console.info(
         "Linked presets:",
-        inst.linkedPresets.map((p) => p.name).join(", ")
+        inst.linkedTo.map((p) => p.name).join(", ")
     );
 
     console.group("Zones:");
@@ -81,7 +81,7 @@ bank.samples.forEach((sample) => {
     );
     console.info(
         "Linked instruments:",
-        sample.linkedInstruments.map((i) => i.name).join(", ")
+        sample.linkedTo.map((i) => i.name).join(", ")
     );
     console.groupEnd();
 });

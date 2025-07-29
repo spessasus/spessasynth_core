@@ -6,7 +6,7 @@ import { consoleColors } from "../../utils/other";
 import { Generator } from "../basic_soundbank/generator";
 import { Modulator } from "../basic_soundbank/modulator";
 import { type GeneratorType, generatorTypes } from "../basic_soundbank/generator_types";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { DLSDestinations, DLSSources } from "../enums";
 
 /**
@@ -16,7 +16,7 @@ import { DLSDestinations, DLSSources } from "../enums";
  * @returns
  */
 export function readArticulation(
-    chunk: RiffChunk,
+    chunk: RIFFChunk,
     disableVibrato: boolean
 ): { modulators: Modulator[]; generators: Generator[] } {
     const artData = chunk.chunkData;

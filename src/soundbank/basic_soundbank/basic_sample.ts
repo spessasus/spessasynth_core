@@ -10,69 +10,68 @@ const RESAMPLE_RATE = 48000;
 
 export class BasicSample {
     /**
-     * The sample's name
+     * The sample's name.
      */
     name: string;
 
     /**
-     * Sample rate in Hz
+     * Sample rate in Hz.
      */
     sampleRate: number;
 
     /**
-     * Original pitch of the sample as a MIDI note number
+     * Original pitch of the sample as a MIDI note number.
      */
     originalKey: number;
 
     /**
-     * Pitch correction, in cents. Can be negative
+     * Pitch correction, in cents. Can be negative.
      */
     pitchCorrection: number;
 
     /**
-     * Linked sample, unused if mono
+     * Linked sample, unused if mono.
      */
     linkedSample: BasicSample | undefined;
 
     /**
-     * The type of the sample
+     * The type of the sample.
      */
     sampleType: SampleType;
 
     /**
-     * Relative to the start of the sample in sample points
+     * Relative to the start of the sample in sample points.
      */
     loopStart: number;
 
     /**
-     * Relative to the start of the sample in sample points
+     * Relative to the start of the sample in sample points.
      */
     loopEnd: number;
     /**
-     * The compressed sample data if the sample has been compressed
-     */
-    compressedData: Uint8Array | undefined;
-    /**
      * Sample's linked instruments (the instruments that use it)
-     * note that duplicates are allowed since one instrument can use the same sample multiple times
+     * note that duplicates are allowed since one instrument can use the same sample multiple times.
      */
-    linkedInstruments: BasicInstrument[] = [];
+    linkedTo: BasicInstrument[] = [];
     /**
-     * The sample's audio data
-     * @type {Float32Array|undefined}
+     * Indicates if the data was overridden, so it cannot be copied back unchanged.
      */
-    sampleData: Float32Array | undefined;
+    protected dataOverridden: boolean = true;
     /**
-     * Indicates if the data was overridden, so it cannot be copied back unchanged
+     * The compressed sample data if the sample has been compressed.
      */
-    dataOverridden: boolean = true;
+    protected compressedData: Uint8Array | undefined;
+    /**
+     * The sample's audio data.
+     */
+    protected audioData: Float32Array | undefined;
 
     /**
      * The basic representation of a sample
      * @param sampleName The sample's name
      * @param sampleRate The sample's rate in Hz
-     * @param samplePitch The sample's pitch as a MIDI note number
-     * @param samplePitchCorrection The sample's pitch correction in cents
+     * @param originalKey The sample's pitch as a MIDI note number
+     * @param pitchCorrection The sample's pitch correction in cents
      * @param sampleType The sample's type, an enum that can indicate SF3
      * @param loopStart The sample's loop start relative to the sample start in sample points
      * @param loopEnd The sample's loop end relative to the sample start in sample points
@@ -80,16 +79,16 @@ export class BasicSample {
     constructor(
         sampleName: string,
         sampleRate: number,
-        samplePitch: number,
-        samplePitchCorrection: number,
+        originalKey: number,
+        pitchCorrection: number,
         sampleType: SampleType,
         loopStart: number,
         loopEnd: number
     ) {
         this.name = sampleName;
         this.sampleRate = sampleRate;
-        this.originalKey = samplePitch;
-        this.pitchCorrection = samplePitchCorrection;
+        this.originalKey = originalKey;
+        this.pitchCorrection = pitchCorrection;
         this.loopStart = loopStart;
         this.loopEnd = loopEnd;
         this.sampleType = sampleType;
@@ -117,7 +116,7 @@ export class BasicSample {
      * The sample's use count
      */
     get useCount() {
-        return this.linkedInstruments.length;
+        return this.linkedTo.length;
     }
 
     /**
@@ -147,7 +146,7 @@ export class BasicSample {
         // adjust loop points
         this.loopStart = Math.floor(this.loopStart * ratio);
         this.loopEnd = Math.floor(this.loopEnd * ratio);
-        this.sampleData = audioData;
+        this.audioData = audioData;
     }
 
     /**
@@ -174,7 +173,7 @@ export class BasicSample {
                 `Failed to compress ${this.name}. Leaving as uncompressed!`,
                 e
             );
-            delete this.compressedData;
+            this.compressedData = undefined;
         }
     }
 
@@ -240,7 +239,7 @@ export class BasicSample {
      * @param instrument the instrument to link to
      */
     linkTo(instrument: BasicInstrument) {
-        this.linkedInstruments.push(instrument);
+        this.linkedTo.push(instrument);
     }
 
     /**
@@ -248,14 +247,14 @@ export class BasicSample {
      * @param instrument the instrument to unlink from
      */
     unlinkFrom(instrument: BasicInstrument) {
-        const index = this.linkedInstruments.indexOf(instrument);
+        const index = this.linkedTo.indexOf(instrument);
         if (index < 0) {
             SpessaSynthWarn(
                 `Cannot unlink ${instrument.name} from ${this.name}: not linked.`
             );
             return;
         }
-        this.linkedInstruments.splice(index, 1);
+        this.linkedTo.splice(index, 1);
     }
 
     /**
@@ -265,14 +264,14 @@ export class BasicSample {
      * @returns the audio data
      */
     getAudioData(): Float32Array {
-        if (this.sampleData) {
-            return this.sampleData;
+        if (this.audioData) {
+            return this.audioData;
         }
         if (this.isCompressed) {
             // SF3
             // if compressed, decode
-            this.sampleData = this.decodeVorbis();
-            return this.sampleData;
+            this.audioData = this.decodeVorbis();
+            return this.audioData;
         }
         throw new Error("Sample data is undefined for a BasicSample instance.");
     }
@@ -284,10 +283,10 @@ export class BasicSample {
      * @param sampleRate The new sample rate, in Hertz.
      */
     setAudioData(audioData: Float32Array, sampleRate: number) {
-        delete this.compressedData;
-        this.sampleData = audioData;
+        this.audioData = audioData;
         this.sampleRate = sampleRate;
         this.dataOverridden = true;
+        this.compressedData = undefined;
     }
 
     /**
@@ -295,7 +294,7 @@ export class BasicSample {
      * @param data the new compressed data
      */
     setCompressedData(data: Uint8Array) {
-        this.sampleData = undefined;
+        this.audioData = undefined;
         this.compressedData = data;
         this.dataOverridden = false;
     }
@@ -324,9 +323,9 @@ export class BasicSample {
     /**
      * Decode binary vorbis into a float32 pcm
      */
-    private decodeVorbis(): Float32Array {
-        if (this.sampleData) {
-            return this.sampleData;
+    protected decodeVorbis(): Float32Array {
+        if (this.audioData) {
+            return this.audioData;
         }
         if (!this.compressedData) {
             throw new Error("Compressed data is missing.");

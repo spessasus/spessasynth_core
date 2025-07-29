@@ -1,10 +1,10 @@
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 
 /**
  * @param zonesChunk both pbag and ibag work
  */
-export function readZoneIndexes(zonesChunk: RiffChunk): {
+export function readZoneIndexes(zonesChunk: RIFFChunk): {
     mod: number[];
     gen: number[];
 } {

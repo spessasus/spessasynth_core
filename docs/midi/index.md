@@ -8,7 +8,7 @@ This is the module responsible for parsing MIDI files.
 
 ## Initialization
 
-```js
+```ts
 const parsedMIDI = new MIDI(arrayBuffer);
 ```
 
@@ -20,7 +20,7 @@ const parsedMIDI = new MIDI(arrayBuffer);
 
 The number of tracks in the file.
 
-```js
+```ts
 console.log(`this file has ${parsedMIDI.tracksAmount}`);
 ```
 
@@ -28,7 +28,7 @@ console.log(`this file has ${parsedMIDI.tracksAmount}`);
 
 The track names of the MIDI file. If a track doesn't have a name, it will have an empty string.
 
-```js
+```ts
 console.log(`First track is called ${parsedMIDI.trackNames[0]}`);
 ```
 
@@ -36,7 +36,7 @@ console.log(`First track is called ${parsedMIDI.trackNames[0]}`);
 
 The time division of the midi file. MIDI ticks per quarter note.
 
-```js
+```ts
 console.log(`this sequence's time division is ${parsedMIDI.timeDivision}`);
 ```
 
@@ -44,7 +44,7 @@ console.log(`this sequence's time division is ${parsedMIDI.timeDivision}`);
 
 The sequence's name. The first track's `Track Name`'s event text.
 
-```js
+```ts
 console.log(`This sequence is named "${parsedMIDI.midiName}"`);
 ```
 
@@ -64,7 +64,7 @@ A `boolean` indicating if the MIDI name is the same as file name, therefore ther
 
 The sequence's name, as a raw `Uint8Array`. Useful for handling unusual encodings.
 
-```js
+```ts
 console.log(new TextDecoder("shift-jis").decode(parsedMIDI.rawMidiName)); // ダメなりんご！！
 ```
 
@@ -74,7 +74,7 @@ The decoded copyright and description of the file.
 Individual messages are separated with a newline. Note: this not only includes the copyright events, but also others.
 Treat this like "additional information" about the file.
 
-```js
+```ts
 console.log(`Midi file description: ${parsedMIDI.copyright}`);
 ```
 
@@ -83,7 +83,7 @@ console.log(`Midi file description: ${parsedMIDI.copyright}`);
 Ordered from last to first, all the tempo changes in the file.
 It will always contain at least one tempo change (the default 120BPM at zero ticks).
 
-```js
+```ts
 [
     {
         tempo: 140 /* tempo in BPM */,
@@ -106,7 +106,7 @@ The points of the loop detected in the MIDI file in ticks.
 If there's nothing detected, the loop will start from the first note on event and end will be the last note off.
 Current looping detection is: CC 2/4, 116/117 and "start," "loopStart" and "loopEnd" markers.
 
-```js
+```ts
 console.log(parsedMIDI.loop); // {start: 1294, end: 49573}
 ```
 
@@ -115,7 +115,7 @@ console.log(parsedMIDI.loop); // {start: 1294, end: 49573}
 The [MIDI file format.](https://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html#BM2_2) Usually 0 or
 1, rarely 2.
 
-```js
+```ts
 console.log(parsedMIDI.format); // 1
 ```
 
@@ -123,7 +123,7 @@ console.log(parsedMIDI.format); // 1
 
 The MIDI tick number of the first noteOn event in the sequence. It can be used to skip the initial silence.
 
-```js
+```ts
 console.log(parsedMIDI.firstNoteOn); // 1294
 ```
 
@@ -132,7 +132,7 @@ console.log(parsedMIDI.firstNoteOn); // 1294
 The MIDI tick number of the last voice event in the sequence.
 Treated as the last event in the sequence, even if the end of track is later.
 
-```js
+```ts
 console.log(parsedMIDI.lastVoiceEventTick); // 14518
 ```
 
@@ -140,7 +140,7 @@ console.log(parsedMIDI.lastVoiceEventTick); // 14518
 
 The sequence's duration in seconds.
 
-```js
+```ts
 console.log(parsedMIDI.duration); // 125.64;
 ```
 
@@ -155,7 +155,7 @@ console.log(parsedMIDI.duration); // 125.64;
 
 The detected midi ports for each track. Each port represents a batch of 16 channels.
 
-```js
+```ts
 console.log(parsedMIDI.midiPorts); // [0, 0, 0, 1, 1, 2, ...]
 ```
 
@@ -164,7 +164,7 @@ console.log(parsedMIDI.midiPorts); // [0, 0, 0, 1, 1, 2, ...]
 The channel offsets for each MIDI port, using
 the [SpessaSynth method](../extra/about-multi-port.md#spessasynth-implementation)
 
-```js
+```ts
 console.log(parsedMIDI.midiPortChannelOffsets); // [16, 0, 48, 32, ...]
 ```
 
@@ -172,7 +172,7 @@ console.log(parsedMIDI.midiPortChannelOffsets); // [16, 0, 48, 32, ...]
 
 All the channels that each track refers to. An array of `Set`s.
 
-```js
+```ts
 console.log(parsedMIDI.usedChannelsOnTrack) // [ Set[0, 1, 2, 3, 4] ] - this sequence has 1 track which plays on channels 0, 1, 2, 3 and 4
 ```
 
@@ -180,7 +180,7 @@ console.log(parsedMIDI.usedChannelsOnTrack) // [ Set[0, 1, 2, 3, 4] ] - this seq
 
 The key range of the sequence. The lowest pressed key and highest.
 
-```js
+```ts
 console.log(parsedMIDI.keyRange); // {min: 0, max: 127}
 ```
 
@@ -224,7 +224,7 @@ The actual MIDI sequence data. Described below.
 
 Updates internal values. Call this after editing the contents of `midi.tracks`.
 
-```js
+```ts
 midi.flush();
 ```
 
@@ -236,7 +236,7 @@ midi.flush();
 
 Calculates time in seconds given the MIDI ticks.
 
-```js
+```ts
 midi.MIDIticksToSeconds(ticks);
 ```
 
@@ -249,7 +249,7 @@ The returned value is the time in seconds from the start of the MIDI to the give
 Renders the sequence as a .mid-file.
 See [Writing MIDI files](../writing-files/midi.md#writemidi) for more info.
 
-```js
+```ts
 midi.writeMIDI();
 ```
 
@@ -260,7 +260,7 @@ The returned value is an `Uint8Array` - a binary representation of the .mid-file
 This function writes out an RMIDI file (MIDI + SF2).
 [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
-```js
+```ts
 const rmidiBinary = midi.writeRMIDI(
     soundfontBinary,
     soundfont,
@@ -288,7 +288,7 @@ See [Writing MIDI files](../writing-files/midi.md) for more info.
 Goes through the MIDI file and returns all used program numbers and MIDI key:velocity combinations for them,
 for a given sound bank (used for capital tone fallback).
 
-```js
+```ts
 const used = midi.getUsedProgramsAndKeys(soundfont);
 ```
 
@@ -304,7 +304,7 @@ The returned value is `Object<string, Set<string>>`. That is:
 
 Returns nicely formatted note data for easy sequence visualization.
 
-```js
+```ts
 const data = midi.getNoteTimes(minDrumLength = 0);
 ```
 
@@ -322,7 +322,7 @@ Each channel is a list of notes, represented as objects with properties:
 
 Example:
 
-```js
+```ts
 const data = [
     [{midiNote: 60, velocity: 100, start: 0.5, length: 0.25}], // channel 1
     // other 14 channels...
@@ -336,7 +336,7 @@ The file is stored as an array of tracks, accesible via `parsedMIDI.tracks`.
 Each track is an array of events.
 Each event is a `MIDIMessage` class, which is defined as follows;
 
-```js
+```ts
 class MIDIMessage {
     /**
      * absolute amount of MIDI Ticks from the start of the track

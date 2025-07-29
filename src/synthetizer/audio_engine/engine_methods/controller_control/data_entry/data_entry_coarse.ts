@@ -1,11 +1,11 @@
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin";
-import { consoleColors } from "../../../../utils/other";
-import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
-import type { GeneratorType } from "../../../../soundbank/basic_soundbank/generator_types";
-import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
-import { modulatorSources } from "../../../../soundbank/enums";
-import { customControllers, dataEntryStates } from "../../../enums";
-import { midiControllers } from "../../../../midi/enums";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../../utils/loggin";
+import { consoleColors } from "../../../../../utils/other";
+import type { MIDIChannel } from "../../../engine_components/midi_channel";
+import type { GeneratorType } from "../../../../../soundbank/basic_soundbank/generator_types";
+import { NON_CC_INDEX_OFFSET } from "../../../engine_components/controller_tables";
+import { modulatorSources } from "../../../../../soundbank/enums";
+import { customControllers, dataEntryStates } from "../../../../enums";
+import { midiControllers } from "../../../../../midi/enums";
 
 /**
  * @enum {number}

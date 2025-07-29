@@ -18,7 +18,7 @@ and efficiently.
     This example uses soundfont3 compression.
     Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
-```js
+```ts
 const sfont = loadSoundFont(input);
 const output = await sfont.write({
     compress: true,
@@ -28,7 +28,7 @@ const output = await sfont.write({
 
 ## DLS to SF2
 
-```js
+```ts
 const sfont = loadSoundFont(input);
 const output = await sfont.write();
 ```
@@ -37,21 +37,21 @@ const output = await sfont.write();
 
 Make sure to read about [the DLS conversion problem](../extra/dls-conversion-problem.md)
 
-```js
+```ts
 const sfont = loadSoundFont(input);
 const output = await sfont.writeDLS();
 ```
 
 ## RMI To MIDI
 
-```js
+```ts
 const RMID = new MIDI(input);
 const output = await RMID.writeMIDI();
 ```
 
 ## RMI To SF2/SF3
 
-```js
+```ts
 const RMID = new MIDI(input);
 const sfont = loadSoundFont(RMID.embeddedSoundFont);
 const output = await sfont.write();
@@ -61,7 +61,7 @@ const output = await sfont.write();
 
 This uses two inputs, `input1` for MIDI and `input2` for SoundFont.
 
-```js
+```ts
 const mid = new MIDI(input1);
 const sfont = loadSoundFont(input2);
 // compress this if you want
@@ -83,7 +83,7 @@ const output = mid.writeRMIDI(
 
 ## DLS RMI To SF2 RMI
 
-```js
+```ts
 const dlsRMID = new MIDI(input);
 const sfont = loadSoundFont(dlsRMID.embeddedSoundFont);
 const sfontBinary = await sfont.write();

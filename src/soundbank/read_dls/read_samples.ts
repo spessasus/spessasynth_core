@@ -1,7 +1,7 @@
 import {
     findRIFFListType,
     readRIFFChunk,
-    RiffChunk
+    RIFFChunk
 } from "../basic_soundbank/riff_chunk";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import {
@@ -20,7 +20,7 @@ import type { DownloadableSounds } from "./downloadable_sounds";
 
 export function readDLSSamples(
     dls: DownloadableSounds,
-    waveListChunk: RiffChunk
+    waveListChunk: RIFFChunk
 ) {
     SpessaSynthGroupCollapsed(
         "%cLoading Wave samples...",
@@ -34,7 +34,7 @@ export function readDLSSamples(
         dls.verifyHeader(waveChunk, "LIST");
         dls.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
 
-        const waveChunks: RiffChunk[] = [];
+        const waveChunks: RIFFChunk[] = [];
         while (waveChunk.chunkData.currentIndex < waveChunk.chunkData.length) {
             waveChunks.push(readRIFFChunk(waveChunk.chunkData));
         }

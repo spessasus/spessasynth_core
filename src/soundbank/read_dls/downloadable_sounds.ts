@@ -10,7 +10,7 @@ import { consoleColors } from "../../utils/other";
 import {
     findRIFFListType,
     readRIFFChunk,
-    RiffChunk
+    RIFFChunk
 } from "../basic_soundbank/riff_chunk";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
@@ -28,10 +28,11 @@ class DownloadableSounds extends BasicSoundBank {
     constructor(buffer: ArrayBuffer) {
         super();
         this.dataArray = new IndexedByteArray(buffer);
-        SpessaSynthGroup("%cParsing DLS...", consoleColors.info);
+        SpessaSynthGroup("%cParsing DLS file...", consoleColors.info);
         if (!this.dataArray) {
             SpessaSynthGroupEnd();
             this.parsingError("No data provided!");
+            return;
         }
 
         // read the main chunk
@@ -45,7 +46,7 @@ class DownloadableSounds extends BasicSoundBank {
         /**
          * Read the list
          */
-        const chunks: RiffChunk[] = [];
+        const chunks: RIFFChunk[] = [];
         while (this.dataArray.currentIndex < this.dataArray.length) {
             chunks.push(readRIFFChunk(this.dataArray));
         }
@@ -154,7 +155,7 @@ class DownloadableSounds extends BasicSoundBank {
      * @param expected
      * @throws error if the check doesn't pass
      */
-    verifyHeader(chunk: RiffChunk, ...expected: string[]) {
+    verifyHeader(chunk: RIFFChunk, ...expected: string[]) {
         for (const expect of expected) {
             if (chunk.header.toLowerCase() === expect.toLowerCase()) {
                 return;

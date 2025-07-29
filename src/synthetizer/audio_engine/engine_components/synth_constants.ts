@@ -1,4 +1,4 @@
-import type { SynthSystem } from "../types";
+import type { SynthSystem } from "../../types";
 
 /**
  * Synthesizer's default voice cap.

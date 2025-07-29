@@ -1,6 +1,6 @@
 import { SpessaSynthWarn } from "../../../utils/loggin";
 import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import type { MIDIChannel } from "../engine_components/midi_audio_channel";
+import type { MIDIChannel } from "../engine_components/midi_channel";
 
 /**
  * Changes the program (preset) of the channel.

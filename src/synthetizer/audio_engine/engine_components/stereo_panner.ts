@@ -1,4 +1,4 @@
-import type { MIDIChannel } from "./midi_audio_channel";
+import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 

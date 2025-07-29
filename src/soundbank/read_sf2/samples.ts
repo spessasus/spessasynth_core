@@ -1,14 +1,11 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    readLittleEndian,
-    signedInt8
-} from "../../utils/byte_functions/little_endian";
+import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { BasicSample } from "../basic_soundbank/basic_sample";
 import { consoleColors } from "../../utils/other";
 import type { SampleType } from "../enums";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 
 /**
  * samples.js
@@ -100,9 +97,11 @@ export class SoundFontSample extends BasicSample {
                 this.loopEnd += this.startByteOffset / 2;
 
                 // copy the compressed data, it can be preserved during writing
-                this.compressedData = sampleDataArray.slice(
-                    this.startByteOffset / 2 + smplStart,
-                    this.endByteOffset / 2 + smplStart
+                this.setCompressedData(
+                    sampleDataArray.slice(
+                        this.startByteOffset / 2 + smplStart,
+                        this.endByteOffset / 2 + smplStart
+                    )
                 );
             } else {
                 // regular sf2 s16le
@@ -111,13 +110,14 @@ export class SoundFontSample extends BasicSample {
                     smplStart + this.endByteOffset
                 );
             }
-
-            this.dataOverridden = true;
         } else {
             // float32 array from SF2pack, copy directly
-            this.sampleData = sampleDataArray.slice(
-                this.startByteOffset / 2,
-                this.endByteOffset / 2
+            this.setAudioData(
+                sampleDataArray.slice(
+                    this.startByteOffset / 2,
+                    this.endByteOffset / 2
+                ),
+                sampleRate
             );
         }
         this.linkedSampleIndex = linkedSampleIndex;
@@ -154,8 +154,8 @@ export class SoundFontSample extends BasicSample {
      * @returns  The audio data
      */
     getAudioData(): Float32Array {
-        if (this.sampleData) {
-            return this.sampleData;
+        if (this.audioData) {
+            return this.audioData;
         }
         // SF2Pack is decoded during load time
         // SF3 is decoded in BasicSample
@@ -163,6 +163,7 @@ export class SoundFontSample extends BasicSample {
             return super.getAudioData();
         }
         if (!this.s16leData) {
+            console.error(this);
             throw new Error("Unexpected lack of audio data.");
         }
 
@@ -185,7 +186,7 @@ export class SoundFontSample extends BasicSample {
             audioData[i] = convertedSigned16[i] / 32768;
         }
 
-        this.sampleData = audioData;
+        this.audioData = audioData;
         return audioData;
     }
 
@@ -203,7 +204,7 @@ export class SoundFontSample extends BasicSample {
  * Reads the samples from the shdr chunk
  */
 export function readSamples(
-    sampleHeadersChunk: RiffChunk,
+    sampleHeadersChunk: RIFFChunk,
     smplChunkData: IndexedByteArray | Float32Array,
     linkSamples: boolean = true
 ): SoundFontSample[] {

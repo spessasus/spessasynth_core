@@ -1,15 +1,12 @@
-import {
-    readLittleEndian,
-    signedInt16
-} from "../../utils/byte_functions/little_endian";
+import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian";
 import { DecodedModulator, Modulator } from "../basic_soundbank/modulator";
-import type { RiffChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 import type { GeneratorType } from "../basic_soundbank/generator_types";
 
 /**
  * Reads the modulator read
  */
-export function readModulators(modulatorChunk: RiffChunk): Modulator[] {
+export function readModulators(modulatorChunk: RIFFChunk): Modulator[] {
     const mods = [];
     while (
         modulatorChunk.chunkData.length > modulatorChunk.chunkData.currentIndex

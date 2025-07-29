@@ -101,6 +101,22 @@ export type PolyPressureCallback = {
 };
 // The error message for soundfont errors.
 export type SoundfontErrorCallback = Error;
+
+export type MasterParameterChangeCallback<P extends keyof MasterParameterType> =
+    {
+        // The parameter that was changed.
+        parameter: P;
+        // The new value of this parameter.
+        value: MasterParameterType[P];
+    };
+
+export type ChannelPropertyChangeCallback = {
+    // The channel number of the new property.
+    channel: number;
+    // The updated property.
+    property: ChannelProperty;
+};
+
 export type ProcessorEventType = {
     // This event fires when a note is played.
     noteOn: NoteOnCallback;
@@ -132,6 +148,12 @@ export type ProcessorEventType = {
     soundBankError: SoundfontErrorCallback;
     // This event fires when the synthesizer receives a display message.
     synthDisplay: SynthDisplayCallback;
+    // This event fires when a master parameter changes.
+    masterParameterChange: MasterParameterChangeCallback<
+        keyof MasterParameterType
+    >;
+    // This event fires when a channel property changes.
+    channelPropertyChange: ChannelPropertyChangeCallback;
 };
 export type SynthMethodOptions = {
     // The audio context time when the event should execute, in seconds.
@@ -215,4 +237,6 @@ export type MasterParameterType = {
     blackMIDIMode: boolean;
     // The global transposition in semitones. It can be decimal.
     transposition: number;
+    // Synthesizer's device ID for system exclusive messages. Set to -1 to accept all.
+    deviceID: number;
 };

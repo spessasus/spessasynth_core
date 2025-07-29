@@ -6,7 +6,7 @@ import {
     midiControllers,
     midiMessageTypes
 } from "../midi/enums";
-import type { SpessaSynthSequencer } from "./sequencer_engine";
+import type { SpessaSynthSequencer } from "./sequencer";
 
 // an array with preset default values
 const defaultControllerArray = resetArray.slice(0, 128);

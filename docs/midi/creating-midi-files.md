@@ -4,7 +4,7 @@ SpessaSynth allows you to create MIDI files from scratch via `MIDIBuilder`
 
 ## Initialization
 
-```js
+```ts
 const mid = new MIDIBuilder(name, timeDivision = 480, initialTempo = 120);
 ```
 
@@ -27,7 +27,7 @@ Updates the internal values of the file, making it ready for playback.
 
     You MUST ALWAYS run this function after you finish creating the file!
 
-```js
+```ts
 mid.flush();
 ```
 
@@ -35,7 +35,7 @@ mid.flush();
 
 Adds a new MIDI track. Changes the format to 1.
 
-```js
+```ts
 mid.addNewTrack(name, port = 0);
 ```
 
@@ -46,7 +46,7 @@ mid.addNewTrack(name, port = 0);
 
 Adds a new MIDI event.
 
-```js
+```ts
 mid.addEvent(ticks, track, event, eventData);
 ```
 
@@ -65,7 +65,7 @@ mid.addEvent(ticks, track, event, eventData);
 
 Adds a new "set tempo" message.
 
-```js
+```ts
 mid.addSetTempo(ticks, tempo);
 ```
 
@@ -76,7 +76,7 @@ mid.addSetTempo(ticks, tempo);
 
 Adds a new "note on" message.
 
-```js
+```ts
 mid.addNoteOn(ticks, track, channel, midiNote, velocity);
 ```
 
@@ -91,7 +91,7 @@ mid.addNoteOn(ticks, track, channel, midiNote, velocity);
 
 Adds a new "note off" message.
 
-```js
+```ts
 mid.addNoteOff(ticks, track, channel, midiNote);
 ```
 
@@ -104,7 +104,7 @@ mid.addNoteOff(ticks, track, channel, midiNote);
 
 Adds a new "program change" message.
 
-```js
+```ts
 mid.addProgramChange(ticks, track, channel, programNumber)
 ```
 
@@ -117,7 +117,7 @@ mid.addProgramChange(ticks, track, channel, programNumber)
 
 Adds a new "controller change" message.
 
-```js
+```ts
 mid.addControllerChange(ticks, track, channel, controllerNumber, controllerValue);
 ```
 
@@ -134,7 +134,7 @@ mid.addControllerChange(ticks, track, channel, controllerNumber, controllerValue
 
 Adds a new "pitch wheel" message.
 
-```js
+```ts
 mid.addPitchWheel(ticks, track, channel, MSB, LSB);
 ```
 
@@ -151,7 +151,7 @@ mid.addPitchWheel(ticks, track, channel, MSB, LSB);
 
 The below code produces a file that plays C Major scale.
 
-```js
+```ts
 // Create a new MIDI file
 const mid = new MIDIBuilder("C Major Scale", 480, 240);
 

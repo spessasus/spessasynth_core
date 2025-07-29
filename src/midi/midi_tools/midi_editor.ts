@@ -7,7 +7,7 @@ import {
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
 import { isSystemXG, isXGDrums, XG_SFX_VOICE } from "../../utils/xg_hacks";
 import {

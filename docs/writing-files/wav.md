@@ -6,7 +6,7 @@ SpessaSynth has a helper function for writing wave files.
 
 Converts PCM audio data into a fully valid wave file.
 
-```js
+```ts
 const file = audioToWav(audioData, sampleRate, normalizeAudio = true, metadata = {}, loop = undefined);
 ```
 

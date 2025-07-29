@@ -12,7 +12,7 @@ import {
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndian } from "../../utils/byte_functions/little_endian";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import {
     isGM2On,

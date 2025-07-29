@@ -8,7 +8,7 @@ This class represents a single generator.
 
 An enum, see below.
 
-```js
+```ts
 console.log(generator.generatorType); // 48 - initial attenuation
 ```
 
@@ -16,7 +16,7 @@ console.log(generator.generatorType); // 48 - initial attenuation
 
 The generator's value can be negative.
 
-```js
+```ts
 console.log(generator.generatorValue); // -10
 ```
 

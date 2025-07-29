@@ -1,5 +1,5 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { signedInt16 } from "../../utils/byte_functions/little_endian";
 import { Generator } from "../basic_soundbank/generator";
 import type { GeneratorType } from "../basic_soundbank/generator_types";
@@ -23,7 +23,7 @@ export class ReadGenerator extends Generator {
 /**
  * Reads the generators
  */
-export function readGenerators(generatorChunk: RiffChunk): Generator[] {
+export function readGenerators(generatorChunk: RIFFChunk): Generator[] {
     const gens = [];
     while (
         generatorChunk.chunkData.length > generatorChunk.chunkData.currentIndex

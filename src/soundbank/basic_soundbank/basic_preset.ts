@@ -76,7 +76,7 @@ export class BasicPreset {
     }
 
     // Unlinks everything from this preset
-    deletePreset() {
+    delete() {
         this.zones.forEach((z) => z.instrument?.unlinkFrom(this));
     }
 

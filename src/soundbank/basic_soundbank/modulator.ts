@@ -344,7 +344,7 @@ export class DecodedModulator extends Modulator {
 export const DEFAULT_ATTENUATION_MOD_AMOUNT = 960;
 export const DEFAULT_ATTENUATION_MOD_CURVE_TYPE = modulatorCurveTypes.concave;
 
-const soundFontModulators = [
+const defaultSoundFont2Modulators = [
     // vel to attenuation
     new DecodedModulator(
         getModSourceEnum(
@@ -410,7 +410,7 @@ const soundFontModulators = [
     new DecodedModulator(0x00dd, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
 ];
 
-const customModulators = [
+const defaultSpessaSynthModulators = [
     // custom modulators heck yeah
     // poly pressure to vibrato
     new DecodedModulator(
@@ -498,4 +498,4 @@ const customModulators = [
 ];
 
 export const defaultModulators: Modulator[] =
-    soundFontModulators.concat(customModulators);
+    defaultSoundFont2Modulators.concat(defaultSpessaSynthModulators);

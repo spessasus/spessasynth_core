@@ -1,14 +1,14 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { SpessaSynthProcessor } from "./synthetizer/audio_engine/main_processor";
-import { SpessaSynthSequencer } from "./sequencer/sequencer_engine";
+import { SpessaSynthProcessor } from "./synthetizer/audio_engine/processor";
+import { SpessaSynthSequencer } from "./sequencer/sequencer";
 import {
     ALL_CHANNELS_OR_DIFFERENT_ACTION,
     DEFAULT_PERCUSSION,
     DEFAULT_SYNTH_MODE,
     MIDI_CHANNEL_COUNT,
     VOICE_CAP
-} from "./synthetizer/audio_engine/synth_constants";
+} from "./synthetizer/audio_engine/engine_components/synth_constants";
 import { NON_CC_INDEX_OFFSET } from "./synthetizer/audio_engine/engine_components/controller_tables";
 import { KeyModifier } from "./synthetizer/audio_engine/engine_components/key_modifier_manager";
 import { SynthesizerSnapshot } from "./synthetizer/audio_engine/snapshot/synthesizer_snapshot";

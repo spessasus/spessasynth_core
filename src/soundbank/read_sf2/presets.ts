@@ -1,4 +1,4 @@
-import { RiffChunk } from "../basic_soundbank/riff_chunk";
+import { RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { BasicPreset } from "../basic_soundbank/basic_preset";
@@ -19,7 +19,7 @@ export class SoundFontPreset extends BasicPreset {
     /**
      * Creates a preset
      */
-    constructor(presetChunk: RiffChunk, sf2: BasicSoundBank) {
+    constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
         super(sf2);
         this.name = readBytesAsString(presetChunk.chunkData, 20).replace(
             /\d{3}:\d{3}/,
@@ -56,7 +56,7 @@ export class SoundFontPreset extends BasicPreset {
  * Reads the presets
  */
 export function readPresets(
-    presetChunk: RiffChunk,
+    presetChunk: RIFFChunk,
     parent: BasicSoundBank
 ): SoundFontPreset[] {
     const presets: SoundFontPreset[] = [];

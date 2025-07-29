@@ -1,5 +1,5 @@
 import { SpessaSynthWarn } from "../../../../utils/loggin";
-import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
+import type { MIDIChannel } from "../../engine_components/midi_channel";
 import { customControllers } from "../../../enums";
 
 /**
@@ -21,7 +21,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         this.customControllers[customControllers.channelKeyShift];
 
     // if high performance mode, kill notes instead of stopping them
-    if (this.synthProps.highPerformanceMode) {
+    if (this.synthProps.masterParameters.blackMIDIMode) {
         // if the channel is percussion channel, do not kill the notes
         if (!this.drumChannel) {
             this.killNote(realKey, -6950);

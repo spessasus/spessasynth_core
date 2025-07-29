@@ -3,22 +3,22 @@ import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
-import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
-import { defaultModulators, Modulator } from "./modulator";
-import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
-import { BasicSample, EmptySample } from "./basic_sample";
-import { Generator } from "./generator";
-import { BasicInstrument } from "./basic_instrument";
-import { BasicPreset } from "./basic_preset";
-import { isXGDrums } from "../../utils/xg_hacks";
-import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
-import type { BasicMIDI } from "../../midi/basic_midi";
+    SpessaSynthWarn,
+} from '../../utils/loggin'
+import { consoleColors } from '../../utils/other'
+import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from './write_sf2/write'
+import { defaultModulators, Modulator } from './modulator'
+import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from './write_dls/write_dls'
+import { BasicSample, EmptySample } from './basic_sample'
+import { Generator } from './generator'
+import { BasicInstrument } from './basic_instrument'
+import { BasicPreset } from './basic_preset'
+import { isXGDrums } from '../../utils/xg_hacks'
+import { stbvorbis } from '../../externals/stbvorbis_sync/stbvorbis_wrapper'
+import type { BasicMIDI } from '../../midi/basic_midi'
 
-import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from "../types";
-import { generatorTypes } from "./generator_types";
+import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from '../types'
+import { generatorTypes } from './generator_types'
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -242,8 +242,8 @@ export class BasicSoundBank {
             sample.loopStart,
             sample.loopEnd
         );
-        if (sample.isCompressed && sample.compressedData) {
-            newSample.setCompressedData(sample.compressedData.slice());
+        if (sample.isCompressed) {
+            newSample.setCompressedData(sample.getRawData(true));
         } else {
             newSample.setAudioData(sample.getAudioData(), sample.sampleRate);
         }
@@ -487,7 +487,7 @@ export class BasicSoundBank {
             i.deleteUnusedZones();
             const deletable = i.useCount < 1;
             if (deletable) {
-                i.deleteInstrument();
+                i.delete();
             }
             return !deletable;
         });
@@ -501,12 +501,12 @@ export class BasicSoundBank {
     }
 
     deleteInstrument(instrument: BasicInstrument) {
-        instrument.deleteInstrument();
+        instrument.delete();
         this.instruments.splice(this.instruments.indexOf(instrument), 1);
     }
 
     deletePreset(preset: BasicPreset) {
-        preset.deletePreset();
+        preset.delete();
         this.presets.splice(this.presets.indexOf(preset), 1);
     }
 
@@ -627,6 +627,7 @@ export class BasicSoundBank {
         return preset;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * gets preset by name
      */

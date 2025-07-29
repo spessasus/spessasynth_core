@@ -5,7 +5,7 @@ import {
 import {
     findRIFFListType,
     readRIFFChunk,
-    RiffChunk
+    RIFFChunk
 } from "../basic_soundbank/riff_chunk";
 import { Generator } from "../basic_soundbank/generator";
 import { SpessaSynthWarn } from "../../utils/loggin";
@@ -17,7 +17,7 @@ import { generatorTypes } from "../basic_soundbank/generator_types";
 
 export function readRegion(
     dls: DownloadableSounds,
-    chunk: RiffChunk,
+    chunk: RIFFChunk,
     instrument: DLSInstrument
 ) {
     // regions are essentially instrument zones
@@ -25,7 +25,7 @@ export function readRegion(
     /**
      * read chunks in the region
      */
-    const regionChunks: RiffChunk[] = [];
+    const regionChunks: RIFFChunk[] = [];
     while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
         regionChunks.push(readRIFFChunk(chunk.chunkData));
     }

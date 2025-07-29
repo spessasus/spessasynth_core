@@ -1,15 +1,15 @@
-import { consoleColors } from "../../../../utils/other";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin";
-import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
+import { consoleColors } from "../../../../../utils/other";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../../utils/loggin";
+import { NON_CC_INDEX_OFFSET } from "../../../engine_components/controller_tables";
 import {
     nonRegisteredMSB,
     registeredParameterTypes
 } from "./data_entry_coarse";
 import { handleAWE32NRPN } from "./awe32";
-import type { MIDIChannel } from "../../engine_components/midi_audio_channel";
-import { midiControllers } from "../../../../midi/enums";
-import { customControllers, dataEntryStates } from "../../../enums";
-import { modulatorSources } from "../../../../soundbank/enums";
+import type { MIDIChannel } from "../../../engine_components/midi_channel";
+import { midiControllers } from "../../../../../midi/enums";
+import { customControllers, dataEntryStates } from "../../../../enums";
+import { modulatorSources } from "../../../../../soundbank/enums";
 
 /**
  * Executes a data entry fine (LSB) change for the current channel.

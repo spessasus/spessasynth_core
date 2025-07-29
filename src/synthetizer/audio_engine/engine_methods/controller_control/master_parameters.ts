@@ -1,19 +1,19 @@
-import { SpessaSynthProcessor } from "../../main_processor";
+import { SpessaSynthProcessor } from "../../processor";
 import type { MasterParameterType } from "../../../types";
 
 /**
  * Sets a master parameter of the synthesizer.
- * @param type The type of the master parameter to set.
+ * @param parameter The type of the master parameter to set.
  * @param value The value to set for the master parameter.
  */
-export function setMasterParameter<P extends keyof MasterParameterType>(
+export function setMasterParameterInternal<P extends keyof MasterParameterType>(
     this: SpessaSynthProcessor,
-    type: P,
+    parameter: P,
     value: MasterParameterType[P]
 ) {
-    this.privateProps.masterParameters[type] = value;
+    this.privateProps.masterParameters[parameter] = value;
     // additional handling for specific parameters
-    switch (type) {
+    switch (parameter) {
         case "masterPan": {
             let pan = value as number;
             // clamp to 0-1 (0 is left)
@@ -48,7 +48,10 @@ export function setMasterParameter<P extends keyof MasterParameterType>(
             this.privateProps.masterParameters.transposition = semitones;
         }
     }
-    this?.onMasterParameterChange?.(type, value);
+    this.callEvent("masterParameterChange", {
+        parameter,
+        value
+    });
 }
 
 /**
@@ -56,9 +59,19 @@ export function setMasterParameter<P extends keyof MasterParameterType>(
  * @param type The type of the master parameter to get.
  * @returns The value of the master parameter.
  */
-export function getMasterParameter<P extends keyof MasterParameterType>(
+export function getMasterParameterInternal<P extends keyof MasterParameterType>(
     this: SpessaSynthProcessor,
     type: P
 ): MasterParameterType[P] {
     return this.privateProps.masterParameters[type];
+}
+
+/**
+ * Gets all master parameters of the synthesizer.
+ * @returns All the master parameters.
+ */
+export function getAllMasterParametersInternal(
+    this: SpessaSynthProcessor
+): MasterParameterType {
+    return { ...this.privateProps.masterParameters };
 }

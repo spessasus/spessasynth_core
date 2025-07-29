@@ -4,7 +4,7 @@ import { DLSPreset } from "./dls_preset";
 import {
     findRIFFListType,
     readRIFFChunk,
-    RiffChunk
+    RIFFChunk
 } from "../basic_soundbank/riff_chunk";
 import {
     SpessaSynthGroupCollapsed,
@@ -24,10 +24,10 @@ import { readRegion } from "./read_region";
 import type { DownloadableSounds } from "./downloadable_sounds";
 import { readLart } from "./read_lart";
 
-export function readDLSInstrument(dls: DownloadableSounds, chunk: RiffChunk) {
+export function readDLSInstrument(dls: DownloadableSounds, chunk: RIFFChunk) {
     dls.verifyHeader(chunk, "LIST");
     dls.verifyText(readBytesAsString(chunk.chunkData, 4), "ins ");
-    const chunks: RiffChunk[] = [];
+    const chunks: RIFFChunk[] = [];
     while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
         chunks.push(readRIFFChunk(chunk.chunkData));
     }

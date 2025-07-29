@@ -1,19 +1,13 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    readLittleEndian,
-    writeDword
-} from "../../utils/byte_functions/little_endian";
-import {
-    readBytesAsString,
-    writeStringAsBytes
-} from "../../utils/byte_functions/string";
+import { readLittleEndian, writeDword } from "../../utils/byte_functions/little_endian";
+import { readBytesAsString, writeStringAsBytes } from "../../utils/byte_functions/string";
 
 /**
  * riff_chunk.js
  * reads a riff chunk and stores it as a class
  */
 
-export class RiffChunk {
+export class RIFFChunk {
     /**
      * The chunks FourCC code
      */
@@ -43,7 +37,7 @@ export function readRIFFChunk(
     dataArray: IndexedByteArray,
     readData: boolean = true,
     forceShift: boolean = false
-): RiffChunk {
+): RIFFChunk {
     const header = readBytesAsString(dataArray, 4);
 
     let size = readLittleEndian(dataArray, 4);
@@ -72,7 +66,7 @@ export function readRIFFChunk(
         }
     }
 
-    return new RiffChunk(header, size, chunkData);
+    return new RIFFChunk(header, size, chunkData);
 }
 
 /**
@@ -169,9 +163,9 @@ export function writeRIFFChunkParts(
  * Finds a given type in a list
  */
 export function findRIFFListType(
-    collection: RiffChunk[],
+    collection: RIFFChunk[],
     type: string
-): RiffChunk | undefined {
+): RIFFChunk | undefined {
     return collection.find((c) => {
         if (c.header !== "LIST") {
             return false;

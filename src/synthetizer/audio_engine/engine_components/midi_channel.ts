@@ -6,14 +6,14 @@ import {
 } from "../engine_methods/controller_control/reset_controllers";
 import { renderVoice } from "../engine_methods/render_voice";
 import { panAndMixVoice } from "./stereo_panner";
-import { dataEntryFine } from "../engine_methods/data_entry/data_entry_fine";
+import { dataEntryFine } from "../engine_methods/controller_control/data_entry/data_entry_fine";
 import { controllerChange } from "../engine_methods/controller_control/controller_change";
-import { dataEntryCoarse } from "../engine_methods/data_entry/data_entry_coarse";
+import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry/data_entry_coarse";
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "../synth_constants";
+import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -24,11 +24,11 @@ import {
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
-import type { SpessaSynthProcessor } from "../main_processor";
+import type { SpessaSynthProcessor } from "../processor";
 import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
-import type { ProtectedSynthValues } from "../internal_synth_values";
+import type { ProtectedSynthValues } from "./internal_synth_values";
 import { midiControllers } from "../../../midi/enums";
 import { modulatorSources } from "../../../soundbank/enums";
 
@@ -249,7 +249,7 @@ class MIDIChannel {
 
     get isXGChannel() {
         return (
-            isSystemXG(this.synthProps.system) ||
+            isSystemXG(this.synthProps.masterParameters.midiSystem) ||
             (this.lockPreset && isSystemXG(this.lockedSystem))
         );
     }
@@ -471,7 +471,7 @@ class MIDIChannel {
     setPresetLock(locked: boolean) {
         this.lockPreset = locked;
         if (locked) {
-            this.lockedSystem = this.synthProps.system;
+            this.lockedSystem = this.synthProps.masterParameters.midiSystem;
         }
     }
 
@@ -486,7 +486,7 @@ class MIDIChannel {
             const bankLogic = parseBankSelect(
                 this.getBankSelect(),
                 bank,
-                this.synthProps.system,
+                this.synthProps.masterParameters.midiSystem,
                 false,
                 this.drumChannel,
                 this.channelNumber
@@ -607,7 +607,10 @@ class MIDIChannel {
             bank: this.sentBank,
             program: this.preset?.program || 0
         };
-        this.synth?.onChannelPropertyChange?.(data, this.channelNumber);
+        this.synthProps.callEvent("channelPropertyChange", {
+            channel: this.channelNumber,
+            property: data
+        });
     }
 
     resetGeneratorOverrides() {

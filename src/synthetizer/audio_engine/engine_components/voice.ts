@@ -6,7 +6,7 @@ import {
     MIN_EXCLUSIVE_LENGTH,
     MIN_NOTE_LENGTH,
     SpessaSynthProcessor
-} from "../main_processor";
+} from "../processor";
 import { SpessaSynthWarn } from "../../../utils/loggin";
 import { LowpassFilter } from "./lowpass_filter";
 import { VolumeEnvelope } from "./volume_envelope";
@@ -333,7 +333,7 @@ export class Voice {
  * @param realKey the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
  * @returns output is an array of Voices
  */
-export function getVoicesForPreset(
+export function getVoicesForPresetInternal(
     this: SpessaSynthProcessor,
     preset: BasicPreset,
     bank: number,
@@ -447,7 +447,7 @@ export function getVoicesForPreset(
  * @param realKey the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
  * @returns output is an array of Voices
  */
-export function getVoices(
+export function getVoicesInternal(
     this: SpessaSynthProcessor,
     channel: number,
     midiNote: number,
