@@ -38,23 +38,16 @@ export function assingMIDIPortInternal(
 /**
  * Loads a new sequence internally.
  * @param parsedMidi The parsed MIDI data to load.
- * @param autoPlay Whether to automatically play the sequence after loading.
  */
 export function loadNewSequenceInternal(
     this: SpessaSynthSequencer,
-    parsedMidi: BasicMIDI,
-    autoPlay = true
+    parsedMidi: BasicMIDI
 ) {
-    this.stop();
     if (!parsedMidi.tracks) {
         throw new Error("This MIDI has no tracks!");
     }
 
     this.oneTickToSeconds = 60 / (120 * parsedMidi.timeDivision);
-
-    /**
-     * @type {BasicMIDI}
-     */
     this.midiData = parsedMidi;
 
     // clear old embedded bank if exists
@@ -123,7 +116,7 @@ export function loadNewSequenceInternal(
         `%cTotal song time: ${formatTime(Math.ceil(this.duration)).time}`,
         consoleColors.recognized
     );
-    this?.onSongChange?.(this._songIndex, autoPlay);
+    this?.onSongChange?.(this._songIndex);
 
     if (this.duration <= 1) {
         SpessaSynthWarn(
@@ -132,14 +125,13 @@ export function loadNewSequenceInternal(
         );
         this.loop = false;
     }
-    if (autoPlay) {
-        this.play(true);
+    if (this.playing) {
+        this.currentTime = 0;
     } else {
         // this shall not play: play to the first note and then wait
         const targetTime = this.skipToFirstNoteOn
             ? this.midiData.firstNoteOn - 1
             : 0;
         this.setTimeTicks(targetTime);
-        this.pause();
     }
 }

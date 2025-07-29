@@ -1,8 +1,7 @@
 import { readLittleEndian } from "../../utils/byte_functions/little_endian";
 import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
 import { getSF2ModulatorFromArticulator } from "./articulator_converter";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
+import { SpessaSynthWarn } from "../../utils/loggin";
 import { Generator } from "../basic_soundbank/generator";
 import { Modulator } from "../basic_soundbank/modulator";
 import { type GeneratorType, generatorTypes } from "../basic_soundbank/generator_types";
@@ -354,10 +353,6 @@ export function readArticulation(
                 if (mod) {
                     // some articulators cannot be turned into modulators, that's why this check is a thing
                     modulators.push(mod);
-                    SpessaSynthInfo(
-                        "%cSucceeded converting to SF2 Modulator!",
-                        consoleColors.recognized
-                    );
                 } else {
                     SpessaSynthWarn("Failed converting to SF2 Modulator!");
                 }

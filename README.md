@@ -211,10 +211,10 @@ import * as fs from "node:fs";
 import {
     audioToWav,
     BasicMIDI,
+    SoundBankLoader,
     SpessaSynthProcessor,
-    SpessaSynthSequencer,
-    SoundBankLoader
-} from "spessasynth_core";
+    SpessaSynthSequencer
+} from "../../src";
 
 // process arguments
 const args = process.argv.slice(2);
@@ -239,7 +239,8 @@ synth.soundBankManager.reloadManager(
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
-seq.loop = false;
+seq.play();
+
 const outLeft = new Float32Array(sampleCount);
 const outRight = new Float32Array(sampleCount);
 const start = performance.now();
@@ -277,6 +278,7 @@ const wave = audioToWav([outLeft, outRight], sampleRate);
 fs.writeFile(args[2], new Uint8Array(wave), () => {
     console.log(`File written to ${args[2]}`);
 });
+
 ```
 
 ### Building

@@ -15,7 +15,7 @@ export function processEventInternal(
     event: MIDIMessage,
     trackIndex: number
 ) {
-    if (this.sendMIDIMessages) {
+    if (this.externalMIDIPlayback) {
         if (event.messageStatusByte >= 0x80) {
             this.sendMIDIMessage([
                 event.messageStatusByte,

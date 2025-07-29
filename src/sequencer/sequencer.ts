@@ -4,7 +4,7 @@ import {
     assingMIDIPortInternal,
     loadNewSequenceInternal
 } from "./song_control";
-import { playToInternal } from "./play";
+import { setTimeToInternal } from "./play";
 import { SpessaSynthWarn } from "../utils/loggin";
 
 import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/engine_components/synth_constants";
@@ -31,7 +31,7 @@ export class SpessaSynthSequencer {
      * If the MIDI messages should be sent to an event instead of the synth.
      * This is used by spessasynth_lib to pass them over to Web MIDI API.
      */
-    public sendMIDIMessages = false;
+    public externalMIDIPlayback = false;
     /**
      * The loop count of the sequencer.
      * If infinite, it will loop forever.
@@ -42,9 +42,9 @@ export class SpessaSynthSequencer {
      */
     public duration = 0;
     /**
-     * Controls if the sequencer loops (defaults to true).
+     * Controls if the sequencer loops (defaults to false).
      */
-    public loop = true;
+    public loop = false;
     /**
      * The currently loaded MIDI data.
      */
@@ -55,12 +55,7 @@ export class SpessaSynthSequencer {
      */
     public skipToFirstNoteOn = true;
     /**
-     * Indicates if the sequencer should stay paused when seeking to a new time.
-     * Defaults to false.
-     */
-    public preservePlaybackState = false;
-    /**
-     * Called when a MIDI message is sent and sendMIDIMessages is true.
+     * Called when a MIDI message is sent and externalMIDIPlayback is true.
      * @param message the binary MIDI message.
      */
     public onMIDIMessage?: (message: number[]) => unknown;
@@ -84,9 +79,8 @@ export class SpessaSynthSequencer {
     /**
      * Called when the song changes.
      * @param songIndex the index of the new song in the song list.
-     * @param autoPlay true if the next song will be played automatically, false if it will not.
      */
-    public onSongChange?: (songIndex: number, autoPlay: boolean) => unknown;
+    public onSongChange?: (songIndex: number) => unknown;
     /**
      * Called when a MIDI Meta event is encountered.
      * @param e the MIDI message of the meta event.
@@ -114,15 +108,10 @@ export class SpessaSynthSequencer {
      */
     protected oneTickToSeconds = 0;
     /**
-     * If the sequencer is currently active (playing or paused)
-     * If there are no songs loaded, this is false.
-     */
-    protected isActive = false;
-    /**
      * The current event index for each track.
      * This is used to track which event is currently being processed for each track.
      */
-    protected eventIndex: number[] = [];
+    protected eventIndexes: number[] = [];
     /**
      * The time that has already been played in the current song.
      */
@@ -131,7 +120,7 @@ export class SpessaSynthSequencer {
      * The paused time of the sequencer.
      * If the sequencer is not paused, this is undefined.
      */
-    protected pausedTime: number | undefined = undefined;
+    protected pausedTime: number | undefined = -1;
     /**
      * Absolute time of the sequencer when it started playing.
      * It is based on the synth's current time.
@@ -162,7 +151,8 @@ export class SpessaSynthSequencer {
     protected assignMIDIPort = assingMIDIPortInternal.bind(this);
     protected loadNewSequence = loadNewSequenceInternal.bind(this);
     protected processEvent = processEventInternal.bind(this);
-    protected playTo = playToInternal.bind(this);
+    protected setTimeTo: typeof setTimeToInternal =
+        setTimeToInternal.bind(this);
 
     /**
      * Initializes a new Sequencer without any songs loaded.
@@ -264,6 +254,9 @@ export class SpessaSynthSequencer {
         if (!this.hasSongs) {
             return;
         }
+        if (this.paused) {
+            this.pausedTime = time;
+        }
         if (time > this.duration || time < 0) {
             // time is 0
             if (this.skipToFirstNoteOn) {
@@ -271,30 +264,19 @@ export class SpessaSynthSequencer {
             } else {
                 this.setTimeTicks(0);
             }
+        } else if (this.skipToFirstNoteOn && time < this.firstNoteTime) {
+            this.setTimeTicks(this.midiData.firstNoteOn - 1);
             return;
-        }
-        if (this.skipToFirstNoteOn) {
-            if (time < this.firstNoteTime) {
-                this.setTimeTicks(this.midiData.firstNoteOn - 1);
+        } else {
+            this.playingNotes = [];
+            this?.onTimeChange?.(time);
+            if (this.midiData.duration === 0) {
+                SpessaSynthWarn("No duration!");
+                this?.onPlaybackStop?.(true);
                 return;
             }
-        }
-        this.stop();
-        this.playingNotes = [];
-        const wasPaused = this.paused && this.preservePlaybackState;
-        this.pausedTime = undefined;
-        this?.onTimeChange?.(time);
-        if (this.midiData.duration === 0) {
-            SpessaSynthWarn("No duration!");
-            this?.onPlaybackStop?.(true);
-            return;
-        }
-        this.playTo(time);
-        this.recalculateStartTime(time);
-        if (wasPaused) {
-            this.pause();
-        } else {
-            this.play();
+            this.setTimeTo(time);
+            this.recalculateStartTime(time);
         }
     }
 
@@ -302,7 +284,11 @@ export class SpessaSynthSequencer {
      * true if paused, false if playing or stopped
      */
     public get paused() {
-        return typeof this.pausedTime === "number";
+        return this.pausedTime !== undefined;
+    }
+
+    protected get playing() {
+        return this.hasSongs && this.pausedTime === undefined;
     }
 
     /**
@@ -315,64 +301,43 @@ export class SpessaSynthSequencer {
     /**
      * Starts or resumes the playback of the sequencer.
      * If the sequencer is paused, it will resume from the paused time.
-     * @param resetTime if true, the current time should be reset to 0.
      */
-    public play(this: SpessaSynthSequencer, resetTime = false) {
-        if (this.isActive) {
-            SpessaSynthWarn("Already playing");
-            return;
-        }
-
+    public play(this: SpessaSynthSequencer) {
         if (!this.hasSongs) {
             throw new Error("No songs loaded in the sequencer!");
         }
 
-        // reset the time if necessary
-        if (resetTime) {
-            this.pausedTime = undefined;
-            this.currentTime = 0;
-            return;
-        }
-
         if (this.currentTime >= this.duration) {
-            this.pausedTime = undefined;
             this.currentTime = 0;
             return;
         }
 
+        this.pausedTime = undefined;
         // unpause if paused
         if (this.paused) {
             // adjust the start time
             this.recalculateStartTime(this.pausedTime ?? 0);
-            this.pausedTime = undefined;
         }
-        if (!this.sendMIDIMessages) {
+        if (!this.externalMIDIPlayback) {
             this.playingNotes.forEach((n) => {
                 this.synth.noteOn(n.channel, n.midiNote, n.velocity);
             });
         }
-        this.setProcessHandler();
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Pauses the playback.
      */
-    public pause(isFinished = false) {
-        if (this.paused) {
-            SpessaSynthWarn("Already paused");
-            return;
-        }
-        this.pausedTime = this.currentTime;
-        this.stop();
-        this?.onPlaybackStop?.(isFinished);
+    public pause() {
+        this.pauseInternal(false);
     }
 
     /**
      * Loads a new song list into the sequencer.
      * @param midiBuffers the list of songs to load.
-     * @param autoPlay whether to automatically play the first song after loading.
      */
-    public loadNewSongList(midiBuffers: BasicMIDI[], autoPlay = true) {
+    public loadNewSongList(midiBuffers: BasicMIDI[]) {
         /**
          * parse the MIDIs (only the array buffers, MIDI is unchanged)
          * @type {BasicMIDI[]}
@@ -382,17 +347,22 @@ export class SpessaSynthSequencer {
             return;
         }
         this._songIndex = 0;
-        if (this.songs.length > 1) {
-            this.loop = false;
-        }
         this.shuffleSongIndexes();
         this?.onSongListChange?.(this.songs);
-        this.loadCurrentSong(autoPlay);
+        this.loadCurrentSong();
     }
 
-    protected nextSong() {
+    protected pauseInternal(isFinished: boolean) {
+        if (this.paused) {
+            return;
+        }
+        this.stop();
+        this?.onPlaybackStop?.(isFinished);
+    }
+
+    protected songIsFinished() {
         if (this.songs.length === 1) {
-            this.currentTime = 0;
+            this.pauseInternal(true);
             return;
         }
         this._songIndex++;
@@ -404,13 +374,13 @@ export class SpessaSynthSequencer {
      * Stops the playback
      */
     protected stop() {
-        this.clearProcessHandler();
+        this.pausedTime = this.currentTime;
         // disable sustain
         for (let i = 0; i < 16; i++) {
             this.synth.controllerChange(i, midiControllers.sustainPedal, 0);
         }
         this.synth.stopAllChannels();
-        if (this.sendMIDIMessages) {
+        if (this.externalMIDIPlayback) {
             for (const note of this.playingNotes) {
                 this.sendMIDIMessage([
                     midiMessageTypes.noteOff | note.channel % 16,
@@ -423,9 +393,14 @@ export class SpessaSynthSequencer {
         }
     }
 
-    protected resetTimers() {
+    protected resetPlayback() {
+        if (this.externalMIDIPlayback) {
+            this.sendMIDIReset();
+        } else {
+            this.synth.resetAllControllers();
+        }
         this.playedTime = 0;
-        this.eventIndex = Array(this.midiData.tracks.length).fill(
+        this.eventIndexes = Array(this.midiData.tracks.length).fill(
             0
         ) as number[];
     }
@@ -437,12 +412,12 @@ export class SpessaSynthSequencer {
         let index = 0;
         let ticks = Infinity;
         this.midiData.tracks.forEach((track, i) => {
-            if (this.eventIndex[i] >= track.length) {
+            if (this.eventIndexes[i] >= track.length) {
                 return;
             }
-            if (track[this.eventIndex[i]].ticks < ticks) {
+            if (track[this.eventIndexes[i]].ticks < ticks) {
                 index = i;
-                ticks = track[this.eventIndex[i]].ticks;
+                ticks = track[this.eventIndexes[i]].ticks;
             }
         });
         return index;
@@ -458,14 +433,14 @@ export class SpessaSynthSequencer {
     }
 
     protected sendMIDIMessage(message: number[]) {
-        if (!this.sendMIDIMessages) {
+        if (!this.externalMIDIPlayback) {
             return;
         }
         this?.onMIDIMessage?.(message);
     }
 
     protected sendMIDIReset() {
-        if (!this.sendMIDIMessages) {
+        if (!this.externalMIDIPlayback) {
             return;
         }
         this.sendMIDIMessage([midiMessageTypes.reset]);
@@ -483,20 +458,12 @@ export class SpessaSynthSequencer {
         }
     }
 
-    protected loadCurrentSong(autoPlay = true) {
+    protected loadCurrentSong() {
         let index = this._songIndex;
         if (this._shuffleMode) {
             index = this.shuffledSongIndexes[this._songIndex];
         }
-        this.loadNewSequence(this.songs[index], autoPlay);
-    }
-
-    protected setProcessHandler() {
-        this.isActive = true;
-    }
-
-    protected clearProcessHandler() {
-        this.isActive = false;
+        this.loadNewSequence(this.songs[index]);
     }
 
     protected shuffleSongIndexes() {
@@ -511,7 +478,7 @@ export class SpessaSynthSequencer {
 
     protected sendMIDICC(channel: number, type: number, value: number) {
         channel %= 16;
-        if (!this.sendMIDIMessages) {
+        if (!this.externalMIDIPlayback) {
             return;
         }
         this.sendMIDIMessage([
@@ -523,7 +490,7 @@ export class SpessaSynthSequencer {
 
     protected sendMIDIProgramChange(channel: number, program: number) {
         channel %= 16;
-        if (!this.sendMIDIMessages) {
+        if (!this.externalMIDIPlayback) {
             return;
         }
         this.sendMIDIMessage([
@@ -540,7 +507,7 @@ export class SpessaSynthSequencer {
      */
     protected sendMIDIPitchWheel(channel: number, MSB: number, LSB: number) {
         channel %= 16;
-        if (!this.sendMIDIMessages) {
+        if (!this.externalMIDIPlayback) {
             return;
         }
         this.sendMIDIMessage([midiMessageTypes.pitchBend | channel, LSB, MSB]);
@@ -551,19 +518,13 @@ export class SpessaSynthSequencer {
      * @param ticks the MIDI ticks to set the time to.
      */
     protected setTimeTicks(ticks: number) {
-        if (!this.hasSongs) {
-            return;
-        }
-        this.stop();
         this.playingNotes = [];
-        this.pausedTime = undefined;
         this?.onTimeChange?.(this.midiData.midiTicksToSeconds(ticks));
-        const isNotFinished = this.playTo(0, ticks);
+        const isNotFinished = this.setTimeTo(0, ticks);
         this.recalculateStartTime(this.playedTime);
         if (!isNotFinished) {
             return;
         }
-        this.play();
     }
 
     /**

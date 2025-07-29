@@ -17,7 +17,7 @@ const defaultControllerArray = resetArray.slice(0, 128);
  * @param ticks optional MIDI ticks, when given is used instead of time.
  * @returns true if the MIDI file is not finished.
  */
-export function playToInternal(
+export function setTimeToInternal(
     this: SpessaSynthSequencer,
     time: number,
     ticks: number | undefined = undefined
@@ -27,9 +27,7 @@ export function playToInternal(
     }
     this.oneTickToSeconds = 60 / (120 * this.midiData.timeDivision);
     // reset
-    this.synth.resetAllControllers();
-    this.sendMIDIReset();
-    this.resetTimers();
+    this.resetPlayback();
 
     // we save the pitch bends, programs and controllers here
     // to only send them once after going through the events
@@ -80,7 +78,7 @@ export function playToInternal(
      * RP-15 compliant reset
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      */
-    function resetAllControlllers(chan: number) {
+    function resetAllControllers(chan: number) {
         // reset pitch bend
         pitchBends[chan] = 8192;
         if (savedControllers?.[chan] === undefined) {
@@ -99,7 +97,7 @@ export function playToInternal(
         // find the next event
         let trackIndex = this.findFirstEventIndex();
         const event: MIDIMessage =
-            this.midiData.tracks[trackIndex][this.eventIndex[trackIndex]];
+            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
         if (ticks !== undefined) {
             if (event.ticks >= ticks) {
                 break;
@@ -169,9 +167,9 @@ export function playToInternal(
                     } else if (
                         controllerNumber === midiControllers.resetAllControllers
                     ) {
-                        resetAllControlllers(channel);
+                        resetAllControllers(channel);
                     }
-                    if (this.sendMIDIMessages) {
+                    if (this.externalMIDIPlayback) {
                         this.sendMIDICC(channel, controllerNumber, ccV);
                     } else {
                         this.synth.controllerChange(
@@ -195,11 +193,11 @@ export function playToInternal(
                 break;
         }
 
-        this.eventIndex[trackIndex]++;
+        this.eventIndexes[trackIndex]++;
         // find the next event
         trackIndex = this.findFirstEventIndex();
         const nextEvent =
-            this.midiData.tracks[trackIndex][this.eventIndex[trackIndex]];
+            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
         if (nextEvent === undefined) {
             this.stop();
             return false;
@@ -209,7 +207,7 @@ export function playToInternal(
     }
 
     // restoring saved controllers
-    if (this.sendMIDIMessages) {
+    if (this.externalMIDIPlayback) {
         for (
             let channelNumber = 0;
             channelNumber < channelsToSave;

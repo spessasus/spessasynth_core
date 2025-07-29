@@ -175,3 +175,15 @@ Drop-in replacement.
 
 Deprecated, replaced by static `create()`
 Drop-in replacement.
+
+## SpessaSynthSequencer
+
+The behavior has been overhauled:
+
+The `preservePlaybackState` has been removed and is always on.
+Loading a new song list no longer automatically starts the playback.
+
+
+### previousSong, nextSong
+
+Removed, replaced with setting the `songIndex` property.

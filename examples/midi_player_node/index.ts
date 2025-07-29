@@ -1,17 +1,15 @@
 import {
     BasicMIDI,
     SoundBankLoader,
-    SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../../src";
-import * as fs from "node:fs";
+import * as fs from "fs/promises";
 import { Readable } from "node:stream";
-// @ts-nocheck
 import Speaker from "speaker";
 
 // process arguments
-const args = process.argv.slice(2);
+const args = process.argv.slice(2) as string[];
 if (args.length !== 2) {
     console.info("Usage: tsx index.ts <soundbank path> <midi path>");
     process.exit();
@@ -19,21 +17,21 @@ if (args.length !== 2) {
 const sfPath = args[0];
 const midPath = args[1];
 
-const sf = fs.readFileSync(sfPath);
-const mid = fs.readFileSync(midPath);
+const sf = await fs.readFile(sfPath);
+const mid = await fs.readFile(midPath);
 
 const sampleRate = 44100;
 const synth = new SpessaSynthProcessor(sampleRate, {
     effectsEnabled: false
 });
-SpessaSynthLogging(true, true, true);
 synth.soundBankManager.reloadManager(
-    SoundBankLoader.fromArrayBuffer(sf.buffer)
+    SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer)
 );
 await synth.processorInitialized;
 
 const seq = new SpessaSynthSequencer(synth);
-seq.loadNewSongList([BasicMIDI.fromArrayBuffer(mid.buffer)]);
+seq.loadNewSongList([BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer)]);
+seq.play();
 
 const bufSize = 128;
 

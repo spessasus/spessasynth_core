@@ -6,10 +6,7 @@ import {
     PORTAMENTO_CONTROL_UNSET,
     resetArray
 } from "../../engine_components/controller_tables";
-import {
-    DEFAULT_PERCUSSION,
-    DEFAULT_SYNTH_MODE
-} from "../../engine_components/synth_constants";
+import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
 import { getDefaultBank } from "../../../../utils/xg_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
@@ -156,7 +153,14 @@ export function resetControllers(this: MIDIChannel) {
         if (this.midiControllers[i] !== resetValue && i < 127) {
             if (i === midiControllers.portamentoControl) {
                 this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
-            } else {
+            } else if (
+                i !== midiControllers.portamentoControl &&
+                i !== midiControllers.dataEntryMsb &&
+                i !== midiControllers.RPNMsb &&
+                i !== midiControllers.RPNLsb &&
+                i !== midiControllers.NRPNMsb &&
+                i !== midiControllers.NRPNLsb
+            ) {
                 this.controllerChange(i, resetValue >> 7);
             }
         } else {

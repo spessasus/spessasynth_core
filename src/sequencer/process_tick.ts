@@ -5,7 +5,7 @@ import type { SpessaSynthSequencer } from "./sequencer";
  * Call this every rendering quantum to process the sequencer events in real-time.
  */
 export function processTick(this: SpessaSynthSequencer) {
-    if (!this.hasSongs || !this.isActive) {
+    if (!this.playing) {
         return;
     }
     const current = this.currentTime;
@@ -13,31 +13,28 @@ export function processTick(this: SpessaSynthSequencer) {
         // find the next event
         let trackIndex = this.findFirstEventIndex();
         const event =
-            this.midiData.tracks[trackIndex][this.eventIndex[trackIndex]];
+            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
         this.processEvent(event, trackIndex);
 
-        this.eventIndex[trackIndex]++;
+        this.eventIndexes[trackIndex]++;
 
         // find the next event
         trackIndex = this.findFirstEventIndex();
         if (
             this.midiData.tracks[trackIndex].length <=
-            this.eventIndex[trackIndex]
+            this.eventIndexes[trackIndex]
         ) {
             // the song has ended
             if (this.loop) {
                 this.setTimeTicks(this.midiData.loop.start);
                 return;
             }
-            this.eventIndex[trackIndex]--;
-            this.pause(true);
-            if (this.songs.length > 1) {
-                this.nextSong();
-            }
+            this.eventIndexes[trackIndex]--;
+            this.songIsFinished();
             return;
         }
         const eventNext =
-            this.midiData.tracks[trackIndex][this.eventIndex[trackIndex]];
+            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
         this.playedTime +=
             this.oneTickToSeconds * (eventNext.ticks - event.ticks);
 
@@ -66,11 +63,8 @@ export function processTick(this: SpessaSynthSequencer) {
                 return;
             }
             // stop the playback
-            this.eventIndex[trackIndex]--;
-            this.pause(true);
-            if (this.songs.length > 1) {
-                this.nextSong();
-            }
+            this.eventIndexes[trackIndex]--;
+            this.songIsFinished();
             return;
         }
     }

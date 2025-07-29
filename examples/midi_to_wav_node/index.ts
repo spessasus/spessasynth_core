@@ -30,7 +30,8 @@ synth.soundBankManager.reloadManager(
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
-seq.loop = false;
+seq.play();
+
 const outLeft = new Float32Array(sampleCount);
 const outRight = new Float32Array(sampleCount);
 const start = performance.now();
