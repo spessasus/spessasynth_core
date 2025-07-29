@@ -90,9 +90,9 @@ nav:
           - writing-files/wav.md
           - writing-files/midi.md
           - writing-files/converting-between-formats.md
+      - extra/midi-implementation.md
 
   - Extra Info:
-      - extra/midi-implementation.md
       - extra/all-npm-exports.md
       - extra/developer-docs.md
       - extra/console-output.md

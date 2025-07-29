@@ -2,7 +2,7 @@
 
 This describes what messages SpessaSynth can receive.
 
-[Here's a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
+[Here is a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
 
 ## Supported MIDI Messages
 

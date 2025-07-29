@@ -37,6 +37,8 @@ npm install --save spessasynth_core
 
 **v3.28 TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
 
+[**Read about breaking changes here**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
+
 **SpessaSynth Project index**
 
 - [spessasynth_core](https://github.com/spessasus/spessasynth_core) (you are here) - SF2/DLS/MIDI library

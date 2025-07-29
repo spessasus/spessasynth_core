@@ -8,25 +8,25 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
 
     If there's more than one property, the returned value is an object with the properties as keys.
 
-| Name                    | Description                                      | Callback Properties                                                                                                                                                                                                 |
-|-------------------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `noteOff`               | Key has been released.                           | - `midiNote`: number - the note that was released<br/> - `channel`: number - the channel number which got the note released.                                                                                        |
-| `noteOn`                | Key has been pressed.                            | - `midiNote`: number - the note that was pressed<br/> - `channel`: number - the channel that the note was played on<br/> - `velocity`: number - the velocity of the note.                                           |
-| `pitchWheel`            | Pitch wheel has been altered.                    | - `channel`: number - the channel that was pitch bent<br/> - `MSB`: number - Most Significant byte of the message<br/> - `LSB`: number - least significant byte of the message.                                     |
-| `controllerChange`      | Controller has been changed.                     | - `channel`: number - the channel that CC was changed on<br/> - `controllerNumber`: number - the number of the MIDI controller list<br/> - `controllerValue`: number - the new value of the controller.             |
-| `programChange`         | Program has been changed.                        | - `channel`: number - the channel that had its program changed<br/> - `program`: number - the new MIDI program number<br/> - `bank`: number - the new bank number of the preset.                                    |
-| `channelPressure`       | Channel's pressure has been changed.             | - `channel`: number - the channel affected<br/> - `pressure`: number - the new pressure.                                                                                                                            |
-| `polyPressure`          | Note's pressure has been changed.                | - `midiNote`: number - the note that was affected<br/> - `channel`: number - the channel affected<br/> - `pressure`: number - the new pressure.                                                                     |
-| `drumChange`            | Channel's drum mode was changed.                 | - `channel`: number - the channel<br/> - `isDrumChannel`: boolean - if the channel is now a drum channel or not.                                                                                                    |
-| `stopAll`               | All voices were stopped.                         | None                                                                                                                                                                                                                |
-| `newChannel`            | A new channel was added to the synth.            | None                                                                                                                                                                                                                |
-| `muteChannel`           | A channel has been muted/unmuted.                | - `channel`: number - the channel that was altered<br/> - `isMuted`: boolean - if the channel is muted or unmuted.                                                                                                  |
-| `presetListChange`      | The preset list has been changed/initialized.    | - `presetList`: array - The sound bank preset list. Each item is an object: `{presetName: string, program: number, bank: number}`                                                                                   |
-| `allControllerReset`    | All controllers have been reset. (and programs!) | None. Note: if there were any locked controllers, they will be restored via `controllerchange` event after. For example `allcontrollersreset` will be called and then `controllerchange` for the locked controller. |
-| `soundBankError`        | The loaded sound bank was invalid.               | - `error`: object - The error message from the sound bank parser.                                                                                                                                                   |
-| `synthDisplay`          | A SysEx to display some text has been received.  | - `displayData`: Uint8Array - the data to display,<br/> - `displayType`: the type of display. Read more below.                                                                                                      |
-| `channelPropertyChange` | A channel's property has changed.                | - `channel`: number - the channel that had its property changed, <br/> `property`: ChannelProperty` - the new property. Read more below.                                                                            |
-| `masterParameterChange` | A master parameter has been changed              | - `parameter`: MasterParameterType - the parameter that was changed, <br/> `value`: varies - the new value of this parameter. [Read more here](master-parameter.md)                                                 |
+| Name                    | Description                                      |
+|-------------------------|--------------------------------------------------|
+| `noteOff`               | Key has been released.                           |
+| `noteOn`                | Key has been pressed.                            |
+| `pitchWheel`            | Pitch wheel has been altered.                    |
+| `controllerChange`      | Controller has been changed.                     |
+| `programChange`         | Program has been changed.                        |
+| `channelPressure`       | Channel's pressure has been changed.             |
+| `polyPressure`          | Note's pressure has been changed.                |
+| `drumChange`            | Channel's drum mode was changed.                 |
+| `stopAll`               | All voices were stopped.                         |
+| `newChannel`            | A new channel was added to the synth.            |
+| `muteChannel`           | A channel has been muted/unmuted.                |
+| `presetListChange`      | The preset list has been changed/initialized.    |
+| `allControllerReset`    | All controllers have been reset. (and programs!) |
+| `soundBankError`        | The loaded sound bank was invalid.               |
+| `synthDisplay`          | A SysEx to display some text has been received.  |
+| `channelPropertyChange` | A channel's property has changed.                |
+| `masterParameterChange` | A master parameter has been changed              |
 
 !!! Note
 
