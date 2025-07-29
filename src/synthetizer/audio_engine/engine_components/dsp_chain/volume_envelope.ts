@@ -41,15 +41,15 @@ export class VolumeEnvelope {
     /**
      * The voice's absolute attenuation as linear gain.
      */
-    public attenuation: number = 0;
+    public attenuation = 0;
     /**
      * The attenuation target, which the "attenuation" property is linearly interpolated towards (gain).
      */
-    public attenuationTargetGain: number = 0;
+    public attenuationTargetGain = 0;
     /**
      * The envelope's current time in samples.
      */
-    protected currentSampleTime: number = 0;
+    protected currentSampleTime = 0;
     /**
      * The dB attenuation of the envelope when it entered the release stage.
      */
@@ -57,47 +57,47 @@ export class VolumeEnvelope {
     /**
      * The time in samples relative to the start of the envelope.
      */
-    protected releaseStartTimeSamples: number = 0;
+    protected releaseStartTimeSamples = 0;
     /**
      * The current gain applied to the voice in the release stage.
      */
-    protected currentReleaseGain: number = 1;
+    protected currentReleaseGain = 1;
     /**
      * The attack duration in samples.
      */
-    protected attackDuration: number = 0;
+    protected attackDuration = 0;
     /**
      * The decay duration in samples.
      */
-    protected decayDuration: number = 0;
+    protected decayDuration = 0;
     /**
      * The release duration in samples.
      */
-    protected releaseDuration: number = 0;
+    protected releaseDuration = 0;
     /**
      * The attenuation target, which the "attenuation" property is linearly interpolated towards (dB).
      */
-    protected attenuationTarget: number = 0;
+    protected attenuationTarget = 0;
     /**
      * The voice's sustain amount in dB, relative to attenuation.
      */
-    protected sustainDbRelative: number = 0;
+    protected sustainDbRelative = 0;
     /**
      * The time in samples to the end of delay stage, relative to the start of the envelope.
      */
-    protected delayEnd: number = 0;
+    protected delayEnd = 0;
     /**
      * The time in samples to the end of attack stage, relative to the start of the envelope.
      */
-    protected attackEnd: number = 0;
+    protected attackEnd = 0;
     /**
      * The time in samples to the end of hold stage, relative to the start of the envelope.
      */
-    protected holdEnd: number = 0;
+    protected holdEnd = 0;
     /**
      * The time in samples to the end of decay stage, relative to the start of the envelope.
      */
-    protected decayEnd: number = 0;
+    protected decayEnd = 0;
 
     /**
      * if sustain stage is silent,

@@ -120,11 +120,9 @@ export function playToInternal(
             // skip note messages
             case midiMessageTypes.noteOn:
                 // track portamento control as last note
-                if (savedControllers[channel] === undefined) {
-                    savedControllers[channel] = Array.from(
-                        defaultControllerArray
-                    ) as MIDIController[];
-                }
+                savedControllers[channel] ??= Array.from(
+                    defaultControllerArray
+                ) as MIDIController[];
                 savedControllers[channel][midiControllers.portamentoControl] =
                     event.messageData[0] as MIDIController;
                 break;
@@ -183,11 +181,9 @@ export function playToInternal(
                         );
                     }
                 } else {
-                    if (savedControllers[channel] === undefined) {
-                        savedControllers[channel] = Array.from(
-                            defaultControllerArray
-                        ) as MIDIController[];
-                    }
+                    savedControllers[channel] ??= Array.from(
+                        defaultControllerArray
+                    ) as MIDIController[];
                     savedControllers[channel][controllerNumber] = event
                         .messageData[1] as MIDIController;
                 }

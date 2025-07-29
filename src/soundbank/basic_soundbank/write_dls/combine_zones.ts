@@ -45,7 +45,7 @@ type notGlobalizedTypes =
  */
 export function combineZones(
     preset: BasicPreset,
-    globalize: boolean = true
+    globalize = true
 ): BasicInstrument {
     const addUnique = (main: Generator[], adder: Generator[]) => {
         main.push(

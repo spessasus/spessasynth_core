@@ -6,13 +6,13 @@ import type { IndexedByteArray } from "../utils/indexed_array";
 import type { MIDIController } from "../midi/enums";
 import type { ModulatorSourceEnum } from "./enums";
 
-export type SoundBankManagerListEntry = {
+export interface SoundBankManagerListEntry {
     id: string;
     soundBank: BasicSoundBank;
     bankOffset: number;
-};
+}
 
-export type SoundBankInfoData = {
+export interface SoundBankInfoData {
     INAM: string;
     ICRD: string;
     IENG: string;
@@ -25,18 +25,19 @@ export type SoundBankInfoData = {
     iron: string;
     iver: string;
     ISFT: string;
-    DMOD: IndexedByteArray;
+    DMOD: string;
     LIST: IndexedByteArray;
-};
+}
 
 export type SoundBankInfoFourCC = keyof SoundBankInfoData;
 export type SoundBankInfo = Partial<SoundBankInfoData>;
-export type SampleAndGenerators = {
+
+export interface SampleAndGenerators {
     instrumentGenerators: Generator[];
     presetGenerators: Generator[];
     modulators: Modulator[];
     sample: BasicSample;
-};
+}
 
 export type SampleEncodingFunction = (
     audioData: Float32Array,
@@ -57,7 +58,7 @@ export type ProgressFunction = (
 ) => Promise<unknown>;
 
 // Options for writing a SoundFont2 file.
-export type SoundFont2WriteOptions = {
+export interface SoundFont2WriteOptions {
     // If the soundfont should be compressed with a given function.
     compress: boolean;
 
@@ -78,10 +79,10 @@ export type SoundFont2WriteOptions = {
 
     // If an SF3 bank should be decompressed back to SF2. Not recommended.
     decompress: boolean;
-};
+}
 
 // Returned structure containing extended SF2 chunks.
-export type ReturnedExtendedSf2Chunks = {
+export interface ReturnedExtendedSf2Chunks {
     // The PDTA part of the chunk.
     pdta: IndexedByteArray;
 
@@ -90,14 +91,15 @@ export type ReturnedExtendedSf2Chunks = {
 
     // The highest index written (0 if not applicable). Used for determining whether the XDTA chunk is necessary.
     highestIndex: number;
-};
+}
 
 // Options for writing a DLS file.
-export type DLSWriteOptions = {
+export interface DLSWriteOptions {
     // A function to show progress for writing large banks. It can be undefined.
     progressFunction?: ProgressFunction;
-};
-export type KeyRange = {
+}
+
+export interface KeyRange {
     min: number;
     max: number;
-};
+}

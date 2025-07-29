@@ -16,7 +16,7 @@ import type { Generator } from "../basic_soundbank/generator";
 export class SoundFontInstrument extends BasicInstrument {
     public zoneStartIndex: number;
 
-    public zonesCount: number = 0;
+    public zonesCount = 0;
 
     /**
      * Creates an instrument

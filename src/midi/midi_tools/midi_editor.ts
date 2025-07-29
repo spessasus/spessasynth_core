@@ -167,16 +167,16 @@ export function modifyMIDIInternal(
     /**
      * Tracks if the channel already had its first note on
      */
-    const isFirstNoteOn: boolean[] = Array(channelsAmount).fill(true);
+    const isFirstNoteOn = Array<boolean>(channelsAmount).fill(true);
 
     /**
      * MIDI key transpose
      */
-    const coarseTranspose: number[] = Array(channelsAmount).fill(0);
+    const coarseTranspose = Array<number>(channelsAmount).fill(0);
     /**
      * RPN fine transpose
      */
-    const fineTranspose: number[] = Array(channelsAmount).fill(0);
+    const fineTranspose = Array<number>(channelsAmount).fill(0);
     desiredChannelsToTranspose.forEach((transpose) => {
         const coarse = Math.trunc(transpose.keyShift);
         const fine = transpose.keyShift - coarse;
@@ -199,7 +199,7 @@ export function modifyMIDIInternal(
             eventIndexes[trackNum]--;
         };
 
-        const addEventBefore = (e: MIDIMessage, offset: number = 0) => {
+        const addEventBefore = (e: MIDIMessage, offset = 0) => {
             track.splice(index + offset, 0, e);
             eventIndexes[trackNum]++;
         };
@@ -220,7 +220,7 @@ export function modifyMIDIInternal(
         const midiChannel = e.messageStatusByte & 0xf;
         const channel = midiChannel + portOffset;
         // clear channel?
-        if (desiredChannelsToClear.indexOf(channel) !== -1) {
+        if (desiredChannelsToClear.includes(channel)) {
             deleteThisEvent();
             continue;
         }

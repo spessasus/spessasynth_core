@@ -12,7 +12,7 @@ export class AudioSample {
     /**
      * Current position in the sample
      */
-    public cursor: number = 0;
+    public cursor = 0;
     /**
      * MIDI root key of the sample
      */
@@ -20,15 +20,15 @@ export class AudioSample {
     /**
      * Start position of the loop
      */
-    public loopStart: number = 0;
+    public loopStart = 0;
     /**
      * End position of the loop
      */
-    public loopEnd: number = 0;
+    public loopEnd = 0;
     /**
      * End position of the sample
      */
-    public end: number = 0;
+    public end = 0;
     /**
      * Looping mode of the sample:
      * 0 - no loop
@@ -40,7 +40,7 @@ export class AudioSample {
     /**
      * Indicates if the sample is currently looping
      */
-    public isLooping: boolean = false;
+    public isLooping = false;
 
     /**
      * @param data

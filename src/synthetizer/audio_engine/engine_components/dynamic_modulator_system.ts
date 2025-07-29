@@ -29,8 +29,8 @@ export class DynamicModulatorSystem {
         source: ModulatorSourceEnum,
         destination: GeneratorType,
         amount: number,
-        isBipolar: boolean = false,
-        isNegative: boolean = false
+        isBipolar = false,
+        isNegative = false
     ) {
         const id = this.getModulatorID(
             source,

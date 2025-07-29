@@ -19,11 +19,11 @@ import type { MIDIFormat } from "./types";
  * including things like marker or CC 2/4 loop detection, copyright detection, etc.
  */
 
-type InternalMIDIChunkType = {
+interface InternalMIDIChunkType {
     type: string;
     size: number;
     data: IndexedByteArray;
-};
+}
 
 /**
  * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
@@ -42,7 +42,7 @@ type InternalMIDIChunkType = {
 export function loadMIDIFromArrayBufferInternal(
     outputMIDI: BasicMIDI,
     arrayBuffer: ArrayBuffer,
-    fileName: string = ""
+    fileName = ""
 ) {
     SpessaSynthGroupCollapsed(`%cParsing MIDI File...`, consoleColors.info);
     outputMIDI.fileName = fileName;
@@ -138,18 +138,17 @@ export function loadMIDIFromArrayBufferInternal(
                             infoChunk.header as RMIDINFOChunk
                         ] = infoChunk.chunkData;
                     }
-                    if (outputMIDI.rmidiInfo["ICOP"]) {
+                    if (outputMIDI.rmidiInfo.ICOP) {
                         // special case, overwrites the copyright components array
                         outputMIDI.copyright = readBytesAsString(
-                            outputMIDI.rmidiInfo["ICOP"],
-                            outputMIDI.rmidiInfo["ICOP"].length,
+                            outputMIDI.rmidiInfo.ICOP,
+                            outputMIDI.rmidiInfo.ICOP.length,
                             false
                         ).replaceAll("\n", " ");
                     }
-                    if (outputMIDI.rmidiInfo["INAM"]) {
-                        outputMIDI.rawMidiName = outputMIDI.rmidiInfo[
-                            rmidInfoChunks.name
-                        ] as IndexedByteArray;
+                    if (outputMIDI.rmidiInfo.INAM) {
+                        outputMIDI.rawMidiName =
+                            outputMIDI.rmidiInfo[rmidInfoChunks.name]!;
                         outputMIDI.midiName = readBytesAsString(
                             outputMIDI.rawMidiName as IndexedByteArray,
                             outputMIDI.rawMidiName.length,
@@ -158,23 +157,21 @@ export function loadMIDIFromArrayBufferInternal(
                     }
                     // these can be used interchangeably
                     if (
-                        outputMIDI.rmidiInfo["IALB"] &&
-                        !outputMIDI.rmidiInfo["IPRD"]
+                        outputMIDI.rmidiInfo.IALB &&
+                        !outputMIDI.rmidiInfo.IPRD
                     ) {
-                        outputMIDI.rmidiInfo["IPRD"] =
-                            outputMIDI.rmidiInfo["IALB"];
+                        outputMIDI.rmidiInfo.IPRD = outputMIDI.rmidiInfo.IALB;
                     }
                     if (
-                        outputMIDI.rmidiInfo["IPRD"] &&
-                        !outputMIDI.rmidiInfo["IALB"]
+                        outputMIDI.rmidiInfo.IPRD &&
+                        !outputMIDI.rmidiInfo.IALB
                     ) {
-                        outputMIDI.rmidiInfo["IALB"] =
-                            outputMIDI.rmidiInfo["IPRD"];
+                        outputMIDI.rmidiInfo.IALB = outputMIDI.rmidiInfo.IPRD;
                     }
                     outputMIDI.bankOffset = 1; // defaults to 1
                     if (outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset]) {
                         outputMIDI.bankOffset = readLittleEndian(
-                            outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset] ||
+                            outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset] ??
                                 new IndexedByteArray(0),
                             2
                         );

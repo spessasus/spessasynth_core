@@ -70,8 +70,8 @@ export function renderVoice(
 
     // midi tuning standard
     const tuning =
-        this.synthProps.tunings[this.preset?.program || 0]?.[voice.realKey];
-    if (tuning !== undefined && tuning?.centTuning) {
+        this.synthProps.tunings[this.preset?.program ?? 0]?.[voice.realKey];
+    if (tuning?.centTuning) {
         // override key
         targetKey = tuning.midiNote;
         // add micro-tonal tuning

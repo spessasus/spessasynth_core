@@ -42,8 +42,8 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
             const semitones = value as number;
             // reset transposition temporarily
             this.privateProps.masterParameters.transposition = 0;
-            for (let i = 0; i < this.midiChannels.length; i++) {
-                this.midiChannels[i].transposeChannel(semitones);
+            for (const item of this.midiChannels) {
+                item.transposeChannel(semitones);
             }
             this.privateProps.masterParameters.transposition = semitones;
         }

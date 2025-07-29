@@ -22,7 +22,7 @@ export function controllerChange(
     this: MIDIChannel,
     controllerNumber: number,
     controllerValue: number,
-    force: boolean = false
+    force = false
 ) {
     if (controllerNumber > 127) {
         // channel configuration. force must be set to true

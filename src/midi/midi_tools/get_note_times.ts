@@ -14,7 +14,7 @@ import type { NoteTime } from "../types";
  */
 export function getNoteTimesInternal(
     midi: BasicMIDI,
-    minDrumLength: number = 0
+    minDrumLength = 0
 ): NoteTime[][] {
     /**
      * gets tempo from the midi message

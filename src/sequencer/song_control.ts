@@ -43,7 +43,7 @@ export function assingMIDIPortInternal(
 export function loadNewSequenceInternal(
     this: SpessaSynthSequencer,
     parsedMidi: BasicMIDI,
-    autoPlay: boolean = true
+    autoPlay = true
 ) {
     this.stop();
     if (!parsedMidi.tracks) {

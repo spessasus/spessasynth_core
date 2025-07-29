@@ -35,8 +35,8 @@ export class RIFFChunk {
 
 export function readRIFFChunk(
     dataArray: IndexedByteArray,
-    readData: boolean = true,
-    forceShift: boolean = false
+    readData = true,
+    forceShift = false
 ): RIFFChunk {
     const header = readBytesAsString(dataArray, 4);
 
@@ -80,8 +80,8 @@ export function readRIFFChunk(
 export function writeRIFFChunkRaw(
     header: string,
     data: Uint8Array,
-    addZeroByte: boolean = false,
-    isList: boolean = false
+    addZeroByte = false,
+    isList = false
 ): IndexedByteArray {
     let dataStartOffset = 8;
     let headerWritten = header;
@@ -125,7 +125,7 @@ export function writeRIFFChunkRaw(
 export function writeRIFFChunkParts(
     header: string,
     chunks: Uint8Array[],
-    isList: boolean = false
+    isList = false
 ): IndexedByteArray {
     let dataOffset = 8;
     let headerWritten = header;

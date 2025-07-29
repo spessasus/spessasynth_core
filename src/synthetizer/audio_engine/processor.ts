@@ -84,7 +84,7 @@ export class SpessaSynthProcessor {
     /**
      * Are the chorus and reverb effects enabled?
      */
-    public effectsEnabled: boolean = true;
+    public effectsEnabled = true;
 
     /**
      * Is the event system enabled?
@@ -96,12 +96,13 @@ export class SpessaSynthProcessor {
      * @param eventType The event type.
      * @param eventData The event data.
      */
-    public onEventCall:
-        | (<K extends keyof ProcessorEventType>(
-              eventType: K,
-              eventData: ProcessorEventType[K]
-          ) => unknown)
-        | undefined;
+    public onEventCall?: <K extends keyof ProcessorEventType>(
+         
+        eventType: K,
+         
+        eventData: ProcessorEventType[K]
+    ) => unknown;
+
     /**
      * Executes a system exclusive message for the synthesizer.
      * @param syx The system exclusive message as an array of bytes.
@@ -306,8 +307,8 @@ export class SpessaSynthProcessor {
      */
     public stopAllChannels(force = false) {
         SpessaSynthInfo("%cStop all received!", consoleColors.info);
-        for (let i = 0; i < this.midiChannels.length; i++) {
-            this.midiChannels[i].stopAllNotes(force);
+        for (const channel of this.midiChannels) {
+            channel.stopAllNotes(force);
         }
         this.privateProps.callEvent("stopAll", undefined);
     }
@@ -326,8 +327,8 @@ export class SpessaSynthProcessor {
         outputs: Float32Array[],
         reverb: Float32Array[],
         chorus: Float32Array[],
-        startIndex: number = 0,
-        sampleCount: number = 0
+        startIndex = 0,
+        sampleCount = 0
     ) {
         this.renderAudioSplit(
             reverb,
@@ -351,8 +352,8 @@ export class SpessaSynthProcessor {
         reverbChannels: Float32Array[],
         chorusChannels: Float32Array[],
         separateChannels: Float32Array[][],
-        startIndex: number = 0,
-        sampleCount: number = 0
+        startIndex = 0,
+        sampleCount = 0
     ) {
         // process event queue
         const time = this.currentSynthTime;
@@ -430,7 +431,7 @@ export class SpessaSynthProcessor {
         channel: number,
         controllerNumber: number,
         controllerValue: number,
-        force: boolean = false
+        force = false
     ) {
         this.midiChannels[channel].controllerChange(
             controllerNumber,
@@ -508,8 +509,8 @@ export class SpessaSynthProcessor {
      */
     public processMessage(
         message: Uint8Array,
-        channelOffset: number = 0,
-        force: boolean = false,
+        channelOffset = 0,
+        force = false,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
         const call = () => {
@@ -623,11 +624,8 @@ export class SpessaSynthProcessor {
      */
     protected setMasterTuning(cents: number) {
         cents = Math.round(cents);
-        for (let i = 0; i < this.midiChannels.length; i++) {
-            this.midiChannels[i].setCustomController(
-                customControllers.masterTuning,
-                cents
-            );
+        for (const channel of this.midiChannels) {
+            channel.setCustomController(customControllers.masterTuning, cents);
         }
     }
 

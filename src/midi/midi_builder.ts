@@ -18,8 +18,8 @@ export class MIDIBuilder extends BasicMIDI {
      */
     public constructor(
         name: string,
-        timeDivision: number = 480,
-        initialTempo: number = 120
+        timeDivision = 480,
+        initialTempo = 120
     ) {
         super();
         this.timeDivision = timeDivision;
@@ -54,7 +54,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param name the new track's name.
      * @param port the new track's port.
      */
-    public addNewTrack(name: string, port: number = 0) {
+    public addNewTrack(name: string, port = 0) {
         this.tracksAmount++;
         if (this.tracksAmount > 1) {
             this.format = 1;
@@ -158,7 +158,7 @@ export class MIDIBuilder extends BasicMIDI {
         track: number,
         channel: number,
         midiNote: number,
-        velocity: number = 64
+        velocity = 64
     ) {
         channel %= 16;
         midiNote %= 128;

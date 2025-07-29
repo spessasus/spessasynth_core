@@ -1,7 +1,7 @@
 /**
  * RMIDMetadata type represents metadata for an RMIDI file.
  */
-export type RMIDMetadata = {
+export interface RMIDMetadata {
     /**
      * The name of the file.
      */
@@ -51,24 +51,24 @@ export type RMIDMetadata = {
      * The encoding of the inner MIDI file.
      */
     midiEncoding: string;
-};
+}
 
-export type TempoChange = {
+export interface TempoChange {
     // MIDI ticks of the change.
     ticks: number;
     // new tempo in BPM.
     tempo: number;
-};
-export type MIDILoop = {
+}
+export interface MIDILoop {
     // start of the loop, in MIDI ticks.
     start: number;
     // end of the loop, in MIDI ticks.
     end: number;
-};
+}
 
 export type MIDIFormat = 0 | 1 | 2;
 
-export type NoteTime = {
+export interface NoteTime {
     // the MIDI key number.
     midiNote: number;
     // start of the note, in seconds.
@@ -77,12 +77,12 @@ export type NoteTime = {
     length: number;
     // the MIDI velocity of the note.
     velocity: number;
-};
+}
 
 /**
  * Represents a desired program change for a MIDI channel.
  */
-export type DesiredProgramChange = {
+export interface DesiredProgramChange {
     /**
      * The channel number.
      */
@@ -103,12 +103,12 @@ export type DesiredProgramChange = {
      * If it is, then the bank number is ignored.
      */
     isDrum: boolean;
-};
+}
 
 /**
  * Represents a desired controller change for a MIDI channel.
  */
-export type DesiredControllerChange = {
+export interface DesiredControllerChange {
     /**
      * The channel number.
      */
@@ -123,12 +123,12 @@ export type DesiredControllerChange = {
      * The new controller value.
      */
     controllerValue: number;
-};
+}
 
 /**
  * Represents a desired channel transpose change.
  */
-export type DesiredChannelTranspose = {
+export interface DesiredChannelTranspose {
     /**
      * The channel number.
      */
@@ -139,4 +139,4 @@ export type DesiredChannelTranspose = {
      * This can use floating point numbers, which will be used to fine-tune the pitch in cents using RPN.
      */
     keyShift: number;
-};
+}

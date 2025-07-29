@@ -18,17 +18,17 @@ export class BasicPreset {
     /**
      * The preset's name
      */
-    public name: string = "";
+    public name = "";
 
     /**
      * The preset's MIDI program number
      */
-    public program: number = 0;
+    public program = 0;
 
     /**
      * The preset's MIDI bank number
      */
-    public bank: number = 0;
+    public bank = 0;
 
     /**
      * The preset's zones
@@ -43,15 +43,15 @@ export class BasicPreset {
     /**
      * unused metadata
      */
-    public library: number = 0;
+    public library = 0;
     /**
      * unused metadata
      */
-    public genre: number = 0;
+    public genre = 0;
     /**
      * unused metadata
      */
-    public morphology: number = 0;
+    public morphology = 0;
 
     /**
      * Creates a new preset representation.
@@ -66,7 +66,7 @@ export class BasicPreset {
      * @param allowXG if the Yamaha XG system is allowed
      * @param allowSFX if the XG SFX drum preset is allowed
      */
-    public isDrumPreset(allowXG: boolean, allowSFX: boolean = false): boolean {
+    public isDrumPreset(allowXG: boolean, allowSFX = false): boolean {
         const xg = allowXG && this.parentSoundBank.isXGBank;
         // sfx is not cool
         return (
@@ -243,8 +243,7 @@ export class BasicPreset {
                 const finalModulatorList: Modulator[] = [
                     ...instrumentModulators
                 ];
-                for (let i = 0; i < presetModulators.length; i++) {
-                    const mod = presetModulators[i];
+                for (const mod of presetModulators) {
                     const identicalInstrumentModulator =
                         finalModulatorList.findIndex((m) =>
                             Modulator.isIdentical(mod, m)

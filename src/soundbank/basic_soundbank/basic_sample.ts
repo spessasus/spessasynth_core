@@ -56,7 +56,7 @@ export class BasicSample {
     /**
      * Indicates if the data was overridden, so it cannot be copied back unchanged.
      */
-    protected dataOverridden: boolean = true;
+    protected dataOverridden = true;
     /**
      * The compressed sample data if the sample has been compressed.
      */

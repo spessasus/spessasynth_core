@@ -77,24 +77,24 @@ export async function writeSF2Internal(
      * @type {IndexedByteArray[]}
      */
     const infoArrays: IndexedByteArray[] = [];
-    targetSoundBank.soundBankInfo["ISFT"] = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    targetSoundBank.soundBankInfo.ISFT = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
     if (
         options?.compress ||
         targetSoundBank.samples.some((s) => s.isCompressed)
     ) {
-        targetSoundBank.soundBankInfo["ifil"] = "3.0"; // set version to 3
+        targetSoundBank.soundBankInfo.ifil = "3.0"; // set version to 3
     }
     if (options?.decompress) {
-        targetSoundBank.soundBankInfo["ifil"] = "2.4"; // set version to 2.04
+        targetSoundBank.soundBankInfo.ifil = "2.4"; // set version to 2.04
     }
 
     if (options?.writeDefaultModulators) {
         // trigger the DMOD write
-        targetSoundBank.soundBankInfo["DMOD"] =
+        targetSoundBank.soundBankInfo.DMOD =
             `${targetSoundBank.defaultModulators.length} Modulators`;
         targetSoundBank.customDefaultModulators = true;
     } else {
-        delete targetSoundBank.soundBankInfo["DMOD"];
+        delete targetSoundBank.soundBankInfo.DMOD;
     }
 
     for (const [type, data] of Object.entries(targetSoundBank.soundBankInfo)) {

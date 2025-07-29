@@ -63,10 +63,10 @@ export async function writeDLSInternal(
     }
     const ptbl = writeRIFFChunkRaw("ptbl", ptblData);
 
-    targetSoundBank.soundBankInfo["ICMT"] =
-        (targetSoundBank.soundBankInfo["ICMT"] || "<No descrption>") +
+    targetSoundBank.soundBankInfo.ICMT =
+        (targetSoundBank.soundBankInfo.ICMT ?? "<No descrption>") +
         "\nConverted from SF2 to DLS using SpessaSynth";
-    targetSoundBank.soundBankInfo["ISFT"] = "SpessaSynth";
+    targetSoundBank.soundBankInfo.ISFT = "SpessaSynth";
     // write INFO
     const infos = [];
     for (const [info, data] of Object.entries(targetSoundBank.soundBankInfo)) {

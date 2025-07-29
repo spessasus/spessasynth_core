@@ -1,13 +1,13 @@
-import js from "@eslint/js";
 import globals from "globals";
-import tseslint from "typescript-eslint";
+import tseslint, * as eslint from "typescript-eslint";
 
 export default tseslint.config(
     { ignores: ["dist"] },
     {
         extends: [
-            js.configs.recommended,
-            ...tseslint.configs.stylisticTypeChecked
+            eslint.configs.recommended,
+            tseslint.configs.recommendedTypeChecked,
+            tseslint.configs.stylisticTypeChecked
         ],
         files: ["**/*.{ts,tsx}"],
         languageOptions: {

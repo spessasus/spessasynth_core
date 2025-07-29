@@ -59,8 +59,8 @@ type TypedArray =
  */
 export function systemExclusiveInternal(
     this: SpessaSynthProcessor,
-    syx: Array<number> | IndexedByteArray | TypedArray,
-    channelOffset: number = 0
+    syx: number[] | IndexedByteArray | TypedArray,
+    channelOffset = 0
 ) {
     const type = syx[0];
     if (

@@ -12,7 +12,7 @@ export class BasicInstrument {
     /**
      * The instrument's name
      */
-    public name: string = "";
+    public name = "";
 
     /**
      * The instrument's zones
@@ -97,7 +97,7 @@ export class BasicInstrument {
      * @param force ignores the use count and deletes forcibly
      * @returns if the zone has been deleted
      */
-    public deleteZone(index: number, force: boolean = false): boolean {
+    public deleteZone(index: number, force = false): boolean {
         const zone = this.zones[index];
         zone.useCount -= 1;
         if (zone.useCount < 1 || force) {

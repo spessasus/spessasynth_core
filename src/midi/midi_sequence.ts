@@ -15,12 +15,12 @@ class MIDISequenceData {
     /**
      * The time division of the sequence, representing the number of ticks per beat.
      */
-    public timeDivision: number = 0;
+    public timeDivision = 0;
 
     /**
      * The duration of the sequence, in seconds.
      */
-    public duration: number = 0;
+    public duration = 0;
 
     /**
      * The tempo changes in the sequence, ordered from the last change to the first.
@@ -31,12 +31,12 @@ class MIDISequenceData {
     /**
      * A string containing the copyright information for the MIDI sequence if detected.
      */
-    public copyright: string = "";
+    public copyright = "";
 
     /**
      * The number of tracks in the MIDI sequence.
      */
-    public tracksAmount: number = 0;
+    public tracksAmount = 0;
 
     /**
      * The track names in the MIDI file, an empty string if not set.
@@ -56,7 +56,7 @@ class MIDISequenceData {
     /**
      * The tick position of the first note-on event in the MIDI sequence.
      */
-    public firstNoteOn: number = 0;
+    public firstNoteOn = 0;
 
     /**
      * The MIDI key range used in the sequence, represented by a minimum and maximum note value.
@@ -66,7 +66,7 @@ class MIDISequenceData {
     /**
      * The tick position of the last voice event (such as note-on, note-off, or control change) in the sequence.
      */
-    public lastVoiceEventTick: number = 0;
+    public lastVoiceEventTick = 0;
 
     /**
      * An array of MIDI port numbers used by each track in the sequence.
@@ -91,17 +91,17 @@ class MIDISequenceData {
     /**
      * The name of the MIDI sequence.
      */
-    public midiName: string = "";
+    public midiName = "";
 
     /**
      * A boolean indicating if the sequence's name is the same as the file name.
      */
-    public midiNameUsesFileName: boolean = false;
+    public midiNameUsesFileName = false;
 
     /**
      * The file name of the MIDI sequence, if provided during parsing.
      */
-    public fileName: string = "";
+    public fileName = "";
 
     /**
      * The raw, encoded MIDI name, represented as a Uint8Array.
@@ -124,18 +124,18 @@ class MIDISequenceData {
     /**
      * The bank offset used for RMID files.
      */
-    public bankOffset: number = 0;
+    public bankOffset = 0;
 
     /**
      * If the MIDI file is a Soft Karaoke file (.kar), this flag is set to true.
      * https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
      */
-    public isKaraokeFile: boolean = false;
+    public isKaraokeFile = false;
 
     /**
      * Indicates if this file is a Multi-Port MIDI file.
      */
-    public isMultiPort: boolean = false;
+    public isMultiPort = false;
 
     /**
      * Converts ticks to time in seconds

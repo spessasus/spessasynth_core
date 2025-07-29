@@ -16,7 +16,7 @@ export class SoundBankManager {
         presetName: string;
         program: number;
     }[] = [];
-    private readonly presetListChangeCallback: { (): unknown };
+    private readonly presetListChangeCallback: () => unknown;
 
     /**
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
@@ -133,7 +133,7 @@ export class SoundBankManager {
     public getPreset(
         bankNumber: number,
         programNumber: number,
-        allowXGDrums: boolean = false
+        allowXGDrums = false
     ): { preset: BasicPreset; bankOffset: number } {
         if (this.soundBankList.length < 1) {
             throw new Error("No sound banks! Did you forget to add one?");

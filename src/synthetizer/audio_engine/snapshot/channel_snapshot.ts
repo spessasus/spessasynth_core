@@ -148,10 +148,10 @@ export class ChannelSnapshot {
         const channelObject = spessaSynthProcessor.midiChannels[channelNumber];
 
         return new ChannelSnapshot(
-            channelObject.preset?.program || 0,
+            channelObject.preset?.program ?? 0,
             channelObject.getBankSelect(),
             channelObject.bank !== channelObject.getBankSelect(),
-            channelObject.preset?.name || "undefined",
+            channelObject.preset?.name ?? "undefined",
             channelObject.lockPreset,
             channelObject.lockedSystem,
             channelObject.midiControllers.slice(),

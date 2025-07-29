@@ -76,8 +76,7 @@ export function writeArticulator(zone: BasicZone): IndexedByteArray {
     // and a strange correction needs to be applied to the real value:
     // real + (60 / 128) * scale
     // we invert this here
-    for (let i = 0; i < zone.generators.length; i++) {
-        const relativeGenerator = zone.generators[i];
+    for (const relativeGenerator of zone.generators) {
         let absoluteCounterpart = undefined;
         switch (relativeGenerator.generatorType) {
             default:

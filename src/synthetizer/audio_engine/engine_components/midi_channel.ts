@@ -71,7 +71,7 @@ export class MIDIChannel {
     /**
      * The key shift of the channel (in semitones).
      */
-    public channelTransposeKeyShift: number = 0;
+    public channelTransposeKeyShift = 0;
 
     /**
      * An array of octave tuning values for each note on the channel.
@@ -87,19 +87,19 @@ export class MIDIChannel {
     /**
      * Indicates whether the sustain (hold) pedal is active.
      */
-    public holdPedal: boolean = false;
+    public holdPedal = false;
     /**
      * Indicates whether this channel is a drum channel.
      */
-    public drumChannel: boolean = false;
+    public drumChannel = false;
     /**
      * If greater than 0, overrides the velocity value for the channel, otherwise it's disabled.
      */
-    public velocityOverride: number = 0;
+    public velocityOverride = 0;
     /**
      * Enables random panning for every note played on this channel.
      */
-    public randomPan: boolean = false;
+    public randomPan = false;
     /**
      * The current state of the data entry for the channel.
      */
@@ -107,15 +107,15 @@ export class MIDIChannel {
     /**
      * The bank number of the channel (used for patch changes).
      */
-    public bank: number = 0;
+    public bank = 0;
     /**
      * The bank number sent as channel properties.
      */
-    public sentBank: number = 0;
+    public sentBank = 0;
     /**
      * The bank LSB number of the channel (used for patch changes in XG mode).
      */
-    public bankLSB: number = 0;
+    public bankLSB = 0;
     /**
      * The preset currently assigned to the channel.
      */
@@ -123,7 +123,7 @@ export class MIDIChannel {
     /**
      * Indicates whether the program on this channel is locked.
      */
-    public lockPreset: boolean = false;
+    public lockPreset = false;
     /**
      * Indicates the MIDI system when the preset was locked.
      */
@@ -131,7 +131,7 @@ export class MIDIChannel {
     /**
      * Indicates whether the GS NRPN parameters are enabled for this channel.
      */
-    public lockGSNRPNParams: boolean = false;
+    public lockGSNRPNParams = false;
     /**
      * The vibrato settings for the channel.
      * @property depth - Depth of the vibrato effect in cents.
@@ -146,7 +146,7 @@ export class MIDIChannel {
     /**
      * Indicates whether the channel is muted.
      */
-    public isMuted: boolean = false;
+    public isMuted = false;
     /**
      * An array of voices currently active on the channel.
      */
@@ -186,7 +186,7 @@ export class MIDIChannel {
      * Will be updated every time something tuning-related gets changed.
      * This is used to avoid a big addition for every voice rendering call.
      */
-    protected channelTuningCents: number = 0;
+    protected channelTuningCents = 0;
     /**
      * An array of offsets generators for SF2 nrpn support.
      * A value of 0 means no change; -10 means 10 lower, etc.
@@ -196,7 +196,7 @@ export class MIDIChannel {
     /**
      * A small optimization that disables applying offsets until at least one is set.
      */
-    protected generatorOffsetsEnabled: boolean = false;
+    protected generatorOffsetsEnabled = false;
     /**
      * An array of override generators for AWE32 support.
      * A value of 32,767 means unchanged, as it is not allowed anywhere.
@@ -207,7 +207,7 @@ export class MIDIChannel {
     /**
      * A small optimization that disables applying overrides until at least one is set.
      */
-    protected generatorOverridesEnabled: boolean = false;
+    protected generatorOverridesEnabled = false;
     // Voice rendering methods
     protected renderVoice = renderVoice.bind(this);
     protected panAndMixVoice = panAndMixVoice.bind(this);
@@ -242,7 +242,7 @@ export class MIDIChannel {
      * @param semitones The number of semitones to transpose the channel by. Can be decimal.
      * @param force Defaults to false, if true, it will force the transpose even if the channel is a drum channel.
      */
-    public transposeChannel(semitones: number, force: boolean = false) {
+    public transposeChannel(semitones: number, force = false) {
         if (!this.drumChannel) {
             semitones += this.synthProps.masterParameters.transposition;
         }
@@ -314,7 +314,7 @@ export class MIDIChannel {
      * @param cents The tuning in cents to set.
      * @param log If true, logs the change to the console.
      */
-    public setTuning(cents: number, log: boolean = true) {
+    public setTuning(cents: number, log = true) {
         cents = Math.round(cents);
         this.setCustomController(customControllers.channelTuning, cents);
         if (!log) {
@@ -458,7 +458,7 @@ export class MIDIChannel {
         }
     }
 
-    public setBankSelect(bank: number, isLSB: boolean = false) {
+    public setBankSelect(bank: number, isLSB = false) {
         if (this.lockPreset) {
             return;
         }
@@ -572,7 +572,7 @@ export class MIDIChannel {
     public setGeneratorOverride(
         gen: GeneratorType,
         value: number,
-        realtime: boolean = false
+        realtime = false
     ) {
         this.generatorOverrides[gen] = value;
         this.generatorOverridesEnabled = true;
@@ -602,7 +602,7 @@ export class MIDIChannel {
      * @param midiNote The note to stop.
      * @param releaseTime in timecents, defaults to -12000 (very short release).
      */
-    public killNote(midiNote: number, releaseTime: number = -12000) {
+    public killNote(midiNote: number, releaseTime = -12000) {
         // adjust midiNote by channel key shift
         midiNote += this.customControllers[customControllers.channelKeyShift];
 
@@ -619,7 +619,7 @@ export class MIDIChannel {
      * Stops all notes on the channel.
      * @param force If true, stops all notes immediately, otherwise applies release time.
      */
-    public stopAllNotes(force: boolean = false) {
+    public stopAllNotes(force = false) {
         if (force) {
             // force stop all
             this.voices.length = 0;
@@ -674,7 +674,7 @@ export class MIDIChannel {
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
             bank: this.sentBank,
-            program: this.preset?.program || 0
+            program: this.preset?.program ?? 0
         };
         this.synthProps.callEvent("channelPropertyChange", {
             channel: this.channelNumber,

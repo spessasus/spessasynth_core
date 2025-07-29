@@ -14,14 +14,14 @@ import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import type { SynthSystem } from "../../synthetizer/types";
 import { midiControllers, midiMessageTypes } from "../enums";
 
-type InternalChannelType = {
+interface InternalChannelType {
     program: number;
     bank: number;
     bankLSB: number;
     drums: boolean;
     string: string;
     actualBank: number;
-};
+}
 
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank.

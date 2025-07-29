@@ -15,7 +15,7 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 export const FILTER_SMOOTHING_FACTOR = 0.1;
 
 // Represents a single cached coefficient.
-type CachedCoefficient = {
+interface CachedCoefficient {
     // Filter coefficient 1.
     a0: number;
     // Filter coefficient 2.
@@ -26,7 +26,7 @@ type CachedCoefficient = {
     a3: number;
     // Filter coefficient 5.
     a4: number;
-};
+}
 
 export class LowpassFilter {
     /**
@@ -250,9 +250,7 @@ export class LowpassFilter {
         filter.a3 = toCache.a3;
         filter.a4 = toCache.a4;
 
-        if (LowpassFilter.cachedCoefficients[qCb] === undefined) {
-            LowpassFilter.cachedCoefficients[qCb] = [];
-        }
+        LowpassFilter.cachedCoefficients[qCb] ??= [];
         // cache the coefficients
         LowpassFilter.cachedCoefficients[qCb][cutoffCents] = toCache;
     }

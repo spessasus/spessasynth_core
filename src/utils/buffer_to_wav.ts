@@ -6,7 +6,7 @@ import {
 } from "../soundbank/basic_soundbank/riff_chunk";
 import { writeLittleEndian } from "./byte_functions/little_endian";
 
-type WaveMetadata = {
+interface WaveMetadata {
     // the song's title.
     title: string;
     // the song's artist.
@@ -15,7 +15,7 @@ type WaveMetadata = {
     album: string;
     // the song's genre.
     genre: string;
-};
+}
 
 /**
  * Writes an audio into a valid WAV file.
@@ -29,7 +29,7 @@ type WaveMetadata = {
 export function audioToWav(
     audioData: Float32Array[],
     sampleRate: number,
-    normalizeAudio: boolean = true,
+    normalizeAudio = true,
     metadata: Partial<WaveMetadata> = {},
     loop: { start: number; end: number } | undefined = undefined
 ): ArrayBuffer {

@@ -196,7 +196,7 @@ export class SoundFontSample extends BasicSample {
             return super.getRawData(allowVorbis);
         }
         // copy the smpl directly
-        return this.s16leData || new Uint8Array(0);
+        return this.s16leData ?? new Uint8Array(0);
     }
 }
 
@@ -206,7 +206,7 @@ export class SoundFontSample extends BasicSample {
 export function readSamples(
     sampleHeadersChunk: RIFFChunk,
     smplChunkData: IndexedByteArray | Float32Array,
-    linkSamples: boolean = true
+    linkSamples = true
 ): SoundFontSample[] {
     const samples: SoundFontSample[] = [];
     let index = 0;

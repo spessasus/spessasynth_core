@@ -31,20 +31,20 @@ export class SpessaSynthSequencer {
      * If the MIDI messages should be sent to an event instead of the synth.
      * This is used by spessasynth_lib to pass them over to Web MIDI API.
      */
-    public sendMIDIMessages: boolean = false;
+    public sendMIDIMessages = false;
     /**
      * The loop count of the sequencer.
      * If infinite, it will loop forever.
      */
-    public loopCount: number = Infinity;
+    public loopCount = Infinity;
     /**
      * The length of the current sequence in seconds.
      */
-    public duration: number = 0;
+    public duration = 0;
     /**
      * Controls if the sequencer loops (defaults to true).
      */
-    public loop: boolean = true;
+    public loop = true;
     /**
      * The currently loaded MIDI data.
      */
@@ -53,12 +53,12 @@ export class SpessaSynthSequencer {
      * Indicates if the sequencer should skip to the first note on event.
      * Defaults to true.
      */
-    public skipToFirstNoteOn: boolean = true;
+    public skipToFirstNoteOn = true;
     /**
      * Indicates if the sequencer should stay paused when seeking to a new time.
      * Defaults to false.
      */
-    public preservePlaybackState: boolean = false;
+    public preservePlaybackState = false;
     /**
      * Called when a MIDI message is sent and sendMIDIMessages is true.
      * @param message the binary MIDI message.
@@ -108,16 +108,16 @@ export class SpessaSynthSequencer {
     /**
      * The time of the first note in seconds.
      */
-    protected firstNoteTime: number = 0;
+    protected firstNoteTime = 0;
     /**
      * How long a single MIDI tick currently lasts in seconds.
      */
-    protected oneTickToSeconds: number = 0;
+    protected oneTickToSeconds = 0;
     /**
      * If the sequencer is currently active (playing or paused)
      * If there are no songs loaded, this is false.
      */
-    protected isActive: boolean = false;
+    protected isActive = false;
     /**
      * The current event index for each track.
      * This is used to track which event is currently being processed for each track.
@@ -126,7 +126,7 @@ export class SpessaSynthSequencer {
     /**
      * The time that has already been played in the current song.
      */
-    protected playedTime: number = 0;
+    protected playedTime = 0;
     /**
      * The paused time of the sequencer.
      * If the sequencer is not paused, this is undefined.
@@ -136,7 +136,7 @@ export class SpessaSynthSequencer {
      * Absolute time of the sequencer when it started playing.
      * It is based on the synth's current time.
      */
-    protected absoluteStartTime: number = 0;
+    protected absoluteStartTime = 0;
     /**
      * Currently playing notes (for pausing and resuming)
      */
@@ -173,7 +173,7 @@ export class SpessaSynthSequencer {
         this.absoluteStartTime = this.synth.currentSynthTime;
     }
 
-    protected _songIndex: number = 0;
+    protected _songIndex = 0;
 
     // noinspection JSUnusedGlobalSymbols
     /**
@@ -195,7 +195,7 @@ export class SpessaSynthSequencer {
         this.loadCurrentSong();
     }
 
-    private _shuffleMode: boolean = false;
+    private _shuffleMode = false;
 
     // noinspection JSUnusedGlobalSymbols
     /**
@@ -225,7 +225,7 @@ export class SpessaSynthSequencer {
     /**
      * Internal playback rate.
      */
-    protected _playbackRate: number = 1;
+    protected _playbackRate = 1;
 
     // noinspection JSUnusedGlobalSymbols
     /**
@@ -317,7 +317,7 @@ export class SpessaSynthSequencer {
      * If the sequencer is paused, it will resume from the paused time.
      * @param resetTime if true, the current time should be reset to 0.
      */
-    public play(this: SpessaSynthSequencer, resetTime: boolean = false) {
+    public play(this: SpessaSynthSequencer, resetTime = false) {
         if (this.isActive) {
             SpessaSynthWarn("Already playing");
             return;
@@ -343,7 +343,7 @@ export class SpessaSynthSequencer {
         // unpause if paused
         if (this.paused) {
             // adjust the start time
-            this.recalculateStartTime(this.pausedTime || 0);
+            this.recalculateStartTime(this.pausedTime ?? 0);
             this.pausedTime = undefined;
         }
         if (!this.sendMIDIMessages) {
@@ -372,7 +372,7 @@ export class SpessaSynthSequencer {
      * @param midiBuffers the list of songs to load.
      * @param autoPlay whether to automatically play the first song after loading.
      */
-    public loadNewSongList(midiBuffers: BasicMIDI[], autoPlay: boolean = true) {
+    public loadNewSongList(midiBuffers: BasicMIDI[], autoPlay = true) {
         /**
          * parse the MIDIs (only the array buffers, MIDI is unchanged)
          * @type {BasicMIDI[]}

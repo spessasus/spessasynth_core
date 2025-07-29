@@ -51,10 +51,10 @@ export function writeRMIDIInternal(
     mid: BasicMIDI,
     soundBankBinary: Uint8Array,
     soundBank: BasicSoundBank,
-    bankOffset: number = 0,
-    encoding: string = "Shift_JIS",
+    bankOffset = 0,
+    encoding = "Shift_JIS",
     metadata: Partial<RMIDMetadata> = {},
-    correctBankOffset: boolean = true
+    correctBankOffset = true
 ): IndexedByteArray {
     SpessaSynthGroup("%cWriting the RMIDI File...", consoleColors.info);
     SpessaSynthInfo(
@@ -200,7 +200,7 @@ export function writeRMIDIInternal(
                         // doesn't exist. pick any preset that has bank 128.
                         e.messageData[0] =
                             soundBank.presets.find((p) => p.isDrumPreset(isXG))
-                                ?.program || 0;
+                                ?.program ?? 0;
                         SpessaSynthInfo(
                             `%cNo drum preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.messageData[0]}.`,
                             consoleColors.info,
@@ -221,7 +221,7 @@ export function writeRMIDIInternal(
                         // doesn't exist. pick any preset that does not have bank 128.
                         e.messageData[0] =
                             soundBank.presets.find((p) => !p.isDrumPreset(isXG))
-                                ?.program || 0;
+                                ?.program ?? 0;
                         SpessaSynthInfo(
                             `%cNo preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.messageData[0]}.`,
                             consoleColors.info,
@@ -252,10 +252,13 @@ export function writeRMIDIInternal(
                     ) === -1
                 ) {
                     // no preset with this bank. find this program with any bank
-                    const targetBank =
-                        (soundBank.presets.find(
-                            (p) => p.program === e.messageData[0]
-                        )?.bank as number) + bankOffset || bankOffset;
+                    const found = soundBank.presets.find(
+                        (p) => p.program === e.messageData[0]
+                    );
+                    let targetBank = bankOffset;
+                    if (found) {
+                        targetBank = bankOffset + found.bank;
+                    }
                     channel.lastBank.messageData[1] = targetBank;
                     if (channel?.lastBankLSB?.messageData) {
                         channel.lastBankLSB.messageData[1] = targetBank;
@@ -307,7 +310,7 @@ export function writeRMIDIInternal(
             const bankNumber = e.messageData[1];
             // interpret
             const interpretation = parseBankSelect(
-                channel?.lastBank?.messageData[1] || 0,
+                channel?.lastBank?.messageData[1] ?? 0,
                 bankNumber,
                 system,
                 isLSB,

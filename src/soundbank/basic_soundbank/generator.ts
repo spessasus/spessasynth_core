@@ -14,7 +14,7 @@ export class Generator {
     /**
      * The generator's 16-bit value.
      */
-    public generatorValue: number = 0;
+    public generatorValue = 0;
 
     /**
      * Constructs a new generator
@@ -24,8 +24,8 @@ export class Generator {
      */
     public constructor(
         type: GeneratorType = generatorTypes.INVALID,
-        value: number = 0,
-        validate: boolean = true
+        value = 0,
+        validate = true
     ) {
         this.generatorType = type;
         if (value === undefined) {

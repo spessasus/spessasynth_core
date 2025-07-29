@@ -45,7 +45,7 @@ export class BasicMIDI extends MIDISequenceData {
     /**
      * If the MIDI file is a DLS RMIDI file.
      */
-    public isDLSRMIDI: boolean = false;
+    public isDLSRMIDI = false;
 
     /**
      * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
@@ -54,7 +54,7 @@ export class BasicMIDI extends MIDISequenceData {
      */
     public static fromArrayBuffer(
         arrayBuffer: ArrayBuffer,
-        fileName: string = ""
+        fileName = ""
     ): BasicMIDI {
         const mid = new BasicMIDI();
         loadMIDIFromArrayBufferInternal(mid, arrayBuffer, fileName);
@@ -71,9 +71,7 @@ export class BasicMIDI extends MIDISequenceData {
         m._copyFromSequence(mid);
 
         m.isDLSRMIDI = mid.isDLSRMIDI;
-        m.embeddedSoundBank = mid?.embeddedSoundBank
-            ? mid.embeddedSoundBank
-            : undefined; // Shallow copy
+        m.embeddedSoundBank = mid?.embeddedSoundBank ?? undefined; // Shallow copy
         m.tracks = mid.tracks.map((track) => [...track]); // Shallow copy of each track array
         return m;
     }
@@ -134,7 +132,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @returns an array of 16 channels, each channel containing its notes,
      * with their key number, velocity, absolute start time and length in seconds.
      */
-    public getNoteTimes(minDrumLength: number = 0): NoteTime[][] {
+    public getNoteTimes(minDrumLength = 0): NoteTime[][] {
         return getNoteTimesInternal(this, minDrumLength);
     }
 
@@ -159,10 +157,10 @@ export class BasicMIDI extends MIDISequenceData {
     public writeRMIDI(
         soundBankBinary: Uint8Array,
         soundBank: BasicSoundBank,
-        bankOffset: number = 0,
-        encoding: string = "Shift_JIS",
+        bankOffset = 0,
+        encoding = "Shift_JIS",
         metadata: Partial<RMIDMetadata> = {},
-        correctBankOffset: boolean = true
+        correctBankOffset = true
     ): IndexedByteArray {
         return writeRMIDIInternal(
             this,
@@ -215,7 +213,7 @@ export class BasicMIDI extends MIDISequenceData {
          * For karaoke files, text events starting with @T are considered titles,
          * usually the first one is the title, and the latter is things such as "sequenced by" etc.
          */
-        let karaokeHasTitle: boolean = false;
+        let karaokeHasTitle = false;
 
         this.keyRange = { max: 0, min: 127 };
 
@@ -225,13 +223,13 @@ export class BasicMIDI extends MIDISequenceData {
          */
         const copyrightComponents: string[] = [];
         let copyrightDetected = false;
-        if (typeof this.rmidiInfo["ICOP"] !== "undefined") {
+        if (typeof this.rmidiInfo.ICOP !== "undefined") {
             // if RMIDI has copyright info, don't try to detect one.
             copyrightDetected = true;
         }
 
         let nameDetected = false;
-        if (typeof this.rmidiInfo["INAM"] !== "undefined") {
+        if (typeof this.rmidiInfo.INAM !== "undefined") {
             // same as with copyright
             nameDetected = true;
         }
@@ -428,7 +426,7 @@ export class BasicMIDI extends MIDISequenceData {
                                         checkedText.substring(2).trim()
                                     );
                                 }
-                            } else if (checkedText[0] !== "@") {
+                            } else if (!checkedText.startsWith("@")) {
                                 // non @: the lyrics
                                 this.lyrics.push(
                                     sanitizeKarLyrics(e.messageData)
@@ -498,9 +496,7 @@ export class BasicMIDI extends MIDISequenceData {
             loopStart = this.firstNoteOn;
             loopEnd = this.lastVoiceEventTick;
         } else {
-            if (loopStart === null) {
-                loopStart = this.firstNoteOn;
-            }
+            loopStart ??= this.firstNoteOn;
 
             if (loopEnd === null || loopEnd === 0) {
                 loopEnd = this.lastVoiceEventTick;
@@ -701,10 +697,10 @@ export class MIDI extends BasicMIDI {
     /**
      * Parses a given MIDI file.
      * @param arrayBuffer the MIDI file array buffer.
-     * @param fileName {string} optional, replaces the decoded title if empty.
+     * @param fileName optional, replaces the decoded title if empty.
      * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
      */
-    public constructor(arrayBuffer: ArrayBuffer, fileName: string = "") {
+    public constructor(arrayBuffer: ArrayBuffer, fileName = "") {
         super();
         loadMIDIFromArrayBufferInternal(this, arrayBuffer, fileName);
     }

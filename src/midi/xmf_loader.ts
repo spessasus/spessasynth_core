@@ -142,9 +142,7 @@ class XMFNode {
                 fieldSpecifier = readVariableLengthQuantity(
                     metadataChunk
                 ) as metadataTypes;
-                if (
-                    Object.values(metadataTypes).indexOf(fieldSpecifier) === -1
-                ) {
+                if (!Object.values(metadataTypes).includes(fieldSpecifier)) {
                     SpessaSynthWarn(
                         `Unknown field specifier: ${fieldSpecifier}`
                     );
@@ -156,7 +154,7 @@ class XMFNode {
                                 metadataTypes[
                                     k as keyof typeof metadataTypes
                                 ] === fieldSpecifier
-                        ) || "";
+                        ) ?? "";
                 }
             } else {
                 // this is the length of string
@@ -310,9 +308,8 @@ class XMFNode {
             /**
              * interpret the content
              */
-            const resourceFormat: number[] = this.metadata[
-                "resourceFormat"
-            ] as number[];
+            const resourceFormat: number[] = this.metadata
+                .resourceFormat as number[];
             if (resourceFormat === undefined) {
                 SpessaSynthWarn("No resource format for this file node!");
             } else {
@@ -326,9 +323,7 @@ class XMFNode {
                 }
                 const resourceFormatID = resourceFormat[1] as resourceFormatIDs;
                 if (
-                    Object.values(resourceFormatIDs).indexOf(
-                        resourceFormatID
-                    ) === -1
+                    !Object.values(resourceFormatIDs).includes(resourceFormatID)
                 ) {
                     SpessaSynthWarn(
                         `Unrecognized resource format: ${resourceFormatID}`

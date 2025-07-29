@@ -26,53 +26,53 @@ export class ModulationEnvelope {
     /**
      * The attack duration, in seconds.
      */
-    protected attackDuration: number = 0;
+    protected attackDuration = 0;
     /**
      * The decay duration, in seconds.
      */
-    protected decayDuration: number = 0;
+    protected decayDuration = 0;
 
     /**
      * The hold duration, in seconds.
      */
-    protected holdDuration: number = 0;
+    protected holdDuration = 0;
 
     /**
      * Release duration, in seconds.
      */
-    protected releaseDuration: number = 0;
+    protected releaseDuration = 0;
 
     /**
      * The sustain level 0-1.
      */
-    protected sustainLevel: number = 0;
+    protected sustainLevel = 0;
 
     /**
      * Delay phase end time in seconds, absolute (audio context time).
      */
-    protected delayEnd: number = 0;
+    protected delayEnd = 0;
     /**
      * Attack phase end time in seconds, absolute (audio context time).
      */
-    protected attackEnd: number = 0;
+    protected attackEnd = 0;
     /**
      * Hold phase end time in seconds, absolute (audio context time).
      */
-    protected holdEnd: number = 0;
+    protected holdEnd = 0;
     /**
      * Decay phase end time in seconds, absolute (audio context time).
      */
-    protected decayEnd: number = 0;
+    protected decayEnd = 0;
 
     /**
      * The level of the envelope when the release phase starts.
      */
-    protected releaseStartLevel: number = 0;
+    protected releaseStartLevel = 0;
 
     /**
      * The current modulation envelope value.
      */
-    protected currentValue: number = 0;
+    protected currentValue = 0;
 
     /**
      * Starts the release phase in the envelope.
@@ -151,7 +151,7 @@ export class ModulationEnvelope {
     public static getValue(
         voice: Voice,
         currentTime: number,
-        ignoreRelease: boolean = false
+        ignoreRelease = false
     ): number {
         const env = voice.modulationEnvelope;
         if (voice.isInRelease && !ignoreRelease) {

@@ -24,14 +24,14 @@ import type { Modulator } from "../basic_soundbank/modulator";
  */
 
 export class SoundFont2 extends BasicSoundBank {
-    protected sampleDataStartIndex: number = 0;
+    protected sampleDataStartIndex = 0;
 
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
     public constructor(
         arrayBuffer: ArrayBuffer,
-        warnDeprecated: boolean = true
+        warnDeprecated = true
     ) {
         super();
         if (warnDeprecated) {
@@ -384,7 +384,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
         this.flush();
         SpessaSynthInfo(
-            `%cParsing finished! %c"${this.soundBankInfo["INAM"] as string}"%c has %c${this.presets.length}%c presets,
+            `%cParsing finished! %c"${this.soundBankInfo.INAM!}"%c has %c${this.presets.length}%c presets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             consoleColors.info,
             consoleColors.recognized,

@@ -52,14 +52,14 @@ class DownloadableSounds extends BasicSoundBank {
         }
 
         // mandatory
-        this.soundBankInfo["ifil"] = "2.1"; // always for dls
-        this.soundBankInfo["isng"] = "E-mu 10K2";
+        this.soundBankInfo.ifil = "2.1"; // always for dls
+        this.soundBankInfo.isng = "E-mu 10K2";
 
         // set some defaults
-        this.soundBankInfo["INAM"] = "Unnamed DLS";
-        this.soundBankInfo["IENG"] = "Unknown";
-        this.soundBankInfo["IPRD"] = "SpessaSynth DLS";
-        this.soundBankInfo["ICRD"] = new Date().toDateString();
+        this.soundBankInfo.INAM = "Unnamed DLS";
+        this.soundBankInfo.IENG = "Unknown";
+        this.soundBankInfo.IPRD = "SpessaSynth DLS";
+        this.soundBankInfo.ICRD = new Date().toDateString();
 
         // read info
         const infoChunk = findRIFFListType(chunks, "INFO");
@@ -68,18 +68,21 @@ class DownloadableSounds extends BasicSoundBank {
                 infoChunk.chunkData.currentIndex < infoChunk.chunkData.length
             ) {
                 const infoPart = readRIFFChunk(infoChunk.chunkData);
-                this.soundBankInfo[infoPart.header as SoundBankInfoFourCC] =
-                    readBytesAsString(infoPart.chunkData, infoPart.size);
+                (this.soundBankInfo[
+                    infoPart.header as SoundBankInfoFourCC
+                ] as string) = readBytesAsString(
+                    infoPart.chunkData,
+                    infoPart.size
+                );
             }
         }
-        this.soundBankInfo["ICMT"] =
-            this.soundBankInfo["ICMT"] || "(No description)";
-        if (this.soundBankInfo["ISBJ"]) {
+        this.soundBankInfo.ICMT = this.soundBankInfo.ICMT ?? "(No description)";
+        if (this.soundBankInfo.ISBJ) {
             // merge it
-            this.soundBankInfo["ICMT"] += "\n" + this.soundBankInfo["ISBJ"];
-            delete this.soundBankInfo["ISBJ"];
+            this.soundBankInfo.ICMT += "\n" + this.soundBankInfo.ISBJ;
+            delete this.soundBankInfo.ISBJ;
         }
-        this.soundBankInfo["ICMT"] +=
+        this.soundBankInfo.ICMT +=
             "\nConverted from DLS to SF2 with SpessaSynth";
 
         for (const [info, value] of Object.entries(this.soundBankInfo)) {
@@ -135,7 +138,7 @@ class DownloadableSounds extends BasicSoundBank {
         // sort presets
         this.flush();
         SpessaSynthInfo(
-            `%cParsing finished! %c"${this.soundBankInfo["INAM"] || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,
+            `%cParsing finished! %c"${this.soundBankInfo.INAM || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             consoleColors.info,
             consoleColors.recognized,

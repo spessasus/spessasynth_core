@@ -79,11 +79,15 @@ export class SynthesizerSnapshot {
      * @param processor the processor to apply the snapshot to.
      */
     public apply(processor: SpessaSynthProcessor) {
-        Object.entries(this.masterParameters).forEach(([parameter, value]) => {
-            processor.setMasterParameter(
-                parameter as keyof MasterParameterType,
-                value
-            );
+        type MasterParameterPair<K extends keyof MasterParameterType> = [
+            K,
+            MasterParameterType[K]
+        ];
+        const entries = Object.entries(
+            this.masterParameters
+        ) as MasterParameterPair<keyof MasterParameterType>[];
+        entries.forEach(([parameter, value]) => {
+            processor.setMasterParameter(parameter, value);
         });
 
         // restore key modifiers

@@ -14,7 +14,7 @@ import type { Generator } from "../basic_soundbank/generator";
 
 export class SoundFontPreset extends BasicPreset {
     public zoneStartIndex: number;
-    public zonesCount: number = 0;
+    public zonesCount = 0;
 
     /**
      * Creates a preset

@@ -2,7 +2,8 @@ import type { Voice } from "./audio_engine/engine_components/voice";
 import type { InterpolationType, SynthDisplayType } from "./enums";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
-export type NoteOnCallback = {
+
+export interface NoteOnCallback {
     /** The MIDI note number. */
     midiNote: number;
 
@@ -11,22 +12,25 @@ export type NoteOnCallback = {
 
     /** The velocity of the note. */
     velocity: number;
-};
-export type NoteOffCallback = {
+}
+
+export interface NoteOffCallback {
     /** The MIDI note number. */
     midiNote: number;
 
     /** The MIDI channel number. */
     channel: number;
-};
-export type DrumChangeCallback = {
+}
+
+export interface DrumChangeCallback {
     /** The MIDI channel number. */
     channel: number;
 
     /** Indicates if the channel is a drum channel. */
     isDrumChannel: boolean;
-};
-export type ProgramChangeCallback = {
+}
+
+export interface ProgramChangeCallback {
     /** The MIDI channel number. */
     channel: number;
 
@@ -35,8 +39,9 @@ export type ProgramChangeCallback = {
 
     /** The bank number. */
     bank: number;
-};
-export type ControllerChangeCallback = {
+}
+
+export interface ControllerChangeCallback {
     /** The MIDI channel number. */
     channel: number;
 
@@ -45,15 +50,17 @@ export type ControllerChangeCallback = {
 
     /** The value of the controller. */
     controllerValue: number;
-};
-export type MuteChannelCallback = {
+}
+
+export interface MuteChannelCallback {
     /** The MIDI channel number. */
     channel: number;
 
     /** Indicates if the channel is muted. */
     isMuted: boolean;
-};
-export type PresetListChangeCallbackSingle = {
+}
+
+export interface PresetListChangeCallbackSingle {
     /** The name of the preset. */
     presetName: string;
 
@@ -62,17 +69,20 @@ export type PresetListChangeCallbackSingle = {
 
     /** The program number. */
     program: number;
-};
+}
+
 // A list of preset changes, each with a name, bank, and program number.
 export type PresetListChangeCallback = PresetListChangeCallbackSingle[];
-export type SynthDisplayCallback = {
+
+export interface SynthDisplayCallback {
     /** The data to display. */
     displayData: Uint8Array;
 
     /** The type of display. */
     displayType: SynthDisplayType; // The type of display (assuming 'synthDisplayTypes' is defined elsewhere).
-};
-export type PitchWheelCallback = {
+}
+
+export interface PitchWheelCallback {
     /** The MIDI channel number. */
     channel: number;
 
@@ -81,15 +91,17 @@ export type PitchWheelCallback = {
 
     /** The least significant byte of the pitch-wheel value. */
     LSB: number;
-};
-export type ChannelPressureCallback = {
+}
+
+export interface ChannelPressureCallback {
     /** The MIDI channel number. */
     channel: number;
 
     /** The pressure value. */
     pressure: number;
-};
-export type PolyPressureCallback = {
+}
+
+export interface PolyPressureCallback {
     /** The MIDI channel number. */
     channel: number;
 
@@ -98,26 +110,28 @@ export type PolyPressureCallback = {
 
     /** The pressure value. */
     pressure: number;
-};
+}
+
 // The error message for soundfont errors.
 export type SoundfontErrorCallback = Error;
 
-export type MasterParameterChangeCallback<P extends keyof MasterParameterType> =
-    {
-        // The parameter that was changed.
-        parameter: P;
-        // The new value of this parameter.
-        value: MasterParameterType[P];
-    };
+export interface MasterParameterChangeCallback<
+    P extends keyof MasterParameterType
+> {
+    // The parameter that was changed.
+    parameter: P;
+    // The new value of this parameter.
+    value: MasterParameterType[P];
+}
 
-export type ChannelPropertyChangeCallback = {
+export interface ChannelPropertyChangeCallback {
     // The channel number of the new property.
     channel: number;
     // The updated property.
     property: ChannelProperty;
-};
+}
 
-export type ProcessorEventType = {
+export interface ProcessorEventType {
     // This event fires when a note is played.
     noteOn: NoteOnCallback;
     // This event fires when a note is released.
@@ -154,22 +168,25 @@ export type ProcessorEventType = {
     >;
     // This event fires when a channel property changes.
     channelPropertyChange: ChannelPropertyChangeCallback;
-};
-export type SynthMethodOptions = {
+}
+
+export interface SynthMethodOptions {
     // The audio context time when the event should execute, in seconds.
     time: number;
-};
+}
+
 /**
  * KeyNum: tuning.
  */
 export type MTSProgramTuning = MTSNoteTuning[];
-export type MTSNoteTuning = {
+
+export interface MTSNoteTuning {
     // The base MIDI note to use, -1 means no change.
     midiNote: number;
 
     // Additional tuning.
     centTuning: number | null;
-};
+}
 
 /**
  * Looping mode of the sample.
@@ -184,7 +201,7 @@ export type SampleLoopingMode = 0 | 1 | 2 | 3;
 export type VoiceList = Voice[];
 
 // Represents a channel property in real-time.
-export type ChannelProperty = {
+export interface ChannelProperty {
     // The channel's current voice amount.
     voicesAmount: number;
     // The channel's current pitch bend from -8192 do 8192.
@@ -201,9 +218,9 @@ export type ChannelProperty = {
     bank: number;
     // The MIDI program number of the current preset.
     program: number;
-};
+}
 
-export type SynthProcessorOptions = {
+export interface SynthProcessorOptions {
     // Indicates if the event system is enabled. This can be changed later.
     enableEventSystem: boolean;
     // The initial time of the synth, in seconds.
@@ -212,9 +229,10 @@ export type SynthProcessorOptions = {
     effectsEnabled: boolean;
     // The number of MIDI channels.
     midiChannels: number;
-};
+}
+
 // The master parameters of the synthesizer.
-export type MasterParameterType = {
+export interface MasterParameterType {
     // The master gain, from 0 to any number. 1 is 100% volume.
     masterGain: number;
     // The master pan, from -1 (left) to 1 (right). 0 is center.
@@ -239,4 +257,4 @@ export type MasterParameterType = {
     transposition: number;
     // Synthesizer's device ID for system exclusive messages. Set to -1 to accept all.
     deviceID: number;
-};
+}

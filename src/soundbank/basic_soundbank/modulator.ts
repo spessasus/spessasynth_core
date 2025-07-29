@@ -44,7 +44,7 @@ export class Modulator {
     /**
      * The current computed value of this modulator. Only used in the synthesis engine for local voices.
      */
-    public currentValue: number = 0;
+    public currentValue = 0;
 
     /**
      * The generator destination of this modulator.
@@ -148,8 +148,8 @@ export class Modulator {
         destination: GeneratorType,
         amount: number,
         transformType: ModulatorTransformType,
-        isEffectModulator: boolean = false,
-        isDefaultResonantModulator: boolean = false
+        isEffectModulator = false,
+        isDefaultResonantModulator = false
     ) {
         this.sourcePolarity = sourcePolarity;
         this.sourceDirection = sourceDirection;
@@ -209,7 +209,7 @@ export class Modulator {
     public static isIdentical(
         mod1: Modulator,
         mod2: Modulator,
-        checkAmount: boolean = false
+        checkAmount = false
     ): boolean {
         return (
             mod1.sourceIndex === mod2.sourceIndex &&

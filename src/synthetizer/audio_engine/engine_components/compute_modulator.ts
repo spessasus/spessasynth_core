@@ -131,8 +131,8 @@ export function computeModulator(
 export function computeModulators(
     this: MIDIChannel,
     voice: Voice,
-    sourceUsesCC: number = -1,
-    sourceIndex: number = 0
+    sourceUsesCC = -1,
+    sourceIndex = 0
 ) {
     const modulators = voice.modulators;
     let generators = voice.generators;

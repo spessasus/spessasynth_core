@@ -7,7 +7,7 @@ export class IndexedByteArray extends Uint8Array {
     /**
      * The current index of the array
      */
-    public currentIndex: number = 0;
+    public currentIndex = 0;
 
     /**
      * Returns a section of an array.

@@ -24,7 +24,7 @@ import { modulatorSources } from "../../../../soundbank/enums";
  */
 export function resetAllControllersInternal(
     this: SpessaSynthProcessor,
-    log: boolean = true
+    log = true
 ) {
     if (log) {
         SpessaSynthInfo("%cResetting all controllers!", consoleColors.info);

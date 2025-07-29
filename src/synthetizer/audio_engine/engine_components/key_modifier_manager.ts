@@ -6,7 +6,7 @@ export class KeyModifier {
     /**
      * The new override velocity. -1 means unchanged.
      */
-    public velocity: number = -1;
+    public velocity = -1;
     /**
      * The patch this key uses. -1 on either means default.
      */
@@ -24,12 +24,7 @@ export class KeyModifier {
      * @param program -1 means default.
      * @param gain linear gain, 1 is default.
      */
-    public constructor(
-        velocity: number = -1,
-        bank: number = -1,
-        program: number = -1,
-        gain: number = 1
-    ) {
+    public constructor(velocity = -1, bank = -1, program = -1, gain = 1) {
         this.velocity = velocity;
         this.patch = {
             bank: bank,
@@ -54,9 +49,7 @@ export class KeyModifierManager {
      * @param mapping The KeyModifier to apply for this key.
      */
     public addMapping(channel: number, midiNote: number, mapping: KeyModifier) {
-        if (this.keyMappings[channel] === undefined) {
-            this.keyMappings[channel] = [];
-        }
+        this.keyMappings[channel] ??= [];
         this.keyMappings[channel][midiNote] = mapping;
     }
 

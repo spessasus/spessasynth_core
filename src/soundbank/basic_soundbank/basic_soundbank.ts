@@ -60,7 +60,7 @@ export class BasicSoundBank {
     /**
      * If the sound bank has custom default modulators (DMOD).
      */
-    public customDefaultModulators: boolean = false;
+    public customDefaultModulators = false;
 
     /**
      * Creates a new basic soundfont template (or copies)
@@ -102,7 +102,7 @@ export class BasicSoundBank {
         }
     }
 
-    private _isXGBank: boolean = false;
+    private _isXGBank = false;
 
     /**
      * Checks for XG drum sets and considers if this soundfont is XG.
@@ -183,9 +183,9 @@ export class BasicSoundBank {
 
         font.addPresets(preset);
 
-        font.soundBankInfo["ifil"] = "2.1";
-        font.soundBankInfo["isng"] = "E-mu 10K2";
-        font.soundBankInfo["INAM"] = "Dummy";
+        font.soundBankInfo.ifil = "2.1";
+        font.soundBankInfo.isng = "E-mu 10K2";
+        font.soundBankInfo.INAM = "Dummy";
         font.flush();
         const f = await font.write();
         return f.buffer;
@@ -475,9 +475,9 @@ export class BasicSoundBank {
         }
         this.removeUnusedElements();
 
-        this.soundBankInfo["ICMT"] =
+        this.soundBankInfo.ICMT =
             `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.midiName}"\n\n` +
-            this.soundBankInfo["ICMT"];
+            this.soundBankInfo.ICMT;
 
         SpessaSynthInfo("%cSoundfont modified!", consoleColors.recognized);
         SpessaSynthGroupEnd();
@@ -527,7 +527,7 @@ export class BasicSoundBank {
     public getPresetNoFallback(
         bankNr: number,
         programNr: number,
-        allowXGDrums: boolean = false
+        allowXGDrums = false
     ): BasicPreset | undefined {
         const isDrum = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
         // check for exact match
@@ -573,7 +573,7 @@ export class BasicSoundBank {
     public getPreset(
         bankNr: number,
         programNr: number,
-        allowXGDrums: boolean = false
+        allowXGDrums = false
     ): BasicPreset {
         const isDrums = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
         // check for exact match
@@ -600,10 +600,8 @@ export class BasicSoundBank {
             preset = this.presets.find(
                 (p) => p.isDrumPreset(allowXGDrums) && p.program === programNr
             );
-            if (!preset) {
-                // only allow 128, otherwise it would default to XG SFX
-                preset = this.presets.find((p) => p.isDrumPreset(allowXGDrums));
-            }
+            // only allow 128, otherwise it would default to XG SFX
+            preset ??= this.presets.find((p) => p.isDrumPreset(allowXGDrums));
         } else {
             // non-drum preset: find any preset with the given program that is not a drum preset
             preset = this.presets.find(

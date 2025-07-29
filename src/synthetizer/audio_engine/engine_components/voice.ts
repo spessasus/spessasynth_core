@@ -49,7 +49,7 @@ export class Voice {
     /**
      * Linear gain of the voice. Used with Key Modifiers.
      */
-    public gain: number = 1;
+    public gain = 1;
 
     /**
      * The unmodulated (copied to) generators of the voice.
@@ -64,7 +64,7 @@ export class Voice {
     /**
      * Resonance offset, it is affected by the default resonant modulator
      */
-    public resonanceOffset: number = 0;
+    public resonanceOffset = 0;
 
     /**
      * The generators in real-time, affected by modulators.
@@ -75,32 +75,32 @@ export class Voice {
     /**
      * Indicates if the voice is finished.
      */
-    public finished: boolean = false;
+    public finished = false;
 
     /**
      * Indicates if the voice is in the release phase.
      */
-    public isInRelease: boolean = false;
+    public isInRelease = false;
 
     /**
      * Velocity of the note.
      */
-    public velocity: number = 0;
+    public velocity = 0;
 
     /**
      * MIDI note number.
      */
-    public midiNote: number = 0;
+    public midiNote = 0;
 
     /**
      * The pressure of the voice
      */
-    public pressure: number = 0;
+    public pressure = 0;
 
     /**
      * Target key for the note.
      */
-    public targetKey: number = 0;
+    public targetKey = 0;
 
     /**
      * Modulation envelope.
@@ -115,27 +115,27 @@ export class Voice {
     /**
      * Start time of the voice, absolute.
      */
-    public startTime: number = 0;
+    public startTime = 0;
 
     /**
      * Start time of the release phase, absolute.
      */
-    public releaseStartTime: number = Infinity;
+    public releaseStartTime = Infinity;
 
     /**
      * Current tuning in cents.
      */
-    public currentTuningCents: number = 0;
+    public currentTuningCents = 0;
 
     /**
      * Current calculated tuning. (as in ratio)
      */
-    public currentTuningCalculated: number = 1;
+    public currentTuningCalculated = 1;
 
     /**
      * From -500 to 500.
      */
-    public currentPan: number = 0;
+    public currentPan = 0;
 
     /**
      * If MIDI Tuning Standard is already applied (at note-on time),
@@ -148,22 +148,22 @@ export class Voice {
     /**
      * @type {number} Initial key to glide from, MIDI Note number. If -1, the portamento is OFF.
      */
-    public portamentoFromKey: number = -1;
+    public portamentoFromKey = -1;
 
     /**
      * Duration of the linear glide, in seconds.
      */
-    public portamentoDuration: number = 0;
+    public portamentoDuration = 0;
 
     /**
      * From -500 to 500, where zero means disabled (use the channel pan). Used for random pan.
      */
-    public overridePan: number = 0;
+    public overridePan = 0;
 
     /**
      * Exclusive class number for hi-hats etc.
      */
-    public exclusiveClass: number = 0;
+    public exclusiveClass = 0;
 
     /**
      * Creates a Voice.
