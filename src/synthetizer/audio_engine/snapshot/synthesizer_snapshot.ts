@@ -19,7 +19,7 @@ export class SynthesizerSnapshot {
 
     public masterParameters: MasterParameterType;
 
-    private constructor(
+    public constructor(
         channelSnapshots: ChannelSnapshot[],
         masterParameters: MasterParameterType,
         keyMappings: (KeyModifier | undefined)[][]
@@ -44,6 +44,19 @@ export class SynthesizerSnapshot {
             channelSnapshots,
             processor.getAllMasterParameters(),
             processor.keyModifierManager.getMappings()
+        );
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Creates a copy of existing snapshot.
+     * @param snapshot The snapshot to create a copy from.
+     */
+    public static copyFrom(snapshot: SynthesizerSnapshot): SynthesizerSnapshot {
+        return new SynthesizerSnapshot(
+            snapshot.channelSnapshots.map((s) => ChannelSnapshot.copyFrom(s)),
+            { ...snapshot.masterParameters },
+            [...snapshot.keyMappings]
         );
     }
 

@@ -137,6 +137,32 @@ export class ChannelSnapshot {
     }
 
     /**
+     * Creates a copy of existing snapshot.
+     * @param snapshot The snapshot to create a copy from.
+     */
+    public static copyFrom(snapshot: ChannelSnapshot) {
+        return new ChannelSnapshot(
+            snapshot.program,
+            snapshot.bank,
+            snapshot.isBankLSB,
+            snapshot.patchName,
+            snapshot.lockPreset,
+            snapshot.lockedSystem,
+            snapshot.midiControllers.slice(),
+            [...snapshot.lockedControllers],
+            snapshot.customControllers.slice(),
+            snapshot.lockVibrato,
+            { ...snapshot.channelVibrato },
+            snapshot.channelTransposeKeyShift,
+            snapshot.channelOctaveTuning,
+            snapshot.isMuted,
+            snapshot.velocityOverride,
+            snapshot.drumChannel,
+            snapshot.channelNumber
+        );
+    }
+
+    /**
      * Creates a snapshot of the channel's state.
      * @param spessaSynthProcessor The synthesizer processor containing the channel.
      * @param channelNumber The channel number to snapshot.

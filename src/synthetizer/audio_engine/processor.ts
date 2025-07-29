@@ -1,6 +1,9 @@
 import { SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { EMBEDDED_SOUND_BANK_ID } from "./engine_components/synth_constants";
+import {
+    DEFAULT_SYNTH_METHOD_OPTIONS,
+    EMBEDDED_SOUND_BANK_ID
+} from "./engine_components/synth_constants";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/dsp_chain/volume_envelope";
 import {
@@ -17,11 +20,19 @@ import { DEFAULT_SYNTH_OPTIONS } from "./engine_components/synth_processor_optio
 import { fillWithDefaults } from "../../utils/fill_with_defaults";
 import { isSystemXG } from "../../utils/xg_hacks";
 import { killVoicesIntenral } from "./engine_methods/stopping_notes/voice_killing";
-import { getVoicesForPresetInternal, getVoicesInternal } from "./engine_components/voice";
+import {
+    getVoicesForPresetInternal,
+    getVoicesInternal
+} from "./engine_components/voice";
 import { systemExclusiveInternal } from "./engine_methods/system_exclusive";
 import { resetAllControllersInternal } from "./engine_methods/controller_control/reset_controllers";
 import { SynthesizerSnapshot } from "./snapshot/synthesizer_snapshot";
-import type { ProcessorEventType, SynthMethodOptions, SynthProcessorOptions, VoiceList } from "../types";
+import type {
+    ProcessorEventType,
+    SynthMethodOptions,
+    SynthProcessorOptions,
+    VoiceList
+} from "../types";
 import { type MIDIMessageType, midiMessageTypes } from "../../midi/enums";
 import { ProtectedSynthValues } from "./engine_components/internal_synth_values";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager";
@@ -29,23 +40,6 @@ import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import { MIDIChannel } from "./engine_components/midi_channel";
 import { SoundBankLoader } from "../../soundbank/sound_bank_loader";
 import { customControllers } from "../enums";
-
-/**
- * main_processor.js
- * purpose: the core synthesis engine
- */
-
-const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
-    time: 0
-};
-
-// if the note is released faster than that, it forced to last that long
-// this is used mostly for drum channels, where a lot of midis like to send instant note off after a note on
-export const MIN_NOTE_LENGTH = 0.03;
-// this sounds way nicer for an instant hi-hat cutoff
-export const MIN_EXCLUSIVE_LENGTH = 0.07;
-
-export const SYNTHESIZER_GAIN = 1.0;
 
 // the core synthesis engine of spessasynth.
 export class SpessaSynthProcessor {
@@ -97,9 +91,7 @@ export class SpessaSynthProcessor {
      * @param eventData The event data.
      */
     public onEventCall?: <K extends keyof ProcessorEventType>(
-         
         eventType: K,
-         
         eventData: ProcessorEventType[K]
     ) => unknown;
 

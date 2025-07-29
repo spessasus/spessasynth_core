@@ -1,17 +1,10 @@
 import type {
-    MasterParameterType,
     MTSProgramTuning,
     ProcessorEventType,
     VoiceList
 } from "../../types";
-import { SYNTHESIZER_GAIN } from "../processor";
-import {
-    ALL_CHANNELS_OR_DIFFERENT_ACTION,
-    DEFAULT_SYNTH_MODE,
-    VOICE_CAP
-} from "./synth_constants";
-import { interpolationTypes } from "../../enums";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import { DEFAULT_MASTER_PARAMETERS } from "./master_parameters";
 
 // This class holds all the internal values of the synthesizer.
 // They are used by both SpessaSynthProcessor and its MIDIChannel instances.
@@ -24,19 +17,7 @@ export class ProtectedSynthValues {
     public readonly tunings: MTSProgramTuning[] = [];
 
     // The master parameters of the synthesizer.
-    public masterParameters: MasterParameterType = {
-        masterGain: SYNTHESIZER_GAIN,
-        masterPan: 0.0,
-        voiceCap: VOICE_CAP,
-        interpolationType: interpolationTypes.fourthOrder,
-        midiSystem: DEFAULT_SYNTH_MODE,
-        monophonicRetriggerMode: false,
-        reverbGain: 1,
-        chorusGain: 1,
-        blackMIDIMode: false,
-        transposition: 0,
-        deviceID: ALL_CHANNELS_OR_DIFFERENT_ACTION
-    };
+    public masterParameters = DEFAULT_MASTER_PARAMETERS;
     /**
      * The volume gain, set by MIDI sysEx
      */

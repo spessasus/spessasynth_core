@@ -2,11 +2,7 @@
  * voice.js
  * purpose: prepares Voices from sample and generator data
  */
-import {
-    MIN_EXCLUSIVE_LENGTH,
-    MIN_NOTE_LENGTH,
-    SpessaSynthProcessor
-} from "../processor";
+import { SpessaSynthProcessor } from "../processor";
 import { SpessaSynthWarn } from "../../../utils/loggin";
 import { LowpassFilter } from "./dsp_chain/lowpass_filter";
 import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
@@ -20,6 +16,7 @@ import {
 import type { SampleLoopingMode, VoiceList } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { AudioSample } from "./audio_sample";
+import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans

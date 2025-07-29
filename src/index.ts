@@ -49,6 +49,7 @@ import { readVariableLengthQuantity } from "./utils/byte_functions/variable_leng
 import { consoleColors } from "./utils/other";
 import { inflateSync } from "./externals/fflate/fflate_wrapper";
 import { BasicInstrumentZone } from "./soundbank/basic_soundbank/basic_instrument_zone";
+import { DEFAULT_MASTER_PARAMETERS } from "./synthetizer/audio_engine/engine_components/master_parameters";
 // you shouldn't use these...
 const SpessaSynthCoreUtils = {
     consoleColors,
@@ -79,6 +80,7 @@ export {
     ChannelSnapshot,
     KeyModifier,
     DEFAULT_PERCUSSION,
+    DEFAULT_MASTER_PARAMETERS,
     VOICE_CAP,
     ALL_CHANNELS_OR_DIFFERENT_ACTION,
     NON_CC_INDEX_OFFSET,

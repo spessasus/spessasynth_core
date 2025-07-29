@@ -1,3 +1,4 @@
+export * from "./audio_engine/engine_components/controller_tables";
 export const interpolationTypes = {
     linear: 0,
     nearestNeighbor: 1,
