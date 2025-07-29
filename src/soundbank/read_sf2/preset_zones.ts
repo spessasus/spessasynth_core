@@ -15,7 +15,7 @@ export class SoundFontPresetZone extends BasicPresetZone {
     /**
      * Creates a zone (preset)
      */
-    constructor(
+    public constructor(
         preset: BasicPreset,
         modulators: Modulator[],
         generators: Generator[],

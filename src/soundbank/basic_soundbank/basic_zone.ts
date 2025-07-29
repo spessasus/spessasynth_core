@@ -9,35 +9,35 @@ export class BasicZone {
      * The zone's velocity range
      * min -1 means that it is a default value
      */
-    velRange: KeyRange = { min: -1, max: 127 };
+    public velRange: KeyRange = { min: -1, max: 127 };
 
     /**
      * The zone's key range
      * min -1 means that it is a default value
      */
-    keyRange: KeyRange = { min: -1, max: 127 };
+    public keyRange: KeyRange = { min: -1, max: 127 };
 
     /**
      * The zone's generators
      */
-    generators: Generator[] = [];
+    public generators: Generator[] = [];
     /**
      * The zone's modulators
      */
-    modulators: Modulator[] = [];
+    public modulators: Modulator[] = [];
 
-    get hasKeyRange(): boolean {
+    public get hasKeyRange(): boolean {
         return this.keyRange.min !== -1;
     }
 
-    get hasVelRange(): boolean {
+    public get hasVelRange(): boolean {
         return this.velRange.min !== -1;
     }
 
     /**
      * Adds a new generator at the start. Useful for prepending the range generators.
      */
-    prependGenerator(generator: Generator) {
+    public prependGenerator(generator: Generator) {
         this.generators.unshift(generator);
     }
 
@@ -45,7 +45,7 @@ export class BasicZone {
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */
-    setGenerator(type: GeneratorType, value: number) {
+    public setGenerator(type: GeneratorType, value: number) {
         switch (type) {
             case generatorTypes.sampleID:
                 throw new Error("Use setSample()");
@@ -68,7 +68,7 @@ export class BasicZone {
      * Adds generators to the zone.
      * @param generators {}
      */
-    addGenerators(...generators: Generator[]) {
+    public addGenerators(...generators: Generator[]) {
         generators.forEach((g) => {
             switch (g.generatorType) {
                 default:
@@ -87,11 +87,11 @@ export class BasicZone {
         });
     }
 
-    addModulators(...modulators: Modulator[]) {
+    public addModulators(...modulators: Modulator[]) {
         this.modulators.push(...modulators);
     }
 
-    getGeneratorValue<K>(
+    public getGeneratorValue<K>(
         generatorType: GeneratorType,
         notFoundValue: number | K
     ): number | K {
@@ -101,7 +101,7 @@ export class BasicZone {
         );
     }
 
-    copyFrom(zone: BasicZone) {
+    public copyFrom(zone: BasicZone) {
         this.generators = [...zone.generators];
         this.modulators = zone.modulators.map((m) => Modulator.copy(m));
         this.velRange = { ...zone.velRange };

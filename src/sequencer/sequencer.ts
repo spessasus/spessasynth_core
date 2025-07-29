@@ -168,7 +168,7 @@ export class SpessaSynthSequencer {
      * Initializes a new Sequencer without any songs loaded.
      * @param spessasynthProcessor the synthesizer processor to use with this sequencer.
      */
-    constructor(spessasynthProcessor: SpessaSynthProcessor) {
+    public constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
         this.absoluteStartTime = this.synth.currentSynthTime;
     }
@@ -191,6 +191,7 @@ export class SpessaSynthSequencer {
      */
     public set songIndex(value: number) {
         this._songIndex = value;
+        this._songIndex %= this.songs.length;
         this.loadCurrentSong();
     }
 
@@ -367,37 +368,6 @@ export class SpessaSynthSequencer {
     }
 
     /**
-     * Switches to the next song in the song list.
-     * If the song list has only one song, it will reset the current time to 0.
-     */
-    public nextSong() {
-        if (this.songs.length === 1) {
-            this.currentTime = 0;
-            return;
-        }
-        this._songIndex++;
-        this._songIndex %= this.songs.length;
-        this.loadCurrentSong();
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Switches to the previous song in the song list.
-     * If the song list has only one song, it will reset the current time to 0.
-     */
-    public previousSong() {
-        if (this.songs.length === 1) {
-            this.currentTime = 0;
-            return;
-        }
-        this._songIndex--;
-        if (this._songIndex < 0) {
-            this._songIndex = this.songs.length - 1;
-        }
-        this.loadCurrentSong();
-    }
-
-    /**
      * Loads a new song list into the sequencer.
      * @param midiBuffers the list of songs to load.
      * @param autoPlay whether to automatically play the first song after loading.
@@ -418,6 +388,16 @@ export class SpessaSynthSequencer {
         this.shuffleSongIndexes();
         this?.onSongListChange?.(this.songs);
         this.loadCurrentSong(autoPlay);
+    }
+
+    protected nextSong() {
+        if (this.songs.length === 1) {
+            this.currentTime = 0;
+            return;
+        }
+        this._songIndex++;
+        this._songIndex %= this.songs.length;
+        this.loadCurrentSong();
     }
 
     /**
@@ -445,7 +425,9 @@ export class SpessaSynthSequencer {
 
     protected resetTimers() {
         this.playedTime = 0;
-        this.eventIndex = Array(this.midiData.tracks.length).fill(0);
+        this.eventIndex = Array(this.midiData.tracks.length).fill(
+            0
+        ) as number[];
     }
 
     /**
@@ -575,7 +557,7 @@ export class SpessaSynthSequencer {
         this.stop();
         this.playingNotes = [];
         this.pausedTime = undefined;
-        this?.onTimeChange?.(this.midiData.MIDIticksToSeconds(ticks));
+        this?.onTimeChange?.(this.midiData.midiTicksToSeconds(ticks));
         const isNotFinished = this.playTo(0, ticks);
         this.recalculateStartTime(this.playedTime);
         if (!isNotFinished) {

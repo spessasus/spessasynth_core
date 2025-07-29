@@ -10,11 +10,11 @@ export class Generator {
     /**
      * The generator's SF2 type.
      */
-    generatorType: GeneratorType = generatorTypes.INVALID;
+    public generatorType: GeneratorType = generatorTypes.INVALID;
     /**
      * The generator's 16-bit value.
      */
-    generatorValue: number = 0;
+    public generatorValue: number = 0;
 
     /**
      * Constructs a new generator
@@ -22,7 +22,7 @@ export class Generator {
      * @param value generator value
      * @param validate if the limits should be validated
      */
-    constructor(
+    public constructor(
         type: GeneratorType = generatorTypes.INVALID,
         value: number = 0,
         validate: boolean = true

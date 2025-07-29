@@ -18,11 +18,21 @@ All variables with `soundfont` in them have been renamed to use `soundBank` inst
 
 ### BasicMIDI
 
-`embeddedSoundFont` has been renamed to `embeddedSoundBank`
+A few methods and properties have been renamed for consistency.
+They behave in exactly the same way.
+
+
+ -`embeddedSoundFont` -> `embeddedSoundBank`
+ - `RMIDInfo` -> `rmidiInfo`
+ - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
 
 ### messageTypes
 
 Enum renamed to `midiMessageTypes`.
+
+### RMIDINFOChunks
+
+Enum renamed to `rmidInfoChunks`.
 
 ### MIDI (Class)
 

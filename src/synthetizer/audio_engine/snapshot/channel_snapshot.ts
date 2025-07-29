@@ -8,52 +8,52 @@ export class ChannelSnapshot {
     /**
      * The channel's MIDI program number.
      */
-    program: number;
+    public program: number;
 
     /**
      * The channel's bank number.
      */
-    bank: number;
+    public bank: number;
 
     /**
      * If the bank is LSB. For restoring.
      */
-    isBankLSB: boolean;
+    public isBankLSB: boolean;
 
     /**
      * The name of the patch currently loaded in the channel.
      */
-    patchName: string;
+    public patchName: string;
 
     /**
      * Indicates whether the channel's program change is disabled.
      */
-    lockPreset: boolean;
+    public lockPreset: boolean;
 
     /**
      * Indicates the MIDI system when the preset was locked
      */
-    lockedSystem: SynthSystem;
+    public lockedSystem: SynthSystem;
 
     /**
      * The array of all MIDI controllers (in 14-bit values) with the modulator sources at the end.
      */
-    midiControllers: Int16Array;
+    public midiControllers: Int16Array;
 
     /**
      * An array of booleans, indicating if the controller with a current index is locked.
      */
-    lockedControllers: boolean[];
+    public lockedControllers: boolean[];
 
     /**
      * Array of custom (not SF2) control values such as RPN pitch tuning, transpose, modulation depth, etc.
      */
-    customControllers: Float32Array;
+    public customControllers: Float32Array;
 
     /**
      * Indicates whether the channel vibrato is locked.
      */
-    lockVibrato: boolean;
+    public lockVibrato: boolean;
 
     /**
      * The channel's vibrato settings.
@@ -61,40 +61,40 @@ export class ChannelSnapshot {
      * @property delay Vibrato delay from note on in seconds.
      * @property rate Vibrato rate in Hz.
      */
-    channelVibrato: { depth: number; delay: number; rate: number };
+    public channelVibrato: { depth: number; delay: number; rate: number };
 
     /**
      * Key shift for the channel.
      */
-    channelTransposeKeyShift: number;
+    public channelTransposeKeyShift: number;
 
     /**
      * The channel's octave tuning in cents.
      */
-    channelOctaveTuning: Int8Array;
+    public channelOctaveTuning: Int8Array;
 
     /**
      * Indicates whether the channel is muted.
      */
-    isMuted: boolean;
+    public isMuted: boolean;
 
     /**
      * Overrides velocity if greater than 0, otherwise disabled.
      */
-    velocityOverride: number;
+    public velocityOverride: number;
 
     /**
      * Indicates whether the channel is a drum channel.
      */
-    drumChannel: boolean;
+    public drumChannel: boolean;
 
     /**
      * The channel number this snapshot represents.
      */
-    channelNumber: number;
+    public channelNumber: number;
 
     // Creates a new channel snapshot.
-    constructor(
+    public constructor(
         program: number,
         bank: number,
         isBankLSB: boolean,
@@ -141,7 +141,7 @@ export class ChannelSnapshot {
      * @param spessaSynthProcessor The synthesizer processor containing the channel.
      * @param channelNumber The channel number to snapshot.
      */
-    static create(
+    public static create(
         spessaSynthProcessor: SpessaSynthProcessor,
         channelNumber: number
     ) {
@@ -154,13 +154,13 @@ export class ChannelSnapshot {
             channelObject.preset?.name || "undefined",
             channelObject.lockPreset,
             channelObject.lockedSystem,
-            channelObject.midiControllers,
-            channelObject.lockedControllers,
-            channelObject.customControllers,
+            channelObject.midiControllers.slice(),
+            [...channelObject.lockedControllers],
+            channelObject.customControllers.slice(),
             channelObject.lockGSNRPNParams,
             { ...channelObject.channelVibrato },
             channelObject.channelTransposeKeyShift,
-            new Int8Array(channelObject.channelOctaveTuning),
+            channelObject.channelOctaveTuning.slice(),
             channelObject.isMuted,
             channelObject.velocityOverride,
             channelObject.drumChannel,
@@ -168,42 +168,20 @@ export class ChannelSnapshot {
         );
     }
 
-    static copyFrom(sourceSnapshot: ChannelSnapshot): ChannelSnapshot {
-        return new ChannelSnapshot(
-            sourceSnapshot.program,
-            sourceSnapshot.bank,
-            sourceSnapshot.isBankLSB,
-            sourceSnapshot.patchName,
-            sourceSnapshot.lockPreset,
-            sourceSnapshot.lockedSystem,
-            new Int16Array(sourceSnapshot.midiControllers),
-            [...sourceSnapshot.lockedControllers],
-            new Float32Array(sourceSnapshot.customControllers),
-            sourceSnapshot.lockVibrato,
-            { ...sourceSnapshot.channelVibrato },
-            sourceSnapshot.channelTransposeKeyShift,
-            new Int8Array(sourceSnapshot.channelOctaveTuning),
-            sourceSnapshot.isMuted,
-            sourceSnapshot.velocityOverride,
-            sourceSnapshot.drumChannel,
-            sourceSnapshot.channelNumber
-        );
-    }
-
     /**
      * Applies the snapshot to the specified channel.
      * @param spessaSynthProcessor The processor containing the channel.
      */
-    apply(spessaSynthProcessor: SpessaSynthProcessor) {
+    public apply(spessaSynthProcessor: SpessaSynthProcessor) {
         const channelObject =
             spessaSynthProcessor.midiChannels[this.channelNumber];
         channelObject.muteChannel(this.isMuted);
         channelObject.setDrums(this.drumChannel);
 
         // restore controllers
-        channelObject.midiControllers = this.midiControllers;
+        channelObject.midiControllers.set(this.midiControllers);
         channelObject.lockedControllers = this.lockedControllers;
-        channelObject.customControllers = this.customControllers;
+        channelObject.customControllers.set(this.customControllers);
         channelObject.updateChannelTuning();
 
         // restore vibrato and transpose

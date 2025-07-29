@@ -6,4 +6,4 @@ The code here is responsible for a single midi channel, synthesizing the sound t
 - `engine_components` contains the various digital signal processing functions such as the wavetable oscillator, low
   pass filter, etc.
 
-For those interested, `engine_methods/render_voice.js` file contains the actual DSP synthesis code.
+For those interested, `engine_components/dsp/render_voice.js` file contains the actual DSP synthesis code.

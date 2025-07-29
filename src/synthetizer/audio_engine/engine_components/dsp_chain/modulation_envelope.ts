@@ -1,8 +1,8 @@
-import { timecentsToSeconds } from "./unit_converter";
-import { getModulatorCurveValue } from "./modulator_curves";
-import type { Voice } from "./voice";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
-import { modulatorCurveTypes } from "../../../soundbank/enums";
+import { timecentsToSeconds } from "../unit_converter";
+import { getModulatorCurveValue } from "../modulator_curves";
+import type { Voice } from "../voice";
+import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import { modulatorCurveTypes } from "../../../../soundbank/enums";
 
 /**
  * modulation_envelope.js
@@ -26,66 +26,66 @@ export class ModulationEnvelope {
     /**
      * The attack duration, in seconds.
      */
-    attackDuration: number = 0;
+    protected attackDuration: number = 0;
     /**
      * The decay duration, in seconds.
      */
-    decayDuration: number = 0;
+    protected decayDuration: number = 0;
 
     /**
      * The hold duration, in seconds.
      */
-    holdDuration: number = 0;
+    protected holdDuration: number = 0;
 
     /**
      * Release duration, in seconds.
      */
-    releaseDuration: number = 0;
+    protected releaseDuration: number = 0;
 
     /**
      * The sustain level 0-1.
      */
-    sustainLevel: number = 0;
+    protected sustainLevel: number = 0;
 
     /**
      * Delay phase end time in seconds, absolute (audio context time).
      */
-    delayEnd: number = 0;
+    protected delayEnd: number = 0;
     /**
      * Attack phase end time in seconds, absolute (audio context time).
      */
-    attackEnd: number = 0;
+    protected attackEnd: number = 0;
     /**
      * Hold phase end time in seconds, absolute (audio context time).
      */
-    holdEnd: number = 0;
+    protected holdEnd: number = 0;
     /**
      * Decay phase end time in seconds, absolute (audio context time).
      */
-    decayEnd: number = 0;
+    protected decayEnd: number = 0;
 
     /**
      * The level of the envelope when the release phase starts.
      */
-    releaseStartLevel: number = 0;
+    protected releaseStartLevel: number = 0;
 
     /**
      * The current modulation envelope value.
      */
-    currentValue: number = 0;
+    protected currentValue: number = 0;
 
     /**
      * Starts the release phase in the envelope.
      * @param voice the voice this envelope belongs to.
      */
-    static startRelease(voice: Voice) {
+    public static startRelease(voice: Voice) {
         ModulationEnvelope.recalculate(voice);
     }
 
     /**
      * @param voice the voice to recalculate.
      */
-    static recalculate(voice: Voice) {
+    public static recalculate(voice: Voice) {
         const env = voice.modulationEnvelope;
 
         // in release? Might need to recalculate the value as it can be modulated
@@ -148,7 +148,7 @@ export class ModulationEnvelope {
      * @param ignoreRelease if true, it will compute the value as if the voice was not released.
      * @returns  mod env value, from 0 to 1.
      */
-    static getValue(
+    public static getValue(
         voice: Voice,
         currentTime: number,
         ignoreRelease: boolean = false

@@ -11,24 +11,26 @@ export type SoundBankManagerListEntry = {
     soundBank: BasicSoundBank;
     bankOffset: number;
 };
-export type SoundBankInfoFourCC =
-    | "INAM"
-    | "ICRD"
-    | "IENG"
-    | "IPRD"
-    | "ICOP"
-    | "ICMT"
-    | "ISBJ"
-    | "ifil"
-    | "isng"
-    | "irom"
-    | "iver"
-    | "ISFT"
-    | "DMOD"
-    | "LIST";
-export type SoundBankInfo = Partial<
-    Record<SoundBankInfoFourCC, string | IndexedByteArray>
->;
+
+export type SoundBankInfoData = {
+    INAM: string;
+    ICRD: string;
+    IENG: string;
+    IPRD: string;
+    ICOP: string;
+    ICMT: string;
+    ISBJ: string;
+    ifil: string;
+    isng: string;
+    iron: string;
+    iver: string;
+    ISFT: string;
+    DMOD: IndexedByteArray;
+    LIST: IndexedByteArray;
+};
+
+export type SoundBankInfoFourCC = keyof SoundBankInfoData;
+export type SoundBankInfo = Partial<SoundBankInfoData>;
 export type SampleAndGenerators = {
     instrumentGenerators: Generator[];
     presetGenerators: Generator[];

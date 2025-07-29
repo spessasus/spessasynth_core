@@ -14,20 +14,20 @@ import type { Generator } from "../basic_soundbank/generator";
  */
 
 export class SoundFontInstrument extends BasicInstrument {
-    zoneStartIndex: number;
+    public zoneStartIndex: number;
 
-    zonesCount: number = 0;
+    public zonesCount: number = 0;
 
     /**
      * Creates an instrument
      */
-    constructor(instrumentChunk: RIFFChunk) {
+    public constructor(instrumentChunk: RIFFChunk) {
         super();
         this.name = readBytesAsString(instrumentChunk.chunkData, 20);
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
 
-    createSoundFontZone(
+    public createSoundFontZone(
         modulators: Modulator[],
         generators: Generator[],
         samples: BasicSample[]

@@ -34,25 +34,25 @@ export class BasicMIDI extends MIDISequenceData {
     /**
      * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
      */
-    embeddedSoundBank: ArrayBuffer | undefined = undefined;
+    public embeddedSoundBank: ArrayBuffer | undefined = undefined;
 
     /**
      * The actual track data of the MIDI file, represented as an array of tracks.
      * Tracks are arrays of MIDIMessage objects.
      */
-    tracks: MIDIMessage[][] = [];
+    public tracks: MIDIMessage[][] = [];
 
     /**
      * If the MIDI file is a DLS RMIDI file.
      */
-    isDLSRMIDI: boolean = false;
+    public isDLSRMIDI: boolean = false;
 
     /**
      * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
      * @param arrayBuffer The ArrayBuffer containing the binary file data.
      * @param fileName The optional name of the file, will be used if the MIDI file does not have a name.
      */
-    static fromArrayBuffer(
+    public static fromArrayBuffer(
         arrayBuffer: ArrayBuffer,
         fileName: string = ""
     ): BasicMIDI {
@@ -66,7 +66,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @param mid the MIDI to copy
      * @returns the copied MIDI
      */
-    static copyFrom(mid: BasicMIDI): BasicMIDI {
+    public static copyFrom(mid: BasicMIDI): BasicMIDI {
         const m = new BasicMIDI();
         m._copyFromSequence(mid);
 
@@ -83,7 +83,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @param mid the MIDI to copy
      * @returns the copied MIDI
      */
-    static copyFromDeep(mid: BasicMIDI): BasicMIDI {
+    public static copyFromDeep(mid: BasicMIDI): BasicMIDI {
         const m = new BasicMIDI();
         m._copyFromSequence(mid);
         m.isDLSRMIDI = mid.isDLSRMIDI;
@@ -108,7 +108,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @param soundbank the sound bank.
      * @returns The output data is a key-value pair: "bank:program" -> Set<"key-velocity">
      */
-    getUsedProgramsAndKeys(
+    public getUsedProgramsAndKeys(
         soundbank: SoundBankManager | BasicSoundBank
     ): Record<string, Set<string>> {
         return getUsedProgramsAndKeys(this, soundbank);
@@ -118,7 +118,7 @@ export class BasicMIDI extends MIDISequenceData {
      * Updates all internal values of the MIDI.
      * @param sortEvents if the events should be sorted by ticks. Recommended to be true.
      */
-    flush(sortEvents = true) {
+    public flush(sortEvents = true) {
         if (sortEvents) {
             for (const t of this.tracks) {
                 // sort the track by ticks
@@ -134,7 +134,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @returns an array of 16 channels, each channel containing its notes,
      * with their key number, velocity, absolute start time and length in seconds.
      */
-    getNoteTimes(minDrumLength: number = 0): NoteTime[][] {
+    public getNoteTimes(minDrumLength: number = 0): NoteTime[][] {
         return getNoteTimesInternal(this, minDrumLength);
     }
 
@@ -142,7 +142,7 @@ export class BasicMIDI extends MIDISequenceData {
      * Exports the midi as a standard MIDI file.
      * @returns the binary file data.
      */
-    writeMIDI(): Uint8Array<ArrayBuffer> {
+    public writeMIDI(): Uint8Array<ArrayBuffer> {
         return writeMIDIInternal(this);
     }
 
@@ -156,7 +156,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @param correctBankOffset if the MIDI file should internally be corrected to work with the set bank offset.
      * @returns the binary file data.
      */
-    writeRMIDI(
+    public writeRMIDI(
         soundBankBinary: Uint8Array,
         soundBank: BasicSoundBank,
         bankOffset: number = 0,
@@ -183,7 +183,7 @@ export class BasicMIDI extends MIDISequenceData {
      * @param desiredChannelsToClear - The channels to remove from the sequence.
      * @param desiredChannelsToTranspose - The channels to transpose.
      */
-    modifyMIDI(
+    public modifyMIDI(
         desiredProgramChanges: DesiredProgramChange[] = [],
         desiredControllerChanges: DesiredControllerChange[] = [],
         desiredChannelsToClear: number[] = [],
@@ -202,7 +202,7 @@ export class BasicMIDI extends MIDISequenceData {
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
      * @param snapshot the snapshot to apply.
      */
-    applySnapshotToMIDI(snapshot: SynthesizerSnapshot) {
+    public applySnapshotToMIDI(snapshot: SynthesizerSnapshot) {
         applySnapshotInternal(this, snapshot);
     }
 
@@ -225,13 +225,13 @@ export class BasicMIDI extends MIDISequenceData {
          */
         const copyrightComponents: string[] = [];
         let copyrightDetected = false;
-        if (typeof this.RMIDInfo["ICOP"] !== "undefined") {
+        if (typeof this.rmidiInfo["ICOP"] !== "undefined") {
             // if RMIDI has copyright info, don't try to detect one.
             copyrightDetected = true;
         }
 
         let nameDetected = false;
-        if (typeof this.RMIDInfo["INAM"] !== "undefined") {
+        if (typeof this.rmidiInfo["INAM"] !== "undefined") {
             // same as with copyright
             nameDetected = true;
         }
@@ -685,7 +685,7 @@ export class BasicMIDI extends MIDISequenceData {
          * The total playback time, in seconds
          * @type {number}
          */
-        this.duration = this.MIDIticksToSeconds(this.lastVoiceEventTick);
+        this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
 
         SpessaSynthInfo("%cSuccess!", consoleColors.recognized);
         SpessaSynthGroupEnd();
@@ -704,7 +704,7 @@ export class MIDI extends BasicMIDI {
      * @param fileName {string} optional, replaces the decoded title if empty.
      * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
      */
-    constructor(arrayBuffer: ArrayBuffer, fileName: string = "") {
+    public constructor(arrayBuffer: ArrayBuffer, fileName: string = "") {
         super();
         loadMIDIFromArrayBufferInternal(this, arrayBuffer, fileName);
     }

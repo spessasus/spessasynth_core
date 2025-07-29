@@ -20,12 +20,12 @@ import type { SoundBankInfoFourCC } from "../types";
 
 class DownloadableSounds extends BasicSoundBank {
     // main array that we read from
-    dataArray: IndexedByteArray;
+    protected dataArray: IndexedByteArray;
 
     /**
      * Loads a new DLS (Downloadable sounds) soundfont
      */
-    constructor(buffer: ArrayBuffer) {
+    public constructor(buffer: ArrayBuffer) {
         super();
         this.dataArray = new IndexedByteArray(buffer);
         SpessaSynthGroup("%cParsing DLS file...", consoleColors.info);
@@ -84,7 +84,7 @@ class DownloadableSounds extends BasicSoundBank {
 
         for (const [info, value] of Object.entries(this.soundBankInfo)) {
             SpessaSynthInfo(
-                `%c"${info}": %c"${value}"`,
+                `%c"${info}": %c"${value.toString()}"`,
                 consoleColors.info,
                 consoleColors.recognized
             );
@@ -111,7 +111,7 @@ class DownloadableSounds extends BasicSoundBank {
             this.parsingError("No wvpl chunk!");
             return;
         }
-        readDLSSamples(this, waveListChunk);
+        readDLSSamples.call(this, waveListChunk);
 
         // read the instrument list
         const instrumentListChunk = findRIFFListType(chunks, "lins");
@@ -125,7 +125,7 @@ class DownloadableSounds extends BasicSoundBank {
             consoleColors.info
         );
         for (let i = 0; i < instrumentAmount; i++) {
-            readDLSInstrument(
+            readDLSInstrument.call(
                 this,
                 readRIFFChunk(instrumentListChunk.chunkData)
             );
@@ -150,12 +150,17 @@ class DownloadableSounds extends BasicSoundBank {
         SpessaSynthGroupEnd();
     }
 
+    public destroySoundBank() {
+        super.destroySoundBank();
+        this.dataArray = new IndexedByteArray(0);
+    }
+
     /**
      * @param chunk
      * @param expected
      * @throws error if the check doesn't pass
      */
-    verifyHeader(chunk: RIFFChunk, ...expected: string[]) {
+    protected verifyHeader(chunk: RIFFChunk, ...expected: string[]) {
         for (const expect of expected) {
             if (chunk.header.toLowerCase() === expect.toLowerCase()) {
                 return;
@@ -172,7 +177,7 @@ class DownloadableSounds extends BasicSoundBank {
      * @param expected {string}
      * @throws error if the check doesn't pass
      */
-    verifyText(text: string, expected: string) {
+    protected verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
             SpessaSynthGroupEnd();
             this.parsingError(
@@ -184,13 +189,8 @@ class DownloadableSounds extends BasicSoundBank {
     /**
      * @throws error if the check doesn't pass
      */
-    parsingError(error: string) {
+    protected parsingError(error: string) {
         throw new Error(`DLS parse error: ${error} The file may be corrupted.`);
-    }
-
-    destroySoundBank() {
-        super.destroySoundBank();
-        this.dataArray = new IndexedByteArray(0);
     }
 }
 

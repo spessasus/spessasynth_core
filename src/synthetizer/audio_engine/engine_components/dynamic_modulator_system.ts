@@ -11,19 +11,10 @@ export class DynamicModulatorSystem {
     /**
      * the current dynamic modulator list.
      */
-    modulatorList: { mod: Modulator; id: string }[] = [];
+    public modulatorList: { mod: Modulator; id: string }[] = [];
 
-    resetModulators() {
+    public resetModulators() {
         this.modulatorList = [];
-    }
-
-    _getModulatorId(
-        source: number,
-        destination: GeneratorType,
-        isBipolar: boolean,
-        isNegative: boolean
-    ) {
-        return `${source}-${destination}-${isBipolar}-${isNegative}`;
     }
 
     /**
@@ -34,21 +25,21 @@ export class DynamicModulatorSystem {
      * @param isBipolar If true, the modulation is bipolar (ranges from -1 to 1 instead of from 0 to 1).
      * @param isNegative If true, the modulation is negative (goes from 1 to 0 instead of from 0 to 1).
      */
-    setModulator(
+    public setModulator(
         source: ModulatorSourceEnum,
         destination: GeneratorType,
         amount: number,
         isBipolar: boolean = false,
         isNegative: boolean = false
     ) {
-        const id = this._getModulatorId(
+        const id = this.getModulatorID(
             source,
             destination,
             isBipolar,
             isNegative
         );
         if (amount === 0) {
-            this._deleteModulator(id);
+            this.deleteModulator(id);
         }
         const mod = this.modulatorList.find((m) => m.id === id);
         if (mod) {
@@ -59,7 +50,7 @@ export class DynamicModulatorSystem {
                 srcNum = (source - NON_CC_INDEX_OFFSET) as ModulatorSourceEnum;
                 isCC = false;
             } else {
-                srcNum = source as ModulatorSourceEnum;
+                srcNum = source;
                 isCC = true;
             }
             const modulator = new Modulator(
@@ -84,7 +75,16 @@ export class DynamicModulatorSystem {
         }
     }
 
-    private _deleteModulator(id: string) {
+    private getModulatorID(
+        source: number,
+        destination: GeneratorType,
+        isBipolar: boolean,
+        isNegative: boolean
+    ) {
+        return `${source}-${destination}-${isBipolar}-${isNegative}`;
+    }
+
+    private deleteModulator(id: string) {
         this.modulatorList = this.modulatorList.filter((m) => m.id !== id);
     }
 }

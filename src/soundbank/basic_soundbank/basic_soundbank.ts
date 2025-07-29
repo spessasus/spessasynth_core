@@ -3,22 +3,22 @@ import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
-    SpessaSynthWarn,
-} from '../../utils/loggin'
-import { consoleColors } from '../../utils/other'
-import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from './write_sf2/write'
-import { defaultModulators, Modulator } from './modulator'
-import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from './write_dls/write_dls'
-import { BasicSample, EmptySample } from './basic_sample'
-import { Generator } from './generator'
-import { BasicInstrument } from './basic_instrument'
-import { BasicPreset } from './basic_preset'
-import { isXGDrums } from '../../utils/xg_hacks'
-import { stbvorbis } from '../../externals/stbvorbis_sync/stbvorbis_wrapper'
-import type { BasicMIDI } from '../../midi/basic_midi'
+    SpessaSynthWarn
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
+import { defaultModulators, Modulator } from "./modulator";
+import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
+import { BasicSample, EmptySample } from "./basic_sample";
+import { Generator } from "./generator";
+import { BasicInstrument } from "./basic_instrument";
+import { BasicPreset } from "./basic_preset";
+import { isXGDrums } from "../../utils/xg_hacks";
+import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
+import type { BasicMIDI } from "../../midi/basic_midi";
 
-import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from '../types'
-import { generatorTypes } from './generator_types'
+import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from "../types";
+import { generatorTypes } from "./generator_types";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -27,45 +27,45 @@ export class BasicSoundBank {
     /**
      * Indicates if the SF3/SF2Pack decoder is ready.
      */
-    static isSF3DecoderReady: Promise<boolean> = stbvorbis.isInitialized;
+    public static isSF3DecoderReady: Promise<boolean> = stbvorbis.isInitialized;
 
     /**
      * Sound bank's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
      */
-    readonly soundBankInfo: SoundBankInfo = {};
+    public readonly soundBankInfo: SoundBankInfo = {};
 
     /**
      * The sound bank's presets.
      * @type {BasicPreset[]}
      */
-    presets: BasicPreset[] = [];
+    public presets: BasicPreset[] = [];
 
     /**
      * The sound bank's samples.
      */
-    samples: BasicSample[] = [];
+    public samples: BasicSample[] = [];
 
     /**
      * The sound bank's instruments.
      */
-    instruments: BasicInstrument[] = [];
+    public instruments: BasicInstrument[] = [];
 
     /**
      * Sound bank's default modulators.
      */
-    defaultModulators: Modulator[] = defaultModulators.map((m) =>
+    public defaultModulators: Modulator[] = defaultModulators.map((m) =>
         Modulator.copy(m)
     );
 
     /**
      * If the sound bank has custom default modulators (DMOD).
      */
-    customDefaultModulators: boolean = false;
+    public customDefaultModulators: boolean = false;
 
     /**
      * Creates a new basic soundfont template (or copies)
      */
-    constructor(
+    public constructor(
         data:
             | undefined
             | {
@@ -107,7 +107,7 @@ export class BasicSoundBank {
     /**
      * Checks for XG drum sets and considers if this soundfont is XG.
      */
-    get isXGBank() {
+    public get isXGBank() {
         return this._isXGBank;
     }
 
@@ -115,7 +115,9 @@ export class BasicSoundBank {
      * Merges soundfonts with the given order. Keep in mind that the info read is copied from the first one
      * @param soundBanks the soundfonts to merge, the first overwrites the last
      */
-    static mergeSoundBanks(...soundBanks: BasicSoundBank[]): BasicSoundBank {
+    public static mergeSoundBanks(
+        ...soundBanks: BasicSoundBank[]
+    ): BasicSoundBank {
         const mainSf = soundBanks.shift();
         if (!mainSf) {
             throw new Error("No sound banks provided!");
@@ -147,7 +149,7 @@ export class BasicSoundBank {
     /**
      * Creates a simple soundfont with one saw wave preset.
      */
-    static async getSampleSoundBankFile(): Promise<ArrayBuffer> {
+    public static async getSampleSoundBankFile(): Promise<ArrayBuffer> {
         const font = new BasicSoundBank();
         const sampleData = new Float32Array(128);
         for (let i = 0; i < 128; i++) {
@@ -194,7 +196,7 @@ export class BasicSoundBank {
      * @param {Partial<DLSWriteOptions>} options - options for writing the file.
      * @returns the binary file.
      */
-    async writeDLS(
+    public async writeDLS(
         options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
     ): Promise<Uint8Array<ArrayBuffer>> {
         return writeDLSInternal(this, options);
@@ -205,21 +207,21 @@ export class BasicSoundBank {
      * @param writeOptions the options for writing.
      * @returns the binary file data.
      */
-    async write(
+    public async write(
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
     ): Promise<Uint8Array<ArrayBuffer>> {
         return writeSF2Internal(this, writeOptions);
     }
 
-    addPresets(...presets: BasicPreset[]) {
+    public addPresets(...presets: BasicPreset[]) {
         this.presets.push(...presets);
     }
 
-    addInstruments(...instruments: BasicInstrument[]) {
+    public addInstruments(...instruments: BasicInstrument[]) {
         this.instruments.push(...instruments);
     }
 
-    addSamples(...samples: BasicSample[]) {
+    public addSamples(...samples: BasicSample[]) {
         this.samples.push(...samples);
     }
 
@@ -228,7 +230,7 @@ export class BasicSoundBank {
      * @param sample samples to copy
      * @returns copied sample, if a sample exists with that name, it is returned instead
      */
-    cloneSample(sample: BasicSample): BasicSample {
+    public cloneSample(sample: BasicSample): BasicSample {
         const duplicate = this.samples.find((s) => s.name === sample.name);
         if (duplicate) {
             return duplicate;
@@ -262,7 +264,7 @@ export class BasicSoundBank {
      * Clones an instruments into this bank
      * @returns the copied instrument, if an instrument exists with that name, it is returned instead
      */
-    cloneInstrument(instrument: BasicInstrument): BasicInstrument {
+    public cloneInstrument(instrument: BasicInstrument): BasicInstrument {
         const duplicate = this.instruments.find(
             (i) => i.name === instrument.name
         );
@@ -287,7 +289,7 @@ export class BasicSoundBank {
      * Clones presets into this sound bank
      * @returns the copied preset, if a preset exists with that name, it is returned instead
      */
-    clonePreset(preset: BasicPreset): BasicPreset {
+    public clonePreset(preset: BasicPreset): BasicPreset {
         const duplicate = this.presets.find((p) => p.name === preset.name);
         if (duplicate) {
             return duplicate;
@@ -311,7 +313,7 @@ export class BasicSoundBank {
         return newPreset;
     }
 
-    flush() {
+    public flush() {
         this.presets.sort((a, b) => {
             if (a.bank !== b.bank) {
                 return a.bank - b.bank;
@@ -325,7 +327,7 @@ export class BasicSoundBank {
      * Trims a sound bank to only contain samples in a given MIDI file
      * @param mid {BasicMIDI} - the MIDI file
      */
-    trimSoundBank(mid: BasicMIDI) {
+    public trimSoundBank(mid: BasicMIDI) {
         const trimInstrumentZones = (
             instrument: BasicInstrument,
             combos: { key: number; velocity: number }[]
@@ -482,7 +484,7 @@ export class BasicSoundBank {
         SpessaSynthGroupEnd();
     }
 
-    removeUnusedElements() {
+    public removeUnusedElements() {
         this.instruments = this.instruments.filter((i) => {
             i.deleteUnusedZones();
             const deletable = i.useCount < 1;
@@ -500,17 +502,17 @@ export class BasicSoundBank {
         });
     }
 
-    deleteInstrument(instrument: BasicInstrument) {
+    public deleteInstrument(instrument: BasicInstrument) {
         instrument.delete();
         this.instruments.splice(this.instruments.indexOf(instrument), 1);
     }
 
-    deletePreset(preset: BasicPreset) {
+    public deletePreset(preset: BasicPreset) {
         preset.delete();
         this.presets.splice(this.presets.indexOf(preset), 1);
     }
 
-    deleteSample(sample: BasicSample) {
+    public deleteSample(sample: BasicSample) {
         sample.unlinkSample();
         this.samples.splice(this.samples.indexOf(sample), 1);
     }
@@ -522,7 +524,7 @@ export class BasicSoundBank {
      * @param allowXGDrums if true, allows XG drum banks (120, 126 and 127) as drum preset
      * @returns {BasicPreset|undefined}
      */
-    getPresetNoFallback(
+    public getPresetNoFallback(
         bankNr: number,
         programNr: number,
         allowXGDrums: boolean = false
@@ -568,7 +570,7 @@ export class BasicSoundBank {
      * @param allowXGDrums if true, allows XG drum banks (120, 126 and 127) as drum preset
      * @returns {BasicPreset}
      */
-    getPreset(
+    public getPreset(
         bankNr: number,
         programNr: number,
         allowXGDrums: boolean = false
@@ -631,7 +633,7 @@ export class BasicSoundBank {
     /**
      * gets preset by name
      */
-    getPresetByName(presetName: string): BasicPreset {
+    public getPresetByName(presetName: string): BasicPreset {
         let preset = this.presets.find((p) => p.name === presetName);
         if (!preset) {
             SpessaSynthWarn(
@@ -643,7 +645,7 @@ export class BasicSoundBank {
         return preset;
     }
 
-    destroySoundBank() {
+    public destroySoundBank() {
         this.presets.length = 0;
         this.instruments.length = 0;
         this.samples.length = 0;

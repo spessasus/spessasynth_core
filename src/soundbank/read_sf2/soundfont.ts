@@ -29,7 +29,10 @@ export class SoundFont2 extends BasicSoundBank {
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
-    constructor(arrayBuffer: ArrayBuffer, warnDeprecated: boolean = true) {
+    public constructor(
+        arrayBuffer: ArrayBuffer,
+        warnDeprecated: boolean = true
+    ) {
         super();
         if (warnDeprecated) {
             console.warn(
@@ -184,7 +187,9 @@ export class SoundFont2 extends BasicSoundBank {
                 ).data[0];
             } catch (e) {
                 SpessaSynthGroupEnd();
-                throw new Error(`SF2Pack Ogg Vorbis decode error: ${e}`);
+                throw new Error(
+                    `SF2Pack Ogg Vorbis decode error: ${e as Error}`
+                );
             }
             SpessaSynthInfo(
                 `%cDecoded the smpl chunk! Length: %c${sampleData.length}`,
@@ -379,7 +384,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
         this.flush();
         SpessaSynthInfo(
-            `%cParsing finished! %c"${this.soundBankInfo["INAM"]}"%c has %c${this.presets.length} %cpresets,
+            `%cParsing finished! %c"${this.soundBankInfo["INAM"] as string}"%c has %c${this.presets.length}%c presets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             consoleColors.info,
             consoleColors.recognized,
@@ -394,7 +399,7 @@ export class SoundFont2 extends BasicSoundBank {
         SpessaSynthGroupEnd();
     }
 
-    verifyHeader(chunk: RIFFChunk, expected: string) {
+    protected verifyHeader(chunk: RIFFChunk, expected: string) {
         if (chunk.header.toLowerCase() !== expected.toLowerCase()) {
             SpessaSynthGroupEnd();
             this.parsingError(
@@ -403,7 +408,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
     }
 
-    verifyText(text: string, expected: string) {
+    protected verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
             SpessaSynthGroupEnd();
             this.parsingError(

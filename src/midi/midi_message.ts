@@ -9,17 +9,17 @@ export class MIDIMessage {
     /**
      * Absolute number of MIDI ticks from the start of the track.
      */
-    ticks: number;
+    public ticks: number;
 
     /**
      * The MIDI message status byte. Note that for meta events, it is the second byte. (not 0xFF)
      */
-    messageStatusByte: MIDIMessageType;
+    public messageStatusByte: MIDIMessageType;
 
     /**
      * Message's binary data
      */
-    messageData: IndexedByteArray;
+    public messageData: IndexedByteArray;
 
     /**
      * Creates a new MIDI message
@@ -27,7 +27,11 @@ export class MIDIMessage {
      * @param byte the message status byte
      * @param data the message's binary data
      */
-    constructor(ticks: number, byte: MIDIMessageType, data: IndexedByteArray) {
+    public constructor(
+        ticks: number,
+        byte: MIDIMessageType,
+        data: IndexedByteArray
+    ) {
         this.ticks = ticks;
         this.messageStatusByte = byte;
         this.messageData = data;

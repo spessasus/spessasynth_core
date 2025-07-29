@@ -11,8 +11,8 @@ import { IndexedByteArray } from "../indexed_array";
 export function readStringOffset(
     dataArray: number[] | ArrayLike<number>,
     bytes: number,
-    offset: number = 0,
-    trimEnd: boolean = true
+    offset = 0,
+    trimEnd = true
 ) {
     let finished = false;
     let string = "";
@@ -48,7 +48,7 @@ export function readStringOffset(
 export function readBytesAsString(
     dataArray: IndexedByteArray,
     bytes: number,
-    trimEnd: boolean = true
+    trimEnd = true
 ): string {
     let finished = false;
     let string = "";
@@ -83,8 +83,8 @@ export function readBytesAsString(
  */
 export function getStringBytes(
     string: string,
-    addZero: boolean = false,
-    ensureEven: boolean = false
+    addZero = false,
+    ensureEven = false
 ): IndexedByteArray {
     let len = string.length;
     if (addZero) {
@@ -108,7 +108,7 @@ export function getStringBytes(
 export function writeStringAsBytes(
     outArray: IndexedByteArray,
     string: string,
-    padLength: number = 0
+    padLength = 0
 ): IndexedByteArray {
     if (padLength > 0) {
         if (string.length > padLength) {

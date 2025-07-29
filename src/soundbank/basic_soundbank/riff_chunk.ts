@@ -11,22 +11,22 @@ export class RIFFChunk {
     /**
      * The chunks FourCC code
      */
-    readonly header: string;
+    public readonly header: string;
 
     /**
      * Chunk's size, in bytes
      */
-    readonly size: number;
+    public readonly size: number;
 
     /**
      * Chunk's binary data
      */
-    readonly chunkData: IndexedByteArray;
+    public readonly chunkData: IndexedByteArray;
 
     /**
      * Creates a new RIFF chunk
      */
-    constructor(header: string, size: number, data: IndexedByteArray) {
+    public constructor(header: string, size: number, data: IndexedByteArray) {
         this.header = header;
         this.size = size;
         this.chunkData = data;

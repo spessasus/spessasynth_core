@@ -12,47 +12,47 @@ export class BasicSample {
     /**
      * The sample's name.
      */
-    name: string;
+    public name: string;
 
     /**
      * Sample rate in Hz.
      */
-    sampleRate: number;
+    public sampleRate: number;
 
     /**
      * Original pitch of the sample as a MIDI note number.
      */
-    originalKey: number;
+    public originalKey: number;
 
     /**
      * Pitch correction, in cents. Can be negative.
      */
-    pitchCorrection: number;
+    public pitchCorrection: number;
 
     /**
      * Linked sample, unused if mono.
      */
-    linkedSample: BasicSample | undefined;
+    public linkedSample: BasicSample | undefined;
 
     /**
      * The type of the sample.
      */
-    sampleType: SampleType;
+    public sampleType: SampleType;
 
     /**
      * Relative to the start of the sample in sample points.
      */
-    loopStart: number;
+    public loopStart: number;
 
     /**
      * Relative to the start of the sample in sample points.
      */
-    loopEnd: number;
+    public loopEnd: number;
     /**
      * Sample's linked instruments (the instruments that use it)
      * note that duplicates are allowed since one instrument can use the same sample multiple times.
      */
-    linkedTo: BasicInstrument[] = [];
+    public linkedTo: BasicInstrument[] = [];
     /**
      * Indicates if the data was overridden, so it cannot be copied back unchanged.
      */
@@ -76,7 +76,7 @@ export class BasicSample {
      * @param loopStart The sample's loop start relative to the sample start in sample points
      * @param loopEnd The sample's loop end relative to the sample start in sample points
      */
-    constructor(
+    public constructor(
         sampleName: string,
         sampleRate: number,
         originalKey: number,
@@ -97,14 +97,14 @@ export class BasicSample {
     /**
      * Indicates if the sample is compressed using vorbis SF3
      */
-    get isCompressed(): boolean {
+    public get isCompressed(): boolean {
         return this.compressedData !== undefined;
     }
 
     /**
      * If the sample is linked to another sample
      */
-    get isLinked(): boolean {
+    public get isLinked(): boolean {
         return (
             this.sampleType === sampleTypes.rightSample ||
             this.sampleType === sampleTypes.leftSample ||
@@ -115,7 +115,7 @@ export class BasicSample {
     /**
      * The sample's use count
      */
-    get useCount() {
+    public get useCount() {
         return this.linkedTo.length;
     }
 
@@ -124,7 +124,7 @@ export class BasicSample {
      * @param allowVorbis if vorbis file data is allowed
      * @return either s16 or vorbis data
      */
-    getRawData(allowVorbis: boolean): Uint8Array {
+    public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.compressedData && allowVorbis && !this.dataOverridden) {
             return this.compressedData;
         }
@@ -132,7 +132,7 @@ export class BasicSample {
     }
 
     // resamples the audio data to a given sample rate
-    resampleData(newSampleRate: number) {
+    public resampleData(newSampleRate: number) {
         let audioData = this.getAudioData();
         const ratio = newSampleRate / this.sampleRate;
         const resampled = new Float32Array(
@@ -153,7 +153,7 @@ export class BasicSample {
      * Compresses the audio data
      * @param encodeVorbis the compression function to use when compressing
      */
-    async compressSample(encodeVorbis: SampleEncodingFunction) {
+    public async compressSample(encodeVorbis: SampleEncodingFunction) {
         // no need to compress
         if (this.isCompressed) {
             return;
@@ -181,7 +181,7 @@ export class BasicSample {
      * Sets the sample type and unlinks if needed
      * @param type the type to use
      */
-    setSampleType(type: SampleType) {
+    public setSampleType(type: SampleType) {
         this.sampleType = type;
         if (!this.isLinked) {
             // unlink the other sample
@@ -201,7 +201,7 @@ export class BasicSample {
     /**
      * Unlinks a sample from its link
      */
-    unlinkSample() {
+    public unlinkSample() {
         this.setSampleType(sampleTypes.monoSample);
     }
 
@@ -211,7 +211,7 @@ export class BasicSample {
      * @param sample the sample to link to
      * @param type either left, right or linked
      */
-    setLinkedSample(sample: BasicSample, type: SampleType) {
+    public setLinkedSample(sample: BasicSample, type: SampleType) {
         // sanity check
         if (sample.linkedSample) {
             throw new Error(
@@ -238,7 +238,7 @@ export class BasicSample {
      * Links the sample to a given instrument
      * @param instrument the instrument to link to
      */
-    linkTo(instrument: BasicInstrument) {
+    public linkTo(instrument: BasicInstrument) {
         this.linkedTo.push(instrument);
     }
 
@@ -246,7 +246,7 @@ export class BasicSample {
      * Unlinks the sample from a given instrument
      * @param instrument the instrument to unlink from
      */
-    unlinkFrom(instrument: BasicInstrument) {
+    public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);
         if (index < 0) {
             SpessaSynthWarn(
@@ -263,7 +263,7 @@ export class BasicSample {
      * If neither are set then it will throw an error!
      * @returns the audio data
      */
-    getAudioData(): Float32Array {
+    public getAudioData(): Float32Array {
         if (this.audioData) {
             return this.audioData;
         }
@@ -282,7 +282,7 @@ export class BasicSample {
      * @param audioData The new audio data as Float32.
      * @param sampleRate The new sample rate, in Hertz.
      */
-    setAudioData(audioData: Float32Array, sampleRate: number) {
+    public setAudioData(audioData: Float32Array, sampleRate: number) {
         this.audioData = audioData;
         this.sampleRate = sampleRate;
         this.dataOverridden = true;
@@ -293,7 +293,7 @@ export class BasicSample {
      * Replaces the audio with a compressed data sample and flags the sample as compressed
      * @param data the new compressed data
      */
-    setCompressedData(data: Uint8Array) {
+    public setCompressedData(data: Uint8Array) {
         this.audioData = undefined;
         this.compressedData = data;
         this.dataOverridden = false;
@@ -351,7 +351,9 @@ export class BasicSample {
             return decoded;
         } catch (e) {
             // do not error out, fill with silence
-            SpessaSynthWarn(`Error decoding sample ${this.name}: ${e}`);
+            SpessaSynthWarn(
+                `Error decoding sample ${this.name}: ${e as Error}`
+            );
             return new Float32Array(this.loopEnd + 1);
         }
     }
@@ -361,7 +363,7 @@ export class EmptySample extends BasicSample {
     /**
      * A simplified class for creating samples.
      */
-    constructor() {
+    public constructor() {
         super("", 44100, 60, 0, sampleTypes.monoSample, 0, 0);
     }
 }

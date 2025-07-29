@@ -1,6 +1,6 @@
 import { getModulatorCurveValue, MOD_PRECOMPUTED_LENGTH } from "./modulator_curves";
-import { VolumeEnvelope } from "./volume_envelope";
-import { ModulationEnvelope } from "./modulation_envelope";
+import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
+import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { generatorTypes, type ModulatorCurveType, modulatorSources } from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";

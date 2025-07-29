@@ -18,18 +18,18 @@ export class SoundFontSample extends BasicSample {
     /**
      * Linked sample index for retrieving linked samples in sf2
      */
-    linkedSampleIndex: number;
+    public linkedSampleIndex: number;
 
     /**
      * The sliced sample from the smpl chunk
      */
-    s16leData: Uint8Array | undefined = undefined;
+    protected s16leData: Uint8Array | undefined = undefined;
 
-    startByteOffset: number;
+    protected startByteOffset: number;
 
-    endByteOffset: number;
+    protected endByteOffset: number;
 
-    sampleID: number;
+    protected sampleID: number;
 
     /**
      * Creates a sample
@@ -47,7 +47,7 @@ export class SoundFontSample extends BasicSample {
      * @param sampleIndex initial sample index when loading the sfont
      * Used for SF2Pack support
      */
-    constructor(
+    public constructor(
         sampleName: string,
         sampleStartIndex: number,
         sampleEndIndex: number,
@@ -123,7 +123,7 @@ export class SoundFontSample extends BasicSample {
         this.linkedSampleIndex = linkedSampleIndex;
     }
 
-    getLinkedSample(samplesArray: BasicSample[]) {
+    public getLinkedSample(samplesArray: BasicSample[]) {
         if (this.linkedSample || !this.isLinked) {
             return;
         }
@@ -153,7 +153,7 @@ export class SoundFontSample extends BasicSample {
      * Loads the audio data and stores it for reuse
      * @returns  The audio data
      */
-    getAudioData(): Float32Array {
+    public getAudioData(): Float32Array {
         if (this.audioData) {
             return this.audioData;
         }
@@ -190,7 +190,7 @@ export class SoundFontSample extends BasicSample {
         return audioData;
     }
 
-    getRawData(allowVorbis: boolean): Uint8Array {
+    public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.dataOverridden || this.compressedData) {
             // return vorbis or encode manually
             return super.getRawData(allowVorbis);

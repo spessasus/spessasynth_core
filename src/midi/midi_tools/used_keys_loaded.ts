@@ -104,7 +104,7 @@ export function getUsedProgramsAndKeys(
     /**
      * indexes for tracks
      */
-    const eventIndexes: number[] = Array(mid.tracks.length).fill(0);
+    const eventIndexes: number[] = Array(mid.tracks.length).fill(0) as number[];
     let remainingTracks = mid.tracks.length;
 
     function findFirstEventIndex() {

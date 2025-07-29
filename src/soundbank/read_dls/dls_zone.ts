@@ -5,7 +5,7 @@ import type { BasicSample } from "../basic_soundbank/basic_sample";
 import { generatorTypes } from "../basic_soundbank/generator_types";
 
 export class DLSZone extends BasicInstrumentZone {
-    constructor(inst: BasicInstrument, sample: BasicSample) {
+    public constructor(inst: BasicInstrument, sample: BasicSample) {
         super(inst, sample);
     }
 
@@ -17,7 +17,7 @@ export class DLSZone extends BasicInstrumentZone {
      * @param sample
      * @param samplePitchCorrection cents
      */
-    setWavesample(
+    public setWaveSample(
         attenuationCb: number,
         loopingMode: number,
         loop: { start: number; end: number },

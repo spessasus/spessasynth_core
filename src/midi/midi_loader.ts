@@ -7,7 +7,7 @@ import { readVariableLengthQuantity } from "../utils/byte_functions/variable_len
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
 import { readBytesAsString } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, type RMIDINFOChunk, RMIDINFOChunks } from "./enums";
+import { type MIDIMessageType, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
@@ -126,7 +126,7 @@ export function loadMIDIFromArrayBufferInternal(
                         "%cFound RMIDI INFO chunk!",
                         consoleColors.recognized
                     );
-                    outputMIDI.RMIDInfo = {};
+                    outputMIDI.rmidiInfo = {};
                     while (
                         currentChunk.chunkData.currentIndex <= currentChunk.size
                     ) {
@@ -134,20 +134,21 @@ export function loadMIDIFromArrayBufferInternal(
                             currentChunk.chunkData,
                             true
                         );
-                        outputMIDI.RMIDInfo[infoChunk.header as RMIDINFOChunk] =
-                            infoChunk.chunkData;
+                        outputMIDI.rmidiInfo[
+                            infoChunk.header as RMIDINFOChunk
+                        ] = infoChunk.chunkData;
                     }
-                    if (outputMIDI.RMIDInfo["ICOP"]) {
+                    if (outputMIDI.rmidiInfo["ICOP"]) {
                         // special case, overwrites the copyright components array
                         outputMIDI.copyright = readBytesAsString(
-                            outputMIDI.RMIDInfo["ICOP"],
-                            outputMIDI.RMIDInfo["ICOP"].length,
+                            outputMIDI.rmidiInfo["ICOP"],
+                            outputMIDI.rmidiInfo["ICOP"].length,
                             false
                         ).replaceAll("\n", " ");
                     }
-                    if (outputMIDI.RMIDInfo["INAM"]) {
-                        outputMIDI.rawMidiName = outputMIDI.RMIDInfo[
-                            RMIDINFOChunks.name
+                    if (outputMIDI.rmidiInfo["INAM"]) {
+                        outputMIDI.rawMidiName = outputMIDI.rmidiInfo[
+                            rmidInfoChunks.name
                         ] as IndexedByteArray;
                         outputMIDI.midiName = readBytesAsString(
                             outputMIDI.rawMidiName as IndexedByteArray,
@@ -157,23 +158,23 @@ export function loadMIDIFromArrayBufferInternal(
                     }
                     // these can be used interchangeably
                     if (
-                        outputMIDI.RMIDInfo["IALB"] &&
-                        !outputMIDI.RMIDInfo["IPRD"]
+                        outputMIDI.rmidiInfo["IALB"] &&
+                        !outputMIDI.rmidiInfo["IPRD"]
                     ) {
-                        outputMIDI.RMIDInfo["IPRD"] =
-                            outputMIDI.RMIDInfo["IALB"];
+                        outputMIDI.rmidiInfo["IPRD"] =
+                            outputMIDI.rmidiInfo["IALB"];
                     }
                     if (
-                        outputMIDI.RMIDInfo["IPRD"] &&
-                        !outputMIDI.RMIDInfo["IALB"]
+                        outputMIDI.rmidiInfo["IPRD"] &&
+                        !outputMIDI.rmidiInfo["IALB"]
                     ) {
-                        outputMIDI.RMIDInfo["IALB"] =
-                            outputMIDI.RMIDInfo["IPRD"];
+                        outputMIDI.rmidiInfo["IALB"] =
+                            outputMIDI.rmidiInfo["IPRD"];
                     }
                     outputMIDI.bankOffset = 1; // defaults to 1
-                    if (outputMIDI.RMIDInfo[RMIDINFOChunks.bankOffset]) {
+                    if (outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset]) {
                         outputMIDI.bankOffset = readLittleEndian(
-                            outputMIDI.RMIDInfo[RMIDINFOChunks.bankOffset] ||
+                            outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset] ||
                                 new IndexedByteArray(0),
                             2
                         );

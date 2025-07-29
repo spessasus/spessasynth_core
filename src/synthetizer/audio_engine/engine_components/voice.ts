@@ -8,9 +8,9 @@ import {
     SpessaSynthProcessor
 } from "../processor";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import { LowpassFilter } from "./lowpass_filter";
-import { VolumeEnvelope } from "./volume_envelope";
-import { ModulationEnvelope } from "./modulation_envelope";
+import { LowpassFilter } from "./dsp_chain/lowpass_filter";
+import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
+import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { addAndClampGenerator } from "../../../soundbank/basic_soundbank/generator";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import {
@@ -19,83 +19,10 @@ import {
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode, VoiceList } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import { AudioSample } from "./audio_sample";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans
-
-class AudioSample {
-    /**
-     * the sample's audio data
-     */
-    sampleData: Float32Array;
-    /**
-     * Current playback step (rate)
-     */
-    playbackStep: number = 0;
-    /**
-     * Current position in the sample
-     */
-    cursor: number = 0;
-    /**
-     * MIDI root key of the sample
-     */
-    rootKey: number = 0;
-    /**
-     * Start position of the loop
-     */
-    loopStart: number = 0;
-    /**
-     * End position of the loop
-     */
-    loopEnd: number = 0;
-    /**
-     * End position of the sample
-     */
-    end: number = 0;
-    /**
-     * Looping mode of the sample:
-     * 0 - no loop
-     * 1 - loop
-     * 2 - UNOFFICIAL: polyphone 2.4 added start on release
-     * 3 - loop then play when released
-     */
-    loopingMode: SampleLoopingMode = 0;
-    /**
-     * Indicates if the sample is currently looping
-     */
-    isLooping: boolean = false;
-
-    /**
-     * @param data
-     * @param playbackStep the playback step, a single increment
-     * @param cursorStart the sample id which starts the playback
-     * @param rootKey MIDI root key
-     * @param loopStart loop start index
-     * @param loopEnd loop end index
-     * @param endIndex sample end index (for end offset)
-     * @param loopingMode sample looping mode
-     */
-    constructor(
-        data: Float32Array,
-        playbackStep: number,
-        cursorStart: number,
-        rootKey: number,
-        loopStart: number,
-        loopEnd: number,
-        endIndex: number,
-        loopingMode: SampleLoopingMode
-    ) {
-        this.sampleData = data;
-        this.playbackStep = playbackStep;
-        this.cursor = cursorStart;
-        this.rootKey = rootKey;
-        this.loopStart = loopStart;
-        this.loopEnd = loopEnd;
-        this.end = endIndex;
-        this.loopingMode = loopingMode;
-        this.isLooping = this.loopingMode === 1 || this.loopingMode === 3;
-    }
-}
 
 /**
  * Voice represents a single instance of the
@@ -112,136 +39,136 @@ export class Voice {
     /**
      * The sample of the voice.
      */
-    sample: AudioSample;
+    public sample: AudioSample;
 
     /**
      * Lowpass filter applied to the voice.
      */
-    filter: LowpassFilter;
+    public filter: LowpassFilter;
 
     /**
      * Linear gain of the voice. Used with Key Modifiers.
      */
-    gain: number = 1;
+    public gain: number = 1;
 
     /**
      * The unmodulated (copied to) generators of the voice.
      */
-    generators: Int16Array;
+    public generators: Int16Array;
 
     /**
      * The voice's modulators.
      */
-    modulators: Modulator[] = [];
+    public modulators: Modulator[] = [];
 
     /**
      * Resonance offset, it is affected by the default resonant modulator
      */
-    resonanceOffset: number = 0;
+    public resonanceOffset: number = 0;
 
     /**
      * The generators in real-time, affected by modulators.
      * This is used during rendering.
      */
-    modulatedGenerators: Int16Array;
+    public modulatedGenerators: Int16Array;
 
     /**
      * Indicates if the voice is finished.
      */
-    finished: boolean = false;
+    public finished: boolean = false;
 
     /**
      * Indicates if the voice is in the release phase.
      */
-    isInRelease: boolean = false;
+    public isInRelease: boolean = false;
 
     /**
      * Velocity of the note.
      */
-    velocity: number = 0;
+    public velocity: number = 0;
 
     /**
      * MIDI note number.
      */
-    midiNote: number = 0;
+    public midiNote: number = 0;
 
     /**
      * The pressure of the voice
      */
-    pressure: number = 0;
+    public pressure: number = 0;
 
     /**
      * Target key for the note.
      */
-    targetKey: number = 0;
+    public targetKey: number = 0;
 
     /**
      * Modulation envelope.
      */
-    modulationEnvelope: ModulationEnvelope = new ModulationEnvelope();
+    public modulationEnvelope: ModulationEnvelope = new ModulationEnvelope();
 
     /**
      * Volume envelope.
      */
-    volumeEnvelope: VolumeEnvelope;
+    public volumeEnvelope: VolumeEnvelope;
 
     /**
      * Start time of the voice, absolute.
      */
-    startTime: number = 0;
+    public startTime: number = 0;
 
     /**
      * Start time of the release phase, absolute.
      */
-    releaseStartTime: number = Infinity;
+    public releaseStartTime: number = Infinity;
 
     /**
      * Current tuning in cents.
      */
-    currentTuningCents: number = 0;
+    public currentTuningCents: number = 0;
 
     /**
      * Current calculated tuning. (as in ratio)
      */
-    currentTuningCalculated: number = 1;
+    public currentTuningCalculated: number = 1;
 
     /**
      * From -500 to 500.
      */
-    currentPan: number = 0;
+    public currentPan: number = 0;
 
     /**
      * If MIDI Tuning Standard is already applied (at note-on time),
      * this will be used to take the values at real-time tuning as "midiNote"
      * property contains the tuned number.
-     * see #29 comment by @paulikaro
+     * see  SpessaSynth#29 comment by @paulikaro
      */
-    realKey: number;
+    public realKey: number;
 
     /**
      * @type {number} Initial key to glide from, MIDI Note number. If -1, the portamento is OFF.
      */
-    portamentoFromKey: number = -1;
+    public portamentoFromKey: number = -1;
 
     /**
      * Duration of the linear glide, in seconds.
      */
-    portamentoDuration: number = 0;
+    public portamentoDuration: number = 0;
 
     /**
      * From -500 to 500, where zero means disabled (use the channel pan). Used for random pan.
      */
-    overridePan: number = 0;
+    public overridePan: number = 0;
 
     /**
      * Exclusive class number for hi-hats etc.
      */
-    exclusiveClass: number = 0;
+    public exclusiveClass: number = 0;
 
     /**
      * Creates a Voice.
      */
-    constructor(
+    public constructor(
         sampleRate: number,
         audioSample: AudioSample,
         midiNote: number,
@@ -272,7 +199,7 @@ export class Voice {
     /**
      * Copies a voice.
      */
-    static copy(voice: Voice, currentTime: number, realKey: number) {
+    public static copy(voice: Voice, currentTime: number, realKey: number) {
         const sampleToCopy = voice.sample;
         const sample = new AudioSample(
             sampleToCopy.sampleData,
@@ -300,7 +227,7 @@ export class Voice {
     /**
      * Releases the voice as exclusiveClass.
      */
-    exclusiveRelease(currentTime: number) {
+    public exclusiveRelease(currentTime: number) {
         this.release(currentTime, MIN_EXCLUSIVE_LENGTH);
         this.modulatedGenerators[generatorTypes.releaseVolEnv] =
             EXCLUSIVE_CUTOFF_TIME; // make the release nearly instant
@@ -315,7 +242,7 @@ export class Voice {
      * @param currentTime
      * @param minNoteLength minimum note length in seconds
      */
-    release(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {
+    public release(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {
         this.releaseStartTime = currentTime;
         // check if the note is shorter than the min note time, if so, extend it
         if (this.releaseStartTime - this.startTime < minNoteLength) {

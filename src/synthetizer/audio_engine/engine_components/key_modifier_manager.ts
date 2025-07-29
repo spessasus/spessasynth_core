@@ -6,16 +6,16 @@ export class KeyModifier {
     /**
      * The new override velocity. -1 means unchanged.
      */
-    velocity: number = -1;
+    public velocity: number = -1;
     /**
      * The patch this key uses. -1 on either means default.
      */
-    patch: { bank: number; program: number } = { bank: -1, program: -1 };
+    public patch: { bank: number; program: number } = { bank: -1, program: -1 };
 
     /**
      * Linear gain override for the voice.
      */
-    gain = 1;
+    public gain = 1;
 
     /**
      * Creates a new KeyModifier.
@@ -24,7 +24,7 @@ export class KeyModifier {
      * @param program -1 means default.
      * @param gain linear gain, 1 is default.
      */
-    constructor(
+    public constructor(
         velocity: number = -1,
         bank: number = -1,
         program: number = -1,
@@ -66,7 +66,7 @@ export class KeyModifierManager {
      * @param channel The MIDI channel number.
      * @param midiNote The MIDI note number (0-127).
      */
-    deleteMapping(channel: number, midiNote: number) {
+    public deleteMapping(channel: number, midiNote: number) {
         if (this.keyMappings[channel]?.[midiNote] === undefined) {
             return;
         }
@@ -77,7 +77,7 @@ export class KeyModifierManager {
     /**
      * Clear all key mappings.
      */
-    clearMappings() {
+    public clearMappings() {
         this.keyMappings = [];
     }
 
@@ -85,14 +85,14 @@ export class KeyModifierManager {
      * Sets the key mappings to a new array.
      * @param mappings A 2D array where the first dimension is the channel number and the second dimension is the MIDI note number.
      */
-    setMappings(mappings: (KeyModifier | undefined)[][]) {
+    public setMappings(mappings: (KeyModifier | undefined)[][]) {
         this.keyMappings = mappings;
     }
 
     /**
      * Returns the current key mappings.
      */
-    getMappings(): (KeyModifier | undefined)[][] {
+    public getMappings(): (KeyModifier | undefined)[][] {
         return this.keyMappings;
     }
 
@@ -102,7 +102,7 @@ export class KeyModifierManager {
      * @param midiNote The MIDI note number (0-127).
      * @returns The velocity override, or -1 if no override is set.
      */
-    getVelocity(channel: number, midiNote: number): number {
+    public getVelocity(channel: number, midiNote: number): number {
         return this.keyMappings[channel]?.[midiNote]?.velocity ?? -1;
     }
 
@@ -112,7 +112,7 @@ export class KeyModifierManager {
      * @param midiNote The MIDI note number (0-127).
      * @returns The gain override, or 1 if no override is set.
      */
-    getGain(channel: number, midiNote: number): number {
+    public getGain(channel: number, midiNote: number): number {
         return this.keyMappings[channel]?.[midiNote]?.gain ?? 1;
     }
 
@@ -122,7 +122,7 @@ export class KeyModifierManager {
      * @param midiNote The MIDI note number (0-127).
      * @returns  True if the key has an override patch, false otherwise.
      */
-    hasOverridePatch(channel: number, midiNote: number): boolean {
+    public hasOverridePatch(channel: number, midiNote: number): boolean {
         const bank = this.keyMappings[channel]?.[midiNote]?.patch?.bank;
         return bank !== undefined && bank >= 0;
     }
@@ -134,7 +134,7 @@ export class KeyModifierManager {
      * @returns An object containing the bank and program numbers.
      * @throws Error if no modifier is set for the key.
      */
-    getPatch(
+    public getPatch(
         channel: number,
         midiNote: number
     ): { bank: number; program: number } {

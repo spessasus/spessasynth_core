@@ -13,51 +13,51 @@ export class BasicPreset {
      * The parent soundbank instance
      * Currently used for determining default modulators and XG status
      */
-    readonly parentSoundBank: BasicSoundBank;
+    public readonly parentSoundBank: BasicSoundBank;
 
     /**
      * The preset's name
      */
-    name: string = "";
+    public name: string = "";
 
     /**
      * The preset's MIDI program number
      */
-    program: number = 0;
+    public program: number = 0;
 
     /**
      * The preset's MIDI bank number
      */
-    bank: number = 0;
+    public bank: number = 0;
 
     /**
      * The preset's zones
      */
-    zones: BasicPresetZone[] = [];
+    public zones: BasicPresetZone[] = [];
 
     /**
      * Preset's global zone
      */
-    readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
+    public readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
 
     /**
      * unused metadata
      */
-    library: number = 0;
+    public library: number = 0;
     /**
      * unused metadata
      */
-    genre: number = 0;
+    public genre: number = 0;
     /**
      * unused metadata
      */
-    morphology: number = 0;
+    public morphology: number = 0;
 
     /**
      * Creates a new preset representation.
      * @param parentSoundBank the sound bank this preset belongs to.
      */
-    constructor(parentSoundBank: BasicSoundBank) {
+    public constructor(parentSoundBank: BasicSoundBank) {
         this.parentSoundBank = parentSoundBank;
     }
 
@@ -66,7 +66,7 @@ export class BasicPreset {
      * @param allowXG if the Yamaha XG system is allowed
      * @param allowSFX if the XG SFX drum preset is allowed
      */
-    isDrumPreset(allowXG: boolean, allowSFX: boolean = false): boolean {
+    public isDrumPreset(allowXG: boolean, allowSFX: boolean = false): boolean {
         const xg = allowXG && this.parentSoundBank.isXGBank;
         // sfx is not cool
         return (
@@ -76,7 +76,7 @@ export class BasicPreset {
     }
 
     // Unlinks everything from this preset
-    delete() {
+    public delete() {
         this.zones.forEach((z) => z.instrument?.unlinkFrom(this));
     }
 
@@ -84,7 +84,7 @@ export class BasicPreset {
      * Deletes an instrument zone from this preset
      * @param index the zone's index to delete
      */
-    deleteZone(index: number) {
+    public deleteZone(index: number) {
         this.zones[index]?.instrument?.unlinkFrom(this);
         this.zones.splice(index, 1);
     }
@@ -93,7 +93,7 @@ export class BasicPreset {
      * Creates a new preset zone and returns it.
      * @param instrument the instrument to use in the zone.
      */
-    createZone(instrument: BasicInstrument): BasicPresetZone {
+    public createZone(instrument: BasicInstrument): BasicPresetZone {
         const z = new BasicPresetZone(this, instrument);
         this.zones.push(z);
         return z;
@@ -103,7 +103,7 @@ export class BasicPreset {
     /**
      * Preloads all samples for a given range
      */
-    preload(keyMin: number, keyMax: number) {
+    public preload(keyMin: number, keyMax: number) {
         for (let key = keyMin; key < keyMax + 1; key++) {
             for (let velocity = 0; velocity < 128; velocity++) {
                 this.getSamplesAndGenerators(key, velocity).forEach(
@@ -121,7 +121,7 @@ export class BasicPreset {
      * @param velocity the MIDI velocity
      * @returns the returned sound data
      */
-    getSamplesAndGenerators(
+    public getSamplesAndGenerators(
         midiNote: number,
         velocity: number
     ): SampleAndGenerators[] {

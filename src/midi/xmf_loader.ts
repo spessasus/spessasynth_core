@@ -11,7 +11,7 @@ import {
 import { consoleColors } from "../utils/other";
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
-import { type RMIDINFOChunk, RMIDINFOChunks } from "./enums";
+import { type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import { inflateSync } from "../externals/fflate/fflate_wrapper";
 import { IndexedByteArray } from "../utils/indexed_array";
 import type { BasicMIDI } from "./basic_midi";
@@ -88,28 +88,28 @@ type InternalUnpackerType = Partial<{
 }>;
 
 class XMFNode {
-    length: number;
+    public length: number;
     /**
      * 0 means it's a file node
      */
-    itemCount: number;
-    metadataLength: number;
+    public itemCount: number;
+    public metadataLength: number;
 
-    metadata: Record<string, string | number[] | IndexedByteArray> = {};
+    public metadata: Record<string, string | number[] | IndexedByteArray> = {};
 
-    nodeData: IndexedByteArray;
+    public nodeData: IndexedByteArray;
 
-    innerNodes: XMFNode[] = [];
+    public innerNodes: XMFNode[] = [];
 
-    packedContent = false;
+    public packedContent = false;
 
-    nodeUnpackers: InternalUnpackerType[] = [];
+    public nodeUnpackers: InternalUnpackerType[] = [];
 
-    resourceFormat: resourceFormatStrings = "unknown";
+    public resourceFormat: resourceFormatStrings = "unknown";
 
-    referenceTypeID: referenceTypeIds;
+    public referenceTypeID: referenceTypeIds;
 
-    constructor(binaryData: IndexedByteArray) {
+    public constructor(binaryData: IndexedByteArray) {
         const nodeStartIndex = binaryData.currentIndex;
         this.length = readVariableLengthQuantity(binaryData);
         this.itemCount = readVariableLengthQuantity(binaryData);
@@ -220,7 +220,9 @@ class XMFNode {
 
                     default:
                         SpessaSynthGroupEnd();
-                        throw new Error(`Unknown unpacker ID: ${unpacker.id}`);
+                        throw new Error(
+                            `Unknown unpacker ID: ${unpacker.id as string}`
+                        );
 
                     case unpackerIDs.none:
                         unpacker.standardID =
@@ -279,7 +281,7 @@ class XMFNode {
             default:
                 SpessaSynthGroupEnd();
                 throw new Error(
-                    `Unknown reference type: ${this.referenceTypeID}`
+                    `Unknown reference type: ${this.referenceTypeID as string}`
                 );
         }
 
@@ -294,7 +296,7 @@ class XMFNode {
                 );
                 try {
                     this.nodeData = new IndexedByteArray(
-                        inflateSync(compressed).buffer as ArrayBuffer
+                        inflateSync(compressed).buffer
                     );
                 } catch (e: unknown) {
                     SpessaSynthGroupEnd();
@@ -317,7 +319,7 @@ class XMFNode {
                 const formatTypeID = resourceFormat[0];
                 if (formatTypeID !== formatTypeIDs.standard) {
                     SpessaSynthWarn(
-                        `Non-standard formatTypeID: ${resourceFormat}`
+                        `Non-standard formatTypeID: ${resourceFormat.toString()}`
                     );
                     this.resourceFormat =
                         resourceFormat.toString() as resourceFormatStrings;
@@ -356,7 +358,7 @@ class XMFNode {
         }
     }
 
-    get isFile() {
+    public get isFile() {
         return this.itemCount === 0;
     }
 }
@@ -423,14 +425,14 @@ export function loadXMF(
                 node.metadata[xmf] !== undefined &&
                 typeof node.metadata[xmf] === "string"
             ) {
-                midi.RMIDInfo[rmid] = getStringBytes(node.metadata[xmf]);
+                midi.rmidiInfo[rmid] = getStringBytes(node.metadata[xmf]);
             }
         };
         // meta
-        checkMeta("nodeName", RMIDINFOChunks.name);
-        checkMeta("title", RMIDINFOChunks.name);
-        checkMeta("copyrightNotice", RMIDINFOChunks.copyright);
-        checkMeta("comment", RMIDINFOChunks.comment);
+        checkMeta("nodeName", rmidInfoChunks.name);
+        checkMeta("title", rmidInfoChunks.name);
+        checkMeta("copyrightNotice", rmidInfoChunks.copyright);
+        checkMeta("comment", rmidInfoChunks.comment);
         if (node.isFile) {
             switch (node.resourceFormat) {
                 default:

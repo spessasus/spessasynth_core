@@ -1,6 +1,6 @@
-import { absCentsToHz, decibelAttenuationToGain } from "./unit_converter";
-import type { Voice } from "./voice";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import { absCentsToHz, decibelAttenuationToGain } from "../unit_converter";
+import type { Voice } from "../voice";
+import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
  * lowpass_filter.js
@@ -37,11 +37,11 @@ export class LowpassFilter {
     /**
      * Resonance in centibels.
      */
-    resonanceCb = 0;
+    public resonanceCb = 0;
     /**
      * Current cutoff frequency in absolute cents.
      */
-    currentInitialFc = 13500;
+    public currentInitialFc = 13500;
     /**
      * Filter coefficient 1.
      */
@@ -103,7 +103,7 @@ export class LowpassFilter {
      * Initializes a new instance of the filter.
      * @param sampleRate the sample rate of the audio engine in Hz.
      */
-    constructor(sampleRate: number) {
+    public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
     }
@@ -115,7 +115,7 @@ export class LowpassFilter {
      * @param fcExcursion The frequency excursion in cents to apply to the filter.
      * @param smoothingFactor The smoothing factor for the filter as determined by the parent synthesizer.
      */
-    static apply(
+    public static apply(
         voice: Voice,
         outputBuffer: Float32Array,
         fcExcursion: number,
@@ -193,7 +193,10 @@ export class LowpassFilter {
      * @param filter The lowpass filter instance to calculate coefficients for.
      * @param cutoffCents The cutoff frequency in cents.
      */
-    static calculateCoefficients(filter: LowpassFilter, cutoffCents: number) {
+    public static calculateCoefficients(
+        filter: LowpassFilter,
+        cutoffCents: number
+    ) {
         cutoffCents = ~~cutoffCents; // Math.floor
         const qCb = filter.resonanceCb;
         // check if these coefficients were already cached

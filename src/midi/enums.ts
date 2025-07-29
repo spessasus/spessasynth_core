@@ -175,7 +175,7 @@ export const midiControllers = {
 export type MIDIController =
     (typeof midiControllers)[keyof typeof midiControllers];
 
-export const RMIDINFOChunks = {
+export const rmidInfoChunks = {
     name: "INAM",
     album: "IPRD",
     album2: "IALB",
@@ -193,4 +193,4 @@ export const RMIDINFOChunks = {
 } as const;
 
 export type RMIDINFOChunk =
-    (typeof RMIDINFOChunks)[keyof typeof RMIDINFOChunks];
+    (typeof rmidInfoChunks)[keyof typeof rmidInfoChunks];

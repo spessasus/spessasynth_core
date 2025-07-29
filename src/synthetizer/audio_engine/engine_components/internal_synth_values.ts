@@ -21,10 +21,10 @@ export class ProtectedSynthValues {
     /**
      * this.tunings[program][key] = tuning
      */
-    readonly tunings: MTSProgramTuning[] = [];
+    public readonly tunings: MTSProgramTuning[] = [];
 
     // The master parameters of the synthesizer.
-    masterParameters: MasterParameterType = {
+    public masterParameters: MasterParameterType = {
         masterGain: SYNTHESIZER_GAIN,
         masterPan: 0.0,
         voiceCap: VOICE_CAP,
@@ -40,64 +40,64 @@ export class ProtectedSynthValues {
     /**
      * The volume gain, set by MIDI sysEx
      */
-    midiVolume = 1;
+    public midiVolume = 1;
     /**
      * Set via system exclusive.
      */
-    reverbSend = 1;
+    public reverbSend = 1;
     /**
      * Set via system exclusive.
      */
-    chorusSend = 1;
+    public chorusSend = 1;
     /**
      * the pan of the left channel
      */
-    panLeft = 0.5;
+    public panLeft = 0.5;
     /**
      * the pan of the right channel
      */
-    panRight = 0.5;
+    public panRight = 0.5;
     /**
      * Synth's default (reset) preset
      */
-    defaultPreset: BasicPreset | undefined;
+    public defaultPreset: BasicPreset | undefined;
     /**
      * Synth's default (reset) drum preset
      */
-    drumPreset: BasicPreset | undefined;
+    public drumPreset: BasicPreset | undefined;
 
     // volume envelope smoothing factor, adjusted to the sample rate.
-    readonly volumeEnvelopeSmoothingFactor: number;
+    public readonly volumeEnvelopeSmoothingFactor: number;
 
     // pan smoothing factor, adjusted to the sample rate.
-    readonly panSmoothingFactor: number;
+    public readonly panSmoothingFactor: number;
 
     // filter smoothing factor, adjusted to the sample rate.
-    readonly filterSmoothingFactor: number;
+    public readonly filterSmoothingFactor: number;
     /**
      * Calls when an event occurs.
      * @param eventType The event type.
      * @param eventData The event data.
      */
-    eventCallbackHandler: <K extends keyof ProcessorEventType>(
+    public eventCallbackHandler: <K extends keyof ProcessorEventType>(
         eventType: K,
         eventData: ProcessorEventType[K]
     ) => unknown;
-    getVoices: (
+    public getVoices: (
         channel: number,
         midiNote: number,
         velocity: number,
         realKey: number
     ) => VoiceList;
-    voiceKilling: (amount: number) => unknown;
+    public voiceKilling: (amount: number) => unknown;
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting goes like this:
      * this.cachedVoices[bankNumber][programNumber][midiNote][velocity] = a list of voices for that.
      */
-    cachedVoices: VoiceList[][][][] = [];
+    public cachedVoices: VoiceList[][][][] = [];
 
-    constructor(
+    public constructor(
         eventCallbackHandler: <K extends keyof ProcessorEventType>(
             eventType: K,
             eventData: ProcessorEventType[K]
@@ -128,7 +128,7 @@ export class ProtectedSynthValues {
     /**
      * Copied callback so MIDI channels can call it.
      */
-    callEvent<K extends keyof ProcessorEventType>(
+    public callEvent<K extends keyof ProcessorEventType>(
         eventName: K,
         eventData: ProcessorEventType[K]
     ) {

@@ -94,16 +94,16 @@ const output = dlsRMID.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // here we try to extract the metadata from the file, then fall back to embedded MIDI
-        name: dlsRMID.RMIDInfo["INAM"] || dlsRMID.midiName,
-        copyright: dlsRMID.RMIDInfo["ICOP"] || dlsRMID.copyright,
+        name: dlsRMID.rmidiInfo["INAM"] || dlsRMID.midiName,
+        copyright: dlsRMID.rmidiInfo["ICOP"] || dlsRMID.copyright,
         engineer: sfont.soundFontInfo["IENG"],
-        artist: dlsRMID.RMIDInfo["IART"],
+        artist: dlsRMID.rmidiInfo["IART"],
         // both IPRD and IALB represent album name
-        album: dlsRMID.RMIDInfo["IPRD"] || dlsRMID.RMIDInfo["IALB"],
-        genre: dlsRMID.RMIDInfo["IGNR"],
-        comment: dlsRMID.RMIDInfo["ICMT"],
+        album: dlsRMID.rmidiInfo["IPRD"] || dlsRMID.rmidiInfo["IALB"],
+        genre: dlsRMID.rmidiInfo["IGNR"],
+        comment: dlsRMID.rmidiInfo["ICMT"],
         // either use the embedded one or today                     
-        creationDate: dlsRMID.RMIDInfo["ICRD"] || new Date().toDateString()
+        creationDate: dlsRMID.rmidiInfo["ICRD"] || new Date().toDateString()
     },
     false // adjust program changes: I recommend false for that one
 );

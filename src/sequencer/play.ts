@@ -38,7 +38,7 @@ export function playToInternal(
     /**
      * save pitch bends here and send them only after
      */
-    const pitchBends: number[] = Array(channelsToSave).fill(8192);
+    const pitchBends: number[] = Array(channelsToSave).fill(8192) as number[];
 
     /**
      * Save programs here and send them only after

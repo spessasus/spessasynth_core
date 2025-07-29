@@ -107,7 +107,9 @@ export function modifyMIDIInternal(
     /**
      * indexes for tracks
      */
-    const eventIndexes: number[] = Array(midi.tracks.length).fill(0);
+    const eventIndexes: number[] = Array(midi.tracks.length).fill(
+        0
+    ) as number[];
     let remainingTracks = midi.tracks.length;
 
     function findFirstEventIndex() {

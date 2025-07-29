@@ -19,7 +19,7 @@ import { DLSSample } from "./dls_sample";
 import type { DownloadableSounds } from "./downloadable_sounds";
 
 export function readDLSSamples(
-    dls: DownloadableSounds,
+    this: DownloadableSounds,
     waveListChunk: RIFFChunk
 ) {
     SpessaSynthGroupCollapsed(
@@ -31,8 +31,8 @@ export function readDLSSamples(
         waveListChunk.chunkData.currentIndex < waveListChunk.chunkData.length
     ) {
         const waveChunk = readRIFFChunk(waveListChunk.chunkData);
-        dls.verifyHeader(waveChunk, "LIST");
-        dls.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
+        this.verifyHeader(waveChunk, "LIST");
+        this.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
 
         const waveChunks: RIFFChunk[] = [];
         while (waveChunk.chunkData.currentIndex < waveChunk.chunkData.length) {
@@ -62,7 +62,7 @@ export function readDLSSamples(
 
         const dataChunk = waveChunks.find((c) => c.header === "data");
         if (!dataChunk) {
-            dls.parsingError("No data chunk in the WAVE chunk!");
+            this.parsingError("No data chunk in the WAVE chunk!");
             return;
         }
 
@@ -129,7 +129,7 @@ export function readDLSSamples(
             SpessaSynthWarn("No wsmp chunk in wave... using sane defaults.");
         }
 
-        dls.addSamples(
+        this.addSamples(
             new DLSSample(
                 sampleName,
                 sampleRate,

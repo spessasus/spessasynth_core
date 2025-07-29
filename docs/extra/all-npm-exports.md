@@ -64,11 +64,11 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - BasicMIDI - the base class for MIDI sequences.
 - MIDIBuilder - the MIDI file builder.
 - MIDIMessage - represents a single MIDI/meta/sysEx event.
-- RMIDINFOChunks - an enum for RMIDI info chunk data.
+- rmidInfoChunks - an enum for RMIDI info chunk data.
 
 ### Related enums
 
-- RMIDIINFOChunks - all the default RMIDI info chunk codes.
+- rmidInfoChunks - all the default RMIDI info chunk codes.
 - midiControllers - an enum for all MIDI controllers.
 - messageTypes - an enum for all the MIDI event status bytes recognized.
 

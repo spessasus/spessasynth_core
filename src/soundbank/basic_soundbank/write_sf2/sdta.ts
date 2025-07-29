@@ -51,7 +51,7 @@ export async function getSDTA(
         // use set timeout so the thread doesn't die
         const r = s.getRawData(true);
         writtenCount++;
-        progressFunc?.(s.name, writtenCount, bank.samples.length);
+        await progressFunc?.(s.name, writtenCount, bank.samples.length);
 
         SpessaSynthInfo(
             `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,

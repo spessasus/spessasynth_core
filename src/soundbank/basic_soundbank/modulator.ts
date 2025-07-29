@@ -44,22 +44,22 @@ export class Modulator {
     /**
      * The current computed value of this modulator. Only used in the synthesis engine for local voices.
      */
-    currentValue: number = 0;
+    public currentValue: number = 0;
 
     /**
      * The generator destination of this modulator.
      */
-    destination: GeneratorType;
+    public destination: GeneratorType;
 
     /**
      * The transform amount for this modulator.
      */
-    transformAmount: number;
+    public transformAmount: number;
 
     /**
      * The transform type for this modulator.
      */
-    transformType: ModulatorTransformType;
+    public transformType: ModulatorTransformType;
 
     /**
      * Indicates if the given modulator is chorus or reverb effects modulator.
@@ -71,70 +71,70 @@ export class Modulator {
      * - still can be disabled if the soundfont has its own modulator curve
      * - this fixes the very low amount of reverb by default and doesn't break soundfonts
      */
-    readonly isEffectModulator: boolean = false;
+    public readonly isEffectModulator: boolean = false;
 
     /**
      * The default resonant modulator does not affect the filter gain.
      * Neither XG nor GS responded to cc #74 in that way.
      */
-    readonly isDefaultResonantModulator: boolean = false;
+    public readonly isDefaultResonantModulator: boolean = false;
 
     /**
      * 1 if the source is bipolar (min is -1, max is 1)
      * otherwise min is 0 and max is 1
      */
-    sourcePolarity: ModulatorNumericBool;
+    public sourcePolarity: ModulatorNumericBool;
 
     /**
      * 1 if the source is negative (from 1 to 0)
      */
-    sourceDirection: ModulatorNumericBool;
+    public sourceDirection: ModulatorNumericBool;
 
     /**
      * 1 if the source uses a MIDI CC
      */
-    sourceUsesCC: ModulatorNumericBool;
+    public sourceUsesCC: ModulatorNumericBool;
 
     /**
      * source index/CC number.
      */
-    sourceIndex: ModulatorSource;
+    public sourceIndex: ModulatorSource;
 
     /**
      * source curve type
      */
-    sourceCurveType: ModulatorCurveType;
+    public sourceCurveType: ModulatorCurveType;
 
     /**
      * 1 if the secondary source is bipolar (min is -1, max is 1)
      * otherwise min is 0 and max is 1
      */
-    secSrcPolarity: ModulatorNumericBool;
+    public secSrcPolarity: ModulatorNumericBool;
 
     /**
      * 1 if the secondary source is negative (from 1 to 0)
      */
-    secSrcDirection: ModulatorNumericBool;
+    public secSrcDirection: ModulatorNumericBool;
 
     /**
      * 1 if the secondary source uses a MIDI CC
      */
-    secSrcUsesCC: ModulatorNumericBool;
+    public secSrcUsesCC: ModulatorNumericBool;
 
     /**
      * secondary source index/CC number
      */
-    secSrcIndex: ModulatorSource;
+    public secSrcIndex: ModulatorSource;
 
     /**
      * secondary source curve type
      */
-    secSrcCurveType: ModulatorCurveType;
+    public secSrcCurveType: ModulatorCurveType;
 
     /**
      * Creates a new SF2 Modulator
      */
-    constructor(
+    public constructor(
         sourceIndex: ModulatorSource,
         sourceCurveType: ModulatorCurveType,
         sourceUsesCC: ModulatorNumericBool,
@@ -179,7 +179,7 @@ export class Modulator {
      * @param modulator the modulator to copy
      * @returns the copied modulator
      */
-    static copy(modulator: Modulator): Modulator {
+    public static copy(modulator: Modulator): Modulator {
         return new Modulator(
             modulator.sourceIndex,
             modulator.sourceCurveType,
@@ -206,7 +206,7 @@ export class Modulator {
      * @param checkAmount if the amount should be checked too (SF2 specification says to not check it)
      * @returns if they are identical
      */
-    static isIdentical(
+    public static isIdentical(
         mod1: Modulator,
         mod2: Modulator,
         checkAmount: boolean = false
@@ -229,7 +229,7 @@ export class Modulator {
     }
 
     // gets the modulator source enum
-    getSourceEnum() {
+    public getSourceEnum() {
         return getModSourceEnum(
             this.sourceCurveType,
             this.sourcePolarity,
@@ -240,7 +240,7 @@ export class Modulator {
     }
 
     // gets the modulator secondary source enum
-    getSecSrcEnum() {
+    public getSecSrcEnum() {
         return getModSourceEnum(
             this.secSrcCurveType,
             this.secSrcPolarity,
@@ -255,7 +255,7 @@ export class Modulator {
      * @param modulator the modulator to sum with
      * @returns the new modulator
      */
-    sumTransform(modulator: Modulator): Modulator {
+    public sumTransform(modulator: Modulator): Modulator {
         return new Modulator(
             this.sourceIndex,
             this.sourceCurveType,
@@ -285,7 +285,7 @@ export class DecodedModulator extends Modulator {
      * @param amount amount
      * @param transformType transform type
      */
-    constructor(
+    public constructor(
         sourceEnum: number,
         secondarySourceEnum: number,
         destination: GeneratorType,

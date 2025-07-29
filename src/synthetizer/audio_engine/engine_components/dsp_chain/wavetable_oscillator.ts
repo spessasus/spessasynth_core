@@ -1,5 +1,5 @@
-import { type InterpolationType, interpolationTypes } from "../../enums";
-import type { Voice } from "./voice";
+import { type InterpolationType, interpolationTypes } from "../../../enums";
+import type { Voice } from "../voice";
 
 /**
  * wavetable_oscillator.js
@@ -13,7 +13,7 @@ export class WavetableOscillator {
      * @param outputBuffer The output buffer to write to.
      * @param interpolation The interpolation type.
      */
-    static getSample(
+    public static getSample(
         voice: Voice,
         outputBuffer: Float32Array,
         interpolation: InterpolationType
@@ -46,7 +46,7 @@ export class WavetableOscillator {
      * @param outputBuffer The output buffer to write to.
      * @param step The step to advance every sample (playback rate).
      */
-    static getSampleLinear(
+    public static getSampleLinear(
         voice: Voice,
         outputBuffer: Float32Array,
         step: number
@@ -111,7 +111,7 @@ export class WavetableOscillator {
      * @param outputBuffer The output buffer to write to.
      * @param step The step to advance every sample (playback rate).
      */
-    static getSampleNearest(
+    public static getSampleNearest(
         voice: Voice,
         outputBuffer: Float32Array,
         step: number
@@ -162,7 +162,7 @@ export class WavetableOscillator {
      * @param outputBuffer The output buffer to write to.
      * @param step The step to advance every sample (playback rate).
      */
-    static getSampleHermite(
+    public static getSampleHermite(
         voice: Voice,
         outputBuffer: Float32Array,
         step: number

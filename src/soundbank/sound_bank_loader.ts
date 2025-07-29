@@ -10,7 +10,7 @@ export class SoundBankLoader {
      * @param buffer The binary file buffer to load.
      * @returns {BasicSoundBank} The loaded sound bank, either a DownloadableSounds or SoundFont2 instance.
      */
-    static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
+    public static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
         const check = buffer.slice(8, 12);
         const a = new IndexedByteArray(check);
         const id = readBytesAsString(a, 4, false).toLowerCase();

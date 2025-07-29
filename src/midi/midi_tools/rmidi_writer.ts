@@ -25,7 +25,7 @@ import {
     midiControllers,
     type MIDIMessageType,
     midiMessageTypes,
-    RMIDINFOChunks
+    rmidInfoChunks
 } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDMetadata } from "../types";
@@ -79,7 +79,9 @@ export function writeRMIDIInternal(
         /**
          * indexes for tracks
          */
-        const eventIndexes: number[] = Array(mid.tracks.length).fill(0);
+        const eventIndexes: number[] = Array(mid.tracks.length).fill(
+            0
+        ) as number[];
         let remainingTracks = mid.tracks.length;
 
         const findFirstEventIndex = () => {
@@ -98,7 +100,7 @@ export function writeRMIDIInternal(
         };
 
         // it copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
-        const ports = Array(mid.tracks.length).fill(0);
+        const ports = Array(mid.tracks.length).fill(0) as number[];
         const channelsAmount =
             16 +
             mid.midiPortChannelOffsets.reduce((max, cur) =>
@@ -423,7 +425,7 @@ export function writeRMIDIInternal(
     // software (SpessaSynth)
     infoContent.push(
         writeRIFFChunkRaw(
-            RMIDINFOChunks.software,
+            rmidInfoChunks.software,
             encoder.encode("SpessaSynth"),
             true
         )
@@ -432,7 +434,7 @@ export function writeRMIDIInternal(
     if (metadata.name !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.name,
+                rmidInfoChunks.name,
                 encoder.encode(metadata.name),
                 true
             )
@@ -440,7 +442,7 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
     } else {
         infoContent.push(
-            writeRIFFChunkRaw(RMIDINFOChunks.name, mid.rawMidiName, true)
+            writeRIFFChunkRaw(rmidInfoChunks.name, mid.rawMidiName, true)
         );
     }
     // creation date
@@ -448,7 +450,7 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.creationDate,
+                rmidInfoChunks.creationDate,
                 encoder.encode(metadata.creationDate),
                 true
             )
@@ -464,7 +466,7 @@ export function writeRMIDIInternal(
         });
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.creationDate,
+                rmidInfoChunks.creationDate,
                 getStringBytes(today, true),
                 true
             )
@@ -475,7 +477,7 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.comment,
+                rmidInfoChunks.comment,
                 encoder.encode(metadata.comment)
             )
         );
@@ -484,7 +486,7 @@ export function writeRMIDIInternal(
     if (metadata.engineer !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.engineer,
+                rmidInfoChunks.engineer,
                 encoder.encode(metadata.engineer),
                 true
             )
@@ -496,14 +498,14 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.album,
+                rmidInfoChunks.album,
                 encoder.encode(metadata.album),
                 true
             )
         );
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.album2,
+                rmidInfoChunks.album2,
                 encoder.encode(metadata.album),
                 true
             )
@@ -514,7 +516,7 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.artist,
+                rmidInfoChunks.artist,
                 encoder.encode(metadata.artist),
                 true
             )
@@ -525,7 +527,7 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.genre,
+                rmidInfoChunks.genre,
                 encoder.encode(metadata.genre),
                 true
             )
@@ -535,7 +537,7 @@ export function writeRMIDIInternal(
     if (metadata.picture !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.picture,
+                rmidInfoChunks.picture,
                 new Uint8Array(metadata.picture)
             )
         );
@@ -545,7 +547,7 @@ export function writeRMIDIInternal(
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.copyright,
+                rmidInfoChunks.copyright,
                 encoder.encode(metadata.copyright),
                 true
             )
@@ -556,7 +558,7 @@ export function writeRMIDIInternal(
             mid.copyright.length > 0 ? mid.copyright : DEFAULT_COPYRIGHT;
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.copyright,
+                rmidInfoChunks.copyright,
                 getStringBytes(copyright, true)
             )
         );
@@ -565,12 +567,12 @@ export function writeRMIDIInternal(
     // bank offset
     const DBNK = new IndexedByteArray(2);
     writeLittleEndian(DBNK, bankOffset, 2);
-    infoContent.push(writeRIFFChunkRaw(RMIDINFOChunks.bankOffset, DBNK));
+    infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.bankOffset, DBNK));
     // midi encoding
     if (metadata.midiEncoding !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
-                RMIDINFOChunks.midiEncoding,
+                rmidInfoChunks.midiEncoding,
                 encoder.encode(metadata.midiEncoding)
             )
         );
@@ -579,7 +581,7 @@ export function writeRMIDIInternal(
     // encoding
     infoContent.push(
         writeRIFFChunkRaw(
-            RMIDINFOChunks.encoding,
+            rmidInfoChunks.encoding,
             getStringBytes(encoding, true)
         )
     );

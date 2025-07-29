@@ -6,19 +6,19 @@ export class BasicPresetZone extends BasicZone {
     /**
      * The parent preset.
      */
-    readonly parentPreset: BasicPreset;
+    public readonly parentPreset: BasicPreset;
 
     /**
      * Zone's instrument.
      */
-    instrument: BasicInstrument;
+    public instrument: BasicInstrument;
 
     /**
      * Creates a new preset zone.
      * @param preset the preset this zone belongs to.
      * @param instrument the instrument to use in this zone.
      */
-    constructor(preset: BasicPreset, instrument: BasicInstrument) {
+    public constructor(preset: BasicPreset, instrument: BasicInstrument) {
         super();
         this.parentPreset = preset;
         this.instrument = instrument;

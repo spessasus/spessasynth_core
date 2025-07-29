@@ -10,14 +10,14 @@ export class SynthesizerSnapshot {
     /**
      * The individual channel snapshots.
      */
-    channelSnapshots: ChannelSnapshot[];
+    public channelSnapshots: ChannelSnapshot[];
 
     /**
      * Key modifiers.
      */
-    keyMappings: (KeyModifier | undefined)[][];
+    public keyMappings: (KeyModifier | undefined)[][];
 
-    masterParameters: MasterParameterType;
+    public masterParameters: MasterParameterType;
 
     private constructor(
         channelSnapshots: ChannelSnapshot[],
@@ -34,7 +34,7 @@ export class SynthesizerSnapshot {
      * @param processor the processor to take a snapshot of.
      * @returns The snapshot.
      */
-    static create(processor: SpessaSynthProcessor): SynthesizerSnapshot {
+    public static create(processor: SpessaSynthProcessor): SynthesizerSnapshot {
         // channel snapshots
         const channelSnapshots = processor.midiChannels.map((_, i) =>
             ChannelSnapshot.create(processor, i)
@@ -54,7 +54,7 @@ export class SynthesizerSnapshot {
      * @returns the snapshot.
      * @deprecated use a 'create' instead
      */
-    static createSynthesizerSnapshot(
+    public static createSynthesizerSnapshot(
         processor: SpessaSynthProcessor
     ): SynthesizerSnapshot {
         return SynthesizerSnapshot.create(processor);
@@ -67,7 +67,7 @@ export class SynthesizerSnapshot {
      * @param snapshot the snapshot to use.
      * @deprecated use a non-static version instead
      */
-    static applySnapshot(
+    public static applySnapshot(
         processor: SpessaSynthProcessor,
         snapshot: SynthesizerSnapshot
     ) {
@@ -78,7 +78,7 @@ export class SynthesizerSnapshot {
      * Applies the snapshot to the synthesizer.
      * @param processor the processor to apply the snapshot to.
      */
-    apply(processor: SpessaSynthProcessor) {
+    public apply(processor: SpessaSynthProcessor) {
         Object.entries(this.masterParameters).forEach(([parameter, value]) => {
             processor.setMasterParameter(
                 parameter as keyof MasterParameterType,

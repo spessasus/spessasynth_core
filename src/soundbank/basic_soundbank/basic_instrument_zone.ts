@@ -6,24 +6,24 @@ export class BasicInstrumentZone extends BasicZone {
     /**
      * The parent instrument.
      */
-    parentInstrument: BasicInstrument;
+    public readonly parentInstrument: BasicInstrument;
 
     /**
      * Zone's sample.
      */
-    sample: BasicSample;
+    public sample: BasicSample;
     /**
      * For tracking on the individual zone level, since multiple presets can refer to the same instrument.
      * @type {number}
      */
-    useCount: number;
+    public useCount: number;
 
     /**
      * Creates a new instrument zone.
      * @param instrument The parent instrument.
      * @param sample The sample to use in this zone.
      */
-    constructor(instrument: BasicInstrument, sample: BasicSample) {
+    public constructor(instrument: BasicInstrument, sample: BasicSample) {
         super();
         this.parentInstrument = instrument;
         this.sample = sample;
@@ -36,7 +36,7 @@ export class BasicInstrumentZone extends BasicZone {
      * Sets a sample for this zone
      * @param sample the sample to set
      */
-    setSample(sample: BasicSample) {
+    public setSample(sample: BasicSample) {
         if (this.sample) {
             this.sample.unlinkFrom(this.parentInstrument);
         }

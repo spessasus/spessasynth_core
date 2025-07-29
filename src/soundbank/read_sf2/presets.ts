@@ -13,13 +13,13 @@ import type { Generator } from "../basic_soundbank/generator";
  */
 
 export class SoundFontPreset extends BasicPreset {
-    zoneStartIndex: number;
-    zonesCount: number = 0;
+    public zoneStartIndex: number;
+    public zonesCount: number = 0;
 
     /**
      * Creates a preset
      */
-    constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
+    public constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
         super(sf2);
         this.name = readBytesAsString(presetChunk.chunkData, 20).replace(
             /\d{3}:\d{3}/,
@@ -36,7 +36,7 @@ export class SoundFontPreset extends BasicPreset {
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
     }
 
-    createSoundFontZone(
+    public createSoundFontZone(
         modulators: Modulator[],
         generators: Generator[],
         instruments: BasicInstrument[]

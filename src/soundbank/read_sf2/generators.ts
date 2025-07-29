@@ -8,7 +8,7 @@ export class ReadGenerator extends Generator {
     /**
      * Creates a generator
      */
-    constructor(dataArray: IndexedByteArray) {
+    public constructor(dataArray: IndexedByteArray) {
         super();
         // 4 bytes:
         // type, type, type, value

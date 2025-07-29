@@ -1,6 +1,6 @@
-import type { MIDIChannel } from "./midi_channel";
-import type { Voice } from "./voice";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import type { MIDIChannel } from "../midi_channel";
+import type { Voice } from "../voice";
+import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
  * stereo_panner.js

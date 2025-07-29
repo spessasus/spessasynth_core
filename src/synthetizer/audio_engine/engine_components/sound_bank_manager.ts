@@ -10,22 +10,30 @@ export class SoundBankManager {
     /**
      * All the sound banks, ordered from the most important to the least.
      */
-    soundBankList: SoundBankManagerListEntry[] = [];
-    presetList: { bank: number; presetName: string; program: number }[] = [];
+    public soundBankList: SoundBankManagerListEntry[] = [];
+    private presetList: {
+        bank: number;
+        presetName: string;
+        program: number;
+    }[] = [];
     private readonly presetListChangeCallback: { (): unknown };
 
     /**
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
      * this is called whenever the preset list changes.
      */
-    constructor(presetListChangeCallback: () => unknown) {
+    public constructor(presetListChangeCallback: () => unknown) {
         this.presetListChangeCallback = presetListChangeCallback;
     }
 
     /**
      * Gets the list of all presets in the sound bank stack.
      */
-    getPresetList(): { bank: number; presetName: string; program: number }[] {
+    public getPresetList(): {
+        bank: number;
+        presetName: string;
+        program: number;
+    }[] {
         return this.presetList.slice();
     }
 
@@ -34,7 +42,7 @@ export class SoundBankManager {
      * Clears the sound bank list and adds the provided sound bank with the ID "main".
      * @param mainSoundBank The main sound bank to use.
      */
-    reloadManager(mainSoundBank: BasicSoundBank) {
+    public reloadManager(mainSoundBank: BasicSoundBank) {
         // do not clear the embedded bank
         this.soundBankList = this.soundBankList.filter(
             (sf) => sf.id === EMBEDDED_SOUND_BANK_ID
@@ -52,7 +60,7 @@ export class SoundBankManager {
      * Deletes a given sound bank by its ID.
      * @param id the ID of the sound bank to delete.
      */
-    deleteSoundBank(id: string) {
+    public deleteSoundBank(id: string) {
         if (this.soundBankList.length === 0) {
             SpessaSynthWarn("1 soundbank left. Aborting!");
             return;
@@ -75,7 +83,11 @@ export class SoundBankManager {
      * @param id the ID of the sound bank.
      * @param bankOffset the bank offset of the sound bank.
      */
-    addNewSoundBank(font: BasicSoundBank, id: string, bankOffset: number) {
+    public addNewSoundBank(
+        font: BasicSoundBank,
+        id: string,
+        bankOffset: number
+    ) {
         const foundBank = this.soundBankList.find((s) => s.id === id);
         if (foundBank !== undefined) {
             // replace
@@ -95,7 +107,7 @@ export class SoundBankManager {
      * Gets the current sound bank order.
      * @returns The IDs of the sound banks in the current order.
      */
-    getSoundBankOrder(): string[] {
+    public getSoundBankOrder(): string[] {
         return this.soundBankList.map((s) => s.id);
     }
 
@@ -104,7 +116,7 @@ export class SoundBankManager {
      * Rearranges the sound banks in the order specified by the new list.
      * @param newList The new order of sound bank IDs.
      */
-    setSoundBankOrder(newList: string[]) {
+    public setSoundBankOrder(newList: string[]) {
         this.soundBankList.sort(
             (a, b) => newList.indexOf(a.id) - newList.indexOf(b.id)
         );
@@ -118,7 +130,7 @@ export class SoundBankManager {
      * @param allowXGDrums If true, allows XG drum presets.
      * @returns An object containing the preset and its bank offset.
      */
-    getPreset(
+    public getPreset(
         bankNumber: number,
         programNumber: number,
         allowXGDrums: boolean = false
@@ -199,7 +211,7 @@ export class SoundBankManager {
     }
 
     // Clears the sound bank list and destroys all sound banks.
-    destroyManager() {
+    public destroyManager() {
         this.soundBankList.forEach((s) => {
             s.soundBank.destroySoundBank();
         });

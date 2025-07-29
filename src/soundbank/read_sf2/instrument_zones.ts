@@ -14,7 +14,7 @@ export class SoundFontInstrumentZone extends BasicInstrumentZone {
     /**
      * Creates a zone (instrument)
      */
-    constructor(
+    public constructor(
         inst: BasicInstrument,
         modulators: Modulator[],
         generators: Generator[],

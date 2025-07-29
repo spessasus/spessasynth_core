@@ -93,14 +93,14 @@ export class DLSSample extends BasicSample {
     /**
      * in decibels of attenuation, WITHOUT E-MU CORRECTION
      */
-    sampleDbAttenuation: number;
-    wFormatTag: number;
-    bytesPerSample: number;
+    public sampleDbAttenuation: number;
+    protected wFormatTag: number;
+    protected bytesPerSample: number;
 
     /**
      * Sample's raw data before decoding it, for faster writing
      */
-    rawData: IndexedByteArray;
+    protected rawData: IndexedByteArray;
 
     /**
      * @param name
@@ -114,7 +114,7 @@ export class DLSSample extends BasicSample {
      * @param wFormatTag
      * @param bytesPerSample
      */
-    constructor(
+    public constructor(
         name: string,
         rate: number,
         pitch: number,
@@ -142,7 +142,7 @@ export class DLSSample extends BasicSample {
         this.bytesPerSample = bytesPerSample;
     }
 
-    getAudioData(): Float32Array {
+    public getAudioData(): Float32Array {
         if (!this.rawData) {
             return new Float32Array(0);
         }
@@ -171,7 +171,7 @@ export class DLSSample extends BasicSample {
         return this.audioData || new Float32Array(0);
     }
 
-    getRawData(allowVorbis: boolean) {
+    public getRawData(allowVorbis: boolean) {
         if (this.dataOverridden || this.isCompressed) {
             return super.getRawData(allowVorbis);
         }

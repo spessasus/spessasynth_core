@@ -40,8 +40,8 @@ export function formatTitle(fileName: string): string {
 export function arrayToHexString(arr: ArrayLike<number>): string {
     let hexString = "";
 
-    for (let i = 0; i < arr.length; i++) {
-        const hex = arr[i].toString(16).padStart(2, "0").toUpperCase();
+    for (const i of arr) {
+        const hex = i.toString(16).padStart(2, "0").toUpperCase();
         hexString += hex;
         hexString += " ";
     }

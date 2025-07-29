@@ -24,9 +24,9 @@ import { readRegion } from "./read_region";
 import type { DownloadableSounds } from "./downloadable_sounds";
 import { readLart } from "./read_lart";
 
-export function readDLSInstrument(dls: DownloadableSounds, chunk: RIFFChunk) {
-    dls.verifyHeader(chunk, "LIST");
-    dls.verifyText(readBytesAsString(chunk.chunkData, 4), "ins ");
+export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
+    this.verifyHeader(chunk, "LIST");
+    this.verifyText(readBytesAsString(chunk.chunkData, 4), "ins ");
     const chunks: RIFFChunk[] = [];
     while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
         chunks.push(readRIFFChunk(chunk.chunkData));
@@ -42,7 +42,7 @@ export function readDLSInstrument(dls: DownloadableSounds, chunk: RIFFChunk) {
     const regions = readLittleEndian(instrumentHeader.chunkData, 4);
     const ulBank = readLittleEndian(instrumentHeader.chunkData, 4);
     const ulInstrument = readLittleEndian(instrumentHeader.chunkData, 4);
-    const preset = new DLSPreset(dls, ulBank, ulInstrument);
+    const preset = new DLSPreset(this, ulBank, ulInstrument);
 
     // read preset name in INFO
     let presetName = ``;
@@ -83,7 +83,7 @@ export function readDLSInstrument(dls: DownloadableSounds, chunk: RIFFChunk) {
     const globalLart = findRIFFListType(chunks, "lart");
     const globalLar2 = findRIFFListType(chunks, "lar2");
     if (globalLar2 !== undefined || globalLart !== undefined) {
-        readLart(dls, globalLart, globalLar2, globalZone);
+        readLart.call(this, globalLart, globalLar2, globalZone);
     }
     // remove generators with default values
     globalZone.generators = globalZone.generators.filter(
@@ -110,18 +110,18 @@ export function readDLSInstrument(dls: DownloadableSounds, chunk: RIFFChunk) {
     // read regions
     for (let i = 0; i < regions; i++) {
         const chunk = readRIFFChunk(regionListChunk.chunkData);
-        dls.verifyHeader(chunk, "LIST");
+        this.verifyHeader(chunk, "LIST");
         const type = readBytesAsString(chunk.chunkData, 4);
         if (type !== "rgn " && type !== "rgn2") {
             SpessaSynthGroupEnd();
-            dls.parsingError(
+            this.parsingError(
                 `Invalid DLS region! Expected "rgn " or "rgn2" got "${type}"`
             );
         }
 
-        readRegion(dls, chunk, preset.dlsInstrument);
+        readRegion.call(this, chunk, preset.dlsInstrument);
     }
-    dls.addPresets(preset);
-    dls.addInstruments(preset.dlsInstrument);
+    this.addPresets(preset);
+    this.addInstruments(preset.dlsInstrument);
     SpessaSynthGroupEnd();
 }

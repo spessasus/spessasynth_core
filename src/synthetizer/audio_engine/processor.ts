@@ -2,15 +2,15 @@ import { SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { EMBEDDED_SOUND_BANK_ID } from "./engine_components/synth_constants";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/volume_envelope";
+import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./engine_components/dsp_chain/volume_envelope";
 import {
     getAllMasterParametersInternal,
     getMasterParameterInternal,
     setMasterParameterInternal
 } from "./engine_methods/controller_control/master_parameters";
 import { SoundBankManager } from "./engine_components/sound_bank_manager";
-import { PAN_SMOOTHING_FACTOR } from "./engine_components/stereo_panner";
-import { FILTER_SMOOTHING_FACTOR } from "./engine_components/lowpass_filter";
+import { PAN_SMOOTHING_FACTOR } from "./engine_components/dsp_chain/stereo_panner";
+import { FILTER_SMOOTHING_FACTOR } from "./engine_components/dsp_chain/lowpass_filter";
 import { getEvent } from "../../midi/midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { DEFAULT_SYNTH_OPTIONS } from "./engine_components/synth_processor_options";
@@ -190,7 +190,7 @@ export class SpessaSynthProcessor {
      * @param sampleRate sample rate, in Hertz.
      * @param opts the processor's options.
      */
-    constructor(
+    public constructor(
         sampleRate: number,
         opts: Partial<SynthProcessorOptions> = DEFAULT_SYNTH_OPTIONS
     ) {
@@ -227,7 +227,7 @@ export class SpessaSynthProcessor {
             // don't send events as we're creating the initial channels
             this.createMIDIChannelInternal(false);
         }
-        this.processorInitialized.then(() => {
+        void this.processorInitialized.then(() => {
             SpessaSynthInfo(
                 "%cSpessaSynth is ready!",
                 consoleColors.recognized
@@ -332,7 +332,7 @@ export class SpessaSynthProcessor {
         this.renderAudioSplit(
             reverb,
             chorus,
-            Array(16).fill(outputs),
+            Array(16).fill(outputs) as Float32Array[][],
             startIndex,
             sampleCount
         );
@@ -409,12 +409,10 @@ export class SpessaSynthProcessor {
      */
     public destroySynthProcessor() {
         this.midiChannels.forEach((c) => {
-            c.midiControllers = new Int16Array(0);
             c.voices.length = 0;
             c.sustainedVoices.length = 0;
             c.lockedControllers = [];
             c.preset = undefined;
-            c.customControllers = new Float32Array(0);
         });
         this.privateProps.cachedVoices.length = 0;
         this.midiChannels.length = 0;

@@ -16,7 +16,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param timeDivision the file's time division (ticks per quarter note).
      * @param initialTempo the file's initial tempo.
      */
-    constructor(
+    public constructor(
         name: string,
         timeDivision: number = 480,
         initialTempo: number = 120
@@ -36,7 +36,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick number of the event.
      * @param tempo the tempo in beats per minute (BPM).
      */
-    addSetTempo(ticks: number, tempo: number) {
+    public addSetTempo(ticks: number, tempo: number) {
         const array = new IndexedByteArray(3);
 
         tempo = 60000000 / tempo;
@@ -54,7 +54,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param name the new track's name.
      * @param port the new track's port.
      */
-    addNewTrack(name: string, port: number = 0) {
+    public addNewTrack(name: string, port: number = 0) {
         this.tracksAmount++;
         if (this.tracksAmount > 1) {
             this.format = 1;
@@ -85,7 +85,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param event the MIDI event number.
      * @param eventData {Uint8Array|Iterable<number>} the raw event data.
      */
-    addEvent(
+    public addEvent(
         ticks: number,
         track: number,
         event: MIDIMessageType,
@@ -126,7 +126,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param midiNote the midi note of the keypress.
      * @param velocity the velocity of the keypress.
      */
-    addNoteOn(
+    public addNoteOn(
         ticks: number,
         track: number,
         channel: number,
@@ -153,7 +153,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param midiNote the midi note of the key release.
      * @param velocity optional and unsupported by spessasynth.
      */
-    addNoteOff(
+    public addNoteOff(
         ticks: number,
         track: number,
         channel: number,
@@ -178,7 +178,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param channel the channel to use.
      * @param programNumber the MIDI program to use.
      */
-    addProgramChange(
+    public addProgramChange(
         ticks: number,
         track: number,
         channel: number,
@@ -203,7 +203,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param controllerNumber the MIDI CC to use.
      * @param controllerValue the new CC value.
      */
-    addControllerChange(
+    public addControllerChange(
         ticks: number,
         track: number,
         channel: number,
@@ -230,7 +230,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param MSB SECOND byte of the MIDI pitchWheel message.
      * @param LSB FIRST byte of the MIDI pitchWheel message.
      */
-    addPitchWheel(
+    public addPitchWheel(
         ticks: number,
         track: number,
         channel: number,

@@ -6,15 +6,15 @@ import {
 import type { DLSDestination, DLSSource } from "../../enums";
 
 export class Articulator {
-    source: DLSSource;
-    control: DLSSource;
-    destination: DLSDestination;
+    public readonly source: DLSSource;
+    public readonly control: DLSSource;
+    public readonly destination: DLSDestination;
     // like SF2 amount
-    scale: number;
+    public readonly scale: number;
     // like sf2 source transforms
-    transform: number;
+    public readonly transform: number;
 
-    constructor(
+    public constructor(
         source: DLSSource,
         control: DLSSource,
         destination: DLSDestination,
@@ -28,7 +28,7 @@ export class Articulator {
         this.transform = transform;
     }
 
-    writeArticulator(): IndexedByteArray {
+    public writeArticulator(): IndexedByteArray {
         const out = new IndexedByteArray(12);
         writeWord(out, this.source);
         writeWord(out, this.control);

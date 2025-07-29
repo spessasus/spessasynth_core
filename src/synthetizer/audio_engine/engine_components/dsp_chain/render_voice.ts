@@ -1,13 +1,13 @@
-import { VolumeEnvelope } from "../engine_components/volume_envelope";
-import { ModulationEnvelope } from "../engine_components/modulation_envelope";
-import { absCentsToHz, timecentsToSeconds } from "../engine_components/unit_converter";
-import { getLFOValue } from "../engine_components/lfo";
-import { WavetableOscillator } from "../engine_components/wavetable_oscillator";
-import { LowpassFilter } from "../engine_components/lowpass_filter";
-import type { Voice } from "../engine_components/voice";
-import type { MIDIChannel } from "../engine_components/midi_channel";
-import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
-import { customControllers } from "../../enums";
+import { VolumeEnvelope } from "./volume_envelope";
+import { ModulationEnvelope } from "./modulation_envelope";
+import { absCentsToHz, timecentsToSeconds } from "../unit_converter";
+import { getLFOValue } from "./lfo";
+import { WavetableOscillator } from "./wavetable_oscillator";
+import { LowpassFilter } from "./lowpass_filter";
+import type { Voice } from "../voice";
+import type { MIDIChannel } from "../midi_channel";
+import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import { customControllers } from "../../../enums";
 
 /**
  * Renders a voice to the stereo output buffer

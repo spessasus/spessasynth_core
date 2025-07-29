@@ -16,7 +16,7 @@ import type { DLSSample } from "./dls_sample";
 import { generatorTypes } from "../basic_soundbank/generator_types";
 
 export function readRegion(
-    dls: DownloadableSounds,
+    this: DownloadableSounds,
     chunk: RIFFChunk,
     instrument: DLSInstrument
 ) {
@@ -69,7 +69,7 @@ export function readRegion(
     // sampleID
     const sampleID = readLittleEndian(waveLinkChunk.chunkData, 4);
     // hacky cast, but works
-    const sample: DLSSample = dls.samples[sampleID] as DLSSample;
+    const sample: DLSSample = this.samples[sampleID] as DLSSample;
     if (sample === undefined) {
         throw new Error("Invalid sample ID!");
     }
@@ -94,12 +94,12 @@ export function readRegion(
     // lart
     const lart = findRIFFListType(regionChunks, "lart");
     const lar2 = findRIFFListType(regionChunks, "lar2");
-    readLart(dls, lart, lar2, zone);
+    readLart.call(this, lart, lar2, zone);
 
     // wsmp: wave sample chunk
     const waveSampleChunk = regionChunks.find((c) => c.header === "wsmp");
     if (!waveSampleChunk) {
-        dls.parsingError("No wavesample chunk in region.");
+        this.parsingError("No wavesample chunk in region.");
         return;
     }
     // cbSize
@@ -148,7 +148,7 @@ export function readRegion(
     // convert to centibels
     const attenuation = (actualDbCorrection * 10) / 0.4; // make sure to apply EMU correction
 
-    zone.setWavesample(
+    zone.setWaveSample(
         attenuation,
         loopingMode,
         loop,

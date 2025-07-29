@@ -116,7 +116,7 @@ export function loadNewSequenceInternal(
      * @type {number}
      */
     this.duration = this.midiData.duration;
-    this.firstNoteTime = this.midiData.MIDIticksToSeconds(
+    this.firstNoteTime = this.midiData.midiTicksToSeconds(
         this.midiData.firstNoteOn
     );
     SpessaSynthInfo(

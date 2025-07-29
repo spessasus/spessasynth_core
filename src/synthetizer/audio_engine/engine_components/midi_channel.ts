@@ -4,8 +4,8 @@ import {
     resetControllersRP15Compliant,
     resetParameters
 } from "../engine_methods/controller_control/reset_controllers";
-import { renderVoice } from "../engine_methods/render_voice";
-import { panAndMixVoice } from "./stereo_panner";
+import { renderVoice } from "./dsp_chain/render_voice";
+import { panAndMixVoice } from "./dsp_chain/stereo_panner";
 import { dataEntryFine } from "../engine_methods/controller_control/data_entry/data_entry_fine";
 import { controllerChange } from "../engine_methods/controller_control/controller_change";
 import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry/data_entry_coarse";
@@ -35,7 +35,7 @@ import { modulatorSources } from "../../../soundbank/enums";
 /**
  * This class represents a single MIDI Channel within the synthesizer.
  */
-class MIDIChannel {
+export class MIDIChannel {
     /*
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
@@ -47,193 +47,176 @@ class MIDIChannel {
      * for example, pitch range and pitch range depth.
      * This allows us for precise control range and supports full pitch-wheel resolution.
      */
-    midiControllers: Int16Array = new Int16Array(CONTROLLER_TABLE_SIZE);
+    public readonly midiControllers: Int16Array = new Int16Array(
+        CONTROLLER_TABLE_SIZE
+    );
 
     /**
      * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
      * (i.e., not allowed changing).
      * A locked controller cannot be modified.
      */
-    lockedControllers: boolean[] = Array(CONTROLLER_TABLE_SIZE).fill(false);
+    public lockedControllers: boolean[] = Array(CONTROLLER_TABLE_SIZE).fill(
+        false
+    ) as boolean[];
 
     /**
      * An array of custom (non-SF2) control values such as RPN pitch tuning, transpose, modulation depth, etc.
      * Refer to controller_tables.js for the index definitions.
      */
-    customControllers: Float32Array = new Float32Array(
+    public readonly customControllers: Float32Array = new Float32Array(
         CUSTOM_CONTROLLER_TABLE_SIZE
     );
 
     /**
      * The key shift of the channel (in semitones).
      */
-    channelTransposeKeyShift: number = 0;
+    public channelTransposeKeyShift: number = 0;
 
     /**
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
      * Note: Repeated every 12 notes.
      */
-    channelOctaveTuning: Int8Array = new Int8Array(128);
-
-    /**
-     * Will be updated every time something tuning-related gets changed.
-     * This is used to avoid a big addition for every voice rendering call.
-     */
-    channelTuningCents: number = 0;
-
+    public channelOctaveTuning: Int8Array = new Int8Array(128);
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */
-    sysExModulators: DynamicModulatorSystem = new DynamicModulatorSystem();
-
-    /**
-     * An array of offsets generators for SF2 nrpn support.
-     * A value of 0 means no change; -10 means 10 lower, etc.
-     */
-    generatorOffsets: Int16Array = new Int16Array(GENERATORS_AMOUNT);
-
-    /**
-     * A small optimization that disables applying offsets until at least one is set.
-     */
-    generatorOffsetsEnabled: boolean = false;
-
-    /**
-     * An array of override generators for AWE32 support.
-     * A value of 32,767 means unchanged, as it is not allowed anywhere.
-     */
-    generatorOverrides: Int16Array = new Int16Array(GENERATORS_AMOUNT);
-
-    /**
-     * A small optimization that disables applying overrides until at least one is set.
-     */
-    generatorOverridesEnabled: boolean = false;
-
+    public sysExModulators: DynamicModulatorSystem =
+        new DynamicModulatorSystem();
     /**
      * Indicates whether the sustain (hold) pedal is active.
      */
-    holdPedal: boolean = false;
-
+    public holdPedal: boolean = false;
     /**
      * Indicates whether this channel is a drum channel.
      */
-    drumChannel: boolean = false;
-
+    public drumChannel: boolean = false;
     /**
      * If greater than 0, overrides the velocity value for the channel, otherwise it's disabled.
      */
-    velocityOverride: number = 0;
-
+    public velocityOverride: number = 0;
     /**
      * Enables random panning for every note played on this channel.
      */
-    randomPan: boolean = false;
-
+    public randomPan: boolean = false;
     /**
      * The current state of the data entry for the channel.
      */
-    dataEntryState: DataEntryState = dataEntryStates.Idle;
-
+    public dataEntryState: DataEntryState = dataEntryStates.Idle;
     /**
      * The bank number of the channel (used for patch changes).
      */
-    bank: number = 0;
-
+    public bank: number = 0;
     /**
      * The bank number sent as channel properties.
      */
-    sentBank: number = 0;
-
+    public sentBank: number = 0;
     /**
      * The bank LSB number of the channel (used for patch changes in XG mode).
      */
-    bankLSB: number = 0;
-
+    public bankLSB: number = 0;
     /**
      * The preset currently assigned to the channel.
      */
-    preset: BasicPreset | undefined = undefined;
-
+    public preset: BasicPreset | undefined = undefined;
     /**
      * Indicates whether the program on this channel is locked.
      */
-    lockPreset: boolean = false;
-
+    public lockPreset: boolean = false;
     /**
      * Indicates the MIDI system when the preset was locked.
      */
-    lockedSystem: SynthSystem = "gs";
-
+    public lockedSystem: SynthSystem = "gs";
     /**
      * Indicates whether the GS NRPN parameters are enabled for this channel.
      */
-    lockGSNRPNParams: boolean = false;
-
+    public lockGSNRPNParams: boolean = false;
     /**
      * The vibrato settings for the channel.
      * @property depth - Depth of the vibrato effect in cents.
      * @property delay - Delay before the vibrato effect starts (in seconds).
      * @property rate - Rate of the vibrato oscillation (in Hz).
      */
-    channelVibrato: { delay: number; depth: number; rate: number } = {
+    public channelVibrato: { delay: number; depth: number; rate: number } = {
         delay: 0,
         depth: 0,
         rate: 0
     };
-
     /**
      * Indicates whether the channel is muted.
      */
-    isMuted: boolean = false;
-
+    public isMuted: boolean = false;
     /**
      * An array of voices currently active on the channel.
      */
-    voices: VoiceList = [];
-
+    public voices: VoiceList = [];
     /**
      * An array of voices that are sustained on the channel.
      */
-    sustainedVoices: VoiceList = [];
-
+    public sustainedVoices: VoiceList = [];
     /**
      * The channel's number (0-based index)
      */
-    channelNumber: number;
-
+    public readonly channelNumber: number;
     /**
      * Parent processor instance.
      */
-    synth: SpessaSynthProcessor;
-
+    public synth: SpessaSynthProcessor;
     /**
      * Grants access to protected synth values.
      */
-    synthProps: ProtectedSynthValues;
+    public synthProps: ProtectedSynthValues;
+    // MIDI messages
+    public noteOn = noteOn.bind(this);
+    public noteOff = noteOff.bind(this);
+    public programChange = programChange.bind(this);
+    // CC (Continuous Controller)
+    public controllerChange = controllerChange.bind(this);
+    public resetControllers = resetControllers.bind(this);
 
     // Bind all methods to the instance
     // (A hacky way to split the class into multiple files)
-    // Voice rendering methods
-    renderVoice = renderVoice.bind(this);
-    panAndMixVoice = panAndMixVoice.bind(this);
-    computeModulators = computeModulators.bind(this);
-    // MIDI messages
-    noteOn = noteOn.bind(this);
-    noteOff = noteOff.bind(this);
-    programChange = programChange.bind(this);
+    public resetControllersRP15Compliant =
+        resetControllersRP15Compliant.bind(this);
+    public resetParameters = resetParameters.bind(this);
+    public dataEntryFine = dataEntryFine.bind(this);
+    public dataEntryCoarse = dataEntryCoarse.bind(this);
+    /**
+     * Will be updated every time something tuning-related gets changed.
+     * This is used to avoid a big addition for every voice rendering call.
+     */
+    protected channelTuningCents: number = 0;
+    /**
+     * An array of offsets generators for SF2 nrpn support.
+     * A value of 0 means no change; -10 means 10 lower, etc.
+     */
+    protected generatorOffsets: Int16Array = new Int16Array(GENERATORS_AMOUNT);
     // Tuning
-    // CC (Continuous Controller)
-    controllerChange = controllerChange.bind(this);
-    resetControllers = resetControllers.bind(this);
-    resetControllersRP15Compliant = resetControllersRP15Compliant.bind(this);
-    resetParameters = resetParameters.bind(this);
-    dataEntryFine = dataEntryFine.bind(this);
-    dataEntryCoarse = dataEntryCoarse.bind(this);
+    /**
+     * A small optimization that disables applying offsets until at least one is set.
+     */
+    protected generatorOffsetsEnabled: boolean = false;
+    /**
+     * An array of override generators for AWE32 support.
+     * A value of 32,767 means unchanged, as it is not allowed anywhere.
+     */
+    protected generatorOverrides: Int16Array = new Int16Array(
+        GENERATORS_AMOUNT
+    );
+    /**
+     * A small optimization that disables applying overrides until at least one is set.
+     */
+    protected generatorOverridesEnabled: boolean = false;
+    // Voice rendering methods
+    protected renderVoice = renderVoice.bind(this);
+    protected panAndMixVoice = panAndMixVoice.bind(this);
+    protected computeModulators = computeModulators.bind(this);
 
     /**
      * Constructs a new MIDI channel.
      */
-    constructor(
+    public constructor(
         synth: SpessaSynthProcessor,
         synthProps: ProtectedSynthValues,
         preset: BasicPreset | undefined,
@@ -247,7 +230,7 @@ class MIDIChannel {
         this.resetGeneratorOffsets();
     }
 
-    get isXGChannel() {
+    public get isXGChannel() {
         return (
             isSystemXG(this.synthProps.masterParameters.midiSystem) ||
             (this.lockPreset && isSystemXG(this.lockedSystem))
@@ -259,7 +242,7 @@ class MIDIChannel {
      * @param semitones The number of semitones to transpose the channel by. Can be decimal.
      * @param force Defaults to false, if true, it will force the transpose even if the channel is a drum channel.
      */
-    transposeChannel(semitones: number, force: boolean = false) {
+    public transposeChannel(semitones: number, force: boolean = false) {
         if (!this.drumChannel) {
             semitones += this.synthProps.masterParameters.transposition;
         }
@@ -290,7 +273,7 @@ class MIDIChannel {
      * @remarks
      * Cent tunings are relative.
      */
-    setOctaveTuning(tuning: Int8Array) {
+    public setOctaveTuning(tuning: Int8Array) {
         if (tuning.length !== 12) {
             throw new Error("Tuning is not the length of 12.");
         }
@@ -313,7 +296,7 @@ class MIDIChannel {
      * will create a total modulation depth of 100 cents.
      *
      */
-    setModulationDepth(cents: number) {
+    public setModulationDepth(cents: number) {
         cents = Math.round(cents);
         SpessaSynthInfo(
             `%cChannel ${this.channelNumber} modulation depth. Cents: %c${cents}`,
@@ -331,7 +314,7 @@ class MIDIChannel {
      * @param cents The tuning in cents to set.
      * @param log If true, logs the change to the console.
      */
-    setTuning(cents: number, log: boolean = true) {
+    public setTuning(cents: number, log: boolean = true) {
         cents = Math.round(cents);
         this.setCustomController(customControllers.channelTuning, cents);
         if (!log) {
@@ -352,7 +335,7 @@ class MIDIChannel {
      * @param MSB The SECOND byte of the MIDI pitchWheel message.
      * @param LSB The FIRST byte of the MIDI pitchWheel message.
      */
-    pitchWheel(MSB: number, LSB: number) {
+    public pitchWheel(MSB: number, LSB: number) {
         if (
             this.lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
@@ -380,7 +363,7 @@ class MIDIChannel {
      * Sets the channel pressure (MIDI Aftertouch).
      * @param pressure the pressure of the channel.
      */
-    channelPressure(pressure: number) {
+    public channelPressure(pressure: number) {
         this.midiControllers[
             NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
         ] = pressure << 7;
@@ -401,7 +384,7 @@ class MIDIChannel {
      * @param midiNote 0 - 127, the MIDI note number to set the pressure for.
      * @param pressure 0 - 127, the pressure value to set for the note.
      */
-    polyPressure(midiNote: number, pressure: number) {
+    public polyPressure(midiNote: number, pressure: number) {
         this.voices.forEach((v) => {
             if (v.midiNote !== midiNote) {
                 return;
@@ -416,12 +399,12 @@ class MIDIChannel {
         });
     }
 
-    setCustomController(type: CustomController, value: number) {
+    public setCustomController(type: CustomController, value: number) {
         this.customControllers[type] = value;
         this.updateChannelTuning();
     }
 
-    updateChannelTuning() {
+    public updateChannelTuning() {
         this.channelTuningCents =
             this.customControllers[customControllers.channelTuning] + // RPN channel fine tuning
             this.customControllers[customControllers.channelTransposeFine] + // user tuning (transpose)
@@ -441,7 +424,7 @@ class MIDIChannel {
      * @param startIndex start index offset.
      * @param sampleCount sample count to render.
      */
-    renderAudio(
+    public renderAudio(
         outputLeft: Float32Array,
         outputRight: Float32Array,
         reverbOutputLeft: Float32Array,
@@ -468,14 +451,14 @@ class MIDIChannel {
         );
     }
 
-    setPresetLock(locked: boolean) {
+    public setPresetLock(locked: boolean) {
         this.lockPreset = locked;
         if (locked) {
             this.lockedSystem = this.synthProps.masterParameters.midiSystem;
         }
     }
 
-    setBankSelect(bank: number, isLSB: boolean = false) {
+    public setBankSelect(bank: number, isLSB: boolean = false) {
         if (this.lockPreset) {
             return;
         }
@@ -510,7 +493,7 @@ class MIDIChannel {
         }
     }
 
-    getBankSelect(): number {
+    public getBankSelect(): number {
         return chooseBank(
             this.bank,
             this.bankLSB,
@@ -522,7 +505,7 @@ class MIDIChannel {
     /**
      * Changes a preset of this channel.
      */
-    setPreset(preset: BasicPreset) {
+    public setPreset(preset: BasicPreset) {
         if (this.lockPreset) {
             return;
         }
@@ -532,7 +515,7 @@ class MIDIChannel {
     /**
      * Sets drums on channel.
      */
-    setDrums(isDrum: boolean) {
+    public setDrums(isDrum: boolean) {
         if (this.lockPreset || !this.preset) {
             return;
         }
@@ -561,7 +544,7 @@ class MIDIChannel {
      * @param rate Hz.
      * @param delay seconds.
      */
-    setVibrato(depth: number, rate: number, delay: number) {
+    public setVibrato(depth: number, rate: number, delay: number) {
         if (this.lockGSNRPNParams) {
             return;
         }
@@ -574,17 +557,103 @@ class MIDIChannel {
     /**
      * Yes.
      */
-    disableAndLockGSNRPN() {
+    public disableAndLockGSNRPN() {
         this.lockGSNRPNParams = true;
         this.channelVibrato.rate = 0;
         this.channelVibrato.delay = 0;
         this.channelVibrato.depth = 0;
     }
 
+    public resetGeneratorOverrides() {
+        this.generatorOverrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
+        this.generatorOverridesEnabled = false;
+    }
+
+    public setGeneratorOverride(
+        gen: GeneratorType,
+        value: number,
+        realtime: boolean = false
+    ) {
+        this.generatorOverrides[gen] = value;
+        this.generatorOverridesEnabled = true;
+        if (realtime) {
+            this.voices.forEach((v) => {
+                v.generators[gen] = value;
+                this.computeModulators(v);
+            });
+        }
+    }
+
+    public resetGeneratorOffsets() {
+        this.generatorOffsets.fill(0);
+        this.generatorOffsetsEnabled = false;
+    }
+
+    public setGeneratorOffset(gen: GeneratorType, value: number) {
+        this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
+        this.generatorOffsetsEnabled = true;
+        this.voices.forEach((v) => {
+            this.computeModulators(v);
+        });
+    }
+
+    /**
+     * Stops a note nearly instantly.
+     * @param midiNote The note to stop.
+     * @param releaseTime in timecents, defaults to -12000 (very short release).
+     */
+    public killNote(midiNote: number, releaseTime: number = -12000) {
+        // adjust midiNote by channel key shift
+        midiNote += this.customControllers[customControllers.channelKeyShift];
+
+        this.voices.forEach((v) => {
+            if (v.realKey !== midiNote) {
+                return;
+            }
+            v.modulatedGenerators[generatorTypes.releaseVolEnv] = releaseTime; // set release to be very short
+            v.release(this.synth.currentSynthTime);
+        });
+    }
+
+    /**
+     * Stops all notes on the channel.
+     * @param force If true, stops all notes immediately, otherwise applies release time.
+     */
+    public stopAllNotes(force: boolean = false) {
+        if (force) {
+            // force stop all
+            this.voices.length = 0;
+            this.sustainedVoices.length = 0;
+            this.sendChannelProperty();
+        } else {
+            this.voices.forEach((v) => {
+                if (v.isInRelease) {
+                    return;
+                }
+                v.release(this.synth.currentSynthTime);
+            });
+            this.sustainedVoices.forEach((v) => {
+                v.release(this.synth.currentSynthTime);
+            });
+        }
+    }
+
+    public muteChannel(isMuted: boolean) {
+        if (isMuted) {
+            this.stopAllNotes(true);
+        }
+        this.isMuted = isMuted;
+        this.sendChannelProperty();
+        this.synthProps.callEvent("muteChannel", {
+            channel: this.channelNumber,
+            isMuted: isMuted
+        });
+    }
+
     /**
      * Sends this channel's property
      */
-    sendChannelProperty() {
+    public sendChannelProperty() {
         if (!this.synth.enableEventSystem) {
             return;
         }
@@ -612,92 +681,4 @@ class MIDIChannel {
             property: data
         });
     }
-
-    resetGeneratorOverrides() {
-        this.generatorOverrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
-        this.generatorOverridesEnabled = false;
-    }
-
-    setGeneratorOverride(
-        gen: GeneratorType,
-        value: number,
-        realtime: boolean = false
-    ) {
-        this.generatorOverrides[gen] = value;
-        this.generatorOverridesEnabled = true;
-        if (realtime) {
-            this.voices.forEach((v) => {
-                v.generators[gen] = value;
-                this.computeModulators(v);
-            });
-        }
-    }
-
-    resetGeneratorOffsets() {
-        this.generatorOffsets.fill(0);
-        this.generatorOffsetsEnabled = false;
-    }
-
-    setGeneratorOffset(gen: GeneratorType, value: number) {
-        this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
-        this.generatorOffsetsEnabled = true;
-        this.voices.forEach((v) => {
-            this.computeModulators(v);
-        });
-    }
-
-    /**
-     * Stops a note nearly instantly.
-     * @param midiNote The note to stop.
-     * @param releaseTime in timecents, defaults to -12000 (very short release).
-     */
-    killNote(midiNote: number, releaseTime: number = -12000) {
-        // adjust midiNote by channel key shift
-        midiNote += this.customControllers[customControllers.channelKeyShift];
-
-        this.voices.forEach((v) => {
-            if (v.realKey !== midiNote) {
-                return;
-            }
-            v.modulatedGenerators[generatorTypes.releaseVolEnv] = releaseTime; // set release to be very short
-            v.release(this.synth.currentSynthTime);
-        });
-    }
-
-    /**
-     * Stops all notes on the channel.
-     * @param force If true, stops all notes immediately, otherwise applies release time.
-     */
-    stopAllNotes(force: boolean = false) {
-        if (force) {
-            // force stop all
-            this.voices.length = 0;
-            this.sustainedVoices.length = 0;
-            this.sendChannelProperty();
-        } else {
-            this.voices.forEach((v) => {
-                if (v.isInRelease) {
-                    return;
-                }
-                v.release(this.synth.currentSynthTime);
-            });
-            this.sustainedVoices.forEach((v) => {
-                v.release(this.synth.currentSynthTime);
-            });
-        }
-    }
-
-    muteChannel(isMuted: boolean) {
-        if (isMuted) {
-            this.stopAllNotes(true);
-        }
-        this.isMuted = isMuted;
-        this.sendChannelProperty();
-        this.synthProps.callEvent("muteChannel", {
-            channel: this.channelNumber,
-            isMuted: isMuted
-        });
-    }
 }
-
-export { MIDIChannel };
