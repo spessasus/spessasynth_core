@@ -2,7 +2,7 @@
 
 The core synthesis engine of SpessaSynth.
 
-### Example
+## Example
 
 A good example of the processor in use can be
 seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spessasynth_lib/blob/master/src/synthetizer/worklet_processor.js).
@@ -14,14 +14,40 @@ const synth = new SpessaSynthProcessor(sampleRate, options);
 ```
 
 - sampleRate - number - sample rate in Hertz, like 44,100Hz.
-- options, an object, explained below
+- options, an object, explained below:
 
-### Managers
+```ts
+type SynthProcessorOptions = {
+    // Indicates if the event system is enabled. This can be changed later.
+    enableEventSystem: boolean;
+    // The initial time of the synth, in seconds.
+    initialTime: number;
+    // Indicates if the effects are enabled. This can be changed later.
+    effectsEnabled: boolean;
+    // The number of MIDI channels.
+    midiChannels: number;
+};
+```
+
+## Managers
 
 - [Key Modifier Manager](key-modifier-manager.md)
 - [Sound Bank Manager](sound-bank-manager.md)
 
-### options
+
+## Event System
+
+Processor has a property `onEventCall` which can be defined as a function that
+listens for events.
+
+Parameters:
+
+- eventType - ProcessorEventType - the event type.
+- eventData - depends - the event data.
+
+[Refer to the synth event types for all events.](event-types.md)
+
+## options
 
 #### enableEventSystem
 
@@ -43,10 +69,6 @@ Defaults to `true`.
 
 Number, the default number of MIDI channels.
 Defaults to 16.
-
-## MasterParameterTypes
-
-TODO
 
 ## Methods
 
@@ -266,63 +288,3 @@ synth.stopAllChannels(force = false);
 ```
 
 - force - if true, the voices will be cut instead of releasing smoothly
-
-### setSystem
-
-Set a MIDI bank select system.
-
-```ts
-synth.setSystem(system);
-```
-
-- system - `gs`, `gm2`, `gm` or `xg` - refer
-  to [MIDI implementation](../extra/midi-implementation.md#supported-bank-systems)
-  for
-  more info.
-
-## Properties
-
-### onEventCall
-
-A listener for events.
-
-Parameters:
-
-- eventType - string - the event type.
-- eventData - depends - the event data.
-
-[Refer to the synth event types for all events.](event-types.md)
-
-### onChannelPropertyChange
-
-A listener for channel property changes.
-
-Parameters:
-
-- newProperty - ChannelProperty - the new property.
-- channelNumber - number - the channel number that the property belongs to.
-
-The property is formatted as follows:
-
-```ts
-/**
- * @typedef {Object} ChannelProperty
- * @property {number} voicesAmount - the channel's current voice amount
- * @property {number} pitchBend - the channel's current pitch bend from -8192 do 8192
- * @property {number} pitchBendRangeSemitones - the pitch bend's range, in semitones
- * @property {boolean} isMuted - indicates whether the channel is muted
- * @property {boolean} isDrum - indicates whether the channel is a drum channel
- * @property {number} transposition - the channel's transposition, in semitones
- * @property {number} bank - the bank number of the current preset
- * @property {number} program - the MIDI program number of the current preset
- */
-```
-
-### onMasterParameterChange
-
-A listerer for change in master parameters.
-
-Parameters:
-
-- parameter - masterParameterType - the new parameter type.
-- value - the new value.

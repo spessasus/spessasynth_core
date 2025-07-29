@@ -204,11 +204,11 @@ export type ChannelProperty = {
 };
 
 export type SynthProcessorOptions = {
-    // Indicates if the event system is enabled.
+    // Indicates if the event system is enabled. This can be changed later.
     enableEventSystem: boolean;
     // The initial time of the synth, in seconds.
     initialTime: number;
-    // Indicates if the effects are enabled.
+    // Indicates if the effects are enabled. This can be changed later.
     effectsEnabled: boolean;
     // The number of MIDI channels.
     midiChannels: number;
@@ -223,7 +223,7 @@ export type MasterParameterType = {
     voiceCap: number;
     // The interpolation type used for sample playback.
     interpolationType: InterpolationType;
-    // The MIDI system used by the synthesizer. (GM, GM2, GS, XG)
+    // The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG)
     midiSystem: SynthSystem;
     // Indicates whether the synthesizer is in monophonic retrigger mode.
     // This emulates the behavior of Microsoft GS Wavetable Synth,

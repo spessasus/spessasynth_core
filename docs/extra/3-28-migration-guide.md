@@ -107,6 +107,8 @@ They behave in exactly the same way.
 `onMasterParameterChange` has been replaced with an event `masterParameterChange`.
 `onChannelPropertyChange` has been replaced with an event `channelPropertyChange`.
 
+`setSystem` has been replaced with a master parameter.
+
 A few properties have been replaced with master parameters.
 
 - `deviceID`
