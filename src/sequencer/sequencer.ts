@@ -312,7 +312,6 @@ export class SpessaSynthSequencer {
             return;
         }
 
-        this.pausedTime = undefined;
         // unpause if paused
         if (this.paused) {
             // adjust the start time
@@ -323,6 +322,7 @@ export class SpessaSynthSequencer {
                 this.synth.noteOn(n.channel, n.midiNote, n.velocity);
             });
         }
+        this.pausedTime = undefined;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -393,18 +393,6 @@ export class SpessaSynthSequencer {
         }
     }
 
-    protected resetPlayback() {
-        if (this.externalMIDIPlayback) {
-            this.sendMIDIReset();
-        } else {
-            this.synth.resetAllControllers();
-        }
-        this.playedTime = 0;
-        this.eventIndexes = Array(this.midiData.tracks.length).fill(
-            0
-        ) as number[];
-    }
-
     /**
      * @returns the index of the first to the current played time
      */
@@ -440,9 +428,6 @@ export class SpessaSynthSequencer {
     }
 
     protected sendMIDIReset() {
-        if (!this.externalMIDIPlayback) {
-            return;
-        }
         this.sendMIDIMessage([midiMessageTypes.reset]);
         for (let ch = 0; ch < MIDI_CHANNEL_COUNT; ch++) {
             this.sendMIDIMessage([
@@ -519,7 +504,8 @@ export class SpessaSynthSequencer {
      */
     protected setTimeTicks(ticks: number) {
         this.playingNotes = [];
-        this?.onTimeChange?.(this.midiData.midiTicksToSeconds(ticks));
+        const seconds = this.midiData.midiTicksToSeconds(ticks);
+        this?.onTimeChange?.(seconds);
         const isNotFinished = this.setTimeTo(0, ticks);
         this.recalculateStartTime(this.playedTime);
         if (!isNotFinished) {

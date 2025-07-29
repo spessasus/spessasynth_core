@@ -26,8 +26,15 @@ export function setTimeToInternal(
         return false;
     }
     this.oneTickToSeconds = 60 / (120 * this.midiData.timeDivision);
-    // reset
-    this.resetPlayback();
+    // reset everything
+    if (this.externalMIDIPlayback) {
+        this.sendMIDIReset();
+    } else {
+        this.synth.resetAllControllers();
+        this.synth.stopAllChannels(false);
+    }
+    this.playedTime = 0;
+    this.eventIndexes = Array(this.midiData.tracks.length).fill(0) as number[];
 
     // we save the pitch bends, programs and controllers here
     // to only send them once after going through the events
@@ -300,6 +307,12 @@ export function setTimeToInternal(
                 }
             }
         }
+    }
+
+    // restoring paused time
+
+    if (this.paused) {
+        this.pausedTime = this.playedTime;
     }
     return true;
 }
