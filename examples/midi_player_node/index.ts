@@ -32,6 +32,7 @@ await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer)]);
 seq.play();
+seq.loop = true;
 
 const bufSize = 128;
 
