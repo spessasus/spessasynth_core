@@ -1,10 +1,5 @@
 import { consoleColors, formatTime } from "../utils/other";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthSequencer } from "./sequencer";
 
@@ -128,7 +123,7 @@ export function loadNewSequenceInternal(
         `%cTotal song time: ${formatTime(Math.ceil(this.duration)).time}`,
         consoleColors.recognized
     );
-    this?.onSongChange?.(this.songIndex, autoPlay);
+    this?.onSongChange?.(this._songIndex, autoPlay);
 
     if (this.duration <= 1) {
         SpessaSynthWarn(

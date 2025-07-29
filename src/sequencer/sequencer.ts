@@ -18,19 +18,11 @@ export class SpessaSynthSequencer {
      * Sequencer's song list.
      */
     public songs: BasicMIDI[] = [];
-
-    /**
-     * The current song index in the song list.
-     * If shuffleMode is enabled, this is the index of the shuffled song list.
-     */
-    public songIndex: number = 0;
-
     /**
      * The shuffled song indexes.
      * This is used when shuffleMode is enabled.
      */
     public shuffledSongIndexes: number[] = [];
-
     /**
      * The synthesizer connected to the sequencer.
      */
@@ -53,11 +45,6 @@ export class SpessaSynthSequencer {
      * Controls if the sequencer loops (defaults to true).
      */
     public loop: boolean = true;
-    /**
-     * Controls if the sequencer should shuffle the songs in the song list.
-     * If true, the sequencer will play the songs in a random order.
-     */
-    public shuffleMode: boolean = false;
     /**
      * The currently loaded MIDI data.
      */
@@ -94,7 +81,6 @@ export class SpessaSynthSequencer {
      * This is called when the sequencer finishes loading a new song list.
      */
     public onSongListChange?: (newSongList: BasicMIDI[]) => unknown;
-
     /**
      * Called when the song changes.
      * @param songIndex the index of the new song in the song list.
@@ -185,6 +171,54 @@ export class SpessaSynthSequencer {
     constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
         this.absoluteStartTime = this.synth.currentSynthTime;
+    }
+
+    protected _songIndex: number = 0;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * The current song index in the song list.
+     * If shuffleMode is enabled, this is the index of the shuffled song list.
+     */
+    public get songIndex(): number {
+        return this._songIndex;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * The current song index in the song list.
+     * If shuffleMode is enabled, this is the index of the shuffled song list.
+     */
+    public set songIndex(value: number) {
+        this._songIndex = value;
+        this.loadCurrentSong();
+    }
+
+    private _shuffleMode: boolean = false;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Controls if the sequencer should shuffle the songs in the song list.
+     * If true, the sequencer will play the songs in a random order.
+     */
+    public get shuffleMode(): boolean {
+        return this._shuffleMode;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Controls if the sequencer should shuffle the songs in the song list.
+     * If true, the sequencer will play the songs in a random order.
+     */
+    public set shuffleMode(on: boolean) {
+        this._shuffleMode = on;
+        if (on) {
+            this.shuffleSongIndexes();
+            this._songIndex = 0;
+            this.loadCurrentSong();
+        } else {
+            this._songIndex = this.shuffledSongIndexes[this._songIndex];
+        }
     }
 
     /**
@@ -341,8 +375,8 @@ export class SpessaSynthSequencer {
             this.currentTime = 0;
             return;
         }
-        this.songIndex++;
-        this.songIndex %= this.songs.length;
+        this._songIndex++;
+        this._songIndex %= this.songs.length;
         this.loadCurrentSong();
     }
 
@@ -356,9 +390,9 @@ export class SpessaSynthSequencer {
             this.currentTime = 0;
             return;
         }
-        this.songIndex--;
-        if (this.songIndex < 0) {
-            this.songIndex = this.songs.length - 1;
+        this._songIndex--;
+        if (this._songIndex < 0) {
+            this._songIndex = this.songs.length - 1;
         }
         this.loadCurrentSong();
     }
@@ -377,7 +411,7 @@ export class SpessaSynthSequencer {
         if (this.songs.length < 1) {
             return;
         }
-        this.songIndex = 0;
+        this._songIndex = 0;
         if (this.songs.length > 1) {
             this.loop = false;
         }
@@ -468,9 +502,9 @@ export class SpessaSynthSequencer {
     }
 
     protected loadCurrentSong(autoPlay = true) {
-        let index = this.songIndex;
-        if (this.shuffleMode) {
-            index = this.shuffledSongIndexes[this.songIndex];
+        let index = this._songIndex;
+        if (this._shuffleMode) {
+            index = this.shuffledSongIndexes[this._songIndex];
         }
         this.loadNewSequence(this.songs[index], autoPlay);
     }
