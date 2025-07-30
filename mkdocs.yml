@@ -98,3 +98,4 @@ nav:
       - extra/about-multi-port.md
       - SF2 RMIDI Extension Specification: https://github.com/spessasus/sf2-rmidi-specification#readme
       - extra/dls-conversion-problem.md
+      - extra/4-0-migration-guide.md

@@ -9,6 +9,13 @@ hide:
 This should serve as the complete documentation of the library.
 (And my attempt to explain the program :-)
 
+!!! DANGER
+
+    The next major update (4.0) will include many breaking changes. 
+    The documentation will be updated when the update releases
+    [The migration guide is available.](extra/4-0-migration-guide.md)
+
+
 !!! Tip
 
     If you encounter any errors in this documentation, please **open an issue!**
