@@ -9,9 +9,10 @@ hide:
 This should serve as the complete documentation of the library.
 (And my attempt to explain the program :-)
 
-!!! Important
+!!! DANGER
 
-    Coming from 3.27? Make sure to read the [3.28 migration guide](extra/3-28-migration-guide.md)!
+    SpessaSynth 4.0 has many breaking changes. 
+    [The migration guide is available.](extra/4-0-migration-guide.md)
 
 ## Documentation
 

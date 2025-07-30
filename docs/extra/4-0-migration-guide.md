@@ -1,6 +1,6 @@
-# 3.28 Migration guide
+# 4.0 Migration guide
 
-SpessaSynth 3.28 (The TypeScript Update) updates its libraries to ship with TypeScript definitions.
+SpessaSynth 4.0 (The TypeScript Update) updates its libraries to ship with TypeScript definitions.
 
 It also includes a few breaking changes which were made to make the API more consistent and logical.
 
@@ -13,6 +13,7 @@ This page documents all the breaking changes in spessasynth_core.
 ## Breaking changes
 
 All variables with `soundfont` in them have been renamed to use `soundBank` instead.
+This is done because spessasynth can load sound bank formats other than SoundFonts as well.
 
 ## MIDI
 
@@ -22,7 +23,7 @@ A few methods and properties have been renamed for consistency.
 They behave in exactly the same way.
 
 
- -`embeddedSoundFont` -> `embeddedSoundBank`
+ - `embeddedSoundFont` -> `embeddedSoundBank`
  - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
 
@@ -187,3 +188,7 @@ Loading a new song list no longer automatically starts the playback.
 ### previousSong, nextSong
 
 Removed, replaced with setting the `songIndex` property.
+
+### SpessaSynthLogging
+
+The parameter `table` has been removed as the console.table command is not used.

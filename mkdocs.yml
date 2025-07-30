@@ -1,4 +1,4 @@
-site_name: spessasynth_core docs
+site_name: spessasynth_core documentation
 site_description: Documentation for the spessasynth_core JavaScript SoundFont2/DLS MIDI Library.
 site_author: spessasus
 site_url: https://spessasus.github.io/spessasynth_core
@@ -99,4 +99,4 @@ nav:
       - extra/about-multi-port.md
       - SF2 RMIDI Extension Specification: https://github.com/spessasus/sf2-rmidi-specification#readme
       - extra/dls-conversion-problem.md
-      - extra/3-28-migration-guide.md
+      - extra/4-0-migration-guide.md
