@@ -302,14 +302,14 @@ export class SpessaSynthSequencer {
      * Starts or resumes the playback of the sequencer.
      * If the sequencer is paused, it will resume from the paused time.
      */
-    public play(this: SpessaSynthSequencer) {
+    public play() {
         if (!this.hasSongs) {
             throw new Error("No songs loaded in the sequencer!");
         }
 
+        // reset the time
         if (this.currentTime >= this.duration) {
             this.currentTime = 0;
-            return;
         }
 
         // unpause if paused
