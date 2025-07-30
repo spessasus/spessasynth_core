@@ -7,10 +7,6 @@
 WebAssembly.*
 
 
-**v3.28 TypeScript Update is here! The NPM package now contains type declarations for easier developing!**
-
-[**Read about breaking changes here**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
-
 
 It allows you to:
 
@@ -19,6 +15,12 @@ It allows you to:
 - Write SF2/SF3 files!
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
+
+
+
+### v4.0.0 TypeScript Update is here! 
+
+[**Read about breaking changes here.**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
 
 > **Tip:**
 > 
