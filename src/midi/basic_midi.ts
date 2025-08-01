@@ -789,12 +789,12 @@ export class BasicMIDI {
                 )
             );
         }
-
-        /**
-         * The total playback time, in seconds
-         * @type {number}
-         */
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
+
+        // invalidate raw name if empty
+        if (this.rawName && this.rawName.length < 1) {
+            this.rawName = undefined;
+        }
 
         SpessaSynthInfo("%cSuccess!", consoleColors.recognized);
         SpessaSynthGroupEnd();
