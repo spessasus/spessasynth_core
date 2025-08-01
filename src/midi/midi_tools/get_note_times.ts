@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { readBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
+import { readBigEndian } from "../../utils/byte_functions/big_endian";
+import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import type { BasicMIDI } from "../basic_midi";
 import type { MIDIMessage } from "../midi_message";
 import type { NoteTime } from "../types";
@@ -25,7 +25,7 @@ export function getNoteTimesInternal(
         // simulate IndexedByteArray
         event.data = new IndexedByteArray(event.data.buffer);
         event.data.currentIndex = 0;
-        return 60000000 / readBytesAsUintBigEndian(event.data, 3);
+        return 60000000 / readBigEndian(event.data, 3);
     };
 
     /**

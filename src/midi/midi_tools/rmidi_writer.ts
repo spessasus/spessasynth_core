@@ -12,7 +12,7 @@ import {
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndian } from "../../utils/byte_functions/little_endian";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import {
     isGM2On,
@@ -31,7 +31,7 @@ import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_sound
 import type { RMIDMetadata } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import { getGsOn } from "./get_gs_on";
-import type { SynthSystem } from "../../synthetizer/types";
+import type { SynthSystem } from "../../synthesizer/types";
 
 const FORCED_ENCODING = "utf-8";
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";

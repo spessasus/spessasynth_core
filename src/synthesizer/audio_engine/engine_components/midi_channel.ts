@@ -24,7 +24,7 @@ import {
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
-import type { SpessaSynthProcessor } from "../processor";
+import type { SpessaSynthProcessor } from "../../processor";
 import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";

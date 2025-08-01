@@ -1,4 +1,4 @@
-import { SpessaSynthProcessor } from "../../processor";
+import { SpessaSynthProcessor } from "../../../processor";
 import type { MasterParameterType } from "../../../types";
 
 /**

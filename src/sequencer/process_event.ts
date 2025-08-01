@@ -1,7 +1,7 @@
 import { getEvent, MIDIMessage } from "../midi/midi_message";
 import { consoleColors } from "../utils/other";
 import { SpessaSynthWarn } from "../utils/loggin";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
+import { readBigEndian } from "../utils/byte_functions/big_endian";
 import type { SpessaSynthSequencer } from "./sequencer";
 import { midiMessageTypes } from "../midi/enums";
 
@@ -115,7 +115,7 @@ export function processEventInternal(
 
         case midiMessageTypes.setTempo: {
             event.data.currentIndex = 0;
-            let tempoBPM = 60000000 / readBytesAsUintBigEndian(event.data, 3);
+            let tempoBPM = 60000000 / readBigEndian(event.data, 3);
             this.oneTickToSeconds =
                 60 / (tempoBPM * this._midiData.timeDivision);
             if (this.oneTickToSeconds === 0) {

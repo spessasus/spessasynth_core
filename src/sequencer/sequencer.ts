@@ -7,9 +7,9 @@ import {
 import { setTimeToInternal } from "./play";
 import { SpessaSynthWarn } from "../utils/loggin";
 
-import { MIDI_CHANNEL_COUNT } from "../synthetizer/audio_engine/engine_components/synth_constants";
+import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
-import type { SpessaSynthProcessor } from "../synthetizer/audio_engine/processor";
+import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { midiControllers, midiMessageTypes } from "../midi/enums";
 import type { SequencerEventType } from "./types";
 

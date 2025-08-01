@@ -1,6 +1,6 @@
 import { getStringBytes, readBytesAsString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
+import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
@@ -20,8 +20,8 @@ import type {
     TempoChange
 } from "./types";
 import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
-import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
-import { SoundBankManager } from "../synthetizer/audio_engine/engine_components/sound_bank_manager";
+import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
+import { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes, type RMIDINFOChunk } from "./enums";
 import type { KeyRange } from "../soundbank/types";
@@ -459,8 +459,7 @@ export class BasicMIDI {
                         e.data.currentIndex = 0;
                         this.tempoChanges.push({
                             ticks: e.ticks,
-                            tempo:
-                                60000000 / readBytesAsUintBigEndian(e.data, 3)
+                            tempo: 60000000 / readBigEndian(e.data, 3)
                         });
                         e.data.currentIndex = 0;
                         break;

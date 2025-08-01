@@ -6,7 +6,7 @@ import type { IndexedByteArray } from "../indexed_array";
  * @param bytesAmount the number of bytes to read.
  * @returns the number.
  */
-export function readBytesAsUintBigEndian(
+export function readBigEndian(
     dataArray: IndexedByteArray,
     bytesAmount: number
 ): number {
@@ -23,10 +23,7 @@ export function readBytesAsUintBigEndian(
  * @param bytesAmount the amount of bytes to use. Excess bytes will be set to zero.
  * @returns the Big endian representation of the number.
  */
-export function writeBytesAsUintBigEndian(
-    number: number,
-    bytesAmount: number
-): number[] {
+export function writeBigEndian(number: number, bytesAmount: number): number[] {
     const bytes = new Array<number>(bytesAmount).fill(0);
     for (let i = bytesAmount - 1; i >= 0; i--) {
         bytes[i] = number & 0xff;

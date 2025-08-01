@@ -4,14 +4,14 @@ import {
     SpessaSynthInfo
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
-import { SoundBankManager } from "../../synthetizer/audio_engine/engine_components/sound_bank_manager";
+import { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
-import type { SynthSystem } from "../../synthetizer/types";
+import type { SynthSystem } from "../../synthesizer/types";
 import { midiControllers, midiMessageTypes } from "../enums";
 
 interface InternalChannelType {

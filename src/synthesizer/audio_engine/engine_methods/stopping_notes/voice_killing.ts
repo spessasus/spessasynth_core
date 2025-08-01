@@ -1,6 +1,6 @@
 import type { MIDIChannel } from "../../engine_components/midi_channel";
 import type { Voice } from "../../engine_components/voice";
-import type { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../../processor";
 
 /**
  * Gets the priority of a voice based on its channel and state.

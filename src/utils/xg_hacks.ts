@@ -1,7 +1,7 @@
 import { SpessaSynthInfo } from "./loggin";
 import { consoleColors } from "./other";
-import { DEFAULT_PERCUSSION } from "../synthetizer/audio_engine/engine_components/synth_constants";
-import type { SynthSystem } from "../synthetizer/types";
+import { DEFAULT_PERCUSSION } from "../synthesizer/audio_engine/engine_components/synth_constants";
+import type { SynthSystem } from "../synthesizer/types";
 
 export const XG_SFX_VOICE = 64;
 

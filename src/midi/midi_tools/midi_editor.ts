@@ -7,7 +7,7 @@ import {
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 
-import { DEFAULT_PERCUSSION } from "../../synthetizer/audio_engine/engine_components/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
 import { isSystemXG, isXGDrums, XG_SFX_VOICE } from "../../utils/xg_hacks";
 import {
@@ -22,9 +22,9 @@ import type {
     DesiredProgramChange
 } from "../types";
 import type { BasicMIDI } from "../basic_midi";
-import type { SynthesizerSnapshot } from "../../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
-import type { SynthSystem } from "../../synthetizer/types";
-import { customControllers } from "../../synthetizer/enums";
+import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
+import type { SynthSystem } from "../../synthesizer/types";
+import { customControllers } from "../../synthesizer/enums";
 
 function getControllerChange(
     channel: number,

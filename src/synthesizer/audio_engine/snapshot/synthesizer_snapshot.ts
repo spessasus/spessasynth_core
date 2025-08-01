@@ -1,6 +1,6 @@
 import { ChannelSnapshot } from "./channel_snapshot";
 import { type KeyModifier } from "../engine_components/key_modifier_manager";
-import { type SpessaSynthProcessor } from "../processor";
+import { type SpessaSynthProcessor } from "../../processor";
 import type { MasterParameterType } from "../../types";
 
 /**

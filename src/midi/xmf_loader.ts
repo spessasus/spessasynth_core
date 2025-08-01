@@ -9,7 +9,7 @@ import {
     SpessaSynthWarn
 } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
+import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import { inflateSync } from "../externals/fflate/fflate_wrapper";
@@ -388,8 +388,8 @@ export function loadXMF(
     // https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp43.pdf
     // version 2.00 has additional bytes
     if (version === "2.00") {
-        const fileTypeId = readBytesAsUintBigEndian(binaryData, 4);
-        const fileTypeRevisionId = readBytesAsUintBigEndian(binaryData, 4);
+        const fileTypeId = readBigEndian(binaryData, 4);
+        const fileTypeRevisionId = readBigEndian(binaryData, 4);
         SpessaSynthInfo(
             `%cFile Type ID: %c${fileTypeId}%c, File Type Revision ID: %c${fileTypeRevisionId}`,
             consoleColors.info,

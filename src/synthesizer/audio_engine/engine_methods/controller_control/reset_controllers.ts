@@ -10,7 +10,7 @@ import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/
 import { getDefaultBank } from "../../../../utils/xg_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
-import type { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../../processor";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { modulatorSources } from "../../../../soundbank/enums";
 

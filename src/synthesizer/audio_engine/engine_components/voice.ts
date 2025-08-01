@@ -2,7 +2,7 @@
  * voice.js
  * purpose: prepares Voices from sample and generator data
  */
-import { SpessaSynthProcessor } from "../processor";
+import { SpessaSynthProcessor } from "../../processor";
 import { SpessaSynthWarn } from "../../../utils/loggin";
 import { LowpassFilter } from "./dsp_chain/lowpass_filter";
 import { VolumeEnvelope } from "./dsp_chain/volume_envelope";

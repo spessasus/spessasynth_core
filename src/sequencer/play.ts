@@ -1,6 +1,6 @@
 import { getEvent } from "../midi/midi_message";
-import { resetArray } from "../synthetizer/audio_engine/engine_components/controller_tables";
-import { nonResettableCCs } from "../synthetizer/audio_engine/engine_methods/controller_control/reset_controllers";
+import { resetArray } from "../synthesizer/audio_engine/engine_components/controller_tables";
+import { nonResettableCCs } from "../synthesizer/audio_engine/engine_methods/controller_control/reset_controllers";
 import {
     type MIDIController,
     midiControllers,

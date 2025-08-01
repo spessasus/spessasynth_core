@@ -1,5 +1,5 @@
 import type { SynthSystem } from "../../types";
-import { type SpessaSynthProcessor } from "../processor";
+import { type SpessaSynthProcessor } from "../../processor";
 
 /**
  * Represents a snapshot of a single channel's state in the synthesizer.

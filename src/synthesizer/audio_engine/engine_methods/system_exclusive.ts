@@ -4,12 +4,8 @@ import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../engine_components/synth_con
 import { isSystemXG } from "../../../utils/xg_hacks";
 import { readStringOffset } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
-import {
-    generatorTypes,
-    type ModulatorSourceEnum,
-    modulatorSources
-} from "../../../soundbank/enums";
-import type { SpessaSynthProcessor } from "../processor";
+import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
+import type { SpessaSynthProcessor } from "../../processor";
 import type { IndexedByteArray } from "../../../utils/indexed_array";
 import { midiControllers } from "../../../midi/enums";
 import { customControllers, synthDisplayTypes } from "../../enums";

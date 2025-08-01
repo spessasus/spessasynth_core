@@ -1,5 +1,5 @@
 import { writeVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
-import { writeBytesAsUintBigEndian } from "../../utils/byte_functions/big_endian";
+import { writeBigEndian } from "../../utils/byte_functions/big_endian";
 import type { BasicMIDI } from "../basic_midi";
 import { midiMessageTypes } from "../enums";
 
@@ -80,16 +80,16 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
     const binaryData: number[] = [];
     // write header
     writeText("MThd", binaryData); // MThd
-    binaryData.push(...writeBytesAsUintBigEndian(6, 4)); // length
+    binaryData.push(...writeBigEndian(6, 4)); // length
     binaryData.push(0, midi.format); // format
-    binaryData.push(...writeBytesAsUintBigEndian(midi.tracks.length, 2)); // num tracks
-    binaryData.push(...writeBytesAsUintBigEndian(midi.timeDivision, 2)); // time division
+    binaryData.push(...writeBigEndian(midi.tracks.length, 2)); // num tracks
+    binaryData.push(...writeBigEndian(midi.timeDivision, 2)); // time division
 
     // write tracks
     for (const track of binaryTrackData) {
         // write track header
         writeText("MTrk", binaryData); // MTrk
-        binaryData.push(...writeBytesAsUintBigEndian(track.length, 4)); // length
+        binaryData.push(...writeBigEndian(track.length, 4)); // length
         binaryData.push(...track); // write data
     }
     return new Uint8Array(binaryData);

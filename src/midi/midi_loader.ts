@@ -4,7 +4,7 @@ import { consoleColors } from "../utils/other";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { readRIFFChunk } from "../soundbank/basic_soundbank/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
-import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
+import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { readBytesAsString } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
 import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
@@ -54,7 +54,7 @@ export function loadMIDIFromArrayBufferInternal(
         fileByteArray: IndexedByteArray
     ): InternalMIDIChunkType => {
         const type = readBytesAsString(fileByteArray, 4);
-        const size = readBytesAsUintBigEndian(fileByteArray, 4);
+        const size = readBigEndian(fileByteArray, 4);
         const data = new IndexedByteArray(size);
         const chunk: InternalMIDIChunkType = {
             type,
@@ -212,14 +212,11 @@ export function loadMIDIFromArrayBufferInternal(
     }
 
     // format
-    outputMIDI.format = readBytesAsUintBigEndian(
-        headerChunk.data,
-        2
-    ) as MIDIFormat;
+    outputMIDI.format = readBigEndian(headerChunk.data, 2) as MIDIFormat;
     // tracks count
-    const trackCount = readBytesAsUintBigEndian(headerChunk.data, 2);
+    const trackCount = readBigEndian(headerChunk.data, 2);
     // time division
-    outputMIDI.timeDivision = readBytesAsUintBigEndian(headerChunk.data, 2);
+    outputMIDI.timeDivision = readBigEndian(headerChunk.data, 2);
     // read all the tracks
     for (let i = 0; i < trackCount; i++) {
         const track = new MIDITrack();
