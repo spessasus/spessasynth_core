@@ -22,18 +22,6 @@ export function formatTime(totalSeconds: number): {
     };
 }
 
-export function formatTitle(fileName: string): string {
-    return fileName
-        .trim()
-        .replaceAll(".mid", "")
-        .replaceAll(".kar", "")
-        .replaceAll(".rmi", "")
-        .replaceAll(".xmf", "")
-        .replaceAll(".mxmf", "")
-        .replaceAll("_", " ")
-        .trim();
-}
-
 /**
  * Does what it says
  */
@@ -52,23 +40,23 @@ export function arrayToHexString(arr: Iterable<number>): string {
 /**
  * Sanitizes KAR lyrics
  */
-export function sanitizeKarLyrics(eventData: Uint8Array): Uint8Array {
-    // for KAR files:
-    // https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
-    // "/" is the newline character
-    // "\" is also the newline character
-    // "\" ASCII code is 92
-    // "/" ASCII code is 47
-    // newline ASCII code is 10
-    const sanitized = [];
-    for (let byte of eventData) {
-        if (byte === 47 || byte === 92) {
-            byte = 10;
-        }
-        sanitized.push(byte);
-    }
-    return new Uint8Array(sanitized);
-}
+// export function sanitizeKarLyrics(eventData: Uint8Array): Uint8Array {
+//     // for KAR files:
+//     // https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
+//     // "/" is the newline character
+//     // "\" is also the newline character
+//     // "\" ASCII code is 92
+//     // "/" ASCII code is 47
+//     // newline ASCII code is 10
+//     const sanitized = [];
+//     for (let byte of eventData) {
+//         if (byte === 47 || byte === 92) {
+//             byte = 10;
+//         }
+//         sanitized.push(byte);
+//     }
+//     return new Uint8Array(sanitized);
+// }
 
 export const consoleColors = {
     warn: "color: orange;",

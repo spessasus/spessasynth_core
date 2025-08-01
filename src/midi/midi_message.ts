@@ -14,12 +14,12 @@ export class MIDIMessage {
     /**
      * The MIDI message status byte. Note that for meta events, it is the second byte. (not 0xFF)
      */
-    public messageStatusByte: MIDIMessageType;
+    public statusByte: MIDIMessageType;
 
     /**
      * Message's binary data
      */
-    public messageData: IndexedByteArray;
+    public data: IndexedByteArray;
 
     /**
      * Creates a new MIDI message
@@ -33,8 +33,8 @@ export class MIDIMessage {
         data: IndexedByteArray
     ) {
         this.ticks = ticks;
-        this.messageStatusByte = byte;
-        this.messageData = data;
+        this.statusByte = byte;
+        this.data = data;
     }
 }
 

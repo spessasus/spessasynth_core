@@ -27,7 +27,7 @@ export function writeBytesAsUintBigEndian(
     number: number,
     bytesAmount: number
 ): number[] {
-    const bytes = new Array(bytesAmount).fill(0) as number[];
+    const bytes = new Array<number>(bytesAmount).fill(0);
     for (let i = bytesAmount - 1; i >= 0; i--) {
         bytes[i] = number & 0xff;
         number >>= 8;

@@ -1,6 +1,7 @@
 import {
     BasicMIDI,
     SoundBankLoader,
+    SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../../src";
@@ -21,6 +22,7 @@ const sf = await fs.readFile(sfPath);
 const mid = await fs.readFile(midPath);
 
 const sampleRate = 44100;
+SpessaSynthLogging(true, true, true);
 const synth = new SpessaSynthProcessor(sampleRate, {
     effectsEnabled: false
 });
@@ -32,7 +34,7 @@ await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer)]);
 seq.play();
-seq.loop = true;
+seq.loopCount = Infinity;
 
 const bufSize = 128;
 

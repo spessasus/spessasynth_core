@@ -23,9 +23,9 @@ export function getNoteTimesInternal(
      */
     const getTempo = (event: MIDIMessage): number => {
         // simulate IndexedByteArray
-        event.messageData = new IndexedByteArray(event.messageData.buffer);
-        event.messageData.currentIndex = 0;
-        return 60000000 / readBytesAsUintBigEndian(event.messageData, 3);
+        event.data = new IndexedByteArray(event.data.buffer);
+        event.data.currentIndex = 0;
+        return 60000000 / readBytesAsUintBigEndian(event.data, 3);
     };
 
     /**
@@ -33,7 +33,7 @@ export function getNoteTimesInternal(
      */
     const noteTimes: NoteTime[][] = [];
     // flatten and sort by ticks
-    const trackData = midi.tracks;
+    const trackData = midi.tracks.map((t) => t.events);
     const events = trackData.flat();
     events.sort((e1, e2) => e1.ticks - e2.ticks);
 
@@ -67,26 +67,26 @@ export function getNoteTimesInternal(
     while (eventIndex < events.length) {
         const event = events[eventIndex];
 
-        const status = event.messageStatusByte >> 4;
-        const channel = event.messageStatusByte & 0x0f;
+        const status = event.statusByte >> 4;
+        const channel = event.statusByte & 0x0f;
 
         // note off
         if (status === 0x8) {
-            noteOff(event.messageData[0], channel);
+            noteOff(event.data[0], channel);
         }
         // note on
         else if (status === 0x9) {
-            if (event.messageData[1] === 0) {
+            if (event.data[1] === 0) {
                 // never mind, its note off
-                noteOff(event.messageData[0], channel);
+                noteOff(event.data[0], channel);
             } else {
                 // stop previous
-                noteOff(event.messageData[0], channel);
+                noteOff(event.data[0], channel);
                 const noteTime = {
-                    midiNote: event.messageData[0],
+                    midiNote: event.data[0],
                     start: elapsedTime,
                     length: -1,
-                    velocity: event.messageData[1] / 127
+                    velocity: event.data[1] / 127
                 };
                 noteTimes[channel].push(noteTime);
                 unfinishedNotes[channel].push(noteTime);
@@ -94,7 +94,7 @@ export function getNoteTimesInternal(
             }
         }
         // set tempo
-        else if (event.messageStatusByte === 0x51) {
+        else if (event.statusByte === 0x51) {
             oneTickToSeconds = 60 / (getTempo(event) * midi.timeDivision);
         }
 

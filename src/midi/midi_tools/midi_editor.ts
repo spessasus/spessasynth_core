@@ -107,21 +107,19 @@ export function modifyMIDIInternal(
     /**
      * indexes for tracks
      */
-    const eventIndexes: number[] = Array(midi.tracks.length).fill(
-        0
-    ) as number[];
+    const eventIndexes: number[] = Array<number>(midi.tracks.length).fill(0);
     let remainingTracks = midi.tracks.length;
 
     function findFirstEventIndex() {
         let index = 0;
         let ticks = Infinity;
         midi.tracks.forEach((track, i) => {
-            if (eventIndexes[i] >= track.length) {
+            if (eventIndexes[i] >= track.events.length) {
                 return;
             }
-            if (track[eventIndexes[i]].ticks < ticks) {
+            if (track.events[eventIndexes[i]].ticks < ticks) {
                 index = i;
-                ticks = track[eventIndexes[i]].ticks;
+                ticks = track.events[eventIndexes[i]].ticks;
             }
         });
         return index;
@@ -131,7 +129,7 @@ export function modifyMIDIInternal(
     /**
      * midi port number for the corresponding track
      */
-    const midiPorts: number[] = midi.midiPorts.slice();
+    const midiPorts: number[] = midi.tracks.map((t) => t.port);
     /**
      * midi port: channel offset
      */
@@ -140,7 +138,8 @@ export function modifyMIDIInternal(
 
     const assignMIDIPort = (trackNum: number, port: number) => {
         // do not assign ports to empty tracks
-        if (midi.usedChannelsOnTrack[trackNum].size === 0) {
+
+        if (midi.tracks[trackNum].channels.size === 0) {
             return;
         }
 
@@ -159,8 +158,8 @@ export function modifyMIDIInternal(
     };
 
     // assign port offsets
-    midi.midiPorts.forEach((port, trackIndex) => {
-        assignMIDIPort(trackIndex, port);
+    midi.tracks.forEach((track, i) => {
+        assignMIDIPort(i, track.port);
     });
 
     const channelsAmount = midiPortChannelOffset;
@@ -187,37 +186,37 @@ export function modifyMIDIInternal(
     while (remainingTracks > 0) {
         const trackNum = findFirstEventIndex();
         const track = midi.tracks[trackNum];
-        if (eventIndexes[trackNum] >= track.length) {
+        if (eventIndexes[trackNum] >= track.events.length) {
             remainingTracks--;
             continue;
         }
         const index = eventIndexes[trackNum]++;
-        const e = track[index];
+        const e = track.events[index];
 
         const deleteThisEvent = () => {
-            track.splice(index, 1);
+            track.deleteEvent(index);
             eventIndexes[trackNum]--;
         };
 
         const addEventBefore = (e: MIDIMessage, offset = 0) => {
-            track.splice(index + offset, 0, e);
+            track.addEvent(e, index + offset);
             eventIndexes[trackNum]++;
         };
 
         const portOffset = midiPortChannelOffsets[midiPorts[trackNum]] || 0;
-        if (e.messageStatusByte === midiMessageTypes.midiPort) {
-            assignMIDIPort(trackNum, e.messageData[0]);
+        if (e.statusByte === midiMessageTypes.midiPort) {
+            assignMIDIPort(trackNum, e.data[0]);
             continue;
         }
         // don't clear meta
         if (
-            e.messageStatusByte <= midiMessageTypes.sequenceSpecific &&
-            e.messageStatusByte >= midiMessageTypes.sequenceNumber
+            e.statusByte <= midiMessageTypes.sequenceSpecific &&
+            e.statusByte >= midiMessageTypes.sequenceNumber
         ) {
             continue;
         }
-        const status = e.messageStatusByte & 0xf0;
-        const midiChannel = e.messageStatusByte & 0xf;
+        const status = e.statusByte & 0xf0;
+        const midiChannel = e.statusByte & 0xf;
         const channel = midiChannel + portOffset;
         // clear channel?
         if (desiredChannelsToClear.includes(channel)) {
@@ -375,11 +374,11 @@ export function modifyMIDIInternal(
                     }
                 }
                 // transpose key (for zero it won't change anyway)
-                e.messageData[0] += coarseTranspose[channel];
+                e.data[0] += coarseTranspose[channel];
                 break;
 
             case midiMessageTypes.noteOff:
-                e.messageData[0] += coarseTranspose[channel];
+                e.data[0] += coarseTranspose[channel];
                 break;
 
             case midiMessageTypes.programChange:
@@ -393,7 +392,7 @@ export function modifyMIDIInternal(
 
             case midiMessageTypes.controllerChange:
                 {
-                    const ccNum = e.messageData[0];
+                    const ccNum = e.data[0];
                     const changes = desiredControllerChanges.find(
                         (c) =>
                             c.channel === channel &&
@@ -427,18 +426,14 @@ export function modifyMIDIInternal(
                     system = "xg";
                     addedGs = true; // flag as true so gs won't get added
                 } else if (
-                    e.messageData[0] === 0x43 && // yamaha
-                    e.messageData[2] === 0x4c && // XG
-                    e.messageData[3] === 0x08 && // part parameter
-                    e.messageData[5] === 0x03 // program change
+                    e.data[0] === 0x43 && // yamaha
+                    e.data[2] === 0x4c && // XG
+                    e.data[3] === 0x08 && // part parameter
+                    e.data[5] === 0x03 // program change
                 ) {
                     // check for xg program change
                     // do we delete it?
-                    if (
-                        channelsToChangeProgram.has(
-                            e.messageData[4] + portOffset
-                        )
-                    ) {
+                    if (channelsToChangeProgram.has(e.data[4] + portOffset)) {
                         // this channel has program change. BEGONE!
                         deleteThisEvent();
                     }
@@ -468,11 +463,11 @@ export function modifyMIDIInternal(
         // gs is not on, add it on the first track at index 0 (or 1 if track name is first)
         let index = 0;
         if (
-            midi.tracks[0][0].messageStatusByte === midiMessageTypes.trackName
+            midi.tracks[0].events[0].statusByte === midiMessageTypes.trackName
         ) {
             index++;
         }
-        midi.tracks[0].splice(index, 0, getGsOn(0));
+        midi.tracks[0].addEvent(getGsOn(0), index);
         SpessaSynthInfo("%cGS on not detected. Adding it.", consoleColors.info);
     }
     midi.flush();

@@ -16,40 +16,37 @@ export function processEventInternal(
     trackIndex: number
 ) {
     if (this.externalMIDIPlayback) {
-        if (event.messageStatusByte >= 0x80) {
-            this.sendMIDIMessage([
-                event.messageStatusByte,
-                ...event.messageData
-            ]);
+        // do not send meta events
+        if (event.statusByte >= 0x80) {
+            this.sendMIDIMessage([event.statusByte, ...event.data]);
             return;
         }
     }
-    const statusByteData = getEvent(event.messageStatusByte);
-    const offset = this.midiPortChannelOffsets[this.midiPorts[trackIndex]] || 0;
+    const track = this._midiData.tracks[trackIndex];
+    const statusByteData = getEvent(event.statusByte);
+    const offset =
+        this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
     statusByteData.channel += offset;
     // process the event
     switch (statusByteData.status) {
         case midiMessageTypes.noteOn: {
-            const velocity = event.messageData[1];
+            const velocity = event.data[1];
             if (velocity > 0) {
                 this.synth.noteOn(
                     statusByteData.channel,
-                    event.messageData[0],
+                    event.data[0],
                     velocity
                 );
                 this.playingNotes.push({
-                    midiNote: event.messageData[0],
+                    midiNote: event.data[0],
                     channel: statusByteData.channel,
                     velocity: velocity
                 });
             } else {
-                this.synth.noteOff(
-                    statusByteData.channel,
-                    event.messageData[0]
-                );
+                this.synth.noteOff(statusByteData.channel, event.data[0]);
                 const toDelete = this.playingNotes.findIndex(
                     (n) =>
-                        n.midiNote === event.messageData[0] &&
+                        n.midiNote === event.data[0] &&
                         n.channel === statusByteData.channel
                 );
                 if (toDelete !== -1) {
@@ -60,10 +57,10 @@ export function processEventInternal(
         }
 
         case midiMessageTypes.noteOff: {
-            this.synth.noteOff(statusByteData.channel, event.messageData[0]);
+            this.synth.noteOff(statusByteData.channel, event.data[0]);
             const toDelete = this.playingNotes.findIndex(
                 (n) =>
-                    n.midiNote === event.messageData[0] &&
+                    n.midiNote === event.data[0] &&
                     n.channel === statusByteData.channel
             );
             if (toDelete !== -1) {
@@ -75,67 +72,55 @@ export function processEventInternal(
         case midiMessageTypes.pitchBend:
             this.synth.pitchWheel(
                 statusByteData.channel,
-                event.messageData[1],
-                event.messageData[0]
+                event.data[1],
+                event.data[0]
             );
             break;
 
         case midiMessageTypes.controllerChange:
             // empty tracks cannot cc change
-            if (
-                this.midiData.isMultiPort &&
-                this.midiData.usedChannelsOnTrack[trackIndex].size === 0
-            ) {
+            if (this._midiData.isMultiPort && track.channels.size === 0) {
                 return;
             }
             this.synth.controllerChange(
                 statusByteData.channel,
-                event.messageData[0],
-                event.messageData[1]
+                event.data[0],
+                event.data[1]
             );
             break;
 
         case midiMessageTypes.programChange:
             // empty tracks cannot program change
-            if (
-                this.midiData.isMultiPort &&
-                this.midiData.usedChannelsOnTrack[trackIndex].size === 0
-            ) {
+            if (this._midiData.isMultiPort && track.channels.size === 0) {
                 return;
             }
-            this.synth.programChange(
-                statusByteData.channel,
-                event.messageData[0]
-            );
+            this.synth.programChange(statusByteData.channel, event.data[0]);
             break;
 
         case midiMessageTypes.polyPressure:
             this.synth.polyPressure(
                 statusByteData.channel,
-                event.messageData[0],
-                event.messageData[1]
+                event.data[0],
+                event.data[1]
             );
             break;
 
         case midiMessageTypes.channelPressure:
-            this.synth.channelPressure(
-                statusByteData.channel,
-                event.messageData[0]
-            );
+            this.synth.channelPressure(statusByteData.channel, event.data[0]);
             break;
 
         case midiMessageTypes.systemExclusive:
-            this.synth.systemExclusive(event.messageData, offset);
+            this.synth.systemExclusive(event.data, offset);
             break;
 
         case midiMessageTypes.setTempo: {
-            event.messageData.currentIndex = 0;
-            let tempoBPM =
-                60000000 / readBytesAsUintBigEndian(event.messageData, 3);
+            event.data.currentIndex = 0;
+            let tempoBPM = 60000000 / readBytesAsUintBigEndian(event.data, 3);
             this.oneTickToSeconds =
-                60 / (tempoBPM * this.midiData.timeDivision);
+                60 / (tempoBPM * this._midiData.timeDivision);
             if (this.oneTickToSeconds === 0) {
-                this.oneTickToSeconds = 60 / (120 * this.midiData.timeDivision);
+                this.oneTickToSeconds =
+                    60 / (120 * this._midiData.timeDivision);
                 SpessaSynthWarn("invalid tempo! falling back to 120 BPM");
                 tempoBPM = 120;
             }
@@ -162,7 +147,7 @@ export function processEventInternal(
             break;
 
         case midiMessageTypes.midiPort:
-            this.assignMIDIPort(trackIndex, event.messageData[0]);
+            this.assignMIDIPort(trackIndex, event.data[0]);
             break;
 
         case midiMessageTypes.reset:
@@ -172,7 +157,7 @@ export function processEventInternal(
 
         default:
             SpessaSynthWarn(
-                `%cUnrecognized Event: %c${event.messageStatusByte}%c status byte: %c${Object.keys(
+                `%cUnrecognized Event: %c${event.statusByte}%c status byte: %c${Object.keys(
                     midiMessageTypes
                 ).find(
                     (k) =>
@@ -187,6 +172,9 @@ export function processEventInternal(
             break;
     }
     if (statusByteData.status >= 0 && statusByteData.status < 0x80) {
-        this?.onMetaEvent?.(event, trackIndex);
+        this?.onEventCall?.("metaEvent", {
+            event,
+            trackIndex
+        });
     }
 }

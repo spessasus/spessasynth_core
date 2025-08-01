@@ -103,7 +103,7 @@ const blob = new Blob([midiBinary.buffer], {type: "audio/midi"});
 const url = URL.createObjectURL(blob);
 const a = document.createElement("a");
 a.href = url;
-a.download = midi.midiName + ".mid";
+a.download = midi.name + ".mid";
 a.click();
 ```
 
@@ -236,7 +236,7 @@ document.getElementById("export").onchange = async () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = midi.midiName + ".rmi";
+    a.download = midi.name + ".rmi";
     a.click();
 }
 ```

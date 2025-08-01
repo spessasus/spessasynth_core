@@ -37,12 +37,9 @@ export function getUsedProgramsAndKeys(
         "%cSearching for all used programs and keys...",
         consoleColors.info
     );
-    // Find every bank:program combo and every key:velocity for each. Make sure to care about ports and drums
-    const channelsAmount =
-        16 +
-        mid.midiPortChannelOffsets.reduce((max, cur) =>
-            cur > max ? cur : max
-        );
+    // Find every bank:program combo and every key:velocity for each.
+    // Make sure to care about ports and drums.
+    const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
     const channelPresets: InternalChannelType[] = [];
     for (let i = 0; i < channelsAmount; i++) {
         const bank = i % 16 === DEFAULT_PERCUSSION ? 128 : 0;
@@ -104,13 +101,13 @@ export function getUsedProgramsAndKeys(
     /**
      * indexes for tracks
      */
-    const eventIndexes: number[] = Array(mid.tracks.length).fill(0) as number[];
+    const eventIndexes: number[] = Array<number>(mid.tracks.length).fill(0);
     let remainingTracks = mid.tracks.length;
 
     function findFirstEventIndex() {
         let index = 0;
         let ticks = Infinity;
-        mid.tracks.forEach((track, i) => {
+        mid.tracks.forEach(({ events: track }, i) => {
             if (eventIndexes[i] >= track.length) {
                 return;
             }
@@ -122,14 +119,14 @@ export function getUsedProgramsAndKeys(
         return index;
     }
 
-    const ports = mid.midiPorts.slice();
+    const ports = mid.tracks.map((t) => t.port);
     // initialize
     channelPresets.forEach((c) => {
         updateString(c);
     });
     while (remainingTracks > 0) {
         const trackNum = findFirstEventIndex();
-        const track = mid.tracks[trackNum];
+        const track = mid.tracks[trackNum].events;
         if (eventIndexes[trackNum] >= track.length) {
             remainingTracks--;
             continue;
@@ -137,11 +134,11 @@ export function getUsedProgramsAndKeys(
         const event = track[eventIndexes[trackNum]];
         eventIndexes[trackNum]++;
 
-        if (event.messageStatusByte === midiMessageTypes.midiPort) {
-            ports[trackNum] = event.messageData[0];
+        if (event.statusByte === midiMessageTypes.midiPort) {
+            ports[trackNum] = event.data[0];
             continue;
         }
-        const status = event.messageStatusByte & 0xf0;
+        const status = event.statusByte & 0xf0;
         if (
             status !== midiMessageTypes.noteOn &&
             status !== midiMessageTypes.controllerChange &&
@@ -151,22 +148,22 @@ export function getUsedProgramsAndKeys(
             continue;
         }
         const channel =
-            (event.messageStatusByte & 0xf) +
-                mid.midiPortChannelOffsets[ports[trackNum]] || 0;
+            (event.statusByte & 0xf) +
+                mid.portChannelOffsetMap[ports[trackNum]] || 0;
         let ch = channelPresets[channel];
         switch (status) {
             case midiMessageTypes.programChange:
-                ch.program = event.messageData[0];
+                ch.program = event.data[0];
                 updateString(ch);
                 break;
 
             case midiMessageTypes.controllerChange:
                 {
                     const isLSB =
-                        event.messageData[0] ===
+                        event.data[0] ===
                         midiControllers.lsbForControl0BankSelect;
                     if (
-                        event.messageData[0] !== midiControllers.bankSelect &&
+                        event.data[0] !== midiControllers.bankSelect &&
                         !isLSB
                     ) {
                         // we only care about bank select
@@ -176,7 +173,7 @@ export function getUsedProgramsAndKeys(
                         // gs drums get changed via sysex, ignore here
                         continue;
                     }
-                    const bank = event.messageData[1];
+                    const bank = event.data[1];
                     if (isLSB) {
                         ch.bankLSB = bank;
                     } else {
@@ -215,12 +212,12 @@ export function getUsedProgramsAndKeys(
                 break;
 
             case midiMessageTypes.noteOn:
-                if (event.messageData[1] === 0) {
+                if (event.data[1] === 0) {
                     // that's a note off
                     continue;
                 }
                 usedProgramsAndKeys[ch.string].add(
-                    `${event.messageData[0]}-${event.messageData[1]}`
+                    `${event.data[0]}-${event.data[1]}`
                 );
                 break;
 
@@ -240,11 +237,9 @@ export function getUsedProgramsAndKeys(
                     }
                     const sysexChannel =
                         [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
-                            event.messageData[5] & 0x0f
-                        ] + mid.midiPortChannelOffsets[ports[trackNum]];
-                    const isDrum = !!(
-                        event.messageData[7] > 0 && event.messageData[5] >> 4
-                    );
+                            event.data[5] & 0x0f
+                        ] + mid.portChannelOffsetMap[ports[trackNum]];
+                    const isDrum = !!(event.data[7] > 0 && event.data[5] >> 4);
                     ch = channelPresets[sysexChannel];
                     ch.drums = isDrum;
                     updateString(ch);

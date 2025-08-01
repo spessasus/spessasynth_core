@@ -1,4 +1,4 @@
-import { getEvent, MIDIMessage } from "../midi/midi_message";
+import { getEvent } from "../midi/midi_message";
 import { resetArray } from "../synthetizer/audio_engine/engine_components/controller_tables";
 import { nonResettableCCs } from "../synthetizer/audio_engine/engine_methods/controller_control/reset_controllers";
 import {
@@ -25,7 +25,7 @@ export function setTimeToInternal(
     if (!this.hasSongs) {
         return false;
     }
-    this.oneTickToSeconds = 60 / (120 * this.midiData.timeDivision);
+    this.oneTickToSeconds = 60 / (120 * this._midiData.timeDivision);
     // reset everything
     if (this.externalMIDIPlayback) {
         this.sendMIDIReset();
@@ -34,7 +34,7 @@ export function setTimeToInternal(
         this.synth.stopAllChannels(false);
     }
     this.playedTime = 0;
-    this.eventIndexes = Array(this.midiData.tracks.length).fill(0) as number[];
+    this.eventIndexes = Array<number>(this._midiData.tracks.length).fill(0);
 
     // we save the pitch bends, programs and controllers here
     // to only send them once after going through the events
@@ -43,7 +43,7 @@ export function setTimeToInternal(
     /**
      * save pitch bends here and send them only after
      */
-    const pitchBends: number[] = Array(channelsToSave).fill(8192) as number[];
+    const pitchBends = Array<number>(channelsToSave).fill(8192);
 
     /**
      * Save programs here and send them only after
@@ -103,8 +103,8 @@ export function setTimeToInternal(
     while (true) {
         // find the next event
         let trackIndex = this.findFirstEventIndex();
-        const event: MIDIMessage =
-            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
+        const track = this._midiData.tracks[trackIndex];
+        const event = track.events[this.eventIndexes[trackIndex]];
         if (ticks !== undefined) {
             if (event.ticks >= ticks) {
                 break;
@@ -116,11 +116,10 @@ export function setTimeToInternal(
         }
 
         // skip note ons
-        const info = getEvent(event.messageStatusByte);
+        const info = getEvent(event.statusByte);
         // Keep in mind midi ports to determine the channel!
         const channel =
-            info.channel +
-            (this.midiPortChannelOffsets[this.midiPorts[trackIndex]] || 0);
+            info.channel + (this.midiPortChannelOffsets[track.port] || 0);
         switch (info.status) {
             // skip note messages
             case midiMessageTypes.noteOn:
@@ -129,7 +128,7 @@ export function setTimeToInternal(
                     defaultControllerArray
                 ) as MIDIController[];
                 savedControllers[channel][midiControllers.portamentoControl] =
-                    event.messageData[0] as MIDIController;
+                    event.data[0] as MIDIController;
                 break;
 
             case midiMessageTypes.noteOff:
@@ -137,36 +136,29 @@ export function setTimeToInternal(
 
             // skip pitch bend
             case midiMessageTypes.pitchBend:
-                pitchBends[channel] =
-                    (event.messageData[1] << 7) | event.messageData[0];
+                pitchBends[channel] = (event.data[1] << 7) | event.data[0];
                 break;
 
             case midiMessageTypes.programChange: {
                 // empty tracks cannot program change
-                if (
-                    this.midiData.isMultiPort &&
-                    this.midiData.usedChannelsOnTrack[trackIndex].size === 0
-                ) {
+                if (this._midiData.isMultiPort && track.channels.size === 0) {
                     break;
                 }
                 const p = programs[channel];
-                p.program = event.messageData[0];
+                p.program = event.data[0];
                 p.actualBank = p.bank;
                 break;
             }
 
             case midiMessageTypes.controllerChange: {
                 // empty tracks cannot controller change
-                if (
-                    this.midiData.isMultiPort &&
-                    this.midiData.usedChannelsOnTrack[trackIndex].size === 0
-                ) {
+                if (this._midiData.isMultiPort && track.channels.size === 0) {
                     break;
                 }
                 // do not skip data entries
-                const controllerNumber = event.messageData[0] as MIDIController;
+                const controllerNumber = event.data[0] as MIDIController;
                 if (isCCNonSkippable(controllerNumber)) {
-                    const ccV = event.messageData[1];
+                    const ccV = event.data[1];
                     if (controllerNumber === midiControllers.bankSelect) {
                         // add the bank to be saved
                         programs[channel].bank = ccV;
@@ -190,7 +182,7 @@ export function setTimeToInternal(
                         defaultControllerArray
                     ) as MIDIController[];
                     savedControllers[channel][controllerNumber] = event
-                        .messageData[1] as MIDIController;
+                        .data[1] as MIDIController;
                 }
                 break;
             }
@@ -203,8 +195,11 @@ export function setTimeToInternal(
         this.eventIndexes[trackIndex]++;
         // find the next event
         trackIndex = this.findFirstEventIndex();
+
         const nextEvent =
-            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
+            this._midiData.tracks[trackIndex].events[
+                this.eventIndexes[trackIndex]
+            ];
         if (nextEvent === undefined) {
             this.stop();
             return false;

@@ -11,8 +11,8 @@ This should serve as the complete documentation of the library.
 
 !!! DANGER
 
-    SpessaSynth 4.0 has many breaking changes. 
-    [The migration guide is available.](extra/4-0-migration-guide.md)
+    SpessaSynth 3.27 and below is no longer supported!
+    [The migration guide for 4.0 is available here.](extra/4-0-migration-guide.md)
 
 ## Documentation
 

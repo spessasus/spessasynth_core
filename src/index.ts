@@ -26,12 +26,11 @@ import { Generator } from "./soundbank/basic_soundbank/generator";
 import { Modulator } from "./soundbank/basic_soundbank/modulator";
 import { BasicZone } from "./soundbank/basic_soundbank/basic_zone";
 import { BasicGlobalZone } from "./soundbank/basic_soundbank/basic_global_zone";
-import { loadSoundFont } from "./soundbank/load_soundfont";
 import { SoundBankLoader } from "./soundbank/sound_bank_loader";
 
 import { MIDIMessage } from "./midi/midi_message";
-import { BasicMIDI, MIDI } from "./midi/basic_midi";
-import { MIDISequenceData } from "./midi/midi_sequence";
+import { MIDITrack } from "./midi/midi_track";
+import { BasicMIDI } from "./midi/basic_midi";
 import { MIDIBuilder } from "./midi/midi_builder";
 import { IndexedByteArray } from "./utils/indexed_array";
 import { audioToWav } from "./utils/buffer_to_wav";
@@ -70,6 +69,7 @@ export * from "./midi/types";
 export * from "./midi/enums";
 export * from "./synthetizer/types";
 export * from "./synthetizer/enums";
+export * from "./sequencer/types";
 
 // see All-NPN-Exports.md in the wiki
 export {
@@ -88,7 +88,6 @@ export {
     MIDI_CHANNEL_COUNT,
 
     // sound banks
-    loadSoundFont,
     Generator,
     Modulator,
     BasicZone,
@@ -104,10 +103,9 @@ export {
 
     // MIDI
     MIDIMessage,
-    MIDI,
-    MIDISequenceData,
     BasicMIDI,
     MIDIBuilder,
+    MIDITrack,
 
     // utils
     IndexedByteArray,

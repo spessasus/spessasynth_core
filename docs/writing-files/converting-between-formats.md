@@ -73,7 +73,7 @@ const output = mid.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // all the values below are examples, showing how to copy MIDI data to the RMI file
-        name: mid.midiName,
+        name: mid.name,
         copyright: mid.copyright,
         engineer: sfont.soundFontInfo["IENG"],
     },
@@ -94,7 +94,7 @@ const output = dlsRMID.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // here we try to extract the metadata from the file, then fall back to embedded MIDI
-        name: dlsRMID.rmidiInfo["INAM"] || dlsRMID.midiName,
+        name: dlsRMID.rmidiInfo["INAM"] || dlsRMID.name,
         copyright: dlsRMID.rmidiInfo["ICOP"] || dlsRMID.copyright,
         engineer: sfont.soundFontInfo["IENG"],
         artist: dlsRMID.rmidiInfo["IART"],

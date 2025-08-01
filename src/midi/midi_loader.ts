@@ -7,10 +7,11 @@ import { readVariableLengthQuantity } from "../utils/byte_functions/variable_len
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
 import { readBytesAsString } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
+import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
+import { MIDITrack } from "./midi_track";
 
 /**
  * midi_loader.js
@@ -147,11 +148,11 @@ export function loadMIDIFromArrayBufferInternal(
                         ).replaceAll("\n", " ");
                     }
                     if (outputMIDI.rmidiInfo.INAM) {
-                        outputMIDI.rawMidiName =
+                        outputMIDI.rawName =
                             outputMIDI.rmidiInfo[rmidInfoChunks.name]!;
-                        outputMIDI.midiName = readBytesAsString(
-                            outputMIDI.rawMidiName as IndexedByteArray,
-                            outputMIDI.rawMidiName.length,
+                        outputMIDI.name = readBytesAsString(
+                            outputMIDI.rawName as IndexedByteArray,
+                            outputMIDI.rawName.length,
                             false
                         ).replaceAll("\n", " ");
                     }
@@ -216,12 +217,12 @@ export function loadMIDIFromArrayBufferInternal(
         2
     ) as MIDIFormat;
     // tracks count
-    outputMIDI.tracksAmount = readBytesAsUintBigEndian(headerChunk.data, 2);
+    const trackCount = readBytesAsUintBigEndian(headerChunk.data, 2);
     // time division
     outputMIDI.timeDivision = readBytesAsUintBigEndian(headerChunk.data, 2);
     // read all the tracks
-    for (let i = 0; i < outputMIDI.tracksAmount; i++) {
-        const track: MIDIMessage[] = [];
+    for (let i = 0; i < trackCount; i++) {
+        const track = new MIDITrack();
         const trackChunk = readMIDIChunk(fileByteArray);
 
         if (trackChunk.type !== "MTrk") {
@@ -240,8 +241,9 @@ export function loadMIDIFromArrayBufferInternal(
         // format 2 plays sequentially
         if (outputMIDI.format === 2 && i > 0) {
             totalTicks +=
-                outputMIDI.tracks[i - 1][outputMIDI.tracks[i - 1].length - 1]
-                    .ticks;
+                outputMIDI.tracks[i - 1].events[
+                    outputMIDI.tracks[i - 1].events.length - 1
+                ].ticks;
         }
         // loop until we reach the end of track
         while (trackChunk.data.currentIndex < trackChunk.size) {
@@ -310,24 +312,31 @@ export function loadMIDIFromArrayBufferInternal(
                     break;
             }
 
-            // put the event data into the array
-            const eventData = new IndexedByteArray(eventDataLength);
-            eventData.set(
-                trackChunk.data.slice(
-                    trackChunk.data.currentIndex,
-                    trackChunk.data.currentIndex + eventDataLength
-                ),
-                0
-            );
-            const event = new MIDIMessage(totalTicks, statusByte, eventData);
-            track.push(event);
+            if (statusByte !== midiMessageTypes.endOfTrack) {
+                // put the event data into the array
+                const eventData = new IndexedByteArray(eventDataLength);
+                eventData.set(
+                    trackChunk.data.slice(
+                        trackChunk.data.currentIndex,
+                        trackChunk.data.currentIndex + eventDataLength
+                    ),
+                    0
+                );
+                const event = new MIDIMessage(
+                    totalTicks,
+                    statusByte,
+                    eventData
+                );
+                track.pushEvent(event);
+            }
+
             // advance the track chunk
             trackChunk.data.currentIndex += eventDataLength;
         }
         outputMIDI.tracks.push(track);
 
         SpessaSynthInfo(
-            `%cParsed %c${outputMIDI.tracks.length}%c / %c${outputMIDI.tracksAmount}`,
+            `%cParsed %c${outputMIDI.tracks.length}%c / %c${outputMIDI.tracks.length}`,
             consoleColors.info,
             consoleColors.value,
             consoleColors.info,

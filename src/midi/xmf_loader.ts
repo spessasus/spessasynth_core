@@ -308,8 +308,7 @@ class XMFNode {
             /**
              * interpret the content
              */
-            const resourceFormat: number[] = this.metadata
-                .resourceFormat as number[];
+            const resourceFormat = this.metadata.resourceFormat as number[];
             if (resourceFormat === undefined) {
                 SpessaSynthWarn("No resource format for this file node!");
             } else {

@@ -1,8 +1,8 @@
 import { BasicMIDI } from "./basic_midi";
 import { MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
-import { SpessaSynthWarn } from "../utils/loggin";
 import { type MIDIMessageType, midiMessageTypes } from "./enums";
+import { MIDITrack } from "./midi_track";
 
 /**
  * A class that helps to build a MIDI file from scratch.
@@ -16,15 +16,10 @@ export class MIDIBuilder extends BasicMIDI {
      * @param timeDivision the file's time division (ticks per quarter note).
      * @param initialTempo the file's initial tempo.
      */
-    public constructor(
-        name: string,
-        timeDivision = 480,
-        initialTempo = 120
-    ) {
+    public constructor(name: string, timeDivision = 480, initialTempo = 120) {
         super();
         this.timeDivision = timeDivision;
-        this.midiName = name;
-        this.rawMidiName = this.encoder.encode(name);
+        this.name = name;
 
         // create the first track with the file name
         this.addNewTrack(name);
@@ -55,25 +50,20 @@ export class MIDIBuilder extends BasicMIDI {
      * @param port the new track's port.
      */
     public addNewTrack(name: string, port = 0) {
-        this.tracksAmount++;
-        if (this.tracksAmount > 1) {
+        if (this.tracks.length > 1) {
             this.format = 1;
         }
-        this.tracks.push([]);
-        this.tracks[this.tracksAmount - 1].push(
-            new MIDIMessage(
-                0,
-                midiMessageTypes.endOfTrack,
-                new IndexedByteArray(0)
-            )
-        );
+        const track = new MIDITrack();
+        track.name = name;
+        track.port = port;
+        this.tracks.push(track);
         this.addEvent(
             0,
-            this.tracksAmount - 1,
+            this.tracks.length - 1,
             midiMessageTypes.trackName,
             this.encoder.encode(name)
         );
-        this.addEvent(0, this.tracksAmount - 1, midiMessageTypes.midiPort, [
+        this.addEvent(0, this.tracks.length - 1, midiMessageTypes.midiPort, [
             port
         ]);
     }
@@ -96,24 +86,8 @@ export class MIDIBuilder extends BasicMIDI {
                 `Track ${track} does not exist. Add it via addTrack method.`
             );
         }
-        if (event === midiMessageTypes.endOfTrack) {
-            SpessaSynthWarn(
-                "The EndOfTrack is added automatically and does not influence the duration. Consider adding a voice event instead."
-            );
-            return;
-        }
-        // remove the end of track
-        this.tracks[track].pop();
-        this.tracks[track].push(
+        this.tracks[track].pushEvent(
             new MIDIMessage(ticks, event, new IndexedByteArray(eventData))
-        );
-        // add the end of track
-        this.tracks[track].push(
-            new MIDIMessage(
-                ticks,
-                midiMessageTypes.endOfTrack,
-                new IndexedByteArray(0)
-            )
         );
     }
 

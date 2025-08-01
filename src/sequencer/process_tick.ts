@@ -8,64 +8,44 @@ export function processTick(this: SpessaSynthSequencer) {
     if (!this.playing) {
         return;
     }
-    const current = this.currentTime;
-    while (this.playedTime < current) {
-        // find the next event
-        let trackIndex = this.findFirstEventIndex();
-        const event =
-            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
+    const currentTime = this.currentTime;
+    while (this.playedTime < currentTime) {
+        // find the next event and process it
+        const trackIndex = this.findFirstEventIndex();
+        const track = this._midiData.tracks[trackIndex];
+        const event = track.events[this.eventIndexes[trackIndex]++];
         this.processEvent(event, trackIndex);
 
-        this.eventIndexes[trackIndex]++;
+        const canLoop = this.loopCount > 0;
 
         // find the next event
-        trackIndex = this.findFirstEventIndex();
+        const nextTrackIndex = this.findFirstEventIndex();
+        const nextTrack = this._midiData.tracks[nextTrackIndex];
+        // check for loop
         if (
-            this.midiData.tracks[trackIndex].length <=
-            this.eventIndexes[trackIndex]
-        ) {
-            // the song has ended
-            if (this.loop) {
-                this.setTimeTicks(this.midiData.loop.start);
-                return;
-            }
-            this.eventIndexes[trackIndex]--;
-            this.songIsFinished();
-            return;
-        }
-        const eventNext =
-            this.midiData.tracks[trackIndex][this.eventIndexes[trackIndex]];
-        this.playedTime +=
-            this.oneTickToSeconds * (eventNext.ticks - event.ticks);
-
-        const canLoop =
-            this.loop && (this.loopCount > 0 || this.loopCount === -1);
-
-        // if we reached loop.end
-        if (this.midiData.loop.end <= event.ticks && canLoop) {
+            // events
+            nextTrack.events.length <= this.eventIndexes[nextTrackIndex] ||
             // loop
-            if (this.loopCount !== Infinity) {
-                this.loopCount--;
-                this?.onLoopCountChange?.(this.loopCount);
-            }
-            this.setTimeTicks(this.midiData.loop.start);
-            return;
-        }
-        // if the song has ended
-        else if (current >= this.duration) {
+            this._midiData.loop.end <= event.ticks
+        ) {
             if (canLoop) {
                 // loop
                 if (this.loopCount !== Infinity) {
                     this.loopCount--;
-                    this?.onLoopCountChange?.(this.loopCount);
+                    this?.onEventCall?.("loopCountChange", {
+                        newCount: this.loopCount
+                    });
                 }
-                this.setTimeTicks(this.midiData.loop.start);
+                this.setTimeTicks(this._midiData.loop.start);
                 return;
             }
             // stop the playback
-            this.eventIndexes[trackIndex]--;
             this.songIsFinished();
             return;
         }
+
+        const eventNext = nextTrack.events[this.eventIndexes[nextTrackIndex]];
+        this.playedTime +=
+            this.oneTickToSeconds * (eventNext.ticks - event.ticks);
     }
 }

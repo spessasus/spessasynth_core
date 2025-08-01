@@ -60,33 +60,6 @@ export class SynthesizerSnapshot {
         );
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Creates a snapshot of the synthesizer's state.
-     * @param processor the processor to take a snapshot of.
-     * @returns the snapshot.
-     * @deprecated use a 'create' instead
-     */
-    public static createSynthesizerSnapshot(
-        processor: SpessaSynthProcessor
-    ): SynthesizerSnapshot {
-        return SynthesizerSnapshot.create(processor);
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Applies the snapshot to the synthesizer.
-     * @param processor the processor to apply the snapshot to.
-     * @param snapshot the snapshot to use.
-     * @deprecated use a non-static version instead
-     */
-    public static applySnapshot(
-        processor: SpessaSynthProcessor,
-        snapshot: SynthesizerSnapshot
-    ) {
-        snapshot.apply(processor);
-    }
-
     /**
      * Applies the snapshot to the synthesizer.
      * @param processor the processor to apply the snapshot to.

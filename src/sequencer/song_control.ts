@@ -8,13 +8,13 @@ import type { SpessaSynthSequencer } from "./sequencer";
  * @param trackNum The track number to assign the port to.
  * @param port The MIDI port number to assign.
  */
-export function assingMIDIPortInternal(
+export function assignMIDIPortInternal(
     this: SpessaSynthSequencer,
     trackNum: number,
     port: number
 ) {
     // do not assign ports to empty tracks
-    if (this.midiData.usedChannelsOnTrack[trackNum].size === 0) {
+    if (this._midiData.tracks[trackNum].channels.size === 0) {
         return;
     }
 
@@ -32,7 +32,7 @@ export function assingMIDIPortInternal(
         this.midiPortChannelOffset += 16;
     }
 
-    this.midiPorts[trackNum] = port;
+    this.currentMIDIPorts[trackNum] = port;
 }
 
 /**
@@ -48,26 +48,26 @@ export function loadNewSequenceInternal(
     }
 
     this.oneTickToSeconds = 60 / (120 * parsedMidi.timeDivision);
-    this.midiData = parsedMidi;
+    this._midiData = parsedMidi;
 
     // clear old embedded bank if exists
     this.synth.clearEmbeddedBank();
 
     // check for embedded soundfont
-    if (this.midiData.embeddedSoundBank !== undefined) {
+    if (this._midiData.embeddedSoundBank !== undefined) {
         SpessaSynthInfo(
             "%cEmbedded soundbank detected! Using it.",
             consoleColors.recognized
         );
         this.synth.setEmbeddedSoundBank(
-            this.midiData.embeddedSoundBank,
-            this.midiData.bankOffset
+            this._midiData.embeddedSoundBank,
+            this._midiData.bankOffset
         );
     }
 
     SpessaSynthGroupCollapsed("%cPreloading samples...", consoleColors.info);
     // smart preloading: load only samples used in the midi!
-    const used = this.midiData.getUsedProgramsAndKeys(
+    const used = this._midiData.getUsedProgramsAndKeys(
         this.synth.soundBankManager
     );
     for (const [programBank, combos] of Object.entries(used)) {
@@ -94,44 +94,31 @@ export function loadNewSequenceInternal(
     SpessaSynthGroupEnd();
 
     // copy over the port data
-    this.midiPorts = this.midiData.midiPorts.slice();
+    this.currentMIDIPorts = this._midiData.tracks.map((t) => t.port);
 
     // clear last port data
     this.midiPortChannelOffset = 0;
     this.midiPortChannelOffsets = {};
     // assign port offsets
-    this.midiData.midiPorts.forEach((port, trackIndex) => {
-        this.assignMIDIPort(trackIndex, port);
+    this._midiData.tracks.forEach((track, trackIndex) => {
+        this.assignMIDIPort(trackIndex, track.port);
     });
-
-    /**
-     * Same as "audio.duration" property (seconds)
-     * @type {number}
-     */
-    this.duration = this.midiData.duration;
-    this.firstNoteTime = this.midiData.midiTicksToSeconds(
-        this.midiData.firstNoteOn
+    this.firstNoteTime = this._midiData.midiTicksToSeconds(
+        this._midiData.firstNoteOn
     );
     SpessaSynthInfo(
-        `%cTotal song time: ${formatTime(Math.ceil(this.duration)).time}`,
+        `%cTotal song time: ${formatTime(Math.ceil(this._midiData.duration)).time}`,
         consoleColors.recognized
     );
-    this?.onSongChange?.(this._songIndex);
+    this?.onEventCall?.("songChange", { songIndex: this._songIndex });
 
-    if (this.duration <= 1) {
+    if (this._midiData.duration <= 1) {
         SpessaSynthWarn(
-            `%cVery short song: (${formatTime(Math.round(this.duration)).time}). Disabling loop!`,
+            `%cVery short song: (${formatTime(Math.round(this._midiData.duration)).time}). Disabling loop!`,
             consoleColors.warn
         );
-        this.loop = false;
+        this.loopCount = 0;
     }
-    if (this.playing) {
-        this.currentTime = 0;
-    } else {
-        // this shall not play: play to the first note and then wait
-        const targetTime = this.skipToFirstNoteOn
-            ? this.midiData.firstNoteOn - 1
-            : 0;
-        this.setTimeTicks(targetTime);
-    }
+    // reset the time
+    this.currentTime = 0;
 }

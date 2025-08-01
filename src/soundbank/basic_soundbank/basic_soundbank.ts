@@ -476,7 +476,7 @@ export class BasicSoundBank {
         this.removeUnusedElements();
 
         this.soundBankInfo.ICMT =
-            `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.midiName}"\n\n` +
+            `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.name}"\n\n` +
             this.soundBankInfo.ICMT;
 
         SpessaSynthInfo("%cSoundfont modified!", consoleColors.recognized);

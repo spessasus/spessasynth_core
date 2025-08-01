@@ -59,6 +59,7 @@ export interface TempoChange {
     // new tempo in BPM.
     tempo: number;
 }
+
 export interface MIDILoop {
     // start of the loop, in MIDI ticks.
     start: number;

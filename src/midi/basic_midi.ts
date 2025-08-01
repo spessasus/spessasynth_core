@@ -1,11 +1,8 @@
-// noinspection JSUnusedGlobalSymbols
-
-import { MIDISequenceData } from "./midi_sequence";
 import { getStringBytes, readBytesAsString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBytesAsUintBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../utils/loggin";
-import { consoleColors, formatTitle, sanitizeKarLyrics } from "../utils/other";
+import { consoleColors } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
 import { writeRMIDIInternal } from "./midi_tools/rmidi_writer";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
@@ -16,36 +13,138 @@ import type {
     DesiredChannelTranspose,
     DesiredControllerChange,
     DesiredProgramChange,
+    MIDIFormat,
+    MIDILoop,
     NoteTime,
-    RMIDMetadata
+    RMIDMetadata,
+    TempoChange
 } from "./types";
 import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthetizer/audio_engine/snapshot/synthesizer_snapshot";
 import { SoundBankManager } from "../synthetizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
-import { midiMessageTypes } from "./enums";
+import { midiMessageTypes, type RMIDINFOChunk } from "./enums";
+import type { KeyRange } from "../soundbank/types";
+import { MIDITrack } from "./midi_track";
 
 /**
- * BasicMIDI is the base of a complete MIDI file, used by the sequencer internally.
- * BasicMIDI is not available on the main thread, as it contains the actual track data which can be large.
- * It can be accessed by calling getMIDI() on the Sequencer.
+ * BasicMIDI is the base of a complete MIDI file.
  */
-export class BasicMIDI extends MIDISequenceData {
+export class BasicMIDI {
     /**
-     * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
+     * The track data of the MIDI file, represented as an array of tracks.
      */
-    public embeddedSoundBank: ArrayBuffer | undefined = undefined;
+    public tracks: MIDITrack[] = [];
 
     /**
-     * The actual track data of the MIDI file, represented as an array of tracks.
-     * Tracks are arrays of MIDIMessage objects.
+     * The time division of the sequence, representing the number of ticks per beat.
      */
-    public tracks: MIDIMessage[][] = [];
+    public timeDivision = 0;
 
+    /**
+     * The duration of the sequence, in seconds.
+     */
+    public duration = 0;
+
+    /**
+     * The tempo changes in the sequence, ordered from the last change to the first.
+     * Each change is represented by an object with a tick position and a tempo value in beats per minute.
+     */
+    public tempoChanges: TempoChange[] = [{ ticks: 0, tempo: 120 }];
+
+    /**
+     * A string containing the copyright information for the MIDI sequence if detected.
+     */
+    public copyright = "";
+
+    /**
+     * Any extra metadata found in the file.
+     */
+    public extraMetadata: string[] = [];
+
+    /**
+     * An array containing the lyrics of the sequence, stored as binary chunks (Uint8Array).
+     */
+    public lyrics: MIDIMessage[] = [];
+
+    /**
+     * The tick position of the first note-on event in the MIDI sequence.
+     */
+    public firstNoteOn = 0;
+
+    /**
+     * The MIDI key range used in the sequence, represented by a minimum and maximum note value.
+     */
+    public keyRange: KeyRange = { min: 0, max: 127 };
+
+    /**
+     * The tick position of the last voice event (such as note-on, note-off, or control change) in the sequence.
+     */
+    public lastVoiceEventTick = 0;
+
+    /**
+     * An array of channel offsets for each MIDI port, using the SpessaSynth method.
+     */
+    public portChannelOffsetMap: number[] = [0];
+
+    /**
+     * The loop points (in ticks) of the sequence, including both start and end points.
+     */
+    public loop: MIDILoop = { start: 0, end: 0 };
+
+    /**
+     * The name of the MIDI sequence.
+     * It will be empty if no name is found.
+     */
+    public name = "";
+
+    /**
+     * The file name of the MIDI sequence, if provided during parsing.
+     */
+    public fileName = "";
+
+    /**
+     * The raw, encoded MIDI name, represented as a Uint8Array.
+     * Useful when the MIDI file uses a different code page.
+     * Undefined if no MIDI name could be found.
+     */
+    public rawName?: Uint8Array;
+
+    /**
+     * The format of the MIDI file, which can be 0, 1, or 2, indicating the type of the MIDI file.
+     */
+    public format: MIDIFormat = 0;
+
+    /**
+     * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
+     * Otherwise, this field is undefined.
+     * Chunk type (e.g. "INAM"): Chunk data as a binary array.
+     */
+    public rmidiInfo: Partial<Record<RMIDINFOChunk, IndexedByteArray>> = {};
+
+    /**
+     * The bank offset used for RMID files.
+     */
+    public bankOffset = 0;
+
+    /**
+     * If the MIDI file is a Soft Karaoke file (.kar), this flag is set to true.
+     * https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
+     */
+    public isKaraokeFile = false;
+
+    /**
+     * Indicates if this file is a Multi-Port MIDI file.
+     */
+    public isMultiPort = false;
     /**
      * If the MIDI file is a DLS RMIDI file.
      */
     public isDLSRMIDI = false;
+    /**
+     * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
+     */
+    public embeddedSoundBank?: ArrayBuffer;
 
     /**
      * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
@@ -62,43 +161,45 @@ export class BasicMIDI extends MIDISequenceData {
     }
 
     /**
-     * Copies a MIDI (tracks are shallowly copied!)
-     * @param mid the MIDI to copy
-     * @returns the copied MIDI
+     * Copies a MIDI.
+     * @param mid The MIDI to copy.
+     * @returns The copied MIDI.
      */
     public static copyFrom(mid: BasicMIDI): BasicMIDI {
         const m = new BasicMIDI();
-        m._copyFromSequence(mid);
+        m.copyMetadataFrom(mid);
 
-        m.isDLSRMIDI = mid.isDLSRMIDI;
-        m.embeddedSoundBank = mid?.embeddedSoundBank ?? undefined; // Shallow copy
-        m.tracks = mid.tracks.map((track) => [...track]); // Shallow copy of each track array
+        m.embeddedSoundBank = mid?.embeddedSoundBank?.slice(0) ?? undefined; // Deep copy
+        m.tracks = mid.tracks.map((track) => MIDITrack.copyFrom(track)); // Deep copy of each track array
         return m;
     }
 
     /**
-     * Copies a MIDI with deep copy
-     * @param mid the MIDI to copy
-     * @returns the copied MIDI
+     * Converts ticks to time in seconds
+     * @param ticks time in MIDI ticks
+     * @returns time in seconds
      */
-    public static copyFromDeep(mid: BasicMIDI): BasicMIDI {
-        const m = new BasicMIDI();
-        m._copyFromSequence(mid);
-        m.isDLSRMIDI = mid.isDLSRMIDI;
-        m.embeddedSoundBank = mid.embeddedSoundBank
-            ? mid.embeddedSoundBank.slice(0)
-            : undefined; // Deep copy
-        m.tracks = mid.tracks.map((track) =>
-            track.map(
-                (event) =>
-                    new MIDIMessage(
-                        event.ticks,
-                        event.messageStatusByte,
-                        event.messageData
-                    )
-            )
-        ); // Deep copy
-        return m;
+    public midiTicksToSeconds(ticks: number): number {
+        let totalSeconds = 0;
+
+        while (ticks > 0) {
+            // tempo changes are reversed, so the first element is the last tempo change
+            // and the last element is the first tempo change
+            // (always at tick 0 and tempo 120)
+            // find the last tempo change that has occurred
+            const tempo = this.tempoChanges.find((v) => v.ticks < ticks);
+            if (!tempo) {
+                return totalSeconds;
+            }
+
+            // calculate the difference and tempo time
+            const timeSinceLastTempo = ticks - tempo.ticks;
+            totalSeconds +=
+                (timeSinceLastTempo * 60) / (tempo.tempo * this.timeDivision);
+            ticks -= timeSinceLastTempo;
+        }
+
+        return totalSeconds;
     }
 
     /**
@@ -120,12 +221,13 @@ export class BasicMIDI extends MIDISequenceData {
         if (sortEvents) {
             for (const t of this.tracks) {
                 // sort the track by ticks
-                t.sort((e1, e2) => e1.ticks - e2.ticks);
+                t.events.sort((e1, e2) => e1.ticks - e2.ticks);
             }
         }
         this.parseInternal();
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Calculates all note times in seconds.
      * @param minDrumLength the shortest a drum note (channel 10) can be, in seconds.
@@ -196,12 +298,54 @@ export class BasicMIDI extends MIDISequenceData {
         );
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
      * @param snapshot the snapshot to apply.
      */
     public applySnapshotToMIDI(snapshot: SynthesizerSnapshot) {
         applySnapshotInternal(this, snapshot);
+    }
+
+    /**
+     * INTERNAL USE ONLY!
+     */
+    protected copyMetadataFrom(mid: BasicMIDI) {
+        // properties can be assigned
+        this.name = mid.name;
+        this.fileName = mid.fileName;
+        this.timeDivision = mid.timeDivision;
+        this.duration = mid.duration;
+        this.copyright = mid.copyright;
+        this.firstNoteOn = mid.firstNoteOn;
+        this.lastVoiceEventTick = mid.lastVoiceEventTick;
+        this.format = mid.format;
+        this.bankOffset = mid.bankOffset;
+        this.isKaraokeFile = mid.isKaraokeFile;
+        this.isMultiPort = mid.isMultiPort;
+        this.isDLSRMIDI = mid.isDLSRMIDI;
+        this.isDLSRMIDI = mid.isDLSRMIDI;
+
+        // copying arrays
+        this.tempoChanges = [...mid.tempoChanges];
+        this.lyrics = mid.lyrics.map(
+            (arr) =>
+                new MIDIMessage(
+                    arr.ticks,
+                    arr.statusByte,
+                    new IndexedByteArray(arr.data)
+                )
+        );
+        this.portChannelOffsetMap = [...mid.portChannelOffsetMap];
+        this.rawName = mid?.rawName?.slice();
+
+        // copying objects
+        this.loop = { ...mid.loop };
+        this.keyRange = { ...mid.keyRange };
+        this.rmidiInfo = {};
+        for (const [key, value] of Object.entries(mid.rmidiInfo)) {
+            this.rmidiInfo[key as RMIDINFOChunk] = value?.slice();
+        }
     }
 
     /**
@@ -217,10 +361,6 @@ export class BasicMIDI extends MIDISequenceData {
 
         this.keyRange = { max: 0, min: 127 };
 
-        /**
-         * Will be joined with "\n" to form the final string
-         * @type {string[]}
-         */
         const copyrightComponents: string[] = [];
         let copyrightDetected = false;
         if (typeof this.rmidiInfo.ICOP !== "undefined") {
@@ -238,18 +378,17 @@ export class BasicMIDI extends MIDISequenceData {
         let loopStart = null;
         let loopEnd = null;
 
-        for (let i = 0; i < this.tracks.length; i++) {
-            const track: MIDIMessage[] = this.tracks[i];
+        for (const track of this.tracks) {
             const usedChannels = new Set<number>();
             let trackHasVoiceMessages = false;
 
-            for (const e of track) {
+            for (const e of track.events) {
                 // check if it's a voice message
-                if (e.messageStatusByte >= 0x80 && e.messageStatusByte < 0xf0) {
+                if (e.statusByte >= 0x80 && e.statusByte < 0xf0) {
                     trackHasVoiceMessages = true;
                     // voice messages are 7-bit always
-                    for (let j = 0; j < e.messageData.length; j++) {
-                        e.messageData[j] = Math.min(127, e.messageData[j]);
+                    for (let j = 0; j < e.data.length; j++) {
+                        e.data[j] = Math.min(127, e.data[j]);
                     }
                     // last voice event tick
                     if (e.ticks > this.lastVoiceEventTick) {
@@ -257,10 +396,10 @@ export class BasicMIDI extends MIDISequenceData {
                     }
 
                     // interpret the voice message
-                    switch (e.messageStatusByte & 0xf0) {
+                    switch (e.statusByte & 0xf0) {
                         // cc change: loop points
                         case midiMessageTypes.controllerChange:
-                            switch (e.messageData[0]) {
+                            switch (e.data[0]) {
                                 case 2:
                                 case 116:
                                     loopStart = e.ticks;
@@ -282,8 +421,8 @@ export class BasicMIDI extends MIDISequenceData {
                                     // check RMID
                                     if (
                                         this.isDLSRMIDI &&
-                                        e.messageData[1] !== 0 &&
-                                        e.messageData[1] !== 127
+                                        e.data[1] !== 0 &&
+                                        e.data[1] !== 127
                                     ) {
                                         SpessaSynthInfo(
                                             "%cDLS RMIDI with offset 1 detected!",
@@ -296,8 +435,8 @@ export class BasicMIDI extends MIDISequenceData {
 
                         // note on: used notes tracking and key range
                         case midiMessageTypes.noteOn: {
-                            usedChannels.add(e.messageStatusByte & 0x0f);
-                            const note = e.messageData[0];
+                            usedChannels.add(e.statusByte & 0x0f);
+                            const note = e.data[0];
                             this.keyRange.min = Math.min(
                                 this.keyRange.min,
                                 note
@@ -310,24 +449,20 @@ export class BasicMIDI extends MIDISequenceData {
                         }
                     }
                 }
-                e.messageData.currentIndex = 0;
-                const eventText = readBytesAsString(
-                    e.messageData,
-                    e.messageData.length
-                );
-                e.messageData.currentIndex = 0;
+                e.data.currentIndex = 0;
+                const eventText = readBytesAsString(e.data, e.data.length);
+                e.data.currentIndex = 0;
                 // interpret the message
-                switch (e.messageStatusByte) {
+                switch (e.statusByte) {
                     case midiMessageTypes.setTempo:
                         // add the tempo change
-                        e.messageData.currentIndex = 0;
+                        e.data.currentIndex = 0;
                         this.tempoChanges.push({
                             ticks: e.ticks,
                             tempo:
-                                60000000 /
-                                readBytesAsUintBigEndian(e.messageData, 3)
+                                60000000 / readBytesAsUintBigEndian(e.data, 3)
                         });
-                        e.messageData.currentIndex = 0;
+                        e.data.currentIndex = 0;
                         break;
 
                     case midiMessageTypes.marker:
@@ -346,22 +481,25 @@ export class BasicMIDI extends MIDISequenceData {
                                 case "loopend":
                                     loopEnd = e.ticks;
                             }
-                            e.messageData.currentIndex = 0;
+                            e.data.currentIndex = 0;
                         }
                         break;
 
                     case midiMessageTypes.copyright:
-                        if (!copyrightDetected) {
-                            e.messageData.currentIndex = 0;
+                        e.data.currentIndex = 0;
+                        if (copyrightDetected) {
                             copyrightComponents.push(
-                                readBytesAsString(
-                                    e.messageData,
-                                    e.messageData.length,
-                                    false
-                                )
+                                readBytesAsString(e.data, e.data.length, false)
                             );
-                            e.messageData.currentIndex = 0;
+                        } else {
+                            this.copyright +=
+                                readBytesAsString(
+                                    e.data,
+                                    e.data.length,
+                                    false
+                                ) + "\n";
                         }
+                        e.data.currentIndex = 0;
                         break;
                     // fallthrough
 
@@ -381,11 +519,10 @@ export class BasicMIDI extends MIDISequenceData {
 
                         if (this.isKaraokeFile) {
                             // replace the type of the message with text
-                            e.messageStatusByte = midiMessageTypes.text;
+                            e.statusByte = midiMessageTypes.text;
                         } else {
                             // add lyrics like a regular midi file
-                            this.lyrics.push(e.messageData);
-                            this.lyricsTicks.push(e.ticks);
+                            this.lyrics.push(e);
                         }
 
                     // kar: treat the same as text
@@ -411,15 +548,9 @@ export class BasicMIDI extends MIDISequenceData {
                                 checkedText.startsWith("@A")
                             ) {
                                 if (!karaokeHasTitle) {
-                                    this.midiName = checkedText
-                                        .substring(2)
-                                        .trim();
+                                    this.name = checkedText.substring(2).trim();
                                     karaokeHasTitle = true;
                                     nameDetected = true;
-                                    // encode to rawMidiName
-                                    this.rawMidiName = getStringBytes(
-                                        this.midiName
-                                    );
                                 } else {
                                     // append to copyright
                                     copyrightComponents.push(
@@ -428,10 +559,7 @@ export class BasicMIDI extends MIDISequenceData {
                                 }
                             } else if (!checkedText.startsWith("@")) {
                                 // non @: the lyrics
-                                this.lyrics.push(
-                                    sanitizeKarLyrics(e.messageData)
-                                );
-                                this.lyricsTicks.push(e.ticks);
+                                this.lyrics.push(e);
                             }
                         }
                         break;
@@ -442,20 +570,20 @@ export class BasicMIDI extends MIDISequenceData {
                 }
             }
             // add used channels
-            this.usedChannelsOnTrack.push(usedChannels);
+            track.channels = usedChannels;
 
             // track name
-            this.trackNames[i] = "";
-            const trackName = track.find(
-                (e) => e.messageStatusByte === midiMessageTypes.trackName
+            track.name = "";
+            const trackName = track.events.find(
+                (e) => e.statusByte === midiMessageTypes.trackName
             );
             if (trackName) {
-                trackName.messageData.currentIndex = 0;
+                trackName.data.currentIndex = 0;
                 const name = readBytesAsString(
-                    trackName.messageData,
-                    trackName.messageData.length
+                    trackName.data,
+                    trackName.data.length
                 );
-                this.trackNames[i] = name;
+                track.name = name;
                 // If the track has no voice messages, its "track name" event (if it has any)
                 // is some metadata.
                 // Add it to copyright
@@ -475,8 +603,8 @@ export class BasicMIDI extends MIDISequenceData {
 
         const firstNoteOns = [];
         for (const t of this.tracks) {
-            const firstNoteOn = t.find(
-                (e) => (e.messageStatusByte & 0xf0) === midiMessageTypes.noteOn
+            const firstNoteOn = t.events.find(
+                (e) => (e.statusByte & 0xf0) === midiMessageTypes.noteOn
             );
             if (firstNoteOn) {
                 firstNoteOns.push(firstNoteOn.ticks);
@@ -519,28 +647,27 @@ export class BasicMIDI extends MIDISequenceData {
 
         // determine ports
         let portOffset = 0;
-        this.midiPorts = [];
-        this.midiPortChannelOffsets = [];
-        for (let trackNum = 0; trackNum < this.tracks.length; trackNum++) {
-            this.midiPorts.push(-1);
-            if (this.usedChannelsOnTrack[trackNum].size === 0) {
+        this.portChannelOffsetMap = [];
+        for (const track of this.tracks) {
+            track.port = -1;
+            if (track.channels.size === 0) {
                 continue;
             }
-            for (const e of this.tracks[trackNum]) {
-                if (e.messageStatusByte !== midiMessageTypes.midiPort) {
+            for (const e of track.events) {
+                if (e.statusByte !== midiMessageTypes.midiPort) {
                     continue;
                 }
-                const port = e.messageData[0];
-                this.midiPorts[trackNum] = port;
-                if (this.midiPortChannelOffsets[port] === undefined) {
-                    this.midiPortChannelOffsets[port] = portOffset;
+                const port = e.data[0];
+                track.port = port;
+                if (this.portChannelOffsetMap[port] === undefined) {
+                    this.portChannelOffsetMap[port] = portOffset;
                     portOffset += 16;
                 }
             }
         }
 
         // fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
-        this.midiPortChannelOffsets = [...this.midiPortChannelOffsets].map(
+        this.portChannelOffsetMap = [...this.portChannelOffsetMap].map(
             (o) => o ?? 0
         );
 
@@ -554,24 +681,26 @@ export class BasicMIDI extends MIDISequenceData {
         // this spessasynth to reserve the first 16 channels for the conductor track
         // (which doesn't play anything) and use the additional 16 for the actual ports.
         let defaultPort = Infinity;
-        for (const port of this.midiPorts) {
-            if (port !== -1) {
-                if (defaultPort > port) {
-                    defaultPort = port;
+        for (const track of this.tracks) {
+            if (track.port !== -1) {
+                if (defaultPort > track.port) {
+                    defaultPort = track.port;
                 }
             }
         }
         if (defaultPort === Infinity) {
             defaultPort = 0;
         }
-        this.midiPorts = this.midiPorts.map((port) =>
-            port === -1 || port === undefined ? defaultPort : port
-        );
-        // add fake port if empty
-        if (this.midiPortChannelOffsets.length === 0) {
-            this.midiPortChannelOffsets = [0];
+        for (const track of this.tracks) {
+            if (track.port === -1 || track.port === undefined) {
+                track.port = defaultPort;
+            }
         }
-        if (this.midiPortChannelOffsets.length < 2) {
+        // add fake port if empty
+        if (this.portChannelOffsetMap.length === 0) {
+            this.portChannelOffsetMap = [0];
+        }
+        if (this.portChannelOffsetMap.length < 2) {
             SpessaSynthInfo(
                 `%cNo additional MIDI Ports detected.`,
                 consoleColors.info
@@ -587,76 +716,58 @@ export class BasicMIDI extends MIDISequenceData {
                 // if more than 1 track and the first track has no notes,
                 // just find the first trackName in the first track.
                 if (
-                    this.tracks[0].find(
+                    this.tracks[0].events.find(
                         (message) =>
-                            message.messageStatusByte >=
-                                midiMessageTypes.noteOn &&
-                            message.messageStatusByte <
-                                midiMessageTypes.polyPressure
+                            message.statusByte >= midiMessageTypes.noteOn &&
+                            message.statusByte < midiMessageTypes.polyPressure
                     ) === undefined
                 ) {
-                    const name = this.tracks[0].find(
+                    const name = this.tracks[0].events.find(
                         (message) =>
-                            message.messageStatusByte ===
-                            midiMessageTypes.trackName
+                            message.statusByte === midiMessageTypes.trackName
                     );
                     if (name) {
-                        this.rawMidiName = name.messageData;
-                        name.messageData.currentIndex = 0;
-                        this.midiName = readBytesAsString(
-                            name.messageData,
-                            name.messageData.length,
+                        this.rawName = name.data;
+                        name.data.currentIndex = 0;
+                        this.name = readBytesAsString(
+                            name.data,
+                            name.data.length,
                             false
                         );
                     }
                 }
             } else {
                 // if only 1 track, find the first "track name" event
-                const name = this.tracks[0].find(
+                const name = this.tracks[0].events.find(
                     (message) =>
-                        message.messageStatusByte === midiMessageTypes.trackName
+                        message.statusByte === midiMessageTypes.trackName
                 );
                 if (name) {
-                    this.rawMidiName = name.messageData;
-                    name.messageData.currentIndex = 0;
-                    this.midiName = readBytesAsString(
-                        name.messageData,
-                        name.messageData.length,
+                    this.rawName = name.data;
+                    name.data.currentIndex = 0;
+                    this.name = readBytesAsString(
+                        name.data,
+                        name.data.length,
                         false
                     );
                 }
             }
         }
 
-        if (!copyrightDetected) {
-            this.copyright =
-                copyrightComponents
-                    // trim and group newlines into one
-                    .map((c) => c.trim().replace(/(\r?\n)+/g, "\n"))
-                    // remove empty strings
-                    .filter((c) => c.length > 0)
-                    // join with newlines
-                    .join("\n") || "";
-        }
+        this.extraMetadata = copyrightComponents
+            // trim and group newlines into one
+            .map((c) => c.trim().replace(/(\r?\n)+/g, "\n"))
+            // remove empty strings
+            .filter((c) => c.length > 0);
 
-        this.midiName = this.midiName.trim();
-        this.midiNameUsesFileName = false;
-        // if midiName is "", use the file name
-        if (this.midiName.length === 0) {
-            SpessaSynthInfo(
-                `%cNo name detected. Using the alt name!`,
-                consoleColors.info
-            );
-            this.midiName = formatTitle(this.fileName);
-            this.midiNameUsesFileName = true;
-            // encode it too
-            this.rawMidiName = new Uint8Array(this.midiName.length);
-            for (let i = 0; i < this.midiName.length; i++) {
-                this.rawMidiName[i] = this.midiName.charCodeAt(i);
-            }
+        this.name = this.name.trim();
+        // if name is "", use the file name
+        if (this.name.length === 0) {
+            SpessaSynthInfo(`%cNo name detected.`, consoleColors.unrecognized);
+            this.name = "";
         } else {
             SpessaSynthInfo(
-                `%cMIDI Name detected! %c"${this.midiName}"`,
+                `%cMIDI Name detected! %c"${this.name}"`,
                 consoleColors.info,
                 consoleColors.recognized
             );
@@ -664,11 +775,14 @@ export class BasicMIDI extends MIDISequenceData {
 
         // if the first event is not at 0 ticks, add a track name
         // https://github.com/spessasus/SpessaSynth/issues/145
-        if (!this.tracks.some((t) => t[0].ticks === 0)) {
+        if (!this.tracks.some((t) => t.events[0].ticks === 0)) {
             const track = this.tracks[0];
             // can copy
-            const b: ArrayBuffer = this.rawMidiName.buffer as ArrayBuffer;
-            track.unshift(
+            let b = this?.rawName?.buffer as ArrayBuffer;
+            if (!b) {
+                b = getStringBytes(this.name).buffer;
+            }
+            track.events.unshift(
                 new MIDIMessage(
                     0,
                     midiMessageTypes.trackName,
@@ -685,23 +799,5 @@ export class BasicMIDI extends MIDISequenceData {
 
         SpessaSynthInfo("%cSuccess!", consoleColors.recognized);
         SpessaSynthGroupEnd();
-    }
-}
-
-/**
- * The MIDI class is a MIDI file parser that reads a MIDI file and extracts all the necessary information from it.
- * Supported formats are .mid and .rmi files.
- * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
- */
-export class MIDI extends BasicMIDI {
-    /**
-     * Parses a given MIDI file.
-     * @param arrayBuffer the MIDI file array buffer.
-     * @param fileName optional, replaces the decoded title if empty.
-     * @deprecated use `BasicMIDI.fromArrayBuffer` instead.
-     */
-    public constructor(arrayBuffer: ArrayBuffer, fileName = "") {
-        super();
-        loadMIDIFromArrayBufferInternal(this, arrayBuffer, fileName);
     }
 }

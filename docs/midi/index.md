@@ -40,17 +40,17 @@ The time division of the midi file. MIDI ticks per quarter note.
 console.log(`this sequence's time division is ${parsedMIDI.timeDivision}`);
 ```
 
-### midiName
+### name
 
 The sequence's name. The first track's `Track Name`'s event text.
 
 ```ts
-console.log(`This sequence is named "${parsedMIDI.midiName}"`);
+console.log(`This sequence is named "${parsedMIDI.name}"`);
 ```
 
 !!! Tip
 
-    This property uses basic decoding. If the name is encoded in a different encoding, like shift_jis, it might be better to use rawMidiName.
+    This property uses basic decoding. If the name is encoded in a different encoding, like shift_jis, it might be better to use rawName.
 
 ### fileName
 
@@ -60,12 +60,12 @@ The name of the MIDI file if provided during the initialization.
 
 A `boolean` indicating if the MIDI name is the same as file name, therefore there's no need to decode it.
 
-### rawMidiName
+### rawName
 
 The sequence's name, as a raw `Uint8Array`. Useful for handling unusual encodings.
 
 ```ts
-console.log(new TextDecoder("shift-jis").decode(parsedMIDI.rawMidiName)); // ダメなりんご！！
+console.log(new TextDecoder("shift-jis").decode(parsedMIDI.rawName)); // ダメなりんご！！
 ```
 
 ### copyright
@@ -159,13 +159,13 @@ The detected midi ports for each track. Each port represents a batch of 16 chann
 console.log(parsedMIDI.midiPorts); // [0, 0, 0, 1, 1, 2, ...]
 ```
 
-### midiPortChannelOffsets
+### portChannelOffsetMap
 
 The channel offsets for each MIDI port, using
 the [SpessaSynth method](../extra/about-multi-port.md#spessasynth-implementation)
 
 ```ts
-console.log(parsedMIDI.midiPortChannelOffsets); // [16, 0, 48, 32, ...]
+console.log(parsedMIDI.portChannelOffsetMap); // [16, 0, 48, 32, ...]
 ```
 
 ### usedChannelsOnTrack
@@ -348,24 +348,24 @@ class MIDIMessage {
      * the status byte of the message as a number from 0 to 255
      * @type {number}
      */
-    messageStatusByte;
+    statusByte;
 
     /**
      * @type {IndexedByteArray}
      */
-    messageData;
+    data;
 }
 ```
 
 - ticks - absolute amount of MIDI Ticks from the start of the track.
-- messageStatusByte - the status byte of the message as a number from 0 to 255.
+- statusByte - the status byte of the message as a number from 0 to 255.
   [Learn more here](https://www.recordingblogs.com/wiki/status-byte-of-a-midi-message) [and here](https://www.recordingblogs.com/wiki/midi-meta-messages).
 
 !!! Important
 
     Note that for Meta Events, the status byte is the SECOND status byte, not the 0xFF!
 
-- messageData - a `IndexedByteArray`(Pretty much exactly the same as `Uint8Array`) instance of the event's binary data.
+- data - a `IndexedByteArray`(Pretty much exactly the same as `Uint8Array`) instance of the event's binary data.
 
 !!! Caution
 
