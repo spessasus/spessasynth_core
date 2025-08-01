@@ -110,7 +110,7 @@ export function loadNewSequenceInternal(
         `%cTotal song time: ${formatTime(Math.ceil(this._midiData.duration)).time}`,
         consoleColors.recognized
     );
-    this?.onEventCall?.("songChange", { songIndex: this._songIndex });
+    this.callEvent("songChange", { songIndex: this._songIndex });
 
     if (this._midiData.duration <= 1) {
         SpessaSynthWarn(

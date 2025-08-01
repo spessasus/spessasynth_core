@@ -1,15 +1,25 @@
-import { getModulatorCurveValue, MOD_PRECOMPUTED_LENGTH } from "./modulator_curves";
+import {
+    getModulatorCurveValue,
+    MOD_PRECOMPUTED_LENGTH
+} from "./modulator_curves";
 import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import { generatorTypes, type ModulatorCurveType, modulatorSources } from "../../../soundbank/enums";
+import {
+    generatorTypes,
+    type ModulatorCurveType,
+    modulatorSources
+} from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";
-import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    generatorLimits,
+    type GeneratorType
+} from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
 /**
- * compute_modulator.js
+ * compute_modulator.ts
  * purpose: precomputes all curve types and computes modulators
  */
 
@@ -97,7 +107,7 @@ export function computeModulator(
             modulator.secSrcDirection
         ][rawSecondSrcValue];
 
-    // see the comment for isEffectModulator (modulator.js in basic_soundbank) for explanation
+    // see the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
     let transformAmount = modulator.transformAmount;
     if (modulator.isEffectModulator && transformAmount <= 1000) {
         transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;

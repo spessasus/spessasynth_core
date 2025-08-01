@@ -1,5 +1,5 @@
 import { SpessaSynthProcessor } from "../../../processor";
-import type { MasterParameterType } from "../../../types";
+import type { MasterParameterChangeCallback, MasterParameterType } from "../../../types";
 
 /**
  * Sets a master parameter of the synthesizer.
@@ -51,7 +51,7 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
     this.callEvent("masterParameterChange", {
         parameter,
         value
-    });
+    } as MasterParameterChangeCallback);
 }
 
 /**

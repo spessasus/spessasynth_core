@@ -1,5 +1,5 @@
 /**
- * voice.js
+ * voice.ts
  * purpose: prepares Voices from sample and generator data
  */
 import { SpessaSynthProcessor } from "../../processor";

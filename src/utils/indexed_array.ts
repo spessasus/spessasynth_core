@@ -1,5 +1,5 @@
 /**
- * indexed_array.js
+ * indexed_array.ts
  * purpose: extends Uint8Array with a currentIndex property.
  */
 

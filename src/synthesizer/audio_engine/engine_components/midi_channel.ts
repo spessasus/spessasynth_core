@@ -1,4 +1,8 @@
-import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
+import {
+    CONTROLLER_TABLE_SIZE,
+    CUSTOM_CONTROLLER_TABLE_SIZE,
+    NON_CC_INDEX_OFFSET
+} from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -12,8 +16,15 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
+import {
+    chooseBank,
+    isSystemXG,
+    parseBankSelect
+} from "../../../utils/xg_hacks";
+import {
+    DEFAULT_PERCUSSION,
+    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
+} from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -25,7 +36,12 @@ import {
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
 import type { SpessaSynthProcessor } from "../../processor";
-import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
+import {
+    type CustomController,
+    customControllers,
+    type DataEntryState,
+    dataEntryStates
+} from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { ProtectedSynthValues } from "./internal_synth_values";
@@ -62,7 +78,7 @@ export class MIDIChannel {
 
     /**
      * An array of custom (non-SF2) control values such as RPN pitch tuning, transpose, modulation depth, etc.
-     * Refer to controller_tables.js for the index definitions.
+     * Refer to controller_tables.ts for the index definitions.
      */
     public readonly customControllers: Float32Array = new Float32Array(
         CUSTOM_CONTROLLER_TABLE_SIZE
@@ -289,7 +305,7 @@ export class MIDIChannel {
      * @remarks
      * This method sets the modulation depth for the channel by converting the given cents value into a
      * multiplier. The MIDI specification assumes the default modulation depth is 50 cents,
-     * but it may vary for different soundfonts.
+     * but it may vary for different sound banks.
      * For example, if you want a modulation depth of 100 cents,
      * the multiplier will be 2,
      * which, for a preset with a depth of 50,

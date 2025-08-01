@@ -11,7 +11,7 @@ import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_component
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { midiControllers, midiMessageTypes } from "../midi/enums";
-import type { SequencerEventType } from "./types";
+import type { SequencerEvent, SequencerEventData } from "./types";
 
 export class SpessaSynthSequencer {
     /**
@@ -46,13 +46,9 @@ export class SpessaSynthSequencer {
 
     /**
      * Called when the sequencer calls an event.
-     * @param eventType The event type.
-     * @param eventData The event's data.
+     * @param event The event
      */
-    public onEventCall?: <K extends keyof SequencerEventType>(
-        eventType: K,
-        eventData: SequencerEventType[K]
-    ) => unknown;
+    public onEventCall?: (event: SequencerEvent) => unknown;
     /**
      * Processes a single MIDI tick.
      * Call this every rendering quantum to process the sequencer events in real-time.
@@ -248,10 +244,10 @@ export class SpessaSynthSequencer {
             return;
         } else {
             this.playingNotes = [];
-            this?.onEventCall?.("timeChange", { newTime: time });
+            this.callEvent("timeChange", { newTime: time });
             if (this._midiData.duration === 0) {
                 SpessaSynthWarn("No duration!");
-                this?.onEventCall?.("pause", { isFinished: true });
+                this.callEvent("pause", { isFinished: true });
                 return;
             }
             this.setTimeTo(time);
@@ -327,8 +323,18 @@ export class SpessaSynthSequencer {
         }
         this._songIndex = 0;
         this.shuffleSongIndexes();
-        this?.onEventCall?.("songListChange", { newSongList: this.songs });
+        this.callEvent("songListChange", { newSongList: [...this.songs] });
         this.loadCurrentSong();
+    }
+
+    protected callEvent<K extends keyof SequencerEventData>(
+        type: K,
+        data: SequencerEventData[K]
+    ) {
+        this?.onEventCall?.({
+            type,
+            data
+        } as SequencerEvent);
     }
 
     protected pauseInternal(isFinished: boolean) {
@@ -336,7 +342,7 @@ export class SpessaSynthSequencer {
             return;
         }
         this.stop();
-        this?.onEventCall?.("pause", { isFinished });
+        this.callEvent("pause", { isFinished });
     }
 
     protected songIsFinished() {
@@ -404,7 +410,7 @@ export class SpessaSynthSequencer {
         if (!this.externalMIDIPlayback) {
             return;
         }
-        this?.onEventCall?.("midiMessage", { message });
+        this.callEvent("midiMessage", { message });
     }
 
     protected sendMIDIReset() {
@@ -485,7 +491,7 @@ export class SpessaSynthSequencer {
     protected setTimeTicks(ticks: number) {
         this.playingNotes = [];
         const seconds = this._midiData.midiTicksToSeconds(ticks);
-        this?.onEventCall?.("timeChange", { newTime: seconds });
+        this.callEvent("timeChange", { newTime: seconds });
         const isNotFinished = this.setTimeTo(0, ticks);
         this.recalculateStartTime(this.playedTime);
         if (!isNotFinished) {

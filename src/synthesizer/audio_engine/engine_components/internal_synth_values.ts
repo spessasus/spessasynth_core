@@ -1,6 +1,6 @@
 import type {
     MTSProgramTuning,
-    ProcessorEventType,
+    SynthProcessorEventData,
     VoiceList
 } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
@@ -60,9 +60,9 @@ export class ProtectedSynthValues {
      * @param eventType The event type.
      * @param eventData The event data.
      */
-    public eventCallbackHandler: <K extends keyof ProcessorEventType>(
+    public eventCallbackHandler: <K extends keyof SynthProcessorEventData>(
         eventType: K,
-        eventData: ProcessorEventType[K]
+        eventData: SynthProcessorEventData[K]
     ) => unknown;
     public getVoices: (
         channel: number,
@@ -79,9 +79,9 @@ export class ProtectedSynthValues {
     public cachedVoices: VoiceList[][][][] = [];
 
     public constructor(
-        eventCallbackHandler: <K extends keyof ProcessorEventType>(
+        eventCallbackHandler: <K extends keyof SynthProcessorEventData>(
             eventType: K,
-            eventData: ProcessorEventType[K]
+            eventData: SynthProcessorEventData[K]
         ) => unknown,
         getVoices: (
             channel: number,
@@ -109,9 +109,9 @@ export class ProtectedSynthValues {
     /**
      * Copied callback so MIDI channels can call it.
      */
-    public callEvent<K extends keyof ProcessorEventType>(
+    public callEvent<K extends keyof SynthProcessorEventData>(
         eventName: K,
-        eventData: ProcessorEventType[K]
+        eventData: SynthProcessorEventData[K]
     ) {
         this.eventCallbackHandler(eventName, eventData);
     }

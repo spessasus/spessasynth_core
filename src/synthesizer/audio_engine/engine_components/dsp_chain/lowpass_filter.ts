@@ -3,7 +3,7 @@ import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
- * lowpass_filter.js
+ * lowpass_filter.ts
  * purpose: applies a low pass filter to a voice
  * note to self: a lot of tricks and come from fluidsynth.
  * They are the real smart guys.

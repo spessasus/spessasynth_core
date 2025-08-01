@@ -2,7 +2,7 @@ import { type InterpolationType, interpolationTypes } from "../../../enums";
 import type { Voice } from "../voice";
 
 /**
- * wavetable_oscillator.js
+ * wavetable_oscillator.ts
  * purpose: plays back raw audio data at an arbitrary playback rate
  */
 

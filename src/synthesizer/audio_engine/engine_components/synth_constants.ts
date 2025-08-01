@@ -25,7 +25,7 @@ export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()
 
 export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32767;
 /**
- * main_processor.js
+ * main_processor.ts
  * purpose: the core synthesis engine
  */
 

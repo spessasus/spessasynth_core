@@ -112,17 +112,17 @@ export interface PolyPressureCallback {
     pressure: number;
 }
 
-// The error message for soundfont errors.
-export type SoundfontErrorCallback = Error;
+// The error message for sound bank errors.
+export type SoundBankErrorCallback = Error;
 
-export interface MasterParameterChangeCallback<
-    P extends keyof MasterParameterType
-> {
-    // The parameter that was changed.
-    parameter: P;
-    // The new value of this parameter.
-    value: MasterParameterType[P];
-}
+export type MasterParameterChangeCallback = {
+    [P in keyof MasterParameterType]: {
+        // The parameter that was changed.
+        parameter: P;
+        // The new value of this parameter.
+        value: MasterParameterType[P];
+    };
+}[keyof MasterParameterType];
 
 export interface ChannelPropertyChangeCallback {
     // The channel number of the new property.
@@ -131,7 +131,7 @@ export interface ChannelPropertyChangeCallback {
     property: ChannelProperty;
 }
 
-export interface ProcessorEventType {
+export interface SynthProcessorEventData {
     // This event fires when a note is played.
     noteOn: NoteOnCallback;
     // This event fires when a note is released.
@@ -159,16 +159,21 @@ export interface ProcessorEventType {
     // This event fires when all controllers on all channels are reset. There is no data for this event.
     allControllerReset: undefined;
     // This event fires when a sound bank parsing error occurs.
-    soundBankError: SoundfontErrorCallback;
+    soundBankError: SoundBankErrorCallback;
     // This event fires when the synthesizer receives a display message.
     synthDisplay: SynthDisplayCallback;
     // This event fires when a master parameter changes.
-    masterParameterChange: MasterParameterChangeCallback<
-        keyof MasterParameterType
-    >;
+    masterParameterChange: MasterParameterChangeCallback;
     // This event fires when a channel property changes.
     channelPropertyChange: ChannelPropertyChangeCallback;
 }
+
+export type SynthProcessorEvent = {
+    [K in keyof SynthProcessorEventData]: {
+        type: K;
+        data: SynthProcessorEventData[K];
+    };
+}[keyof SynthProcessorEventData];
 
 export interface SynthMethodOptions {
     // The audio context time when the event should execute, in seconds.

@@ -1,20 +1,30 @@
 import { dataBytesAmount, getChannel, MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { consoleColors } from "../utils/other";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo,
+    SpessaSynthWarn
+} from "../utils/loggin";
 import { readRIFFChunk } from "../soundbank/basic_soundbank/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { readBytesAsString } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
+import {
+    type MIDIMessageType,
+    midiMessageTypes,
+    type RMIDINFOChunk,
+    rmidInfoChunks
+} from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
 import { MIDITrack } from "./midi_track";
 
 /**
- * midi_loader.js
+ * midi_loader.ts
  * purpose:
  * parses a midi file for the sequencer,
  * including things like marker or CC 2/4 loop detection, copyright detection, etc.

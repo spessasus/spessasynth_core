@@ -1,9 +1,15 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { readLittleEndian, writeDword } from "../../utils/byte_functions/little_endian";
-import { readBytesAsString, writeStringAsBytes } from "../../utils/byte_functions/string";
+import {
+    readLittleEndian,
+    writeDword
+} from "../../utils/byte_functions/little_endian";
+import {
+    readBytesAsString,
+    writeStringAsBytes
+} from "../../utils/byte_functions/string";
 
 /**
- * riff_chunk.js
+ * riff_chunk.ts
  * reads a riff chunk and stores it as a class
  */
 

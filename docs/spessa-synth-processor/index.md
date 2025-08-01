@@ -42,7 +42,7 @@ listens for events.
 
 Parameters:
 
-- eventType - ProcessorEventType - the event type.
+- eventType - SynthProcessorEventData - the event type.
 - eventData - depends - the event data.
 
 [Refer to the synth event types for all events.](event-types.md)

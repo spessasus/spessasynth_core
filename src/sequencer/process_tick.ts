@@ -32,7 +32,7 @@ export function processTick(this: SpessaSynthSequencer) {
                 // loop
                 if (this.loopCount !== Infinity) {
                     this.loopCount--;
-                    this?.onEventCall?.("loopCountChange", {
+                    this.callEvent("loopCountChange", {
                         newCount: this.loopCount
                     });
                 }

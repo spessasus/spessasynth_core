@@ -28,8 +28,9 @@ import { systemExclusiveInternal } from "./audio_engine/engine_methods/system_ex
 import { resetAllControllersInternal } from "./audio_engine/engine_methods/controller_control/reset_controllers";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
 import type {
-    ProcessorEventType,
     SynthMethodOptions,
+    SynthProcessorEvent,
+    SynthProcessorEventData,
     SynthProcessorOptions,
     VoiceList
 } from "./types";
@@ -87,13 +88,9 @@ export class SpessaSynthProcessor {
 
     /**
      * Calls when an event occurs.
-     * @param eventType The event type.
-     * @param eventData The event data.
+     * @param event The event that occurred.
      */
-    public onEventCall?: <K extends keyof ProcessorEventType>(
-        eventType: K,
-        eventData: ProcessorEventType[K]
-    ) => unknown;
+    public onEventCall?: (event: SynthProcessorEvent) => unknown;
 
     /**
      * Executes a system exclusive message for the synthesizer.
@@ -589,7 +586,7 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * Gets a specified preset from the soundfont manager.
+     * Gets a specified preset from the sound bank manager.
      * @param bank the bank number of the preset.
      * @param program the program number of the preset.
      */
@@ -626,11 +623,14 @@ export class SpessaSynthProcessor {
      * @param eventName the event name
      * @param eventData the event data
      */
-    protected callEvent<K extends keyof ProcessorEventType>(
+    protected callEvent<K extends keyof SynthProcessorEventData>(
         eventName: K,
-        eventData: ProcessorEventType[K]
+        eventData: SynthProcessorEventData[K]
     ) {
-        this.onEventCall?.(eventName, eventData);
+        this.onEventCall?.({
+            type: eventName,
+            data: eventData
+        } as SynthProcessorEvent);
     }
 
     protected getCachedVoice(

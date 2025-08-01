@@ -7,7 +7,7 @@ import type { SoundFontPreset } from "./presets";
 import { generatorTypes } from "../basic_soundbank/generator_types";
 
 /**
- * preset_zones.js
+ * preset_zones.ts
  * purpose: reads preset zones from soundfont and gets their respective samples and generators and modulators
  */
 

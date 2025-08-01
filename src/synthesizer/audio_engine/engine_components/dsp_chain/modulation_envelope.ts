@@ -5,7 +5,7 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 import { modulatorCurveTypes } from "../../../../soundbank/enums";
 
 /**
- * modulation_envelope.js
+ * modulation_envelope.ts
  * purpose: calculates the modulation envelope for the given voice
  */
 const MODENV_PEAK = 1;

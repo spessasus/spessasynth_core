@@ -1,5 +1,5 @@
 /**
- * modulator_curves.js
+ * modulator_curves.ts
  * precomputes modulator concave and convex curves and calculates a curve value for a given polarity, direction and type
  */
 import type { ModulatorNumericBool } from "../../../soundbank/types";

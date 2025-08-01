@@ -172,7 +172,7 @@ export function processEventInternal(
             break;
     }
     if (statusByteData.status >= 0 && statusByteData.status < 0x80) {
-        this?.onEventCall?.("metaEvent", {
+        this.callEvent("metaEvent", {
             event,
             trackIndex
         });

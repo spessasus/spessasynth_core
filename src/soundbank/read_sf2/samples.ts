@@ -1,5 +1,8 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian";
+import {
+    readLittleEndian,
+    signedInt8
+} from "../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { BasicSample } from "../basic_soundbank/basic_sample";
@@ -8,7 +11,7 @@ import type { SampleType } from "../enums";
 import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 
 /**
- * samples.js
+ * samples.ts
  * purpose: parses soundfont samples
  */
 

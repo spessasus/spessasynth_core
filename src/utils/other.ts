@@ -1,5 +1,5 @@
 /**
- * other.js
+ * other.ts
  * purpose: contains some useful functions that don't belong in any specific category
  */
 

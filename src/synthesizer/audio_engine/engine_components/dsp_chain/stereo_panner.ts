@@ -3,7 +3,7 @@ import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
- * stereo_panner.js
+ * stereo_panner.ts
  * purpose: pans a given voice out to the stereo output and to the effects' outputs
  */
 

@@ -168,8 +168,25 @@ They behave in exactly the same way.
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+### Events
+
 `onMasterParameterChange` has been replaced with an event `masterParameterChange`.
 `onChannelPropertyChange` has been replaced with an event `channelPropertyChange`.
+
+`onEventCall` now takes a single object as an argument. This is done to help with TypeScript type narrowing in switch statements.
+
+### Master parameters
+
+
+The master parameter system has been overhauled to use strings instead of enums.
+
+```ts
+processor.setMasterParameter(masterParameterType.masterPan, 1);
+```
+changes into:
+```ts
+processor.setMasterParameter("masterPan", 1);
+```
 
 `setSystem` has been replaced with a master parameter.
 
@@ -186,18 +203,6 @@ A few properties have been replaced with master parameters.
 - `pan`
 - `system`
 - `_monophonicRetriggerMode`
-
-### Master parameters
-
-The master parameter system has been overhauled to use strings instead of enums.
-
-```ts
-processor.setMasterParameter(masterParameterType.masterPan, 1);
-```
-changes into:
-```ts
-processor.setMasterParameter("masterPan", 1);
-```
 
 ### Sound Bank Manager
 
@@ -246,9 +251,11 @@ Removed, `loopCount` of zero disables the loop.
 
 Removed, replaced with setting the `songIndex` property.
 
-### on...
+### onEvent...
 
 All `onSomething` have been replaced with `onEventCall` to bring the API in-line with `SpessaSynthProcessor`.
+
+Note that this method also only takes a single object to help with TypeScript type narrowing.
 
 ## SpessaSynthLogging
 

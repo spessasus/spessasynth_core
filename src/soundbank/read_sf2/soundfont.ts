@@ -8,7 +8,11 @@ import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
 import { readRIFFChunk, RIFFChunk } from "../basic_soundbank/riff_chunk";
 import { consoleColors } from "../../utils/other";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { readBytesAsString } from "../../utils/byte_functions/string";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
@@ -19,7 +23,7 @@ import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
 
 /**
- * soundfont.js
+ * soundfont.ts
  * purpose: parses a soundfont2 file
  */
 
@@ -29,10 +33,7 @@ export class SoundFont2 extends BasicSoundBank {
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
-    public constructor(
-        arrayBuffer: ArrayBuffer,
-        warnDeprecated = true
-    ) {
+    public constructor(arrayBuffer: ArrayBuffer, warnDeprecated = true) {
         super();
         if (warnDeprecated) {
             console.warn(

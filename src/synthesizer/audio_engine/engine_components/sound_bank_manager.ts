@@ -153,7 +153,7 @@ export class SoundBankManager {
                     bankOffset: sf.bankOffset
                 };
             }
-            // if not found, advance to the next soundfont
+            // if not found, advance to the next sound bank
         }
         // if none found, return the first correct preset found
         if (!isDrum) {

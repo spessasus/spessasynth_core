@@ -1,5 +1,5 @@
 /**
- * lfo.js
+ * lfo.ts
  * purpose: low frequency triangle oscillator
  */
 

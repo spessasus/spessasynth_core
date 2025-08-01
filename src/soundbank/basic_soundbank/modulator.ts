@@ -1,4 +1,8 @@
-import { type GeneratorType, generatorTypes, MAX_GENERATOR } from "./generator_types";
+import {
+    type GeneratorType,
+    generatorTypes,
+    MAX_GENERATOR
+} from "./generator_types";
 import type { ModulatorNumericBool, ModulatorSource } from "../types";
 import {
     type ModulatorCurveType,
@@ -10,7 +14,7 @@ import {
 import { midiControllers } from "../../midi/enums";
 
 /**
- * modulators.js
+ * modulators.ts
  * purpose: parses soundfont modulators and the source enums, also includes the default modulators list
  **/
 

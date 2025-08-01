@@ -1,5 +1,5 @@
 /**
- * unit_converter.js
+ * unit_converter.ts
  * purpose: converts soundfont units into more usable values with the use of lookup tables to improve performance
  */
 

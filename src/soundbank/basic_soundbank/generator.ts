@@ -46,7 +46,7 @@ export class Generator {
 }
 
 /**
- * generator.js
+ * generator.ts
  * purpose: contains enums for generators,
  * and their limits parses reads soundfont generators, sums them and applies limits
  */

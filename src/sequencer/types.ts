@@ -1,7 +1,7 @@
 import type { BasicMIDI } from "../midi/basic_midi";
 import type { MIDIMessage } from "../midi/midi_message";
 
-export interface SequencerEventType {
+export interface SequencerEventData {
     // Called when a MIDI message is sent and externalMIDIPlayback is true.
     midiMessage: {
         // The binary MIDI message.
@@ -46,3 +46,10 @@ export interface SequencerEventType {
         newCount: number;
     };
 }
+
+export type SequencerEvent = {
+    [K in keyof SequencerEventData]: {
+        type: K;
+        data: SequencerEventData[K];
+    };
+}[keyof SequencerEventData];

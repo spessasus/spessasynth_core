@@ -70,7 +70,7 @@ export function writeArticulator(zone: BasicZone): IndexedByteArray {
         }
     }
 
-    // read_articulation.js:
+    // read_articulation.ts:
     // according to viena and another strange (with modulators) rendition of gm.dls in sf2,
     // it shall be divided by -128,
     // and a strange correction needs to be applied to the real value:

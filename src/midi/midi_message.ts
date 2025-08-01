@@ -1,5 +1,5 @@
 /**
- * midi_message.js
+ * midi_message.ts
  * purpose: contains enums for midi events and controllers and functions to parse them
  */
 import type { IndexedByteArray } from "../utils/indexed_array";

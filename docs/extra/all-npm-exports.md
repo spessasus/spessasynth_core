@@ -9,11 +9,11 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 ## Synthesizer and Sequencer
 
-- SpessaSynthProcessor - the main sythesis engine.
+- SpessaSynthProcessor - the main synthesis engine.
 - SpessaSynthSequencer - the main sequencer engine.
 - SynthesizerSnapshot - the class for manipulating synthesizer snapshots.
 - ChannelSnapshot - a part of SynthesizerSnapshot, represents a single channel.
-- KeyModifier - for the key modifer manager.
+- KeyModifier - for the key Modifier manager.
 
 ### Related Enums
 
@@ -21,7 +21,7 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - channelConfiguration - for setting the channel configuration. (currently only velocity override)
 - interpolationTypes - the available interpolation types.
 - synthDisplayTypes - for the `synthdisplay` event.
-- ChannelSnapshot - a subclass of SynthesizerShanshot, a snapshot of a single MIDI channel in the thread.
+- ChannelSnapshot - a subclass of SynthesizerSnapshot, a snapshot of a single MIDI channel in the thread.
 - DEFAULT_PERCUSSION - the default drum channel, i.e. channel 9.
 - VOICE_CAP - the default voice cap of the synthesizer. Currently, 350.
 - NON_CC_INDEX_OFFSET - the offset for other modulator sources for controller locking, i.e., 128.
@@ -30,9 +30,9 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - DEFAULT_SYNTH_MODE - the default synthesizer sysEx and bank select mode, i.e., `gs`
 - MIDI_CHANNEL_COUNT - the default MIDI channel amount, i.e., 16.
 
-## SoundFont
+## Sound banks
 
-- loadSoundFont - the main function for loading a sound bank.
+- SoundBankLoader - the loader for SF2 or DLS files.
 - BasicSoundBank - represents a sound bank file. (be it DLS or SF2)
 - BasicSample - represents a sample. (be it DLS or SF2)
 - CreatedSample - a class that simplifies the process of creating a new sample.
@@ -47,7 +47,7 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 ### Related Enums
 
-- modulatorSouces - an enum for modulator sources as defined in SF2 specification.
+- modulatorSources - an enum for modulator sources as defined in SF2 specification.
 - modulatorCurveTypes - an enum for modulator curve types as defined in the SF2 specification.
 - generatorTypes - an enum for all the generators in the SF2 specification, along with a few internal ones.
 - generatorLimits - an object, the key specifies the type, the value is min, max and def (default) values for this
@@ -58,9 +58,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 ## MIDI
 
-- MIDI - the MIDI file parser.
-- MIDISequenceData - the parent class of BasicMIDI, containing all the information without the memory-intensive track
-  and embedded sound bank data.
 - BasicMIDI - the base class for MIDI sequences.
 - MIDIBuilder - the MIDI file builder.
 - MIDIMessage - represents a single MIDI/meta/sysEx event.
@@ -77,5 +74,5 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - IndexedByteArray - an Uint8Array with an internal counter called `currentIndex`. Extensively used in the library.
 - audioToWav - a function that converts PCM audio data to a WAV file.
 - SpessaSynthLogging - a function to control log output of the library.
-- SpessaSynthCoreUtils - some utilites and byte functions of the library, used by `spessasynth_lib` and might be useful
+- SpessaSynthCoreUtils - some utilities and byte functions of the library, used by `spessasynth_lib` and might be useful
   for your project too!

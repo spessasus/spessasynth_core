@@ -1,5 +1,5 @@
 /**
- * instrument_zones.js
+ * instrument_zones.ts
  * purpose: reads instrument zones from soundfont and gets their respective samples and generators and modulators
  */
 import { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
