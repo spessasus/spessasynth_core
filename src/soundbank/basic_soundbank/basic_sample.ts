@@ -197,7 +197,7 @@ export class BasicSample {
         }
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Unlinks a sample from its link
      */
@@ -205,7 +205,7 @@ export class BasicSample {
         this.setSampleType(sampleTypes.monoSample);
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Links a stereo sample
      * @param sample the sample to link to
@@ -276,7 +276,7 @@ export class BasicSample {
         throw new Error("Sample data is undefined for a BasicSample instance.");
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Replaces the audio data _in-place_.
      * @param audioData The new audio data as Float32.

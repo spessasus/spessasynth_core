@@ -1,8 +1,4 @@
-import {
-    CONTROLLER_TABLE_SIZE,
-    CUSTOM_CONTROLLER_TABLE_SIZE,
-    NON_CC_INDEX_OFFSET
-} from "./controller_tables";
+import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -16,15 +12,8 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import {
-    chooseBank,
-    isSystemXG,
-    parseBankSelect
-} from "../../../utils/xg_hacks";
-import {
-    DEFAULT_PERCUSSION,
-    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
-} from "./synth_constants";
+import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks";
+import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -36,12 +25,7 @@ import {
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
 import type { SpessaSynthProcessor } from "../../processor";
-import {
-    type CustomController,
-    customControllers,
-    type DataEntryState,
-    dataEntryStates
-} from "../../enums";
+import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { ProtectedSynthValues } from "./internal_synth_values";
@@ -393,7 +377,7 @@ export class MIDIChannel {
         });
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets the pressure of the given note on a specific channel.
      * This is used for polyphonic pressure (aftertouch).
@@ -553,7 +537,7 @@ export class MIDIChannel {
         this.sendChannelProperty();
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a custom vibrato.
      * @param depth cents.
@@ -569,7 +553,7 @@ export class MIDIChannel {
         this.channelVibrato.depth = depth;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Yes.
      */

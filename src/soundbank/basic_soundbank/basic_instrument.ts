@@ -4,7 +4,7 @@ import { SpessaSynthWarn } from "../../utils/loggin";
 import type { BasicPreset } from "./basic_preset";
 import type { BasicSample } from "./basic_sample";
 
-// Noinspection JSUnusedGlobalSymbols
+// noinspection JSUnusedGlobalSymbols
 /**
  * Represents a single instrument
  */

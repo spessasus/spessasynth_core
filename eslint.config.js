@@ -21,7 +21,13 @@ export default tseslint.config(
             "@typescript-eslint/no-unused-vars": "error",
             "@typescript-eslint/explicit-member-accessibility": "error",
             "@typescript-eslint/no-deprecated": "error",
-            "capitalized-comments": "error"
+            "capitalized-comments": [
+                "error",
+                "always",
+                {
+                    ignorePattern: "noinspection"
+                }
+            ]
         }
     }
 );

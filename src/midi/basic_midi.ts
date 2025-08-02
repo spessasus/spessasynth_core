@@ -227,7 +227,7 @@ export class BasicMIDI {
         this.parseInternal();
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Calculates all note times in seconds.
      * @param minDrumLength the shortest a drum note (channel 10) can be, in seconds.
@@ -298,7 +298,7 @@ export class BasicMIDI {
         );
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
      * @param snapshot the snapshot to apply.
@@ -307,7 +307,7 @@ export class BasicMIDI {
         applySnapshotInternal(this, snapshot);
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Gets the MIDI's name.
      * @param encoding The encoding to use if the MIDI uses an extended code page.

@@ -122,7 +122,7 @@ export class SpessaSynthSequencer {
 
     protected _midiData: BasicMIDI = new BasicMIDI();
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * The currently loaded MIDI data.
      */
@@ -130,7 +130,7 @@ export class SpessaSynthSequencer {
         return this._midiData;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * The length of the current sequence in seconds.
      */
@@ -140,7 +140,7 @@ export class SpessaSynthSequencer {
 
     protected _songIndex = 0;
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * The current song index in the song list.
      * If shuffleMode is enabled, this is the index of the shuffled song list.
@@ -149,7 +149,7 @@ export class SpessaSynthSequencer {
         return this._songIndex;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * The current song index in the song list.
      * If shuffleMode is enabled, this is the index of the shuffled song list.
@@ -162,7 +162,7 @@ export class SpessaSynthSequencer {
 
     protected _shuffleMode = false;
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
@@ -171,7 +171,7 @@ export class SpessaSynthSequencer {
         return this._shuffleMode;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
@@ -192,7 +192,7 @@ export class SpessaSynthSequencer {
      */
     protected _playbackRate = 1;
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * The sequencer's playback rate.
      * This is the rate at which the sequencer plays back the MIDI data.
@@ -300,7 +300,7 @@ export class SpessaSynthSequencer {
         this.pausedTime = undefined;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Pauses the playback.
      */

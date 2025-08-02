@@ -72,7 +72,7 @@ export class SoundBankManager {
         this.generatePresetList();
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new sound bank with a given ID, or replaces an existing one.
      * @param font the sound bank to add.

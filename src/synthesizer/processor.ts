@@ -116,7 +116,7 @@ export class SpessaSynthProcessor {
         setMasterParameterInternal.bind(
             this
         ) as typeof setMasterParameterInternal;
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Gets a master parameter of the synthesizer.
      * @param type The type of the master parameter to get.
@@ -234,7 +234,7 @@ export class SpessaSynthProcessor {
         this.resetAllControllers();
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Gets a synthesizer snapshot from this processor instance.
      */
@@ -301,7 +301,7 @@ export class SpessaSynthProcessor {
         this.privateProps.callEvent("stopAll", undefined);
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
      * All float arrays must have the same length.
@@ -391,7 +391,7 @@ export class SpessaSynthProcessor {
         this.currentSynthTime += quantumSize * this.sampleTime;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      *  Destroy the synthesizer processor, clearing all channels and voices.
      *  This is irreversible, so use with caution.
@@ -487,7 +487,7 @@ export class SpessaSynthProcessor {
         this.midiChannels[channel].programChange(programNumber);
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Processes a raw MIDI message.
      * @param message The message to process.

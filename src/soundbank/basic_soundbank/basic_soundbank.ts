@@ -284,7 +284,7 @@ export class BasicSoundBank {
         return newInstrument;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Clones presets into this sound bank
      * @returns the copied preset, if a preset exists with that name, it is returned instead
@@ -627,7 +627,7 @@ export class BasicSoundBank {
         return preset;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Gets preset by name
      */

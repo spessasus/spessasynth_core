@@ -16,21 +16,20 @@ import {
     SpessaSynthWarn
 } from "./loggin";
 
-// Noinspection JSUnusedGlobalSymbols
 // You shouldn't use these...
 const SpessaSynthCoreUtils = {
     consoleColors,
     SpessaSynthInfo,
     SpessaSynthWarn,
     SpessaSynthGroupCollapsed,
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     SpessaSynthGroup,
     SpessaSynthGroupEnd,
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     readBytesAsUintBigEndian: readBigEndian,
     readLittleEndian,
     readBytesAsString,
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     readVariableLengthQuantity,
     inflateSync
 };

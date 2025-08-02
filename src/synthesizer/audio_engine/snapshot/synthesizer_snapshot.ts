@@ -47,7 +47,7 @@ export class SynthesizerSnapshot {
         );
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Creates a copy of existing snapshot.
      * @param snapshot The snapshot to create a copy from.

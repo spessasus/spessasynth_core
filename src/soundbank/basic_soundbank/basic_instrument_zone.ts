@@ -38,7 +38,7 @@ export class BasicInstrumentZone extends BasicZone {
         return this._sample;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a sample for this zone.
      * @param sample the sample to set.

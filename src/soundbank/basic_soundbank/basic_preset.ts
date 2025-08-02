@@ -99,7 +99,7 @@ export class BasicPreset {
         return z;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Preloads all samples for a given range
      */

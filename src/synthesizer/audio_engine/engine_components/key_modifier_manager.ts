@@ -41,7 +41,7 @@ export class KeyModifierManager {
      */
     private keyMappings: (KeyModifier | undefined)[][] = [];
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Add a mapping for a MIDI key to a KeyModifier.
      * @param channel The MIDI channel number.
@@ -53,7 +53,7 @@ export class KeyModifierManager {
         this.keyMappings[channel][midiNote] = mapping;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Delete a mapping for a MIDI key.
      * @param channel The MIDI channel number.
@@ -66,7 +66,7 @@ export class KeyModifierManager {
         this.keyMappings[channel][midiNote] = undefined;
     }
 
-    // Noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Clear all key mappings.
      */
