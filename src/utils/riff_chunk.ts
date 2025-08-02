@@ -158,7 +158,9 @@ export function writeRIFFChunkParts(
 }
 
 /**
- * Finds a given type in a list
+ * Finds a given type in a list.
+ * @remarks
+ * Also skips the current index to after the list FourCC.
  */
 export function findRIFFListType(
     collection: RIFFChunk[],
@@ -168,6 +170,7 @@ export function findRIFFListType(
         if (c.header !== "LIST") {
             return false;
         }
+        c.data.currentIndex = 4;
         return readBinaryString(c.data, 4) === type;
     });
 }

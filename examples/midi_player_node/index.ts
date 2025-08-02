@@ -32,8 +32,10 @@ synth.soundBankManager.addSoundBank(
 );
 await synth.processorInitialized;
 
+const midi = BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer);
+console.info(`Now playing: ${midi.getName()}`);
 const seq = new SpessaSynthSequencer(synth);
-seq.loadNewSongList([BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer)]);
+seq.loadNewSongList([midi]);
 seq.play();
 seq.loopCount = Infinity;
 

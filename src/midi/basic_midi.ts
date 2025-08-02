@@ -101,7 +101,7 @@ export class BasicMIDI {
     /**
      * The file name of the MIDI sequence, if provided during parsing.
      */
-    public fileName = "";
+    public fileName?: string;
 
     /**
      * The raw, encoded MIDI name, represented as a Uint8Array.
@@ -394,6 +394,7 @@ export class BasicMIDI {
         if (typeof this.rmidiInfo.INAM !== "undefined") {
             // Same as with copyright
             nameDetected = true;
+            this.rawName = this.rmidiInfo.INAM;
         }
 
         // Loop tracking

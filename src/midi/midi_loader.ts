@@ -43,7 +43,7 @@ interface MIDIChunk {
 export function loadMIDIFromArrayBufferInternal(
     outputMIDI: BasicMIDI,
     arrayBuffer: ArrayBuffer,
-    fileName = ""
+    fileName?: string
 ) {
     SpessaSynthGroupCollapsed(`%cParsing MIDI File...`, consoleColors.info);
     outputMIDI.fileName = fileName;

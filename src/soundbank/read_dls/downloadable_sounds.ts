@@ -30,7 +30,6 @@ class DownloadableSounds extends BasicSoundBank {
         this.dataArray = new IndexedByteArray(buffer);
         SpessaSynthGroup("%cParsing DLS file...", consoleColors.info);
         if (!this.dataArray) {
-            SpessaSynthGroupEnd();
             this.parsingError("No data provided!");
             return;
         }
@@ -94,7 +93,6 @@ class DownloadableSounds extends BasicSoundBank {
         // Read "colh"
         const colhChunk = chunks.find((c) => c.header === "colh");
         if (!colhChunk) {
-            SpessaSynthGroupEnd();
             this.parsingError("No colh chunk!");
             return;
         }
@@ -108,7 +106,6 @@ class DownloadableSounds extends BasicSoundBank {
         // Read the wave list
         const waveListChunk = findRIFFListType(chunks, "wvpl");
         if (!waveListChunk) {
-            SpessaSynthGroupEnd();
             this.parsingError("No wvpl chunk!");
             return;
         }
@@ -117,7 +114,6 @@ class DownloadableSounds extends BasicSoundBank {
         // Read the instrument list
         const instrumentListChunk = findRIFFListType(chunks, "lins");
         if (!instrumentListChunk) {
-            SpessaSynthGroupEnd();
             this.parsingError("No lins chunk!");
             return;
         }
@@ -167,7 +163,6 @@ class DownloadableSounds extends BasicSoundBank {
                 return;
             }
         }
-        SpessaSynthGroupEnd();
         this.parsingError(
             `Invalid DLS chunk header! Expected "${expected.toString()}" got "${chunk.header.toLowerCase()}"`
         );
@@ -180,7 +175,6 @@ class DownloadableSounds extends BasicSoundBank {
      */
     protected verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
-            SpessaSynthGroupEnd();
             this.parsingError(
                 `FourCC error: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"`
             );
@@ -191,6 +185,7 @@ class DownloadableSounds extends BasicSoundBank {
      * @throws error if the check doesn't pass
      */
     protected parsingError(error: string) {
+        SpessaSynthGroupEnd();
         throw new Error(`DLS parse error: ${error} The file may be corrupted.`);
     }
 }
