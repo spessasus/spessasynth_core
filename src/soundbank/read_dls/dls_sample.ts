@@ -1,8 +1,8 @@
 import { BasicSample } from "../basic_soundbank/basic_sample";
 import { SpessaSynthWarn } from "../../utils/loggin";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../../utils/riff_chunk";
 import { sampleTypes } from "../enums";
 
 const W_FORMAT_TAG = {
@@ -34,7 +34,7 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     } else {
         for (let i = 0; i < sampleData.length; i++) {
             // Read
-            let sample = readLittleEndian(data, bytesPerSample);
+            let sample = readLittleEndianIndexed(data, bytesPerSample);
             // Turn into signed
             if (isUnsigned) {
                 // Normalize unsigned 8-bit sample
@@ -59,7 +59,7 @@ function readALAW(
     const sampleData = new Float32Array(sampleLength);
     for (let i = 0; i < sampleData.length; i++) {
         // Read
-        const input = readLittleEndian(data, bytesPerSample);
+        const input = readLittleEndianIndexed(data, bytesPerSample);
 
         // https://en.wikipedia.org/wiki/G.711#A-law
         // Re-toggle toggled bits
@@ -137,7 +137,7 @@ export class DLSSample extends BasicSample {
         );
         this.sampleDbAttenuation = sampleDbAttenuation;
         this.dataOverridden = false;
-        this.rawData = dataChunk.chunkData;
+        this.rawData = dataChunk.data;
         this.wFormatTag = wFormatTag;
         this.bytesPerSample = bytesPerSample;
     }

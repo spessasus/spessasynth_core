@@ -11,9 +11,9 @@ import {
     findRIFFListType,
     readRIFFChunk,
     RIFFChunk
-} from "../basic_soundbank/riff_chunk";
-import { readBytesAsString } from "../../utils/byte_functions/string";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+} from "../../utils/riff_chunk";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { readDLSInstrument } from "./read_instrument";
 import { readDLSSamples } from "./read_samples";
 import type { SoundBankInfoFourCC } from "../types";
@@ -39,7 +39,7 @@ class DownloadableSounds extends BasicSoundBank {
         const firstChunk = readRIFFChunk(this.dataArray, false);
         this.verifyHeader(firstChunk, "riff");
         this.verifyText(
-            readBytesAsString(this.dataArray, 4).toLowerCase(),
+            readBinaryStringIndexed(this.dataArray, 4).toLowerCase(),
             "dls "
         );
 
@@ -64,14 +64,12 @@ class DownloadableSounds extends BasicSoundBank {
         // Read info
         const infoChunk = findRIFFListType(chunks, "INFO");
         if (infoChunk) {
-            while (
-                infoChunk.chunkData.currentIndex < infoChunk.chunkData.length
-            ) {
-                const infoPart = readRIFFChunk(infoChunk.chunkData);
+            while (infoChunk.data.currentIndex < infoChunk.data.length) {
+                const infoPart = readRIFFChunk(infoChunk.data);
                 (this.soundBankInfo[
                     infoPart.header as SoundBankInfoFourCC
-                ] as string) = readBytesAsString(
-                    infoPart.chunkData,
+                ] as string) = readBinaryStringIndexed(
+                    infoPart.data,
                     infoPart.size
                 );
             }
@@ -100,7 +98,7 @@ class DownloadableSounds extends BasicSoundBank {
             this.parsingError("No colh chunk!");
             return;
         }
-        const instrumentAmount = readLittleEndian(colhChunk.chunkData, 4);
+        const instrumentAmount = readLittleEndianIndexed(colhChunk.data, 4);
         SpessaSynthInfo(
             `%cInstruments amount: %c${instrumentAmount}`,
             consoleColors.info,
@@ -130,7 +128,7 @@ class DownloadableSounds extends BasicSoundBank {
         for (let i = 0; i < instrumentAmount; i++) {
             readDLSInstrument.call(
                 this,
-                readRIFFChunk(instrumentListChunk.chunkData)
+                readRIFFChunk(instrumentListChunk.data)
             );
         }
         SpessaSynthGroupEnd();

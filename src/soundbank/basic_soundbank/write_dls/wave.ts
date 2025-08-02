@@ -1,9 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeDword,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { writeWavesample } from "./wsmp";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";

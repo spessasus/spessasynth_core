@@ -2,8 +2,8 @@ import {
     findRIFFListType,
     readRIFFChunk,
     RIFFChunk
-} from "../basic_soundbank/riff_chunk";
-import { readBytesAsString } from "../../utils/byte_functions/string";
+} from "../../utils/riff_chunk";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
@@ -12,7 +12,7 @@ import {
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import {
-    readLittleEndian,
+    readLittleEndianIndexed,
     signedInt16
 } from "../../utils/byte_functions/little_endian";
 import { DLSSample } from "./dls_sample";
@@ -27,16 +27,14 @@ export function readDLSSamples(
         consoleColors.recognized
     );
     let sampleID = 0;
-    while (
-        waveListChunk.chunkData.currentIndex < waveListChunk.chunkData.length
-    ) {
-        const waveChunk = readRIFFChunk(waveListChunk.chunkData);
+    while (waveListChunk.data.currentIndex < waveListChunk.data.length) {
+        const waveChunk = readRIFFChunk(waveListChunk.data);
         this.verifyHeader(waveChunk, "LIST");
-        this.verifyText(readBytesAsString(waveChunk.chunkData, 4), "wave");
+        this.verifyText(readBinaryStringIndexed(waveChunk.data, 4), "wave");
 
         const waveChunks: RIFFChunk[] = [];
-        while (waveChunk.chunkData.currentIndex < waveChunk.chunkData.length) {
-            waveChunks.push(readRIFFChunk(waveChunk.chunkData));
+        while (waveChunk.data.currentIndex < waveChunk.data.length) {
+            waveChunks.push(readRIFFChunk(waveChunk.data));
         }
 
         const fmtChunk = waveChunks.find((c) => c.header === "fmt ");
@@ -44,20 +42,20 @@ export function readDLSSamples(
             throw new Error("No fmt chunk in the wave file!");
         }
         // https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.14393.0/shared/mmreg.h#L2108
-        const wFormatTag = readLittleEndian(fmtChunk.chunkData, 2);
-        const channelsAmount = readLittleEndian(fmtChunk.chunkData, 2);
+        const wFormatTag = readLittleEndianIndexed(fmtChunk.data, 2);
+        const channelsAmount = readLittleEndianIndexed(fmtChunk.data, 2);
         if (channelsAmount !== 1) {
             throw new Error(
                 `Only mono samples are supported. Fmt reports ${channelsAmount} channels`
             );
         }
-        const sampleRate = readLittleEndian(fmtChunk.chunkData, 4);
+        const sampleRate = readLittleEndianIndexed(fmtChunk.data, 4);
         // Skip avg bytes
-        readLittleEndian(fmtChunk.chunkData, 4);
+        readLittleEndianIndexed(fmtChunk.data, 4);
         // BlockAlign
-        readLittleEndian(fmtChunk.chunkData, 2);
+        readLittleEndianIndexed(fmtChunk.data, 2);
         // It's bits per sample because one channel
-        const wBitsPerSample = readLittleEndian(fmtChunk.chunkData, 2);
+        const wBitsPerSample = readLittleEndianIndexed(fmtChunk.data, 2);
         const bytesPerSample = wBitsPerSample / 8;
 
         const dataChunk = waveChunks.find((c) => c.header === "data");
@@ -70,16 +68,16 @@ export function readDLSSamples(
         const waveInfo = findRIFFListType(waveChunks, "INFO");
         let sampleName = `Unnamed ${sampleID}`;
         if (waveInfo) {
-            let infoChunk = readRIFFChunk(waveInfo.chunkData);
+            let infoChunk = readRIFFChunk(waveInfo.data);
             while (
                 infoChunk.header !== "INAM" &&
-                waveInfo.chunkData.currentIndex < waveInfo.chunkData.length
+                waveInfo.data.currentIndex < waveInfo.data.length
             ) {
-                infoChunk = readRIFFChunk(waveInfo.chunkData);
+                infoChunk = readRIFFChunk(waveInfo.data);
             }
             if (infoChunk.header === "INAM") {
-                sampleName = readBytesAsString(
-                    infoChunk.chunkData,
+                sampleName = readBinaryStringIndexed(
+                    infoChunk.data,
                     infoChunk.size
                 ).trim();
             }
@@ -97,13 +95,13 @@ export function readDLSSamples(
         const wsmpChunk = waveChunks.find((c) => c.header === "wsmp");
         if (wsmpChunk) {
             // Skip cbsize
-            readLittleEndian(wsmpChunk.chunkData, 4);
-            sampleKey = readLittleEndian(wsmpChunk.chunkData, 2);
+            readLittleEndianIndexed(wsmpChunk.data, 4);
+            sampleKey = readLittleEndianIndexed(wsmpChunk.data, 2);
             // Section 1.14.2: Each relative pitch unit represents 1/65536 cents.
             // But that doesn't seem true for this one: it's just cents.
             samplePitch = signedInt16(
-                wsmpChunk.chunkData[wsmpChunk.chunkData.currentIndex++],
-                wsmpChunk.chunkData[wsmpChunk.chunkData.currentIndex++]
+                wsmpChunk.data[wsmpChunk.data.currentIndex++],
+                wsmpChunk.data[wsmpChunk.data.currentIndex++]
             );
 
             // Pitch correction: convert hundreds to the root key
@@ -112,17 +110,17 @@ export function readDLSSamples(
             samplePitch -= samplePitchSemitones * 100;
 
             // Gain is applied it manually here (literally multiplying the samples)
-            const gainCorrection = readLittleEndian(wsmpChunk.chunkData, 4);
+            const gainCorrection = readLittleEndianIndexed(wsmpChunk.data, 4);
             // Convert to signed and turn into decibels
             sampleDbAttenuation = (gainCorrection | 0) / -655360;
             // No idea about ful options
-            readLittleEndian(wsmpChunk.chunkData, 4);
-            const loopsAmount = readLittleEndian(wsmpChunk.chunkData, 4);
+            readLittleEndianIndexed(wsmpChunk.data, 4);
+            const loopsAmount = readLittleEndianIndexed(wsmpChunk.data, 4);
             if (loopsAmount === 1) {
                 // Skip size and type
-                readLittleEndian(wsmpChunk.chunkData, 8);
-                sampleLoopStart = readLittleEndian(wsmpChunk.chunkData, 4);
-                const loopSize = readLittleEndian(wsmpChunk.chunkData, 4);
+                readLittleEndianIndexed(wsmpChunk.data, 8);
+                sampleLoopStart = readLittleEndianIndexed(wsmpChunk.data, 4);
+                const loopSize = readLittleEndianIndexed(wsmpChunk.data, 4);
                 sampleLoopEnd = sampleLoopStart + loopSize;
             }
         } else {

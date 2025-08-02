@@ -1,4 +1,4 @@
-import { getStringBytes, readBytesAsString } from "../utils/byte_functions/string";
+import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../utils/loggin";
@@ -119,6 +119,7 @@ export class BasicMIDI {
      * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
      * Otherwise, this field is undefined.
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
+     * Note that text chunks contain a terminal zero byte.
      */
     public rmidiInfo: Partial<Record<RMIDINFOChunk, IndexedByteArray>> = {};
 
@@ -319,8 +320,9 @@ export class BasicMIDI {
         if (this.rawName) {
             const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
             if (encodingInfo) {
-                encoding = new TextDecoder().decode(
-                    encodingInfo.slice(0, encodingInfo.length)
+                encoding = readBinaryString(
+                    encodingInfo,
+                    encodingInfo.length - 1
                 );
             }
             const decoder = new TextDecoder(encoding);
@@ -387,11 +389,6 @@ export class BasicMIDI {
         this.keyRange = { max: 0, min: 127 };
 
         const copyrightComponents: string[] = [];
-        let copyrightDetected = false;
-        if (typeof this.rmidiInfo.ICOP !== "undefined") {
-            // If RMIDI has copyright info, don't try to detect one.
-            copyrightDetected = true;
-        }
 
         let nameDetected = false;
         if (typeof this.rmidiInfo.INAM !== "undefined") {
@@ -474,19 +471,15 @@ export class BasicMIDI {
                         }
                     }
                 }
-                e.data.currentIndex = 0;
-                const eventText = readBytesAsString(e.data, e.data.length);
-                e.data.currentIndex = 0;
+                const eventText = readBinaryString(e.data);
                 // Interpret the message
                 switch (e.statusByte) {
                     case midiMessageTypes.setTempo:
                         // Add the tempo change
-                        e.data.currentIndex = 0;
                         this.tempoChanges.push({
                             ticks: e.ticks,
                             tempo: 60000000 / readBigEndian(e.data, 3)
                         });
-                        e.data.currentIndex = 0;
                         break;
 
                     case midiMessageTypes.marker:
@@ -505,25 +498,14 @@ export class BasicMIDI {
                                 case "loopend":
                                     loopEnd = e.ticks;
                             }
-                            e.data.currentIndex = 0;
                         }
                         break;
 
                     case midiMessageTypes.copyright:
-                        e.data.currentIndex = 0;
-                        if (copyrightDetected) {
-                            copyrightComponents.push(
-                                readBytesAsString(e.data, e.data.length, false)
-                            );
-                        } else {
-                            this.copyright +=
-                                readBytesAsString(
-                                    e.data,
-                                    e.data.length,
-                                    false
-                                ) + "\n";
-                        }
-                        e.data.currentIndex = 0;
+                        copyrightComponents.push(
+                            readBinaryString(e.data, e.data.length, 0, false)
+                        );
+
                         break;
                     // Fallthrough
 
@@ -602,11 +584,7 @@ export class BasicMIDI {
                 (e) => e.statusByte === midiMessageTypes.trackName
             );
             if (trackName) {
-                trackName.data.currentIndex = 0;
-                const name = readBytesAsString(
-                    trackName.data,
-                    trackName.data.length
-                );
+                const name = readBinaryString(trackName.data);
                 track.name = name;
                 // If the track has no voice messages, its "track name" event (if it has any)
                 // Is some metadata.
@@ -752,10 +730,10 @@ export class BasicMIDI {
                     );
                     if (name) {
                         this.rawName = name.data;
-                        name.data.currentIndex = 0;
-                        this.name = readBytesAsString(
+                        this.name = readBinaryString(
                             name.data,
                             name.data.length,
+                            0,
                             false
                         );
                     }
@@ -768,10 +746,10 @@ export class BasicMIDI {
                 );
                 if (name) {
                     this.rawName = name.data;
-                    name.data.currentIndex = 0;
-                    this.name = readBytesAsString(
+                    this.name = readBinaryString(
                         name.data,
                         name.data.length,
+                        0,
                         false
                     );
                 }

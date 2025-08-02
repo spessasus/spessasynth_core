@@ -1,4 +1,4 @@
-import { readRIFFChunk, RIFFChunk } from "../basic_soundbank/riff_chunk";
+import { readRIFFChunk, RIFFChunk } from "../../utils/riff_chunk";
 import { readArticulation } from "./read_articulation";
 import type { DownloadableSounds } from "./downloadable_sounds";
 import type { BasicZone } from "../basic_soundbank/basic_zone";
@@ -10,8 +10,8 @@ export function readLart(
     zone: BasicZone
 ) {
     if (lartChunk) {
-        while (lartChunk.chunkData.currentIndex < lartChunk.chunkData.length) {
-            const art1 = readRIFFChunk(lartChunk.chunkData);
+        while (lartChunk.data.currentIndex < lartChunk.data.length) {
+            const art1 = readRIFFChunk(lartChunk.data);
             this.verifyHeader(art1, "art1", "art2");
             const modsAndGens = readArticulation(art1, true);
             zone.addGenerators(...modsAndGens.generators);
@@ -20,8 +20,8 @@ export function readLart(
     }
 
     if (lar2Chunk) {
-        while (lar2Chunk.chunkData.currentIndex < lar2Chunk.chunkData.length) {
-            const art2 = readRIFFChunk(lar2Chunk.chunkData);
+        while (lar2Chunk.data.currentIndex < lar2Chunk.data.length) {
+            const art2 = readRIFFChunk(lar2Chunk.data);
             this.verifyHeader(art2, "art2", "art1");
             const modsAndGens = readArticulation(art2, false);
             zone.addGenerators(...modsAndGens.generators);

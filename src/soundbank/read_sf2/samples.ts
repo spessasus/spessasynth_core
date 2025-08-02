@@ -1,14 +1,11 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    readLittleEndian,
-    signedInt8
-} from "../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, signedInt8 } from "../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
-import { readBytesAsString } from "../../utils/byte_functions/string";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { BasicSample } from "../basic_soundbank/basic_sample";
 import { consoleColors } from "../../utils/other";
 import type { SampleType } from "../enums";
-import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../../utils/riff_chunk";
 
 /**
  * Samples.ts
@@ -214,12 +211,11 @@ export function readSamples(
     const samples: SoundFontSample[] = [];
     let index = 0;
     while (
-        sampleHeadersChunk.chunkData.length >
-        sampleHeadersChunk.chunkData.currentIndex
+        sampleHeadersChunk.data.length > sampleHeadersChunk.data.currentIndex
     ) {
         const sample = readSample(
             index,
-            sampleHeadersChunk.chunkData,
+            sampleHeadersChunk.data,
             smplChunkData
         );
         samples.push(sample);
@@ -245,22 +241,22 @@ function readSample(
     smplArrayData: IndexedByteArray | Float32Array
 ): SoundFontSample {
     // Read the sample name
-    const sampleName = readBytesAsString(sampleHeaderData, 20);
+    const sampleName = readBinaryStringIndexed(sampleHeaderData, 20);
 
     // Read the sample start index
-    const sampleStartIndex = readLittleEndian(sampleHeaderData, 4) * 2;
+    const sampleStartIndex = readLittleEndianIndexed(sampleHeaderData, 4) * 2;
 
     // Read the sample end index
-    const sampleEndIndex = readLittleEndian(sampleHeaderData, 4) * 2;
+    const sampleEndIndex = readLittleEndianIndexed(sampleHeaderData, 4) * 2;
 
     // Read the sample looping start index
-    const sampleLoopStartIndex = readLittleEndian(sampleHeaderData, 4);
+    const sampleLoopStartIndex = readLittleEndianIndexed(sampleHeaderData, 4);
 
     // Read the sample looping end index
-    const sampleLoopEndIndex = readLittleEndian(sampleHeaderData, 4);
+    const sampleLoopEndIndex = readLittleEndianIndexed(sampleHeaderData, 4);
 
     // Read the sample rate
-    const sampleRate = readLittleEndian(sampleHeaderData, 4);
+    const sampleRate = readLittleEndianIndexed(sampleHeaderData, 4);
 
     // Read the original sample pitch
     let samplePitch = sampleHeaderData[sampleHeaderData.currentIndex++];
@@ -275,8 +271,11 @@ function readSample(
     );
 
     // Read the link to the other channel
-    const sampleLink = readLittleEndian(sampleHeaderData, 2);
-    const sampleType = readLittleEndian(sampleHeaderData, 2) as SampleType;
+    const sampleLink = readLittleEndianIndexed(sampleHeaderData, 2);
+    const sampleType = readLittleEndianIndexed(
+        sampleHeaderData,
+        2
+    ) as SampleType;
 
     return new SoundFontSample(
         sampleName,

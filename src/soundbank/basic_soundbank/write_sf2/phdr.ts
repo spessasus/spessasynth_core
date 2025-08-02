@@ -1,10 +1,10 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string";
+import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import {
     writeDword,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkRaw } from "../riff_chunk";
+import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
 
@@ -18,8 +18,8 @@ export function getPHDR(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // The preset start is adjusted in pbag, this is only for the terminal preset index
     let presetStart = 0;
     for (const preset of bank.presets) {
-        writeStringAsBytes(phdrData, preset.name.substring(0, 20), 20);
-        writeStringAsBytes(xphdrData, preset.name.substring(20), 20);
+        writeBinaryStringIndexed(phdrData, preset.name.substring(0, 20), 20);
+        writeBinaryStringIndexed(xphdrData, preset.name.substring(20), 20);
 
         writeWord(phdrData, preset.program);
         writeWord(phdrData, preset.bank);
@@ -38,12 +38,12 @@ export function getPHDR(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
         presetStart += preset.zones.length + 1; // Global
     }
     // Write EOP
-    writeStringAsBytes(phdrData, "EOP", 20);
+    writeBinaryStringIndexed(phdrData, "EOP", 20);
     phdrData.currentIndex += 4; // Program, bank
     writeWord(phdrData, presetStart & 0xffff);
     phdrData.currentIndex += 12; // Library, genre, morphology
 
-    writeStringAsBytes(xphdrData, "EOP", 20);
+    writeBinaryStringIndexed(xphdrData, "EOP", 20);
     xphdrData.currentIndex += 4; // Program, bank
     writeWord(xphdrData, presetStart >> 16);
     xphdrData.currentIndex += 12; // Library, genre, morphology

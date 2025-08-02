@@ -24,7 +24,6 @@ export function getNoteTimesInternal(
     const getTempo = (event: MIDIMessage): number => {
         // Simulate IndexedByteArray
         event.data = new IndexedByteArray(event.data.buffer);
-        event.data.currentIndex = 0;
         return 60000000 / readBigEndian(event.data, 3);
     };
 

@@ -2,7 +2,7 @@ import {
     getDLSArticulatorFromSf2Generator,
     getDLSArticulatorFromSf2Modulator
 } from "./modulator_converter";
-import { writeRIFFChunkParts } from "../riff_chunk";
+import { writeRIFFChunkParts } from "../../../utils/riff_chunk";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { Generator } from "../generator";
 import { writeDword } from "../../../utils/byte_functions/little_endian";

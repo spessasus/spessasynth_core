@@ -8,28 +8,22 @@ import { IndexedByteArray } from "../indexed_array";
  * @param trimEnd if we should trim once we reach an invalid byte.
  * @returns the string.
  */
-export function readStringOffset(
+export function readBinaryString(
     dataArray: number[] | ArrayLike<number>,
-    bytes: number,
+    bytes = dataArray.length,
     offset = 0,
     trimEnd = true
 ) {
-    let finished = false;
     let string = "";
     for (let i = 0; i < bytes; i++) {
         const byte = dataArray[offset + i];
-        if (finished) {
-            continue;
-        }
         if ((byte < 32 || byte > 127) && byte !== 10) {
             // 10 is "\n"
             if (trimEnd) {
-                finished = true;
-                continue;
+                return string;
             } else {
                 if (byte === 0) {
-                    finished = true;
-                    continue;
+                    return string;
                 }
             }
         }
@@ -39,39 +33,20 @@ export function readStringOffset(
 }
 
 /**
- * Reads bytes as an ASCII string.
+ * Reads bytes as an ASCII string from an IndexedByteArray.
  * @param dataArray the IndexedByteArray to read from.
  * @param bytes the amount of bytes to read.
  * @param trimEnd if we should trim once we reach an invalid byte.
  * @returns the string.
  */
-export function readBytesAsString(
+export function readBinaryStringIndexed(
     dataArray: IndexedByteArray,
     bytes: number,
     trimEnd = true
-): string {
-    let finished = false;
-    let string = "";
-    for (let i = 0; i < bytes; i++) {
-        const byte = dataArray[dataArray.currentIndex++];
-        if (finished) {
-            continue;
-        }
-        if ((byte < 32 || byte > 127) && byte !== 10) {
-            // 10 is "\n"
-            if (trimEnd) {
-                finished = true;
-                continue;
-            } else {
-                if (byte === 0) {
-                    finished = true;
-                    continue;
-                }
-            }
-        }
-        string += String.fromCharCode(byte);
-    }
-    return string;
+) {
+    const startIndex = dataArray.currentIndex;
+    dataArray.currentIndex += bytes;
+    return readBinaryString(dataArray, bytes, startIndex, trimEnd);
 }
 
 /**
@@ -94,7 +69,7 @@ export function getStringBytes(
         len++;
     }
     const arr = new IndexedByteArray(len);
-    writeStringAsBytes(arr, string);
+    writeBinaryStringIndexed(arr, string);
     return arr;
 }
 
@@ -105,7 +80,7 @@ export function getStringBytes(
  * @param padLength pad with zeros if the string is shorter
  * @returns modified _in-place_
  */
-export function writeStringAsBytes(
+export function writeBinaryStringIndexed(
     outArray: IndexedByteArray,
     string: string,
     padLength = 0

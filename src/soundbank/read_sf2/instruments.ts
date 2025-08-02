@@ -1,6 +1,6 @@
-import { RIFFChunk } from "../basic_soundbank/riff_chunk";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
-import { readBytesAsString } from "../../utils/byte_functions/string";
+import { RIFFChunk } from "../../utils/riff_chunk";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { BasicInstrument } from "../basic_soundbank/basic_instrument";
 
 import { SoundFontInstrumentZone } from "./instrument_zones";
@@ -23,8 +23,8 @@ export class SoundFontInstrument extends BasicInstrument {
      */
     public constructor(instrumentChunk: RIFFChunk) {
         super();
-        this.name = readBytesAsString(instrumentChunk.chunkData, 20);
-        this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
+        this.name = readBinaryStringIndexed(instrumentChunk.data, 20);
+        this.zoneStartIndex = readLittleEndianIndexed(instrumentChunk.data, 2);
     }
 
     public createSoundFontZone(
@@ -50,10 +50,7 @@ export function readInstruments(
     instrumentChunk: RIFFChunk
 ): SoundFontInstrument[] {
     const instruments: SoundFontInstrument[] = [];
-    while (
-        instrumentChunk.chunkData.length >
-        instrumentChunk.chunkData.currentIndex
-    ) {
+    while (instrumentChunk.data.length > instrumentChunk.data.currentIndex) {
         const instrument = new SoundFontInstrument(instrumentChunk);
 
         if (instruments.length > 0) {

@@ -1,10 +1,10 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string";
+import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import {
     writeDword,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkRaw } from "../riff_chunk";
+import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { SF3_BIT_FLIT } from "../../read_sf2/samples";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
@@ -22,8 +22,8 @@ export function getSHDR(
     let maxSampleLink = 0;
     bank.samples.forEach((sample, index) => {
         // Sample name
-        writeStringAsBytes(shdrData, sample.name.substring(0, 20), 20);
-        writeStringAsBytes(xshdrData, sample.name.substring(20), 20);
+        writeBinaryStringIndexed(shdrData, sample.name.substring(0, 20), 20);
+        writeBinaryStringIndexed(xshdrData, sample.name.substring(20), 20);
         // Start offset
         const dwStart = smplStartOffsets[index];
         writeDword(shdrData, dwStart);
@@ -66,8 +66,8 @@ export function getSHDR(
     });
 
     // Write EOS and zero everything else
-    writeStringAsBytes(shdrData, "EOS", sampleLength);
-    writeStringAsBytes(xshdrData, "EOS", sampleLength);
+    writeBinaryStringIndexed(shdrData, "EOS", sampleLength);
+    writeBinaryStringIndexed(xshdrData, "EOS", sampleLength);
     const shdr = writeRIFFChunkRaw("shdr", shdrData);
     const xshdr = writeRIFFChunkRaw("shdr", xshdrData);
     return {

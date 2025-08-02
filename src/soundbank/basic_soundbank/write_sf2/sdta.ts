@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string";
-import { writeLittleEndian } from "../../../utils/byte_functions/little_endian";
+import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { writeLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { BasicSoundBank } from "../basic_soundbank";
@@ -84,12 +84,12 @@ export async function getSDTA(
 
     // Avoid using writeRIFFChunk for performance
     // Sdta chunk
-    writeStringAsBytes(sdta, "LIST");
+    writeBinaryStringIndexed(sdta, "LIST");
     // "sdta" + full smpl length
-    writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET - 8, 4);
-    writeStringAsBytes(sdta, "sdta");
-    writeStringAsBytes(sdta, "smpl");
-    writeLittleEndian(sdta, smplChunkSize, 4);
+    writeLittleEndianIndexed(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET - 8, 4);
+    writeBinaryStringIndexed(sdta, "sdta");
+    writeBinaryStringIndexed(sdta, "smpl");
+    writeLittleEndianIndexed(sdta, smplChunkSize, 4);
 
     let offset = 0;
     // Write out

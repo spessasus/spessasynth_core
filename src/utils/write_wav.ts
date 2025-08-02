@@ -1,10 +1,7 @@
 import { IndexedByteArray } from "./indexed_array";
-import { writeStringAsBytes } from "./byte_functions/string";
-import {
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../soundbank/basic_soundbank/riff_chunk";
-import { writeLittleEndian } from "./byte_functions/little_endian";
+import { writeBinaryStringIndexed } from "./byte_functions/string";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "./riff_chunk";
+import { writeLittleEndianIndexed } from "./byte_functions/little_endian";
 
 interface WaveMetadata {
     // The song's title.
@@ -82,20 +79,20 @@ export function audioToWav(
         const loopEndSamples = Math.floor(loop.end * sampleRate);
 
         const cueStart = new IndexedByteArray(24);
-        writeLittleEndian(cueStart, 0, 4); // DwIdentifier
-        writeLittleEndian(cueStart, 0, 4); // DwPosition
-        writeStringAsBytes(cueStart, "data"); // Cue point ID
-        writeLittleEndian(cueStart, 0, 4); // ChunkStart, always 0
-        writeLittleEndian(cueStart, 0, 4); // BlockStart, always 0
-        writeLittleEndian(cueStart, loopStartSamples, 4); // SampleOffset
+        writeLittleEndianIndexed(cueStart, 0, 4); // DwIdentifier
+        writeLittleEndianIndexed(cueStart, 0, 4); // DwPosition
+        writeBinaryStringIndexed(cueStart, "data"); // Cue point ID
+        writeLittleEndianIndexed(cueStart, 0, 4); // ChunkStart, always 0
+        writeLittleEndianIndexed(cueStart, 0, 4); // BlockStart, always 0
+        writeLittleEndianIndexed(cueStart, loopStartSamples, 4); // SampleOffset
 
         const cueEnd = new IndexedByteArray(24);
-        writeLittleEndian(cueEnd, 1, 4); // DwIdentifier
-        writeLittleEndian(cueEnd, 0, 4); // DwPosition
-        writeStringAsBytes(cueEnd, "data"); // Cue point ID
-        writeLittleEndian(cueEnd, 0, 4); // ChunkStart, always 0
-        writeLittleEndian(cueEnd, 0, 4); // BlockStart, always 0
-        writeLittleEndian(cueEnd, loopEndSamples, 4); // SampleOffset
+        writeLittleEndianIndexed(cueEnd, 1, 4); // DwIdentifier
+        writeLittleEndianIndexed(cueEnd, 0, 4); // DwPosition
+        writeBinaryStringIndexed(cueEnd, "data"); // Cue point ID
+        writeLittleEndianIndexed(cueEnd, 0, 4); // ChunkStart, always 0
+        writeLittleEndianIndexed(cueEnd, 0, 4); // BlockStart, always 0
+        writeLittleEndianIndexed(cueEnd, loopEndSamples, 4); // SampleOffset
 
         cueChunk = writeRIFFChunkParts("cue ", [
             new IndexedByteArray([2, 0, 0, 0]), // Cue points count

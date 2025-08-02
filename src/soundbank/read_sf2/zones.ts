@@ -1,5 +1,5 @@
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
-import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
+import type { RIFFChunk } from "../../utils/riff_chunk";
 
 /**
  * @param zonesChunk both pbag and ibag work
@@ -11,9 +11,9 @@ export function readZoneIndexes(zonesChunk: RIFFChunk): {
     const modStartIndexes: number[] = [];
     const genStartIndexes: number[] = [];
 
-    while (zonesChunk.chunkData.length > zonesChunk.chunkData.currentIndex) {
-        genStartIndexes.push(readLittleEndian(zonesChunk.chunkData, 2));
-        modStartIndexes.push(readLittleEndian(zonesChunk.chunkData, 2));
+    while (zonesChunk.data.length > zonesChunk.data.currentIndex) {
+        genStartIndexes.push(readLittleEndianIndexed(zonesChunk.data, 2));
+        modStartIndexes.push(readLittleEndianIndexed(zonesChunk.data, 2));
     }
     return {
         mod: modStartIndexes,

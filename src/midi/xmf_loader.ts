@@ -1,6 +1,6 @@
 import {
     getStringBytes,
-    readBytesAsString
+    readBinaryStringIndexed
 } from "../utils/byte_functions/string";
 import {
     SpessaSynthGroup,
@@ -9,7 +9,7 @@ import {
     SpessaSynthWarn
 } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
-import { readBigEndian } from "../utils/byte_functions/big_endian";
+import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import { inflateSync } from "../externals/fflate/fflate_wrapper";
@@ -159,7 +159,10 @@ class XMFNode {
             } else {
                 // This is the length of string
                 const stringLength = readVariableLengthQuantity(metadataChunk);
-                fieldSpecifier = readBytesAsString(metadataChunk, stringLength);
+                fieldSpecifier = readBinaryStringIndexed(
+                    metadataChunk,
+                    stringLength
+                );
                 key = fieldSpecifier;
             }
 
@@ -174,7 +177,7 @@ class XMFNode {
                 const formatID = readVariableLengthQuantity(contentsChunk);
                 // Text only
                 if (formatID < 4) {
-                    this.metadata[key] = readBytesAsString(
+                    this.metadata[key] = readBinaryStringIndexed(
                         contentsChunk,
                         dataLength - 1
                     );
@@ -370,7 +373,7 @@ export function loadXMF(
     midi.bankOffset = 0;
     // https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/xmf-v1a.pdf
     // https://wiki.multimedia.cx/index.php?title=Extensible_Music_Format_(XMF)
-    const sanityCheck = readBytesAsString(binaryData, 4);
+    const sanityCheck = readBinaryStringIndexed(binaryData, 4);
     if (sanityCheck !== "XMF_") {
         SpessaSynthGroupEnd();
         throw new SyntaxError(
@@ -379,7 +382,7 @@ export function loadXMF(
     }
 
     SpessaSynthGroup("%cParsing XMF file...", consoleColors.info);
-    const version = readBytesAsString(binaryData, 4);
+    const version = readBinaryStringIndexed(binaryData, 4);
     SpessaSynthInfo(
         `%cXMF version: %c${version}`,
         consoleColors.info,
@@ -388,8 +391,8 @@ export function loadXMF(
     // https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp43.pdf
     // Version 2.00 has additional bytes
     if (version === "2.00") {
-        const fileTypeId = readBigEndian(binaryData, 4);
-        const fileTypeRevisionId = readBigEndian(binaryData, 4);
+        const fileTypeId = readBigEndianIndexed(binaryData, 4);
+        const fileTypeRevisionId = readBigEndianIndexed(binaryData, 4);
         SpessaSynthInfo(
             `%cFile Type ID: %c${fileTypeId}%c, File Type Revision ID: %c${fileTypeRevisionId}`,
             consoleColors.info,

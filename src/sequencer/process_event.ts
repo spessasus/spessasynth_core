@@ -114,7 +114,6 @@ export function processEventInternal(
             break;
 
         case midiMessageTypes.setTempo: {
-            event.data.currentIndex = 0;
             let tempoBPM = 60000000 / readBigEndian(event.data, 3);
             this.oneTickToSeconds =
                 60 / (tempoBPM * this._midiData.timeDivision);

@@ -1,6 +1,6 @@
-import { RIFFChunk } from "../basic_soundbank/riff_chunk";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
-import { readBytesAsString } from "../../utils/byte_functions/string";
+import { RIFFChunk } from "../../utils/riff_chunk";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { BasicPreset } from "../basic_soundbank/basic_preset";
 import { SoundFontPresetZone } from "./preset_zones";
 import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
@@ -21,19 +21,19 @@ export class SoundFontPreset extends BasicPreset {
      */
     public constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
         super(sf2);
-        this.name = readBytesAsString(presetChunk.chunkData, 20).replace(
+        this.name = readBinaryStringIndexed(presetChunk.data, 20).replace(
             /\d{3}:\d{3}/,
             ""
         ); // Remove those pesky "000:001"
 
-        this.program = readLittleEndian(presetChunk.chunkData, 2);
-        this.bank = readLittleEndian(presetChunk.chunkData, 2);
-        this.zoneStartIndex = readLittleEndian(presetChunk.chunkData, 2);
+        this.program = readLittleEndianIndexed(presetChunk.data, 2);
+        this.bank = readLittleEndianIndexed(presetChunk.data, 2);
+        this.zoneStartIndex = readLittleEndianIndexed(presetChunk.data, 2);
 
         // Read the dword
-        this.library = readLittleEndian(presetChunk.chunkData, 4);
-        this.genre = readLittleEndian(presetChunk.chunkData, 4);
-        this.morphology = readLittleEndian(presetChunk.chunkData, 4);
+        this.library = readLittleEndianIndexed(presetChunk.data, 4);
+        this.genre = readLittleEndianIndexed(presetChunk.data, 4);
+        this.morphology = readLittleEndianIndexed(presetChunk.data, 4);
     }
 
     public createSoundFontZone(
@@ -60,7 +60,7 @@ export function readPresets(
     parent: BasicSoundBank
 ): SoundFontPreset[] {
     const presets: SoundFontPreset[] = [];
-    while (presetChunk.chunkData.length > presetChunk.chunkData.currentIndex) {
+    while (presetChunk.data.length > presetChunk.data.currentIndex) {
         const preset = new SoundFontPreset(presetChunk, parent);
         if (presets.length > 0) {
             const previous = presets[presets.length - 1];

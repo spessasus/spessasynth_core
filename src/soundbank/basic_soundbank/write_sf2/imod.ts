@@ -1,9 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeLittleEndian,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkRaw } from "../riff_chunk";
+import { writeLittleEndianIndexed, writeWord } from "../../../utils/byte_functions/little_endian";
+import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { MOD_BYTE_SIZE } from "../modulator";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
@@ -46,11 +43,11 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     }
 
     // Terminal modulator, is zero
-    writeLittleEndian(imodData, 0, MOD_BYTE_SIZE);
+    writeLittleEndianIndexed(imodData, 0, MOD_BYTE_SIZE);
 
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const ximodData = new IndexedByteArray(MOD_BYTE_SIZE);
-    writeLittleEndian(ximodData, 0, MOD_BYTE_SIZE);
+    writeLittleEndianIndexed(ximodData, 0, MOD_BYTE_SIZE);
 
     const imod = writeRIFFChunkRaw("imod", imodData);
     const ximod = writeRIFFChunkRaw("imod", ximodData);

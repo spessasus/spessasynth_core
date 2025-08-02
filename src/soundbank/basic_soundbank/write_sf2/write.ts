@@ -1,5 +1,8 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { consoleColors } from "../../../utils/other";
 import { getIGEN } from "./igen";
@@ -13,7 +16,7 @@ import { getPMOD } from "./pmod";
 import { getPBAG } from "./pbag";
 import { getPHDR } from "./phdr";
 import {
-    writeLittleEndian,
+    writeLittleEndianIndexed,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
 import {
@@ -90,8 +93,7 @@ export async function writeSF2Internal(
 
     if (options?.writeDefaultModulators) {
         // Trigger the DMOD write
-        targetSoundBank.soundBankInfo.DMOD =
-            `${targetSoundBank.defaultModulators.length} Modulators`;
+        targetSoundBank.soundBankInfo.DMOD = `${targetSoundBank.defaultModulators.length} Modulators`;
         targetSoundBank.customDefaultModulators = true;
     } else {
         delete targetSoundBank.soundBankInfo.DMOD;
@@ -125,7 +127,7 @@ export async function writeSF2Internal(
             }
 
             // Terminal modulator, is zero
-            writeLittleEndian(dmoddata, 0, MOD_BYTE_SIZE);
+            writeLittleEndianIndexed(dmoddata, 0, MOD_BYTE_SIZE);
 
             infoArrays.push(writeRIFFChunkRaw(type, dmoddata));
         } else if (isString) {

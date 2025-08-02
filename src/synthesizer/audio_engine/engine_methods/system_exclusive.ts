@@ -2,7 +2,7 @@ import { arrayToHexString, consoleColors } from "../../../utils/other";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../engine_components/synth_constants";
 import { isSystemXG } from "../../../utils/xg_hacks";
-import { readStringOffset } from "../../../utils/byte_functions/string";
+import { readBinaryString } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
 import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
 import type { SpessaSynthProcessor } from "../../processor";
@@ -205,7 +205,7 @@ export function systemExclusiveInternal(
                         case 0x01: {
                             const program = syx[currentMessageIndex++];
                             // Read the name
-                            const tuningName = readStringOffset(
+                            const tuningName = readBinaryString(
                                 syx,
                                 16,
                                 currentMessageIndex
@@ -817,7 +817,7 @@ export function systemExclusiveInternal(
                             case 0x00: {
                                 // Patch name. cool!
                                 // Not sure what to do with it, but let's log it!
-                                const patchName = readStringOffset(syx, 16, 7);
+                                const patchName = readBinaryString(syx, 16, 7);
                                 SpessaSynthInfo(
                                     `%cGS Patch name: %c${patchName}`,
                                     consoleColors.info,

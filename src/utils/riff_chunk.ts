@@ -1,12 +1,6 @@
-import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    readLittleEndian,
-    writeDword
-} from "../../utils/byte_functions/little_endian";
-import {
-    readBytesAsString,
-    writeStringAsBytes
-} from "../../utils/byte_functions/string";
+import { IndexedByteArray } from "./indexed_array";
+import { readLittleEndianIndexed, writeDword } from "./byte_functions/little_endian";
+import { readBinaryString, readBinaryStringIndexed, writeBinaryStringIndexed } from "./byte_functions/string";
 
 /**
  * Riff_chunk.ts
@@ -15,27 +9,27 @@ import {
 
 export class RIFFChunk {
     /**
-     * The chunks FourCC code
+     * The chunks FourCC code.
      */
     public readonly header: string;
 
     /**
-     * Chunk's size, in bytes
+     * Chunk's size, in bytes.
      */
     public readonly size: number;
 
     /**
-     * Chunk's binary data
+     * Chunk's binary data. Note that this will have a length of 0 if "readData" was set to false.
      */
-    public readonly chunkData: IndexedByteArray;
+    public readonly data: IndexedByteArray;
 
     /**
-     * Creates a new RIFF chunk
+     * Creates a new RIFF chunk.
      */
     public constructor(header: string, size: number, data: IndexedByteArray) {
         this.header = header;
         this.size = size;
-        this.chunkData = data;
+        this.data = data;
     }
 }
 
@@ -44,9 +38,9 @@ export function readRIFFChunk(
     readData = true,
     forceShift = false
 ): RIFFChunk {
-    const header = readBytesAsString(dataArray, 4);
+    const header = readBinaryStringIndexed(dataArray, 4);
 
-    let size = readLittleEndian(dataArray, 4);
+    let size = readLittleEndianIndexed(dataArray, 4);
     if (header === "") {
         // Safeguard against evil DLS files
         // The test case: CrysDLS v1.23.dls
@@ -67,9 +61,7 @@ export function readRIFFChunk(
     }
 
     if (size % 2 !== 0) {
-        if (dataArray[dataArray.currentIndex] === 0) {
-            dataArray.currentIndex++;
-        }
+        dataArray.currentIndex++;
     }
 
     return new RIFFChunk(header, size, chunkData);
@@ -110,12 +102,12 @@ export function writeRIFFChunkRaw(
 
     const outArray = new IndexedByteArray(finalSize);
     // FourCC ("RIFF", "LIST", "pdta" etc.)
-    writeStringAsBytes(outArray, headerWritten);
+    writeBinaryStringIndexed(outArray, headerWritten);
     // Chunk size
     writeDword(outArray, writtenSize);
     if (isList) {
         // List type (e.g. "INFO")
-        writeStringAsBytes(outArray, header);
+        writeBinaryStringIndexed(outArray, header);
     }
     outArray.set(data, dataStartOffset);
     return outArray;
@@ -151,12 +143,12 @@ export function writeRIFFChunkParts(
 
     const outArray = new IndexedByteArray(finalSize);
     // FourCC ("RIFF", "LIST", "pdta" etc.)
-    writeStringAsBytes(outArray, headerWritten);
+    writeBinaryStringIndexed(outArray, headerWritten);
     // Chunk size
     writeDword(outArray, writtenSize);
     if (isList) {
         // List type (e.g. "INFO")
-        writeStringAsBytes(outArray, header);
+        writeBinaryStringIndexed(outArray, header);
     }
     chunks.forEach((c) => {
         outArray.set(c, dataOffset);
@@ -176,7 +168,6 @@ export function findRIFFListType(
         if (c.header !== "LIST") {
             return false;
         }
-        c.chunkData.currentIndex = 0;
-        return readBytesAsString(c.chunkData, 4) === type;
+        return readBinaryString(c.data, 4) === type;
     });
 }

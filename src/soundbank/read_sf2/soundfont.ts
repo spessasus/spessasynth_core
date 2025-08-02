@@ -1,19 +1,15 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { readSamples } from "./samples";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { readGenerators } from "./generators";
 import { applyPresetZones } from "./preset_zones";
 import { readPresets } from "./presets";
 import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
-import { readRIFFChunk, RIFFChunk } from "../basic_soundbank/riff_chunk";
+import { readRIFFChunk, RIFFChunk } from "../../utils/riff_chunk";
 import { consoleColors } from "../../utils/other";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
-import { readBytesAsString } from "../../utils/byte_functions/string";
+import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
@@ -51,7 +47,7 @@ export class SoundFont2 extends BasicSoundBank {
         const firstChunk = readRIFFChunk(mainFileArray, false);
         this.verifyHeader(firstChunk, "riff");
 
-        const type = readBytesAsString(mainFileArray, 4).toLowerCase();
+        const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
         if (type !== "sfbk" && type !== "sfpk") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
@@ -68,7 +64,7 @@ export class SoundFont2 extends BasicSoundBank {
         // INFO
         const infoChunk = readRIFFChunk(mainFileArray);
         this.verifyHeader(infoChunk, "list");
-        const infoString = readBytesAsString(infoChunk.chunkData, 4);
+        const infoString = readBinaryStringIndexed(infoChunk.data, 4);
         if (infoString !== "INFO") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
@@ -78,22 +74,22 @@ export class SoundFont2 extends BasicSoundBank {
 
         let xdtaChunk: RIFFChunk | undefined = undefined;
 
-        while (infoChunk.chunkData.length > infoChunk.chunkData.currentIndex) {
-            const chunk = readRIFFChunk(infoChunk.chunkData);
+        while (infoChunk.data.length > infoChunk.data.currentIndex) {
+            const chunk = readRIFFChunk(infoChunk.data);
             let text;
             // Special cases
             const headerTyped = chunk.header as SoundBankInfoFourCC;
             switch (headerTyped) {
                 case "ifil":
                 case "iver":
-                    text = `${readLittleEndian(chunk.chunkData, 2)}.${readLittleEndian(chunk.chunkData, 2)}`;
+                    text = `${readLittleEndianIndexed(chunk.data, 2)}.${readLittleEndianIndexed(chunk.data, 2)}`;
                     this.soundBankInfo[headerTyped] = text;
                     break;
 
                 case "ICMT":
-                    text = readBytesAsString(
-                        chunk.chunkData,
-                        chunk.chunkData.length,
+                    text = readBinaryStringIndexed(
+                        chunk.data,
+                        chunk.data.length,
                         false
                     );
                     this.soundBankInfo[headerTyped] = text;
@@ -113,7 +109,7 @@ export class SoundFont2 extends BasicSoundBank {
 
                 case "LIST": {
                     // Possible xdta
-                    const listType = readBytesAsString(chunk.chunkData, 4);
+                    const listType = readBinaryStringIndexed(chunk.data, 4);
                     if (listType === "xdta") {
                         SpessaSynthInfo(
                             "%cExtended SF2 found!",
@@ -125,9 +121,9 @@ export class SoundFont2 extends BasicSoundBank {
                 }
 
                 default:
-                    text = readBytesAsString(
-                        chunk.chunkData,
-                        chunk.chunkData.length
+                    text = readBinaryStringIndexed(
+                        chunk.data,
+                        chunk.data.length
                     );
                     this.soundBankInfo[headerTyped] = text;
             }
@@ -152,21 +148,21 @@ export class SoundFont2 extends BasicSoundBank {
         }> = {};
         if (xdtaChunk !== undefined) {
             // Read the hydra chunks
-            xChunks.phdr = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.pbag = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.pmod = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.pgen = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.inst = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.ibag = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.imod = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.igen = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.shdr = readRIFFChunk(xdtaChunk.chunkData);
+            xChunks.phdr = readRIFFChunk(xdtaChunk.data);
+            xChunks.pbag = readRIFFChunk(xdtaChunk.data);
+            xChunks.pmod = readRIFFChunk(xdtaChunk.data);
+            xChunks.pgen = readRIFFChunk(xdtaChunk.data);
+            xChunks.inst = readRIFFChunk(xdtaChunk.data);
+            xChunks.ibag = readRIFFChunk(xdtaChunk.data);
+            xChunks.imod = readRIFFChunk(xdtaChunk.data);
+            xChunks.igen = readRIFFChunk(xdtaChunk.data);
+            xChunks.shdr = readRIFFChunk(xdtaChunk.data);
         }
 
         // SDTA
         const sdtaChunk = readRIFFChunk(mainFileArray, false);
         this.verifyHeader(sdtaChunk, "list");
-        this.verifyText(readBytesAsString(mainFileArray, 4), "sdta");
+        this.verifyText(readBinaryStringIndexed(mainFileArray, 4), "sdta");
 
         // Smpl
         SpessaSynthInfo("%cVerifying smpl chunk...", consoleColors.warn);
@@ -213,34 +209,34 @@ export class SoundFont2 extends BasicSoundBank {
         SpessaSynthInfo("%cLoading preset data chunk...", consoleColors.warn);
         const presetChunk = readRIFFChunk(mainFileArray);
         this.verifyHeader(presetChunk, "list");
-        readBytesAsString(presetChunk.chunkData, 4);
+        readBinaryStringIndexed(presetChunk.data, 4);
 
         // Read the hydra chunks
-        const phdrChunk = readRIFFChunk(presetChunk.chunkData);
+        const phdrChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(phdrChunk, "phdr");
 
-        const pbagChunk = readRIFFChunk(presetChunk.chunkData);
+        const pbagChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(pbagChunk, "pbag");
 
-        const pmodChunk = readRIFFChunk(presetChunk.chunkData);
+        const pmodChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(pmodChunk, "pmod");
 
-        const pgenChunk = readRIFFChunk(presetChunk.chunkData);
+        const pgenChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(pgenChunk, "pgen");
 
-        const instChunk = readRIFFChunk(presetChunk.chunkData);
+        const instChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(instChunk, "inst");
 
-        const ibagChunk = readRIFFChunk(presetChunk.chunkData);
+        const ibagChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(ibagChunk, "ibag");
 
-        const imodChunk = readRIFFChunk(presetChunk.chunkData);
+        const imodChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(imodChunk, "imod");
 
-        const igenChunk = readRIFFChunk(presetChunk.chunkData);
+        const igenChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(igenChunk, "igen");
 
-        const shdrChunk = readRIFFChunk(presetChunk.chunkData);
+        const shdrChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(shdrChunk, "shdr");
 
         /**

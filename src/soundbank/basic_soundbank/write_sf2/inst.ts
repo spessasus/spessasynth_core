@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeStringAsBytes } from "../../../utils/byte_functions/string";
+import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { writeWord } from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkRaw } from "../riff_chunk";
+import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
 
@@ -19,15 +19,15 @@ export function getINST(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // The instrument start index is adjusted in ibag, write it here
     let instrumentStart = 0;
     for (const inst of bank.instruments) {
-        writeStringAsBytes(instData, inst.name.substring(0, 20), 20);
-        writeStringAsBytes(xinstData, inst.name.substring(20), 20);
+        writeBinaryStringIndexed(instData, inst.name.substring(0, 20), 20);
+        writeBinaryStringIndexed(xinstData, inst.name.substring(20), 20);
         writeWord(instData, instrumentStart & 0xffff);
         writeWord(xinstData, instrumentStart >> 16);
         instrumentStart += inst.zones.length + 1; // Global
     }
     // Write EOI
-    writeStringAsBytes(instData, "EOI", 20);
-    writeStringAsBytes(xinstData, "EOI", 20);
+    writeBinaryStringIndexed(instData, "EOI", 20);
+    writeBinaryStringIndexed(xinstData, "EOI", 20);
     writeWord(instData, instrumentStart & 0xffff);
     writeWord(xinstData, instrumentStart >> 16);
 

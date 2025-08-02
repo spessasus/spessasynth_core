@@ -1,5 +1,5 @@
 import { writeDLSSample } from "./wave";
-import { writeRIFFChunkParts } from "../riff_chunk";
+import { writeRIFFChunkParts } from "../../../utils/riff_chunk";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ProgressFunction } from "../../types";
 import type { IndexedByteArray } from "../../../utils/indexed_array";

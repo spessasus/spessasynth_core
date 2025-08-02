@@ -1,4 +1,7 @@
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
 import { writeDword } from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { getStringBytes } from "../../../utils/byte_functions/string";

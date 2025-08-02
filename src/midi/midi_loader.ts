@@ -2,12 +2,12 @@ import { dataBytesAmount, getChannel, MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { consoleColors } from "../utils/other";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
-import { readRIFFChunk } from "../soundbank/basic_soundbank/riff_chunk";
+import { readRIFFChunk } from "../utils/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
-import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { readBytesAsString } from "../utils/byte_functions/string";
-import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
+import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
+import { readBinaryString, readBinaryStringIndexed } from "../utils/byte_functions/string";
+import { readLittleEndianIndexed } from "../utils/byte_functions/little_endian";
+import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
@@ -20,7 +20,7 @@ import { MIDITrack } from "./midi_track";
  * including things like marker or CC 2/4 loop detection, copyright detection, etc.
  */
 
-interface InternalMIDIChunkType {
+interface MIDIChunk {
     type: string;
     size: number;
     data: IndexedByteArray;
@@ -48,15 +48,13 @@ export function loadMIDIFromArrayBufferInternal(
     SpessaSynthGroupCollapsed(`%cParsing MIDI File...`, consoleColors.info);
     outputMIDI.fileName = fileName;
     const binaryData = new IndexedByteArray(arrayBuffer);
-    let fileByteArray: IndexedByteArray = binaryData;
+    let smfFileBinary = binaryData;
 
-    const readMIDIChunk = (
-        fileByteArray: IndexedByteArray
-    ): InternalMIDIChunkType => {
-        const type = readBytesAsString(fileByteArray, 4);
-        const size = readBigEndian(fileByteArray, 4);
+    const readMIDIChunk = (fileByteArray: IndexedByteArray): MIDIChunk => {
+        const type = readBinaryStringIndexed(fileByteArray, 4);
+        const size = readBigEndianIndexed(fileByteArray, 4);
         const data = new IndexedByteArray(size);
-        const chunk: InternalMIDIChunkType = {
+        const chunk: MIDIChunk = {
             type,
             size,
             data
@@ -72,13 +70,12 @@ export function loadMIDIFromArrayBufferInternal(
     };
 
     // Check for rmid
-    const initialString = readBytesAsString(binaryData, 4);
-    binaryData.currentIndex -= 4;
+    const initialString = readBinaryString(binaryData, 4);
     if (initialString === "RIFF") {
         // Possibly an RMID file (https://github.com/spessasus/sf2-rmidi-specification#readme)
         // Skip size
         binaryData.currentIndex += 8;
-        const rmid = readBytesAsString(binaryData, 4, false);
+        const rmid = readBinaryStringIndexed(binaryData, 4, false);
         if (rmid !== "RMID") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
@@ -93,15 +90,15 @@ export function loadMIDIFromArrayBufferInternal(
             );
         }
         // OutputMIDI is a rmid, load the midi into an array for parsing
-        fileByteArray = riff.chunkData;
+        smfFileBinary = riff.data;
 
         // Keep loading chunks until we get the "SFBK" header
         while (binaryData.currentIndex <= binaryData.length) {
             const startIndex = binaryData.currentIndex;
             const currentChunk = readRIFFChunk(binaryData, true);
             if (currentChunk.header === "RIFF") {
-                const type = readBytesAsString(
-                    currentChunk.chunkData,
+                const type = readBinaryStringIndexed(
+                    currentChunk.data,
                     4
                 ).toLowerCase();
                 if (type === "sfbk" || type === "sfpk" || type === "dls ") {
@@ -121,7 +118,7 @@ export function loadMIDIFromArrayBufferInternal(
                     outputMIDI.isDLSRMIDI = true;
                 }
             } else if (currentChunk.header === "LIST") {
-                const type = readBytesAsString(currentChunk.chunkData, 4);
+                const type = readBinaryStringIndexed(currentChunk.data, 4);
                 if (type === "INFO") {
                     SpessaSynthInfo(
                         "%cFound RMIDI INFO chunk!",
@@ -129,32 +126,30 @@ export function loadMIDIFromArrayBufferInternal(
                     );
                     outputMIDI.rmidiInfo = {};
                     while (
-                        currentChunk.chunkData.currentIndex <= currentChunk.size
+                        currentChunk.data.currentIndex <= currentChunk.size
                     ) {
                         const infoChunk = readRIFFChunk(
-                            currentChunk.chunkData,
+                            currentChunk.data,
                             true
                         );
                         outputMIDI.rmidiInfo[
                             infoChunk.header as RMIDINFOChunk
-                        ] = infoChunk.chunkData;
+                        ] = infoChunk.data;
                     }
                     if (outputMIDI.rmidiInfo.ICOP) {
                         // Special case, overwrites the copyright components array
-                        outputMIDI.copyright = readBytesAsString(
+                        outputMIDI.copyright = readBinaryStringIndexed(
                             outputMIDI.rmidiInfo.ICOP,
                             outputMIDI.rmidiInfo.ICOP.length,
                             false
                         ).replaceAll("\n", " ");
                     }
                     if (outputMIDI.rmidiInfo.INAM) {
-                        outputMIDI.rawName =
-                            outputMIDI.rmidiInfo[rmidInfoChunks.name]!;
-                        outputMIDI.name = readBytesAsString(
-                            outputMIDI.rawName as IndexedByteArray,
-                            outputMIDI.rawName.length,
-                            false
-                        ).replaceAll("\n", " ");
+                        // Remove the terminal zero
+                        outputMIDI.rawName = outputMIDI.rmidiInfo.INAM.slice(
+                            0,
+                            outputMIDI.rmidiInfo.INAM.length - 1
+                        );
                     }
                     // These can be used interchangeably
                     if (
@@ -170,10 +165,9 @@ export function loadMIDIFromArrayBufferInternal(
                         outputMIDI.rmidiInfo.IALB = outputMIDI.rmidiInfo.IPRD;
                     }
                     outputMIDI.bankOffset = 1; // Defaults to 1
-                    if (outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset]) {
-                        outputMIDI.bankOffset = readLittleEndian(
-                            outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset] ??
-                                new IndexedByteArray(0),
+                    if (outputMIDI.rmidiInfo.DBNK) {
+                        outputMIDI.bankOffset = readLittleEndianIndexed(
+                            outputMIDI.rmidiInfo.DBNK,
                             2
                         );
                     }
@@ -192,11 +186,11 @@ export function loadMIDIFromArrayBufferInternal(
         }
     } else if (initialString === "XMF_") {
         // XMF file
-        fileByteArray = loadXMF(outputMIDI, binaryData);
+        smfFileBinary = loadXMF(outputMIDI, binaryData);
     } else {
-        fileByteArray = binaryData;
+        smfFileBinary = binaryData;
     }
-    const headerChunk = readMIDIChunk(fileByteArray);
+    const headerChunk = readMIDIChunk(smfFileBinary);
     if (headerChunk.type !== "MThd") {
         SpessaSynthGroupEnd();
         throw new SyntaxError(
@@ -212,15 +206,15 @@ export function loadMIDIFromArrayBufferInternal(
     }
 
     // Format
-    outputMIDI.format = readBigEndian(headerChunk.data, 2) as MIDIFormat;
+    outputMIDI.format = readBigEndianIndexed(headerChunk.data, 2) as MIDIFormat;
     // Tracks count
-    const trackCount = readBigEndian(headerChunk.data, 2);
+    const trackCount = readBigEndianIndexed(headerChunk.data, 2);
     // Time division
-    outputMIDI.timeDivision = readBigEndian(headerChunk.data, 2);
+    outputMIDI.timeDivision = readBigEndianIndexed(headerChunk.data, 2);
     // Read all the tracks
     for (let i = 0; i < trackCount; i++) {
         const track = new MIDITrack();
-        const trackChunk = readMIDIChunk(fileByteArray);
+        const trackChunk = readMIDIChunk(smfFileBinary);
 
         if (trackChunk.type !== "MTrk") {
             SpessaSynthGroupEnd();

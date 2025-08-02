@@ -1,11 +1,11 @@
-import { readBytesAsString } from "../../utils/byte_functions/string";
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DLSPreset } from "./dls_preset";
 import {
     findRIFFListType,
     readRIFFChunk,
     RIFFChunk
-} from "../basic_soundbank/riff_chunk";
+} from "../../utils/riff_chunk";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd
@@ -26,10 +26,10 @@ import { readLart } from "./read_lart";
 
 export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
     this.verifyHeader(chunk, "LIST");
-    this.verifyText(readBytesAsString(chunk.chunkData, 4), "ins ");
+    this.verifyText(readBinaryStringIndexed(chunk.data, 4), "ins ");
     const chunks: RIFFChunk[] = [];
-    while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
-        chunks.push(readRIFFChunk(chunk.chunkData));
+    while (chunk.data.length > chunk.data.currentIndex) {
+        chunks.push(readRIFFChunk(chunk.data));
     }
 
     const instrumentHeader = chunks.find((c) => c.header === "insh");
@@ -39,22 +39,22 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
     }
 
     // Read instrument header
-    const regions = readLittleEndian(instrumentHeader.chunkData, 4);
-    const ulBank = readLittleEndian(instrumentHeader.chunkData, 4);
-    const ulInstrument = readLittleEndian(instrumentHeader.chunkData, 4);
+    const regions = readLittleEndianIndexed(instrumentHeader.data, 4);
+    const ulBank = readLittleEndianIndexed(instrumentHeader.data, 4);
+    const ulInstrument = readLittleEndianIndexed(instrumentHeader.data, 4);
     const preset = new DLSPreset(this, ulBank, ulInstrument);
 
     // Read preset name in INFO
     let presetName = ``;
     const infoChunk = findRIFFListType(chunks, "INFO");
     if (infoChunk) {
-        let info = readRIFFChunk(infoChunk.chunkData);
+        let info = readRIFFChunk(infoChunk.data);
         while (info.header !== "INAM") {
-            info = readRIFFChunk(infoChunk.chunkData);
+            info = readRIFFChunk(infoChunk.data);
         }
-        presetName = readBytesAsString(
-            info.chunkData,
-            info.chunkData.length
+        presetName = readBinaryStringIndexed(
+            info.data,
+            info.data.length
         ).trim();
     }
     if (presetName.length < 1) {
@@ -109,9 +109,9 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
 
     // Read regions
     for (let i = 0; i < regions; i++) {
-        const chunk = readRIFFChunk(regionListChunk.chunkData);
+        const chunk = readRIFFChunk(regionListChunk.data);
         this.verifyHeader(chunk, "LIST");
-        const type = readBytesAsString(chunk.chunkData, 4);
+        const type = readBinaryStringIndexed(chunk.data, 4);
         if (type !== "rgn " && type !== "rgn2") {
             SpessaSynthGroupEnd();
             this.parsingError(

@@ -1,18 +1,39 @@
 import type { IndexedByteArray } from "../indexed_array";
 
 /**
- * Reads the number as little endian.
+ * Reads the number as little endian from an IndexedByteArray.
  * @param dataArray the array to read from.
  * @param bytesAmount the number of bytes to read.
  * @returns the number.
  */
-export function readLittleEndian(
+export function readLittleEndianIndexed(
     dataArray: IndexedByteArray,
     bytesAmount: number
 ): number {
+    const res = readLittleEndian(
+        dataArray,
+        bytesAmount,
+        dataArray.currentIndex
+    );
+    dataArray.currentIndex += bytesAmount;
+    return res;
+}
+
+/**
+ * Reads the number as little endian.
+ * @param dataArray the array to read from.
+ * @param bytesAmount the number of bytes to read.
+ * @param offset the offset to start reading at.
+ * @returns the number.
+ */
+export function readLittleEndian(
+    dataArray: number[] | ArrayLike<number>,
+    bytesAmount: number,
+    offset = 0
+) {
     let out = 0;
     for (let i = 0; i < bytesAmount; i++) {
-        out |= dataArray[dataArray.currentIndex++] << (i * 8);
+        out |= dataArray[offset + i] << (i * 8);
     }
     // Make sure it stays unsigned
     return out >>> 0;
@@ -25,7 +46,7 @@ export function readLittleEndian(
  * @param byteTarget the amount of bytes to use. Excess bytes will be set to zero.
  * @returns the Big endian representation of the number.
  */
-export function writeLittleEndian(
+export function writeLittleEndianIndexed(
     dataArray: IndexedByteArray,
     number: number,
     byteTarget: number
@@ -47,7 +68,7 @@ export function writeWord(dataArray: IndexedByteArray, word: number) {
  * Writes a DWORD (INT)
  */
 export function writeDword(dataArray: IndexedByteArray, dword: number) {
-    writeLittleEndian(dataArray, dword, 4);
+    writeLittleEndianIndexed(dataArray, dword, 4);
 }
 
 /**

@@ -1,11 +1,11 @@
-import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
 import { getSF2ModulatorFromArticulator } from "./articulator_converter";
 import { SpessaSynthWarn } from "../../utils/loggin";
 import { Generator } from "../basic_soundbank/generator";
 import { Modulator } from "../basic_soundbank/modulator";
 import { type GeneratorType, generatorTypes } from "../basic_soundbank/generator_types";
-import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
+import type { RIFFChunk } from "../../utils/riff_chunk";
 import { DLSDestinations, DLSSources } from "../enums";
 
 /**
@@ -18,20 +18,20 @@ export function readArticulation(
     chunk: RIFFChunk,
     disableVibrato: boolean
 ): { modulators: Modulator[]; generators: Generator[] } {
-    const artData = chunk.chunkData;
+    const artData = chunk.data;
     const generators: Generator[] = [];
     const modulators: Modulator[] = [];
 
     // CbSize (ignore)
-    readLittleEndian(artData, 4);
-    const connectionsAmount = readLittleEndian(artData, 4);
+    readLittleEndianIndexed(artData, 4);
+    const connectionsAmount = readLittleEndianIndexed(artData, 4);
     for (let i = 0; i < connectionsAmount; i++) {
         // Read the block
-        const source = readLittleEndian(artData, 2);
-        const control = readLittleEndian(artData, 2);
-        const destination = readLittleEndian(artData, 2);
-        const transform = readLittleEndian(artData, 2);
-        const scale = readLittleEndian(artData, 4) | 0;
+        const source = readLittleEndianIndexed(artData, 2);
+        const control = readLittleEndianIndexed(artData, 2);
+        const destination = readLittleEndianIndexed(artData, 2);
+        const transform = readLittleEndianIndexed(artData, 2);
+        const scale = readLittleEndianIndexed(artData, 4) | 0;
         const value = scale >> 16; // Convert it to 16 bit as soundfont uses that
 
         // ModulatorConverterDebug(

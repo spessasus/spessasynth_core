@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { writeWavesample } from "./wsmp";
 import { writeArticulator } from "./art2";
 import type { BasicSoundBank } from "../basic_soundbank";

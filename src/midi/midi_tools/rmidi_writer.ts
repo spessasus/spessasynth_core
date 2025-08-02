@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../soundbank/basic_soundbank/riff_chunk";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../utils/riff_chunk";
 import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
 import {
@@ -11,7 +8,7 @@ import {
     SpessaSynthInfo
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { writeLittleEndian } from "../../utils/byte_functions/little_endian";
+import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
 import {
@@ -565,7 +562,7 @@ export function writeRMIDIInternal(
 
     // Bank offset
     const DBNK = new IndexedByteArray(2);
-    writeLittleEndian(DBNK, bankOffset, 2);
+    writeLittleEndianIndexed(DBNK, bankOffset, 2);
     infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.bankOffset, DBNK));
     // Midi encoding
     if (metadata.midiEncoding !== undefined) {
