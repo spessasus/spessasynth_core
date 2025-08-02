@@ -12,11 +12,11 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
     value: MasterParameterType[P]
 ) {
     this.privateProps.masterParameters[parameter] = value;
-    // additional handling for specific parameters
+    // Additional handling for specific parameters
     switch (parameter) {
         case "masterPan": {
             let pan = value as number;
-            // clamp to 0-1 (0 is left)
+            // Clamp to 0-1 (0 is left)
             pan = pan / 2 + 0.5;
             this.privateProps.panLeft = 1 - pan;
             this.privateProps.panRight = pan;
@@ -40,7 +40,7 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
 
         case "transposition": {
             const semitones = value as number;
-            // reset transposition temporarily
+            // Reset transposition temporarily
             this.privateProps.masterParameters.transposition = 0;
             for (const item of this.midiChannels) {
                 item.transposeChannel(semitones);

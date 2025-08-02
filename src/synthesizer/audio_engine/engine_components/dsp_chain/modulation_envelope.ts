@@ -5,7 +5,7 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 import { modulatorCurveTypes } from "../../../../soundbank/enums";
 
 /**
- * modulation_envelope.ts
+ * Modulation_envelope.ts
  * purpose: calculates the modulation envelope for the given voice
  */
 const MODENV_PEAK = 1;
@@ -13,7 +13,7 @@ const MODENV_PEAK = 1;
 // 1000 should be precise enough
 const CONVEX_ATTACK = new Float32Array(1000);
 for (let i = 0; i < CONVEX_ATTACK.length; i++) {
-    // this makes the db linear (I think)
+    // This makes the db linear (I think)
     CONVEX_ATTACK[i] = getModulatorCurveValue(
         0,
         modulatorCurveTypes.convex,
@@ -88,7 +88,7 @@ export class ModulationEnvelope {
     public static recalculate(voice: Voice) {
         const env = voice.modulationEnvelope;
 
-        // in release? Might need to recalculate the value as it can be modulated
+        // In release? Might need to recalculate the value as it can be modulated
         if (voice.isInRelease) {
             env.releaseStartLevel = ModulationEnvelope.getValue(
                 voice,
@@ -111,9 +111,9 @@ export class ModulationEnvelope {
             voice.modulatedGenerators[generatorTypes.decayModEnv] +
                 decayKeyExcursionCents
         );
-        // according to the specification, the decay time is the time it takes to reach 0% from 100%.
-        // calculate the time to reach actual sustain level,
-        // for example, sustain 0.6 will be 0.4 of the decay time
+        // According to the specification, the decay time is the time it takes to reach 0% from 100%.
+        // Calculate the time to reach actual sustain level,
+        // For example, sustain 0.6 will be 0.4 of the decay time
         env.decayDuration = decayTime * (1 - env.sustainLevel);
 
         const holdKeyExcursionCents =
@@ -127,8 +127,8 @@ export class ModulationEnvelope {
         const releaseTime = timecentsToSeconds(
             voice.modulatedGenerators[generatorTypes.releaseModEnv]
         );
-        // release time is from the full level to 0%
-        // to get the actual time, multiply by the release start level
+        // Release time is from the full level to 0%
+        // To get the actual time, multiply by the release start level
         env.releaseDuration = releaseTime * env.releaseStartLevel;
 
         env.delayEnd =
@@ -155,8 +155,8 @@ export class ModulationEnvelope {
     ): number {
         const env = voice.modulationEnvelope;
         if (voice.isInRelease && !ignoreRelease) {
-            // if the voice is still in the delay phase,
-            // start level will be 0 that will result in divide by zero
+            // If the voice is still in the delay phase,
+            // Start level will be 0 that will result in divide by zero
             if (env.releaseStartLevel === 0) {
                 return 0;
             }
@@ -170,9 +170,9 @@ export class ModulationEnvelope {
         }
 
         if (currentTime < env.delayEnd) {
-            env.currentValue = 0; // delay
+            env.currentValue = 0; // Delay
         } else if (currentTime < env.attackEnd) {
-            // modulation envelope uses convex curve for attack
+            // Modulation envelope uses convex curve for attack
             env.currentValue =
                 CONVEX_ATTACK[
                     ~~(
@@ -183,16 +183,16 @@ export class ModulationEnvelope {
                     )
                 ];
         } else if (currentTime < env.holdEnd) {
-            // hold: stay at 1
+            // Hold: stay at 1
             env.currentValue = MODENV_PEAK;
         } else if (currentTime < env.decayEnd) {
-            // decay: linear ramp from 1 to sustain level
+            // Decay: linear ramp from 1 to sustain level
             env.currentValue =
                 (1 - (env.decayEnd - currentTime) / env.decayDuration) *
                     (env.sustainLevel - MODENV_PEAK) +
                 MODENV_PEAK;
         } else {
-            // sustain: stay at sustain level
+            // Sustain: stay at sustain level
             env.currentValue = env.sustainLevel;
         }
         return env.currentValue;

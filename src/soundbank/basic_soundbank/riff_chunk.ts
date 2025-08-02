@@ -9,7 +9,7 @@ import {
 } from "../../utils/byte_functions/string";
 
 /**
- * riff_chunk.ts
+ * Riff_chunk.ts
  * reads a riff chunk and stores it as a class
  */
 
@@ -48,7 +48,7 @@ export function readRIFFChunk(
 
     let size = readLittleEndian(dataArray, 4);
     if (header === "") {
-        // safeguard against evil DLS files
+        // Safeguard against evil DLS files
         // The test case: CrysDLS v1.23.dls
         // https://github.com/spessasus/spessasynth_core/issues/5
         size = 0;
@@ -97,24 +97,24 @@ export function writeRIFFChunkRaw(
     }
     let writtenSize = dataLength;
     if (isList) {
-        // written header is LIST and the passed header is the first 4 bytes of chunk data
+        // Written header is LIST and the passed header is the first 4 bytes of chunk data
         dataStartOffset += 4;
         writtenSize += 4;
         headerWritten = "LIST";
     }
     let finalSize = dataStartOffset + dataLength;
     if (finalSize % 2 !== 0) {
-        // pad byte does not get included in the size
+        // Pad byte does not get included in the size
         finalSize++;
     }
 
     const outArray = new IndexedByteArray(finalSize);
     // FourCC ("RIFF", "LIST", "pdta" etc.)
     writeStringAsBytes(outArray, headerWritten);
-    // chunk size
+    // Chunk size
     writeDword(outArray, writtenSize);
     if (isList) {
-        // list type (e.g. "INFO")
+        // List type (e.g. "INFO")
         writeStringAsBytes(outArray, header);
     }
     outArray.set(data, dataStartOffset);
@@ -138,24 +138,24 @@ export function writeRIFFChunkParts(
     const dataLength = chunks.reduce((len, c) => c.length + len, 0);
     let writtenSize = dataLength;
     if (isList) {
-        // written header is LIST and the passed header is the first 4 bytes of chunk data
+        // Written header is LIST and the passed header is the first 4 bytes of chunk data
         dataOffset += 4;
         writtenSize += 4;
         headerWritten = "LIST";
     }
     let finalSize = dataOffset + dataLength;
     if (finalSize % 2 !== 0) {
-        // pad byte does not get included in the size
+        // Pad byte does not get included in the size
         finalSize++;
     }
 
     const outArray = new IndexedByteArray(finalSize);
-    // fourCC ("RIFF", "LIST", "pdta" etc.)
+    // FourCC ("RIFF", "LIST", "pdta" etc.)
     writeStringAsBytes(outArray, headerWritten);
-    // chunk size
+    // Chunk size
     writeDword(outArray, writtenSize);
     if (isList) {
-        // list type (e.g. "INFO")
+        // List type (e.g. "INFO")
         writeStringAsBytes(outArray, header);
     }
     chunks.forEach((c) => {

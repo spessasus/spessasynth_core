@@ -5,7 +5,7 @@ import { type SampleType, sampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
 import type { SampleEncodingFunction } from "../types";
 
-// should be reasonable for most cases
+// Should be reasonable for most cases
 const RESAMPLE_RATE = 48000;
 
 export class BasicSample {
@@ -131,7 +131,7 @@ export class BasicSample {
         return this.encodeS16LE();
     }
 
-    // resamples the audio data to a given sample rate
+    // Resamples the audio data to a given sample rate
     public resampleData(newSampleRate: number) {
         let audioData = this.getAudioData();
         const ratio = newSampleRate / this.sampleRate;
@@ -143,7 +143,7 @@ export class BasicSample {
         }
         audioData = resampled;
         this.sampleRate = newSampleRate;
-        // adjust loop points
+        // Adjust loop points
         this.loopStart = Math.floor(this.loopStart * ratio);
         this.loopEnd = Math.floor(this.loopEnd * ratio);
         this.audioData = audioData;
@@ -154,13 +154,13 @@ export class BasicSample {
      * @param encodeVorbis the compression function to use when compressing
      */
     public async compressSample(encodeVorbis: SampleEncodingFunction) {
-        // no need to compress
+        // No need to compress
         if (this.isCompressed) {
             return;
         }
-        // compress, always mono!
+        // Compress, always mono!
         try {
-            // if the sample rate is too low or too high, resample
+            // If the sample rate is too low or too high, resample
             let audioData = this.getAudioData();
             if (this.sampleRate < 8000 || this.sampleRate > 96000) {
                 this.resampleData(RESAMPLE_RATE);
@@ -184,7 +184,7 @@ export class BasicSample {
     public setSampleType(type: SampleType) {
         this.sampleType = type;
         if (!this.isLinked) {
-            // unlink the other sample
+            // Unlink the other sample
             if (this.linkedSample) {
                 this.linkedSample.linkedSample = undefined;
                 this.linkedSample.sampleType = type;
@@ -197,7 +197,7 @@ export class BasicSample {
         }
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Unlinks a sample from its link
      */
@@ -205,14 +205,14 @@ export class BasicSample {
         this.setSampleType(sampleTypes.monoSample);
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Links a stereo sample
      * @param sample the sample to link to
      * @param type either left, right or linked
      */
     public setLinkedSample(sample: BasicSample, type: SampleType) {
-        // sanity check
+        // Sanity check
         if (sample.linkedSample) {
             throw new Error(
                 `${sample.name} is linked tp ${sample.linkedSample.name}. Unlink it first.`
@@ -269,14 +269,14 @@ export class BasicSample {
         }
         if (this.isCompressed) {
             // SF3
-            // if compressed, decode
+            // If compressed, decode
             this.audioData = this.decodeVorbis();
             return this.audioData;
         }
         throw new Error("Sample data is undefined for a BasicSample instance.");
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Replaces the audio data _in-place_.
      * @param audioData The new audio data as Float32.
@@ -339,10 +339,10 @@ export class BasicSample {
                 );
                 return new Float32Array(0);
             }
-            // clip
-            // because vorbis can go above 1 sometimes
+            // Clip
+            // Because vorbis can go above 1 sometimes
             for (let i = 0; i < decoded.length; i++) {
-                // magic number is 32,767 / 32,768
+                // Magic number is 32,767 / 32,768
                 decoded[i] = Math.max(
                     -1,
                     Math.min(decoded[i], 0.999969482421875)
@@ -350,7 +350,7 @@ export class BasicSample {
             }
             return decoded;
         } catch (e) {
-            // do not error out, fill with silence
+            // Do not error out, fill with silence
             SpessaSynthWarn(
                 `Error decoding sample ${this.name}: ${e as Error}`
             );

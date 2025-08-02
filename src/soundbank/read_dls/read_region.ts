@@ -20,17 +20,17 @@ export function readRegion(
     chunk: RIFFChunk,
     instrument: DLSInstrument
 ) {
-    // regions are essentially instrument zones
+    // Regions are essentially instrument zones
 
     /**
-     * read chunks in the region
+     * Read chunks in the region
      */
     const regionChunks: RIFFChunk[] = [];
     while (chunk.chunkData.length > chunk.chunkData.currentIndex) {
         regionChunks.push(readRIFFChunk(chunk.chunkData));
     }
 
-    // region header
+    // Region header
     const regionHeader = regionChunks.find((c) => c.header === "rgnh");
 
     if (!regionHeader) {
@@ -39,51 +39,51 @@ export function readRegion(
         );
         return;
     }
-    // key range
+    // Key range
     const keyMin = readLittleEndian(regionHeader.chunkData, 2);
     const keyMax = readLittleEndian(regionHeader.chunkData, 2);
-    // vel range
+    // Vel range
     let velMin = readLittleEndian(regionHeader.chunkData, 2);
     let velMax = readLittleEndian(regionHeader.chunkData, 2);
 
-    // a fix for not cool files
+    // A fix for not cool files
     if (velMin === 0 && velMax === 0) {
         velMax = 127;
         velMin = 0;
     }
-    // cannot do the same to key zones sadly
+    // Cannot do the same to key zones sadly
 
-    // wave link
+    // Wave link
     const waveLinkChunk = regionChunks.find((c) => c.header === "wlnk");
     if (waveLinkChunk === undefined) {
         // No wave link means no sample. What? Why is it even here then?
         return undefined;
     }
 
-    // flags
+    // Flags
     readLittleEndian(waveLinkChunk.chunkData, 2);
-    // phase group
+    // Phase group
     readLittleEndian(waveLinkChunk.chunkData, 2);
-    // channel
+    // Channel
     readLittleEndian(waveLinkChunk.chunkData, 4);
-    // sampleID
+    // SampleID
     const sampleID = readLittleEndian(waveLinkChunk.chunkData, 4);
-    // hacky cast, but works
+    // Hacky cast, but works
     const sample: DLSSample = this.samples[sampleID] as DLSSample;
     if (sample === undefined) {
         throw new Error("Invalid sample ID!");
     }
 
-    // create zone
+    // Create zone
     const zone = instrument.createZone(sample);
-    // apply ranges
+    // Apply ranges
     zone.keyRange = { min: keyMin, max: keyMax };
     zone.velRange = { min: velMin, max: velMax };
 
-    // fusOptions: no idea about that one???
+    // FusOptions: no idea about that one???
     readLittleEndian(regionHeader.chunkData, 2);
 
-    // keyGroup: essentially exclusive class
+    // KeyGroup: essentially exclusive class
     const exclusive = readLittleEndian(regionHeader.chunkData, 2);
     if (exclusive !== 0) {
         zone.addGenerators(
@@ -91,48 +91,48 @@ export function readRegion(
         );
     }
 
-    // lart
+    // Lart
     const lart = findRIFFListType(regionChunks, "lart");
     const lar2 = findRIFFListType(regionChunks, "lar2");
     readLart.call(this, lart, lar2, zone);
 
-    // wsmp: wave sample chunk
+    // Wsmp: wave sample chunk
     const waveSampleChunk = regionChunks.find((c) => c.header === "wsmp");
     if (!waveSampleChunk) {
         this.parsingError("No wavesample chunk in region.");
         return;
     }
-    // cbSize
+    // CbSize
     readLittleEndian(waveSampleChunk.chunkData, 4);
     const originalKey = readLittleEndian(waveSampleChunk.chunkData, 2);
 
-    // sFineTune
+    // SFineTune
     const pitchCorrection = signedInt16(
         waveSampleChunk.chunkData[waveSampleChunk.chunkData.currentIndex++],
         waveSampleChunk.chunkData[waveSampleChunk.chunkData.currentIndex++]
     );
 
-    // gain correction: Each unit of gain represents 1/655360 dB
-    // it is set after linking the sample
+    // Gain correction: Each unit of gain represents 1/655360 dB
+    // It is set after linking the sample
     const gainCorrection = readLittleEndian(waveSampleChunk.chunkData, 4);
-    // convert to signed and turn into attenuation (invert)
+    // Convert to signed and turn into attenuation (invert)
     const dbCorrection = (gainCorrection | 0) / -655360;
 
-    // skip options
+    // Skip options
     readLittleEndian(waveSampleChunk.chunkData, 4);
 
-    // read loop count (always one or zero)
+    // Read loop count (always one or zero)
     const loopsAmount = readLittleEndian(waveSampleChunk.chunkData, 4);
     let loopingMode;
     const loop = { start: 0, end: 0 };
     if (loopsAmount === 0) {
-        // no loop
+        // No loop
         loopingMode = 0;
     } else {
-        // ignore cbSize
+        // Ignore cbSize
         readLittleEndian(waveSampleChunk.chunkData, 4);
-        // loop type: loop normally or loop until release (like soundfont)
-        const loopType = readLittleEndian(waveSampleChunk.chunkData, 4); // why is it long?
+        // Loop type: loop normally or loop until release (like soundfont)
+        const loopType = readLittleEndian(waveSampleChunk.chunkData, 4); // Why is it long?
         if (loopType === 0) {
             loopingMode = 1;
         } else {
@@ -143,10 +143,10 @@ export function readRegion(
         loop.end = loop.start + loopLength;
     }
 
-    // this correction overrides the sample gain correction
+    // This correction overrides the sample gain correction
     const actualDbCorrection = dbCorrection || sample.sampleDbAttenuation;
-    // convert to centibels
-    const attenuation = (actualDbCorrection * 10) / 0.4; // make sure to apply EMU correction
+    // Convert to centibels
+    const attenuation = (actualDbCorrection * 10) / 0.4; // Make sure to apply EMU correction
 
     zone.setWaveSample(
         attenuation,

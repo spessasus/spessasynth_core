@@ -3,7 +3,7 @@ import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
- * lowpass_filter.ts
+ * Lowpass_filter.ts
  * purpose: applies a low pass filter to a voice
  * note to self: a lot of tricks and come from fluidsynth.
  * They are the real smart guys.
@@ -126,7 +126,7 @@ export class LowpassFilter {
         const filter: LowpassFilter = voice.filter;
 
         if (!filter.initialized) {
-            // filter initialization, set the current fc to target
+            // Filter initialization, set the current fc to target
             filter.initialized = true;
             filter.currentInitialFc = initialFc;
         } else {
@@ -138,11 +138,11 @@ export class LowpassFilter {
                 (initialFc - filter.currentInitialFc) * smoothingFactor;
         }
 
-        // the final cutoff for this calculation
+        // The final cutoff for this calculation
         const targetCutoff = filter.currentInitialFc + fcExcursion;
         const modulatedResonance =
             voice.modulatedGenerators[generatorTypes.initialFilterQ];
-        /* note:
+        /* Note:
          * the check for initialFC is because of the filter optimization
          * (if cents are the maximum then the filter is open)
          * filter cannot use this optimization if it's dynamic (see #53), and
@@ -154,10 +154,10 @@ export class LowpassFilter {
             modulatedResonance === 0
         ) {
             filter.currentInitialFc = 13500;
-            return; // filter is open
+            return; // Filter is open
         }
 
-        // check if the frequency has changed. if so, calculate new coefficients
+        // Check if the frequency has changed. if so, calculate new coefficients
         if (
             Math.abs(filter.lastTargetCutoff - targetCutoff) > 1 ||
             filter.resonanceCb !== modulatedResonance
@@ -167,8 +167,8 @@ export class LowpassFilter {
             LowpassFilter.calculateCoefficients(filter, targetCutoff);
         }
 
-        // filter the input
-        // initial filtering code was ported from meltysynth created by sinshu.
+        // Filter the input
+        // Initial filtering code was ported from meltysynth created by sinshu.
         for (let i = 0; i < outputBuffer.length; i++) {
             const input = outputBuffer[i];
             const filtered =
@@ -178,7 +178,7 @@ export class LowpassFilter {
                 filter.a3 * filter.y1 -
                 filter.a4 * filter.y2;
 
-            // set buffer
+            // Set buffer
             filter.x2 = filter.x1;
             filter.x1 = input;
             filter.y2 = filter.y1;
@@ -199,7 +199,7 @@ export class LowpassFilter {
     ) {
         cutoffCents = ~~cutoffCents; // Math.floor
         const qCb = filter.resonanceCb;
-        // check if these coefficients were already cached
+        // Check if these coefficients were already cached
         const cached = LowpassFilter.cachedCoefficients?.[qCb]?.[cutoffCents];
         if (cached !== undefined) {
             filter.a0 = cached.a0;
@@ -211,21 +211,21 @@ export class LowpassFilter {
         }
         let cutoffHz = absCentsToHz(cutoffCents);
 
-        // fix cutoff on low sample rates
+        // Fix cutoff on low sample rates
         cutoffHz = Math.min(cutoffHz, filter.maxCutoff);
 
-        // the coefficient calculation code was originally ported from meltysynth by sinshu.
-        // turn resonance to gain, -3.01 so it gives a non-resonant peak
+        // The coefficient calculation code was originally ported from meltysynth by sinshu.
+        // Turn resonance to gain, -3.01 so it gives a non-resonant peak
         const qDb = qCb / 10;
         // -1 because it's attenuation, and we don't want attenuation
         const resonanceGain = decibelAttenuationToGain(-(qDb - 3.01));
 
-        // the sf spec asks for a reduction in gain based on the Q value.
-        // note that we calculate it again,
-        // without the 3.01-peak offset as it only applies to the coefficients, not the gain.
+        // The sf spec asks for a reduction in gain based on the Q value.
+        // Note that we calculate it again,
+        // Without the 3.01-peak offset as it only applies to the coefficients, not the gain.
         const qGain = 1 / Math.sqrt(decibelAttenuationToGain(-qDb));
 
-        // note: no sin or cos tables are used here as the coefficients are cached
+        // Note: no sin or cos tables are used here as the coefficients are cached
         const w = (2 * Math.PI * cutoffHz) / filter.sampleRate;
         const cosw = Math.cos(w);
         const alpha = Math.sin(w) / (2 * resonanceGain);
@@ -251,15 +251,15 @@ export class LowpassFilter {
         filter.a4 = toCache.a4;
 
         LowpassFilter.cachedCoefficients[qCb] ??= [];
-        // cache the coefficients
+        // Cache the coefficients
         LowpassFilter.cachedCoefficients[qCb][cutoffCents] = toCache;
     }
 }
 
-// precompute all the cutoffs for 0q (most common)
+// Precompute all the cutoffs for 0q (most common)
 const dummy = new LowpassFilter(44100);
 dummy.resonanceCb = 0;
-// sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
+// Sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
 for (let i = 1500; i < 13500; i++) {
     dummy.currentInitialFc = i;
     LowpassFilter.calculateCoefficients(dummy, i);

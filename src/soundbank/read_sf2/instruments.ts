@@ -9,7 +9,7 @@ import type { Modulator } from "../basic_soundbank/modulator";
 import type { Generator } from "../basic_soundbank/generator";
 
 /**
- * instrument.ts
+ * Instrument.ts
  * purpose: parses soundfont instrument and stores them as a class
  */
 
@@ -63,7 +63,7 @@ export function readInstruments(
         }
         instruments.push(instrument);
     }
-    // remove EOI
+    // Remove EOI
     instruments.pop();
     return instruments;
 }

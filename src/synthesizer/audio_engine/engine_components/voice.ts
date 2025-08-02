@@ -1,5 +1,5 @@
 /**
- * voice.ts
+ * Voice.ts
  * purpose: prepares Voices from sample and generator data
  */
 import { SpessaSynthProcessor } from "../../processor";
@@ -19,7 +19,7 @@ import { AudioSample } from "./audio_sample";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
-const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // less because filter shenanigans
+const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // Less because filter shenanigans
 
 /**
  * Voice represents a single instance of the
@@ -227,7 +227,7 @@ export class Voice {
     public exclusiveRelease(currentTime: number) {
         this.release(currentTime, MIN_EXCLUSIVE_LENGTH);
         this.modulatedGenerators[generatorTypes.releaseVolEnv] =
-            EXCLUSIVE_CUTOFF_TIME; // make the release nearly instant
+            EXCLUSIVE_CUTOFF_TIME; // Make the release nearly instant
         this.modulatedGenerators[generatorTypes.releaseModEnv] =
             EXCLUSIVE_MOD_CUTOFF_TIME;
         VolumeEnvelope.recalculate(this);
@@ -241,7 +241,7 @@ export class Voice {
      */
     public release(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {
         this.releaseStartTime = currentTime;
-        // check if the note is shorter than the min note time, if so, extend it
+        // Check if the note is shorter than the min note time, if so, extend it
         if (this.releaseStartTime - this.startTime < minNoteLength) {
             this.releaseStartTime = this.startTime + minNoteLength;
         }
@@ -276,9 +276,9 @@ export function getVoicesForPresetInternal(
                 return voices;
             }
 
-            // create the generator list
+            // Create the generator list
             const generators = new Int16Array(GENERATORS_AMOUNT);
-            // apply and sum the gens
+            // Apply and sum the gens
             for (let i = 0; i < 60; i++) {
                 generators[i] = addAndClampGenerator(
                     i,
@@ -288,12 +288,12 @@ export function getVoicesForPresetInternal(
             }
 
             // EMU initial attenuation correction, multiply initial attenuation by 0.4!
-            // all EMU sound cards have this quirk, and all sf2 editors and players emulate it too
+            // All EMU sound cards have this quirk, and all sf2 editors and players emulate it too
             generators[generatorTypes.initialAttenuation] = Math.floor(
                 generators[generatorTypes.initialAttenuation] * 0.4
             );
 
-            // key override
+            // Key override
             let rootKey = sampleAndGenerators.sample.originalKey;
             if (generators[generatorTypes.overridingRootKey] > -1) {
                 rootKey = generators[generatorTypes.overridingRootKey];
@@ -304,14 +304,14 @@ export function getVoicesForPresetInternal(
                 targetKey = generators[generatorTypes.keyNum];
             }
 
-            // determine looping mode now. if the loop is too small, disable
+            // Determine looping mode now. if the loop is too small, disable
             const loopStart = sampleAndGenerators.sample.loopStart;
             const loopEnd = sampleAndGenerators.sample.loopEnd;
             const loopingMode = generators[
                 generatorTypes.sampleModes
             ] as SampleLoopingMode;
             /**
-             * create the sample
+             * Create the sample
              * offsets are calculated at note on time (to allow for modulation of them)
              */
             const sampleData = sampleAndGenerators.sample.getAudioData();
@@ -321,7 +321,7 @@ export function getVoicesForPresetInternal(
                     Math.pow(
                         2,
                         sampleAndGenerators.sample.pitchCorrection / 1200
-                    ), // cent tuning
+                    ), // Cent tuning
                 0,
                 rootKey,
                 loopStart,
@@ -329,12 +329,12 @@ export function getVoicesForPresetInternal(
                 Math.floor(sampleData.length) - 1,
                 loopingMode
             );
-            // velocity override
+            // Velocity override
             if (generators[generatorTypes.velocity] > -1) {
                 velocity = generators[generatorTypes.velocity];
             }
 
-            // uncomment to print debug info
+            // Uncomment to print debug info
             // SpessaSynthTable([{
             //     Sample: sampleAndGenerators.sample.sampleName,
             //     Generators: generators,
@@ -359,7 +359,7 @@ export function getVoicesForPresetInternal(
             );
             return voices;
         }, []);
-    // cache the voice
+    // Cache the voice
     this.setCachedVoice(bank, program, midiNote, velocity, voices);
     return voices.map((v) => Voice.copy(v, this.currentSynthTime, realKey));
 }
@@ -380,7 +380,7 @@ export function getVoicesInternal(
 ): VoiceList {
     const channelObject = this.midiChannels[channel];
 
-    // override patch
+    // Override patch
     const overridePatch = this.keyModifierManager.hasOverridePatch(
         channel,
         midiNote
@@ -401,12 +401,12 @@ export function getVoicesInternal(
     }
 
     const cached = this.getCachedVoice(bank, program, midiNote, velocity);
-    // if cached, return it!
+    // If cached, return it!
     if (cached !== undefined) {
         return cached.map((v) => Voice.copy(v, this.currentSynthTime, realKey));
     }
 
-    // not cached...
+    // Not cached...
     if (overridePatch) {
         preset = this.getPreset(bank, program);
     }

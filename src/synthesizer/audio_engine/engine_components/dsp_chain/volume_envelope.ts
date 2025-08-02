@@ -6,7 +6,7 @@ import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
- * volume_envelope.ts
+ * Volume_envelope.ts
  * purpose: applies a volume envelope for a given voice
  */
 
@@ -14,8 +14,8 @@ export const VOLUME_ENVELOPE_SMOOTHING_FACTOR = 0.01;
 
 const DB_SILENCE = 100;
 const PERCEIVED_DB_SILENCE = 90;
-// around 96 dB of attenuation
-const PERCEIVED_GAIN_SILENCE = 0.000015; // can't go lower than that (see #50)
+// Around 96 dB of attenuation
+const PERCEIVED_GAIN_SILENCE = 0.000015; // Can't go lower than that (see #50)
 
 /**
  * VOL ENV STATES:
@@ -103,7 +103,7 @@ export class VolumeEnvelope {
     protected decayEnd = 0;
 
     /**
-     * if sustain stage is silent,
+     * If sustain stage is silent,
      * then we can turn off the voice when it is silent.
      * We can't do that with modulated as it can silence the volume and then raise it again, and the voice must keep playing.
      */
@@ -143,7 +143,7 @@ export class VolumeEnvelope {
                 Math.floor(timecentsToSeconds(tc) * env.sampleRate)
             );
         };
-        // calculate absolute times (they can change so we have to recalculate every time
+        // Calculate absolute times (they can change so we have to recalculate every time
         env.attenuationTarget =
             Math.max(
                 0,
@@ -153,7 +153,7 @@ export class VolumeEnvelope {
                     ],
                     1440
                 )
-            ) / 10; // divide by ten to get decibels
+            ) / 10; // Divide by ten to get decibels
         env.attenuationTargetGain = decibelAttenuationToGain(
             env.attenuationTarget
         );
@@ -163,13 +163,13 @@ export class VolumeEnvelope {
         );
         const sustainDb = Math.min(DB_SILENCE, env.sustainDbRelative);
 
-        // calculate durations
+        // Calculate durations
         env.attackDuration = timecentsToSamples(
             voice.modulatedGenerators[generatorTypes.attackVolEnv]
         );
 
-        // decay: sf spec page 35: the time is for change from attenuation to -100dB,
-        // therefore, we need to calculate the real time
+        // Decay: sf spec page 35: the time is for change from attenuation to -100dB,
+        // Therefore, we need to calculate the real time
         // (changing from attenuation to sustain instead of -100dB)
         const fullChange =
             voice.modulatedGenerators[generatorTypes.decayVolEnv];
@@ -184,13 +184,13 @@ export class VolumeEnvelope {
             voice.modulatedGenerators[generatorTypes.releaseVolEnv]
         );
 
-        // calculate absolute end times for the values
+        // Calculate absolute end times for the values
         env.delayEnd = timecentsToSamples(
             voice.modulatedGenerators[generatorTypes.delayVolEnv]
         );
         env.attackEnd = env.attackDuration + env.delayEnd;
 
-        // make sure to take keyNumToVolEnvHold into account!
+        // Make sure to take keyNumToVolEnvHold into account!
         const holdExcursion =
             (60 - voice.targetKey) *
             voice.modulatedGenerators[generatorTypes.keyNumToVolEnvHold];
@@ -202,16 +202,16 @@ export class VolumeEnvelope {
 
         env.decayEnd = env.decayDuration + env.holdEnd;
 
-        // if this is the first recalculation and the voice has no attack or delay time, set current db to peak
+        // If this is the first recalculation and the voice has no attack or delay time, set current db to peak
         if (env.state === 0 && env.attackEnd === 0) {
-            // env.currentAttenuationDb = env.attenuationTarget;
+            // Env.currentAttenuationDb = env.attenuationTarget;
             env.state = 2;
         }
 
-        // check if voice is in release
+        // Check if voice is in release
         if (voice.isInRelease) {
-            // no interpolation this time: force update to actual attenuation and calculate release start from there
-            //env.attenuation = Math.min(DB_SILENCE, env.attenuationTarget);
+            // No interpolation this time: force update to actual attenuation and calculate release start from there
+            //Env.attenuation = Math.min(DB_SILENCE, env.attenuationTarget);
             const sustainDb = Math.max(
                 0,
                 Math.min(DB_SILENCE, env.sustainDbRelative)
@@ -226,16 +226,16 @@ export class VolumeEnvelope {
                     break;
 
                 case 1: {
-                    // attack phase: get linear gain of the attack phase when release started
-                    // and turn it into db as we're ramping the db up linearly
+                    // Attack phase: get linear gain of the attack phase when release started
+                    // And turn it into db as we're ramping the db up linearly
                     // (to make volume go down exponentially)
-                    // attack is linear (in gain) so we need to do get db from that
+                    // Attack is linear (in gain) so we need to do get db from that
                     const elapsed =
                         1 -
                         (env.attackEnd - env.releaseStartTimeSamples) /
                             env.attackDuration;
-                    // calculate the gain that the attack would have, so
-                    // turn that into db
+                    // Calculate the gain that the attack would have, so
+                    // Turn that into db
                     env.releaseStartDb = 20 * Math.log10(elapsed) * -1;
                     break;
                 }
@@ -267,8 +267,8 @@ export class VolumeEnvelope {
                 env.releaseStartDb
             );
 
-            // release: sf spec page 35: the time is for change from attenuation to -100dB,
-            // therefore, we need to calculate the real time
+            // Release: sf spec page 35: the time is for change from attenuation to -100dB,
+            // Therefore, we need to calculate the real time
             // (changing from release start to -100dB instead of from peak to -100dB)
             const releaseFraction =
                 (DB_SILENCE - env.releaseStartDb) / DB_SILENCE;
@@ -308,7 +308,7 @@ export class VolumeEnvelope {
             }
             const dbDifference = DB_SILENCE - env.releaseStartDb;
             for (let i = 0; i < audioBuffer.length; i++) {
-                // attenuation interpolation
+                // Attenuation interpolation
                 env.attenuation +=
                     (env.attenuationTargetGain - env.attenuation) *
                     attenuationSmoothing;
@@ -332,7 +332,7 @@ export class VolumeEnvelope {
         let filledBuffer = 0;
         switch (env.state) {
             case 0:
-                // delay phase, no sound is produced
+                // Delay phase, no sound is produced
                 while (env.currentSampleTime < env.delayEnd) {
                     env.currentAttenuationDb = DB_SILENCE;
                     audioBuffer[filledBuffer] = 0;
@@ -343,12 +343,12 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
-            // fallthrough
+            // Fallthrough
 
             case 1:
-                // attack phase: ramp from 0 to attenuation
+                // Attack phase: ramp from 0 to attenuation
                 while (env.currentSampleTime < env.attackEnd) {
-                    // attenuation interpolation
+                    // Attenuation interpolation
                     env.attenuation +=
                         (env.attenuationTargetGain - env.attenuation) *
                         attenuationSmoothing;
@@ -362,7 +362,7 @@ export class VolumeEnvelope {
                         linearAttenuation *
                         env.attenuation *
                         decibelAttenuationToGain(decibelOffset);
-                    // set current attenuation to peak as its invalid during this phase
+                    // Set current attenuation to peak as its invalid during this phase
                     env.currentAttenuationDb = 0;
 
                     env.currentSampleTime++;
@@ -371,12 +371,12 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
-            // fallthrough
+            // Fallthrough
 
             case 2:
-                // hold/peak phase: stay at attenuation
+                // Hold/peak phase: stay at attenuation
                 while (env.currentSampleTime < env.holdEnd) {
-                    // attenuation interpolation
+                    // Attenuation interpolation
                     env.attenuation +=
                         (env.attenuationTargetGain - env.attenuation) *
                         attenuationSmoothing;
@@ -392,12 +392,12 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
-            // fallthrough
+            // Fallthrough
 
             case 3:
-                // decay phase: linear ramp from attenuation to sustain
+                // Decay phase: linear ramp from attenuation to sustain
                 while (env.currentSampleTime < env.decayEnd) {
-                    // attenuation interpolation
+                    // Attenuation interpolation
                     env.attenuation +=
                         (env.attenuationTargetGain - env.attenuation) *
                         attenuationSmoothing;
@@ -419,7 +419,7 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
-            // fallthrough
+            // Fallthrough
 
             case 4:
                 if (
@@ -428,9 +428,9 @@ export class VolumeEnvelope {
                 ) {
                     voice.finished = true;
                 }
-                // sustain phase: stay at sustain
+                // Sustain phase: stay at sustain
                 while (true) {
-                    // attenuation interpolation
+                    // Attenuation interpolation
                     env.attenuation +=
                         (env.attenuationTargetGain - env.attenuation) *
                         attenuationSmoothing;

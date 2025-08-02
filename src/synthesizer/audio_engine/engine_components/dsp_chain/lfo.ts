@@ -1,5 +1,5 @@
 /**
- * lfo.ts
+ * Lfo.ts
  * purpose: low frequency triangle oscillator
  */
 
@@ -20,9 +20,9 @@ export function getLFOValue(
     }
 
     const xVal = (currentTime - startTime) / (1 / frequency) + 0.25;
-    // offset by -0.25, otherwise we start at -1 and can have unexpected jump in pitch or low-pass
+    // Offset by -0.25, otherwise we start at -1 and can have unexpected jump in pitch or low-pass
     // (happened with Synth Strings 2)
 
-    // triangle, not sine
+    // Triangle, not sine
     return Math.abs(xVal - ~~(xVal + 0.5)) * 4 - 1;
 }

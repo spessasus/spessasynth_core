@@ -204,20 +204,20 @@ export class ChannelSnapshot {
         channelObject.muteChannel(this.isMuted);
         channelObject.setDrums(this.drumChannel);
 
-        // restore controllers
+        // Restore controllers
         channelObject.midiControllers.set(this.midiControllers);
         channelObject.lockedControllers = this.lockedControllers;
         channelObject.customControllers.set(this.customControllers);
         channelObject.updateChannelTuning();
 
-        // restore vibrato and transpose
+        // Restore vibrato and transpose
         channelObject.channelVibrato = this.channelVibrato;
         channelObject.lockGSNRPNParams = this.lockVibrato;
         channelObject.channelTransposeKeyShift = this.channelTransposeKeyShift;
         channelObject.channelOctaveTuning = this.channelOctaveTuning;
         channelObject.velocityOverride = this.velocityOverride;
 
-        // restore preset and lock
+        // Restore preset and lock
         channelObject.setPresetLock(false);
         channelObject.setBankSelect(this.bank, this.isBankLSB);
         channelObject.programChange(this.program);

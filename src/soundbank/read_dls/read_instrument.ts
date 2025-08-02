@@ -38,13 +38,13 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
         throw new Error("No instrument header!");
     }
 
-    // read instrument header
+    // Read instrument header
     const regions = readLittleEndian(instrumentHeader.chunkData, 4);
     const ulBank = readLittleEndian(instrumentHeader.chunkData, 4);
     const ulInstrument = readLittleEndian(instrumentHeader.chunkData, 4);
     const preset = new DLSPreset(this, ulBank, ulInstrument);
 
-    // read preset name in INFO
+    // Read preset name in INFO
     let presetName = ``;
     const infoChunk = findRIFFListType(chunks, "INFO");
     if (infoChunk) {
@@ -69,7 +69,7 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
         consoleColors.info
     );
 
-    // list of regions
+    // List of regions
     const regionListChunk = findRIFFListType(chunks, "lrgn");
     if (!regionListChunk) {
         SpessaSynthGroupEnd();
@@ -79,18 +79,18 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
     // global articulation: essentially global zone
     const globalZone = preset.dlsInstrument.globalZone;
 
-    // read articulators
+    // Read articulators
     const globalLart = findRIFFListType(chunks, "lart");
     const globalLar2 = findRIFFListType(chunks, "lar2");
     if (globalLar2 !== undefined || globalLart !== undefined) {
         readLart.call(this, globalLart, globalLar2, globalZone);
     }
-    // remove generators with default values
+    // Remove generators with default values
     globalZone.generators = globalZone.generators.filter(
         (g) => g.generatorValue !== generatorLimits[g.generatorType].def
     );
-    // override reverb and chorus with 1000 instead of 200 (if not override)
-    // reverb
+    // Override reverb and chorus with 1000 instead of 200 (if not override)
+    // Reverb
     if (
         globalZone.modulators.find(
             (m) => m.destination === generatorTypes.reverbEffectsSend
@@ -98,7 +98,7 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
     ) {
         globalZone.addModulators(Modulator.copy(DEFAULT_DLS_REVERB));
     }
-    // chorus
+    // Chorus
     if (
         globalZone.modulators.find(
             (m) => m.destination === generatorTypes.chorusEffectsSend
@@ -107,7 +107,7 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
         globalZone.addModulators(Modulator.copy(DEFAULT_DLS_CHORUS));
     }
 
-    // read regions
+    // Read regions
     for (let i = 0; i < regions; i++) {
         const chunk = readRIFFChunk(regionListChunk.chunkData);
         this.verifyHeader(chunk, "LIST");

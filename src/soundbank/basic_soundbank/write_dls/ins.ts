@@ -28,30 +28,30 @@ export function writeIns(
         consoleColors.recognized,
         consoleColors.info
     );
-    // combine preset and instrument zones into a single instrument zone (region) list
+    // Combine preset and instrument zones into a single instrument zone (region) list
     const inst = combineZones(preset);
     const global = inst.globalZone;
     const zones = inst.zones;
 
-    // insh: instrument header
+    // Insh: instrument header
     const inshData = new IndexedByteArray(12);
-    writeDword(inshData, zones.length); // cRegions
-    // bank MSB is in bits 8-14
+    writeDword(inshData, zones.length); // CRegions
+    // Bank MSB is in bits 8-14
     let ulBank = (preset.bank & 127) << 8;
-    // bit 32 means drums
+    // Bit 32 means drums
     if (preset.bank === 128) {
         ulBank |= 1 << 31;
     }
-    writeDword(inshData, ulBank); // ulBank
-    writeDword(inshData, preset.program & 127); // ulInstrument
+    writeDword(inshData, ulBank); // UlBank
+    writeDword(inshData, preset.program & 127); // UlInstrument
 
     const insh = writeRIFFChunkRaw("insh", inshData);
 
-    // write global zone
+    // Write global zone
     const art2 = writeArticulator(global);
     const lar2 = writeRIFFChunkRaw("lar2", art2, false, true);
 
-    // write the region list
+    // Write the region list
     const lrgn = writeRIFFChunkParts(
         "lrgn",
         zones.reduce((arrs: IndexedByteArray[], z) => {
@@ -61,7 +61,7 @@ export function writeIns(
         true
     );
 
-    // writeINFO
+    // WriteINFO
     const inam = writeRIFFChunkRaw("INAM", getStringBytes(preset.name, true));
     const info = writeRIFFChunkRaw("INFO", inam, false, true);
 

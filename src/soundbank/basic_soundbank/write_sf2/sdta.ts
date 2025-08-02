@@ -15,13 +15,13 @@ LIST chunk
 - - raw data
  */
 
-// in bytes, from the start of sdta-LIST to the first actual sample
+// In bytes, from the start of sdta-LIST to the first actual sample
 const SDTA_TO_DATA_OFFSET =
     4 + // "LIST"
-    4 + // sdta size
+    4 + // Sdta size
     4 + // "sdta"
     4 + // "smpl"
-    4; // smpl size
+    4; // Smpl size
 
 export async function getSDTA(
     bank: BasicSoundBank,
@@ -32,13 +32,13 @@ export async function getSDTA(
     vorbisFunc: SampleEncodingFunction | undefined,
     progressFunc: ProgressFunction | undefined
 ): Promise<Uint8Array> {
-    // write smpl: write int16 data of each sample linearly
-    // get size (calling getAudioData twice doesn't matter since it gets cached)
+    // Write smpl: write int16 data of each sample linearly
+    // Get size (calling getAudioData twice doesn't matter since it gets cached)
     let writtenCount = 0;
     let smplChunkSize = 0;
     const sampleDatas: Uint8Array[] = [];
 
-    // linear async is faster here as the writing function usually uses a single wasm instance
+    // Linear async is faster here as the writing function usually uses a single wasm instance
     for (const s of bank.samples) {
         if (compress && vorbisFunc) {
             await s.compressSample(vorbisFunc);
@@ -47,8 +47,8 @@ export async function getSDTA(
             s.setAudioData(s.getAudioData(), s.sampleRate);
         }
 
-        // raw data: either copy s16le or encoded vorbis or encode manually if overridden
-        // use set timeout so the thread doesn't die
+        // Raw data: either copy s16le or encoded vorbis or encode manually if overridden
+        // Use set timeout so the thread doesn't die
         const r = s.getRawData(true);
         writtenCount++;
         await progressFunc?.(s.name, writtenCount, bank.samples.length);
@@ -82,8 +82,8 @@ export async function getSDTA(
 
     const sdta = new IndexedByteArray(smplChunkSize + SDTA_TO_DATA_OFFSET);
 
-    // avoid using writeRIFFChunk for performance
-    // sdta chunk
+    // Avoid using writeRIFFChunk for performance
+    // Sdta chunk
     writeStringAsBytes(sdta, "LIST");
     // "sdta" + full smpl length
     writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET - 8, 4);
@@ -92,20 +92,20 @@ export async function getSDTA(
     writeLittleEndian(sdta, smplChunkSize, 4);
 
     let offset = 0;
-    // write out
+    // Write out
     bank.samples.forEach((sample, i) => {
         const data = sampleDatas[i];
         sdta.set(data, offset + SDTA_TO_DATA_OFFSET);
         let startOffset;
         let endOffset;
         if (sample.isCompressed) {
-            // sf3 offset is in bytes
+            // Sf3 offset is in bytes
             startOffset = offset;
             endOffset = startOffset + data.length;
         } else {
-            // sf2 in sample data points
-            startOffset = offset / 2; // inclusive
-            endOffset = startOffset + data.length / 2; // exclusive
+            // Sf2 in sample data points
+            startOffset = offset / 2; // Inclusive
+            endOffset = startOffset + data.length / 2; // Exclusive
             offset += 92; // 46 sample data points
         }
         offset += data.length;

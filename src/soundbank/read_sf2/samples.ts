@@ -11,7 +11,7 @@ import type { SampleType } from "../enums";
 import type { RIFFChunk } from "../basic_soundbank/riff_chunk";
 
 /**
- * samples.ts
+ * Samples.ts
  * purpose: parses soundfont samples
  */
 
@@ -64,10 +64,10 @@ export class SoundFontSample extends BasicSample {
         sampleDataArray: IndexedByteArray | Float32Array,
         sampleIndex: number
     ) {
-        // read sf3
+        // Read sf3
         // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
         const compressed = (sampleType & SF3_BIT_FLIT) > 0;
-        // remove the compression flag
+        // Remove the compression flag
         sampleType &= ~SF3_BIT_FLIT;
         super(
             sampleName,
@@ -80,7 +80,7 @@ export class SoundFontSample extends BasicSample {
         );
         this.dataOverridden = false;
         this.name = sampleName;
-        // in bytes
+        // In bytes
         this.startByteOffset = sampleStartIndex;
         this.endByteOffset = sampleEndIndex;
         this.sampleID = sampleIndex;
@@ -89,17 +89,17 @@ export class SoundFontSample extends BasicSample {
                 ? sampleDataArray.currentIndex
                 : 0;
 
-        // three data types in:
+        // Three data types in:
         // SF2 (s16le)
         // SF3 (vorbis)
         // SF2Pack (entire smpl vorbis)
         if (sampleDataArray instanceof IndexedByteArray) {
             if (compressed) {
-                // correct loop points
+                // Correct loop points
                 this.loopStart += this.startByteOffset / 2;
                 this.loopEnd += this.startByteOffset / 2;
 
-                // copy the compressed data, it can be preserved during writing
+                // Copy the compressed data, it can be preserved during writing
                 this.setCompressedData(
                     sampleDataArray.slice(
                         this.startByteOffset / 2 + smplStart,
@@ -107,14 +107,14 @@ export class SoundFontSample extends BasicSample {
                     )
                 );
             } else {
-                // regular sf2 s16le
+                // Regular sf2 s16le
                 this.s16leData = sampleDataArray.slice(
                     smplStart + this.startByteOffset,
                     smplStart + this.endByteOffset
                 );
             }
         } else {
-            // float32 array from SF2pack, copy directly
+            // Float32 array from SF2pack, copy directly
             this.setAudioData(
                 sampleDataArray.slice(
                     this.startByteOffset / 2,
@@ -132,14 +132,14 @@ export class SoundFontSample extends BasicSample {
         }
         const linked = samplesArray[this.linkedSampleIndex];
         if (!linked) {
-            // log as info because it's common and not really dangerous
+            // Log as info because it's common and not really dangerous
             SpessaSynthInfo(
                 `%cInvalid linked sample for ${this.name}. Setting to mono.`,
                 consoleColors.warn
             );
             this.unlinkSample();
         } else {
-            // check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
+            // Check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
             if (linked.linkedSample) {
                 SpessaSynthInfo(
                     `%cInvalid linked sample for ${this.name}: Already linked to ${linked.linkedSample.name}`,
@@ -170,7 +170,7 @@ export class SoundFontSample extends BasicSample {
             throw new Error("Unexpected lack of audio data.");
         }
 
-        // start loading data if it is not loaded
+        // Start loading data if it is not loaded
         const byteLength = this.endByteOffset - this.startByteOffset;
         if (byteLength < 1) {
             SpessaSynthWarn(
@@ -180,11 +180,11 @@ export class SoundFontSample extends BasicSample {
         }
 
         // SF2
-        // read the sample data
+        // Read the sample data
         const audioData = new Float32Array(byteLength / 2);
         const convertedSigned16 = new Int16Array(this.s16leData.buffer);
 
-        // convert to float
+        // Convert to float
         for (let i = 0; i < convertedSigned16.length; i++) {
             audioData[i] = convertedSigned16[i] / 32768;
         }
@@ -195,10 +195,10 @@ export class SoundFontSample extends BasicSample {
 
     public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.dataOverridden || this.compressedData) {
-            // return vorbis or encode manually
+            // Return vorbis or encode manually
             return super.getRawData(allowVorbis);
         }
-        // copy the smpl directly
+        // Copy the smpl directly
         return this.s16leData ?? new Uint8Array(0);
     }
 }
@@ -225,10 +225,10 @@ export function readSamples(
         samples.push(sample);
         index++;
     }
-    // remove EOS
+    // Remove EOS
     samples.pop();
 
-    // link samples
+    // Link samples
     if (linkSamples) {
         samples.forEach((s) => s.getLinkedSample(samples));
     }
@@ -244,37 +244,37 @@ function readSample(
     sampleHeaderData: IndexedByteArray,
     smplArrayData: IndexedByteArray | Float32Array
 ): SoundFontSample {
-    // read the sample name
+    // Read the sample name
     const sampleName = readBytesAsString(sampleHeaderData, 20);
 
-    // read the sample start index
+    // Read the sample start index
     const sampleStartIndex = readLittleEndian(sampleHeaderData, 4) * 2;
 
-    // read the sample end index
+    // Read the sample end index
     const sampleEndIndex = readLittleEndian(sampleHeaderData, 4) * 2;
 
-    // read the sample looping start index
+    // Read the sample looping start index
     const sampleLoopStartIndex = readLittleEndian(sampleHeaderData, 4);
 
-    // read the sample looping end index
+    // Read the sample looping end index
     const sampleLoopEndIndex = readLittleEndian(sampleHeaderData, 4);
 
-    // read the sample rate
+    // Read the sample rate
     const sampleRate = readLittleEndian(sampleHeaderData, 4);
 
-    // read the original sample pitch
+    // Read the original sample pitch
     let samplePitch = sampleHeaderData[sampleHeaderData.currentIndex++];
     if (samplePitch > 127) {
-        // if it's out of range, then default to 60
+        // If it's out of range, then default to 60
         samplePitch = 60;
     }
 
-    // read the sample pitch correction
+    // Read the sample pitch correction
     const samplePitchCorrection = signedInt8(
         sampleHeaderData[sampleHeaderData.currentIndex++]
     );
 
-    // read the link to the other channel
+    // Read the link to the other channel
     const sampleLink = readLittleEndian(sampleHeaderData, 2);
     const sampleType = readLittleEndian(sampleHeaderData, 2) as SampleType;
 

@@ -12,12 +12,12 @@ import { modulatorSources } from "../../../soundbank/enums";
 export const NON_CC_INDEX_OFFSET = 128;
 export const CONTROLLER_TABLE_SIZE = 147;
 
-// an array with preset default values, so we can quickly use set() to reset the controllers
+// An array with preset default values, so we can quickly use set() to reset the controllers
 export const resetArray = new Int16Array(CONTROLLER_TABLE_SIZE).fill(0);
 export const setResetValue = (i: MIDIController, v: number) =>
     (resetArray[i] = v << 7);
 
-// values come from Falcosoft MidiPlayer 6
+// Values come from Falcosoft MidiPlayer 6
 setResetValue(midiControllers.mainVolume, 100);
 setResetValue(midiControllers.balance, 64);
 setResetValue(midiControllers.expressionController, 127);
@@ -43,13 +43,13 @@ setResetValue(midiControllers.NRPNLsb, 127);
 setResetValue(midiControllers.NRPNMsb, 127);
 
 export const PORTAMENTO_CONTROL_UNSET = 1;
-// special case: portamento control
-// since it is only 7-bit, only the values at multiple of 128 are allowed.
-// a value of just 1 indicates no key set, hence no portamento.
-// this is the "initial unset portamento key" flag.
+// Special case: portamento control
+// Since it is only 7-bit, only the values at multiple of 128 are allowed.
+// A value of just 1 indicates no key set, hence no portamento.
+// This is the "initial unset portamento key" flag.
 resetArray[midiControllers.portamentoControl] = PORTAMENTO_CONTROL_UNSET;
 
-// pitch wheel
+// Pitch wheel
 setResetValue(
     (NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel) as MIDIController,
     64
@@ -69,5 +69,5 @@ customResetArray[customControllers.modulationMultiplier] = 1;
  * @enum {number}
  */
 export const channelConfiguration = {
-    velocityOverride: 128 // overrides velocity for the given channel
+    velocityOverride: 128 // Overrides velocity for the given channel
 };

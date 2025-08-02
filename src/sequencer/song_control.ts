@@ -13,12 +13,12 @@ export function assignMIDIPortInternal(
     trackNum: number,
     port: number
 ) {
-    // do not assign ports to empty tracks
+    // Do not assign ports to empty tracks
     if (this._midiData.tracks[trackNum].channels.size === 0) {
         return;
     }
 
-    // assign new 16 channels if the port is not occupied yet
+    // Assign new 16 channels if the port is not occupied yet
     if (this.midiPortChannelOffset === 0) {
         this.midiPortChannelOffset += 16;
         this.midiPortChannelOffsets[port] = 0;
@@ -50,10 +50,10 @@ export function loadNewSequenceInternal(
     this.oneTickToSeconds = 60 / (120 * parsedMidi.timeDivision);
     this._midiData = parsedMidi;
 
-    // clear old embedded bank if exists
+    // Clear old embedded bank if exists
     this.synth.clearEmbeddedBank();
 
-    // check for embedded soundfont
+    // Check for embedded soundfont
     if (this._midiData.embeddedSoundBank !== undefined) {
         SpessaSynthInfo(
             "%cEmbedded soundbank detected! Using it.",
@@ -66,7 +66,7 @@ export function loadNewSequenceInternal(
     }
 
     SpessaSynthGroupCollapsed("%cPreloading samples...", consoleColors.info);
-    // smart preloading: load only samples used in the midi!
+    // Smart preloading: load only samples used in the midi!
     const used = this._midiData.getUsedProgramsAndKeys(
         this.synth.soundBankManager
     );
@@ -93,13 +93,13 @@ export function loadNewSequenceInternal(
     }
     SpessaSynthGroupEnd();
 
-    // copy over the port data
+    // Copy over the port data
     this.currentMIDIPorts = this._midiData.tracks.map((t) => t.port);
 
-    // clear last port data
+    // Clear last port data
     this.midiPortChannelOffset = 0;
     this.midiPortChannelOffsets = {};
-    // assign port offsets
+    // Assign port offsets
     this._midiData.tracks.forEach((track, trackIndex) => {
         this.assignMIDIPort(trackIndex, track.port);
     });
@@ -119,6 +119,6 @@ export function loadNewSequenceInternal(
         );
         this.loopCount = 0;
     }
-    // reset the time
+    // Reset the time
     this.currentTime = 0;
 }

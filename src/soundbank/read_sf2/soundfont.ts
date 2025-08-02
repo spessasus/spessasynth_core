@@ -23,7 +23,7 @@ import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
 
 /**
- * soundfont.ts
+ * Soundfont.ts
  * purpose: parses a soundfont2 file
  */
 
@@ -47,7 +47,7 @@ export class SoundFont2 extends BasicSoundBank {
             this.parsingError("No data provided!");
         }
 
-        // read the main chunk
+        // Read the main chunk
         const firstChunk = readRIFFChunk(mainFileArray, false);
         this.verifyHeader(firstChunk, "riff");
 
@@ -81,7 +81,7 @@ export class SoundFont2 extends BasicSoundBank {
         while (infoChunk.chunkData.length > infoChunk.chunkData.currentIndex) {
             const chunk = readRIFFChunk(infoChunk.chunkData);
             let text;
-            // special cases
+            // Special cases
             const headerTyped = chunk.header as SoundBankInfoFourCC;
             switch (headerTyped) {
                 case "ifil":
@@ -99,12 +99,12 @@ export class SoundFont2 extends BasicSoundBank {
                     this.soundBankInfo[headerTyped] = text;
                     break;
 
-                // dmod: default modulators
+                // Dmod: default modulators
                 case "DMOD": {
                     const newModulators = readModulators(chunk);
                     text = `Modulators: ${newModulators.length}`;
 
-                    // override default modulators
+                    // Override default modulators
                     this.defaultModulators = newModulators;
                     this.customDefaultModulators = true;
                     this.soundBankInfo[headerTyped] = text;
@@ -112,7 +112,7 @@ export class SoundFont2 extends BasicSoundBank {
                 }
 
                 case "LIST": {
-                    // possible xdta
+                    // Possible xdta
                     const listType = readBytesAsString(chunk.chunkData, 4);
                     if (listType === "xdta") {
                         SpessaSynthInfo(
@@ -151,7 +151,7 @@ export class SoundFont2 extends BasicSoundBank {
             shdr: RIFFChunk;
         }> = {};
         if (xdtaChunk !== undefined) {
-            // read the hydra chunks
+            // Read the hydra chunks
             xChunks.phdr = readRIFFChunk(xdtaChunk.chunkData);
             xChunks.pbag = readRIFFChunk(xdtaChunk.chunkData);
             xChunks.pmod = readRIFFChunk(xdtaChunk.chunkData);
@@ -168,7 +168,7 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyHeader(sdtaChunk, "list");
         this.verifyText(readBytesAsString(mainFileArray, 4), "sdta");
 
-        // smpl
+        // Smpl
         SpessaSynthInfo("%cVerifying smpl chunk...", consoleColors.warn);
         const sampleDataChunk = readRIFFChunk(mainFileArray, false);
         this.verifyHeader(sampleDataChunk, "smpl");
@@ -215,7 +215,7 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyHeader(presetChunk, "list");
         readBytesAsString(presetChunk.chunkData, 4);
 
-        // read the hydra chunks
+        // Read the hydra chunks
         const phdrChunk = readRIFFChunk(presetChunk.chunkData);
         this.verifyHeader(phdrChunk, "phdr");
 
@@ -244,7 +244,7 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyHeader(shdrChunk, "shdr");
 
         /**
-         * read all the samples
+         * Read all the samples
          * (the current index points to start of the smpl read)
          */
         mainFileArray.currentIndex = this.sampleDataStartIndex;
@@ -255,7 +255,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         if (xdtaChunk && xChunks.shdr) {
-            // apply extensions to samples
+            // Apply extensions to samples
             const xSamples = readSamples(
                 xChunks.shdr,
                 new Float32Array(1),
@@ -268,31 +268,31 @@ export class SoundFont2 extends BasicSoundBank {
                 });
             }
         }
-        // trim names
+        // Trim names
         samples.forEach((s) => (s.name = s.name.trim()));
         this.samples.push(...samples);
 
         /**
-         * read all the instrument generators
+         * Read all the instrument generators
          */
         const instrumentGenerators: Generator[] = readGenerators(igenChunk);
 
         /**
-         * read all the instrument modulators
+         * Read all the instrument modulators
          */
         const instrumentModulators: Modulator[] = readModulators(imodChunk);
 
         const instruments = readInstruments(instChunk);
 
         if (xdtaChunk && xChunks.inst) {
-            // apply extensions to instruments
+            // Apply extensions to instruments
             const xInst = readInstruments(xChunks.inst);
             if (xInst.length === instruments.length) {
                 instruments.forEach((inst, i) => {
                     inst.name += xInst[i].name;
                     inst.zoneStartIndex |= xInst[i].zoneStartIndex;
                 });
-                // adjust zone counts
+                // Adjust zone counts
                 instruments.forEach((inst, i) => {
                     if (i < instruments.length - 1) {
                         inst.zonesCount =
@@ -302,7 +302,7 @@ export class SoundFont2 extends BasicSoundBank {
                 });
             }
         }
-        // trim names
+        // Trim names
         instruments.forEach((i) => (i.name = i.name.trim()));
         this.instruments.push(...instruments);
 
@@ -319,7 +319,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
 
         /**
-         * read all the instrument zones (and apply them)
+         * Read all the instrument zones (and apply them)
          */
         applyInstrumentZones(
             ibagIndexes,
@@ -330,7 +330,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         /**
-         * read all the preset generators
+         * Read all the preset generators
          */
         const presetGenerators: Generator[] = readGenerators(pgenChunk);
 
@@ -342,14 +342,14 @@ export class SoundFont2 extends BasicSoundBank {
         const presets = readPresets(phdrChunk, this);
 
         if (xdtaChunk && xChunks.phdr) {
-            // apply extensions to presets
+            // Apply extensions to presets
             const xPreset = readPresets(xChunks.phdr, this);
             if (xPreset.length === presets.length) {
                 presets.forEach((pres, i) => {
                     pres.name += xPreset[i].name;
                     pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
                 });
-                // adjust zone counts
+                // Adjust zone counts
                 presets.forEach((preset, i) => {
                     if (i < presets.length - 1) {
                         preset.zonesCount =
@@ -360,7 +360,7 @@ export class SoundFont2 extends BasicSoundBank {
             }
         }
 
-        // trim names
+        // Trim names
         presets.forEach((p) => p.name === p.name.trim());
         this.addPresets(...presets);
 

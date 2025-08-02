@@ -37,11 +37,11 @@ import { SoundBankLoader } from "../soundbank/sound_bank_loader";
 import { customControllers } from "./enums";
 
 /**
- * processor.ts
+ * Processor.ts
  * purpose: the core synthesis engine
  */
 
-// the core synthesis engine of spessasynth.
+// The core synthesis engine of spessasynth.
 export class SpessaSynthProcessor {
     // The sound bank manager, which manages all sound banks and presets.
     public soundBankManager: SoundBankManager = new SoundBankManager(
@@ -116,7 +116,7 @@ export class SpessaSynthProcessor {
         setMasterParameterInternal.bind(
             this
         ) as typeof setMasterParameterInternal;
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Gets a master parameter of the synthesizer.
      * @param type The type of the master parameter to get.
@@ -157,7 +157,7 @@ export class SpessaSynthProcessor {
     public killVoices: typeof killVoicesIntenral = killVoicesIntenral.bind(
         this
     ) as typeof killVoicesIntenral;
-    // protected methods
+    // Protected methods
     protected getVoices = getVoicesInternal.bind(this);
     // This contains the properties that have to be accessed from the MIDI channels.
     protected privateProps: ProtectedSynthValues;
@@ -203,17 +203,17 @@ export class SpessaSynthProcessor {
             this.callEvent.bind(this),
             this.getVoices.bind(this),
             this.killVoices.bind(this),
-            // these smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
-            // volume envelope smoothing factor
+            // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
+            // Volume envelope smoothing factor
             VOLUME_ENVELOPE_SMOOTHING_FACTOR * (44100 / sampleRate),
-            // pan smoothing factor
+            // Pan smoothing factor
             PAN_SMOOTHING_FACTOR * (44100 / sampleRate),
-            // filter smoothing factor
+            // Filter smoothing factor
             FILTER_SMOOTHING_FACTOR * (44100 / sampleRate)
         );
 
         for (let i = 0; i < this.midiOutputsCount; i++) {
-            // don't send events as we're creating the initial channels
+            // Don't send events as we're creating the initial channels
             this.createMIDIChannelInternal(false);
         }
         void this.processorInitialized.then(() => {
@@ -234,7 +234,7 @@ export class SpessaSynthProcessor {
         this.resetAllControllers();
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Gets a synthesizer snapshot from this processor instance.
      */
@@ -248,21 +248,21 @@ export class SpessaSynthProcessor {
      * @param offset The bank offset of the embedded sound bank.
      */
     public setEmbeddedSoundBank(bank: ArrayBuffer, offset: number) {
-        // the embedded bank is set as the first bank in the manager,
-        // with a special ID that is randomized.
+        // The embedded bank is set as the first bank in the manager,
+        // With a special ID that is randomized.
         const loadedFont = SoundBankLoader.fromArrayBuffer(bank);
         this.soundBankManager.addSoundBank(
             loadedFont,
             EMBEDDED_SOUND_BANK_ID,
             offset
         );
-        // rearrange so the embedded is first (most important as it overrides all others)
+        // Rearrange so the embedded is first (most important as it overrides all others)
         const order = this.soundBankManager.priorityOrder;
         order.pop();
         order.unshift(EMBEDDED_SOUND_BANK_ID);
         this.soundBankManager.priorityOrder = order;
 
-        // apply snapshot again if applicable
+        // Apply snapshot again if applicable
         if (this.savedSnapshot !== undefined) {
             this.applySynthesizerSnapshot(this.savedSnapshot);
         }
@@ -301,7 +301,7 @@ export class SpessaSynthProcessor {
         this.privateProps.callEvent("stopAll", undefined);
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
      * All float arrays must have the same length.
@@ -343,7 +343,7 @@ export class SpessaSynthProcessor {
         startIndex = 0,
         sampleCount = 0
     ) {
-        // process event queue
+        // Process event queue
         const time = this.currentSynthTime;
         while (this.eventQueue[0]?.time <= time) {
             this.eventQueue.shift()?.callback();
@@ -353,22 +353,22 @@ export class SpessaSynthProcessor {
         const chrL = chorusChannels[0];
         const chrR = chorusChannels[1];
 
-        // validate
+        // Validate
         startIndex = Math.max(startIndex, 0);
         const quantumSize =
             sampleCount || separateChannels[0][0].length - startIndex;
 
-        // for every channel
+        // For every channel
         this.totalVoicesAmount = 0;
         this.midiChannels.forEach((channel, index) => {
             if (channel.voices.length < 1 || channel.isMuted) {
-                // there's nothing to do!
+                // There's nothing to do!
                 return;
             }
             const voiceCount = channel.voices.length;
             const ch = index % 16;
 
-            // render to the appropriate output
+            // Render to the appropriate output
             channel.renderAudio(
                 separateChannels[ch][0],
                 separateChannels[ch][1],
@@ -381,17 +381,17 @@ export class SpessaSynthProcessor {
             );
 
             this.totalVoicesAmount += channel.voices.length;
-            // if voice count changed, update voice amount
+            // If voice count changed, update voice amount
             if (channel.voices.length !== voiceCount) {
                 channel.sendChannelProperty();
             }
         });
 
-        // advance the time appropriately
+        // Advance the time appropriately
         this.currentSynthTime += quantumSize * this.sampleTime;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      *  Destroy the synthesizer processor, clearing all channels and voices.
      *  This is irreversible, so use with caution.
@@ -487,7 +487,7 @@ export class SpessaSynthProcessor {
         this.midiChannels[channel].programChange(programNumber);
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Processes a raw MIDI message.
      * @param message The message to process.
@@ -505,7 +505,7 @@ export class SpessaSynthProcessor {
             const statusByteData = getEvent(message[0] as MIDIMessageType);
 
             const channel = statusByteData.channel + channelOffset;
-            // process the event
+            // Process the event
             switch (statusByteData.status as MIDIMessageType) {
                 case midiMessageTypes.noteOn: {
                     const velocity = message[2];
@@ -602,7 +602,7 @@ export class SpessaSynthProcessor {
      */
     protected setMIDIVolume(volume: number) {
         // GM2 specification, section 4.1: volume is squared.
-        // though, according to my own testing, Math.E seems like a better choice
+        // Though, according to my own testing, Math.E seems like a better choice
         this.privateProps.midiVolume = Math.pow(volume, Math.E);
     }
 
@@ -650,7 +650,7 @@ export class SpessaSynthProcessor {
         velocity: number,
         voices: VoiceList
     ) {
-        // make sure that it exists
+        // Make sure that it exists
         if (!this.privateProps.cachedVoices[bank]) {
             this.privateProps.cachedVoices[bank] = [];
         }
@@ -661,7 +661,7 @@ export class SpessaSynthProcessor {
             this.privateProps.cachedVoices[bank][program][midiNote] = [];
         }
 
-        // cache
+        // Cache
         this.privateProps.cachedVoices[bank][program][midiNote][velocity] =
             voices;
     }
@@ -686,7 +686,7 @@ export class SpessaSynthProcessor {
         this.clearCache();
         this.privateProps.callEvent("presetListChange", mainFont);
         this.getDefaultPresets();
-        // unlock presets
+        // Unlock presets
         this.midiChannels.forEach((c) => {
             c.setPresetLock(false);
         });
@@ -694,7 +694,7 @@ export class SpessaSynthProcessor {
     }
 
     private getDefaultPresets() {
-        // override this to XG, to set the default preset to NOT be XG drums!
+        // Override this to XG, to set the default preset to NOT be XG drums!
         this.privateProps.defaultPreset = this.soundBankManager.getPreset(
             0,
             0,

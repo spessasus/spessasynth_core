@@ -271,10 +271,10 @@ export class MIDIChannel {
             return;
         }
         if (keyShift !== this.channelTransposeKeyShift) {
-            // stop all (and emit cc change)
+            // Stop all (and emit cc change)
             this.controllerChange(midiControllers.allNotesOff, 127);
         }
-        // apply transpose
+        // Apply transpose
         this.channelTransposeKeyShift = keyShift;
         this.setCustomController(
             customControllers.channelTransposeFine,
@@ -369,7 +369,7 @@ export class MIDIChannel {
             NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
         ] = bend;
         this.voices.forEach((v) =>
-            // compute pitch modulators
+            // Compute pitch modulators
             this.computeModulators(v, 0, modulatorSources.pitchWheel)
         );
         this.sendChannelProperty();
@@ -393,7 +393,7 @@ export class MIDIChannel {
         });
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Sets the pressure of the given note on a specific channel.
      * This is used for polyphonic pressure (aftertouch).
@@ -423,8 +423,8 @@ export class MIDIChannel {
     public updateChannelTuning() {
         this.channelTuningCents =
             this.customControllers[customControllers.channelTuning] + // RPN channel fine tuning
-            this.customControllers[customControllers.channelTransposeFine] + // user tuning (transpose)
-            this.customControllers[customControllers.masterTuning] + // master tuning, set by sysEx
+            this.customControllers[customControllers.channelTransposeFine] + // User tuning (transpose)
+            this.customControllers[customControllers.masterTuning] + // Master tuning, set by sysEx
             this.customControllers[customControllers.channelTuningSemitones] *
                 100; // RPN channel coarse tuning
     }
@@ -497,7 +497,7 @@ export class MIDIChannel {
 
                 case 1:
                     if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
-                        // cannot disable drums on channel 9
+                        // Cannot disable drums on channel 9
                         this.bank = 127;
                     }
                     break;
@@ -539,7 +539,7 @@ export class MIDIChannel {
             return;
         }
         if (isDrum) {
-            // clear transpose
+            // Clear transpose
             this.channelTransposeKeyShift = 0;
             this.drumChannel = true;
         } else {
@@ -553,7 +553,7 @@ export class MIDIChannel {
         this.sendChannelProperty();
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Sets a custom vibrato.
      * @param depth cents.
@@ -569,7 +569,7 @@ export class MIDIChannel {
         this.channelVibrato.depth = depth;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Yes.
      */
@@ -619,14 +619,14 @@ export class MIDIChannel {
      * @param releaseTime in timecents, defaults to -12000 (very short release).
      */
     public killNote(midiNote: number, releaseTime = -12000) {
-        // adjust midiNote by channel key shift
+        // Adjust midiNote by channel key shift
         midiNote += this.customControllers[customControllers.channelKeyShift];
 
         this.voices.forEach((v) => {
             if (v.realKey !== midiNote) {
                 return;
             }
-            v.modulatedGenerators[generatorTypes.releaseVolEnv] = releaseTime; // set release to be very short
+            v.modulatedGenerators[generatorTypes.releaseVolEnv] = releaseTime; // Set release to be very short
             v.release(this.synth.currentSynthTime);
         });
     }
@@ -637,7 +637,7 @@ export class MIDIChannel {
      */
     public stopAllNotes(force = false) {
         if (force) {
-            // force stop all
+            // Force stop all
             this.voices.length = 0;
             this.sustainedVoices.length = 0;
             this.sendChannelProperty();

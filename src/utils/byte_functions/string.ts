@@ -119,7 +119,7 @@ export function writeStringAsBytes(
         outArray[outArray.currentIndex++] = string.charCodeAt(i);
     }
 
-    // pad with zeros if needed
+    // Pad with zeros if needed
     if (padLength > string.length) {
         for (let i = 0; i < padLength - string.length; i++) {
             outArray[outArray.currentIndex++] = 0;

@@ -252,7 +252,7 @@ export class BasicSoundBank {
         this.addSamples(newSample);
         if (sample.linkedSample) {
             const clonedLinked = this.cloneSample(sample.linkedSample);
-            // sanity check
+            // Sanity check
             if (!clonedLinked.linkedSample) {
                 newSample.setLinkedSample(clonedLinked, newSample.sampleType);
             }
@@ -284,7 +284,7 @@ export class BasicSoundBank {
         return newInstrument;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Clones presets into this sound bank
      * @returns the copied preset, if a preset exists with that name, it is returned instead
@@ -386,7 +386,7 @@ export class BasicSoundBank {
             consoleColors.info
         );
         SpessaSynthInfo("Detected keys for midi:", usedProgramsAndKeys);
-        // modify the soundfont to only include programs and samples that are used
+        // Modify the soundfont to only include programs and samples that are used
         for (
             let presetIndex = 0;
             presetIndex < this.presets.length;
@@ -419,7 +419,7 @@ export class BasicSoundBank {
                 );
                 SpessaSynthInfo(`Keys for ${p.name}:`, combos);
                 let trimmedZones = 0;
-                // clean the preset to only use zones that are used
+                // Clean the preset to only use zones that are used
                 for (
                     let zoneIndex = 0;
                     zoneIndex < p.zones.length;
@@ -428,7 +428,7 @@ export class BasicSoundBank {
                     const zone = p.zones[zoneIndex];
                     const keyRange = zone.keyRange;
                     const velRange = zone.velRange;
-                    // check if any of the combos matches the zone
+                    // Check if any of the combos matches the zone
                     let isZoneUsed = false;
                     for (const combo of combos) {
                         if (
@@ -438,7 +438,7 @@ export class BasicSoundBank {
                             combo.velocity <= velRange.max &&
                             zone.instrument
                         ) {
-                            // zone is used, trim the instrument zones
+                            // Zone is used, trim the instrument zones
                             isZoneUsed = true;
                             const trimmedIZones = trimInstrumentZones(
                                 zone.instrument,
@@ -530,7 +530,7 @@ export class BasicSoundBank {
         allowXGDrums = false
     ): BasicPreset | undefined {
         const isDrum = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
-        // check for exact match
+        // Check for exact match
         let p;
         if (isDrum) {
             p = this.presets.find(
@@ -547,10 +547,10 @@ export class BasicSoundBank {
         if (p) {
             return p;
         }
-        // no match...
+        // No match...
         if (isDrum) {
             if (allowXGDrums) {
-                // try any drum preset with matching program?
+                // Try any drum preset with matching program?
                 const p = this.presets.find(
                     (p) =>
                         p.isDrumPreset(allowXGDrums) && p.program === programNr
@@ -576,9 +576,9 @@ export class BasicSoundBank {
         allowXGDrums = false
     ): BasicPreset {
         const isDrums = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
-        // check for exact match
+        // Check for exact match
         let preset;
-        // only allow drums if the preset is considered to be a drum preset
+        // Only allow drums if the preset is considered to be a drum preset
         if (isDrums) {
             preset = this.presets.find(
                 (p) =>
@@ -594,16 +594,16 @@ export class BasicSoundBank {
         if (preset) {
             return preset;
         }
-        // no match...
+        // No match...
         if (isDrums) {
-            // drum preset: find any preset with bank 128
+            // Drum preset: find any preset with bank 128
             preset = this.presets.find(
                 (p) => p.isDrumPreset(allowXGDrums) && p.program === programNr
             );
-            // only allow 128, otherwise it would default to XG SFX
+            // Only allow 128, otherwise it would default to XG SFX
             preset ??= this.presets.find((p) => p.isDrumPreset(allowXGDrums));
         } else {
-            // non-drum preset: find any preset with the given program that is not a drum preset
+            // Non-drum preset: find any preset with the given program that is not a drum preset
             preset = this.presets.find(
                 (p) => p.program === programNr && !p.isDrumPreset(allowXGDrums)
             );
@@ -616,7 +616,7 @@ export class BasicSoundBank {
             );
         }
 
-        // no preset, use the first one available
+        // No preset, use the first one available
         if (!preset) {
             SpessaSynthWarn(
                 `Preset ${programNr} not found. Defaulting to`,
@@ -627,9 +627,9 @@ export class BasicSoundBank {
         return preset;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
-     * gets preset by name
+     * Gets preset by name
      */
     public getPresetByName(presetName: string): BasicPreset {
         let preset = this.presets.find((p) => p.name === presetName);
@@ -656,15 +656,15 @@ export class BasicSoundBank {
     }
 
     /**
-     * parses the bank after loading is done
+     * Parses the bank after loading is done
      * @protected
      */
     protected parseInternal() {
         this._isXGBank = false;
-        // definitions for XG:
-        // at least one preset with bank 127, 126 or 120
+        // Definitions for XG:
+        // At least one preset with bank 127, 126 or 120
         // MUST be a valid XG bank.
-        // allowed banks: (see XG specification)
+        // Allowed banks: (see XG specification)
         // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24,
         // 25, 27, 28, 29, 30, 31, 32, 33, 40, 41, 48, 56, 57, 58,
         // 64, 65, 66, 126, 127
@@ -676,7 +676,7 @@ export class BasicSoundBank {
             if (isXGDrums(preset.bank)) {
                 this._isXGBank = true;
                 if (!allowedPrograms.has(preset.program)) {
-                    // not valid!
+                    // Not valid!
                     this._isXGBank = false;
                     SpessaSynthInfo(
                         `%cThis bank is not valid XG. Preset %c${preset.bank}:${preset.program}%c is not a valid XG drum. XG mode will use presets on bank 128.`,

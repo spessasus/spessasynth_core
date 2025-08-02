@@ -1,5 +1,5 @@
 /**
- * midi_message.ts
+ * Midi_message.ts
  * purpose: contains enums for midi events and controllers and functions to parse them
  */
 import type { IndexedByteArray } from "../utils/indexed_array";
@@ -50,7 +50,7 @@ export function getChannel(statusByte: MIDIMessageType): number {
     let resultChannel = channel;
 
     switch (eventType) {
-        // midi (and meta and sysex headers)
+        // Midi (and meta and sysex headers)
         case 0x80:
         case 0x90:
         case 0xa0:
@@ -123,11 +123,11 @@ export function getEvent(statusByte: MIDIMessageType): {
 }
 
 export const dataBytesAmount = {
-    0x8: 2, // note off
-    0x9: 2, // note on
-    0xa: 2, // note at
-    0xb: 2, // cc change
-    0xc: 1, // pg change
-    0xd: 1, // channel after touch
-    0xe: 2 // pitch wheel
+    0x8: 2, // Note off
+    0x9: 2, // Note on
+    0xa: 2, // Note at
+    0xb: 2, // Cc change
+    0xc: 1, // Pg change
+    0xd: 1, // Channel after touch
+    0xe: 2 // Pitch wheel
 } as const;

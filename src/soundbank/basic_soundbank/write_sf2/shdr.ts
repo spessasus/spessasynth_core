@@ -21,18 +21,18 @@ export function getSHDR(
     const xshdrData = new IndexedByteArray(shdrSize);
     let maxSampleLink = 0;
     bank.samples.forEach((sample, index) => {
-        // sample name
+        // Sample name
         writeStringAsBytes(shdrData, sample.name.substring(0, 20), 20);
         writeStringAsBytes(xshdrData, sample.name.substring(20), 20);
-        // start offset
+        // Start offset
         const dwStart = smplStartOffsets[index];
         writeDword(shdrData, dwStart);
         xshdrData.currentIndex += 4;
-        // end offset
+        // End offset
         const dwEnd = smplEndOffsets[index];
         writeDword(shdrData, dwEnd);
         xshdrData.currentIndex += 4;
-        // loop is stored as relative in sample points, change it to absolute sample points here
+        // Loop is stored as relative in sample points, change it to absolute sample points here
         let loopStart = sample.loopStart + dwStart;
         let loopEnd = sample.loopEnd + dwStart;
         if (sample.isCompressed) {
@@ -42,21 +42,21 @@ export function getSHDR(
         }
         writeDword(shdrData, loopStart);
         writeDword(shdrData, loopEnd);
-        // sample rate
+        // Sample rate
         writeDword(shdrData, sample.sampleRate);
-        // pitch and correction
+        // Pitch and correction
         shdrData[shdrData.currentIndex++] = sample.originalKey;
         shdrData[shdrData.currentIndex++] = sample.pitchCorrection;
-        // skip all those for xshdr
+        // Skip all those for xshdr
         xshdrData.currentIndex += 14;
-        // sample link
+        // Sample link
         const sampleLinkIndex = sample.linkedSample
             ? bank.samples.indexOf(sample.linkedSample)
             : 0;
         writeWord(shdrData, Math.max(0, sampleLinkIndex) & 0xffff);
         writeWord(xshdrData, Math.max(0, sampleLinkIndex) >> 16);
         maxSampleLink = Math.max(maxSampleLink, sampleLinkIndex);
-        // sample type: add byte if compressed
+        // Sample type: add byte if compressed
         let type = sample.sampleType;
         if (sample.isCompressed) {
             type |= SF3_BIT_FLIT;
@@ -65,7 +65,7 @@ export function getSHDR(
         xshdrData.currentIndex += 2;
     });
 
-    // write EOS and zero everything else
+    // Write EOS and zero everything else
     writeStringAsBytes(shdrData, "EOS", sampleLength);
     writeStringAsBytes(xshdrData, "EOS", sampleLength);
     const shdr = writeRIFFChunkRaw("shdr", shdrData);

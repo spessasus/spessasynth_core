@@ -16,16 +16,16 @@ export function getINST(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const instData = new IndexedByteArray(instSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xinstData = new IndexedByteArray(instSize);
-    // the instrument start index is adjusted in ibag, write it here
+    // The instrument start index is adjusted in ibag, write it here
     let instrumentStart = 0;
     for (const inst of bank.instruments) {
         writeStringAsBytes(instData, inst.name.substring(0, 20), 20);
         writeStringAsBytes(xinstData, inst.name.substring(20), 20);
         writeWord(instData, instrumentStart & 0xffff);
         writeWord(xinstData, instrumentStart >> 16);
-        instrumentStart += inst.zones.length + 1; // global
+        instrumentStart += inst.zones.length + 1; // Global
     }
-    // write EOI
+    // Write EOI
     writeStringAsBytes(instData, "EOI", 20);
     writeStringAsBytes(xinstData, "EOI", 20);
     writeWord(instData, instrumentStart & 0xffff);

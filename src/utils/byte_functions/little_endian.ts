@@ -14,7 +14,7 @@ export function readLittleEndian(
     for (let i = 0; i < bytesAmount; i++) {
         out |= dataArray[dataArray.currentIndex++] << (i * 8);
     }
-    // make sure it stays unsigned
+    // Make sure it stays unsigned
     return out >>> 0;
 }
 

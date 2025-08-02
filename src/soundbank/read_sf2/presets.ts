@@ -9,7 +9,7 @@ import type { Modulator } from "../basic_soundbank/modulator";
 import type { Generator } from "../basic_soundbank/generator";
 
 /**
- * parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
+ * Parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
  */
 
 export class SoundFontPreset extends BasicPreset {
@@ -24,13 +24,13 @@ export class SoundFontPreset extends BasicPreset {
         this.name = readBytesAsString(presetChunk.chunkData, 20).replace(
             /\d{3}:\d{3}/,
             ""
-        ); // remove those pesky "000:001"
+        ); // Remove those pesky "000:001"
 
         this.program = readLittleEndian(presetChunk.chunkData, 2);
         this.bank = readLittleEndian(presetChunk.chunkData, 2);
         this.zoneStartIndex = readLittleEndian(presetChunk.chunkData, 2);
 
-        // read the dword
+        // Read the dword
         this.library = readLittleEndian(presetChunk.chunkData, 4);
         this.genre = readLittleEndian(presetChunk.chunkData, 4);
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
@@ -69,7 +69,7 @@ export function readPresets(
         }
         presets.push(preset);
     }
-    // remove EOP
+    // Remove EOP
     presets.pop();
     return presets;
 }

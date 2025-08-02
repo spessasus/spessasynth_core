@@ -3,13 +3,13 @@ import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
- * stereo_panner.ts
+ * Stereo_panner.ts
  * purpose: pans a given voice out to the stereo output and to the effects' outputs
  */
 
 export const PAN_SMOOTHING_FACTOR = 0.05;
 
-// optimized for spessasynth_lib's effects
+// Optimized for spessasynth_lib's effects
 export const REVERB_DIVIDER = 3070;
 export const CHORUS_DIVIDER = 2000;
 const HALF_PI = Math.PI / 2;
@@ -18,11 +18,11 @@ const MIN_PAN = -500;
 const MAX_PAN = 500;
 const PAN_RESOLUTION = MAX_PAN - MIN_PAN;
 
-// initialize pan lookup tables
+// Initialize pan lookup tables
 const panTableLeft = new Float32Array(PAN_RESOLUTION + 1);
 const panTableRight = new Float32Array(PAN_RESOLUTION + 1);
 for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
-    // clamp to 0-1
+    // Clamp to 0-1
     const realPan = (pan - MIN_PAN) / PAN_RESOLUTION;
     const tableIndex = pan - MIN_PAN;
     panTableLeft[tableIndex] = Math.cos(HALF_PI * realPan);
@@ -57,13 +57,13 @@ export function panAndMixVoice(
         return;
     }
     /**
-     * clamp -500 to 500
+     * Clamp -500 to 500
      */
     let pan: number;
     if (voice.overridePan) {
         pan = voice.overridePan;
     } else {
-        // smooth out pan to prevent clicking
+        // Smooth out pan to prevent clicking
         voice.currentPan +=
             (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
             this.synthProps.panSmoothingFactor;
@@ -75,16 +75,16 @@ export function panAndMixVoice(
         this.synthProps.midiVolume *
         voice.gain;
     const index = ~~(pan + 500);
-    // get voice's gain levels for each channel
+    // Get voice's gain levels for each channel
     const gainLeft = panTableLeft[index] * gain * this.synthProps.panLeft;
     const gainRight = panTableRight[index] * gain * this.synthProps.panRight;
 
-    // disable reverb and chorus if necessary
+    // Disable reverb and chorus if necessary
     if (this.synth.effectsEnabled) {
         const reverbSend =
             voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
         if (reverbSend > 0) {
-            // reverb is mono so we need to multiply by gain
+            // Reverb is mono so we need to multiply by gain
             const reverbGain =
                 this.synthProps.masterParameters.reverbGain *
                 this.synthProps.reverbSend *
@@ -100,7 +100,7 @@ export function panAndMixVoice(
         const chorusSend =
             voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
         if (chorusSend > 0) {
-            // chorus is stereo so we do not need to
+            // Chorus is stereo so we do not need to
             const chorusGain =
                 this.synthProps.masterParameters.chorusGain *
                 this.synthProps.chorusSend *
@@ -115,7 +115,7 @@ export function panAndMixVoice(
         }
     }
 
-    // mix down the audio data
+    // Mix down the audio data
     if (gainLeft > 0) {
         for (let i = 0; i < inputBuffer.length; i++) {
             outputLeft[i + startIndex] += gainLeft * inputBuffer[i];

@@ -8,7 +8,7 @@ import {
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 
-// an array with preset default values
+// An array with preset default values
 const defaultControllerArray = resetArray.slice(0, 128);
 
 /**
@@ -26,7 +26,7 @@ export function setTimeToInternal(
         return false;
     }
     this.oneTickToSeconds = 60 / (120 * this._midiData.timeDivision);
-    // reset everything
+    // Reset everything
     if (this.externalMIDIPlayback) {
         this.sendMIDIReset();
     } else {
@@ -36,12 +36,12 @@ export function setTimeToInternal(
     this.playedTime = 0;
     this.eventIndexes = Array<number>(this._midiData.tracks.length).fill(0);
 
-    // we save the pitch bends, programs and controllers here
-    // to only send them once after going through the events
+    // We save the pitch bends, programs and controllers here
+    // To only send them once after going through the events
 
     const channelsToSave = this.synth.midiChannels.length;
     /**
-     * save pitch bends here and send them only after
+     * Save pitch bends here and send them only after
      */
     const pitchBends = Array<number>(channelsToSave).fill(8192);
 
@@ -86,7 +86,7 @@ export function setTimeToInternal(
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      */
     function resetAllControllers(chan: number) {
-        // reset pitch bend
+        // Reset pitch bend
         pitchBends[chan] = 8192;
         if (savedControllers?.[chan] === undefined) {
             return;
@@ -101,7 +101,7 @@ export function setTimeToInternal(
     }
 
     while (true) {
-        // find the next event
+        // Find the next event
         let trackIndex = this.findFirstEventIndex();
         const track = this._midiData.tracks[trackIndex];
         const event = track.events[this.eventIndexes[trackIndex]];
@@ -115,15 +115,15 @@ export function setTimeToInternal(
             }
         }
 
-        // skip note ons
+        // Skip note ons
         const info = getEvent(event.statusByte);
         // Keep in mind midi ports to determine the channel!
         const channel =
             info.channel + (this.midiPortChannelOffsets[track.port] || 0);
         switch (info.status) {
-            // skip note messages
+            // Skip note messages
             case midiMessageTypes.noteOn:
-                // track portamento control as last note
+                // Track portamento control as last note
                 savedControllers[channel] ??= Array.from(
                     defaultControllerArray
                 ) as MIDIController[];
@@ -134,13 +134,13 @@ export function setTimeToInternal(
             case midiMessageTypes.noteOff:
                 break;
 
-            // skip pitch bend
+            // Skip pitch bend
             case midiMessageTypes.pitchBend:
                 pitchBends[channel] = (event.data[1] << 7) | event.data[0];
                 break;
 
             case midiMessageTypes.programChange: {
-                // empty tracks cannot program change
+                // Empty tracks cannot program change
                 if (this._midiData.isMultiPort && track.channels.size === 0) {
                     break;
                 }
@@ -151,16 +151,16 @@ export function setTimeToInternal(
             }
 
             case midiMessageTypes.controllerChange: {
-                // empty tracks cannot controller change
+                // Empty tracks cannot controller change
                 if (this._midiData.isMultiPort && track.channels.size === 0) {
                     break;
                 }
-                // do not skip data entries
+                // Do not skip data entries
                 const controllerNumber = event.data[0] as MIDIController;
                 if (isCCNonSkippable(controllerNumber)) {
                     const ccV = event.data[1];
                     if (controllerNumber === midiControllers.bankSelect) {
-                        // add the bank to be saved
+                        // Add the bank to be saved
                         programs[channel].bank = ccV;
                         break;
                     } else if (
@@ -193,7 +193,7 @@ export function setTimeToInternal(
         }
 
         this.eventIndexes[trackIndex]++;
-        // find the next event
+        // Find the next event
         trackIndex = this.findFirstEventIndex();
 
         const nextEvent =
@@ -208,14 +208,14 @@ export function setTimeToInternal(
             this.oneTickToSeconds * (nextEvent.ticks - event.ticks);
     }
 
-    // restoring saved controllers
+    // Restoring saved controllers
     if (this.externalMIDIPlayback) {
         for (
             let channelNumber = 0;
             channelNumber < channelsToSave;
             channelNumber++
         ) {
-            // restore pitch bends
+            // Restore pitch bends
             if (pitchBends[channelNumber] !== undefined) {
                 this.sendMIDIPitchWheel(
                     channelNumber,
@@ -224,7 +224,7 @@ export function setTimeToInternal(
                 );
             }
             if (savedControllers[channelNumber] !== undefined) {
-                // every controller that has changed
+                // Every controller that has changed
                 savedControllers[channelNumber].forEach((value, index) => {
                     if (
                         value !== defaultControllerArray[index] &&
@@ -234,7 +234,7 @@ export function setTimeToInternal(
                     }
                 });
             }
-            // restore programs
+            // Restore programs
             if (
                 programs[channelNumber].program >= 0 &&
                 programs[channelNumber].actualBank >= 0
@@ -252,13 +252,13 @@ export function setTimeToInternal(
             }
         }
     } else {
-        // for all synth channels
+        // For all synth channels
         for (
             let channelNumber = 0;
             channelNumber < channelsToSave;
             channelNumber++
         ) {
-            // restore pitch bends
+            // Restore pitch bends
             if (pitchBends[channelNumber] !== undefined) {
                 this.synth.pitchWheel(
                     channelNumber,
@@ -267,7 +267,7 @@ export function setTimeToInternal(
                 );
             }
             if (savedControllers[channelNumber] !== undefined) {
-                // every controller that has changed
+                // Every controller that has changed
                 savedControllers[channelNumber].forEach((value, index) => {
                     if (
                         value !== defaultControllerArray[index] &&
@@ -281,11 +281,11 @@ export function setTimeToInternal(
                     }
                 });
             }
-            // restore programs
+            // Restore programs
             if (programs[channelNumber].actualBank >= 0) {
                 const p = programs[channelNumber];
                 if (p.program !== -1) {
-                    // a program change has occurred, apply the actual bank when program change was executed
+                    // A program change has occurred, apply the actual bank when program change was executed
                     this.synth.controllerChange(
                         channelNumber,
                         midiControllers.bankSelect,
@@ -293,7 +293,7 @@ export function setTimeToInternal(
                     );
                     this.synth.programChange(channelNumber, p.program);
                 } else {
-                    // no program change, apply the current bank select
+                    // No program change, apply the current bank select
                     this.synth.controllerChange(
                         channelNumber,
                         midiControllers.bankSelect,
@@ -304,7 +304,7 @@ export function setTimeToInternal(
         }
     }
 
-    // restoring paused time
+    // Restoring paused time
 
     if (this.paused) {
         this.pausedTime = this.playedTime;

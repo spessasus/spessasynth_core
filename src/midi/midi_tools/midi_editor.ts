@@ -43,7 +43,7 @@ function getDrumChange(channel: number, ticks: number): MIDIMessage {
     const chanAddress =
         0x10 |
         [1, 2, 3, 4, 5, 6, 7, 8, 0, 9, 10, 11, 12, 13, 14, 15][channel % 16];
-    // excluding manufacturerID DeviceID and ModelID (and F7)
+    // Excluding manufacturerID DeviceID and ModelID (and F7)
     const sysexData = [
         0x41, // Roland
         0x10, // Device ID (defaults to 16 on roland)
@@ -54,11 +54,11 @@ function getDrumChange(channel: number, ticks: number): MIDIMessage {
         0x15, // Drum change                }
         0x01 // Is Drums                    } Data
     ];
-    // calculate checksum
+    // Calculate checksum
     // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
     const sum = 0x40 + chanAddress + 0x15 + 0x01;
     const checksum = 128 - (sum % 128);
-    // add system exclusive to enable drums
+    // Add system exclusive to enable drums
     return new MIDIMessage(
         ticks,
         midiMessageTypes.systemExclusive,
@@ -101,11 +101,11 @@ export function modifyMIDIInternal(
         channelsToChangeProgram.add(c.channel);
     });
 
-    // go through all events one by one
+    // Go through all events one by one
     let system: SynthSystem = "gs";
     let addedGs = false;
     /**
-     * indexes for tracks
+     * Indexes for tracks
      */
     const eventIndexes: number[] = Array<number>(midi.tracks.length).fill(0);
     let remainingTracks = midi.tracks.length;
@@ -125,25 +125,25 @@ export function modifyMIDIInternal(
         return index;
     }
 
-    // it copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
+    // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     /**
-     * midi port number for the corresponding track
+     * Midi port number for the corresponding track
      */
     const midiPorts: number[] = midi.tracks.map((t) => t.port);
     /**
-     * midi port: channel offset
+     * Midi port: channel offset
      */
     const midiPortChannelOffsets: Record<number, number> = {};
     let midiPortChannelOffset = 0;
 
     const assignMIDIPort = (trackNum: number, port: number) => {
-        // do not assign ports to empty tracks
+        // Do not assign ports to empty tracks
 
         if (midi.tracks[trackNum].channels.size === 0) {
             return;
         }
 
-        // assign new 16 channels if the port is not occupied yet
+        // Assign new 16 channels if the port is not occupied yet
         if (midiPortChannelOffset === 0) {
             midiPortChannelOffset += 16;
             midiPortChannelOffsets[port] = 0;
@@ -157,7 +157,7 @@ export function modifyMIDIInternal(
         midiPorts[trackNum] = port;
     };
 
-    // assign port offsets
+    // Assign port offsets
     midi.tracks.forEach((track, i) => {
         assignMIDIPort(i, track.port);
     });
@@ -208,7 +208,7 @@ export function modifyMIDIInternal(
             assignMIDIPort(trackNum, e.data[0]);
             continue;
         }
-        // don't clear meta
+        // Don't clear meta
         if (
             e.statusByte <= midiMessageTypes.sequenceSpecific &&
             e.statusByte >= midiMessageTypes.sequenceNumber
@@ -218,22 +218,22 @@ export function modifyMIDIInternal(
         const status = e.statusByte & 0xf0;
         const midiChannel = e.statusByte & 0xf;
         const channel = midiChannel + portOffset;
-        // clear channel?
+        // Clear channel?
         if (desiredChannelsToClear.includes(channel)) {
             deleteThisEvent();
             continue;
         }
         switch (status) {
             case midiMessageTypes.noteOn:
-                // is it first?
+                // Is it first?
                 if (isFirstNoteOn[channel]) {
                     isFirstNoteOn[channel] = false;
-                    // all right, so this is the first note on
-                    // first: controllers
-                    // because FSMP does not like program changes after cc changes in embedded midis
-                    // and since we use splice,
-                    // controllers get added first, then programs before them
-                    // now add controllers
+                    // All right, so this is the first note on
+                    // First: controllers
+                    // Because FSMP does not like program changes after cc changes in embedded midis
+                    // And since we use splice,
+                    // Controllers get added first, then programs before them
+                    // Now add controllers
                     desiredControllerChanges
                         .filter((c) => c.channel === channel)
                         .forEach((change) => {
@@ -248,7 +248,7 @@ export function modifyMIDIInternal(
                     const fineTune = fineTranspose[channel];
 
                     if (fineTune !== 0) {
-                        // add rpn
+                        // Add rpn
                         // 64 is the center, 96 = 50 cents up
                         const centsCoarse = fineTune * 64 + 64;
                         const rpnCoarse = getControllerChange(
@@ -303,10 +303,10 @@ export function modifyMIDIInternal(
                             consoleColors.recognized
                         );
 
-                        // note: this is in reverse.
-                        // the output event order is: drums -> lsb -> msb -> program change
+                        // Note: this is in reverse.
+                        // The output event order is: drums -> lsb -> msb -> program change
 
-                        // add program change
+                        // Add program change
                         const programChange = new MIDIMessage(
                             e.ticks,
                             (midiMessageTypes.programChange |
@@ -327,9 +327,9 @@ export function modifyMIDIInternal(
                             addEventBefore(bankChange);
                         };
 
-                        // on xg, add lsb
+                        // On xg, add lsb
                         if (isSystemXG(system)) {
-                            // xg drums: msb can be 120, 126 or 127
+                            // Xg drums: msb can be 120, 126 or 127
                             if (change.isDrum) {
                                 SpessaSynthInfo(
                                     `%cAdding XG Drum change on track %c${trackNum}`,
@@ -342,25 +342,25 @@ export function modifyMIDIInternal(
                                 );
                                 addBank(true, 0);
                             } else {
-                                // sfx voice is set via MSB
+                                // Sfx voice is set via MSB
                                 if (desiredBank === XG_SFX_VOICE) {
                                     addBank(false, XG_SFX_VOICE);
                                     addBank(true, 0);
                                 } else {
-                                    // add variation as LSB
+                                    // Add variation as LSB
                                     addBank(false, 0);
                                     addBank(true, desiredBank);
                                 }
                             }
                         } else {
-                            // add just msb
+                            // Add just msb
                             addBank(false, desiredBank);
 
                             if (
                                 change.isDrum &&
                                 midiChannel !== DEFAULT_PERCUSSION
                             ) {
-                                // add gs drum change
+                                // Add gs drum change
                                 SpessaSynthInfo(
                                     `%cAdding GS Drum change on track %c${trackNum}`,
                                     consoleColors.recognized,
@@ -373,7 +373,7 @@ export function modifyMIDIInternal(
                         }
                     }
                 }
-                // transpose key (for zero it won't change anyway)
+                // Transpose key (for zero it won't change anyway)
                 e.data[0] += coarseTranspose[channel];
                 break;
 
@@ -382,9 +382,9 @@ export function modifyMIDIInternal(
                 break;
 
             case midiMessageTypes.programChange:
-                // do we delete it?
+                // Do we delete it?
                 if (channelsToChangeProgram.has(channel)) {
-                    // this channel has program change. BEGONE!
+                    // This channel has program change. BEGONE!
                     deleteThisEvent();
                     continue;
                 }
@@ -399,11 +399,11 @@ export function modifyMIDIInternal(
                             ccNum === c.controllerNumber
                     );
                     if (changes !== undefined) {
-                        // this controller is locked, BEGONE CHANGE!
+                        // This controller is locked, BEGONE CHANGE!
                         deleteThisEvent();
                         continue;
                     }
-                    // bank maybe?
+                    // Bank maybe?
                     if (
                         ccNum === midiControllers.bankSelect ||
                         ccNum === midiControllers.lsbForControl0BankSelect
@@ -417,29 +417,29 @@ export function modifyMIDIInternal(
                 break;
 
             case midiMessageTypes.systemExclusive:
-                // check for xg on
+                // Check for xg on
                 if (isXGOn(e)) {
                     SpessaSynthInfo(
                         "%cXG system on detected",
                         consoleColors.info
                     );
                     system = "xg";
-                    addedGs = true; // flag as true so gs won't get added
+                    addedGs = true; // Flag as true so gs won't get added
                 } else if (
-                    e.data[0] === 0x43 && // yamaha
+                    e.data[0] === 0x43 && // Yamaha
                     e.data[2] === 0x4c && // XG
-                    e.data[3] === 0x08 && // part parameter
-                    e.data[5] === 0x03 // program change
+                    e.data[3] === 0x08 && // Part parameter
+                    e.data[5] === 0x03 // Program change
                 ) {
-                    // check for xg program change
-                    // do we delete it?
+                    // Check for xg program change
+                    // Do we delete it?
                     if (channelsToChangeProgram.has(e.data[4] + portOffset)) {
-                        // this channel has program change. BEGONE!
+                        // This channel has program change. BEGONE!
                         deleteThisEvent();
                     }
                 } else if (isGSOn(e)) {
-                    // check for GS on
-                    // that's a GS on, we're done here
+                    // Check for GS on
+                    // That's a GS on, we're done here
                     addedGs = true;
                     SpessaSynthInfo(
                         "%cGS on detected!",
@@ -447,8 +447,8 @@ export function modifyMIDIInternal(
                     );
                     break;
                 } else if (isGMOn(e) || isGM2On(e)) {
-                    // check for GM/2 on
-                    // that's a GM1 system change, remove it!
+                    // Check for GM/2 on
+                    // That's a GM1 system change, remove it!
                     SpessaSynthInfo(
                         "%cGM/2 on detected, removing!",
                         consoleColors.info
@@ -458,9 +458,9 @@ export function modifyMIDIInternal(
                 }
         }
     }
-    // check for gs
+    // Check for gs
     if (!addedGs && desiredProgramChanges.length > 0) {
-        // gs is not on, add it on the first track at index 0 (or 1 if track name is first)
+        // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)
         let index = 0;
         if (
             midi.tracks[0].events[0].statusByte === midiMessageTypes.trackName
@@ -509,7 +509,7 @@ export function applySnapshotInternal(
                 isDrum: channel.drumChannel
             });
         }
-        // check for locked controllers and change them appropriately
+        // Check for locked controllers and change them appropriately
         channel.lockedControllers.forEach((l, ccNumber) => {
             if (
                 !l ||
@@ -518,7 +518,7 @@ export function applySnapshotInternal(
             ) {
                 return;
             }
-            const targetValue = channel.midiControllers[ccNumber] >> 7; // channel controllers are stored as 14 bit values
+            const targetValue = channel.midiControllers[ccNumber] >> 7; // Channel controllers are stored as 14 bit values
             controllerChanges.push({
                 channel: channelNumber,
                 controllerNumber: ccNumber,

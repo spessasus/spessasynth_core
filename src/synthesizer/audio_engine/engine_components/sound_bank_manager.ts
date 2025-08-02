@@ -72,7 +72,7 @@ export class SoundBankManager {
         this.generatePresetList();
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new sound bank with a given ID, or replaces an existing one.
      * @param font the sound bank to add.
@@ -82,7 +82,7 @@ export class SoundBankManager {
     public addSoundBank(font: BasicSoundBank, id: string, bankOffset = 0) {
         const foundBank = this.soundBankList.find((s) => s.id === id);
         if (foundBank !== undefined) {
-            // replace
+            // Replace
             foundBank.soundBank = font;
             foundBank.bankOffset = bankOffset;
         } else {
@@ -113,7 +113,7 @@ export class SoundBankManager {
         const isDrum =
             bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));
         for (const sf of this.soundBankList) {
-            // check for the preset (with given offset)
+            // Check for the preset (with given offset)
             const preset = sf.soundBank.getPresetNoFallback(
                 bankNumber === 128 ? 128 : bankNumber - sf.bankOffset,
                 programNumber,
@@ -125,9 +125,9 @@ export class SoundBankManager {
                     bankOffset: sf.bankOffset
                 };
             }
-            // if not found, advance to the next sound bank
+            // If not found, advance to the next sound bank
         }
-        // if none found, return the first correct preset found
+        // If none found, return the first correct preset found
         if (!isDrum) {
             for (const sf of this.soundBankList) {
                 const preset = sf.soundBank.presets.find(
@@ -142,7 +142,7 @@ export class SoundBankManager {
                     };
                 }
             }
-            // if nothing at all, use the first preset
+            // If nothing at all, use the first preset
             const sf = this.soundBankList[0];
             return {
                 preset: sf.soundBank.presets[0],
@@ -150,7 +150,7 @@ export class SoundBankManager {
             };
         } else {
             for (const sf of this.soundBankList) {
-                // check for any drum type (127/128) and matching program
+                // Check for any drum type (127/128) and matching program
                 const p = sf.soundBank.presets.find(
                     (p) =>
                         p.isDrumPreset(allowXGDrums) &&
@@ -162,7 +162,7 @@ export class SoundBankManager {
                         bankOffset: sf.bankOffset
                     };
                 }
-                // check for any drum preset
+                // Check for any drum preset
                 const preset = sf.soundBank.presets.find((p) =>
                     p.isDrumPreset(allowXGDrums)
                 );
@@ -173,7 +173,7 @@ export class SoundBankManager {
                     };
                 }
             }
-            // if nothing at all, use the first preset
+            // If nothing at all, use the first preset
             const sf = this.soundBankList[0];
             return {
                 preset: sf.soundBank.presets[0],
@@ -195,11 +195,11 @@ export class SoundBankManager {
          * <"bank-program", "presetName">
          */
         const presetList: Record<string, string> = {};
-        // gather the presets in reverse and replace if necessary
+        // Gather the presets in reverse and replace if necessary
         for (let i = this.soundBankList.length - 1; i >= 0; i--) {
             const font = this.soundBankList[i];
             /**
-             * prevent preset names from the same sound bank from being overridden
+             * Prevent preset names from the same sound bank from being overridden
              * if the soundfont has two presets with matching bank and program
              */
             const presets = new Set<string>();

@@ -52,11 +52,11 @@ export function readDLSSamples(
             );
         }
         const sampleRate = readLittleEndian(fmtChunk.chunkData, 4);
-        // skip avg bytes
+        // Skip avg bytes
         readLittleEndian(fmtChunk.chunkData, 4);
-        // blockAlign
+        // BlockAlign
         readLittleEndian(fmtChunk.chunkData, 2);
-        // it's bits per sample because one channel
+        // It's bits per sample because one channel
         const wBitsPerSample = readLittleEndian(fmtChunk.chunkData, 2);
         const bytesPerSample = wBitsPerSample / 8;
 
@@ -66,7 +66,7 @@ export function readDLSSamples(
             return;
         }
 
-        // read sample name
+        // Read sample name
         const waveInfo = findRIFFListType(waveChunks, "INFO");
         let sampleName = `Unnamed ${sampleID}`;
         if (waveInfo) {
@@ -85,7 +85,7 @@ export function readDLSSamples(
             }
         }
 
-        // correct defaults
+        // Correct defaults
         let sampleKey = 60;
         let samplePitch = 0;
         let sampleLoopStart = 0;
@@ -93,33 +93,33 @@ export function readDLSSamples(
         let sampleLoopEnd = sampleLength - 1;
         let sampleDbAttenuation = 0;
 
-        // read wsmp
+        // Read wsmp
         const wsmpChunk = waveChunks.find((c) => c.header === "wsmp");
         if (wsmpChunk) {
-            // skip cbsize
+            // Skip cbsize
             readLittleEndian(wsmpChunk.chunkData, 4);
             sampleKey = readLittleEndian(wsmpChunk.chunkData, 2);
-            // section 1.14.2: Each relative pitch unit represents 1/65536 cents.
-            // but that doesn't seem true for this one: it's just cents.
+            // Section 1.14.2: Each relative pitch unit represents 1/65536 cents.
+            // But that doesn't seem true for this one: it's just cents.
             samplePitch = signedInt16(
                 wsmpChunk.chunkData[wsmpChunk.chunkData.currentIndex++],
                 wsmpChunk.chunkData[wsmpChunk.chunkData.currentIndex++]
             );
 
-            // pitch correction: convert hundreds to the root key
+            // Pitch correction: convert hundreds to the root key
             const samplePitchSemitones = Math.trunc(samplePitch / 100);
             sampleKey += samplePitchSemitones;
             samplePitch -= samplePitchSemitones * 100;
 
-            // gain is applied it manually here (literally multiplying the samples)
+            // Gain is applied it manually here (literally multiplying the samples)
             const gainCorrection = readLittleEndian(wsmpChunk.chunkData, 4);
-            // convert to signed and turn into decibels
+            // Convert to signed and turn into decibels
             sampleDbAttenuation = (gainCorrection | 0) / -655360;
-            // no idea about ful options
+            // No idea about ful options
             readLittleEndian(wsmpChunk.chunkData, 4);
             const loopsAmount = readLittleEndian(wsmpChunk.chunkData, 4);
             if (loopsAmount === 1) {
-                // skip size and type
+                // Skip size and type
                 readLittleEndian(wsmpChunk.chunkData, 8);
                 sampleLoopStart = readLittleEndian(wsmpChunk.chunkData, 4);
                 const loopSize = readLittleEndian(wsmpChunk.chunkData, 4);

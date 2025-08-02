@@ -1,9 +1,9 @@
 /**
- * unit_converter.ts
+ * Unit_converter.ts
  * purpose: converts soundfont units into more usable values with the use of lookup tables to improve performance
  */
 
-// timecent lookup table
+// Timecent lookup table
 const MIN_TIMECENT = -15000;
 const MAX_TIMECENT = 15000;
 const timecentLookupTable = new Float32Array(MAX_TIMECENT - MIN_TIMECENT + 1);
@@ -24,9 +24,9 @@ export function timecentsToSeconds(timecents: number): number {
     return timecentLookupTable[timecents - MIN_TIMECENT];
 }
 
-// abs cent lookup table
-const MIN_ABS_CENT = -20000; // freqVibLfo
-const MAX_ABS_CENT = 16500; // filterFc
+// Abs cent lookup table
+const MIN_ABS_CENT = -20000; // FreqVibLfo
+const MAX_ABS_CENT = 16500; // FilterFc
 const absoluteCentLookupTable = new Float32Array(
     MAX_ABS_CENT - MIN_ABS_CENT + 1
 );
@@ -48,7 +48,7 @@ export function absCentsToHz(cents: number): number {
     return absoluteCentLookupTable[~~cents - MIN_ABS_CENT];
 }
 
-// decibel lookup table (2 points of precision)
+// Decibel lookup table (2 points of precision)
 const MIN_DECIBELS = -1660;
 const MAX_DECIBELS = 1600;
 const decibelLookUpTable = new Float32Array(

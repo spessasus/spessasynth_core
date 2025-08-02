@@ -10,8 +10,8 @@ import type { BasicSoundBank } from "../basic_soundbank";
 import type { BasicZone } from "../basic_zone";
 
 export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
-    // very similar to imod,
-    // go through all presets -> zones and write modulators sequentially
+    // Very similar to imod,
+    // Go through all presets -> zones and write modulators sequentially
     let pmodSize = MOD_BYTE_SIZE;
     for (const preset of bank.presets) {
         pmodSize += preset.globalZone.modulators.length * MOD_BYTE_SIZE;
@@ -33,14 +33,14 @@ export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     };
 
     for (const preset of bank.presets) {
-        // global
+        // Global
         writeZone(preset.globalZone);
         for (const zone of preset.zones) {
             writeZone(zone);
         }
     }
 
-    // terminal modulator, is zero
+    // Terminal modulator, is zero
     writeLittleEndian(pmodData, 0, MOD_BYTE_SIZE);
 
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
@@ -52,6 +52,6 @@ export function getPMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     return {
         pdta: pmod,
         xdta: xpmod,
-        highestIndex: 0 // not applicable
+        highestIndex: 0 // Not applicable
     };
 }

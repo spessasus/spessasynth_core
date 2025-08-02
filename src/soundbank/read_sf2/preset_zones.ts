@@ -7,7 +7,7 @@ import type { SoundFontPreset } from "./presets";
 import { generatorTypes } from "../basic_soundbank/generator_types";
 
 /**
- * preset_zones.ts
+ * Preset_zones.ts
  * purpose: reads preset zones from soundfont and gets their respective samples and generators and modulators
  */
 
@@ -59,13 +59,13 @@ export function applyPresetZones(
             const modsStart = modStartIndexes[modIndex++];
             const modsEnd = modStartIndexes[modIndex];
             const mods = presetMods.slice(modsStart, modsEnd);
-            // check for global zone
+            // Check for global zone
             if (
                 gens.find(
                     (g) => g.generatorType === generatorTypes.instrument
                 ) !== undefined
             ) {
-                // regular zone
+                // Regular zone
                 preset.createSoundFontZone(mods, gens, instruments);
             } else {
                 // global zone

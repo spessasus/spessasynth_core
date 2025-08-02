@@ -48,12 +48,12 @@ export function getUsedProgramsAndKeys(
             bank: bank,
             bankLSB: 0,
             actualBank: bank,
-            drums: i % 16 === DEFAULT_PERCUSSION, // drums appear on 9 every 16 channels,
+            drums: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
             string: `${bank}:0`
         });
     }
 
-    // check for xg
+    // Check for xg
     let system: SynthSystem = "gs";
 
     function updateString(ch: InternalChannelType) {
@@ -63,7 +63,7 @@ export function getUsedProgramsAndKeys(
             ch.drums,
             isSystemXG(system)
         );
-        // check if this exists in the soundfont
+        // Check if this exists in the soundfont
         let existsBank, existsProgram;
         if (soundBank instanceof SoundBankManager) {
             const exists: { preset: BasicPreset; bankOffset: number } =
@@ -93,13 +93,13 @@ export function getUsedProgramsAndKeys(
     }
 
     /**
-     * find all programs used and key-velocity combos in them
+     * Find all programs used and key-velocity combos in them
      * bank:program each has a set of midiNote-velocity
      */
     const usedProgramsAndKeys: Record<string, Set<string>> = {};
 
     /**
-     * indexes for tracks
+     * Indexes for tracks
      */
     const eventIndexes: number[] = Array<number>(mid.tracks.length).fill(0);
     let remainingTracks = mid.tracks.length;
@@ -120,7 +120,7 @@ export function getUsedProgramsAndKeys(
     }
 
     const ports = mid.tracks.map((t) => t.port);
-    // initialize
+    // Initialize
     channelPresets.forEach((c) => {
         updateString(c);
     });
@@ -166,11 +166,11 @@ export function getUsedProgramsAndKeys(
                         event.data[0] !== midiControllers.bankSelect &&
                         !isLSB
                     ) {
-                        // we only care about bank select
+                        // We only care about bank select
                         continue;
                     }
                     if (system === "gs" && ch.drums) {
-                        // gs drums get changed via sysex, ignore here
+                        // Gs drums get changed via sysex, ignore here
                         continue;
                     }
                     const bank = event.data[1];
@@ -179,7 +179,7 @@ export function getUsedProgramsAndKeys(
                     } else {
                         ch.bank = bank;
                     }
-                    // interpret the bank
+                    // Interpret the bank
                     const interpretation = parseBankSelect(
                         ch.bank,
                         bank,
@@ -190,30 +190,30 @@ export function getUsedProgramsAndKeys(
                     );
                     switch (interpretation.drumsStatus) {
                         case 0:
-                            // no change
+                            // No change
                             break;
 
                         case 1:
-                            // drums changed to off
-                            // drum change is a program change
+                            // Drums changed to off
+                            // Drum change is a program change
                             ch.drums = false;
                             updateString(ch);
                             break;
 
                         case 2:
-                            // drums changed to on
-                            // drum change is a program change
+                            // Drums changed to on
+                            // Drum change is a program change
                             ch.drums = true;
                             updateString(ch);
                             break;
                     }
-                    // do not update the data, bank change doesn't change the preset
+                    // Do not update the data, bank change doesn't change the preset
                 }
                 break;
 
             case midiMessageTypes.noteOn:
                 if (event.data[1] === 0) {
-                    // that's a note off
+                    // That's a note off
                     continue;
                 }
                 usedProgramsAndKeys[ch.string].add(
@@ -222,10 +222,10 @@ export function getUsedProgramsAndKeys(
                 break;
 
             case midiMessageTypes.systemExclusive:
-                // check for drum sysex
+                // Check for drum sysex
                 {
                     if (!isGSDrumsOn(event)) {
-                        // check for XG
+                        // Check for XG
                         if (isXGOn(event)) {
                             system = "xg";
                             SpessaSynthInfo(

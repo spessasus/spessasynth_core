@@ -113,7 +113,7 @@ class XMFNode {
         const nodeStartIndex = binaryData.currentIndex;
         this.length = readVariableLengthQuantity(binaryData);
         this.itemCount = readVariableLengthQuantity(binaryData);
-        // header length
+        // Header length
         const headerLength = readVariableLengthQuantity(binaryData);
         const readBytes = binaryData.currentIndex - nodeStartIndex;
 
@@ -157,7 +157,7 @@ class XMFNode {
                         ) ?? "";
                 }
             } else {
-                // this is the length of string
+                // This is the length of string
                 const stringLength = readVariableLengthQuantity(metadataChunk);
                 fieldSpecifier = readBytesAsString(metadataChunk, stringLength);
                 key = fieldSpecifier;
@@ -172,7 +172,7 @@ class XMFNode {
                 );
                 metadataChunk.currentIndex += dataLength;
                 const formatID = readVariableLengthQuantity(contentsChunk);
-                // text only
+                // Text only
                 if (formatID < 4) {
                     this.metadata[key] = readBytesAsString(
                         contentsChunk,
@@ -184,7 +184,7 @@ class XMFNode {
                     );
                 }
             } else {
-                // throw new Error ("International content is not supported.");
+                // Throw new Error ("International content is not supported.");
                 // Skip the number of versions
                 SpessaSynthWarn(`International content: ${numberOfVersions}`);
                 // Length in bytes
@@ -231,7 +231,7 @@ class XMFNode {
                         {
                             let manufacturerID =
                                 unpackersData[unpackersData.currentIndex++];
-                            // one or three byte form, depending on if the first byte is zero
+                            // One or three byte form, depending on if the first byte is zero
                             if (manufacturerID === 0) {
                                 manufacturerID <<= 8;
                                 manufacturerID |=
@@ -283,7 +283,7 @@ class XMFNode {
                 );
         }
 
-        // read the data
+        // Read the data
         if (this.isFile) {
             if (this.packedContent) {
                 const compressed = this.nodeData.slice(2, this.nodeData.length);
@@ -306,7 +306,7 @@ class XMFNode {
                 }
             }
             /**
-             * interpret the content
+             * Interpret the content
              */
             const resourceFormat = this.metadata.resourceFormat as number[];
             if (resourceFormat === undefined) {
@@ -337,7 +337,7 @@ class XMFNode {
                 }
             }
         } else {
-            // folder node
+            // Folder node
             this.resourceFormat = "folder";
             while (this.nodeData.currentIndex < this.nodeData.length) {
                 const nodeStartIndex = this.nodeData.currentIndex;
@@ -386,7 +386,7 @@ export function loadXMF(
         consoleColors.recognized
     );
     // https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp43.pdf
-    // version 2.00 has additional bytes
+    // Version 2.00 has additional bytes
     if (version === "2.00") {
         const fileTypeId = readBigEndian(binaryData, 4);
         const fileTypeRevisionId = readBigEndian(binaryData, 4);
@@ -399,19 +399,19 @@ export function loadXMF(
         );
     }
 
-    // file length
+    // File length
     readVariableLengthQuantity(binaryData);
 
     const metadataTableLength = readVariableLengthQuantity(binaryData);
-    // skip metadata
+    // Skip metadata
     binaryData.currentIndex += metadataTableLength;
 
-    // skip to tree root
+    // Skip to tree root
     binaryData.currentIndex = readVariableLengthQuantity(binaryData);
     const rootNode = new XMFNode(binaryData);
     let midiArray: IndexedByteArray | undefined = undefined;
     /**
-     * find the stuff we care about
+     * Find the stuff we care about
      */
     const searchNode = (node: XMFNode) => {
         const checkMeta = (xmf: string, rmid: RMIDINFOChunk) => {
@@ -422,7 +422,7 @@ export function loadXMF(
                 midi.rmidiInfo[rmid] = getStringBytes(node.metadata[xmf]);
             }
         };
-        // meta
+        // Meta
         checkMeta("nodeName", rmidInfoChunks.name);
         checkMeta("title", rmidInfoChunks.name);
         checkMeta("copyrightNotice", rmidInfoChunks.copyright);

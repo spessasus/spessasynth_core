@@ -25,7 +25,7 @@ export function controllerChange(
     force = false
 ) {
     if (controllerNumber > 127) {
-        // channel configuration. force must be set to true
+        // Channel configuration. force must be set to true
         if (!force) {
             return;
         }
@@ -38,8 +38,8 @@ export function controllerChange(
         }
     }
 
-    // lsb controller values: append them as the lower nibble of the 14-bit value
-    // excluding bank select and data entry as it's handled separately
+    // Lsb controller values: append them as the lower nibble of the 14-bit value
+    // Excluding bank select and data entry as it's handled separately
     if (
         controllerNumber >= midiControllers.lsbForControl1ModulationWheel &&
         controllerNumber <= midiControllers.lsbForControl13EffectControl2 &&
@@ -49,7 +49,7 @@ export function controllerChange(
         if (this.lockedControllers[actualCCNum]) {
             return;
         }
-        // append the lower nibble to the main controller
+        // Append the lower nibble to the main controller
         this.midiControllers[actualCCNum] =
             (this.midiControllers[actualCCNum] & 0x3f80) |
             (controllerValue & 0x7f);
@@ -59,10 +59,10 @@ export function controllerChange(
         return;
     }
 
-    // apply the cc to the table
+    // Apply the cc to the table
     this.midiControllers[controllerNumber] = controllerValue << 7;
 
-    // interpret special CCs
+    // Interpret special CCs
     {
         switch (controllerNumber) {
             case midiControllers.allNotesOff:
@@ -73,7 +73,7 @@ export function controllerChange(
                 this.stopAllNotes(true);
                 break;
 
-            // special case: bank select
+            // Special case: bank select
             case midiControllers.bankSelect:
                 this.setBankSelect(controllerValue);
                 break;
@@ -82,7 +82,7 @@ export function controllerChange(
                 this.setBankSelect(controllerValue, true);
                 break;
 
-            // check for RPN and NPRN and data entry
+            // Check for RPN and NPRN and data entry
             case midiControllers.RPNLsb:
                 this.dataEntryState = dataEntryStates.RPFine;
                 break;
@@ -92,7 +92,7 @@ export function controllerChange(
                 break;
 
             case midiControllers.NRPNMsb:
-                // sf spec section 9.6.2
+                // Sf spec section 9.6.2
                 this.customControllers[customControllers.sf2NPRNGeneratorLSB] =
                     0;
                 this.dataEntryState = dataEntryStates.NRPCoarse;
@@ -103,7 +103,7 @@ export function controllerChange(
                     this.midiControllers[midiControllers.NRPNMsb] >> 7 ===
                     nonRegisteredMSB.SF2
                 ) {
-                    // if a <100 value has already been sent, reset!
+                    // If a <100 value has already been sent, reset!
                     if (
                         this.customControllers[
                             customControllers.sf2NPRNGeneratorLSB
@@ -161,7 +161,7 @@ export function controllerChange(
                 }
                 break;
 
-            // default: just compute modulators
+            // Default: just compute modulators
             default:
                 this.voices.forEach((v) =>
                     this.computeModulators(v, 1, controllerNumber)

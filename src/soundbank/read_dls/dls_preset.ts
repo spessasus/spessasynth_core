@@ -13,12 +13,12 @@ export class DLSPreset extends BasicPreset {
         ulBank: number,
         ulInstrument: number
     ) {
-        // use stock default modulators, dls won't ever have DMOD chunk
+        // Use stock default modulators, dls won't ever have DMOD chunk
         super(dls);
         this.program = ulInstrument & 127;
         const bankMSB = (ulBank >> 8) & 127;
         const bankLSB = ulBank & 127;
-        // switch accordingly
+        // Switch accordingly
         if (bankMSB > 0) {
             this.bank = bankMSB;
         } else {
@@ -26,7 +26,7 @@ export class DLSPreset extends BasicPreset {
         }
         const isDrums = ulBank >> 31;
         if (isDrums) {
-            // soundfont bank is 128, so we change it here
+            // Soundfont bank is 128, so we change it here
             this.bank = 128;
         }
 

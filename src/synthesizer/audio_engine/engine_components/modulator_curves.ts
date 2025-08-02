@@ -1,5 +1,5 @@
 /**
- * modulator_curves.ts
+ * Modulator_curves.ts
  * precomputes modulator concave and convex curves and calculates a curve value for a given polarity, direction and type
  */
 import type { ModulatorNumericBool } from "../../../soundbank/types";
@@ -8,14 +8,14 @@ import {
     modulatorCurveTypes
 } from "../../../soundbank/enums";
 
-// the length of the precomputed curve tables
+// The length of the precomputed curve tables
 export const MOD_PRECOMPUTED_LENGTH = 16384;
 
 // Precalculate lookup tables for concave and convex curves
 const concave = new Float32Array(MOD_PRECOMPUTED_LENGTH + 1);
 const convex = new Float32Array(MOD_PRECOMPUTED_LENGTH + 1);
-// the equation is taken from FluidSynth as it's the standard for soundFonts
-// more precisely, the gen_conv.c file
+// The equation is taken from FluidSynth as it's the standard for soundFonts
+// More precisely, the gen_conv.c file
 concave[0] = 0;
 concave[concave.length - 1] = 1;
 
@@ -42,29 +42,29 @@ export function getModulatorCurveValue(
     value: number,
     polarity: ModulatorNumericBool
 ): number {
-    // inverse the value if needed
+    // Inverse the value if needed
     if (direction) {
         value = 1 - value;
     }
     switch (curveType) {
         case modulatorCurveTypes.linear:
             if (polarity) {
-                // bipolar curve
+                // Bipolar curve
                 return value * 2 - 1;
             }
             return value;
 
         case modulatorCurveTypes.switch:
-            // switch
+            // Switch
             value = value > 0.5 ? 1 : 0;
             if (polarity) {
-                // multiply
+                // Multiply
                 return value * 2 - 1;
             }
             return value;
 
         case modulatorCurveTypes.concave:
-            // look up the value
+            // Look up the value
             if (polarity) {
                 value = value * 2 - 1;
                 if (value < 0) {
@@ -75,7 +75,7 @@ export function getModulatorCurveValue(
             return concave[~~(value * MOD_PRECOMPUTED_LENGTH)];
 
         case modulatorCurveTypes.convex:
-            // look up the value
+            // Look up the value
             if (polarity) {
                 value = value * 2 - 1;
                 if (value < 0) {

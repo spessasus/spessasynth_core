@@ -250,7 +250,7 @@ export interface MasterParameterType {
     midiSystem: SynthSystem;
     // Indicates whether the synthesizer is in monophonic retrigger mode.
     // This emulates the behavior of Microsoft GS Wavetable Synth,
-    // where a new note will kill the previous one if it is still playing.
+    // Where a new note will kill the previous one if it is still playing.
     monophonicRetriggerMode: boolean;
     // The reverb gain, from 0 to any number. 1 is 100% reverb.
     reverbGain: number;

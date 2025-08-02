@@ -19,7 +19,7 @@ import { readDLSSamples } from "./read_samples";
 import type { SoundBankInfoFourCC } from "../types";
 
 class DownloadableSounds extends BasicSoundBank {
-    // main array that we read from
+    // Main array that we read from
     protected dataArray: IndexedByteArray;
 
     /**
@@ -35,7 +35,7 @@ class DownloadableSounds extends BasicSoundBank {
             return;
         }
 
-        // read the main chunk
+        // Read the main chunk
         const firstChunk = readRIFFChunk(this.dataArray, false);
         this.verifyHeader(firstChunk, "riff");
         this.verifyText(
@@ -51,17 +51,17 @@ class DownloadableSounds extends BasicSoundBank {
             chunks.push(readRIFFChunk(this.dataArray));
         }
 
-        // mandatory
-        this.soundBankInfo.ifil = "2.1"; // always for dls
+        // Mandatory
+        this.soundBankInfo.ifil = "2.1"; // Always for dls
         this.soundBankInfo.isng = "E-mu 10K2";
 
-        // set some defaults
+        // Set some defaults
         this.soundBankInfo.INAM = "Unnamed DLS";
         this.soundBankInfo.IENG = "Unknown";
         this.soundBankInfo.IPRD = "SpessaSynth DLS";
         this.soundBankInfo.ICRD = new Date().toDateString();
 
-        // read info
+        // Read info
         const infoChunk = findRIFFListType(chunks, "INFO");
         if (infoChunk) {
             while (
@@ -78,7 +78,7 @@ class DownloadableSounds extends BasicSoundBank {
         }
         this.soundBankInfo.ICMT = this.soundBankInfo.ICMT ?? "(No description)";
         if (this.soundBankInfo.ISBJ) {
-            // merge it
+            // Merge it
             this.soundBankInfo.ICMT += "\n" + this.soundBankInfo.ISBJ;
             delete this.soundBankInfo.ISBJ;
         }
@@ -93,7 +93,7 @@ class DownloadableSounds extends BasicSoundBank {
             );
         }
 
-        // read "colh"
+        // Read "colh"
         const colhChunk = chunks.find((c) => c.header === "colh");
         if (!colhChunk) {
             SpessaSynthGroupEnd();
@@ -107,7 +107,7 @@ class DownloadableSounds extends BasicSoundBank {
             consoleColors.recognized
         );
 
-        // read the wave list
+        // Read the wave list
         const waveListChunk = findRIFFListType(chunks, "wvpl");
         if (!waveListChunk) {
             SpessaSynthGroupEnd();
@@ -116,7 +116,7 @@ class DownloadableSounds extends BasicSoundBank {
         }
         readDLSSamples.call(this, waveListChunk);
 
-        // read the instrument list
+        // Read the instrument list
         const instrumentListChunk = findRIFFListType(chunks, "lins");
         if (!instrumentListChunk) {
             SpessaSynthGroupEnd();
@@ -135,7 +135,7 @@ class DownloadableSounds extends BasicSoundBank {
         }
         SpessaSynthGroupEnd();
 
-        // sort presets
+        // Sort presets
         this.flush();
         SpessaSynthInfo(
             `%cParsing finished! %c"${this.soundBankInfo.INAM || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,

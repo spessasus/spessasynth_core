@@ -1,30 +1,20 @@
 import { dataBytesAmount, getChannel, MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { consoleColors } from "../utils/other";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { readRIFFChunk } from "../soundbank/basic_soundbank/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { readBytesAsString } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import {
-    type MIDIMessageType,
-    midiMessageTypes,
-    type RMIDINFOChunk,
-    rmidInfoChunks
-} from "./enums";
+import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
 import { MIDITrack } from "./midi_track";
 
 /**
- * midi_loader.ts
+ * Midi_loader.ts
  * purpose:
  * parses a midi file for the sequencer,
  * including things like marker or CC 2/4 loop detection, copyright detection, etc.
@@ -81,12 +71,12 @@ export function loadMIDIFromArrayBufferInternal(
         return chunk;
     };
 
-    // check for rmid
+    // Check for rmid
     const initialString = readBytesAsString(binaryData, 4);
     binaryData.currentIndex -= 4;
     if (initialString === "RIFF") {
-        // possibly an RMID file (https://github.com/spessasus/sf2-rmidi-specification#readme)
-        // skip size
+        // Possibly an RMID file (https://github.com/spessasus/sf2-rmidi-specification#readme)
+        // Skip size
         binaryData.currentIndex += 8;
         const rmid = readBytesAsString(binaryData, 4, false);
         if (rmid !== "RMID") {
@@ -102,10 +92,10 @@ export function loadMIDIFromArrayBufferInternal(
                 `Invalid RMIDI Chunk header! Expected "data", got "${rmid}"`
             );
         }
-        // outputMIDI is a rmid, load the midi into an array for parsing
+        // OutputMIDI is a rmid, load the midi into an array for parsing
         fileByteArray = riff.chunkData;
 
-        // keep loading chunks until we get the "SFBK" header
+        // Keep loading chunks until we get the "SFBK" header
         while (binaryData.currentIndex <= binaryData.length) {
             const startIndex = binaryData.currentIndex;
             const currentChunk = readRIFFChunk(binaryData, true);
@@ -150,7 +140,7 @@ export function loadMIDIFromArrayBufferInternal(
                         ] = infoChunk.chunkData;
                     }
                     if (outputMIDI.rmidiInfo.ICOP) {
-                        // special case, overwrites the copyright components array
+                        // Special case, overwrites the copyright components array
                         outputMIDI.copyright = readBytesAsString(
                             outputMIDI.rmidiInfo.ICOP,
                             outputMIDI.rmidiInfo.ICOP.length,
@@ -166,7 +156,7 @@ export function loadMIDIFromArrayBufferInternal(
                             false
                         ).replaceAll("\n", " ");
                     }
-                    // these can be used interchangeably
+                    // These can be used interchangeably
                     if (
                         outputMIDI.rmidiInfo.IALB &&
                         !outputMIDI.rmidiInfo.IPRD
@@ -179,7 +169,7 @@ export function loadMIDIFromArrayBufferInternal(
                     ) {
                         outputMIDI.rmidiInfo.IALB = outputMIDI.rmidiInfo.IPRD;
                     }
-                    outputMIDI.bankOffset = 1; // defaults to 1
+                    outputMIDI.bankOffset = 1; // Defaults to 1
                     if (outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset]) {
                         outputMIDI.bankOffset = readLittleEndian(
                             outputMIDI.rmidiInfo[rmidInfoChunks.bankOffset] ??
@@ -196,7 +186,7 @@ export function loadMIDIFromArrayBufferInternal(
             outputMIDI.bankOffset = 0;
         }
 
-        // if no embedded bank, assume 0
+        // If no embedded bank, assume 0
         if (outputMIDI.embeddedSoundBank === undefined) {
             outputMIDI.bankOffset = 0;
         }
@@ -221,13 +211,13 @@ export function loadMIDIFromArrayBufferInternal(
         );
     }
 
-    // format
+    // Format
     outputMIDI.format = readBigEndian(headerChunk.data, 2) as MIDIFormat;
-    // tracks count
+    // Tracks count
     const trackCount = readBigEndian(headerChunk.data, 2);
-    // time division
+    // Time division
     outputMIDI.timeDivision = readBigEndian(headerChunk.data, 2);
-    // read all the tracks
+    // Read all the tracks
     for (let i = 0; i < trackCount; i++) {
         const track = new MIDITrack();
         const trackChunk = readMIDIChunk(fileByteArray);
@@ -245,35 +235,34 @@ export function loadMIDIFromArrayBufferInternal(
         let runningByte: MIDIMessageType | undefined = undefined;
 
         let totalTicks = 0;
-        // format 2 plays sequentially
+        // Format 2 plays sequentially
         if (outputMIDI.format === 2 && i > 0) {
             totalTicks +=
                 outputMIDI.tracks[i - 1].events[
                     outputMIDI.tracks[i - 1].events.length - 1
                 ].ticks;
         }
-        // loop until we reach the end of track
+        // Loop until we reach the end of track
         while (trackChunk.data.currentIndex < trackChunk.size) {
             totalTicks += readVariableLengthQuantity(trackChunk.data);
 
-            // check if the status byte is valid (IE. larger than 127)
+            // Check if the status byte is valid (IE. larger than 127)
             const statusByteCheck =
                 trackChunk.data[trackChunk.data.currentIndex];
 
             let statusByte: MIDIMessageType;
-            // if we have a running byte and the status byte isn't valid
+            // If we have a running byte and the status byte isn't valid
             if (runningByte !== undefined && statusByteCheck < 0x80) {
                 statusByte = runningByte;
             } else {
-                // noinspection PointlessBooleanExpressionJS
-                if (runningByte === undefined && statusByteCheck < 0x80) {
-                    // if we don't have a running byte and the status byte isn't valid, it's an error.
+                if (statusByteCheck < 0x80) {
+                    // If we don't have a running byte and the status byte isn't valid, it's an error.
                     SpessaSynthGroupEnd();
                     throw new SyntaxError(
                         `Unexpected byte with no running byte. (${statusByteCheck})`
                     );
                 } else {
-                    // if the status byte is valid, use that
+                    // If the status byte is valid, use that
                     statusByte = trackChunk.data[
                         trackChunk.data.currentIndex++
                     ] as MIDIMessageType;
@@ -283,15 +272,15 @@ export function loadMIDIFromArrayBufferInternal(
 
             let eventDataLength;
 
-            // determine the message's length;
+            // Determine the message's length;
             switch (statusByteChannel) {
                 case -1:
-                    // system common/realtime (no length)
+                    // System common/realtime (no length)
                     eventDataLength = 0;
                     break;
 
                 case -2:
-                    // meta (the next is the actual status byte)
+                    // Meta (the next is the actual status byte)
                     statusByte = trackChunk.data[
                         trackChunk.data.currentIndex++
                     ] as MIDIMessageType;
@@ -301,26 +290,26 @@ export function loadMIDIFromArrayBufferInternal(
                     break;
 
                 case -3:
-                    // sysex
+                    // Sysex
                     eventDataLength = readVariableLengthQuantity(
                         trackChunk.data
                     );
                     break;
 
                 default:
-                    // voice message
-                    // gets the midi message length
+                    // Voice message
+                    // Gets the midi message length
                     eventDataLength =
                         dataBytesAmount[
                             (statusByte >> 4) as keyof typeof dataBytesAmount
                         ];
-                    // save the status byte
+                    // Save the status byte
                     runningByte = statusByte;
                     break;
             }
 
             if (statusByte !== midiMessageTypes.endOfTrack) {
-                // put the event data into the array
+                // Put the event data into the array
                 const eventData = new IndexedByteArray(eventDataLength);
                 eventData.set(
                     trackChunk.data.slice(
@@ -337,7 +326,7 @@ export function loadMIDIFromArrayBufferInternal(
                 track.pushEvent(event);
             }
 
-            // advance the track chunk
+            // Advance the track chunk
             trackChunk.data.currentIndex += eventDataLength;
         }
         outputMIDI.tracks.push(track);
@@ -352,7 +341,7 @@ export function loadMIDIFromArrayBufferInternal(
     }
 
     SpessaSynthInfo(`%cAll tracks parsed correctly!`, consoleColors.recognized);
-    // parse the events (no need to sort as they are already sorted by the SMF specification)
+    // Parse the events (no need to sort as they are already sorted by the SMF specification)
     outputMIDI.flush(false);
     SpessaSynthGroupEnd();
     SpessaSynthInfo(

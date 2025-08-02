@@ -1,4 +1,4 @@
-// all the midi statuses dictionary
+// All the midi statuses dictionary
 export const midiMessageTypes = {
     noteOff: 0x80,
     noteOn: 0x90,
@@ -40,7 +40,7 @@ export const midiMessageTypes = {
 export type MIDIMessageType =
     (typeof midiMessageTypes)[keyof typeof midiMessageTypes];
 
-// all midi controllers dictionary
+// All midi controllers dictionary
 export const midiControllers = {
     bankSelect: 0,
     modulationWheel: 1,

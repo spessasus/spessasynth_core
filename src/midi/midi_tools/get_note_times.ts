@@ -17,22 +17,22 @@ export function getNoteTimesInternal(
     minDrumLength = 0
 ): NoteTime[][] {
     /**
-     * gets tempo from the midi message
+     * Gets tempo from the midi message
      * @param event the midi event
      * @return the tempo in bpm
      */
     const getTempo = (event: MIDIMessage): number => {
-        // simulate IndexedByteArray
+        // Simulate IndexedByteArray
         event.data = new IndexedByteArray(event.data.buffer);
         event.data.currentIndex = 0;
         return 60000000 / readBigEndian(event.data, 3);
     };
 
     /**
-     * an array of 16 arrays (channels)
+     * An array of 16 arrays (channels)
      */
     const noteTimes: NoteTime[][] = [];
-    // flatten and sort by ticks
+    // Flatten and sort by ticks
     const trackData = midi.tracks.map((t) => t.events);
     const events = trackData.flat();
     events.sort((e1, e2) => e1.ticks - e2.ticks);
@@ -59,7 +59,7 @@ export function getNoteTimesInternal(
             if (channel === DEFAULT_PERCUSSION) {
                 note.length = time < minDrumLength ? minDrumLength : time;
             }
-            // delete from unfinished
+            // Delete from unfinished
             unfinishedNotes[channel].splice(noteIndex, 1);
         }
         unfinished--;
@@ -70,17 +70,17 @@ export function getNoteTimesInternal(
         const status = event.statusByte >> 4;
         const channel = event.statusByte & 0x0f;
 
-        // note off
+        // Note off
         if (status === 0x8) {
             noteOff(event.data[0], channel);
         }
-        // note on
+        // Note on
         else if (status === 0x9) {
             if (event.data[1] === 0) {
-                // never mind, its note off
+                // Never mind, its note off
                 noteOff(event.data[0], channel);
             } else {
-                // stop previous
+                // Stop previous
                 noteOff(event.data[0], channel);
                 const noteTime = {
                     midiNote: event.data[0],
@@ -93,7 +93,7 @@ export function getNoteTimesInternal(
                 unfinished++;
             }
         }
-        // set tempo
+        // Set tempo
         else if (event.statusByte === 0x51) {
             oneTickToSeconds = 60 / (getTempo(event) * midi.timeDivision);
         }
@@ -106,9 +106,9 @@ export function getNoteTimesInternal(
             oneTickToSeconds * (events[eventIndex].ticks - event.ticks);
     }
 
-    // finish the unfinished notes
+    // Finish the unfinished notes
     if (unfinished > 0) {
-        // for every channel, for every note that is unfinished (has -1 length)
+        // For every channel, for every note that is unfinished (has -1 length)
         unfinishedNotes.forEach((channelNotes, channel) => {
             channelNotes.forEach((note) => {
                 const time = elapsedTime - note.start;

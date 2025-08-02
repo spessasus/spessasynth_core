@@ -46,7 +46,7 @@ export class Generator {
 }
 
 /**
- * generator.ts
+ * Generator.ts
  * purpose: contains enums for generators,
  * and their limits parses reads soundfont generators, sums them and applies limits
  */
@@ -77,9 +77,9 @@ export function addAndClampGenerator(
         instValue = instrGen.generatorValue;
     }
 
-    // limits are applied in the compute_modulator function
-    // clamp to prevent short from overflowing
-    // testcase: Sega Genesis soundfont (spessasynth/#169) adds 20,999 and the default 13,500 to initialFilterFc
-    // which is more than 32k
+    // Limits are applied in the compute_modulator function
+    // Clamp to prevent short from overflowing
+    // Testcase: Sega Genesis soundfont (spessasynth/#169) adds 20,999 and the default 13,500 to initialFilterFc
+    // Which is more than 32k
     return Math.max(-32767, Math.min(32767, instValue + presetValue));
 }

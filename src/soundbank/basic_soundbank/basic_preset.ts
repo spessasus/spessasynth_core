@@ -41,15 +41,15 @@ export class BasicPreset {
     public readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
 
     /**
-     * unused metadata
+     * Unused metadata
      */
     public library = 0;
     /**
-     * unused metadata
+     * Unused metadata
      */
     public genre = 0;
     /**
-     * unused metadata
+     * Unused metadata
      */
     public morphology = 0;
 
@@ -68,7 +68,7 @@ export class BasicPreset {
      */
     public isDrumPreset(allowXG: boolean, allowSFX = false): boolean {
         const xg = allowXG && this.parentSoundBank.isXGBank;
-        // sfx is not cool
+        // Sfx is not cool
         return (
             this.bank === 128 ||
             (xg && isXGDrums(this.bank) && (this.bank !== 126 || allowSFX))
@@ -99,7 +99,7 @@ export class BasicPreset {
         return z;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Preloads all samples for a given range
      */
@@ -153,7 +153,7 @@ export class BasicPreset {
         const parsedGeneratorsAndSamples: SampleAndGenerators[] = [];
 
         /**
-         * global zone is always first, so it or nothing
+         * Global zone is always first, so it or nothing
          */
         const globalPresetGenerators: Generator[] = [
             ...this.globalZone.generators
@@ -165,7 +165,7 @@ export class BasicPreset {
         const globalKeyRange = this.globalZone.keyRange;
         const globalVelRange = this.globalZone.velRange;
 
-        // find the preset zones in range
+        // Find the preset zones in range
         const presetZonesInRange = this.zones.filter(
             (currentZone) =>
                 isInRange(
@@ -184,14 +184,14 @@ export class BasicPreset {
 
         presetZonesInRange.forEach((presetZone) => {
             const instrument = presetZone.instrument;
-            // the global zone is already taken into account earlier
+            // The global zone is already taken into account earlier
             if (!instrument || instrument.zones.length < 1) {
                 return;
             }
             const presetGenerators = presetZone.generators;
             const presetModulators = presetZone.modulators;
             /**
-             * global zone is always first, so it or nothing
+             * Global zone is always first, so it or nothing
              */
             const globalInstrumentGenerators: Generator[] = [
                 ...instrument.globalZone.generators
@@ -223,22 +223,22 @@ export class BasicPreset {
                 const instrumentModulators = [...instrumentZone.modulators];
 
                 addUnique(presetGenerators, globalPresetGenerators);
-                // add the unique global preset generators (local replace global(
+                // Add the unique global preset generators (local replace global(
 
-                // add the unique global instrument generators (local replace global)
+                // Add the unique global instrument generators (local replace global)
                 addUnique(instrumentGenerators, globalInstrumentGenerators);
 
                 addUniqueMods(presetModulators, globalPresetModulators);
                 addUniqueMods(instrumentModulators, globalInstrumentModulators);
 
-                // default mods
+                // Default mods
                 addUniqueMods(
                     instrumentModulators,
                     this.parentSoundBank.defaultModulators
                 );
 
                 /**
-                 * sum preset modulators to instruments (amount) sf spec page 54
+                 * Sum preset modulators to instruments (amount) sf spec page 54
                  */
                 const finalModulatorList: Modulator[] = [
                     ...instrumentModulators
@@ -249,9 +249,9 @@ export class BasicPreset {
                             Modulator.isIdentical(mod, m)
                         );
                     if (identicalInstrumentModulator !== -1) {
-                        // sum the amounts
-                        // this makes a new modulator
-                        // because otherwise it would overwrite the one in the soundfont!
+                        // Sum the amounts
+                        // This makes a new modulator
+                        // Because otherwise it would overwrite the one in the soundfont!
                         finalModulatorList[identicalInstrumentModulator] =
                             finalModulatorList[
                                 identicalInstrumentModulator
@@ -262,7 +262,7 @@ export class BasicPreset {
                 }
 
                 if (instrumentZone.sample) {
-                    // combine both generators and add to the final result
+                    // Combine both generators and add to the final result
                     parsedGeneratorsAndSamples.push({
                         instrumentGenerators: instrumentGenerators,
                         presetGenerators: presetGenerators,

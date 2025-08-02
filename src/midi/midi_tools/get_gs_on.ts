@@ -14,9 +14,9 @@ export function getGsOn(ticks: number): MIDIMessage {
             0x40, // System parameter - Address
             0x00, // Global parameter -  Address
             0x7f, // GS Change - Address
-            0x00, // turn on - Data
-            0x41, // checksum
-            0xf7 // end of exclusive
+            0x00, // Turn on - Data
+            0x41, // Checksum
+            0xf7 // End of exclusive
         ])
     );
 }

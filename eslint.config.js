@@ -1,11 +1,10 @@
 import globals from "globals";
-import tseslint, * as eslint from "typescript-eslint";
+import tseslint from "typescript-eslint";
 
 export default tseslint.config(
     { ignores: ["dist"] },
     {
         extends: [
-            eslint.configs.recommended,
             tseslint.configs.recommendedTypeChecked,
             tseslint.configs.stylisticTypeChecked
         ],
@@ -21,7 +20,8 @@ export default tseslint.config(
         rules: {
             "@typescript-eslint/no-unused-vars": "error",
             "@typescript-eslint/explicit-member-accessibility": "error",
-            "@typescript-eslint/no-deprecated": "error"
+            "@typescript-eslint/no-deprecated": "error",
+            "capitalized-comments": "error"
         }
     }
 );

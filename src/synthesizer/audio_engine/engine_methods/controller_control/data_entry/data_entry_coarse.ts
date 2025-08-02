@@ -49,7 +49,7 @@ const nonRegisteredGSLSB = {
  * @param dataValue The value to set for the data entry coarse controller (0-127).
  */
 export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
-    // store in cc table
+    // Store in cc table
     this.midiControllers[midiControllers.dataEntryMsb] = dataValue << 7;
     /*
     A note on this vibrato.
@@ -91,7 +91,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
         case dataEntryStates.Idle:
             break;
 
-        // process GS NRPNs
+        // Process GS NRPNs
         case dataEntryStates.NRPFine: {
             if (this.lockGSNRPNParams) {
                 return;
@@ -105,7 +105,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
             switch (NRPNCoarse) {
                 default:
                     if (dataValue === 64) {
-                        // default value
+                        // Default value
                         return;
                     }
                     SpessaSynthWarn(
@@ -123,12 +123,12 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     );
                     break;
 
-                // part parameters: vibrato, cutoff
+                // Part parameters: vibrato, cutoff
                 case nonRegisteredMSB.partParameter:
                     switch (NRPNFine) {
                         default:
                             if (dataValue === 64) {
-                                // default value
+                                // Default value
                                 return;
                             }
                             SpessaSynthWarn(
@@ -144,7 +144,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // vibrato rate
+                        // Vibrato rate
                         case nonRegisteredGSLSB.vibratoRate:
                             if (dataValue === 64) {
                                 return;
@@ -158,7 +158,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // vibrato depth
+                        // Vibrato depth
                         case nonRegisteredGSLSB.vibratoDepth:
                             if (dataValue === 64) {
                                 return;
@@ -172,7 +172,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // vibrato delay
+                        // Vibrato delay
                         case nonRegisteredGSLSB.vibratoDelay:
                             if (dataValue === 64) {
                                 return;
@@ -186,9 +186,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // filter cutoff
+                        // Filter cutoff
                         case nonRegisteredGSLSB.TVFFilterCutoff:
-                            // affect the "brightness" controller as we have a default modulator that controls it
+                            // Affect the "brightness" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.brightness,
                                 dataValue
@@ -196,9 +196,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             coolInfo("Filter cutoff", dataValue.toString(), "");
                             break;
 
-                        // attack time
+                        // Attack time
                         case nonRegisteredGSLSB.EGAttackTime:
-                            // affect the "attack time" controller as we have a default modulator that controls it
+                            // Affect the "attack time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.attackTime,
                                 dataValue
@@ -210,9 +210,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // release time
+                        // Release time
                         case nonRegisteredGSLSB.EGReleaseTime:
-                            // affect the "release time" controller as we have a default modulator that controls it
+                            // Affect the "release time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.releaseTime,
                                 dataValue
@@ -232,9 +232,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                 // SF2 NRPN
                 case nonRegisteredMSB.SF2: {
                     if (NRPNFine > 100) {
-                        // sf spec:
+                        // Sf spec:
                         // Note that NRPN Select LSB greater than 100 are for setup only, and should not be used on their own to select a
-                        // generator parameter.
+                        // Generator parameter.
                         break;
                     }
                     const gen = this.customControllers[
@@ -266,7 +266,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     );
                     break;
 
-                // pitch bend range
+                // Pitch bend range
                 case registeredParameterTypes.pitchBendRange:
                     this.midiControllers[
                         NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
@@ -278,9 +278,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     );
                     break;
 
-                // coarse tuning
+                // Coarse tuning
                 case registeredParameterTypes.coarseTuning: {
-                    // semitones
+                    // Semitones
                     const semitones = dataValue - 64;
                     this.setCustomController(
                         customControllers.channelTuningSemitones,
@@ -294,14 +294,14 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     break;
                 }
 
-                // fine-tuning
+                // Fine-tuning
                 case registeredParameterTypes.fineTuning:
-                    // note: this will not work properly unless the lsb is sent!
-                    // here we store the raw value to then adjust in fine
+                    // Note: this will not work properly unless the lsb is sent!
+                    // Here we store the raw value to then adjust in fine
                     this.setTuning(dataValue - 64, false);
                     break;
 
-                // modulation depth
+                // Modulation depth
                 case registeredParameterTypes.modulationDepth:
                     this.setModulationDepth(dataValue * 100);
                     break;

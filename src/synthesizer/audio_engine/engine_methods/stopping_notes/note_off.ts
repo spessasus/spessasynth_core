@@ -14,15 +14,15 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    // adjust the midi note with the channel transpose key shift
+    // Adjust the midi note with the channel transpose key shift
     const realKey =
         midiNote +
         this.channelTransposeKeyShift +
         this.customControllers[customControllers.channelKeyShift];
 
-    // if high performance mode, kill notes instead of stopping them
+    // If high performance mode, kill notes instead of stopping them
     if (this.synthProps.masterParameters.blackMIDIMode) {
-        // if the channel is percussion channel, do not kill the notes
+        // If the channel is percussion channel, do not kill the notes
         if (!this.drumChannel) {
             this.killNote(realKey, -6950);
             this.synthProps.callEvent("noteOff", {
@@ -38,7 +38,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         if (v.realKey !== realKey || v.isInRelease) {
             return;
         }
-        // if hold pedal, move to sustain
+        // If hold pedal, move to sustain
         if (this.holdPedal) {
             this.sustainedVoices.push(v);
         } else {

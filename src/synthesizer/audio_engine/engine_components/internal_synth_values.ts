@@ -12,7 +12,7 @@ import { DEFAULT_MASTER_PARAMETERS } from "./master_parameters";
 // Essentially think like all these belong to SpessaSynthProcessor and are "protected".
 export class ProtectedSynthValues {
     /**
-     * this.tunings[program][key] = tuning
+     * This.tunings[program][key] = tuning
      */
     public readonly tunings: MTSProgramTuning[] = [];
 
@@ -31,11 +31,11 @@ export class ProtectedSynthValues {
      */
     public chorusSend = 1;
     /**
-     * the pan of the left channel
+     * The pan of the left channel
      */
     public panLeft = 0.5;
     /**
-     * the pan of the right channel
+     * The pan of the right channel
      */
     public panRight = 0.5;
     /**
@@ -47,13 +47,13 @@ export class ProtectedSynthValues {
      */
     public drumPreset: BasicPreset | undefined;
 
-    // volume envelope smoothing factor, adjusted to the sample rate.
+    // Volume envelope smoothing factor, adjusted to the sample rate.
     public readonly volumeEnvelopeSmoothingFactor: number;
 
-    // pan smoothing factor, adjusted to the sample rate.
+    // Pan smoothing factor, adjusted to the sample rate.
     public readonly panSmoothingFactor: number;
 
-    // filter smoothing factor, adjusted to the sample rate.
+    // Filter smoothing factor, adjusted to the sample rate.
     public readonly filterSmoothingFactor: number;
     /**
      * Calls when an event occurs.

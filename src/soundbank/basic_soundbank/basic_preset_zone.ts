@@ -25,7 +25,7 @@ export class BasicPresetZone extends BasicZone {
         this.instrument.linkTo(this.parentPreset);
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Sets an instrument for this zone.
      * @param instrument the instrument to use.

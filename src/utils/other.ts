@@ -1,5 +1,5 @@
 /**
- * other.ts
+ * Other.ts
  * purpose: contains some useful functions that don't belong in any specific category
  */
 
@@ -40,7 +40,7 @@ export function arrayToHexString(arr: Iterable<number>): string {
 /**
  * Sanitizes KAR lyrics
  */
-// export function sanitizeKarLyrics(eventData: Uint8Array): Uint8Array {
+// Export function sanitizeKarLyrics(eventData: Uint8Array): Uint8Array {
 //     // for KAR files:
 //     // https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
 //     // "/" is the newline character
@@ -48,14 +48,14 @@ export function arrayToHexString(arr: Iterable<number>): string {
 //     // "\" ASCII code is 92
 //     // "/" ASCII code is 47
 //     // newline ASCII code is 10
-//     const sanitized = [];
-//     for (let byte of eventData) {
-//         if (byte === 47 || byte === 92) {
-//             byte = 10;
+//     Const sanitized = [];
+//     For (let byte of eventData) {
+//         If (byte === 47 || byte === 92) {
+//             Byte = 10;
 //         }
-//         sanitized.push(byte);
+//         Sanitized.push(byte);
 //     }
-//     return new Uint8Array(sanitized);
+//     Return new Uint8Array(sanitized);
 // }
 
 export const consoleColors = {

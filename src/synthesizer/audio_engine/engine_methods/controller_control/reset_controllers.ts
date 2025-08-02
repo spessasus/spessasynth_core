@@ -36,7 +36,7 @@ export function resetAllControllersInternal(
         const ch: MIDIChannel = this.midiChannels[channelNumber];
 
         ch.resetControllers();
-        // if preset is unlocked, switch to non-drums and call event
+        // If preset is unlocked, switch to non-drums and call event
         if (
             !ch.lockPreset &&
             this.privateProps.drumPreset &&
@@ -66,12 +66,12 @@ export function resetAllControllersInternal(
                 isDrumChannel: ch.drumChannel
             });
         }
-        // safety net
+        // Safety net
         if (!ch.preset) {
             continue;
         }
         const presetBank = ch.preset?.bank;
-        // call program change
+        // Call program change
         this.privateProps.callEvent("programChange", {
             channel: channelNumber,
             program: ch.preset?.program,
@@ -80,7 +80,7 @@ export function resetAllControllersInternal(
 
         for (let ccNum = 0; ccNum < 128; ccNum++) {
             if (this.midiChannels[channelNumber].lockedControllers[ccNum]) {
-                // was not reset so restore the value
+                // Was not reset so restore the value
                 this.privateProps.callEvent("controllerChange", {
                     channel: channelNumber,
                     controllerNumber: ccNum,
@@ -92,7 +92,7 @@ export function resetAllControllersInternal(
             }
         }
 
-        // restore pitch wheel
+        // Restore pitch wheel
         if (
             !this.midiChannels[channelNumber].lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
@@ -111,7 +111,7 @@ export function resetAllControllersInternal(
             });
         }
 
-        // restore channel pressure
+        // Restore channel pressure
         if (
             !this.midiChannels[channelNumber].lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
@@ -144,7 +144,7 @@ export function resetAllControllersInternal(
 export function resetControllers(this: MIDIChannel) {
     this.channelOctaveTuning.fill(0);
 
-    // reset the array
+    // Reset the array
     for (let i = 0; i < resetArray.length; i++) {
         if (this.lockedControllers[i]) {
             continue;
@@ -164,7 +164,7 @@ export function resetControllers(this: MIDIChannel) {
                 this.controllerChange(i, resetValue >> 7);
             }
         } else {
-            // out of range, do a regular reset
+            // Out of range, do a regular reset
             this.midiControllers[i] = resetValue;
         }
     }
@@ -174,8 +174,8 @@ export function resetControllers(this: MIDIChannel) {
 
     this.sysExModulators.resetModulators();
 
-    // reset custom controllers
-    // special case: transpose does not get affected
+    // Reset custom controllers
+    // Special case: transpose does not get affected
     const transpose =
         this.customControllers[customControllers.channelTransposeFine];
     this.customControllers.set(customResetArray);
@@ -212,10 +212,10 @@ export const nonResettableCCs = new Set<MIDIController>([
  * Reset controllers according to RP-15 Recommended Practice.
  */
 export function resetControllersRP15Compliant(this: MIDIChannel) {
-    // reset tunings
+    // Reset tunings
     this.channelOctaveTuning.fill(0);
 
-    // reset pitch bend
+    // Reset pitch bend
     this.pitchWheel(64, 0);
 
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
@@ -244,7 +244,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
  */
 export function resetParameters(this: MIDIChannel) {
     /**
-     * reset the state machine to idle
+     * Reset the state machine to idle
      */
     this.dataEntryState = dataEntryStates.Idle;
     this.midiControllers[midiControllers.NRPNLsb] = 127 << 7;

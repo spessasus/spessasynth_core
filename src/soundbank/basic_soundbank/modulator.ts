@@ -14,7 +14,7 @@ import {
 import { midiControllers } from "../../midi/enums";
 
 /**
- * modulators.ts
+ * Modulators.ts
  * purpose: parses soundfont modulators and the source enums, also includes the default modulators list
  **/
 
@@ -42,7 +42,7 @@ const defaultResonantModSource = getModSourceEnum(
     0,
     1,
     midiControllers.filterResonance
-); // linear forwards bipolar cc 74
+); // Linear forwards bipolar cc 74
 
 export class Modulator {
     /**
@@ -100,12 +100,12 @@ export class Modulator {
     public sourceUsesCC: ModulatorNumericBool;
 
     /**
-     * source index/CC number.
+     * Source index/CC number.
      */
     public sourceIndex: ModulatorSource;
 
     /**
-     * source curve type
+     * Source curve type
      */
     public sourceCurveType: ModulatorCurveType;
 
@@ -126,12 +126,12 @@ export class Modulator {
     public secSrcUsesCC: ModulatorNumericBool;
 
     /**
-     * secondary source index/CC number
+     * Secondary source index/CC number
      */
     public secSrcIndex: ModulatorSource;
 
     /**
-     * secondary source curve type
+     * Secondary source curve type
      */
     public secSrcCurveType: ModulatorCurveType;
 
@@ -174,7 +174,7 @@ export class Modulator {
         this.isDefaultResonantModulator = isDefaultResonantModulator;
 
         if (this.destination > MAX_GENERATOR) {
-            this.destination = generatorTypes.INVALID; // flag as invalid (for linked ones)
+            this.destination = generatorTypes.INVALID; // Flag as invalid (for linked ones)
         }
     }
 
@@ -232,7 +232,7 @@ export class Modulator {
         );
     }
 
-    // gets the modulator source enum
+    // Gets the modulator source enum
     public getSourceEnum() {
         return getModSourceEnum(
             this.sourceCurveType,
@@ -243,7 +243,7 @@ export class Modulator {
         );
     }
 
-    // gets the modulator secondary source enum
+    // Gets the modulator secondary source enum
     public getSecSrcEnum() {
         return getModSourceEnum(
             this.secSrcCurveType,
@@ -282,7 +282,7 @@ export class Modulator {
 
 export class DecodedModulator extends Modulator {
     /**
-     * reads an SF2 modulator
+     * Reads an SF2 modulator
      * @param sourceEnum SF2 source enum
      * @param secondarySourceEnum SF2 secondary source enum
      * @param destination destination
@@ -296,14 +296,14 @@ export class DecodedModulator extends Modulator {
         amount: number,
         transformType: number
     ) {
-        // decode the source
+        // Decode the source
         const sourcePolarity = ((sourceEnum >> 9) & 1) as ModulatorNumericBool;
         const sourceDirection = ((sourceEnum >> 8) & 1) as ModulatorNumericBool;
         const sourceUsesCC = ((sourceEnum >> 7) & 1) as ModulatorNumericBool;
         const sourceIndex = (sourceEnum & 127) as ModulatorSourceEnum;
         const sourceCurveType = ((sourceEnum >> 10) & 3) as ModulatorCurveType;
 
-        // decode the secondary source
+        // Decode the secondary source
         const secSrcPolarity = ((secondarySourceEnum >> 9) &
             1) as ModulatorNumericBool;
         const secSrcDirection = ((secondarySourceEnum >> 8) &
@@ -349,7 +349,7 @@ export const DEFAULT_ATTENUATION_MOD_AMOUNT = 960;
 export const DEFAULT_ATTENUATION_MOD_CURVE_TYPE = modulatorCurveTypes.concave;
 
 const defaultSoundFont2Modulators = [
-    // vel to attenuation
+    // Vel to attenuation
     new DecodedModulator(
         getModSourceEnum(
             DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
@@ -364,10 +364,10 @@ const defaultSoundFont2Modulators = [
         0
     ),
 
-    // mod wheel to vibrato
+    // Mod wheel to vibrato
     new DecodedModulator(0x0081, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
 
-    // vol to attenuation
+    // Vol to attenuation
     new DecodedModulator(
         getModSourceEnum(
             DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
@@ -382,17 +382,17 @@ const defaultSoundFont2Modulators = [
         0
     ),
 
-    // channel pressure to vibrato
+    // Channel pressure to vibrato
     new DecodedModulator(0x000d, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
 
-    // pitch wheel to tuning
+    // Pitch wheel to tuning
     new DecodedModulator(0x020e, 0x0010, generatorTypes.fineTune, 12700, 0),
 
-    // pan to uhh, pan
-    // amount is 500 instead of 1000, see #59
+    // Pan to uhh, pan
+    // Amount is 500 instead of 1000, see #59
     new DecodedModulator(0x028a, 0x0, generatorTypes.pan, 500, 0),
 
-    // expression to attenuation
+    // Expression to attenuation
     new DecodedModulator(
         getModSourceEnum(
             DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
@@ -407,16 +407,16 @@ const defaultSoundFont2Modulators = [
         0
     ),
 
-    // reverb effects to send
+    // Reverb effects to send
     new DecodedModulator(0x00db, 0x0, generatorTypes.reverbEffectsSend, 200, 0),
 
-    // chorus effects to send
+    // Chorus effects to send
     new DecodedModulator(0x00dd, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
 ];
 
 const defaultSpessaSynthModulators = [
-    // custom modulators heck yeah
-    // poly pressure to vibrato
+    // Custom modulators heck yeah
+    // Poly pressure to vibrato
     new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
@@ -431,7 +431,7 @@ const defaultSpessaSynthModulators = [
         0
     ),
 
-    // cc 92 (tremolo) to modLFO volume
+    // Cc 92 (tremolo) to modLFO volume
     new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
@@ -439,14 +439,14 @@ const defaultSpessaSynthModulators = [
             0,
             1,
             midiControllers.tremoloDepth
-        ) /*linear forward unipolar cc 92 */,
-        0x0, // no controller
+        ) /*Linear forward unipolar cc 92 */,
+        0x0, // No controller
         generatorTypes.modLfoToVolume,
         24,
         0
     ),
 
-    // cc 73 (attack time) to volEnv attack
+    // Cc 73 (attack time) to volEnv attack
     new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.convex,
@@ -454,14 +454,14 @@ const defaultSpessaSynthModulators = [
             0,
             1,
             midiControllers.attackTime
-        ), // linear forward bipolar cc 72
-        0x0, // no controller
+        ), // Linear forward bipolar cc 72
+        0x0, // No controller
         generatorTypes.attackVolEnv,
         6000,
         0
     ),
 
-    // cc 72 (release time) to volEnv release
+    // Cc 72 (release time) to volEnv release
     new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
@@ -469,14 +469,14 @@ const defaultSpessaSynthModulators = [
             0,
             1,
             midiControllers.releaseTime
-        ), // linear forward bipolar cc 72
-        0x0, // no controller
+        ), // Linear forward bipolar cc 72
+        0x0, // No controller
         generatorTypes.releaseVolEnv,
         3600,
         0
     ),
 
-    // cc 74 (brightness) to filterFc
+    // Cc 74 (brightness) to filterFc
     new DecodedModulator(
         getModSourceEnum(
             modulatorCurveTypes.linear,
@@ -484,17 +484,17 @@ const defaultSpessaSynthModulators = [
             0,
             1,
             midiControllers.brightness
-        ), // linear forwards bipolar cc 74
-        0x0, // no controller
+        ), // Linear forwards bipolar cc 74
+        0x0, // No controller
         generatorTypes.initialFilterFc,
         6000,
         0
     ),
 
-    // cc 71 (filter Q) to filter Q (default resonant modulator)
+    // Cc 71 (filter Q) to filter Q (default resonant modulator)
     new DecodedModulator(
         defaultResonantModSource,
-        0x0, // no controller
+        0x0, // No controller
         generatorTypes.initialFilterQ,
         250,
         0

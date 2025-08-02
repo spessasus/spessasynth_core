@@ -8,7 +8,7 @@ import type { BasicZone } from "../basic_zone";
 const BAG_SIZE = 4;
 
 export function getPBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
-    // write all pbag with their start indexes as they were changed in getPGEN() and getPMOD()
+    // Write all pbag with their start indexes as they were changed in getPGEN() and getPMOD()
     const pbagSize = bank.presets.reduce(
         (sum, i) =>
             // +1 because global zone
@@ -31,13 +31,13 @@ export function getPBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     };
 
     for (const preset of bank.presets) {
-        // global
+        // Global
         writeZone(preset.globalZone);
         for (const pbag of preset.zones) {
             writeZone(pbag);
         }
     }
-    // write the terminal PBAG
+    // Write the terminal PBAG
     writeWord(pbagData, generatorIndex);
     writeWord(pbagData, modulatorIndex);
     writeWord(xpbagData, generatorIndex);

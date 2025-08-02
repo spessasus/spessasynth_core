@@ -19,8 +19,8 @@ export const DEFAULT_SYNTH_MODE: SynthSystem = "gs";
 
 export const ALL_CHANNELS_OR_DIFFERENT_ACTION = -1;
 
-// used globally to identify the embedded sound bank
-// this is used to prevent the embedded bank from being deleted.
+// Used globally to identify the embedded sound bank
+// This is used to prevent the embedded bank from being deleted.
 export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()}_DO_NOT_DELETE`;
 
 export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32767;
@@ -28,9 +28,9 @@ export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32767;
 export const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
     time: 0
 };
-// if the note is released faster than that, it forced to last that long
-// this is used mostly for drum channels, where a lot of midis like to send instant note off after a note on
+// If the note is released faster than that, it forced to last that long
+// This is used mostly for drum channels, where a lot of midis like to send instant note off after a note on
 export const MIN_NOTE_LENGTH = 0.03;
-// this sounds way nicer for an instant hi-hat cutoff
+// This sounds way nicer for an instant hi-hat cutoff
 export const MIN_EXCLUSIVE_LENGTH = 0.07;
 export const SYNTHESIZER_GAIN = 1.0;

@@ -27,19 +27,19 @@ export function writeWavesample(
 ): IndexedByteArray {
     let loopCount = loopingMode === 0 ? 0 : 1;
     const wsmpData = new IndexedByteArray(WSMP_SIZE + loopCount * 16);
-    writeDword(wsmpData, WSMP_SIZE); // cbSize
-    // usUnityNote (apply root pitch here)
+    writeDword(wsmpData, WSMP_SIZE); // CbSize
+    // UsUnityNote (apply root pitch here)
     writeWord(wsmpData, rootKey);
-    // sFineTune
+    // SFineTune
     writeWord(wsmpData, tuning);
 
-    // gain correction, use InitialAttenuation, apply attenuation correction
+    // Gain correction, use InitialAttenuation, apply attenuation correction
     const attenuationCb = attenuationCentibels * 0.4;
 
-    // gain correction: Each unit of gain represents 1/655360 dB
+    // Gain correction: Each unit of gain represents 1/655360 dB
     const lGain = Math.floor(attenuationCb * -65536);
     writeDword(wsmpData, lGain);
-    // fulOptions: has to be 2, according to all DLS files I have
+    // FulOptions: has to be 2, according to all DLS files I have
     writeDword(wsmpData, 2);
 
     const loopSize = loopEnd - loopStart;
@@ -47,26 +47,26 @@ export function writeWavesample(
     switch (loopingMode) {
         default:
         case 0:
-            // no loop
+            // No loop
             loopCount = 0;
             break;
 
         case 1:
-            // loop
+            // Loop
             ulLoopType = 0;
             loopCount = 1;
             break;
 
         case 3:
-            // loop and release
+            // Loop and release
             ulLoopType = 1;
             loopCount = 1;
     }
 
-    // cSampleLoops
+    // CSampleLoops
     writeDword(wsmpData, loopCount);
     if (loopCount === 1) {
-        writeDword(wsmpData, 16); // cbSize
+        writeDword(wsmpData, 16); // CbSize
         writeDword(wsmpData, ulLoopType);
         writeDword(wsmpData, loopStart);
         writeDword(wsmpData, loopSize);

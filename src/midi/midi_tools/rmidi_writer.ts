@@ -43,15 +43,15 @@ function correctBankOffsetInternal(
 ) {
     // Add the offset to the bank.
     // See https://github.com/spessasus/sf2-rmidi-specification#readme
-    // also fix presets that don't exist
-    // since midi player6 doesn't seem to default to 0 when non-existent...
+    // Also fix presets that don't exist
+    // Since midi player6 doesn't seem to default to 0 when non-existent...
     let system: SynthSystem = "gm";
     /**
      * The unwanted system messages such as gm/gm2 on
      */
     const unwantedSystems: { tNum: number; e: MIDIMessage }[] = [];
     /**
-     * indexes for tracks
+     * Indexes for tracks
      */
     const eventIndexes: number[] = Array<number>(mid.tracks.length).fill(0);
     let remainingTracks = mid.tracks.length;
@@ -71,7 +71,7 @@ function correctBankOffsetInternal(
         return index;
     };
 
-    // it copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
+    // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     const ports = Array<number>(mid.tracks.length).fill(0);
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
     const channelsInfo: {
@@ -84,7 +84,7 @@ function correctBankOffsetInternal(
     for (let i = 0; i < channelsAmount; i++) {
         channelsInfo.push({
             program: 0,
-            drums: i % 16 === DEFAULT_PERCUSSION, // drums appear on 9 every 16 channels,
+            drums: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
             lastBank: undefined,
             lastBankLSB: undefined,
             hasBankSelect: false
@@ -115,15 +115,15 @@ function correctBankOffsetInternal(
         }
 
         if (status === midiMessageTypes.systemExclusive) {
-            // check for drum sysex
+            // Check for drum sysex
             if (!isGSDrumsOn(e)) {
-                // check for XG
+                // Check for XG
                 if (isXGOn(e)) {
                     system = "xg";
                 } else if (isGSOn(e)) {
                     system = "gs";
                 } else if (isGMOn(e)) {
-                    // we do not want gm1
+                    // We do not want gm1
                     system = "gm";
                     unwantedSystems.push({
                         tNum: trackNum,
@@ -144,7 +144,7 @@ function correctBankOffsetInternal(
             continue;
         }
 
-        // program change
+        // Program change
         const chNum = (e.statusByte & 0xf) + portOffset;
         const channel: {
             program: number;
@@ -155,7 +155,7 @@ function correctBankOffsetInternal(
         } = channelsInfo[chNum];
         if (status === midiMessageTypes.programChange) {
             const isXG = isSystemXG(system);
-            // check if the preset for this program exists
+            // Check if the preset for this program exists
             const initialProgram = e.data[0];
             if (channel.drums) {
                 if (
@@ -165,7 +165,7 @@ function correctBankOffsetInternal(
                             p.isDrumPreset(isXG, true)
                     ) === -1
                 ) {
-                    // doesn't exist. pick any preset that has bank 128.
+                    // Doesn't exist. pick any preset that has bank 128.
                     e.data[0] =
                         soundBank.presets.find((p) => p.isDrumPreset(isXG))
                             ?.program ?? 0;
@@ -186,7 +186,7 @@ function correctBankOffsetInternal(
                             !p.isDrumPreset(isXG)
                     ) === -1
                 ) {
-                    // doesn't exist. pick any preset that does not have bank 128.
+                    // Doesn't exist. pick any preset that does not have bank 128.
                     e.data[0] =
                         soundBank.presets.find((p) => !p.isDrumPreset(isXG))
                             ?.program ?? 0;
@@ -201,25 +201,25 @@ function correctBankOffsetInternal(
                 }
             }
             channel.program = e.data[0];
-            // check if this preset exists for program and bank
+            // Check if this preset exists for program and bank
             if (channel.lastBank === undefined) {
                 continue;
             }
             const realBank = Math.max(
                 0,
                 channel.lastBank.data[1] - mid.bankOffset
-            ); // make sure to take the previous bank offset into account
+            ); // Make sure to take the previous bank offset into account
             const bankLSB = channel?.lastBankLSB
                 ? channel.lastBankLSB.data[1] - mid.bankOffset
                 : 0;
-            // adjust bank for XG
+            // Adjust bank for XG
             let bank = chooseBank(realBank, bankLSB, channel.drums, isXG);
             if (
                 soundBank.presets.findIndex(
                     (p) => p.bank === bank && p.program === e.data[0]
                 ) === -1
             ) {
-                // no preset with this bank. find this program with any bank
+                // No preset with this bank. find this program with any bank
                 const found = soundBank.presets.find(
                     (p) => p.program === e.data[0]
                 );
@@ -265,16 +265,16 @@ function correctBankOffsetInternal(
             continue;
         }
 
-        // controller change
-        // we only care about bank-selects
+        // Controller change
+        // We only care about bank-selects
         const isLSB = e.data[0] === midiControllers.lsbForControl0BankSelect;
         if (e.data[0] !== midiControllers.bankSelect && !isLSB) {
             continue;
         }
-        // bank select
+        // Bank select
         channel.hasBankSelect = true;
         const bankNumber = e.data[1];
-        // interpret
+        // Interpret
         const interpretation = parseBankSelect(
             channel?.lastBank?.data[1] ?? 0,
             bankNumber,
@@ -295,29 +295,29 @@ function correctBankOffsetInternal(
         }
     }
 
-    // add missing bank selects
-    // add all bank selects that are missing for this track
+    // Add missing bank selects
+    // Add all bank selects that are missing for this track
     channelsInfo.forEach((has, ch) => {
         if (has.hasBankSelect) {
             return;
         }
-        // find the first program change (for the given channel)
+        // Find the first program change (for the given channel)
         const midiChannel = ch % 16;
         const status = midiMessageTypes.programChange | midiChannel;
-        // find track with this channel being used
+        // Find track with this channel being used
         const portOffset = Math.floor(ch / 16) * 16;
         const port = mid.portChannelOffsetMap.indexOf(portOffset);
         const track = mid.tracks.find(
             (t) => t.port === port && t.channels.has(midiChannel)
         );
         if (track === undefined) {
-            // this channel is not used at all
+            // This channel is not used at all
             return;
         }
         let indexToAdd = track.events.findIndex((e) => e.statusByte === status);
         if (indexToAdd === -1) {
-            // no program change...
-            // add programs if they are missing from the track
+            // No program change...
+            // Add programs if they are missing from the track
             // (need them to activate bank 1 for the embedded soundfont)
             const programIndex = track.events.findIndex(
                 (e) =>
@@ -326,7 +326,7 @@ function correctBankOffsetInternal(
                     (e.statusByte & 0xf) === midiChannel
             );
             if (programIndex === -1) {
-                // no voices??? skip
+                // No voices??? skip
                 return;
             }
             const programTicks = track.events[programIndex].ticks;
@@ -362,7 +362,7 @@ function correctBankOffsetInternal(
         );
     });
 
-    // make sure to put xg if gm
+    // Make sure to put xg if gm
     if (system !== "gs" && !isSystemXG(system)) {
         for (const m of unwantedSystems) {
             const track = mid.tracks[m.tNum];
@@ -411,10 +411,10 @@ export function writeRMIDIInternal(
     }
     const newMid = new IndexedByteArray(mid.write().buffer);
 
-    // info data for RMID
+    // Info data for RMID
     const infoContent: Uint8Array[] = [];
     const encoder = new TextEncoder();
-    // software (SpessaSynth)
+    // Software (SpessaSynth)
     infoContent.push(
         writeRIFFChunkRaw(
             rmidInfoChunks.software,
@@ -422,7 +422,7 @@ export function writeRMIDIInternal(
             true
         )
     );
-    // name
+    // Name
     if (metadata.name !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
@@ -444,7 +444,7 @@ export function writeRMIDIInternal(
             );
         }
     }
-    // creation date
+    // Creation date
     if (metadata.creationDate !== undefined) {
         encoding = FORCED_ENCODING;
         infoContent.push(
@@ -471,7 +471,7 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // comment
+    // Comment
     if (metadata.comment !== undefined) {
         encoding = FORCED_ENCODING;
         infoContent.push(
@@ -481,7 +481,7 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // engineer
+    // Engineer
     if (metadata.engineer !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
@@ -491,9 +491,9 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // album
+    // Album
     if (metadata.album !== undefined) {
-        // note that there are two album chunks: IPRD and IALB
+        // Note that there are two album chunks: IPRD and IALB
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -510,7 +510,7 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // artist
+    // Artist
     if (metadata.artist !== undefined) {
         encoding = FORCED_ENCODING;
         infoContent.push(
@@ -521,7 +521,7 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // genre
+    // Genre
     if (metadata.genre !== undefined) {
         encoding = FORCED_ENCODING;
         infoContent.push(
@@ -532,7 +532,7 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // picture
+    // Picture
     if (metadata.picture !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
@@ -541,7 +541,7 @@ export function writeRMIDIInternal(
             )
         );
     }
-    // copyright
+    // Copyright
     if (metadata.copyright !== undefined) {
         encoding = FORCED_ENCODING;
         infoContent.push(
@@ -552,7 +552,7 @@ export function writeRMIDIInternal(
             )
         );
     } else {
-        // use midi copyright if possible
+        // Use midi copyright if possible
         const copyright =
             mid.copyright.length > 0 ? mid.copyright : DEFAULT_COPYRIGHT;
         infoContent.push(
@@ -563,11 +563,11 @@ export function writeRMIDIInternal(
         );
     }
 
-    // bank offset
+    // Bank offset
     const DBNK = new IndexedByteArray(2);
     writeLittleEndian(DBNK, bankOffset, 2);
     infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.bankOffset, DBNK));
-    // midi encoding
+    // Midi encoding
     if (metadata.midiEncoding !== undefined) {
         infoContent.push(
             writeRIFFChunkRaw(
@@ -577,7 +577,7 @@ export function writeRMIDIInternal(
         );
         encoding = FORCED_ENCODING;
     }
-    // encoding
+    // Encoding
     infoContent.push(
         writeRIFFChunkRaw(
             rmidInfoChunks.encoding,
@@ -585,7 +585,7 @@ export function writeRMIDIInternal(
         )
     );
 
-    // combine and write out
+    // Combine and write out
     SpessaSynthInfo("%cFinished!", consoleColors.info);
     SpessaSynthGroupEnd();
     return writeRIFFChunkParts("RIFF", [

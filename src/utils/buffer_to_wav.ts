@@ -7,13 +7,13 @@ import {
 import { writeLittleEndian } from "./byte_functions/little_endian";
 
 interface WaveMetadata {
-    // the song's title.
+    // The song's title.
     title: string;
-    // the song's artist.
+    // The song's artist.
     artist: string;
-    // the song's album.
+    // The song's album.
     album: string;
-    // the song's genre.
+    // The song's genre.
     genre: string;
 }
 
@@ -38,7 +38,7 @@ export function audioToWav(
 
     const bytesPerSample = 2; // 16-bit PCM
 
-    // prepare INFO chunk
+    // Prepare INFO chunk
     let infoChunk = new IndexedByteArray(0);
     const infoOn = Object.keys(metadata).length > 0;
     // INFO chunk
@@ -74,7 +74,7 @@ export function audioToWav(
         infoChunk = writeRIFFChunkParts("INFO", infoChunks, true);
     }
 
-    // prepare CUE chunk
+    // Prepare CUE chunk
     let cueChunk = new IndexedByteArray(0);
     const cueOn = loop?.end !== undefined && loop?.start !== undefined;
     if (cueOn) {
@@ -82,23 +82,23 @@ export function audioToWav(
         const loopEndSamples = Math.floor(loop.end * sampleRate);
 
         const cueStart = new IndexedByteArray(24);
-        writeLittleEndian(cueStart, 0, 4); // dwIdentifier
-        writeLittleEndian(cueStart, 0, 4); // dwPosition
-        writeStringAsBytes(cueStart, "data"); // cue point ID
-        writeLittleEndian(cueStart, 0, 4); // chunkStart, always 0
+        writeLittleEndian(cueStart, 0, 4); // DwIdentifier
+        writeLittleEndian(cueStart, 0, 4); // DwPosition
+        writeStringAsBytes(cueStart, "data"); // Cue point ID
+        writeLittleEndian(cueStart, 0, 4); // ChunkStart, always 0
         writeLittleEndian(cueStart, 0, 4); // BlockStart, always 0
-        writeLittleEndian(cueStart, loopStartSamples, 4); // sampleOffset
+        writeLittleEndian(cueStart, loopStartSamples, 4); // SampleOffset
 
         const cueEnd = new IndexedByteArray(24);
-        writeLittleEndian(cueEnd, 1, 4); // dwIdentifier
-        writeLittleEndian(cueEnd, 0, 4); // dwPosition
-        writeStringAsBytes(cueEnd, "data"); // cue point ID
-        writeLittleEndian(cueEnd, 0, 4); // chunkStart, always 0
+        writeLittleEndian(cueEnd, 1, 4); // DwIdentifier
+        writeLittleEndian(cueEnd, 0, 4); // DwPosition
+        writeStringAsBytes(cueEnd, "data"); // Cue point ID
+        writeLittleEndian(cueEnd, 0, 4); // ChunkStart, always 0
         writeLittleEndian(cueEnd, 0, 4); // BlockStart, always 0
-        writeLittleEndian(cueEnd, loopEndSamples, 4); // sampleOffset
+        writeLittleEndian(cueEnd, loopEndSamples, 4); // SampleOffset
 
         cueChunk = writeRIFFChunkParts("cue ", [
-            new IndexedByteArray([2, 0, 0, 0]), // cue points count
+            new IndexedByteArray([2, 0, 0, 0]), // Cue points count
             cueStart,
             cueEnd
         ]);
@@ -108,12 +108,12 @@ export function audioToWav(
     const headerSize = 44;
     const dataSize = length * numChannels * bytesPerSample; // 16-bit per channel
     const fileSize =
-        headerSize + dataSize + infoChunk.length + cueChunk.length - 8; // total file size minus the first 8 bytes
+        headerSize + dataSize + infoChunk.length + cueChunk.length - 8; // Total file size minus the first 8 bytes
     const header = new Uint8Array(headerSize);
 
     // 'RIFF'
     header.set([82, 73, 70, 70], 0);
-    // file length
+    // File length
     header.set(
         new Uint8Array([
             fileSize & 0xff,
@@ -127,13 +127,13 @@ export function audioToWav(
     header.set([87, 65, 86, 69], 8);
     // 'fmt '
     header.set([102, 109, 116, 32], 12);
-    // fmt chunk length
+    // Fmt chunk length
     header.set([16, 0, 0, 0], 16); // 16 for PCM
-    // audio format (PCM)
+    // Audio format (PCM)
     header.set([1, 0], 20);
-    // number of channels (2)
+    // Number of channels (2)
     header.set([numChannels & 255, numChannels >> 8], 22);
-    // sample rate
+    // Sample rate
     header.set(
         new Uint8Array([
             sampleRate & 0xff,
@@ -143,7 +143,7 @@ export function audioToWav(
         ]),
         24
     );
-    // byte rate (sample rate * block align)
+    // Byte rate (sample rate * block align)
     const byteRate = sampleRate * numChannels * bytesPerSample; // 16-bit per channel
     header.set(
         new Uint8Array([
@@ -154,14 +154,14 @@ export function audioToWav(
         ]),
         28
     );
-    // block align (channels * bytes per sample)
-    header.set([numChannels * bytesPerSample, 0], 32); // n channels * 16-bit per channel / 8
-    // bits per sample
+    // Block align (channels * bytes per sample)
+    header.set([numChannels * bytesPerSample, 0], 32); // N channels * 16-bit per channel / 8
+    // Bits per sample
     header.set([16, 0], 34); // 16-bit
 
-    // data chunk identifier 'data'
+    // Data chunk identifier 'data'
     header.set([100, 97, 116, 97], 36);
-    // data chunk length
+    // Data chunk length
     header.set(
         new Uint8Array([
             dataSize & 0xff,
@@ -179,7 +179,7 @@ export function audioToWav(
     // Interleave audio data (combine channels)
     let multiplier = 32767;
     if (normalizeAudio) {
-        // find min and max values to prevent clipping when converting to 16 bits
+        // Find min and max values to prevent clipping when converting to 16 bits
         const numSamples = audioData[0].length;
 
         let maxAbsValue = 0;
@@ -197,10 +197,10 @@ export function audioToWav(
         multiplier = maxAbsValue > 0 ? 32767 / maxAbsValue : 1;
     }
     for (let i = 0; i < length; i++) {
-        // interleave both channels
+        // Interleave both channels
         audioData.forEach((d) => {
             const sample = Math.min(32767, Math.max(-32768, d[i] * multiplier));
-            // convert to 16-bit
+            // Convert to 16-bit
             wavData[offset++] = sample & 0xff;
             wavData[offset++] = (sample >> 8) & 0xff;
         });

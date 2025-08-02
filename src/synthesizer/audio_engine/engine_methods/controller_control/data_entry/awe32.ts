@@ -65,7 +65,7 @@ export function handleAWE32NRPN(
     dataLSB: number,
     dataMSB: number
 ) {
-    // helper functions
+    // Helper functions
     const clip = (v: number, min: number, max: number) =>
         Math.max(min, Math.min(max, v));
     const msecToTimecents = (ms: number) =>
@@ -73,8 +73,8 @@ export function handleAWE32NRPN(
     const hzToCents = (hz: number) => 6900 + 1200 * Math.log2(hz / 440);
 
     let dataValue = (dataMSB << 7) | dataLSB;
-    // center the value
-    // though ranges reported as 0 to 127 only use LSB
+    // Center the value
+    // Though ranges reported as 0 to 127 only use LSB
     dataValue -= 8192;
     const generator = AWE_NRPN_GENERATOR_MAPPINGS[aweGen];
     if (!generator) {
@@ -86,54 +86,54 @@ export function handleAWE32NRPN(
     let milliseconds, hertz, centibels, cents;
     switch (generator) {
         default:
-            // this should not happen
+            // This should not happen
             break;
 
-        // delays
+        // Delays
         case generatorTypes.delayModLFO:
         case generatorTypes.delayVibLFO:
         case generatorTypes.delayVolEnv:
         case generatorTypes.delayModEnv:
             milliseconds = 4 * clip(dataValue, 0, 5900);
-            // convert to timecents
+            // Convert to timecents
             this.setGeneratorOverride(generator, msecToTimecents(milliseconds));
             break;
 
-        // attacks
+        // Attacks
         case generatorTypes.attackVolEnv:
         case generatorTypes.attackModEnv:
             milliseconds = clip(dataValue, 0, 5940);
-            // convert to timecents
+            // Convert to timecents
             this.setGeneratorOverride(generator, msecToTimecents(milliseconds));
             break;
 
-        // holds
+        // Holds
         case generatorTypes.holdVolEnv:
         case generatorTypes.holdModEnv:
             milliseconds = clip(dataValue, 0, 8191);
-            // convert to timecents
+            // Convert to timecents
             this.setGeneratorOverride(generator, msecToTimecents(milliseconds));
             break;
 
-        // decays and releases (share clips and units)
+        // Decays and releases (share clips and units)
         case generatorTypes.decayModEnv:
         case generatorTypes.decayVolEnv:
         case generatorTypes.releaseVolEnv:
         case generatorTypes.releaseModEnv:
             milliseconds = 4 * clip(dataValue, 0, 5940);
-            // convert to timecents
+            // Convert to timecents
             this.setGeneratorOverride(generator, msecToTimecents(milliseconds));
             break;
 
-        // lfo frequencies
+        // Lfo frequencies
         case generatorTypes.freqVibLFO:
         case generatorTypes.freqModLFO:
             hertz = 0.084 * dataLSB;
-            // convert to abs cents
+            // Convert to abs cents
             this.setGeneratorOverride(generator, hzToCents(hertz), true);
             break;
 
-        // sustains
+        // Sustains
         case generatorTypes.sustainVolEnv:
         case generatorTypes.sustainModEnv:
             // 0.75 dB is 7.5 cB
@@ -141,49 +141,49 @@ export function handleAWE32NRPN(
             this.setGeneratorOverride(generator, centibels);
             break;
 
-        // pitch
+        // Pitch
         case generatorTypes.fineTune:
-            // data is already centered
+            // Data is already centered
             this.setGeneratorOverride(generator, dataValue, true);
             break;
 
-        // lfo to pitch
+        // Lfo to pitch
         case generatorTypes.modLfoToPitch:
         case generatorTypes.vibLfoToPitch:
             cents = clip(dataValue, -127, 127) * 9.375;
             this.setGeneratorOverride(generator, cents, true);
             break;
 
-        // env to pitch
+        // Env to pitch
         case generatorTypes.modEnvToPitch:
             cents = clip(dataValue, -127, 127) * 9.375;
             this.setGeneratorOverride(generator, cents);
             break;
 
-        // mod lfo to vol
+        // Mod lfo to vol
         case generatorTypes.modLfoToVolume:
             // 0.1875 dB is 1.875 cB
             centibels = 1.875 * dataLSB;
             this.setGeneratorOverride(generator, centibels, true);
             break;
 
-        // filter fc
+        // Filter fc
         case generatorTypes.initialFilterFc: {
-            // minimum: 100 Hz -> 4335 cents
+            // Minimum: 100 Hz -> 4335 cents
             const fcCents = 4335 + 59 * dataLSB;
             this.setGeneratorOverride(generator, fcCents, true);
             break;
         }
 
-        // filter Q
+        // Filter Q
         case generatorTypes.initialFilterQ:
-            // note: this uses the "modulator-ish" approach proposed by mrbumpy409
-            // here https://github.com/FluidSynth/fluidsynth/issues/1473
+            // Note: this uses the "modulator-ish" approach proposed by mrbumpy409
+            // Here https://github.com/FluidSynth/fluidsynth/issues/1473
             centibels = 215 * (dataLSB / 127);
             this.setGeneratorOverride(generator, centibels, true);
             break;
 
-        // to filterFc
+        // To filterFc
         case generatorTypes.modLfoToFilterFc:
             cents = clip(dataValue, -64, 63) * 56.25;
             this.setGeneratorOverride(generator, cents, true);
@@ -194,7 +194,7 @@ export function handleAWE32NRPN(
             this.setGeneratorOverride(generator, cents);
             break;
 
-        // effects
+        // Effects
         case generatorTypes.chorusEffectsSend:
         case generatorTypes.reverbEffectsSend:
             this.setGeneratorOverride(

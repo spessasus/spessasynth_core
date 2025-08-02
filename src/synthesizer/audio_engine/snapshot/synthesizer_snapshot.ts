@@ -35,7 +35,7 @@ export class SynthesizerSnapshot {
      * @returns The snapshot.
      */
     public static create(processor: SpessaSynthProcessor): SynthesizerSnapshot {
-        // channel snapshots
+        // Channel snapshots
         const channelSnapshots = processor.midiChannels.map((_, i) =>
             ChannelSnapshot.create(processor, i)
         );
@@ -47,7 +47,7 @@ export class SynthesizerSnapshot {
         );
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Creates a copy of existing snapshot.
      * @param snapshot The snapshot to create a copy from.
@@ -76,15 +76,15 @@ export class SynthesizerSnapshot {
             processor.setMasterParameter(parameter, value);
         });
 
-        // restore key modifiers
+        // Restore key modifiers
         processor.keyModifierManager.setMappings(this.keyMappings);
 
-        // add channels if more needed
+        // Add channels if more needed
         while (processor.midiChannels.length < this.channelSnapshots.length) {
             processor.createMIDIChannel();
         }
 
-        // restore channels
+        // Restore channels
         this.channelSnapshots.forEach((channelSnapshot) => {
             channelSnapshot.apply(processor);
         });

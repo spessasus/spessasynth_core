@@ -11,20 +11,20 @@ import type { BasicZone } from "../basic_zone";
 import { generatorTypes } from "../generator_types";
 
 export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
-    // go through all instruments -> zones and write generators sequentially (add 4 for terminal)
+    // Go through all instruments -> zones and write generators sequentially (add 4 for terminal)
     let igenSize = GEN_BYTE_SIZE;
     for (const inst of bank.instruments) {
         igenSize += inst.globalZone.generators.length * GEN_BYTE_SIZE;
         igenSize += inst.zones.reduce((sum, z) => {
-            // clear sample and range generators before determining the size
+            // Clear sample and range generators before determining the size
             z.generators = z.generators.filter(
                 (g) =>
                     g.generatorType !== generatorTypes.sampleID &&
                     g.generatorType !== generatorTypes.keyRange &&
                     g.generatorType !== generatorTypes.velRange
             );
-            // add sample and ranges if necessary
-            // unshift vel then key (to make key first) and the sample is last
+            // Add sample and ranges if necessary
+            // Unshift vel then key (to make key first) and the sample is last
             if (z.hasVelRange) {
                 z.prependGenerator(
                     new Generator(
@@ -46,7 +46,7 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
             if (!z.sample) {
                 return sum;
             }
-            // add sample id
+            // Add sample id
             z.addGenerators(
                 new Generator(
                     generatorTypes.sampleID,
@@ -61,7 +61,7 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
 
     const writeZone = (z: BasicZone) => {
         for (const gen of z.generators) {
-            // name is deceptive, it works on negatives
+            // Name is deceptive, it works on negatives
             writeWord(igenData, gen.generatorType);
             writeWord(igenData, gen.generatorValue);
         }
@@ -74,7 +74,7 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
             writeZone(instrumentZone);
         }
     }
-    // terminal generator, is zero
+    // Terminal generator, is zero
     writeDword(igenData, 0);
 
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
@@ -86,6 +86,6 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     return {
         pdta: igen,
         xdta: xigen,
-        highestIndex: 0 // not applicable
+        highestIndex: 0 // Not applicable
     };
 }

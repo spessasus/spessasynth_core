@@ -2,7 +2,7 @@ import type { SampleLoopingMode } from "../../types";
 
 export class AudioSample {
     /**
-     * the sample's audio data
+     * The sample's audio data
      */
     public readonly sampleData: Float32Array;
     /**

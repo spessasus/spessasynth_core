@@ -9,9 +9,9 @@ export class Articulator {
     public readonly source: DLSSource;
     public readonly control: DLSSource;
     public readonly destination: DLSDestination;
-    // like SF2 amount
+    // Like SF2 amount
     public readonly scale: number;
-    // like sf2 source transforms
+    // Like sf2 source transforms
     public readonly transform: number;
 
     public constructor(

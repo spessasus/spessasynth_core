@@ -15,12 +15,12 @@ import type { BasicSample } from "../basic_sample";
  */
 export function writeDLSSample(sample: BasicSample): IndexedByteArray {
     const fmtData = new IndexedByteArray(18);
-    writeWord(fmtData, 1); // wFormatTag
-    writeWord(fmtData, 1); // wChannels
+    writeWord(fmtData, 1); // WFormatTag
+    writeWord(fmtData, 1); // WChannels
     writeDword(fmtData, sample.sampleRate);
     writeDword(fmtData, sample.sampleRate * 2); // 16-bit samples
-    writeWord(fmtData, 2); // wBlockAlign
-    writeWord(fmtData, 16); // wBitsPerSample
+    writeWord(fmtData, 2); // WBlockAlign
+    writeWord(fmtData, 16); // WBitsPerSample
     const fmt = writeRIFFChunkRaw("fmt ", fmtData);
     let loop = 1;
     if (
@@ -40,7 +40,7 @@ export function writeDLSSample(sample: BasicSample): IndexedByteArray {
     );
     const data = writeRIFFChunkRaw(
         "data",
-        sample.getRawData(false) // no vorbis allowed
+        sample.getRawData(false) // No vorbis allowed
     );
 
     const inam = writeRIFFChunkRaw("INAM", getStringBytes(sample.name, true));

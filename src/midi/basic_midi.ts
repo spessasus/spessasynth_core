@@ -183,16 +183,16 @@ export class BasicMIDI {
         let totalSeconds = 0;
 
         while (ticks > 0) {
-            // tempo changes are reversed, so the first element is the last tempo change
-            // and the last element is the first tempo change
+            // Tempo changes are reversed, so the first element is the last tempo change
+            // And the last element is the first tempo change
             // (always at tick 0 and tempo 120)
-            // find the last tempo change that has occurred
+            // Find the last tempo change that has occurred
             const tempo = this.tempoChanges.find((v) => v.ticks < ticks);
             if (!tempo) {
                 return totalSeconds;
             }
 
-            // calculate the difference and tempo time
+            // Calculate the difference and tempo time
             const timeSinceLastTempo = ticks - tempo.ticks;
             totalSeconds +=
                 (timeSinceLastTempo * 60) / (tempo.tempo * this.timeDivision);
@@ -220,14 +220,14 @@ export class BasicMIDI {
     public flush(sortEvents = true) {
         if (sortEvents) {
             for (const t of this.tracks) {
-                // sort the track by ticks
+                // Sort the track by ticks
                 t.events.sort((e1, e2) => e1.ticks - e2.ticks);
             }
         }
         this.parseInternal();
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Calculates all note times in seconds.
      * @param minDrumLength the shortest a drum note (channel 10) can be, in seconds.
@@ -298,7 +298,7 @@ export class BasicMIDI {
         );
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
      * @param snapshot the snapshot to apply.
@@ -307,7 +307,7 @@ export class BasicMIDI {
         applySnapshotInternal(this, snapshot);
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Gets the MIDI's name.
      * @param encoding The encoding to use if the MIDI uses an extended code page.
@@ -324,8 +324,8 @@ export class BasicMIDI {
                 );
             }
             const decoder = new TextDecoder(encoding);
-            // trim since "                                                                "
-            // is not a valid name
+            // Trim since "                                                                "
+            // Is not a valid name
             // MIDI file with that name: th07_10.mid
             rawName = decoder.decode(this.rawName).trim();
         }
@@ -336,7 +336,7 @@ export class BasicMIDI {
      * INTERNAL USE ONLY!
      */
     protected copyMetadataFrom(mid: BasicMIDI) {
-        // properties can be assigned
+        // Properties can be assigned
         this.name = mid.name;
         this.fileName = mid.fileName;
         this.timeDivision = mid.timeDivision;
@@ -351,7 +351,7 @@ export class BasicMIDI {
         this.isDLSRMIDI = mid.isDLSRMIDI;
         this.isDLSRMIDI = mid.isDLSRMIDI;
 
-        // copying arrays
+        // Copying arrays
         this.tempoChanges = [...mid.tempoChanges];
         this.lyrics = mid.lyrics.map(
             (arr) =>
@@ -364,7 +364,7 @@ export class BasicMIDI {
         this.portChannelOffsetMap = [...mid.portChannelOffsetMap];
         this.rawName = mid?.rawName?.slice();
 
-        // copying objects
+        // Copying objects
         this.loop = { ...mid.loop };
         this.keyRange = { ...mid.keyRange };
         this.rmidiInfo = {};
@@ -389,17 +389,17 @@ export class BasicMIDI {
         const copyrightComponents: string[] = [];
         let copyrightDetected = false;
         if (typeof this.rmidiInfo.ICOP !== "undefined") {
-            // if RMIDI has copyright info, don't try to detect one.
+            // If RMIDI has copyright info, don't try to detect one.
             copyrightDetected = true;
         }
 
         let nameDetected = false;
         if (typeof this.rmidiInfo.INAM !== "undefined") {
-            // same as with copyright
+            // Same as with copyright
             nameDetected = true;
         }
 
-        // loop tracking
+        // Loop tracking
         let loopStart = null;
         let loopEnd = null;
 
@@ -408,21 +408,21 @@ export class BasicMIDI {
             let trackHasVoiceMessages = false;
 
             for (const e of track.events) {
-                // check if it's a voice message
+                // Check if it's a voice message
                 if (e.statusByte >= 0x80 && e.statusByte < 0xf0) {
                     trackHasVoiceMessages = true;
-                    // voice messages are 7-bit always
+                    // Voice messages are 7-bit always
                     for (let j = 0; j < e.data.length; j++) {
                         e.data[j] = Math.min(127, e.data[j]);
                     }
-                    // last voice event tick
+                    // Last voice event tick
                     if (e.ticks > this.lastVoiceEventTick) {
                         this.lastVoiceEventTick = e.ticks;
                     }
 
-                    // interpret the voice message
+                    // Interpret the voice message
                     switch (e.statusByte & 0xf0) {
-                        // cc change: loop points
+                        // Cc change: loop points
                         case midiMessageTypes.controllerChange:
                             switch (e.data[0]) {
                                 case 2:
@@ -435,15 +435,15 @@ export class BasicMIDI {
                                     if (loopEnd === null) {
                                         loopEnd = e.ticks;
                                     } else {
-                                        // this controller has occurred more than once;
-                                        // this means
-                                        // that it doesn't indicate the loop
+                                        // This controller has occurred more than once;
+                                        // This means
+                                        // That it doesn't indicate the loop
                                         loopEnd = 0;
                                     }
                                     break;
 
                                 case 0:
-                                    // check RMID
+                                    // Check RMID
                                     if (
                                         this.isDLSRMIDI &&
                                         e.data[1] !== 0 &&
@@ -458,7 +458,7 @@ export class BasicMIDI {
                             }
                             break;
 
-                        // note on: used notes tracking and key range
+                        // Note on: used notes tracking and key range
                         case midiMessageTypes.noteOn: {
                             usedChannels.add(e.statusByte & 0x0f);
                             const note = e.data[0];
@@ -477,10 +477,10 @@ export class BasicMIDI {
                 e.data.currentIndex = 0;
                 const eventText = readBytesAsString(e.data, e.data.length);
                 e.data.currentIndex = 0;
-                // interpret the message
+                // Interpret the message
                 switch (e.statusByte) {
                     case midiMessageTypes.setTempo:
-                        // add the tempo change
+                        // Add the tempo change
                         e.data.currentIndex = 0;
                         this.tempoChanges.push({
                             ticks: e.ticks,
@@ -490,7 +490,7 @@ export class BasicMIDI {
                         break;
 
                     case midiMessageTypes.marker:
-                        // check for loop markers
+                        // Check for loop markers
                         {
                             const text = eventText.trim().toLowerCase();
                             switch (text) {
@@ -525,12 +525,12 @@ export class BasicMIDI {
                         }
                         e.data.currentIndex = 0;
                         break;
-                    // fallthrough
+                    // Fallthrough
 
                     case midiMessageTypes.lyric:
-                        // note here: .kar files sometimes just use...
-                        // lyrics instead of text because why not (of course)
-                        // perform the same check for @KMIDI KARAOKE FILE
+                        // Note here: .kar files sometimes just use...
+                        // Lyrics instead of text because why not (of course)
+                        // Perform the same check for @KMIDI KARAOKE FILE
                         if (
                             eventText.trim().startsWith("@KMIDI KARAOKE FILE")
                         ) {
@@ -542,18 +542,18 @@ export class BasicMIDI {
                         }
 
                         if (this.isKaraokeFile) {
-                            // replace the type of the message with text
+                            // Replace the type of the message with text
                             e.statusByte = midiMessageTypes.text;
                         } else {
-                            // add lyrics like a regular midi file
+                            // Add lyrics like a regular midi file
                             this.lyrics.push(e);
                         }
 
-                    // kar: treat the same as text
-                    // fallthrough
+                    // Kar: treat the same as text
+                    // Fallthrough
                     case midiMessageTypes.text: {
-                        // possibly Soft Karaoke MIDI file
-                        // it has a text event at the start of the file
+                        // Possibly Soft Karaoke MIDI file
+                        // It has a text event at the start of the file
                         // "@KMIDI KARAOKE FILE"
                         const checkedText = eventText.trim();
                         if (checkedText.startsWith("@KMIDI KARAOKE FILE")) {
@@ -564,8 +564,8 @@ export class BasicMIDI {
                                 consoleColors.recognized
                             );
                         } else if (this.isKaraokeFile) {
-                            // check for @T (title)
-                            // or @A because it is a title too sometimes?
+                            // Check for @T (title)
+                            // Or @A because it is a title too sometimes?
                             // IDK it's strange
                             if (
                                 checkedText.startsWith("@T") ||
@@ -576,13 +576,13 @@ export class BasicMIDI {
                                     karaokeHasTitle = true;
                                     nameDetected = true;
                                 } else {
-                                    // append to copyright
+                                    // Append to copyright
                                     copyrightComponents.push(
                                         checkedText.substring(2).trim()
                                     );
                                 }
                             } else if (!checkedText.startsWith("@")) {
-                                // non @: the lyrics
+                                // Non @: the lyrics
                                 this.lyrics.push(e);
                             }
                         }
@@ -593,10 +593,10 @@ export class BasicMIDI {
                         break;
                 }
             }
-            // add used channels
+            // Add used channels
             track.channels = usedChannels;
 
-            // track name
+            // Track name
             track.name = "";
             const trackName = track.events.find(
                 (e) => e.statusByte === midiMessageTypes.trackName
@@ -609,7 +609,7 @@ export class BasicMIDI {
                 );
                 track.name = name;
                 // If the track has no voice messages, its "track name" event (if it has any)
-                // is some metadata.
+                // Is some metadata.
                 // Add it to copyright
                 if (!trackHasVoiceMessages) {
                     copyrightComponents.push(name);
@@ -617,7 +617,7 @@ export class BasicMIDI {
             }
         }
 
-        // reverse the tempo changes
+        // Reverse the tempo changes
         this.tempoChanges.reverse();
 
         SpessaSynthInfo(
@@ -644,7 +644,7 @@ export class BasicMIDI {
         );
 
         if (loopStart !== null && loopEnd === null) {
-            // not a loop
+            // Not a loop
             loopStart = this.firstNoteOn;
             loopEnd = this.lastVoiceEventTick;
         } else {
@@ -669,7 +669,7 @@ export class BasicMIDI {
             consoleColors.recognized
         );
 
-        // determine ports
+        // Determine ports
         let portOffset = 0;
         this.portChannelOffsetMap = [];
         for (const track of this.tracks) {
@@ -690,19 +690,19 @@ export class BasicMIDI {
             }
         }
 
-        // fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
+        // Fix empty port channel offsets (do a copy to turn empty slots into undefined so the map goes over them)
         this.portChannelOffsetMap = [...this.portChannelOffsetMap].map(
             (o) => o ?? 0
         );
 
-        // fix midi ports:
-        // midi tracks without ports will have a value of -1
-        // if all ports have a value of -1, set it to 0,
-        // otherwise take the first midi port and replace all -1 with it,
-        // why would we do this?
-        // some midis (for some reason) specify all channels to port 1 or else,
-        // but leave the conductor track with no port pref.
-        // this spessasynth to reserve the first 16 channels for the conductor track
+        // Fix midi ports:
+        // Midi tracks without ports will have a value of -1
+        // If all ports have a value of -1, set it to 0,
+        // Otherwise take the first midi port and replace all -1 with it,
+        // Why would we do this?
+        // Some midis (for some reason) specify all channels to port 1 or else,
+        // But leave the conductor track with no port pref.
+        // This spessasynth to reserve the first 16 channels for the conductor track
         // (which doesn't play anything) and use the additional 16 for the actual ports.
         let defaultPort = Infinity;
         for (const track of this.tracks) {
@@ -720,7 +720,7 @@ export class BasicMIDI {
                 track.port = defaultPort;
             }
         }
-        // add fake port if empty
+        // Add fake port if empty
         if (this.portChannelOffsetMap.length === 0) {
             this.portChannelOffsetMap = [0];
         }
@@ -734,11 +734,11 @@ export class BasicMIDI {
             SpessaSynthInfo(`%cMIDI Ports detected!`, consoleColors.recognized);
         }
 
-        // midi name
+        // Midi name
         if (!nameDetected) {
             if (this.tracks.length > 1) {
-                // if more than 1 track and the first track has no notes,
-                // just find the first trackName in the first track.
+                // If more than 1 track and the first track has no notes,
+                // Just find the first trackName in the first track.
                 if (
                     this.tracks[0].events.find(
                         (message) =>
@@ -761,7 +761,7 @@ export class BasicMIDI {
                     }
                 }
             } else {
-                // if only 1 track, find the first "track name" event
+                // If only 1 track, find the first "track name" event
                 const name = this.tracks[0].events.find(
                     (message) =>
                         message.statusByte === midiMessageTypes.trackName
@@ -779,13 +779,13 @@ export class BasicMIDI {
         }
 
         this.extraMetadata = copyrightComponents
-            // trim and group newlines into one
+            // Trim and group newlines into one
             .map((c) => c.trim().replace(/(\r?\n)+/g, "\n"))
-            // remove empty strings
+            // Remove empty strings
             .filter((c) => c.length > 0);
 
         this.name = this.name.trim();
-        // if name is "", use the file name
+        // If name is "", use the file name
         if (this.name.length === 0) {
             SpessaSynthInfo(`%cNo name detected.`, consoleColors.unrecognized);
             this.name = "";
@@ -797,11 +797,11 @@ export class BasicMIDI {
             );
         }
 
-        // if the first event is not at 0 ticks, add a track name
+        // If the first event is not at 0 ticks, add a track name
         // https://github.com/spessasus/SpessaSynth/issues/145
         if (!this.tracks.some((t) => t.events[0].ticks === 0)) {
             const track = this.tracks[0];
-            // can copy
+            // Can copy
             let b = this?.rawName?.buffer as ArrayBuffer;
             if (!b) {
                 b = getStringBytes(this.name).buffer;
@@ -816,7 +816,7 @@ export class BasicMIDI {
         }
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
 
-        // invalidate raw name if empty
+        // Invalidate raw name if empty
         if (this.rawName && this.rawName.length < 1) {
             this.rawName = undefined;
         }

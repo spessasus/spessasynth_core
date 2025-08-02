@@ -30,12 +30,12 @@ export async function writeDLSInternal(
 ): Promise<Uint8Array<ArrayBuffer>> {
     options = fillWithDefaults(options, DEFAULT_DLS_OPTIONS);
     SpessaSynthGroupCollapsed("%cSaving DLS...", consoleColors.info);
-    // write colh
+    // Write colh
     const colhNum = new IndexedByteArray(4);
     writeDword(colhNum, targetSoundBank.presets.length);
     const colh = writeRIFFChunkRaw("colh", colhNum);
     SpessaSynthGroupCollapsed("%cWriting instruments...", consoleColors.info);
-    // instrument list
+    // Instrument list
     const lins = writeRIFFChunkParts(
         "lins",
         targetSoundBank.presets.map((p) => writeIns(targetSoundBank, p)),
@@ -54,7 +54,7 @@ export async function writeDLSInternal(
     SpessaSynthInfo("%cSucceeded!", consoleColors.recognized);
     SpessaSynthGroupEnd();
 
-    // write ptbl
+    // Write ptbl
     const ptblData = new IndexedByteArray(8 + 4 * ptblOffsets.length);
     writeDword(ptblData, 8);
     writeDword(ptblData, ptblOffsets.length);
@@ -67,7 +67,7 @@ export async function writeDLSInternal(
         (targetSoundBank.soundBankInfo.ICMT ?? "<No descrption>") +
         "\nConverted from SF2 to DLS using SpessaSynth";
     targetSoundBank.soundBankInfo.ISFT = "SpessaSynth";
-    // write INFO
+    // Write INFO
     const infos = [];
     for (const [info, data] of Object.entries(targetSoundBank.soundBankInfo)) {
         if (

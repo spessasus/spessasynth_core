@@ -12,16 +12,16 @@ import type { SpessaSynthProcessor } from "../../../processor";
 function getPriority(channel: MIDIChannel, voice: Voice): number {
     let priority = 0;
     if (channel.drumChannel) {
-        // important
+        // Important
         priority += 5;
     }
     if (voice.isInRelease) {
-        // not important
+        // Not important
         priority -= 5;
     }
-    // less velocity = less important
-    priority += voice.velocity / 25; // map to 0-5
-    // the newer, more important
+    // Less velocity = less important
+    priority += voice.velocity / 25; // Map to 0-5
+    // The newer, more important
     priority -= voice.volumeEnvelope.state;
     if (voice.isInRelease) {
         priority -= 5;

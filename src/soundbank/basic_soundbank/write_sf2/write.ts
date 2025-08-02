@@ -82,14 +82,14 @@ export async function writeSF2Internal(
         options?.compress ||
         targetSoundBank.samples.some((s) => s.isCompressed)
     ) {
-        targetSoundBank.soundBankInfo.ifil = "3.0"; // set version to 3
+        targetSoundBank.soundBankInfo.ifil = "3.0"; // Set version to 3
     }
     if (options?.decompress) {
-        targetSoundBank.soundBankInfo.ifil = "2.4"; // set version to 2.04
+        targetSoundBank.soundBankInfo.ifil = "2.4"; // Set version to 2.04
     }
 
     if (options?.writeDefaultModulators) {
-        // trigger the DMOD write
+        // Trigger the DMOD write
         targetSoundBank.soundBankInfo.DMOD =
             `${targetSoundBank.defaultModulators.length} Modulators`;
         targetSoundBank.customDefaultModulators = true;
@@ -124,7 +124,7 @@ export async function writeSF2Internal(
                 writeWord(dmoddata, mod.transformType);
             }
 
-            // terminal modulator, is zero
+            // Terminal modulator, is zero
             writeLittleEndian(dmoddata, 0, MOD_BYTE_SIZE);
 
             infoArrays.push(writeRIFFChunkRaw(type, dmoddata));
@@ -132,14 +132,14 @@ export async function writeSF2Internal(
             infoArrays.push(
                 writeRIFFChunkRaw(
                     type,
-                    getStringBytes(data, true, true) // pad with zero and ensure even length
+                    getStringBytes(data, true, true) // Pad with zero and ensure even length
                 )
             );
         }
     }
 
     SpessaSynthInfo("%cWriting SDTA...", consoleColors.info);
-    // write sdta
+    // Write sdta
     const smplStartOffsets: number[] = [];
     const smplEndOffsets: number[] = [];
     const sdtaChunk = await getSDTA(
@@ -153,9 +153,9 @@ export async function writeSF2Internal(
     );
 
     SpessaSynthInfo("%cWriting PDTA...", consoleColors.info);
-    // write pdta
-    // go in reverse so the indexes are correct
-    // instruments
+    // Write pdta
+    // Go in reverse so the indexes are correct
+    // Instruments
     SpessaSynthInfo("%cWriting SHDR...", consoleColors.info);
     const shdrChunk = getSHDR(
         targetSoundBank,
@@ -171,7 +171,7 @@ export async function writeSF2Internal(
     SpessaSynthInfo("%cWriting INST...", consoleColors.info);
     const instChunk = getINST(targetSoundBank);
     SpessaSynthInfo("%cWriting PGEN...", consoleColors.info);
-    // presets
+    // Presets
     const pgenChunk = getPGEN(targetSoundBank);
     SpessaSynthInfo("%cWriting PMOD...", consoleColors.info);
     const pmodChunk = getPMOD(targetSoundBank);
@@ -190,7 +190,7 @@ export async function writeSF2Internal(
         igenChunk,
         shdrChunk
     ];
-    // combine in the sfspec order
+    // Combine in the sfspec order
     const pdtaChunk = writeRIFFChunkParts(
         "pdta",
         chunks.map((c) => c.pdta),
@@ -222,7 +222,7 @@ export async function writeSF2Internal(
 
     const infoChunk = writeRIFFChunkParts("INFO", infoArrays, true);
     SpessaSynthInfo("%cWriting the output file...", consoleColors.info);
-    // finally, combine everything
+    // Finally, combine everything
     const main = writeRIFFChunkParts("RIFF", [
         getStringBytes("sfbk"),
         infoChunk,

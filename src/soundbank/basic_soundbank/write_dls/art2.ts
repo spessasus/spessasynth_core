@@ -46,8 +46,8 @@ type invalidGeneratorTypes =
  * Writes a DLS articulator chunk.
  */
 export function writeArticulator(zone: BasicZone): IndexedByteArray {
-    // envelope generators are limited to 40 seconds
-    // in timecents, this is 1200 * log2(10) = 6386
+    // Envelope generators are limited to 40 seconds
+    // In timecents, this is 1200 * log2(10) = 6386
 
     for (let i = 0; i < zone.generators.length; i++) {
         const g = zone.generators[i];
@@ -70,12 +70,12 @@ export function writeArticulator(zone: BasicZone): IndexedByteArray {
         }
     }
 
-    // read_articulation.ts:
-    // according to viena and another strange (with modulators) rendition of gm.dls in sf2,
-    // it shall be divided by -128,
-    // and a strange correction needs to be applied to the real value:
-    // real + (60 / 128) * scale
-    // we invert this here
+    // Read_articulation.ts:
+    // According to viena and another strange (with modulators) rendition of gm.dls in sf2,
+    // It shall be divided by -128,
+    // And a strange correction needs to be applied to the real value:
+    // Real + (60 / 128) * scale
+    // We invert this here
     for (const relativeGenerator of zone.generators) {
         let absoluteCounterpart = undefined;
         switch (relativeGenerator.generatorType) {
@@ -98,7 +98,7 @@ export function writeArticulator(zone: BasicZone): IndexedByteArray {
             (g) => g.generatorType === absoluteCounterpart
         );
         if (absoluteGenerator === undefined) {
-            // there's no absolute generator here.
+            // There's no absolute generator here.
             continue;
         }
         const dlsRelative = relativeGenerator.generatorValue * -128;
@@ -143,7 +143,7 @@ export function writeArticulator(zone: BasicZone): IndexedByteArray {
     );
     const modulators: Articulator[] = zone.modulators.reduce(
         (articulators: Articulator[], m) => {
-            // do not write the default DLS modulators
+            // Do not write the default DLS modulators
             if (
                 Modulator.isIdentical(m, DEFAULT_DLS_CHORUS, true) ||
                 Modulator.isIdentical(m, DEFAULT_DLS_REVERB, true) ||
@@ -169,8 +169,8 @@ export function writeArticulator(zone: BasicZone): IndexedByteArray {
     generators.push(...modulators);
 
     const art2Data = new IndexedByteArray(8);
-    writeDword(art2Data, 8); // cbSize
-    writeDword(art2Data, generators.length); // cbConnectionBlocks
+    writeDword(art2Data, 8); // CbSize
+    writeDword(art2Data, generators.length); // CbConnectionBlocks
 
     const out = generators.map((a) => a.writeArticulator());
     return writeRIFFChunkParts("art2", [art2Data, ...out]);

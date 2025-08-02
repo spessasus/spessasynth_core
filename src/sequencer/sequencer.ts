@@ -122,7 +122,7 @@ export class SpessaSynthSequencer {
 
     protected _midiData: BasicMIDI = new BasicMIDI();
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * The currently loaded MIDI data.
      */
@@ -130,7 +130,7 @@ export class SpessaSynthSequencer {
         return this._midiData;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * The length of the current sequence in seconds.
      */
@@ -140,7 +140,7 @@ export class SpessaSynthSequencer {
 
     protected _songIndex = 0;
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * The current song index in the song list.
      * If shuffleMode is enabled, this is the index of the shuffled song list.
@@ -149,7 +149,7 @@ export class SpessaSynthSequencer {
         return this._songIndex;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * The current song index in the song list.
      * If shuffleMode is enabled, this is the index of the shuffled song list.
@@ -162,7 +162,7 @@ export class SpessaSynthSequencer {
 
     protected _shuffleMode = false;
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
@@ -171,7 +171,7 @@ export class SpessaSynthSequencer {
         return this._shuffleMode;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
@@ -192,7 +192,7 @@ export class SpessaSynthSequencer {
      */
     protected _playbackRate = 1;
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * The sequencer's playback rate.
      * This is the rate at which the sequencer plays back the MIDI data.
@@ -209,7 +209,7 @@ export class SpessaSynthSequencer {
      * This is the time in seconds since the sequencer started playing.
      */
     public get currentTime() {
-        // return the paused time if it's set to something other than undefined
+        // Return the paused time if it's set to something other than undefined
         if (this.pausedTime !== undefined) {
             return this.pausedTime;
         }
@@ -233,7 +233,7 @@ export class SpessaSynthSequencer {
             this.pausedTime = time;
         }
         if (time > this._midiData.duration || time < 0) {
-            // time is 0
+            // Time is 0
             if (this.skipToFirstNoteOn) {
                 this.setTimeTicks(this._midiData.firstNoteOn - 1);
             } else {
@@ -256,7 +256,7 @@ export class SpessaSynthSequencer {
     }
 
     /**
-     * true if paused, false if playing or stopped
+     * True if paused, false if playing or stopped
      */
     public get paused() {
         return this.pausedTime !== undefined;
@@ -282,14 +282,14 @@ export class SpessaSynthSequencer {
             throw new Error("No songs loaded in the sequencer!");
         }
 
-        // reset the time
+        // Reset the time
         if (this.currentTime >= this._midiData.duration) {
             this.currentTime = 0;
         }
 
-        // unpause if paused
+        // Unpause if paused
         if (this.paused) {
-            // adjust the start time
+            // Adjust the start time
             this.recalculateStartTime(this.pausedTime ?? 0);
         }
         if (!this.externalMIDIPlayback) {
@@ -300,7 +300,7 @@ export class SpessaSynthSequencer {
         this.pausedTime = undefined;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Pauses the playback.
      */
@@ -314,7 +314,7 @@ export class SpessaSynthSequencer {
      */
     public loadNewSongList(midiBuffers: BasicMIDI[]) {
         /**
-         * parse the MIDIs (only the array buffers, MIDI is unchanged)
+         * Parse the MIDIs (only the array buffers, MIDI is unchanged)
          * @type {BasicMIDI[]}
          */
         this.songs = midiBuffers;
@@ -360,7 +360,7 @@ export class SpessaSynthSequencer {
      */
     protected stop() {
         this.pausedTime = this.currentTime;
-        // disable sustain
+        // Disable sustain
         for (let i = 0; i < 16; i++) {
             this.synth.controllerChange(i, midiControllers.sustainPedal, 0);
         }

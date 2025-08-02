@@ -20,10 +20,10 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
             // Ticks stored in MIDI are absolute, but SMF wants relative. Convert them here.
             const deltaTicks = Math.max(0, event.ticks - currentTick);
             let messageData: number[];
-            // determine the message
+            // Determine the message
             if (event.statusByte <= midiMessageTypes.sequenceSpecific) {
-                // this is a meta-message
-                // syntax is FF<type><length><data>
+                // This is a meta-message
+                // Syntax is FF<type><length><data>
                 messageData = [
                     0xff,
                     event.statusByte,
@@ -34,8 +34,8 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
                 // Sysex events and meta-events cancel any running status which was in effect.
                 runningByte = undefined;
             } else if (event.statusByte === midiMessageTypes.systemExclusive) {
-                // this is a system exclusive message
-                // syntax is F0<length><data>
+                // This is a system exclusive message
+                // Syntax is F0<length><data>
                 messageData = [
                     0xf0,
                     ...writeVariableLengthQuantity(event.data.length),
@@ -45,24 +45,24 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
                 // Sysex events and meta-events cancel any running status which was in effect.
                 runningByte = undefined;
             } else {
-                // this is a midi message
+                // This is a midi message
                 messageData = [];
                 if (runningByte !== event.statusByte) {
                     // Running byte was not the byte we want. Add the byte here.
                     runningByte = event.statusByte;
-                    // add the status byte to the midi
+                    // Add the status byte to the midi
                     messageData.push(event.statusByte);
                 }
-                // add the data
+                // Add the data
                 messageData.push(...event.data);
             }
-            // write VLQ
+            // Write VLQ
             binaryTrack.push(...writeVariableLengthQuantity(deltaTicks));
-            // write the message
+            // Write the message
             binaryTrack.push(...messageData);
             currentTick += deltaTicks;
         }
-        // write endOfTrack
+        // Write endOfTrack
         binaryTrack.push(0);
         binaryTrack.push(0xff);
         binaryTrack.push(midiMessageTypes.endOfTrack);
@@ -76,21 +76,21 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
         }
     };
 
-    // write the file
+    // Write the file
     const binaryData: number[] = [];
-    // write header
+    // Write header
     writeText("MThd", binaryData); // MThd
-    binaryData.push(...writeBigEndian(6, 4)); // length
-    binaryData.push(0, midi.format); // format
-    binaryData.push(...writeBigEndian(midi.tracks.length, 2)); // num tracks
-    binaryData.push(...writeBigEndian(midi.timeDivision, 2)); // time division
+    binaryData.push(...writeBigEndian(6, 4)); // Length
+    binaryData.push(0, midi.format); // Format
+    binaryData.push(...writeBigEndian(midi.tracks.length, 2)); // Num tracks
+    binaryData.push(...writeBigEndian(midi.timeDivision, 2)); // Time division
 
-    // write tracks
+    // Write tracks
     for (const track of binaryTrackData) {
-        // write track header
+        // Write track header
         writeText("MTrk", binaryData); // MTrk
-        binaryData.push(...writeBigEndian(track.length, 4)); // length
-        binaryData.push(...track); // write data
+        binaryData.push(...writeBigEndian(track.length, 4)); // Length
+        binaryData.push(...track); // Write data
     }
     return new Uint8Array(binaryData);
 }

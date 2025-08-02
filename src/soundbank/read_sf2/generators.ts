@@ -11,7 +11,7 @@ export class ReadGenerator extends Generator {
     public constructor(dataArray: IndexedByteArray) {
         super();
         // 4 bytes:
-        // type, type, type, value
+        // Type, type, type, value
         const i = dataArray.currentIndex;
         this.generatorType = ((dataArray[i + 1] << 8) |
             dataArray[i]) as GeneratorType;
@@ -30,7 +30,7 @@ export function readGenerators(generatorChunk: RIFFChunk): Generator[] {
     ) {
         gens.push(new ReadGenerator(generatorChunk.chunkData));
     }
-    // remove terminal
+    // Remove terminal
     gens.pop();
     return gens;
 }

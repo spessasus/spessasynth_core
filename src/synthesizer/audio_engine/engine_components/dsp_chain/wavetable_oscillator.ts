@@ -2,7 +2,7 @@ import { type InterpolationType, interpolationTypes } from "../../../enums";
 import type { Voice } from "../voice";
 
 /**
- * wavetable_oscillator.ts
+ * Wavetable_oscillator.ts
  * purpose: plays back raw audio data at an arbitrary playback rate
  */
 
@@ -19,7 +19,7 @@ export class WavetableOscillator {
         interpolation: InterpolationType
     ) {
         const step = voice.currentTuningCalculated * voice.sample.playbackStep;
-        // why not?
+        // Why not?
         if (step === 1) {
             WavetableOscillator.getSampleNearest(voice, outputBuffer, step);
             return;
@@ -58,12 +58,12 @@ export class WavetableOscillator {
         if (sample.isLooping) {
             const loopLength = sample.loopEnd - sample.loopStart;
             for (let i = 0; i < outputBuffer.length; i++) {
-                // check for loop
+                // Check for loop
                 while (cur >= sample.loopEnd) {
                     cur -= loopLength;
                 }
 
-                // grab the 2 nearest points
+                // Grab the 2 nearest points
                 const floor = ~~cur;
                 let ceil = floor + 1;
 
@@ -73,7 +73,7 @@ export class WavetableOscillator {
 
                 const fraction = cur - floor;
 
-                // grab the samples and interpolate
+                // Grab the samples and interpolate
                 const upper = sampleData[ceil];
                 const lower = sampleData[floor];
                 outputBuffer[i] = lower + (upper - lower) * fraction;
@@ -82,11 +82,11 @@ export class WavetableOscillator {
             }
         } else {
             for (let i = 0; i < outputBuffer.length; i++) {
-                // linear interpolation
+                // Linear interpolation
                 const floor = ~~cur;
                 const ceil = floor + 1;
 
-                // flag the voice as finished if needed
+                // Flag the voice as finished if needed
                 if (ceil >= sample.end) {
                     voice.finished = true;
                     return;
@@ -94,7 +94,7 @@ export class WavetableOscillator {
 
                 const fraction = cur - floor;
 
-                // grab the samples and interpolate
+                // Grab the samples and interpolate
                 const upper = sampleData[ceil];
                 const lower = sampleData[floor];
                 outputBuffer[i] = lower + (upper - lower) * fraction;
@@ -123,12 +123,12 @@ export class WavetableOscillator {
         if (sample.isLooping) {
             const loopLength = sample.loopEnd - sample.loopStart;
             for (let i = 0; i < outputBuffer.length; i++) {
-                // check for loop
+                // Check for loop
                 while (cur >= sample.loopEnd) {
                     cur -= loopLength;
                 }
 
-                // grab the nearest neighbor
+                // Grab the nearest neighbor
                 let ceil = ~~cur + 1;
 
                 while (ceil >= sample.loopEnd) {
@@ -140,10 +140,10 @@ export class WavetableOscillator {
             }
         } else {
             for (let i = 0; i < outputBuffer.length; i++) {
-                // nearest neighbor
+                // Nearest neighbor
                 const ceil = ~~cur + 1;
 
-                // flag the voice as finished if needed
+                // Flag the voice as finished if needed
                 if (ceil >= sample.end) {
                     voice.finished = true;
                     return;
@@ -174,19 +174,19 @@ export class WavetableOscillator {
         if (sample.isLooping) {
             const loopLength = sample.loopEnd - sample.loopStart;
             for (let i = 0; i < outputBuffer.length; i++) {
-                // check for loop (it can exceed the end point multiple times)
+                // Check for loop (it can exceed the end point multiple times)
                 while (cur >= sample.loopEnd) {
                     cur -= loopLength;
                 }
 
-                // grab the 4 points
-                const y0 = ~~cur; // point before the cursor. twice bitwise-not is just a faster Math.floor
-                let y1 = y0 + 1; // point after the cursor
-                let y2 = y0 + 2; // point 1 after the cursor
-                let y3 = y0 + 3; // point 2 after the cursor
-                const t = cur - y0; // the distance from y0 to cursor [0;1]
-                // y0 is not handled here
-                // as it's math.floor of cur which is handled above
+                // Grab the 4 points
+                const y0 = ~~cur; // Point before the cursor. twice bitwise-not is just a faster Math.floor
+                let y1 = y0 + 1; // Point after the cursor
+                let y2 = y0 + 2; // Point 1 after the cursor
+                let y3 = y0 + 3; // Point 2 after the cursor
+                const t = cur - y0; // The distance from y0 to cursor [0;1]
+                // Y0 is not handled here
+                // As it's math.floor of cur which is handled above
                 if (y1 >= sample.loopEnd) {
                     y1 -= loopLength;
                 }
@@ -197,13 +197,13 @@ export class WavetableOscillator {
                     y3 -= loopLength;
                 }
 
-                // grab the samples
+                // Grab the samples
                 const xm1 = sampleData[y0];
                 const x0 = sampleData[y1];
                 const x1 = sampleData[y2];
                 const x2 = sampleData[y3];
 
-                // interpolate
+                // Interpolate
                 // https://www.musicdsp.org/en/latest/Other/93-hermite-interpollation.html
                 const c = (x1 - xm1) * 0.5;
                 const v = x0 - x1;
@@ -216,26 +216,26 @@ export class WavetableOscillator {
             }
         } else {
             for (let i = 0; i < outputBuffer.length; i++) {
-                // grab the 4 points
-                const y0 = ~~cur; // point before the cursor. twice bitwise-not is just a faster Math.floor
-                const y1 = y0 + 1; // point after the cursor
-                const y2 = y0 + 2; // point 1 after the cursor
-                const y3 = y0 + 3; // point 2 after the cursor
-                const t = cur - y0; // the distance from y0 to cursor [0;1]
+                // Grab the 4 points
+                const y0 = ~~cur; // Point before the cursor. twice bitwise-not is just a faster Math.floor
+                const y1 = y0 + 1; // Point after the cursor
+                const y2 = y0 + 2; // Point 1 after the cursor
+                const y3 = y0 + 3; // Point 2 after the cursor
+                const t = cur - y0; // The distance from y0 to cursor [0;1]
 
-                // flag as finished if needed
+                // Flag as finished if needed
                 if (y1 >= sample.end || y2 >= sample.end || y3 >= sample.end) {
                     voice.finished = true;
                     return;
                 }
 
-                // grab the samples
+                // Grab the samples
                 const xm1 = sampleData[y0];
                 const x0 = sampleData[y1];
                 const x1 = sampleData[y2];
                 const x2 = sampleData[y3];
 
-                // interpolate
+                // Interpolate
                 // https://www.musicdsp.org/en/latest/Other/93-hermite-interpollation.html
                 const c = (x1 - xm1) * 0.5;
                 const v = x0 - x1;

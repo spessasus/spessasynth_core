@@ -22,39 +22,39 @@ export function readArticulation(
     const generators: Generator[] = [];
     const modulators: Modulator[] = [];
 
-    // cbSize (ignore)
+    // CbSize (ignore)
     readLittleEndian(artData, 4);
     const connectionsAmount = readLittleEndian(artData, 4);
     for (let i = 0; i < connectionsAmount; i++) {
-        // read the block
+        // Read the block
         const source = readLittleEndian(artData, 2);
         const control = readLittleEndian(artData, 2);
         const destination = readLittleEndian(artData, 2);
         const transform = readLittleEndian(artData, 2);
         const scale = readLittleEndian(artData, 4) | 0;
-        const value = scale >> 16; // convert it to 16 bit as soundfont uses that
+        const value = scale >> 16; // Convert it to 16 bit as soundfont uses that
 
-        // modulatorConverterDebug(
-        //     source,
-        //     control,
-        //     destination,
-        //     value,
-        //     transform
+        // ModulatorConverterDebug(
+        //     Source,
+        //     Control,
+        //     Destination,
+        //     Value,
+        //     Transform
         // );
 
-        // interpret this somehow...
-        // if source and control are both zero, it's a generator
+        // Interpret this somehow...
+        // If source and control are both zero, it's a generator
         if (source === 0 && control === 0 && transform === 0) {
             let generator: Generator | undefined;
             switch (destination) {
                 case DLSDestinations.pan:
-                    generator = new Generator(generatorTypes.pan, value); // turn percent into tenths of percent
+                    generator = new Generator(generatorTypes.pan, value); // Turn percent into tenths of percent
                     break;
                 case DLSDestinations.gain:
                     generator = new Generator(
                         generatorTypes.initialAttenuation,
                         (-value * 10) / 0.4
-                    ); // turn to centibels and apply emu correction
+                    ); // Turn to centibels and apply emu correction
                     break;
                 case DLSDestinations.filterCutoff:
                     generator = new Generator(
@@ -69,7 +69,7 @@ export function readArticulation(
                     );
                     break;
 
-                // mod lfo raw values it seems
+                // Mod lfo raw values it seems
                 case DLSDestinations.modLfoFreq:
                     generator = new Generator(generatorTypes.freqModLFO, value);
                     break;
@@ -89,7 +89,7 @@ export function readArticulation(
                     );
                     break;
 
-                // vol. env: all times are timecents like sf2
+                // Vol. env: all times are timecents like sf2
                 case DLSDestinations.volEnvDelay:
                     generator = new Generator(
                         generatorTypes.delayVolEnv,
@@ -103,7 +103,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.volEnvHold:
-                    // do not validate because keyNumToSomething
+                    // Do not validate because keyNumToSomething
                     generator = new Generator(
                         generatorTypes.holdVolEnv,
                         value,
@@ -111,7 +111,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.volEnvDecay:
-                    // do not validate because keyNumToSomething
+                    // Do not validate because keyNumToSomething
                     generator = new Generator(
                         generatorTypes.decayVolEnv,
                         value,
@@ -125,7 +125,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.volEnvSustain:
-                    // gain seems to be (1000 - value) / 10 = sustain dB
+                    // Gain seems to be (1000 - value) / 10 = sustain dB
                     {
                         const sustainCb = 1000 - value;
                         generator = new Generator(
@@ -135,7 +135,7 @@ export function readArticulation(
                     }
                     break;
 
-                // mod env
+                // Mod env
                 case DLSDestinations.modEnvDelay:
                     generator = new Generator(
                         generatorTypes.delayModEnv,
@@ -149,7 +149,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.modEnvHold:
-                    // do not validate because keyNumToSomething
+                    // Do not validate because keyNumToSomething
                     generator = new Generator(
                         generatorTypes.holdModEnv,
                         value,
@@ -157,7 +157,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.modEnvDecay:
-                    // do not validate because keyNumToSomething
+                    // Do not validate because keyNumToSomething
                     generator = new Generator(
                         generatorTypes.decayModEnv,
                         value,
@@ -171,7 +171,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.modEnvSustain: {
-                    // dls uses 1%, soundfont uses 0.1%
+                    // Dls uses 1%, soundfont uses 0.1%
                     const percentageSustain = 1000 - value;
                     generator = new Generator(
                         generatorTypes.sustainModEnv,
@@ -193,7 +193,7 @@ export function readArticulation(
                     );
                     break;
                 case DLSDestinations.pitch: {
-                    // split it up
+                    // Split it up
                     const semi = Math.floor(value / 100);
                     const cents = Math.floor(value - semi * 100);
                     generator = new Generator(generatorTypes.fineTune, cents);
@@ -207,7 +207,7 @@ export function readArticulation(
                 generators.push(generator);
             }
         }
-        // if not, modulator?
+        // If not, modulator?
         else {
             let isGenerator = true;
 
@@ -216,13 +216,13 @@ export function readArticulation(
                 keyToGen: GeneratorType,
                 realGen: GeneratorType
             ) => {
-                // according to viena and another strange (with modulators) rendition of gm.dls in sf2,
-                // it shall be divided by -128
-                // and a strange correction needs to be applied to the real value:
-                // real + (60 / 128) * scale
+                // According to viena and another strange (with modulators) rendition of gm.dls in sf2,
+                // It shall be divided by -128
+                // And a strange correction needs to be applied to the real value:
+                // Real + (60 / 128) * scale
                 const keyToGenValue = value / -128;
                 generators.push(new Generator(keyToGen, keyToGenValue));
-                // airfont 340 fix
+                // Airfont 340 fix
                 if (keyToGenValue <= 120) {
                     const correction = Math.round((60 / 128) * value);
                     generators.forEach((g) => {
@@ -233,9 +233,9 @@ export function readArticulation(
                 }
             };
 
-            // a few special cases which are generators:
+            // A few special cases which are generators:
             if (control === DLSSources.none) {
-                // mod lfo to pitch
+                // Mod lfo to pitch
                 if (
                     source === DLSSources.modLfo &&
                     destination === DLSDestinations.pitch
@@ -247,7 +247,7 @@ export function readArticulation(
                     source === DLSSources.modLfo &&
                     destination === DLSDestinations.gain
                 ) {
-                    // mod lfo to volume
+                    // Mod lfo to volume
                     generators.push(
                         new Generator(generatorTypes.modLfoToVolume, value)
                     );
@@ -255,7 +255,7 @@ export function readArticulation(
                     source === DLSSources.modLfo &&
                     destination === DLSDestinations.filterCutoff
                 ) {
-                    // mod lfo to filter
+                    // Mod lfo to filter
                     generators.push(
                         new Generator(generatorTypes.modLfoToFilterFc, value)
                     );
@@ -263,7 +263,7 @@ export function readArticulation(
                     source === DLSSources.vibratoLfo &&
                     destination === DLSDestinations.pitch
                 ) {
-                    // vib lfo to pitch
+                    // Vib lfo to pitch
                     generators.push(
                         new Generator(generatorTypes.vibLfoToPitch, value)
                     );
@@ -271,7 +271,7 @@ export function readArticulation(
                     source === DLSSources.modEnv &&
                     destination === DLSDestinations.pitch
                 ) {
-                    // mod env to pitch
+                    // Mod env to pitch
                     generators.push(
                         new Generator(generatorTypes.modEnvToPitch, value)
                     );
@@ -279,7 +279,7 @@ export function readArticulation(
                     source === DLSSources.modEnv &&
                     destination === DLSDestinations.filterCutoff
                 ) {
-                    // mod env to filter
+                    // Mod env to filter
                     generators.push(
                         new Generator(generatorTypes.modEnvToFilterFc, value)
                     );
@@ -287,8 +287,8 @@ export function readArticulation(
                     source === DLSSources.keyNum &&
                     destination === DLSDestinations.pitch
                 ) {
-                    // scale tuning (key number to pitch)
-                    // this is just a soundfont generator, but the amount must be changed
+                    // Scale tuning (key number to pitch)
+                    // This is just a soundfont generator, but the amount must be changed
                     // 12,800 means the regular scale (100)
                     generators.push(
                         new Generator(generatorTypes.scaleTuning, value / 128)
@@ -297,7 +297,7 @@ export function readArticulation(
                     source === DLSSources.keyNum &&
                     destination === DLSDestinations.volEnvHold
                 ) {
-                    // key to vol env hold
+                    // Key to vol env hold
                     applyKeyToCorrection(
                         value,
                         generatorTypes.keyNumToVolEnvHold,
@@ -307,7 +307,7 @@ export function readArticulation(
                     source === DLSSources.keyNum &&
                     destination === DLSDestinations.volEnvDecay
                 ) {
-                    // key to vol env decay
+                    // Key to vol env decay
                     applyKeyToCorrection(
                         value,
                         generatorTypes.keyNumToVolEnvDecay,
@@ -317,7 +317,7 @@ export function readArticulation(
                     source === DLSSources.keyNum &&
                     destination === DLSDestinations.modEnvHold
                 ) {
-                    // key to mod env hold
+                    // Key to mod env hold
                     applyKeyToCorrection(
                         value,
                         generatorTypes.keyNumToModEnvHold,
@@ -327,7 +327,7 @@ export function readArticulation(
                     source === DLSSources.keyNum &&
                     destination === DLSDestinations.modEnvDecay
                 ) {
-                    // key to mod env decay
+                    // Key to mod env decay
                     applyKeyToCorrection(
                         value,
                         generatorTypes.keyNumToModEnvDecay,
@@ -341,8 +341,8 @@ export function readArticulation(
             }
             if (!isGenerator) {
                 // UNCOMMENT TO ENABLE DEBUG
-                // modulatorConverterDebug(source, control, destination, value, transform)
-                // convert it to modulator
+                // ModulatorConverterDebug(source, control, destination, value, transform)
+                // Convert it to modulator
                 const mod = getSF2ModulatorFromArticulator(
                     source,
                     control,
@@ -351,7 +351,7 @@ export function readArticulation(
                     value
                 );
                 if (mod) {
-                    // some articulators cannot be turned into modulators, that's why this check is a thing
+                    // Some articulators cannot be turned into modulators, that's why this check is a thing
                     modulators.push(mod);
                 } else {
                     SpessaSynthWarn("Failed converting to SF2 Modulator!");
@@ -360,12 +360,12 @@ export function readArticulation(
         }
     }
 
-    // it seems that dls 1 does not have vibrato lfo, so we shall disable it
+    // It seems that dls 1 does not have vibrato lfo, so we shall disable it
     if (disableVibrato) {
         modulators.push(
-            // mod to vib
+            // Mod to vib
             Modulator.copy(DLS_1_NO_VIBRATO_MOD),
-            // press to vib
+            // Press to vib
             Modulator.copy(DLS_1_NO_VIBRATO_PRESSURE)
         );
     }

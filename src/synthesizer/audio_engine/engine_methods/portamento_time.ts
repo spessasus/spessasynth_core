@@ -43,7 +43,7 @@ function getLookup(value: number): number {
     if (portamentoLookup[value] !== undefined) {
         return portamentoLookup[value];
     }
-    // get the nearest lower and upper points from the lookup table
+    // Get the nearest lower and upper points from the lookup table
     let lower = null;
     let upper = null;
 
@@ -57,12 +57,12 @@ function getLookup(value: number): number {
         }
     }
 
-    // if we have found both lower and upper points, perform linear interpolation
+    // If we have found both lower and upper points, perform linear interpolation
     if (lower !== null && upper !== null) {
         const lowerTime = portamentoLookup[lower];
         const upperTime = portamentoLookup[upper];
 
-        // linear interpolation
+        // Linear interpolation
         return (
             lowerTime +
             ((value - lower) * (upperTime - lowerTime)) / (upper - lower)
@@ -81,7 +81,7 @@ export function portamentoTimeToSeconds(
     time: number,
     distance: number
 ): number {
-    // this seems to work fine for the MIDIs I have.
-    // why? No idea, but it does. :-)
+    // This seems to work fine for the MIDIs I have.
+    // Why? No idea, but it does. :-)
     return getLookup(time) * (distance / 30);
 }

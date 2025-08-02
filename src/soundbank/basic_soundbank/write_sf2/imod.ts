@@ -14,12 +14,12 @@ import type { BasicZone } from "../basic_zone";
  * @returns {ReturnedExtendedSf2Chunks}
  */
 export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
-    // very similar to igen,
-    // go through all instruments -> zones and write modulators sequentially
-    let imodSize = MOD_BYTE_SIZE; // terminal
+    // Very similar to igen,
+    // Go through all instruments -> zones and write modulators sequentially
+    let imodSize = MOD_BYTE_SIZE; // Terminal
     for (const inst of bank.instruments) {
         imodSize += inst.globalZone.modulators.length * MOD_BYTE_SIZE;
-        // start with one mod for global
+        // Start with one mod for global
         imodSize += inst.zones.reduce(
             (sum, z) => z.modulators.length * MOD_BYTE_SIZE + sum,
             0
@@ -38,14 +38,14 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     };
 
     for (const inst of bank.instruments) {
-        // global
+        // Global
         writeZone(inst.globalZone);
         for (const instrumentZone of inst.zones) {
             writeZone(instrumentZone);
         }
     }
 
-    // terminal modulator, is zero
+    // Terminal modulator, is zero
     writeLittleEndian(imodData, 0, MOD_BYTE_SIZE);
 
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
@@ -57,6 +57,6 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     return {
         pdta: imod,
         xdta: ximod,
-        highestIndex: 0 // not applicable
+        highestIndex: 0 // Not applicable
     };
 }

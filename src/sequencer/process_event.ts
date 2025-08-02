@@ -16,7 +16,7 @@ export function processEventInternal(
     trackIndex: number
 ) {
     if (this.externalMIDIPlayback) {
-        // do not send meta events
+        // Do not send meta events
         if (event.statusByte >= 0x80) {
             this.sendMIDIMessage([event.statusByte, ...event.data]);
             return;
@@ -27,7 +27,7 @@ export function processEventInternal(
     const offset =
         this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
     statusByteData.channel += offset;
-    // process the event
+    // Process the event
     switch (statusByteData.status) {
         case midiMessageTypes.noteOn: {
             const velocity = event.data[1];
@@ -78,7 +78,7 @@ export function processEventInternal(
             break;
 
         case midiMessageTypes.controllerChange:
-            // empty tracks cannot cc change
+            // Empty tracks cannot cc change
             if (this._midiData.isMultiPort && track.channels.size === 0) {
                 return;
             }
@@ -90,7 +90,7 @@ export function processEventInternal(
             break;
 
         case midiMessageTypes.programChange:
-            // empty tracks cannot program change
+            // Empty tracks cannot program change
             if (this._midiData.isMultiPort && track.channels.size === 0) {
                 return;
             }
@@ -127,7 +127,7 @@ export function processEventInternal(
             break;
         }
 
-        // recognized but ignored
+        // Recognized but ignored
         case midiMessageTypes.timeSignature:
         case midiMessageTypes.endOfTrack:
         case midiMessageTypes.midiChannelPrefix:

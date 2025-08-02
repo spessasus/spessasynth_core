@@ -10,7 +10,7 @@ export function processTick(this: SpessaSynthSequencer) {
     }
     const currentTime = this.currentTime;
     while (this.playedTime < currentTime) {
-        // find the next event and process it
+        // Find the next event and process it
         const trackIndex = this.findFirstEventIndex();
         const track = this._midiData.tracks[trackIndex];
         const event = track.events[this.eventIndexes[trackIndex]++];
@@ -18,18 +18,18 @@ export function processTick(this: SpessaSynthSequencer) {
 
         const canLoop = this.loopCount > 0;
 
-        // find the next event
+        // Find the next event
         const nextTrackIndex = this.findFirstEventIndex();
         const nextTrack = this._midiData.tracks[nextTrackIndex];
-        // check for loop
+        // Check for loop
         if (
-            // events
+            // Events
             nextTrack.events.length <= this.eventIndexes[nextTrackIndex] ||
-            // loop
+            // Loop
             this._midiData.loop.end <= event.ticks
         ) {
             if (canLoop) {
-                // loop
+                // Loop
                 if (this.loopCount !== Infinity) {
                     this.loopCount--;
                     this.callEvent("loopCountChange", {
@@ -39,7 +39,7 @@ export function processTick(this: SpessaSynthSequencer) {
                 this.setTimeTicks(this._midiData.loop.start);
                 return;
             }
-            // stop the playback
+            // Stop the playback
             this.songIsFinished();
             return;
         }

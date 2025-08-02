@@ -41,7 +41,7 @@ export class BasicZone {
         this.generators.unshift(generator);
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // Noinspection JSUnusedGlobalSymbols
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */

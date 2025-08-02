@@ -64,7 +64,7 @@ export function parseBankSelect(
         let canSetBankSelect = true;
         switch (system) {
             case "gm":
-                // gm ignores bank select
+                // Gm ignores bank select
                 SpessaSynthInfo(
                     `%cIgnoring the Bank Select (${bank}), as the synth is in GM mode.`,
                     consoleColors.info
@@ -74,11 +74,11 @@ export function parseBankSelect(
 
             case "xg":
                 canSetBankSelect = isValidXGMSB(bank);
-                // for xg, if msb is 120, 126 or 127, then it's drums
+                // For xg, if msb is 120, 126 or 127, then it's drums
                 if (isXGDrums(bank)) {
                     drumsStatus = 2;
                 } else {
-                    // drums shall not be disabled on channel 9
+                    // Drums shall not be disabled on channel 9
                     if (channelNumber % 16 !== DEFAULT_PERCUSSION) {
                         drumsStatus = 1;
                     }
@@ -100,7 +100,7 @@ export function parseBankSelect(
             bank = 128;
         }
         if (bank === 128 && !isDrums) {
-            // if a channel is not for percussion, default to bank current
+            // If a channel is not for percussion, default to bank current
             bank = bankBefore;
         }
         if (canSetBankSelect) {
@@ -138,11 +138,11 @@ export function chooseBank(
                 return 128;
             }
         } else {
-            // check for SFX
+            // Check for SFX
             if (isValidXGMSB(msb)) {
                 return msb;
             }
-            // if lsb is 0 and msb is not, use that
+            // If lsb is 0 and msb is not, use that
             if (lsb === 0 && msb !== 0) {
                 return msb;
             }

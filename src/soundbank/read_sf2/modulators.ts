@@ -30,7 +30,7 @@ export function readModulators(modulatorChunk: RIFFChunk): Modulator[] {
             )
         );
     }
-    // remove terminal
+    // Remove terminal
     mods.pop();
     return mods;
 }

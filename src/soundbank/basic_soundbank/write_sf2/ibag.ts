@@ -8,7 +8,7 @@ import type { BasicZone } from "../basic_zone";
 const BAG_SIZE = 4;
 
 export function getIBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
-    // write all ibag with their start indexes as they were changed in getIGEN() and getIMOD()
+    // Write all ibag with their start indexes as they were changed in getIGEN() and getIMOD()
     const ibagSize = bank.instruments.reduce(
         (sum, i) =>
             // +1 because global zone
@@ -21,10 +21,10 @@ export function getIBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     let generatorIndex = 0;
     let modulatorIndex = 0;
     const writeZone = (z: BasicZone) => {
-        // bottom WORD: regular ibag
+        // Bottom WORD: regular ibag
         writeWord(ibagData, generatorIndex & 0xffff);
         writeWord(ibagData, modulatorIndex & 0xffff);
-        // top WORD: extended ibag
+        // Top WORD: extended ibag
         writeWord(xibagData, generatorIndex >> 16);
         writeWord(xibagData, modulatorIndex >> 16);
         generatorIndex += z.generators.length;
@@ -37,7 +37,7 @@ export function getIBAG(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
             writeZone(ibag);
         }
     }
-    // write the terminal IBAG
+    // Write the terminal IBAG
     writeWord(ibagData, generatorIndex & 0xffff);
     writeWord(ibagData, modulatorIndex & 0xffff);
     writeWord(xibagData, generatorIndex >> 16);

@@ -11,10 +11,10 @@ export function readVariableLengthQuantity(
     let out = 0;
     while (MIDIbyteArray) {
         const byte = MIDIbyteArray[MIDIbyteArray.currentIndex++];
-        // extract the first 7 bytes
+        // Extract the first 7 bytes
         out = (out << 7) | (byte & 127);
 
-        // if the last byte isn't 1, stop reading
+        // If the last byte isn't 1, stop reading
         if (byte >> 7 !== 1) {
             break;
         }

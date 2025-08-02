@@ -16,7 +16,7 @@ import { modulatorSources } from "../../../../../soundbank/enums";
  * @param dataValue The value to set for the data entry fine controller (0-127).
  */
 export function dataEntryFine(this: MIDIChannel, dataValue: number) {
-    // store in cc table
+    // Store in cc table
     this.midiControllers[midiControllers.lsbForControl6DataEntry] =
         dataValue << 7;
     switch (this.dataEntryState) {
@@ -32,7 +32,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                 default:
                     break;
 
-                // pitch bend range fine tune
+                // Pitch bend range fine tune
                 case registeredParameterTypes.pitchBendRange: {
                     if (dataValue === 0) {
                         break;
@@ -56,17 +56,17 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                     break;
                 }
 
-                // fine-tuning
+                // Fine-tuning
                 case registeredParameterTypes.fineTuning: {
-                    // grab the data and shift
+                    // Grab the data and shift
                     const coarse =
                         this.customControllers[customControllers.channelTuning];
                     const finalTuning = (coarse << 7) | dataValue;
-                    this.setTuning(finalTuning * 0.01220703125); // multiply by 8192 / 100 (cent increments)
+                    this.setTuning(finalTuning * 0.01220703125); // Multiply by 8192 / 100 (cent increments)
                     break;
                 }
 
-                // modulation depth
+                // Modulation depth
                 case registeredParameterTypes.modulationDepth: {
                     const currentModulationDepthCents =
                         this.customControllers[

@@ -19,7 +19,7 @@ import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
 /**
- * compute_modulator.ts
+ * Compute_modulator.ts
  * purpose: precomputes all curve types and computes modulators
  */
 
@@ -41,7 +41,7 @@ export function computeModulator(
         modulator.currentValue = 0;
         return 0;
     }
-    // mapped to 0-16,384
+    // Mapped to 0-16,384
     let rawSourceValue;
     if (modulator.sourceUsesCC) {
         rawSourceValue = controllerTable[modulator.sourceIndex];
@@ -49,7 +49,7 @@ export function computeModulator(
         const index = modulator.sourceIndex + NON_CC_INDEX_OFFSET;
         switch (modulator.sourceIndex) {
             case modulatorSources.noController:
-                rawSourceValue = 16383; // equals to 1
+                rawSourceValue = 16383; // Equals to 1
                 break;
 
             case modulatorSources.noteOnKeyNum:
@@ -65,7 +65,7 @@ export function computeModulator(
                 break;
 
             default:
-                rawSourceValue = controllerTable[index]; // pitch bend and range are stored in the cc table
+                rawSourceValue = controllerTable[index]; // Pitch bend and range are stored in the cc table
                 break;
         }
     }
@@ -75,7 +75,7 @@ export function computeModulator(
             modulator.sourceDirection
         ][rawSourceValue];
 
-    // mapped to 0-127
+    // Mapped to 0-127
     let rawSecondSrcValue;
     if (modulator.secSrcUsesCC) {
         rawSecondSrcValue = controllerTable[modulator.secSrcIndex];
@@ -83,7 +83,7 @@ export function computeModulator(
         const index = modulator.secSrcIndex + NON_CC_INDEX_OFFSET;
         switch (modulator.secSrcIndex) {
             case modulatorSources.noController:
-                rawSecondSrcValue = 16383; // equals to 1
+                rawSecondSrcValue = 16383; // Equals to 1
                 break;
 
             case modulatorSources.noteOnKeyNum:
@@ -99,7 +99,7 @@ export function computeModulator(
                 break;
 
             default:
-                rawSecondSrcValue = controllerTable[index]; // pitch bend and range are stored in the cc table
+                rawSecondSrcValue = controllerTable[index]; // Pitch bend and range are stored in the cc table
         }
     }
     const secondSrcValue =
@@ -107,24 +107,24 @@ export function computeModulator(
             modulator.secSrcDirection
         ][rawSecondSrcValue];
 
-    // see the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
+    // See the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
     let transformAmount = modulator.transformAmount;
     if (modulator.isEffectModulator && transformAmount <= 1000) {
         transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;
         transformAmount = Math.min(transformAmount, 1000);
     }
 
-    // compute the modulator
+    // Compute the modulator
     let computedValue = sourceValue * secondSrcValue * transformAmount;
 
     if (modulator.transformType === 2) {
-        // abs value
+        // Abs value
         computedValue = Math.abs(computedValue);
     }
 
-    // resonant modulator: take its value and ensure that it won't change the final gain
+    // Resonant modulator: take its value and ensure that it won't change the final gain
     if (modulator.isDefaultResonantModulator) {
-        // half the gain, negates the filter
+        // Half the gain, negates the filter
         voice.resonanceOffset = Math.max(0, computedValue / 2);
     }
 
@@ -146,7 +146,7 @@ export function computeModulators(
 ) {
     const modulators = voice.modulators;
     let generators = voice.generators;
-    // apply offsets if enabled
+    // Apply offsets if enabled
     if (this.generatorOffsetsEnabled) {
         generators = new Int16Array(generators);
         for (let i = 0; i < generators.length; i++) {
@@ -165,11 +165,11 @@ export function computeModulators(
                 voice
             );
         });
-        // apply limits
+        // Apply limits
         for (let gen = 0; gen < modulatedGenerators.length; gen++) {
             const limit = generatorLimits[gen];
             if (!limit) {
-                // skip unused
+                // Skip unused
                 continue;
             }
             modulatedGenerators[gen] = Math.min(
@@ -208,15 +208,15 @@ export function computeModulators(
             if (!computedDestinations.has(destination)) {
                 // Reset this destination
                 modulatedGenerators[destination] = generators[destination];
-                // compute our modulator
+                // Compute our modulator
                 computeModulator(this.midiControllers, mod, voice);
-                // sum the values of all modulators for this destination
+                // Sum the values of all modulators for this destination
                 modulators.forEach((m) => {
                     if (m.destination === destination) {
                         modulatedGenerators[destination] += m.currentValue;
                     }
                 });
-                // apply limits
+                // Apply limits
                 const limits = generatorLimits[destination];
                 modulatedGenerators[destination] = Math.max(
                     limits.min,
@@ -240,7 +240,7 @@ export function computeModulators(
 }
 
 /**
- * as follows: transforms[curveType][polarity][direction] is an array
+ * As follows: transforms[curveType][polarity][direction] is an array
  */
 const transforms: [
     [Float32Array, Float32Array],
@@ -260,7 +260,7 @@ for (let c = 0; c < 4; c++) {
         ]
     ];
     for (let i = 0; i < MOD_PRECOMPUTED_LENGTH; i++) {
-        // polarity 0 dir 0
+        // Polarity 0 dir 0
         transforms[curve][0][0][i] = getModulatorCurveValue(
             0,
             curve,
@@ -268,7 +268,7 @@ for (let c = 0; c < 4; c++) {
             0
         );
 
-        // polarity 1 dir 0
+        // Polarity 1 dir 0
         transforms[curve][1][0][i] = getModulatorCurveValue(
             0,
             curve,
@@ -276,7 +276,7 @@ for (let c = 0; c < 4; c++) {
             1
         );
 
-        // polarity 0 dir 1
+        // Polarity 0 dir 1
         transforms[curve][0][1][i] = getModulatorCurveValue(
             1,
             curve,
@@ -284,7 +284,7 @@ for (let c = 0; c < 4; c++) {
             0
         );
 
-        // polarity 1 dir 1
+        // Polarity 1 dir 1
         transforms[curve][1][1][i] = getModulatorCurveValue(
             1,
             curve,

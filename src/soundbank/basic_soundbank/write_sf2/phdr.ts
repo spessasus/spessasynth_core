@@ -15,7 +15,7 @@ export function getPHDR(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const phdrData = new IndexedByteArray(phdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xphdrData = new IndexedByteArray(phdrSize);
-    // the preset start is adjusted in pbag, this is only for the terminal preset index
+    // The preset start is adjusted in pbag, this is only for the terminal preset index
     let presetStart = 0;
     for (const preset of bank.presets) {
         writeStringAsBytes(phdrData, preset.name.substring(0, 20), 20);
@@ -35,18 +35,18 @@ export function getPHDR(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
 
         xphdrData.currentIndex += 12;
 
-        presetStart += preset.zones.length + 1; // global
+        presetStart += preset.zones.length + 1; // Global
     }
-    // write EOP
+    // Write EOP
     writeStringAsBytes(phdrData, "EOP", 20);
-    phdrData.currentIndex += 4; // program, bank
+    phdrData.currentIndex += 4; // Program, bank
     writeWord(phdrData, presetStart & 0xffff);
-    phdrData.currentIndex += 12; // library, genre, morphology
+    phdrData.currentIndex += 12; // Library, genre, morphology
 
     writeStringAsBytes(xphdrData, "EOP", 20);
-    xphdrData.currentIndex += 4; // program, bank
+    xphdrData.currentIndex += 4; // Program, bank
     writeWord(xphdrData, presetStart >> 16);
-    xphdrData.currentIndex += 12; // library, genre, morphology
+    xphdrData.currentIndex += 12; // Library, genre, morphology
 
     const phdr = writeRIFFChunkRaw("phdr", phdrData);
 

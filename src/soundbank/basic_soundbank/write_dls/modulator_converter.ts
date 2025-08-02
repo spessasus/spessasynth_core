@@ -36,7 +36,7 @@ function getDLSSourceFromSf2Source(cc: 0 | 1, index: number) {
     } else {
         switch (index) {
             default:
-                // cannot be a DLS articulator
+                // Cannot be a DLS articulator
                 return undefined;
 
             case modulatorSources.noteOnKeyNum:
@@ -66,8 +66,8 @@ function getDLSDestinationFromSf2(
             return undefined;
 
         case generatorTypes.initialAttenuation:
-            // the amount does not get EMU corrected here, as this only applies to modulator attenuation
-            // the generator (affected) attenuation is handled in wsmp.
+            // The amount does not get EMU corrected here, as this only applies to modulator attenuation
+            // The generator (affected) attenuation is handled in wsmp.
             return { dest: DLSDestinations.gain, amount: -amount };
         case generatorTypes.fineTune:
             return DLSDestinations.pitch;
@@ -134,7 +134,7 @@ function checkSF2SpecialCombos(dest: number, amt: number) {
     switch (dest) {
         default:
             return undefined;
-        // mod env
+        // Mod env
         case generatorTypes.modEnvToFilterFc:
             return {
                 source: DLSSources.modEnv,
@@ -150,7 +150,7 @@ function checkSF2SpecialCombos(dest: number, amt: number) {
                 isBipolar: false
             };
 
-        // mod lfo
+        // Mod lfo
         case generatorTypes.modLfoToFilterFc:
             return {
                 source: DLSSources.modLfo,
@@ -173,7 +173,7 @@ function checkSF2SpecialCombos(dest: number, amt: number) {
                 isBipolar: true
             };
 
-        // vib lfo
+        // Vib lfo
         case generatorTypes.vibLfoToPitch:
             return {
                 source: DLSSources.vibratoLfo,
@@ -182,7 +182,7 @@ function checkSF2SpecialCombos(dest: number, amt: number) {
                 isBipolar: true
             };
 
-        // key to something
+        // Key to something
         case generatorTypes.keyNumToVolEnvHold:
             return {
                 source: DLSSources.keyNum,
@@ -213,7 +213,7 @@ function checkSF2SpecialCombos(dest: number, amt: number) {
             };
 
         // Scale tuning is implemented in DLS via an articulator:
-        // keyNum to relative pitch at 12,800 cents.
+        // KeyNum to relative pitch at 12,800 cents.
         // Change that to scale tuning * 128.
         // Therefore, a regular scale is still 12,800, half is 6400, etc.
         case generatorTypes.scaleTuning:
@@ -221,7 +221,7 @@ function checkSF2SpecialCombos(dest: number, amt: number) {
                 source: DLSSources.keyNum,
                 dest: DLSDestinations.pitch,
                 amt: amt * 128,
-                isBipolar: false // according to table 4, this should be false.
+                isBipolar: false // According to table 4, this should be false.
             };
     }
 }
@@ -240,7 +240,7 @@ export function getDLSArticulatorFromSf2Generator(
         amount = dest.amount;
         destination = dest.dest;
     }
-    // check for special combo
+    // Check for special combo
     const combo = checkSF2SpecialCombos(gen.generatorType, gen.generatorValue);
     if (combo !== undefined) {
         amount = combo.amt;
@@ -312,13 +312,13 @@ export function getDLSArticulatorFromSf2Modulator(
     );
     if (specialCombo !== undefined) {
         amt = specialCombo.amt;
-        // move the source to control
+        // Move the source to control
         control = source;
         controlTransformType = sourceTransformType;
         controlBipolar = sourceBipolar;
         controlDirection = sourceDirection;
 
-        // set source as static as it's either: env, lfo or key num
+        // Set source as static as it's either: env, lfo or key num
         sourceTransformType = modulatorCurveTypes.linear;
         sourceBipolar = specialCombo.isBipolar ? 1 : 0;
         sourceDirection = 0;
@@ -329,13 +329,13 @@ export function getDLSArticulatorFromSf2Modulator(
         return undefined;
     }
 
-    // source curve type maps to a soundfont curve type in section 2.10, table 9
+    // Source curve type maps to a soundfont curve type in section 2.10, table 9
     let transform = 0;
     transform |= controlTransformType << 4;
     transform |= controlBipolar << 8;
     transform |= controlDirection << 9;
 
-    // use the source curve in output transform
+    // Use the source curve in output transform
     transform |= sourceTransformType;
     transform |= sourceBipolar << 14;
     transform |= sourceDirection << 15;

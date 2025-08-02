@@ -26,21 +26,21 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     const sampleLength = data.length / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
     if (bytesPerSample === 2) {
-        // special optimized case for s16 (most common)
+        // Special optimized case for s16 (most common)
         const s16 = new Int16Array(data.buffer);
         for (let i = 0; i < s16.length; i++) {
             sampleData[i] = s16[i] / 32768;
         }
     } else {
         for (let i = 0; i < sampleData.length; i++) {
-            // read
+            // Read
             let sample = readLittleEndian(data, bytesPerSample);
-            // turn into signed
+            // Turn into signed
             if (isUnsigned) {
-                // normalize unsigned 8-bit sample
+                // Normalize unsigned 8-bit sample
                 sampleData[i] = sample / normalizationFactor - 0.5;
             } else {
-                // normalize signed sample
+                // Normalize signed sample
                 if (sample >= maxSampleValue) {
                     sample -= maxUnsigned;
                 }
@@ -58,22 +58,22 @@ function readALAW(
     const sampleLength = data.length / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
     for (let i = 0; i < sampleData.length; i++) {
-        // read
+        // Read
         const input = readLittleEndian(data, bytesPerSample);
 
         // https://en.wikipedia.org/wiki/G.711#A-law
-        // re-toggle toggled bits
+        // Re-toggle toggled bits
         let sample = input ^ 0x55;
 
-        // remove sign bit
+        // Remove sign bit
         sample &= 0x7f;
 
-        // extract exponent
+        // Extract exponent
         const exponent = sample >> 4;
-        // extract mantissa
+        // Extract mantissa
         let mantissa = sample & 0xf;
         if (exponent > 0) {
-            mantissa += 16; // add leading '1', if exponent > 0
+            mantissa += 16; // Add leading '1', if exponent > 0
         }
 
         mantissa = (mantissa << 4) + 0x8;
@@ -83,7 +83,7 @@ function readALAW(
 
         const s16sample = input > 127 ? mantissa : -mantissa;
 
-        // convert to float
+        // Convert to float
         sampleData[i] = s16sample / 32678;
     }
     return sampleData;
@@ -91,7 +91,7 @@ function readALAW(
 
 export class DLSSample extends BasicSample {
     /**
-     * in decibels of attenuation, WITHOUT E-MU CORRECTION
+     * In decibels of attenuation, WITHOUT E-MU CORRECTION
      */
     public sampleDbAttenuation: number;
     protected wFormatTag: number;
@@ -176,7 +176,7 @@ export class DLSSample extends BasicSample {
             return super.getRawData(allowVorbis);
         }
         if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2) {
-            // copy straight away
+            // Copy straight away
             return this.rawData;
         }
         return this.encodeS16LE();

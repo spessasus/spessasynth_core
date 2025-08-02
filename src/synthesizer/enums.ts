@@ -33,14 +33,14 @@ export type DataEntryState =
     (typeof dataEntryStates)[keyof typeof dataEntryStates];
 
 export const customControllers = {
-    channelTuning: 0, // cents, RPN for fine tuning
-    channelTransposeFine: 1, // cents, only the decimal tuning, (e.g., transpose is 4.5,
-    // then shift by 4 keys + tune by 50 cents)
-    modulationMultiplier: 2, // cents, set by modulation depth RPN
-    masterTuning: 3, // cents, set by system exclusive
-    channelTuningSemitones: 4, // semitones, for RPN coarse tuning
-    channelKeyShift: 5, // key shift: for system exclusive
-    sf2NPRNGeneratorLSB: 6 // sf2 NPRN LSB for selecting a generator value
+    channelTuning: 0, // Cents, RPN for fine tuning
+    channelTransposeFine: 1, // Cents, only the decimal tuning, (e.g., transpose is 4.5,
+    // Then shift by 4 keys + tune by 50 cents)
+    modulationMultiplier: 2, // Cents, set by modulation depth RPN
+    masterTuning: 3, // Cents, set by system exclusive
+    channelTuningSemitones: 4, // Semitones, for RPN coarse tuning
+    channelKeyShift: 5, // Key shift: for system exclusive
+    sf2NPRNGeneratorLSB: 6 // Sf2 NPRN LSB for selecting a generator value
 } as const;
 
 export type CustomController =

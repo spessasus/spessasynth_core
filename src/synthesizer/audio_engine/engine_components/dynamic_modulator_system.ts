@@ -9,7 +9,7 @@ import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator
  */
 export class DynamicModulatorSystem {
     /**
-     * the current dynamic modulator list.
+     * The current dynamic modulator list.
      */
     public modulatorList: { mod: Modulator; id: string }[] = [];
 

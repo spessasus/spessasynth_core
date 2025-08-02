@@ -34,7 +34,7 @@ export class DLSZone extends BasicInstrumentZone {
             new Generator(generatorTypes.initialAttenuation, attenuationCb)
         );
 
-        // correct tuning if needed
+        // Correct tuning if needed
         samplePitchCorrection -= sample.pitchCorrection;
         const coarseTune = Math.trunc(samplePitchCorrection / 100);
         if (coarseTune !== 0) {
@@ -49,7 +49,7 @@ export class DLSZone extends BasicInstrumentZone {
             );
         }
 
-        // correct loop if needed
+        // Correct loop if needed
         if (loopingMode !== 0) {
             const diffStart = loop.start - sample.loopStart;
             const diffEnd = loop.end - sample.loopEnd;
@@ -58,7 +58,7 @@ export class DLSZone extends BasicInstrumentZone {
                 this.addGenerators(
                     new Generator(generatorTypes.startloopAddrsOffset, fine)
                 );
-                // coarse generator uses 32768 samples per step
+                // Coarse generator uses 32768 samples per step
                 const coarse = Math.trunc(diffStart / 32768);
                 if (coarse !== 0) {
                     this.addGenerators(
@@ -74,7 +74,7 @@ export class DLSZone extends BasicInstrumentZone {
                 this.addGenerators(
                     new Generator(generatorTypes.endloopAddrsOffset, fine)
                 );
-                // coarse generator uses 32768 samples per step
+                // Coarse generator uses 32768 samples per step
                 const coarse = Math.trunc(diffEnd / 32768);
                 if (coarse !== 0) {
                     this.addGenerators(
@@ -86,12 +86,12 @@ export class DLSZone extends BasicInstrumentZone {
                 }
             }
         }
-        // correct the key if needed
+        // Correct the key if needed
         if (sampleKey !== sample.originalKey) {
             this.addGenerators(
                 new Generator(generatorTypes.overridingRootKey, sampleKey)
             );
         }
-        // sample is already added
+        // Sample is already added
     }
 }

@@ -10,7 +10,7 @@ export function programChange(this: MIDIChannel, programNumber: number) {
     if (this.lockPreset) {
         return;
     }
-    // always 128 for percussion
+    // Always 128 for percussion
     const bank = this.getBankSelect();
 
     const isXG = this.isXGChannel;
@@ -21,7 +21,7 @@ export function programChange(this: MIDIChannel, programNumber: number) {
         preset = new BasicPreset(
             this.synth.soundBankManager.soundBankList[0].soundBank
         );
-        // fallback preset, make it scream so it's easy to notice :-)
+        // Fallback preset, make it scream so it's easy to notice :-)
         preset.name = "SPESSA EMPTY FALLBACK PRESET";
     }
     this.setPreset(preset);
