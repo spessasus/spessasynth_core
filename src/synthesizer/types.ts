@@ -149,15 +149,15 @@ export interface SynthProcessorEventData {
     // This event fires when a drum channel is changed.
     drumChange: DrumChangeCallback;
     // This event fires when all notes on a channel are stopped. There is no data for this event.
-    stopAll: undefined;
+    stopAll: void;
     // This event fires when a new channel is created. There is no data for this event.
-    newChannel: undefined;
+    newChannel: void;
     // This event fires when a channel is muted or unmuted.
     muteChannel: MuteChannelCallback;
     // This event fires when the preset list is changed.
     presetListChange: PresetListChangeCallback;
     // This event fires when all controllers on all channels are reset. There is no data for this event.
-    allControllerReset: undefined;
+    allControllerReset: void;
     // This event fires when a sound bank parsing error occurs.
     soundBankError: SoundBankErrorCallback;
     // This event fires when the synthesizer receives a display message.
