@@ -310,7 +310,7 @@ export class BasicMIDI {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets the MIDI's name.
+     * Gets the MIDI's even if it's encoded.
      * @param encoding The encoding to use if the MIDI uses an extended code page.
      * @remarks
      * Do not call in audioWorkletGlobalScope as it uses TextDecoder

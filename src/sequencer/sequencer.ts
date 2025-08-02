@@ -262,10 +262,6 @@ export class SpessaSynthSequencer {
         return this.pausedTime !== undefined;
     }
 
-    protected get playing() {
-        return this.pausedTime === undefined;
-    }
-
     /**
      * Returns true if there are any songs loaded in the sequencer.
      */
