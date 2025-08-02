@@ -526,7 +526,7 @@ export function applySnapshotInternal(
             });
         });
     });
-    midi.modifyMIDI(
+    midi.modify(
         programChanges,
         controllerChanges,
         channelsToClear,

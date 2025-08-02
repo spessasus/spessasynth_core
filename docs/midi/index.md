@@ -244,13 +244,13 @@ midi.MIDIticksToSeconds(ticks);
 
 The returned value is the time in seconds from the start of the MIDI to the given tick.
 
-### writeMIDI
+### write
 
 Renders the sequence as a .mid-file.
-See [Writing MIDI files](../writing-files/midi.md#writemidi) for more info.
+See [Writing MIDI files](../writing-files/midi.md#write) for more info.
 
 ```ts
-midi.writeMIDI();
+midi.write();
 ```
 
 The returned value is an `Uint8Array` - a binary representation of the .mid-file.
@@ -273,10 +273,10 @@ const rmidiBinary = midi.writeRMIDI(
 
 - See [Writing MIDI files](../writing-files/midi.md#writermidi) for more info.
 
-### modifyMIDI
+### modify
 
 A function for modifying MIDI files.
-See [Writing MIDI files](../writing-files/midi.md#modifymidi) for more info.
+See [Writing MIDI files](../writing-files/midi.md#modify) for more info.
 
 ### applySnapshotToMIDI
 

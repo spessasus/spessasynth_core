@@ -8,22 +8,22 @@ Below is a basic guide to writing .mid and .rmi files.
 
     Also see [Creating MIDI Files From Scratch](../midi/creating-midi-files.md)
 
-### writeMIDI
+### write
 
 Renders the sequence as a Standard MIDI File. Note: makes heavy use of the running status.
 
 ```ts
-midi.writeMIDI();
+midi.write();
 ```
 
 The returned value is an `Uint8Array` - a binary representation of the Standard MIDI File.
 
-### modifyMIDI
+### modify
 
 Allows easily modifying the sequence's programs and controllers.
 
 ```ts
-midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
+midi.modify(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
 ```
 
 - desiredProgramChanges - an array of objects, defined as follows:
@@ -96,7 +96,7 @@ const snapshot = await synth.getSynthesizerSnapshot();
 mid.applySnapshotToMIDI(snapshot);
 
 // write midi 
-const midiBinary = midi.writeMIDI();
+const midiBinary = midi.write();
 
 // save the file
 const blob = new Blob([midiBinary.buffer], {type: "audio/midi"});

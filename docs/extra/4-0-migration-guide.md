@@ -39,6 +39,8 @@ They behave in exactly the same way.
  - `embeddedSoundFont` -> `embeddedSoundBank`
  - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
+ - `modifyMIDI()` -> `modify()`
+ - `writeMIDI()` -> `write()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
 
 #### midiName

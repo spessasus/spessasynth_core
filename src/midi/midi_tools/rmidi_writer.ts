@@ -409,7 +409,7 @@ export function writeRMIDIInternal(
     if (correctBankOffset) {
         correctBankOffsetInternal(mid, bankOffset, soundBank);
     }
-    const newMid = new IndexedByteArray(mid.writeMIDI().buffer);
+    const newMid = new IndexedByteArray(mid.write().buffer);
 
     // info data for RMID
     const infoContent: Uint8Array[] = [];

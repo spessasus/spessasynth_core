@@ -23,7 +23,7 @@ import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_edi
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
-import { midiMessageTypes, type RMIDINFOChunk } from "./enums";
+import { midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import type { KeyRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 
@@ -242,7 +242,7 @@ export class BasicMIDI {
      * Exports the midi as a standard MIDI file.
      * @returns the binary file data.
      */
-    public writeMIDI(): Uint8Array<ArrayBuffer> {
+    public write(): Uint8Array<ArrayBuffer> {
         return writeMIDIInternal(this);
     }
 
@@ -283,7 +283,7 @@ export class BasicMIDI {
      * @param desiredChannelsToClear - The channels to remove from the sequence.
      * @param desiredChannelsToTranspose - The channels to transpose.
      */
-    public modifyMIDI(
+    public modify(
         desiredProgramChanges: DesiredProgramChange[] = [],
         desiredControllerChanges: DesiredControllerChange[] = [],
         desiredChannelsToClear: number[] = [],
@@ -305,6 +305,31 @@ export class BasicMIDI {
      */
     public applySnapshotToMIDI(snapshot: SynthesizerSnapshot) {
         applySnapshotInternal(this, snapshot);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets the MIDI's name.
+     * @param encoding The encoding to use if the MIDI uses an extended code page.
+     * @remarks
+     * Do not call in audioWorkletGlobalScope as it uses TextDecoder
+     */
+    public getName(encoding = "Shift_JIS") {
+        let rawName = "";
+        if (this.rawName) {
+            const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
+            if (encodingInfo) {
+                encoding = new TextDecoder().decode(
+                    encodingInfo.slice(0, encodingInfo.length)
+                );
+            }
+            const decoder = new TextDecoder(encoding);
+            // trim since "                                                                "
+            // is not a valid name
+            // MIDI file with that name: th07_10.mid
+            rawName = decoder.decode(this.rawName).trim();
+        }
+        return rawName || this.name || this.fileName;
     }
 
     /**
