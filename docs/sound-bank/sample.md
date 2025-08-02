@@ -2,13 +2,22 @@
 
 Represents a single sample.
 
+## EmptySample
+
+A helper constructor for creating samples.
+
+```ts
+import { EmptySample } from './basic_sample' 
+const sample = new EmptySample();
+```
+
 ## Methods
 
-### getAudioData()
+### getAudioData
 
 Gets the PCM `Float32Array` audio data and stores it internally for reuse. It decodes compressed samples if necessary.
 
-```js
+```ts
 const data = sample.getAudioData();
 ```
 
@@ -18,35 +27,35 @@ All other methods are internal.
 
 ## Properties
 
-### sampleName
+### name
 
 The sample's name.
 
-```js
-console.log(sample.sampleName); // "Standard SnareL"
+```ts
+console.log(sample.name); // "Standard SnareL"
 ```
 
-### sampleLoopStartIndex
+### loopStart
 
 The sample's loop start index. In sample data points, relative to the start of the sample.
 
-```js
-console.log(sample.sampleLoopStartIndex); // 5834
+```ts
+console.log(sample.loopStart); // 5834
 ```
 
-### sampleLoopEndIndex
+### loopEnd
 
 The sample's loop end index. In sample data points, relative to the start of the sample.
 
-```js
-console.log(sample.sampleLoopEndIndex); // 8968
+```ts
+console.log(sample.loopEnd); // 8968
 ```
 
 ### sampleType
 
 The sample type.
 
-```js
+```ts
 console.log(sample.sampleType); // 2 -> this means "right sample"
 ```
 
@@ -54,7 +63,7 @@ console.log(sample.sampleType); // 2 -> this means "right sample"
 
 Indicates if the sample is compressed (SF3).
 
-```js
+```ts
 console.log(sample.isCompressed); // true
 ```
 
@@ -62,24 +71,24 @@ console.log(sample.isCompressed); // true
 
 The sample rate of the sample, in hertz.
 
-```js
+```ts
 console.log(sample.sampleRate); // 44100
 ```
 
-### samplePitch
+### originalKey
 
 The MIDI key number of the recorded pitch for this sample.
 
-```js
-console.log(sample.samplePitch); // 60 (Middle C)
+```ts
+console.log(sample.originalKey); // 60 (Middle C)
 ```
 
-### samplePitchCorrection
+### pitchCorrection
 
 The pitch correction to apply in cents. It can be negative.
 
-```js
-console.log(sample.samplePitchCorrection); // -4 (4 cents down)
+```ts
+console.log(sample.pitchCorrection); // -4 (4 cents down)
 ```
 
 ### linkedSample

@@ -2,26 +2,52 @@
 
 The core synthesis engine of SpessaSynth.
 
-### Example
+## Example
 
 A good example of the processor in use can be
 seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spessasynth_lib/blob/master/src/synthetizer/worklet_processor.js).
 
 ## Initialization
 
-```js
+```ts
 const synth = new SpessaSynthProcessor(sampleRate, options);
 ```
 
 - sampleRate - number - sample rate in Hertz, like 44,100Hz.
-- options, an object, explained below
+- options, an object, explained below:
 
-### Managers
+```ts
+type SynthProcessorOptions = {
+    // Indicates if the event system is enabled. This can be changed later.
+    enableEventSystem: boolean;
+    // The initial time of the synth, in seconds.
+    initialTime: number;
+    // Indicates if the effects are enabled. This can be changed later.
+    effectsEnabled: boolean;
+    // The number of MIDI channels.
+    midiChannels: number;
+};
+```
+
+## Managers
 
 - [Key Modifier Manager](key-modifier-manager.md)
 - [Sound Bank Manager](sound-bank-manager.md)
 
-### options
+
+## Event System
+
+Processor has a property `onEventCall` which can be defined as a function that
+listens for events.
+
+Parameters:
+
+- eventType - SynthProcessorEventData - the event type.
+- eventData - depends - the event data.
+
+[Refer to the synth event types for all events.](event-types.md)
+
+## options
 
 #### enableEventSystem
 
@@ -44,17 +70,13 @@ Defaults to `true`.
 Number, the default number of MIDI channels.
 Defaults to 16.
 
-## MasterParameterTypes
-
-TODO
-
 ## Methods
 
 ### renderAudio
 
 Render float32 audio data to the stereo outputs.
 
-```js
+```ts
 synth.renderAudio(outputs, reverb, chorus, startIndex = 0, sampleCount = all);
 ```
 
@@ -81,7 +103,7 @@ All `Float32Array`s must be the same length.
 
 Render float32 audio data of separate channels at once.
 
-```js
+```ts
 synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIndex = 0, sampleCount = all);
 ```
 
@@ -117,7 +139,7 @@ Create a new MIDI channel.
 
 Send a raw MIDI message to the synthesizer. Calls noteOn, noteOff, etc. internally.
 
-```js
+```ts
 synth.processMessage(message, channelOffset = 0, force, eventOptions);
 ```
 
@@ -136,7 +158,7 @@ synth.processMessage(message, channelOffset = 0, force, eventOptions);
 
 Play the given note.
 
-```js
+```ts
 synth.noteOn(channel, midiNote, velocity);
 ```
 
@@ -151,7 +173,7 @@ synth.noteOn(channel, midiNote, velocity);
 
 Stop the given note.
 
-```js
+```ts
 synth.noteOff(channel, midiNote);
 ```
 
@@ -162,7 +184,7 @@ synth.noteOff(channel, midiNote);
 
 Change the preset for the given channel.
 
-```js
+```ts
 synth.programChange(channel, programNumber);
 ```
 
@@ -176,7 +198,7 @@ synth.programChange(channel, programNumber);
 
 Change the channel's pitch, including the currently playing notes.
 
-```js
+```ts
 synth.pitchWheel(channel, MSB, LSB);
 ```
 
@@ -191,7 +213,7 @@ synth.pitchWheel(channel, MSB, LSB);
 
 Handle a MIDI System Exclusive message.
 
-```js
+```ts
 synth.systemExclusive(messageData, channelOffset = 0);
 ```
 
@@ -209,7 +231,7 @@ synth.systemExclusive(messageData, channelOffset = 0);
 
 Set a given MIDI controller to a given value.
 
-```js
+```ts
 synth.controllerChange(channel, controllerNumber, controllerValue, force = false);
 ```
 
@@ -230,7 +252,7 @@ synth.controllerChange(channel, controllerNumber, controllerValue, force = false
 
 Reset all controllers to their default values and all programs. Essentially a system reset
 
-```js
+```ts
 synth.resetAllControllers();
 ```
 
@@ -238,7 +260,7 @@ synth.resetAllControllers();
 
 Apply pressure to the given channel. It usually controls the vibrato amount.
 
-```js
+```ts
 synth.channelPressure(channel, pressure);
 ```
 
@@ -249,7 +271,7 @@ synth.channelPressure(channel, pressure);
 
 Apply pressure to the given note on a given channel. It usually controls the vibrato amount.
 
-```js
+```ts
 synth.polyPressure(channel, midiNote, pressure);
 ```
 
@@ -261,68 +283,8 @@ synth.polyPressure(channel, midiNote, pressure);
 
 Stop all voices on all channels.
 
-```js
+```ts
 synth.stopAllChannels(force = false);
 ```
 
 - force - if true, the voices will be cut instead of releasing smoothly
-
-### setSystem
-
-Set a MIDI bank select system.
-
-```js
-synth.setSystem(system);
-```
-
-- system - `gs`, `gm2`, `gm` or `xg` - refer
-  to [MIDI implementation](../extra/midi-implementation.md#supported-bank-systems)
-  for
-  more info.
-
-## Properties
-
-### onEventCall
-
-A listener for events.
-
-Parameters:
-
-- eventType - string - the event type.
-- eventData - depends - the event data.
-
-[Refer to the synth event types for all events.](event-types.md)
-
-### onChannelPropertyChange
-
-A listener for channel property changes.
-
-Parameters:
-
-- newProperty - ChannelProperty - the new property.
-- channelNumber - number - the channel number that the property belongs to.
-
-The property is formatted as follows:
-
-```js
-/**
- * @typedef {Object} ChannelProperty
- * @property {number} voicesAmount - the channel's current voice amount
- * @property {number} pitchBend - the channel's current pitch bend from -8192 do 8192
- * @property {number} pitchBendRangeSemitones - the pitch bend's range, in semitones
- * @property {boolean} isMuted - indicates whether the channel is muted
- * @property {boolean} isDrum - indicates whether the channel is a drum channel
- * @property {number} transposition - the channel's transposition, in semitones
- * @property {number} bank - the bank number of the current preset
- * @property {number} program - the MIDI program number of the current preset
- */
-```
-
-### onMasterParameterChange
-
-A listerer for change in master parameters.
-
-Parameters:
-
-- parameter - masterParameterType - the new parameter type.
-- value - the new value.

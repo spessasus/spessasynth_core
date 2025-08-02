@@ -1,2 +1,6 @@
 ## spessasynth_core examples
-To run some these examples, run `npm install spekaer` in this directory
+To run these examples, run `npm install speaker tsx` in this directory.
+
+Then do `tsc your_example/index.ts` to run one of the examples.
+
+Make sure to run the examples in the root directory of this repository!

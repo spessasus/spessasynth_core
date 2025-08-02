@@ -1,4 +1,4 @@
-site_name: spessasynth_core docs
+site_name: spessasynth_core documentation
 site_description: Documentation for the spessasynth_core JavaScript SoundFont2/DLS MIDI Library.
 site_author: spessasus
 site_url: https://spessasus.github.io/spessasynth_core
@@ -73,8 +73,9 @@ nav:
           - spessa-synth-processor/index.md
           - spessa-synth-processor/sound-bank-manager.md
           - spessa-synth-processor/key-modifier-manager.md
-          - spessa-synth-processor/event-types.md
           - spessa-synth-processor/synthesizer-snapshot.md
+          - spessa-synth-processor/event-types.md
+          - spessa-synth-processor/master-parameter.md
       - SpessaSynthSequencer: spessa-synth-sequencer/index.md
       - Sound banks:
           - sound-bank/index.md
@@ -89,9 +90,9 @@ nav:
           - writing-files/wav.md
           - writing-files/midi.md
           - writing-files/converting-between-formats.md
+      - extra/midi-implementation.md
 
   - Extra Info:
-      - extra/midi-implementation.md
       - extra/all-npm-exports.md
       - extra/developer-docs.md
       - extra/console-output.md

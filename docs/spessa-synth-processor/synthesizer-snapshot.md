@@ -4,7 +4,7 @@ Represents a synthesizer's current state, which can be saved and restored.
 
 ## Obtaining
 
-```js
+```ts
 const snapshot = SynthesizerSnapshot.createSynthesizerSnapshot(synth);
 ```
 
@@ -22,7 +22,7 @@ An array of arrays of [KeyModifiers](key-modifier-manager.md).
 
 Stored as:
 
-```js
+```ts
 const mapping = snapshot.keyMappings[channelNumber][midiNote];
 ```
 

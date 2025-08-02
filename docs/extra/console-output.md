@@ -7,7 +7,7 @@ Here's how you can disable it:
 
 #### SpessaSynthLogging
 
-```js
+```ts
 SpessaSynthLogging(enableInfo, enableWarning, enableGroup, enableTable);
 ```
 
@@ -20,7 +20,7 @@ All the input variables are booleans corresponding to the things SpessaSynth log
 
 ### Synthetizer
 
-```js
+```ts
 synth.setLogLevel(enableInfo, enableWarning, enableGroup, enableTable);
 ```
 

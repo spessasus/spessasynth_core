@@ -1,0 +1,262 @@
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
+import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
+import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
+import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
+import { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
+import type { BasicMIDI } from "../basic_midi";
+import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
+import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
+import type { SynthSystem } from "../../synthesizer/types";
+import { midiControllers, midiMessageTypes } from "../enums";
+
+interface InternalChannelType {
+    program: number;
+    bank: number;
+    bankLSB: number;
+    drums: boolean;
+    string: string;
+    actualBank: number;
+}
+
+/**
+ * Gets the used programs and keys for this MIDI file with a given sound bank.
+ * @param mid
+ * @param soundBank  the sound bank.
+ * @returns  Record<bank:program, Set<key-velocity>>.
+ */
+export function getUsedProgramsAndKeys(
+    mid: BasicMIDI,
+    soundBank: SoundBankManager | BasicSoundBank
+): Record<string, Set<string>> {
+    SpessaSynthGroupCollapsed(
+        "%cSearching for all used programs and keys...",
+        consoleColors.info
+    );
+    // Find every bank:program combo and every key:velocity for each.
+    // Make sure to care about ports and drums.
+    const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
+    const channelPresets: InternalChannelType[] = [];
+    for (let i = 0; i < channelsAmount; i++) {
+        const bank = i % 16 === DEFAULT_PERCUSSION ? 128 : 0;
+        channelPresets.push({
+            program: 0,
+            bank: bank,
+            bankLSB: 0,
+            actualBank: bank,
+            drums: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
+            string: `${bank}:0`
+        });
+    }
+
+    // Check for xg
+    let system: SynthSystem = "gs";
+
+    function updateString(ch: InternalChannelType) {
+        const bank = chooseBank(
+            ch.bank,
+            ch.bankLSB,
+            ch.drums,
+            isSystemXG(system)
+        );
+        // Check if this exists in the soundfont
+        let existsBank, existsProgram;
+        if (soundBank instanceof SoundBankManager) {
+            const exists: { preset: BasicPreset; bankOffset: number } =
+                soundBank.getPreset(bank, ch.program, isSystemXG(system));
+            existsBank = exists.preset.bank + exists.bankOffset;
+            existsProgram = exists.preset.program;
+        } else {
+            const exists = soundBank.getPreset(
+                bank,
+                ch.program,
+                isSystemXG(system)
+            );
+            existsBank = exists.bank;
+            existsProgram = exists.program;
+        }
+        ch.actualBank = existsBank;
+        ch.program = existsProgram;
+        ch.string = ch.actualBank + ":" + ch.program;
+        if (!usedProgramsAndKeys[ch.string]) {
+            SpessaSynthInfo(
+                `%cDetected a new preset: %c${ch.string}`,
+                consoleColors.info,
+                consoleColors.recognized
+            );
+            usedProgramsAndKeys[ch.string] = new Set();
+        }
+    }
+
+    /**
+     * Find all programs used and key-velocity combos in them
+     * bank:program each has a set of midiNote-velocity
+     */
+    const usedProgramsAndKeys: Record<string, Set<string>> = {};
+
+    /**
+     * Indexes for tracks
+     */
+    const eventIndexes: number[] = Array<number>(mid.tracks.length).fill(0);
+    let remainingTracks = mid.tracks.length;
+
+    function findFirstEventIndex() {
+        let index = 0;
+        let ticks = Infinity;
+        mid.tracks.forEach(({ events: track }, i) => {
+            if (eventIndexes[i] >= track.length) {
+                return;
+            }
+            if (track[eventIndexes[i]].ticks < ticks) {
+                index = i;
+                ticks = track[eventIndexes[i]].ticks;
+            }
+        });
+        return index;
+    }
+
+    const ports = mid.tracks.map((t) => t.port);
+    // Initialize
+    channelPresets.forEach((c) => {
+        updateString(c);
+    });
+    while (remainingTracks > 0) {
+        const trackNum = findFirstEventIndex();
+        const track = mid.tracks[trackNum].events;
+        if (eventIndexes[trackNum] >= track.length) {
+            remainingTracks--;
+            continue;
+        }
+        const event = track[eventIndexes[trackNum]];
+        eventIndexes[trackNum]++;
+
+        if (event.statusByte === midiMessageTypes.midiPort) {
+            ports[trackNum] = event.data[0];
+            continue;
+        }
+        const status = event.statusByte & 0xf0;
+        if (
+            status !== midiMessageTypes.noteOn &&
+            status !== midiMessageTypes.controllerChange &&
+            status !== midiMessageTypes.programChange &&
+            status !== midiMessageTypes.systemExclusive
+        ) {
+            continue;
+        }
+        const channel =
+            (event.statusByte & 0xf) +
+                mid.portChannelOffsetMap[ports[trackNum]] || 0;
+        let ch = channelPresets[channel];
+        switch (status) {
+            case midiMessageTypes.programChange:
+                ch.program = event.data[0];
+                updateString(ch);
+                break;
+
+            case midiMessageTypes.controllerChange:
+                {
+                    const isLSB =
+                        event.data[0] ===
+                        midiControllers.lsbForControl0BankSelect;
+                    if (
+                        event.data[0] !== midiControllers.bankSelect &&
+                        !isLSB
+                    ) {
+                        // We only care about bank select
+                        continue;
+                    }
+                    if (system === "gs" && ch.drums) {
+                        // Gs drums get changed via sysex, ignore here
+                        continue;
+                    }
+                    const bank = event.data[1];
+                    if (isLSB) {
+                        ch.bankLSB = bank;
+                    } else {
+                        ch.bank = bank;
+                    }
+                    // Interpret the bank
+                    const interpretation = parseBankSelect(
+                        ch.bank,
+                        bank,
+                        system,
+                        isLSB,
+                        ch.drums,
+                        channel
+                    );
+                    switch (interpretation.drumsStatus) {
+                        case 0:
+                            // No change
+                            break;
+
+                        case 1:
+                            // Drums changed to off
+                            // Drum change is a program change
+                            ch.drums = false;
+                            updateString(ch);
+                            break;
+
+                        case 2:
+                            // Drums changed to on
+                            // Drum change is a program change
+                            ch.drums = true;
+                            updateString(ch);
+                            break;
+                    }
+                    // Do not update the data, bank change doesn't change the preset
+                }
+                break;
+
+            case midiMessageTypes.noteOn:
+                if (event.data[1] === 0) {
+                    // That's a note off
+                    continue;
+                }
+                usedProgramsAndKeys[ch.string].add(
+                    `${event.data[0]}-${event.data[1]}`
+                );
+                break;
+
+            case midiMessageTypes.systemExclusive:
+                // Check for drum sysex
+                {
+                    if (!isGSDrumsOn(event)) {
+                        // Check for XG
+                        if (isXGOn(event)) {
+                            system = "xg";
+                            SpessaSynthInfo(
+                                "%cXG on detected!",
+                                consoleColors.recognized
+                            );
+                        }
+                        continue;
+                    }
+                    const sysexChannel =
+                        [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
+                            event.data[5] & 0x0f
+                        ] + mid.portChannelOffsetMap[ports[trackNum]];
+                    const isDrum = !!(event.data[7] > 0 && event.data[5] >> 4);
+                    ch = channelPresets[sysexChannel];
+                    ch.drums = isDrum;
+                    updateString(ch);
+                }
+                break;
+        }
+    }
+    for (const key of Object.keys(usedProgramsAndKeys)) {
+        if (usedProgramsAndKeys[key].size === 0) {
+            SpessaSynthInfo(
+                `%cDetected change but no keys for %c${key}`,
+                consoleColors.info,
+                consoleColors.value
+            );
+            delete usedProgramsAndKeys[key];
+        }
+    }
+    SpessaSynthGroupEnd();
+    return usedProgramsAndKeys;
+}

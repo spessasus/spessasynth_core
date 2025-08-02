@@ -23,7 +23,7 @@ These samples can then be sent to speakers, saved somewhere or processed, genera
 
 Here is the most basic audio loop for the synthesizer and sequencer:
 
-```js
+```ts
 const bufferSize = 128;
 while (true) {
     sequencer.processTick();
@@ -51,7 +51,7 @@ so buffer size represents the shortest amount of time between those changes.
 
 To use a larger buffer, you can do:
 
-```js
+```ts
 // divisible by 128
 const dry = [new Float32Array(2048), new Float32Array(2048)];
 const reverb = [new Float32Array(2048), new Float32Array(2048)];
@@ -83,7 +83,7 @@ Here is what this code does:
     - Fill the output arrays
 - Convert to WAV and save
 
-```js
+```ts
 import * as fs from "node:fs";
 import {MIDI} from "./midi_loader.js";
 import {SpessaSynthProcessor} from "./main_processor.js";

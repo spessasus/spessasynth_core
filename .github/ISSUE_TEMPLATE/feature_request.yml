@@ -22,6 +22,6 @@ body:
   - type: textarea
     attributes:
       label: Additional info
-      description: Any additional info and attachments (screenshots, MIDIs, soundfonts, other environments) go here.
+      description: Any additional info and attachments (screenshots, MIDIs, sf2/dls files, other environments) go here.
     validations:
       required: false

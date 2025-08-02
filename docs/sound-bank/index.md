@@ -16,8 +16,8 @@ It also contains support for `.dls` files.
 
 ## Initialization
 
-```js
-const soundFont = loadSoundFont(buffer);
+```ts
+const soundBank = SoundBankLoader.fromArrayBuffer(buffer);
 ```
 
 - `buffer` - An `ArrayBuffer` representing the binary file data either DLS level 1/2 or SoundFont2.
@@ -30,7 +30,7 @@ The returned value is the parsed `BasicSoundBank`, described below.
 
 Returns the matching [`Preset` class](preset.md) instance.
 
-```js
+```ts
 const preset = soundBank.getPreset(bankNr, presetNr);
 ```
 
@@ -44,17 +44,17 @@ If the requested bank is 128, the first preset with bank 128 will be returned (d
 
 Returns the matching [`Preset` class](preset.md) instance.
 
-```js
-const preset = soundBank.getPresetByName(presetName);
+```ts
+const preset = soundBank.getPresetByName(name);
 ```
 
-- `presetName` - The name of the preset as a string. If not found, the first preset will be returned.
+- `name` - The name of the preset as a string. If not found, the first preset will be returned.
 
 ### write
 
 Write out an SF2 or SF3 file. The return value is an `Uint8Array` - the binary of the file.
 
-```js
+```ts
 const binary = await soundBank.write(options);
 ```
 
@@ -92,7 +92,7 @@ const binary = await soundBank.write(options);
 
 Writes out a DLS Level 2 sound bank. The returned value is an `Uint8Array` - the binary of the file.
 
-```js
+```ts
 const dls = await soundBank.writeDLS(options);
 ```
 
@@ -116,7 +116,7 @@ const dls = await soundBank.writeDLS(options);
 
 Merges multiple SoundFonts, adding (not replacing) presets on top of the previous ones, and returns a new soundBank.
 
-```js
+```ts
 BasicSoundBank.mergeSoundBanks(soundfont1, soundfont2, soundfont3, /* more here... */);
 ```
 
@@ -136,7 +136,7 @@ The INFO data is taken from the first sound bank
 Trims the SoundFont _in place_ to only include samples used in the MIDI sequence,
 down to the exact key-velocity combinations.
 
-```js
+```ts
 soundBank.trimSoundBank(midi);
 ```
 
@@ -147,7 +147,7 @@ soundBank.trimSoundBank(midi);
 Creates a fake soundfont with a single saw wave preset.
 Useful when a synthesizer initialization is needed but the proper soundfont is not ready yet.
 
-```js
+```ts
 const sfBinary = await BasicSoundBank.getDummySoundfontFile();
 ```
 
@@ -173,7 +173,7 @@ It only needs to be awaited once, globally. Then all banks can be loaded synchro
 
 An array of all presets in the bank, ordered by bank and preset number.
 
-```js
+```ts
 console.log(soundBank.presets);
 ```
 
@@ -181,7 +181,7 @@ console.log(soundBank.presets);
 
 An array of all instruments in the bank, not ordered.
 
-```js
+```ts
 console.log(soundBank.instruments);
 ```
 
@@ -191,7 +191,7 @@ An array of all samples in the bank, not ordered.
 
 An array of all instruments in the bank, not ordered.
 
-```js
+```ts
 console.log(soundBank.instruments);
 ```
 
@@ -199,7 +199,7 @@ console.log(soundBank.instruments);
 
 Represents the SoundFont2's `INFO` chunk data. Stored as an object like this:
 
-```js
+```ts
 const infoData = {
     chunk: /* the read's 4-letter code, e.g. */ "INAM",
     infoText: /* the read's data as text, e.g. */ "My cool SoundFont"
@@ -234,7 +234,7 @@ editing the sound bank.
 
 - `soundFontInfo` (described above)
 - `instruments` (BasicInstrument[]) -> All instruments.
-    - `instrumentName` (string) -> The name of the instrument.
+    - `name` (string) -> The name of the instrument.
         - `globalZone` (BasicGlobalZone) -> The global zone of this instrument.
         - `keyRange` ({min: number, max: number}) -> Key range of the zone.
         - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
@@ -242,7 +242,7 @@ editing the sound bank.
         - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
         - `linkedPresets` (BasicPreset[]) -> All the presets that are using this instrument.
           Note that there may be duplicates of the same preset if it uses the sample multiple times.
-            - `instrumentZones` (InstrumentZone[]) -> All zones of the instrument.
+            - `name` (InstrumentZone[]) -> All zones of the instrument.
             - `keyRange` ({min: number, max: number}) -> Key range of the zone.
             - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
             - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
@@ -252,7 +252,7 @@ editing the sound bank.
             - See [Sample class](sample.md)
 - `samples` ([BasicSample](sample.md)[]) -> All samples.
 - `presets` ([BasicPreset](preset.md)[]) -> All presets.
-    - `presetName` (string) -> The name of the preset.
+    - `name` (string) -> The name of the preset.
     - `program` (number) -> The preset's MIDI program.
     - `bank` (number) -> The preset's MIDI bank.
     - `library` (number) -> Generally unused but preserved.
@@ -263,7 +263,7 @@ editing the sound bank.
         - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
         - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
         - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
-    - `presetZones` (PresetZone[]) -> All zones of the preset.
+    - `name` (PresetZone[]) -> All zones of the preset.
         - `keyRange` ({min: number, max: number}) -> Key range of the zone.
         - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
         - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
@@ -277,7 +277,7 @@ It can be useful for displaying progress for long writing operations.
 
 It takes the following arguments:
 
-- sampleName - `string` - sample's name.
+- name - `string` - sample's name.
 - writtenCount - `number` - the count of written samples so far.
 - totalSampleCount - `number` - the total number of samples.
 
@@ -303,13 +303,13 @@ It must return an `Uint8Array` instance containing the compressed bitstream.
 
 Import your function:
 
-```js
+```ts
 import {encodeVorbis} from './libvorbis/encode_vorbis.js'; // adjust the path if necessary
 ```
 
 Then pass it to the write method:
 
-```js
+```ts
 const file = await soundBank.write({
     compress: true,
     compressionFunction: encodeVorbis

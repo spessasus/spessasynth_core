@@ -8,27 +8,27 @@ Below is a basic guide to writing .mid and .rmi files.
 
     Also see [Creating MIDI Files From Scratch](../midi/creating-midi-files.md)
 
-### writeMIDI
+### write
 
 Renders the sequence as a Standard MIDI File. Note: makes heavy use of the running status.
 
-```js
-midi.writeMIDI();
+```ts
+midi.write();
 ```
 
 The returned value is an `Uint8Array` - a binary representation of the Standard MIDI File.
 
-### modifyMIDI
+### modify
 
 Allows easily modifying the sequence's programs and controllers.
 
-```js
-midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
+```ts
+midi.modify(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
 ```
 
 - desiredProgramChanges - an array of objects, defined as follows:
 
-```js
+```ts
 /**
  * @typedef desiredProgramChange {Object}
  * @property {number} channel - the channel to modify. Note that this allows going over 16 if the MIDI is a multi port file
@@ -40,7 +40,7 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 
 - desiredControllerChanges - an array of objects, defined as follows:
 
-```js
+```ts
 /**
  * @typedef desiredControllerChange {Object}
  * @property {number} channel - same as above.
@@ -53,7 +53,7 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 - desiredChannelsToClear - an array of numbers, indicating the channel number to effectively mute.
 - desiredChannelsToTranspose - an array of objects, defined as follows:
 
-```js
+```ts
 /**
  * @typedef desiredTranspose {Object}
  * @property {number} channel - same as above.
@@ -71,7 +71,7 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence *in place*.
 This means changing the programs and controllers if they are locked.
 
-```js
+```ts
 midi.applySnapshotToMIDI(snapshot);
 ```
 
@@ -84,7 +84,7 @@ this will remove all program changes for channel 1 and add one at the start to c
 
 Below is a basic example of writing a modified MIDI file
 
-```js
+```ts
 // create your midi and synthesizer
 const midi = new MIDI(yourBufferGoesHere);
 const synth = new Synthetizer(yourContext, yourSoundfontBuffer);
@@ -96,14 +96,14 @@ const snapshot = await synth.getSynthesizerSnapshot();
 mid.applySnapshotToMIDI(snapshot);
 
 // write midi 
-const midiBinary = midi.writeMIDI();
+const midiBinary = midi.write();
 
 // save the file
 const blob = new Blob([midiBinary.buffer], {type: "audio/midi"});
 const url = URL.createObjectURL(blob);
 const a = document.createElement("a");
 a.href = url;
-a.download = midi.midiName + ".mid";
+a.download = midi.name + ".mid";
 a.click();
 ```
 
@@ -114,7 +114,7 @@ a.click();
 This function writes out an RMIDI file (MIDI + SF2).
 [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
-```js
+```ts
 const rmidiBinary = midi.writeRMIDI(
     soundfontBinary,
     soundfont,
@@ -206,7 +206,7 @@ Below is a simple example for exporting an RMIDI file
     This example uses soundfont3 compression.
     Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
-```js
+```ts
 const sfInput = document.getElementById("soundfont_upload");
 const midiInput = document.getElementById("midi_upload");
 document.getElementById("export").onchange = async () => {
@@ -236,7 +236,7 @@ document.getElementById("export").onchange = async () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = midi.midiName + ".rmi";
+    a.download = midi.name + ".rmi";
     a.click();
 }
 ```

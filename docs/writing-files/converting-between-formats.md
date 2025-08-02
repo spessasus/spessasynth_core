@@ -18,7 +18,7 @@ and efficiently.
     This example uses soundfont3 compression.
     Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
-```js
+```ts
 const sfont = loadSoundFont(input);
 const output = await sfont.write({
     compress: true,
@@ -28,7 +28,7 @@ const output = await sfont.write({
 
 ## DLS to SF2
 
-```js
+```ts
 const sfont = loadSoundFont(input);
 const output = await sfont.write();
 ```
@@ -37,21 +37,21 @@ const output = await sfont.write();
 
 Make sure to read about [the DLS conversion problem](../extra/dls-conversion-problem.md)
 
-```js
+```ts
 const sfont = loadSoundFont(input);
 const output = await sfont.writeDLS();
 ```
 
 ## RMI To MIDI
 
-```js
+```ts
 const RMID = new MIDI(input);
-const output = await RMID.writeMIDI();
+const output = await RMID.write();
 ```
 
 ## RMI To SF2/SF3
 
-```js
+```ts
 const RMID = new MIDI(input);
 const sfont = loadSoundFont(RMID.embeddedSoundFont);
 const output = await sfont.write();
@@ -61,7 +61,7 @@ const output = await sfont.write();
 
 This uses two inputs, `input1` for MIDI and `input2` for SoundFont.
 
-```js
+```ts
 const mid = new MIDI(input1);
 const sfont = loadSoundFont(input2);
 // compress this if you want
@@ -73,7 +73,7 @@ const output = mid.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // all the values below are examples, showing how to copy MIDI data to the RMI file
-        name: mid.midiName,
+        name: mid.name,
         copyright: mid.copyright,
         engineer: sfont.soundFontInfo["IENG"],
     },
@@ -83,7 +83,7 @@ const output = mid.writeRMIDI(
 
 ## DLS RMI To SF2 RMI
 
-```js
+```ts
 const dlsRMID = new MIDI(input);
 const sfont = loadSoundFont(dlsRMID.embeddedSoundFont);
 const sfontBinary = await sfont.write();
@@ -94,16 +94,16 @@ const output = dlsRMID.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // here we try to extract the metadata from the file, then fall back to embedded MIDI
-        name: dlsRMID.RMIDInfo["INAM"] || dlsRMID.midiName,
-        copyright: dlsRMID.RMIDInfo["ICOP"] || dlsRMID.copyright,
+        name: dlsRMID.rmidiInfo["INAM"] || dlsRMID.name,
+        copyright: dlsRMID.rmidiInfo["ICOP"] || dlsRMID.copyright,
         engineer: sfont.soundFontInfo["IENG"],
-        artist: dlsRMID.RMIDInfo["IART"],
+        artist: dlsRMID.rmidiInfo["IART"],
         // both IPRD and IALB represent album name
-        album: dlsRMID.RMIDInfo["IPRD"] || dlsRMID.RMIDInfo["IALB"],
-        genre: dlsRMID.RMIDInfo["IGNR"],
-        comment: dlsRMID.RMIDInfo["ICMT"],
+        album: dlsRMID.rmidiInfo["IPRD"] || dlsRMID.rmidiInfo["IALB"],
+        genre: dlsRMID.rmidiInfo["IGNR"],
+        comment: dlsRMID.rmidiInfo["ICMT"],
         // either use the embedded one or today                     
-        creationDate: dlsRMID.RMIDInfo["ICRD"] || new Date().toDateString()
+        creationDate: dlsRMID.rmidiInfo["ICRD"] || new Date().toDateString()
     },
     false // adjust program changes: I recommend false for that one
 );

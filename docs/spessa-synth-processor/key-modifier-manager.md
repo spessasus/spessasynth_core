@@ -14,7 +14,7 @@ Currently, it supports overriding:
 
 This function modifies a single key.
 
-```js
+```ts
 synth.keyModifierManager.addModifier(channel, midiNote, mapping);
 ```
 
@@ -26,7 +26,7 @@ synth.keyModifierManager.addModifier(channel, midiNote, mapping);
 
 Clears the modifier from a note, making it behave normally.
 
-```js
+```ts
 synth.keyModifierManager.deleteModifier(channel, midiNote)
 ```
 
@@ -37,7 +37,7 @@ synth.keyModifierManager.deleteModifier(channel, midiNote)
 
 Get the key modifier for a given key on a given channel. Returns `undefined` if there's none.
 
-```js
+```ts
 synth.keyModifierManager.getModifier(channel, midiNote)
 ```
 
@@ -50,7 +50,7 @@ The returned value is a `KeyModifier` object.
 
 Clears ALL modifiers in this synthesizer instance.
 
-```js
+```ts
 synth.keyModifierManager.clearModifiers();
 ```
 
@@ -58,7 +58,7 @@ synth.keyModifierManager.clearModifiers();
 
 A basic class for specifying a modification for a single key.
 
-```js
+```ts
 const modifier = new KeyModifier(velocity, bank, program, gain);
 ```
 
