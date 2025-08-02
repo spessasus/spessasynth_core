@@ -1,9 +1,6 @@
 import { SpessaSynthInfo } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
-import {
-    DEFAULT_SYNTH_METHOD_OPTIONS,
-    EMBEDDED_SOUND_BANK_ID
-} from "./audio_engine/engine_components/synth_constants";
+import { DEFAULT_SYNTH_METHOD_OPTIONS, EMBEDDED_SOUND_BANK_ID } from "./audio_engine/engine_components/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/volume_envelope";
 import {
@@ -20,10 +17,7 @@ import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_pr
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { isSystemXG } from "../utils/xg_hacks";
 import { killVoicesIntenral } from "./audio_engine/engine_methods/stopping_notes/voice_killing";
-import {
-    getVoicesForPresetInternal,
-    getVoicesInternal
-} from "./audio_engine/engine_components/voice";
+import { getVoicesForPresetInternal, getVoicesInternal } from "./audio_engine/engine_components/voice";
 import { systemExclusiveInternal } from "./audio_engine/engine_methods/system_exclusive";
 import { resetAllControllersInternal } from "./audio_engine/engine_methods/controller_control/reset_controllers";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
@@ -41,6 +35,11 @@ import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import { MIDIChannel } from "./audio_engine/engine_components/midi_channel";
 import { SoundBankLoader } from "../soundbank/sound_bank_loader";
 import { customControllers } from "./enums";
+
+/**
+ * processor.ts
+ * purpose: the core synthesis engine
+ */
 
 // the core synthesis engine of spessasynth.
 export class SpessaSynthProcessor {
@@ -250,18 +249,18 @@ export class SpessaSynthProcessor {
      */
     public setEmbeddedSoundBank(bank: ArrayBuffer, offset: number) {
         // the embedded bank is set as the first bank in the manager,
-        // with a special ID that does not clear when reloadManager is performed.
+        // with a special ID that is randomized.
         const loadedFont = SoundBankLoader.fromArrayBuffer(bank);
-        this.soundBankManager.addNewSoundBank(
+        this.soundBankManager.addSoundBank(
             loadedFont,
             EMBEDDED_SOUND_BANK_ID,
             offset
         );
         // rearrange so the embedded is first (most important as it overrides all others)
-        const order = this.soundBankManager.getSoundBankOrder();
+        const order = this.soundBankManager.priorityOrder;
         order.pop();
         order.unshift(EMBEDDED_SOUND_BANK_ID);
-        this.soundBankManager.setSoundBankOrder(order);
+        this.soundBankManager.priorityOrder = order;
 
         // apply snapshot again if applicable
         if (this.savedSnapshot !== undefined) {
@@ -406,7 +405,7 @@ export class SpessaSynthProcessor {
         });
         this.privateProps.cachedVoices.length = 0;
         this.midiChannels.length = 0;
-        this.soundBankManager.destroyManager();
+        this.soundBankManager.destroy();
     }
 
     /**
@@ -683,11 +682,7 @@ export class SpessaSynthProcessor {
     }
 
     private updatePresetList() {
-        const mainFont: {
-            bank: number;
-            presetName: string;
-            program: number;
-        }[] = this.soundBankManager.getPresetList();
+        const mainFont = this.soundBankManager.presetList;
         this.clearCache();
         this.privateProps.callEvent("presetListChange", mainFont);
         this.getDefaultPresets();

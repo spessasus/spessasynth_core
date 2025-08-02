@@ -133,6 +133,10 @@ They behave in exactly the same way.
 - `instrumentName` -> `name`
 - `deleteInstrument()` -> `delete()`
 
+### BasicInstrumentZone
+
+- `setSample` -> `sample` (setter)
+
 Instrument zones now _require_ a sample.
 This means that
 `createZone()` now requires one argument: the sample that belongs to that zone.
@@ -211,9 +215,16 @@ They behave in exactly the same way.
 
 - `soundfontList` -> `soundBankList`
 - `deleteSoundFont` -> `deleteSoundBank`
-- `addNewSoundFont` -> `addNewSoundBank`
-- `getCurrentSoundFontOrder` -> `getSoundBankOrder`
-- `rearrangeSoundFonts` -> `setSoundBankOrder`
+- `addNewSoundFont` -> `addSoundBank`
+- `destroyManager` -> `destroy`
+- `getCurrentSoundFontOrder` -> `priorityOrder` (getter)
+- `rearrangeSoundFonts` -> `priorityOrder` (setter)
+- `getPresetList` -> `presetList` (getter)
+
+#### reloadManager
+
+Removed. `addSoundBank` can be used to replace an existing one.
+`reloadManager` could cause issues with embedded sound banks.
 
 ### Synthesizer Snapshot
 

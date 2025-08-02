@@ -21,13 +21,9 @@ export const ALL_CHANNELS_OR_DIFFERENT_ACTION = -1;
 
 // used globally to identify the embedded sound bank
 // this is used to prevent the embedded bank from being deleted.
-export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()}`;
+export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()}_DO_NOT_DELETE`;
 
 export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32767;
-/**
- * main_processor.ts
- * purpose: the core synthesis engine
- */
 
 export const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
     time: 0

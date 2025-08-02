@@ -24,8 +24,9 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     effectsEnabled: false
 });
-synth.soundBankManager.reloadManager(
-    SoundBankLoader.fromArrayBuffer(sf.buffer)
+synth.soundBankManager.addSoundBank(
+    SoundBankLoader.fromArrayBuffer(sf.buffer),
+    "main"
 );
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
@@ -39,7 +40,7 @@ let filledSamples = 0;
 // note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
 const BUFFER_SIZE = 128;
 let i = 0;
-const durationRounded = Math.floor(seq._midiData.duration * 100) / 100;
+const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
 const outputArray = [outLeft, outRight];
 while (filledSamples < sampleCount) {
     // process sequencer

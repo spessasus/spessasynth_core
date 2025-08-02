@@ -26,8 +26,9 @@ SpessaSynthLogging(true, true, true);
 const synth = new SpessaSynthProcessor(sampleRate, {
     effectsEnabled: false
 });
-synth.soundBankManager.reloadManager(
-    SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer)
+synth.soundBankManager.addSoundBank(
+    SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),
+    "main"
 );
 await synth.processorInitialized;
 
