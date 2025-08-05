@@ -7,9 +7,6 @@ import { modulatorSources } from "../../../../../soundbank/enums";
 import { customControllers, dataEntryStates } from "../../../../enums";
 import { midiControllers } from "../../../../../midi/enums";
 
-/**
- * @enum {number}
- */
 export const registeredParameterTypes = {
     pitchBendRange: 0x0000,
     fineTuning: 0x0001,
@@ -18,9 +15,6 @@ export const registeredParameterTypes = {
     resetParameters: 0x3fff
 };
 
-/**
- * @enum {number}
- */
 export const nonRegisteredMSB = {
     partParameter: 0x01,
     awe32: 0x7f,

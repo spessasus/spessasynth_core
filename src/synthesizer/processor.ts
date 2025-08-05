@@ -28,7 +28,7 @@ import type {
     SynthProcessorOptions,
     VoiceList
 } from "./types";
-import { type MIDIMessageType, midiMessageTypes } from "../midi/enums";
+import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../midi/enums";
 import { ProtectedSynthValues } from "./audio_engine/engine_components/internal_synth_values";
 import { KeyModifierManager } from "./audio_engine/engine_components/key_modifier_manager";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
@@ -413,18 +413,15 @@ export class SpessaSynthProcessor {
      * @param channel The MIDI channel to change the controller on.
      * @param controllerNumber The MIDI controller number to change.
      * @param controllerValue The value to set the controller to.
-     * @param force If true, the controller change is forced, otherwise it is ignored if the controller is locked.
      */
     public controllerChange(
         channel: number,
-        controllerNumber: number,
-        controllerValue: number,
-        force = false
+        controllerNumber: MIDIController,
+        controllerValue: number
     ) {
         this.midiChannels[channel].controllerChange(
             controllerNumber,
-            controllerValue,
-            force
+            controllerValue
         );
     }
 
@@ -496,7 +493,7 @@ export class SpessaSynthProcessor {
      * @param options Additional options for scheduling the message.
      */
     public processMessage(
-        message: Uint8Array,
+        message: Uint8Array | number[],
         channelOffset = 0,
         force = false,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
@@ -532,9 +529,8 @@ export class SpessaSynthProcessor {
                 case midiMessageTypes.controllerChange:
                     this.controllerChange(
                         channel,
-                        message[1],
-                        message[2],
-                        force
+                        message[1] as MIDIController,
+                        message[2]
                     );
                     break;
 

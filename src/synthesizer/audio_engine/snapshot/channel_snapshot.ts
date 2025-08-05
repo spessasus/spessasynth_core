@@ -79,11 +79,6 @@ export class ChannelSnapshot {
     public isMuted: boolean;
 
     /**
-     * Overrides velocity if greater than 0, otherwise disabled.
-     */
-    public velocityOverride: number;
-
-    /**
      * Indicates whether the channel is a drum channel.
      */
     public drumChannel: boolean;
@@ -113,7 +108,6 @@ export class ChannelSnapshot {
         channelTransposeKeyShift: number,
         channelOctaveTuning: Int8Array,
         isMuted: boolean,
-        velocityOverride: number,
         drumChannel: boolean,
         channelNumber: number
     ) {
@@ -131,7 +125,6 @@ export class ChannelSnapshot {
         this.channelTransposeKeyShift = channelTransposeKeyShift;
         this.channelOctaveTuning = channelOctaveTuning;
         this.isMuted = isMuted;
-        this.velocityOverride = velocityOverride;
         this.drumChannel = drumChannel;
         this.channelNumber = channelNumber;
     }
@@ -156,7 +149,6 @@ export class ChannelSnapshot {
             snapshot.channelTransposeKeyShift,
             snapshot.channelOctaveTuning,
             snapshot.isMuted,
-            snapshot.velocityOverride,
             snapshot.drumChannel,
             snapshot.channelNumber
         );
@@ -188,7 +180,6 @@ export class ChannelSnapshot {
             channelObject.channelTransposeKeyShift,
             channelObject.channelOctaveTuning.slice(),
             channelObject.isMuted,
-            channelObject.velocityOverride,
             channelObject.drumChannel,
             channelNumber
         );
@@ -215,7 +206,6 @@ export class ChannelSnapshot {
         channelObject.lockGSNRPNParams = this.lockVibrato;
         channelObject.channelTransposeKeyShift = this.channelTransposeKeyShift;
         channelObject.channelOctaveTuning = this.channelOctaveTuning;
-        channelObject.velocityOverride = this.velocityOverride;
 
         // Restore preset and lock
         channelObject.setPresetLock(false);

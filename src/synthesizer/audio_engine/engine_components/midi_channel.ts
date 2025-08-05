@@ -93,10 +93,6 @@ export class MIDIChannel {
      */
     public drumChannel = false;
     /**
-     * If greater than 0, overrides the velocity value for the channel, otherwise it's disabled.
-     */
-    public velocityOverride = 0;
-    /**
      * Enables random panning for every note played on this channel.
      */
     public randomPan = false;
@@ -167,21 +163,68 @@ export class MIDIChannel {
      * Grants access to protected synth values.
      */
     public synthProps: ProtectedSynthValues;
-    // MIDI messages
-    public noteOn = noteOn.bind(this);
-    public noteOff = noteOff.bind(this);
-    public programChange = programChange.bind(this);
-    // CC (Continuous Controller)
-    public controllerChange = controllerChange.bind(this);
-    public resetControllers = resetControllers.bind(this);
 
     // Bind all methods to the instance
     // (A hacky way to split the class into multiple files)
-    public resetControllersRP15Compliant =
-        resetControllersRP15Compliant.bind(this);
-    public resetParameters = resetParameters.bind(this);
-    public dataEntryFine = dataEntryFine.bind(this);
-    public dataEntryCoarse = dataEntryCoarse.bind(this);
+    // MIDI messages
+    /**
+     * Sends a "MIDI Note on" message and starts a note.
+     * @param midiNote The MIDI note number (0-127).
+     * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
+     */
+    public noteOn = noteOn.bind(this) as typeof noteOn;
+    /**
+     * Releases a note by its MIDI note number.
+     * If the note is in high performance mode and the channel is not a drum channel,
+     * it kills the note instead of releasing it.
+     * @param midiNote The MIDI note number to release (0-127).
+     */
+    public noteOff = noteOff.bind(this) as typeof noteOff;
+    /**
+     * Changes the program (preset) of the channel.
+     * @param programNumber The program number (0-127) to change to.
+     */
+    public programChange = programChange.bind(this) as typeof programChange;
+    // CC (Continuous Controller)
+    public controllerChange = controllerChange.bind(
+        this
+    ) as typeof controllerChange;
+    /**
+     * Reset all controllers for channel.
+     * This will reset all controllers to their default values,
+     * except for the locked controllers.
+     */
+    public resetControllers = resetControllers.bind(
+        this
+    ) as typeof resetControllers;
+
+    /**
+     * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
+     * Reset controllers according to RP-15 Recommended Practice.
+     */
+    public resetControllersRP15Compliant = resetControllersRP15Compliant.bind(
+        this
+    ) as typeof resetControllersRP15Compliant;
+    /**
+     * Reset all parameters to their default values.
+     * This includes NRPN and RPN controllers, data entry state,
+     * and generator overrides and offsets.
+     */
+    public resetParameters = resetParameters.bind(
+        this
+    ) as typeof resetParameters;
+    /**
+     * Executes a data entry fine (LSB) change for the current channel.
+     * @param dataValue The value to set for the data entry fine controller (0-127).
+     */
+    public dataEntryFine = dataEntryFine.bind(this) as typeof dataEntryFine;
+    /**
+     * Executes a data entry coarse (MSB) change for the current channel.
+     * @param dataValue The value to set for the data entry coarse controller (0-127).
+     */
+    public dataEntryCoarse = dataEntryCoarse.bind(
+        this
+    ) as typeof dataEntryCoarse;
     /**
      * Will be updated every time something tuning-related gets changed.
      * This is used to avoid a big addition for every voice rendering call.

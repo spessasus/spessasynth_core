@@ -49,11 +49,6 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         internalMidiNote = tune;
     }
 
-    // Velocity override
-    if (this.velocityOverride > 0) {
-        velocity = this.velocityOverride;
-    }
-
     // Monophonic retrigger
     if (this.synthProps.masterParameters.monophonicRetriggerMode) {
         this.killNote(midiNote, -7200);

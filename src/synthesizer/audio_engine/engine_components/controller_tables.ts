@@ -63,11 +63,3 @@ export const CUSTOM_CONTROLLER_TABLE_SIZE =
     Object.keys(customControllers).length;
 export const customResetArray = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);
 customResetArray[customControllers.modulationMultiplier] = 1;
-
-/**
- * This is a channel configuration enum, it is internally sent from Synthesizer via controller change
- * @enum {number}
- */
-export const channelConfiguration = {
-    velocityOverride: 128 // Overrides velocity for the given channel
-};

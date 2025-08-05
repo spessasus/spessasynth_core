@@ -1,14 +1,12 @@
-import { channelConfiguration } from "../../engine_components/controller_tables";
 import { nonRegisteredMSB } from "./data_entry/data_entry_coarse";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
-import { midiControllers } from "../../../../midi/enums";
+import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
 
 /**
  * Handles MIDI controller changes for a channel.
  * @param controllerNumber The MIDI controller number (0-127).
  * @param controllerValue The value of the controller (0-127).
- * @param force If true, allows changes to channel configuration controllers (128+).
  * @remarks
  * This function processes MIDI controller changes, updating the channel's
  * midiControllers table and handling special cases like bank select,
@@ -20,22 +18,11 @@ import { customControllers, dataEntryStates } from "../../../enums";
  */
 export function controllerChange(
     this: MIDIChannel,
-    controllerNumber: number,
-    controllerValue: number,
-    force = false
+    controllerNumber: MIDIController,
+    controllerValue: number
 ) {
     if (controllerNumber > 127) {
-        // Channel configuration. force must be set to true
-        if (!force) {
-            return;
-        }
-        switch (controllerNumber) {
-            default:
-                return;
-
-            case channelConfiguration.velocityOverride:
-                this.velocityOverride = controllerValue;
-        }
+        throw new Error("Invalid MIDI Controller.");
     }
 
     // Lsb controller values: append them as the lower nibble of the 14-bit value

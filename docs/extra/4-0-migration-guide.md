@@ -228,6 +228,10 @@ They behave in exactly the same way.
 Removed. `addSoundBank` can be used to replace an existing one.
 `reloadManager` could cause issues with embedded sound banks.
 
+### channel configuration
+
+Removed. It only had one property (velocity override) which can be implemented via key modifiers.
+
 ### Synthesizer Snapshot
 
 The following properties have been replaced by a property `masterParameters`:

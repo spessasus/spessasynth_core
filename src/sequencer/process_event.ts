@@ -3,7 +3,7 @@ import { consoleColors } from "../utils/other";
 import { SpessaSynthWarn } from "../utils/loggin";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import type { SpessaSynthSequencer } from "./sequencer";
-import { midiMessageTypes } from "../midi/enums";
+import { type MIDIController, midiMessageTypes } from "../midi/enums";
 
 /**
  * Processes a MIDI event.
@@ -84,7 +84,7 @@ export function processEventInternal(
             }
             this.synth.controllerChange(
                 statusByteData.channel,
-                event.data[0],
+                event.data[0] as MIDIController,
                 event.data[1]
             );
             break;

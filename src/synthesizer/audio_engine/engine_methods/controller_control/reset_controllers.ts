@@ -161,7 +161,7 @@ export function resetControllers(this: MIDIChannel) {
                 i !== midiControllers.NRPNMsb &&
                 i !== midiControllers.NRPNLsb
             ) {
-                this.controllerChange(i, resetValue >> 7);
+                this.controllerChange(i as MIDIController, resetValue >> 7);
             }
         } else {
             // Out of range, do a regular reset
@@ -229,7 +229,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
             if (i === midiControllers.portamentoControl) {
                 this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
             } else {
-                this.controllerChange(i, resetValue >> 7);
+                this.controllerChange(i as MIDIController, resetValue >> 7);
             }
         }
     }

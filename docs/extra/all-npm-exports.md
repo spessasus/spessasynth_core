@@ -18,7 +18,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 ### Related Enums
 
 - masterParameterType - for setting master parameters.
-- channelConfiguration - for setting the channel configuration. (currently only velocity override)
 - interpolationTypes - the available interpolation types.
 - synthDisplayTypes - for the `synthdisplay` event.
 - ChannelSnapshot - a subclass of SynthesizerSnapshot, a snapshot of a single MIDI channel in the thread.

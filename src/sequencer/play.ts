@@ -275,7 +275,7 @@ export function setTimeToInternal(
                     ) {
                         this.synth.controllerChange(
                             channelNumber,
-                            index,
+                            index as MIDIController,
                             value
                         );
                     }
