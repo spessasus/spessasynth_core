@@ -194,8 +194,13 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             sm.loopEnd = temp;
         }
         if (sm.loopEnd - sm.loopStart < 1) {
-            sm.loopingMode = 0;
-            sm.isLooping = false;
+            // Disable loop if enabled
+            // Don't disable on release mode. Testcase:
+            // https://github.com/spessasus/SpessaSynth/issues/174
+            if (sm.loopingMode === 1 || sm.loopingMode === 3) {
+                sm.loopingMode = 0;
+                sm.isLooping = false;
+            }
         }
         // Set the current attenuation to target,
         // As it's interpolated (we don't want 0 attenuation for even a split second)

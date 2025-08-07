@@ -8,9 +8,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "node examples/midi_to_wav_node/index.ts",
-    "local-build": "npm run build && npm pack && echo built the tgz file for local install",
+    "local-build": "npm run build:fast && npm pack && echo built the tgz file for local install",
     "lint": "eslint src",
-    "build": "npm run test:types && rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
+    "build:fast": "rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
+    "build": "npm run test:types && npm run build:fast",
     "test:types": "npm run lint && tsc -b "
   },
   "repository": {
