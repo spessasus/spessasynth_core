@@ -7,7 +7,7 @@ import { midiMessageTypes } from "../enums";
  * Exports the midi as a standard MIDI file
  * @param midi the MIDI to write
  */
-export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
+export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
     if (!midi.tracks) {
         throw new Error("MIDI has no tracks!");
     }
@@ -92,5 +92,5 @@ export function writeMIDIInternal(midi: BasicMIDI): Uint8Array<ArrayBuffer> {
         binaryData.push(...writeBigEndian(track.length, 4)); // Length
         binaryData.push(...track); // Write data
     }
-    return new Uint8Array(binaryData);
+    return new Uint8Array(binaryData).buffer;
 }

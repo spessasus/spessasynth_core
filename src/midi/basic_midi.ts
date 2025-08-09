@@ -4,7 +4,7 @@ import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
-import { writeRMIDIInternal } from "./midi_tools/rmidi_writer";
+import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./midi_tools/rmidi_writer";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
@@ -16,7 +16,7 @@ import type {
     MIDIFormat,
     MIDILoop,
     NoteTime,
-    RMIDMetadata,
+    RMIDIWriteOptions,
     TempoChange
 } from "./types";
 import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
@@ -26,6 +26,7 @@ import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
 import type { KeyRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
+import { fillWithDefaults } from "../utils/fill_with_defaults";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -243,36 +244,24 @@ export class BasicMIDI {
      * Exports the midi as a standard MIDI file.
      * @returns the binary file data.
      */
-    public write(): Uint8Array<ArrayBuffer> {
+    public writeMIDI(): ArrayBuffer {
         return writeMIDIInternal(this);
     }
 
     /**
      * Writes an RMIDI file. Note that this method modifies the MIDI file in-place.
      * @param soundBankBinary the binary sound bank to embed into the file.
-     * @param soundBank the sound bank instance.
-     * @param bankOffset the bank offset for RMIDI.
-     * @param encoding the encoding of the RMIDI info chunk.
-     * @param metadata the metadata of the file. Optional. If provided, the encoding is forced to utf-8.
-     * @param correctBankOffset if the MIDI file should internally be corrected to work with the set bank offset.
+     * @param configuration Extra options for writing the file.
      * @returns the binary file data.
      */
     public writeRMIDI(
-        soundBankBinary: Uint8Array,
-        soundBank: BasicSoundBank,
-        bankOffset = 0,
-        encoding = "Shift_JIS",
-        metadata: Partial<RMIDMetadata> = {},
-        correctBankOffset = true
-    ): IndexedByteArray {
+        soundBankBinary: ArrayBuffer,
+        configuration: Partial<RMIDIWriteOptions> = DEFAULT_RMIDI_WRITE_OPTIONS
+    ): ArrayBuffer {
         return writeRMIDIInternal(
             this,
             soundBankBinary,
-            soundBank,
-            bankOffset,
-            encoding,
-            metadata,
-            correctBankOffset
+            fillWithDefaults(configuration, DEFAULT_RMIDI_WRITE_OPTIONS)
         );
     }
 

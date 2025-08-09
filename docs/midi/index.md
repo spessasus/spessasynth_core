@@ -244,13 +244,13 @@ midi.MIDIticksToSeconds(ticks);
 
 The returned value is the time in seconds from the start of the MIDI to the given tick.
 
-### write
+### writeMIDI
 
 Renders the sequence as a .mid-file.
 See [Writing MIDI files](../writing-files/midi.md#write) for more info.
 
 ```ts
-midi.write();
+midi.writeMIDI();
 ```
 
 The returned value is an `Uint8Array` - a binary representation of the .mid-file.

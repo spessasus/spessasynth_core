@@ -40,8 +40,17 @@ They behave in exactly the same way.
  - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
  - `modifyMIDI()` -> `modify()`
- - `writeMIDI()` -> `write()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
+
+#### writeRMIDI
+
+Now takes a partial `options` object instead of separate optional arguments.
+
+Now returns `ArrayBuffer` instead of `Uint8Array`.
+
+#### writeMIDI
+
+Now returns `ArrayBuffer` instead of `Uint8Array`.
 
 #### midiName
 
@@ -164,6 +173,7 @@ They behave in exactly the same way.
 
 - `soundFontInfo` -> `soundBankInfo`
 - `getDummySoundfontFile()` -> `getSampleSoundBankFile()`
+- `wriete()` -> `writeSF2()`
 
 ## SpessaSynthProcessor
 

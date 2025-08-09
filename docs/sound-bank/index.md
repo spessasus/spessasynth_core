@@ -50,12 +50,12 @@ const preset = soundBank.getPresetByName(name);
 
 - `name` - The name of the preset as a string. If not found, the first preset will be returned.
 
-### write
+### writeSF2
 
 Write out an SF2 or SF3 file. The return value is an `Uint8Array` - the binary of the file.
 
 ```ts
-const binary = await soundBank.write(options);
+const binary = await soundBank.writeSF2(options);
 ```
 
 - `options` - An optional object:
@@ -310,7 +310,7 @@ import {encodeVorbis} from './libvorbis/encode_vorbis.js'; // adjust the path if
 Then pass it to the write method:
 
 ```ts
-const file = await soundBank.write({
+const file = await soundBank.writeSF2({
     compress: true,
     compressionFunction: encodeVorbis
 });

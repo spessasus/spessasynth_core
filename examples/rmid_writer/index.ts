@@ -26,8 +26,9 @@ console.info("Loaded bank and MIDI!");
 bank.trimSoundBank(midi);
 
 // write rmidi
-const rmidi = midi.writeRMIDI(await bank.write(), bank);
-fs.writeFileSync(outPath, rmidi);
-fs.writeFile(outPath, rmidi, () => {
+const rmidi = midi.writeRMIDI(await bank.writeSF2(), {
+    soundBank: bank
+});
+fs.writeFile(outPath, new Uint8Array(rmidi), () => {
     console.info(`File written to ${outPath}`);
 });

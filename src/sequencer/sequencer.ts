@@ -192,6 +192,10 @@ export class SpessaSynthSequencer {
      */
     protected _playbackRate = 1;
 
+    public get playbackRate() {
+        return this._playbackRate;
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * The sequencer's playback rate.

@@ -187,8 +187,7 @@ export class BasicSoundBank {
         font.soundBankInfo.isng = "E-mu 10K2";
         font.soundBankInfo.INAM = "Dummy";
         font.flush();
-        const f = await font.write();
-        return f.buffer;
+        return await font.writeSF2();
     }
 
     /**
@@ -198,7 +197,7 @@ export class BasicSoundBank {
      */
     public async writeDLS(
         options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
-    ): Promise<Uint8Array<ArrayBuffer>> {
+    ): Promise<ArrayBuffer> {
         return writeDLSInternal(this, options);
     }
 
@@ -207,9 +206,9 @@ export class BasicSoundBank {
      * @param writeOptions the options for writing.
      * @returns the binary file data.
      */
-    public async write(
+    public async writeSF2(
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
-    ): Promise<Uint8Array<ArrayBuffer>> {
+    ): Promise<ArrayBuffer> {
         return writeSF2Internal(this, writeOptions);
     }
 

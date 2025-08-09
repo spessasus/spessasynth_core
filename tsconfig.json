@@ -9,6 +9,9 @@
       "DOM",
       "DOM.Iterable"
     ],
+    "types": [
+      "node"
+    ],
     "module": "esnext",
     "skipLibCheck": true,
     "allowJs": true,
@@ -33,11 +36,11 @@
     "noEmit": true
   },
   "include": [
-    "src"
+    "src",
+    "examples"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "examples"
+    "dist"
   ]
 }

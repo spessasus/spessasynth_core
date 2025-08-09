@@ -30,7 +30,7 @@ export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
 export async function writeDLSInternal(
     targetSoundBank: BasicSoundBank,
     options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
-): Promise<Uint8Array<ArrayBuffer>> {
+): Promise<ArrayBuffer> {
     options = fillWithDefaults(options, DEFAULT_DLS_OPTIONS);
     SpessaSynthGroupCollapsed("%cSaving DLS...", consoleColors.info);
     // Write colh
@@ -97,5 +97,5 @@ export async function writeDLSInternal(
         ptbl,
         wvpl,
         info
-    ]);
+    ]).buffer;
 }

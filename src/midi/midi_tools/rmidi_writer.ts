@@ -25,7 +25,7 @@ import {
     rmidInfoChunks
 } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
-import type { RMIDMetadata } from "../types";
+import type { RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import { getGsOn } from "./get_gs_on";
 import type { SynthSystem } from "../../synthesizer/types";
@@ -373,40 +373,40 @@ function correctBankOffsetInternal(
     }
 }
 
+export const DEFAULT_RMIDI_WRITE_OPTIONS: RMIDIWriteOptions = {
+    bankOffset: 0,
+    encoding: "Shift_JIS",
+    metadata: {},
+    correctBankOffset: true,
+    soundBank: undefined
+};
+
 /**
  * Writes an RMIDI file. Note that this method modifies the MIDI file in-place.
- * @param mid MIDI to modify
- * @param soundBankBinary the binary sound bank to embed into the file
- * @param soundBank the sound bank instance
- * @param bankOffset the bank offset for RMIDI
- * @param encoding the encoding of the RMIDI info chunk
- * @param metadata the metadata of the file. Optional. If provided, the encoding is forced to utf-8
- * @param correctBankOffset if the MIDI file should internally be corrected to work with the set bank offset
+ * @param mid MIDI to modify.
+ * @param soundBankBinary The binary sound bank to embed into the file.
+ * @param options Extra options for writing the file.
  * @returns the binary data
  */
 export function writeRMIDIInternal(
     mid: BasicMIDI,
-    soundBankBinary: Uint8Array,
-    soundBank: BasicSoundBank,
-    bankOffset = 0,
-    encoding = "Shift_JIS",
-    metadata: Partial<RMIDMetadata> = {},
-    correctBankOffset = true
-): IndexedByteArray {
+    soundBankBinary: ArrayBuffer,
+    options: RMIDIWriteOptions
+): ArrayBuffer {
+    const metadata = options.metadata;
+    let encoding = options.encoding;
     SpessaSynthGroup("%cWriting the RMIDI File...", consoleColors.info);
-    SpessaSynthInfo(
-        `%cConfiguration: Bank offset: %c${bankOffset}%c, encoding: %c${encoding}`,
-        consoleColors.info,
-        consoleColors.value,
-        consoleColors.info,
-        consoleColors.value
-    );
     SpessaSynthInfo("metadata", metadata);
     SpessaSynthInfo("Initial bank offset", mid.bankOffset);
-    if (correctBankOffset) {
-        correctBankOffsetInternal(mid, bankOffset, soundBank);
+    if (options.correctBankOffset) {
+        if (!options.soundBank) {
+            throw new Error(
+                "Sound bank must be provided if correcting bank offset."
+            );
+        }
+        correctBankOffsetInternal(mid, options.bankOffset, options.soundBank);
     }
-    const newMid = new IndexedByteArray(mid.write().buffer);
+    const newMid = new IndexedByteArray(mid.writeMIDI());
 
     // Info data for RMID
     const infoContent: Uint8Array[] = [];
@@ -562,7 +562,7 @@ export function writeRMIDIInternal(
 
     // Bank offset
     const DBNK = new IndexedByteArray(2);
-    writeLittleEndianIndexed(DBNK, bankOffset, 2);
+    writeLittleEndianIndexed(DBNK, options.bankOffset, 2);
     infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.bankOffset, DBNK));
     // Midi encoding
     if (metadata.midiEncoding !== undefined) {
@@ -589,6 +589,6 @@ export function writeRMIDIInternal(
         getStringBytes("RMID"),
         writeRIFFChunkRaw("data", newMid),
         writeRIFFChunkParts("INFO", infoContent, true),
-        soundBankBinary
-    ]);
+        new IndexedByteArray(soundBankBinary)
+    ]).buffer;
 }

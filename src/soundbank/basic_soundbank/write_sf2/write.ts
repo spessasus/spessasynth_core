@@ -51,7 +51,7 @@ export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
 export async function writeSF2Internal(
     targetSoundBank: BasicSoundBank,
     writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
-): Promise<Uint8Array<ArrayBuffer>> {
+): Promise<ArrayBuffer> {
     const options: SoundFont2WriteOptions = fillWithDefaults(
         writeOptions,
         DEFAULT_SF2_WRITE_OPTIONS
@@ -237,5 +237,5 @@ export async function writeSF2Internal(
         consoleColors.recognized
     );
     SpessaSynthGroupEnd();
-    return main;
+    return main.buffer;
 }

@@ -1,3 +1,5 @@
+import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+
 /**
  * RMIDMetadata type represents metadata for an RMIDI file.
  */
@@ -140,4 +142,28 @@ export interface DesiredChannelTranspose {
      * This can use floating point numbers, which will be used to fine-tune the pitch in cents using RPN.
      */
     keyShift: number;
+}
+
+export interface RMIDIWriteOptions {
+    /**
+     * The bank offset for RMIDI.
+     */
+    bankOffset: number;
+    /**
+     * The encoding of the RMIDI info chunk.
+     */
+    encoding: string;
+    /**
+     * The metadata of the file. Optional. If provided, the encoding is forced to utf-8.
+     */
+    metadata: Partial<RMIDMetadata>;
+    /**
+     * If the MIDI file should internally be corrected to work with the set bank offset.
+     */
+    correctBankOffset: boolean;
+
+    /**
+     * The optional sound bank instance used to correct bank offset.
+     */
+    soundBank?: BasicSoundBank;
 }

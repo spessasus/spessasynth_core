@@ -1,4 +1,4 @@
-// process arguments
+// Process arguments
 import * as fs from "fs";
 import { BasicSoundBank, SoundBankLoader } from "../../src";
 
@@ -21,6 +21,6 @@ console.time("Converted in");
 const outDLS = await bank.writeDLS();
 console.timeEnd("Converted in");
 console.info(`Writing file...`);
-fs.writeFile(dlsPath, outDLS, () => {
+fs.writeFile(dlsPath, new Uint8Array(outDLS), () => {
     console.info(`File written to ${dlsPath}`);
 });
