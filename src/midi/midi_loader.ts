@@ -136,34 +136,25 @@ export function loadMIDIFromArrayBufferInternal(
                             infoChunk.header as RMIDINFOChunk
                         ] = infoChunk.data;
                     }
-                    if (outputMIDI.rmidiInfo.ICOP) {
-                        // Special case, overwrites the copyright components array
-                        outputMIDI.copyright = readBinaryStringIndexed(
-                            outputMIDI.rmidiInfo.ICOP,
-                            outputMIDI.rmidiInfo.ICOP.length,
-                            false
-                        ).replaceAll("\n", " ");
-                    }
-                    if (outputMIDI.rmidiInfo.INAM) {
-                        // Remove the terminal zero
-                        outputMIDI.rawName = outputMIDI.rmidiInfo.INAM.slice(
-                            0,
-                            outputMIDI.rmidiInfo.INAM.length - 1
-                        );
-                    }
-                    // These can be used interchangeably
+                    // Note that there are two album chunks: IPRD and IALB
+                    // Spessasynth uses IPRD
                     if (
-                        outputMIDI.rmidiInfo.IALB &&
-                        !outputMIDI.rmidiInfo.IPRD
+                        "IALB" in outputMIDI.rmidiInfo &&
+                        !("IPRD" in outputMIDI.rmidiInfo)
                     ) {
-                        outputMIDI.rmidiInfo.IPRD = outputMIDI.rmidiInfo.IALB;
+                        outputMIDI.rmidiInfo.IPRD = outputMIDI.rmidiInfo
+                            .IALB as IndexedByteArray;
                     }
+
+                    // Older RMIDIs written by spessasynth erroneously used ICRT instead of ICRD. Fix this here
                     if (
-                        outputMIDI.rmidiInfo.IPRD &&
-                        !outputMIDI.rmidiInfo.IALB
+                        "ICRT" in outputMIDI.rmidiInfo &&
+                        !("ICRD" in outputMIDI.rmidiInfo)
                     ) {
-                        outputMIDI.rmidiInfo.IALB = outputMIDI.rmidiInfo.IPRD;
+                        outputMIDI.rmidiInfo.ICRD = outputMIDI.rmidiInfo
+                            .ICRT as IndexedByteArray;
                     }
+
                     outputMIDI.bankOffset = 1; // Defaults to 1
                     if (outputMIDI.rmidiInfo.DBNK) {
                         outputMIDI.bankOffset = readLittleEndianIndexed(

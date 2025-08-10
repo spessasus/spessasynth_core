@@ -54,14 +54,9 @@ export class BasicMIDI {
     public tempoChanges: TempoChange[] = [{ ticks: 0, tempo: 120 }];
 
     /**
-     * A string containing the copyright information for the MIDI sequence if detected.
-     */
-    public copyright = "";
-
-    /**
      * Any extra metadata found in the file.
      */
-    public extraMetadata: string[] = [];
+    public extraMetadata: MIDIMessage[] = [];
 
     /**
      * An array containing the lyrics of the sequence, stored as binary chunks (Uint8Array).
@@ -147,6 +142,19 @@ export class BasicMIDI {
      * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
      */
     public embeddedSoundBank?: ArrayBuffer;
+
+    protected get encoding() {
+        const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
+        if (!encodingInfo) {
+            return undefined;
+        }
+        let lengthToRead = encodingInfo.length;
+        // Some files don't have a terminal zero
+        if (encodingInfo[encodingInfo.length - 1] === 0) {
+            lengthToRead--;
+        }
+        return readBinaryString(encodingInfo, lengthToRead);
+    }
 
     /**
      * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
@@ -302,20 +310,13 @@ export class BasicMIDI {
      * Gets the MIDI's even if it's encoded.
      * @param encoding The encoding to use if the MIDI uses an extended code page.
      * @remarks
-     * Do not call in audioWorkletGlobalScope as it uses TextDecoder
+     * Do not call in audioWorkletGlobalScope as it uses TextDecoder.
+     * IENC overrides the provided encoding.
      */
     public getName(encoding = "Shift_JIS") {
         let rawName = "";
         if (this.rawName) {
-            const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
-            if (encodingInfo) {
-                let lengthToRead = encodingInfo.length;
-                // Some files don't have a terminal zero
-                if (encodingInfo[encodingInfo.length - 1] === 0) {
-                    lengthToRead--;
-                }
-                encoding = readBinaryString(encodingInfo, lengthToRead);
-            }
+            encoding = this.encoding ?? encoding;
             try {
                 const decoder = new TextDecoder(encoding);
                 // Trim since "                                                                "
@@ -329,6 +330,29 @@ export class BasicMIDI {
         return rawName || this.name || this.fileName;
     }
 
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets a given chunk from the RMIDI Information as text, undefined if it does not exist
+     * @param infoType The metadata type.
+     * @returns the text or undefined.
+     */
+    public getRMIDInfo(infoType: RMIDINFOChunk) {
+        if (!this.rmidiInfo[infoType]) {
+            return undefined;
+        }
+        const encoding = this.encoding ?? "UTF-8";
+
+        try {
+            const decoder = new TextDecoder(encoding);
+            return decoder.decode(this.rmidiInfo[infoType].buffer).trim();
+        } catch (e) {
+            SpessaSynthWarn(
+                `Failed to decode ${infoType} name: ${e as string}`
+            );
+            return undefined;
+        }
+    }
+
     /**
      * INTERNAL USE ONLY!
      */
@@ -338,7 +362,6 @@ export class BasicMIDI {
         this.fileName = mid.fileName;
         this.timeDivision = mid.timeDivision;
         this.duration = mid.duration;
-        this.copyright = mid.copyright;
         this.firstNoteOn = mid.firstNoteOn;
         this.lastVoiceEventTick = mid.lastVoiceEventTick;
         this.format = mid.format;
@@ -383,7 +406,7 @@ export class BasicMIDI {
 
         this.keyRange = { max: 0, min: 127 };
 
-        const copyrightComponents: string[] = [];
+        this.extraMetadata = [];
 
         let nameDetected = false;
         if (typeof this.rmidiInfo.INAM !== "undefined") {
@@ -498,9 +521,7 @@ export class BasicMIDI {
                         break;
 
                     case midiMessageTypes.copyright:
-                        copyrightComponents.push(
-                            readBinaryString(e.data, e.data.length, 0, false)
-                        );
+                        this.extraMetadata.push(e);
 
                         break;
                     // Fallthrough
@@ -554,10 +575,8 @@ export class BasicMIDI {
                                     karaokeHasTitle = true;
                                     nameDetected = true;
                                 } else {
-                                    // Append to copyright
-                                    copyrightComponents.push(
-                                        checkedText.substring(2).trim()
-                                    );
+                                    // Append to metadata
+                                    this.extraMetadata.push(e);
                                 }
                             } else if (!checkedText.startsWith("@")) {
                                 // Non @: the lyrics
@@ -580,13 +599,12 @@ export class BasicMIDI {
                 (e) => e.statusByte === midiMessageTypes.trackName
             );
             if (trackName) {
-                const name = readBinaryString(trackName.data);
-                track.name = name;
+                track.name = readBinaryString(trackName.data);
                 // If the track has no voice messages, its "track name" event (if it has any)
                 // Is some metadata.
                 // Add it to copyright
                 if (!trackHasVoiceMessages) {
-                    copyrightComponents.push(name);
+                    this.extraMetadata.push(trackName);
                 }
             }
         }
@@ -751,12 +769,10 @@ export class BasicMIDI {
                 }
             }
         }
-
-        this.extraMetadata = copyrightComponents
-            // Trim and group newlines into one
-            .map((c) => c.trim().replace(/(\r?\n)+/g, "\n"))
-            // Remove empty strings
-            .filter((c) => c.length > 0);
+        // Remove empty strings
+        this.extraMetadata = this.extraMetadata.filter(
+            (c) => c.data.length > 0
+        );
 
         this.name = this.name.trim();
         // If name is "", use the file name

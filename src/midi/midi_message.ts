@@ -2,7 +2,6 @@
  * Midi_message.ts
  * purpose: contains enums for midi events and controllers and functions to parse them
  */
-import type { IndexedByteArray } from "../utils/indexed_array";
 import type { MIDIMessageType } from "./enums";
 
 export class MIDIMessage {
@@ -19,7 +18,7 @@ export class MIDIMessage {
     /**
      * Message's binary data
      */
-    public data: IndexedByteArray;
+    public data: Uint8Array<ArrayBuffer>;
 
     /**
      * Creates a new MIDI message
@@ -30,7 +29,7 @@ export class MIDIMessage {
     public constructor(
         ticks: number,
         byte: MIDIMessageType,
-        data: IndexedByteArray
+        data: Uint8Array<ArrayBuffer>
     ) {
         this.ticks = ticks;
         this.statusByte = byte;

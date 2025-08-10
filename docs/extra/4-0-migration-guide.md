@@ -60,6 +60,11 @@ If no name is found. It will no longer fall back to `fileName` but be empty inst
 
 To replicate the old behavior, consider `mid.name || mid.fileName`.
 
+#### copyright
+
+Removed in favor of `extraMetadata`. There isn't a consistent way to determine a copyright of a MIDI file as it's often stored in track names or markers.
+Extra metadata separates what copyright was: a stitched string of all meta events that were "interesting".
+
 #### tracks
 
 Is no longer an array of `MIDIMessage`, but its own class: `MIDITrack`.

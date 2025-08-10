@@ -420,7 +420,7 @@ export function writeRMIDIInternal(
         )
     );
     // Name
-    if (metadata.name !== undefined) {
+    if (metadata.name) {
         infoContent.push(
             writeRIFFChunkRaw(
                 rmidInfoChunks.name,
@@ -442,7 +442,7 @@ export function writeRMIDIInternal(
         }
     }
     // Creation date
-    if (metadata.creationDate !== undefined) {
+    if (metadata.creationDate) {
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -469,7 +469,7 @@ export function writeRMIDIInternal(
         );
     }
     // Comment
-    if (metadata.comment !== undefined) {
+    if (metadata.comment) {
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -479,7 +479,7 @@ export function writeRMIDIInternal(
         );
     }
     // Engineer
-    if (metadata.engineer !== undefined) {
+    if (metadata.engineer) {
         infoContent.push(
             writeRIFFChunkRaw(
                 rmidInfoChunks.engineer,
@@ -489,8 +489,9 @@ export function writeRMIDIInternal(
         );
     }
     // Album
-    if (metadata.album !== undefined) {
+    if (metadata.album) {
         // Note that there are two album chunks: IPRD and IALB
+        // Spessasynth uses IPRD, but writes both
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -500,15 +501,11 @@ export function writeRMIDIInternal(
             )
         );
         infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.album2,
-                encoder.encode(metadata.album),
-                true
-            )
+            writeRIFFChunkRaw("IALB", encoder.encode(metadata.album), true)
         );
     }
     // Artist
-    if (metadata.artist !== undefined) {
+    if (metadata.artist) {
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -519,7 +516,7 @@ export function writeRMIDIInternal(
         );
     }
     // Genre
-    if (metadata.genre !== undefined) {
+    if (metadata.genre) {
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -530,7 +527,7 @@ export function writeRMIDIInternal(
         );
     }
     // Picture
-    if (metadata.picture !== undefined) {
+    if (metadata.picture) {
         infoContent.push(
             writeRIFFChunkRaw(
                 rmidInfoChunks.picture,
@@ -539,7 +536,7 @@ export function writeRMIDIInternal(
         );
     }
     // Copyright
-    if (metadata.copyright !== undefined) {
+    if (metadata.copyright) {
         encoding = FORCED_ENCODING;
         infoContent.push(
             writeRIFFChunkRaw(
@@ -550,12 +547,10 @@ export function writeRMIDIInternal(
         );
     } else {
         // Use midi copyright if possible
-        const copyright =
-            mid.copyright.length > 0 ? mid.copyright : DEFAULT_COPYRIGHT;
         infoContent.push(
             writeRIFFChunkRaw(
                 rmidInfoChunks.copyright,
-                getStringBytes(copyright, true)
+                mid.rmidiInfo.ICOP ?? getStringBytes(DEFAULT_COPYRIGHT, true)
             )
         );
     }

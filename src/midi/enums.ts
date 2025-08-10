@@ -178,7 +178,6 @@ export type MIDIController =
 export const rmidInfoChunks = {
     name: "INAM",
     album: "IPRD",
-    album2: "IALB",
     artist: "IART",
     genre: "IGNR",
     picture: "IPIC",
@@ -187,6 +186,7 @@ export const rmidInfoChunks = {
     comment: "ICMT",
     engineer: "IENG",
     software: "ISFT",
+    subject: "ISBJ",
     encoding: "IENC",
     midiEncoding: "MENC",
     bankOffset: "DBNK"
