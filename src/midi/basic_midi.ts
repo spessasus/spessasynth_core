@@ -143,7 +143,10 @@ export class BasicMIDI {
      */
     public embeddedSoundBank?: ArrayBuffer;
 
-    protected get encoding() {
+    /**
+     * The encoding of the MIDI file, if specified.
+     */
+    public get encoding() {
         const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
         if (!encodingInfo) {
             return undefined;
