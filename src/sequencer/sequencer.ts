@@ -192,6 +192,11 @@ export class SpessaSynthSequencer {
      */
     protected _playbackRate = 1;
 
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * The sequencer's playback rate.
+     * This is the rate at which the sequencer plays back the MIDI data.
+     */
     public get playbackRate() {
         return this._playbackRate;
     }

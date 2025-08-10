@@ -32,7 +32,7 @@ export class SoundFont2 extends BasicSoundBank {
     public constructor(arrayBuffer: ArrayBuffer, warnDeprecated = true) {
         super();
         if (warnDeprecated) {
-            console.warn(
+            throw new Error(
                 "Using the constructor directly is deprecated. Use SoundBankLoader.fromArrayBuffer() instead."
             );
         }

@@ -1,7 +1,7 @@
 import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
 import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./midi_tools/rmidi_writer";
@@ -309,16 +309,22 @@ export class BasicMIDI {
         if (this.rawName) {
             const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
             if (encodingInfo) {
-                encoding = readBinaryString(
-                    encodingInfo,
-                    encodingInfo.length - 1
-                );
+                let lengthToRead = encodingInfo.length;
+                // Some files don't have a terminal zero
+                if (encodingInfo[encodingInfo.length - 1] === 0) {
+                    lengthToRead--;
+                }
+                encoding = readBinaryString(encodingInfo, lengthToRead);
             }
-            const decoder = new TextDecoder(encoding);
-            // Trim since "                                                                "
-            // Is not a valid name
-            // MIDI file with that name: th07_10.mid
-            rawName = decoder.decode(this.rawName).trim();
+            try {
+                const decoder = new TextDecoder(encoding);
+                // Trim since "                                                                "
+                // Is not a valid name
+                // MIDI file with that name: th07_10.mid
+                rawName = decoder.decode(this.rawName).trim();
+            } catch (e) {
+                SpessaSynthWarn(`Failed to decode MIDI name: ${e as string}`);
+            }
         }
         return rawName || this.name || this.fileName;
     }

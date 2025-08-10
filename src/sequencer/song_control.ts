@@ -112,7 +112,7 @@ export function loadNewSequenceInternal(
     );
     this.callEvent("songChange", { songIndex: this._songIndex });
 
-    if (this._midiData.duration <= 1) {
+    if (this._midiData.duration <= 0.2) {
         SpessaSynthWarn(
             `%cVery short song: (${formatTime(Math.round(this._midiData.duration)).time}). Disabling loop!`,
             consoleColors.warn
