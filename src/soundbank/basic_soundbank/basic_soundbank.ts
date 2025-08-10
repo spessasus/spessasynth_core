@@ -1,10 +1,4 @@
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
 import { defaultModulators, Modulator } from "./modulator";
@@ -608,7 +602,7 @@ export class BasicSoundBank {
             );
         }
         if (preset) {
-            SpessaSynthWarn(
+            SpessaSynthInfo(
                 `%cPreset ${bankNr}.${programNr} not found. Replaced with %c${preset.name} (${preset.bank}.${preset.program})`,
                 consoleColors.warn,
                 consoleColors.recognized
@@ -617,7 +611,7 @@ export class BasicSoundBank {
 
         // No preset, use the first one available
         if (!preset) {
-            SpessaSynthWarn(
+            SpessaSynthInfo(
                 `Preset ${programNr} not found. Defaulting to`,
                 this.presets[0].name
             );
@@ -633,7 +627,7 @@ export class BasicSoundBank {
     public getPresetByName(presetName: string): BasicPreset {
         let preset = this.presets.find((p) => p.name === presetName);
         if (!preset) {
-            SpessaSynthWarn(
+            SpessaSynthInfo(
                 "Preset not found. Defaulting to:",
                 this.presets[0].name
             );

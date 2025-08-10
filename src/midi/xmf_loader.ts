@@ -143,7 +143,7 @@ class XMFNode {
                     metadataChunk
                 ) as metadataTypes;
                 if (!Object.values(metadataTypes).includes(fieldSpecifier)) {
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `Unknown field specifier: ${fieldSpecifier}`
                     );
                     key = `unknown_${fieldSpecifier}`;
@@ -189,7 +189,7 @@ class XMFNode {
             } else {
                 // Throw new Error ("International content is not supported.");
                 // Skip the number of versions
-                SpessaSynthWarn(`International content: ${numberOfVersions}`);
+                SpessaSynthInfo(`International content: ${numberOfVersions}`);
                 // Length in bytes
                 // Skip the whole thing!
                 metadataChunk.currentIndex +=
@@ -317,7 +317,7 @@ class XMFNode {
             } else {
                 const formatTypeID = resourceFormat[0];
                 if (formatTypeID !== formatTypeIDs.standard) {
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `Non-standard formatTypeID: ${resourceFormat.toString()}`
                     );
                     this.resourceFormat =
@@ -327,7 +327,7 @@ class XMFNode {
                 if (
                     !Object.values(resourceFormatIDs).includes(resourceFormatID)
                 ) {
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `Unrecognized resource format: ${resourceFormatID}`
                     );
                 } else {

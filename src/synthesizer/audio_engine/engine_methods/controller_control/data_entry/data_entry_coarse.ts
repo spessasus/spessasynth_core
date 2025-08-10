@@ -1,4 +1,4 @@
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../../utils/loggin";
+import { SpessaSynthInfo } from "../../../../../utils/loggin";
 import { consoleColors } from "../../../../../utils/other";
 import type { MIDIChannel } from "../../../engine_components/midi_channel";
 import type { GeneratorType } from "../../../../../soundbank/basic_soundbank/generator_types";
@@ -102,7 +102,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         // Default value
                         return;
                     }
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `%cUnrecognized NRPN for %c${this.channelNumber}%c: %c(0x${NRPNFine.toString(
                             16
                         ).toUpperCase()} 0x${NRPNFine.toString(
@@ -125,7 +125,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 // Default value
                                 return;
                             }
-                            SpessaSynthWarn(
+                            SpessaSynthInfo(
                                 `%cUnrecognized NRPN for %c${this.channelNumber}%c: %c(0x${NRPNCoarse.toString(16)} 0x${NRPNFine.toString(
                                     16
                                 )})%c data value: %c${dataValue}`,
@@ -249,7 +249,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                 (this.midiControllers[midiControllers.RPNLsb] >> 7);
             switch (rpnValue) {
                 default:
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `%cUnrecognized RPN for %c${this.channelNumber}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
                         consoleColors.warn,
                         consoleColors.recognized,

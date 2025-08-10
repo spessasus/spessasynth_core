@@ -1,10 +1,7 @@
 import { consoleColors } from "../../../../../utils/other";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../../utils/loggin";
+import { SpessaSynthInfo } from "../../../../../utils/loggin";
 import { NON_CC_INDEX_OFFSET } from "../../../engine_components/controller_tables";
-import {
-    nonRegisteredMSB,
-    registeredParameterTypes
-} from "./data_entry_coarse";
+import { nonRegisteredMSB, registeredParameterTypes } from "./data_entry_coarse";
 import { handleAWE32NRPN } from "./awe32";
 import type { MIDIChannel } from "../../../engine_components/midi_channel";
 import { midiControllers } from "../../../../../midi/enums";
@@ -94,7 +91,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
             }
             switch (NRPNCoarse) {
                 default:
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `%cUnrecognized NRPN LSB for %c${this.channelNumber}%c: %c(0x${NRPNFine.toString(
                             16
                         ).toUpperCase()} 0x${NRPNFine.toString(

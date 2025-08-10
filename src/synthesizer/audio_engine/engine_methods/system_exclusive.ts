@@ -90,7 +90,7 @@ export function systemExclusiveInternal(
 
     function notRecognized() {
         // This is some other GS sysex...
-        SpessaSynthWarn(
+        SpessaSynthInfo(
             `%cUnrecognized Roland %cGS %cSysEx: %c${arrayToHexString(syx)}`,
             consoleColors.warn,
             consoleColors.recognized,
@@ -101,7 +101,7 @@ export function systemExclusiveInternal(
 
     switch (type) {
         default:
-            SpessaSynthWarn(
+            SpessaSynthInfo(
                 `%cUnrecognized SysEx: %c${arrayToHexString(syx)}`,
                 consoleColors.warn,
                 consoleColors.unrecognized
@@ -170,7 +170,7 @@ export function systemExclusiveInternal(
                         }
 
                         default:
-                            SpessaSynthWarn(
+                            SpessaSynthInfo(
                                 `%cUnrecognized MIDI Device Control Real-time message: %c${arrayToHexString(syx)}`,
                                 consoleColors.warn,
                                 consoleColors.unrecognized
@@ -334,7 +334,7 @@ export function systemExclusiveInternal(
                         }
 
                         default:
-                            SpessaSynthWarn(
+                            SpessaSynthInfo(
                                 `%cUnrecognized MIDI Tuning standard message: %c${arrayToHexString(syx)}`,
                                 consoleColors.warn,
                                 consoleColors.unrecognized
@@ -345,7 +345,7 @@ export function systemExclusiveInternal(
                 }
 
                 default:
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `%cUnrecognized MIDI Realtime/non realtime message: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
@@ -944,7 +944,7 @@ export function systemExclusiveInternal(
                 return;
             } else {
                 // This is something else...
-                SpessaSynthWarn(
+                SpessaSynthInfo(
                     `%cUnrecognized Roland SysEx: %c${arrayToHexString(syx)}`,
                     consoleColors.warn,
                     consoleColors.unrecognized
@@ -1089,7 +1089,7 @@ export function systemExclusiveInternal(
                             break;
 
                         default:
-                            SpessaSynthWarn(
+                            SpessaSynthInfo(
                                 `%cUnrecognized Yamaha XG Part Setup: %c${syx[5]
                                     .toString(16)
                                     .toUpperCase()}`,
@@ -1113,7 +1113,7 @@ export function systemExclusiveInternal(
                 } else if (
                     isSystemXG(this.privateProps.masterParameters.midiSystem)
                 ) {
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
@@ -1121,7 +1121,7 @@ export function systemExclusiveInternal(
                 }
             } else {
                 if (isSystemXG(this.privateProps.masterParameters.midiSystem)) {
-                    SpessaSynthWarn(
+                    SpessaSynthInfo(
                         `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
