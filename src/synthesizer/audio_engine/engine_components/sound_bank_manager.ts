@@ -22,7 +22,7 @@ export class SoundBankManager {
 
     private _presetList: {
         bank: number;
-        presetName: string;
+        name: string;
         program: number;
     }[] = [];
 
@@ -218,7 +218,7 @@ export class SoundBankManager {
         for (const [string, name] of Object.entries(presetList)) {
             const pb = string.split("-");
             this._presetList.push({
-                presetName: name,
+                name,
                 program: parseInt(pb[1]),
                 bank: parseInt(pb[0])
             });

@@ -32,7 +32,7 @@ export class BasicSample {
     /**
      * Linked sample, unused if mono.
      */
-    public linkedSample: BasicSample | undefined;
+    public linkedSample?: BasicSample;
 
     /**
      * The type of the sample.
@@ -60,11 +60,11 @@ export class BasicSample {
     /**
      * The compressed sample data if the sample has been compressed.
      */
-    protected compressedData: Uint8Array | undefined;
+    protected compressedData?: Uint8Array;
     /**
      * The sample's audio data.
      */
-    protected audioData: Float32Array | undefined;
+    protected audioData?: Float32Array;
 
     /**
      * The basic representation of a sample

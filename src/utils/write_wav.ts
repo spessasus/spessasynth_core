@@ -28,7 +28,7 @@ export function audioToWav(
     sampleRate: number,
     normalizeAudio = true,
     metadata: Partial<WaveMetadata> = {},
-    loop: { start: number; end: number } | undefined = undefined
+    loop?: { start: number; end: number }
 ): ArrayBuffer {
     const length = audioData[0].length;
     const numChannels = audioData.length;

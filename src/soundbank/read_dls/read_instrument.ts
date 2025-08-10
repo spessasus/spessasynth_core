@@ -83,7 +83,7 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
     const globalLart = findRIFFListType(chunks, "lart");
     const globalLar2 = findRIFFListType(chunks, "lar2");
     if (globalLar2 !== undefined || globalLart !== undefined) {
-        readLart.call(this, globalLart, globalLar2, globalZone);
+        readLart.call(this, globalZone, globalLart, globalLar2);
     }
     // Remove generators with default values
     globalZone.generators = globalZone.generators.filter(

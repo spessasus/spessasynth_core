@@ -74,8 +74,8 @@ function correctBankOffsetInternal(
     const channelsInfo: {
         program: number;
         drums: boolean;
-        lastBank: MIDIMessage | undefined;
-        lastBankLSB: MIDIMessage | undefined;
+        lastBank?: MIDIMessage;
+        lastBankLSB?: MIDIMessage;
         hasBankSelect: boolean;
     }[] = [];
     for (let i = 0; i < channelsAmount; i++) {
@@ -146,8 +146,8 @@ function correctBankOffsetInternal(
         const channel: {
             program: number;
             drums: boolean;
-            lastBank: MIDIMessage | undefined;
-            lastBankLSB: MIDIMessage | undefined;
+            lastBank?: MIDIMessage;
+            lastBankLSB?: MIDIMessage;
             hasBankSelect: boolean;
         } = channelsInfo[chNum];
         if (status === midiMessageTypes.programChange) {

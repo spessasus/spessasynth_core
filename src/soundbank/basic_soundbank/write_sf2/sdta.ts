@@ -29,8 +29,8 @@ export async function getSDTA(
     smplEndOffsets: number[],
     compress: boolean,
     decompress: boolean,
-    vorbisFunc: SampleEncodingFunction | undefined,
-    progressFunc: ProgressFunction | undefined
+    vorbisFunc?: SampleEncodingFunction,
+    progressFunc?: ProgressFunction
 ): Promise<Uint8Array> {
     // Write smpl: write int16 data of each sample linearly
     // Get size (calling getAudioData twice doesn't matter since it gets cached)

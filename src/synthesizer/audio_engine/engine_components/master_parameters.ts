@@ -11,7 +11,7 @@ export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     masterGain: SYNTHESIZER_GAIN,
     masterPan: 0.0,
     voiceCap: VOICE_CAP,
-    interpolationType: interpolationTypes.fourthOrder,
+    interpolationType: interpolationTypes.hermite,
     midiSystem: DEFAULT_SYNTH_MODE,
     monophonicRetriggerMode: false,
     reverbGain: 1,

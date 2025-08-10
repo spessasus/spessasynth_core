@@ -62,7 +62,7 @@ export interface MuteChannelCallback {
 
 export interface PresetListChangeCallbackSingle {
     /** The name of the preset. */
-    presetName: string;
+    name: string;
 
     /** The bank number. */
     bank: number;

@@ -25,7 +25,7 @@ export class WavetableOscillator {
             return;
         }
         switch (interpolation) {
-            case interpolationTypes.fourthOrder:
+            case interpolationTypes.hermite:
                 this.getSampleHermite(voice, outputBuffer, step);
                 return;
 

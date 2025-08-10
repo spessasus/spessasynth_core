@@ -6,7 +6,7 @@ import type { IndexedByteArray } from "../../../utils/indexed_array";
 
 export async function writeWavePool(
     bank: BasicSoundBank,
-    progressFunction: ProgressFunction | undefined
+    progressFunction?: ProgressFunction
 ): Promise<{ data: IndexedByteArray; indexes: number[] }> {
     let currentIndex = 0;
     const offsets = [];

@@ -21,9 +21,9 @@ export class SoundFontSample extends BasicSample {
     public linkedSampleIndex: number;
 
     /**
-     * The sliced sample from the smpl chunk
+     * The sliced sample from the smpl chunk.
      */
-    protected s16leData: Uint8Array | undefined = undefined;
+    protected s16leData?: Uint8Array;
 
     protected startByteOffset: number;
 

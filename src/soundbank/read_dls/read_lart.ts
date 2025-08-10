@@ -5,9 +5,9 @@ import type { BasicZone } from "../basic_soundbank/basic_zone";
 
 export function readLart(
     this: DownloadableSounds,
-    lartChunk: RIFFChunk | undefined,
-    lar2Chunk: RIFFChunk | undefined,
-    zone: BasicZone
+    zone: BasicZone,
+    lartChunk?: RIFFChunk,
+    lar2Chunk?: RIFFChunk
 ) {
     if (lartChunk) {
         while (lartChunk.data.currentIndex < lartChunk.data.length) {

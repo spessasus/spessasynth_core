@@ -94,7 +94,7 @@ export function readRegion(
     // Lart
     const lart = findRIFFListType(regionChunks, "lart");
     const lar2 = findRIFFListType(regionChunks, "lar2");
-    readLart.call(this, lart, lar2, zone);
+    readLart.call(this, zone, lart, lar2);
 
     // Wsmp: wave sample chunk
     const waveSampleChunk = regionChunks.find((c) => c.header === "wsmp");

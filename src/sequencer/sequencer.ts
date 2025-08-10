@@ -77,7 +77,7 @@ export class SpessaSynthSequencer {
      * The paused time of the sequencer.
      * If the sequencer is not paused, this is undefined.
      */
-    protected pausedTime: number | undefined = -1;
+    protected pausedTime?: number = -1;
     /**
      * Absolute time of the sequencer when it started playing.
      * It is based on the synth's current time.

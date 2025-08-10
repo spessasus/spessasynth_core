@@ -59,14 +59,7 @@ export class BasicSoundBank {
     /**
      * Creates a new basic soundfont template (or copies)
      */
-    public constructor(
-        data:
-            | undefined
-            | {
-                  presets: BasicPreset[];
-                  info: SoundBankInfo;
-              } = undefined
-    ) {
+    public constructor(data?: { presets: BasicPreset[]; info: SoundBankInfo }) {
         if (data?.presets) {
             this.soundBankInfo = data.info;
             this.addPresets(...data.presets);

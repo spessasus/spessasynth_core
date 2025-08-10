@@ -104,6 +104,18 @@ Enum renamed to `midiMessageTypes`.
 
 Enum renamed to `rmidInfoChunks`.
 
+
+### interpolationTypes
+
+- `fourthOrder` -> `hermite`
+
+
+### synthDisplayTypes
+
+- `XGText` -> `yamahaXGText`
+- `SoundCanvasText` -> `soundCanvasText`
+- `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
+
 ## MIDI (Class)
 
 Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
@@ -237,6 +249,10 @@ They behave in exactly the same way.
 - `getCurrentSoundFontOrder` -> `priorityOrder` (getter)
 - `rearrangeSoundFonts` -> `priorityOrder` (setter)
 - `getPresetList` -> `presetList` (getter)
+
+#### presetList
+
+`presetName` -> `name`
 
 #### reloadManager
 

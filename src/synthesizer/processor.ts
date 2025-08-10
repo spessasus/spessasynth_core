@@ -164,7 +164,7 @@ export class SpessaSynthProcessor {
     /**
      * Tor applying the snapshot after an override sound bank too.
      */
-    protected savedSnapshot: SynthesizerSnapshot | undefined = undefined;
+    protected savedSnapshot?: SynthesizerSnapshot;
     /**
      * Synth's event queue from the main thread
      */

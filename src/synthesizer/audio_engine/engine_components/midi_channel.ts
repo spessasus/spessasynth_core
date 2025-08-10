@@ -115,7 +115,7 @@ export class MIDIChannel {
     /**
      * The preset currently assigned to the channel.
      */
-    public preset: BasicPreset | undefined = undefined;
+    public preset?: BasicPreset;
     /**
      * Indicates whether the program on this channel is locked.
      */

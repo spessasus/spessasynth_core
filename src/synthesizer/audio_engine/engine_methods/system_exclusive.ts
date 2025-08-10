@@ -904,7 +904,7 @@ export function systemExclusiveInternal(
                         );
                         this.privateProps.callEvent("synthDisplay", {
                             displayData: text,
-                            displayType: synthDisplayTypes.SoundCanvasText
+                            displayType: synthDisplayTypes.soundCanvasText
                         });
                     } else if (syx[5] === 0x01) {
                         // Matrix display
@@ -915,7 +915,7 @@ export function systemExclusiveInternal(
                         );
                         this.privateProps.callEvent("synthDisplay", {
                             displayData: dotMatrixData,
-                            displayType: synthDisplayTypes.SoundCanvasDotDisplay
+                            displayType: synthDisplayTypes.soundCanvasDotMatrix
                         });
                         SpessaSynthInfo(
                             `%cRoland SC Display Dot Matrix via: %c${arrayToHexString(
@@ -1108,7 +1108,7 @@ export function systemExclusiveInternal(
                     );
                     this.privateProps.callEvent("synthDisplay", {
                         displayData: textData,
-                        displayType: synthDisplayTypes.XGText
+                        displayType: synthDisplayTypes.yamahaXGText
                     });
                 } else if (
                     isSystemXG(this.privateProps.masterParameters.midiSystem)

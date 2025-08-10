@@ -1,18 +1,18 @@
 export const interpolationTypes = {
     linear: 0,
     nearestNeighbor: 1,
-    fourthOrder: 2
+    hermite: 2
 } as const;
 export type InterpolationType =
     (typeof interpolationTypes)[keyof typeof interpolationTypes];
 // Types of synthesizer message displays.
 export const synthDisplayTypes = {
     // This message type is used to display text on the SoundCanvas display.
-    SoundCanvasText: 0,
+    soundCanvasText: 0,
     // This message type is used to display text on a Yamaha XG synthesizer.
-    XGText: 1,
+    yamahaXGText: 1,
     // This message type is used to display a dot matrix display (pixelated graphics) on a SoundCanvas synthesizer.
-    SoundCanvasDotDisplay: 2
+    soundCanvasDotMatrix: 2
 } as const;
 export type SynthDisplayType =
     (typeof synthDisplayTypes)[keyof typeof synthDisplayTypes];
