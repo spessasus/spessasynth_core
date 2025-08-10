@@ -9,8 +9,8 @@ import * as fs from "fs/promises";
 import { Readable } from "node:stream";
 import Speaker from "speaker";
 
-// process arguments
-const args = process.argv.slice(2) as string[];
+// Process arguments
+const args = process.argv.slice(2);
 if (args.length !== 2) {
     console.info("Usage: tsx index.ts <soundbank path> <midi path>");
     process.exit();

@@ -260,11 +260,7 @@ export function setTimeToInternal(
         ) {
             // Restore pitch bends
             if (pitchBends[channelNumber] !== undefined) {
-                this.synth.pitchWheel(
-                    channelNumber,
-                    pitchBends[channelNumber] >> 7,
-                    pitchBends[channelNumber] & 0x7f
-                );
+                this.synth.pitchWheel(channelNumber, pitchBends[channelNumber]);
             }
             if (savedControllers[channelNumber] !== undefined) {
                 // Every controller that has changed

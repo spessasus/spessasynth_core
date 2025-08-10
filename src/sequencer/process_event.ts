@@ -72,8 +72,7 @@ export function processEventInternal(
         case midiMessageTypes.pitchBend:
             this.synth.pitchWheel(
                 statusByteData.channel,
-                event.data[1],
-                event.data[0]
+                (event.data[1] << 7) | event.data[0]
             );
             break;
 

@@ -468,11 +468,10 @@ export class SpessaSynthProcessor {
     /**
      * Executes a MIDI Pitch Wheel message on the specified channel.
      * @param channel The MIDI channel to send the pitch wheel on.
-     * @param MSB The most significant byte of the pitch wheel value, from 0 to 127.
-     * @param LSB The least significant byte of the pitch wheel value, from 0 to 127.
+     * @param pitch The new pitch value: 0-16384
      */
-    public pitchWheel(channel: number, MSB: number, LSB: number) {
-        this.midiChannels[channel].pitchWheel(MSB, LSB);
+    public pitchWheel(channel: number, pitch: number) {
+        this.midiChannels[channel].pitchWheel(pitch);
     }
 
     /**
@@ -523,7 +522,8 @@ export class SpessaSynthProcessor {
                     break;
 
                 case midiMessageTypes.pitchBend:
-                    this.pitchWheel(channel, message[2], message[1]);
+                    // LSB | (MSB << 7)
+                    this.pitchWheel(channel, (message[2] << 7) | message[1]);
                     break;
 
                 case midiMessageTypes.controllerChange:

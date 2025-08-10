@@ -102,12 +102,9 @@ export function resetAllControllersInternal(
                 this.midiChannels[channelNumber].midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
                 ];
-            const msb = val >> 7;
-            const lsb = val & 0x7f;
             this.privateProps.callEvent("pitchWheel", {
                 channel: channelNumber,
-                MSB: msb,
-                LSB: lsb
+                pitch: val
             });
         }
 
@@ -216,7 +213,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     this.channelOctaveTuning.fill(0);
 
     // Reset pitch bend
-    this.pitchWheel(64, 0);
+    this.pitchWheel(8192);
 
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
 

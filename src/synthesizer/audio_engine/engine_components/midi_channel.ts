@@ -375,10 +375,9 @@ export class MIDIChannel {
 
     /**
      * Sets the pitch of the given channel.
-     * @param MSB The SECOND byte of the MIDI pitchWheel message.
-     * @param LSB The FIRST byte of the MIDI pitchWheel message.
+     * @param pitch The pitch (0 - 16384)
      */
-    public pitchWheel(MSB: number, LSB: number) {
+    public pitchWheel(pitch: number) {
         if (
             this.lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
@@ -386,15 +385,13 @@ export class MIDIChannel {
         ) {
             return;
         }
-        const bend = LSB | (MSB << 7);
         this.synthProps.callEvent("pitchWheel", {
             channel: this.channelNumber,
-            MSB: MSB,
-            LSB: LSB
+            pitch
         });
         this.midiControllers[
             NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-        ] = bend;
+        ] = pitch;
         this.voices.forEach((v) =>
             // Compute pitch modulators
             this.computeModulators(v, 0, modulatorSources.pitchWheel)

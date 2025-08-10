@@ -86,11 +86,10 @@ export interface PitchWheelCallback {
     /** The MIDI channel number. */
     channel: number;
 
-    /** The most significant byte of the pitch-wheel value. */
-    MSB: number;
-
-    /** The least significant byte of the pitch-wheel value. */
-    LSB: number;
+    /**
+     * The unsigned 14-bit value of the pitch.
+     */
+    pitch: number;
 }
 
 export interface ChannelPressureCallback {

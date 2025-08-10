@@ -201,6 +201,10 @@ They behave in exactly the same way.
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+### pitchWheel
+
+Now takes a single `pitch` 14-bit value instead of the confusing `MSB` and `LSB` parameters. Same with the `pitchWheel` event.
+
 ### Events
 
 `onMasterParameterChange` has been replaced with an event `masterParameterChange`.
