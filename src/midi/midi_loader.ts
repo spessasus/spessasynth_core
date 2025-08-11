@@ -7,7 +7,7 @@ import { readVariableLengthQuantity } from "../utils/byte_functions/variable_len
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readBinaryString, readBinaryStringIndexed } from "../utils/byte_functions/string";
 import { readLittleEndianIndexed } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, midiMessageTypes, type RMIDINFOChunk } from "./enums";
+import { type MIDIMessageType, type RMIDINFOChunk } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
@@ -293,23 +293,17 @@ export function loadMIDIFromArrayBufferInternal(
                     break;
             }
 
-            if (statusByte !== midiMessageTypes.endOfTrack) {
-                // Put the event data into the array
-                const eventData = new IndexedByteArray(eventDataLength);
-                eventData.set(
-                    trackChunk.data.slice(
-                        trackChunk.data.currentIndex,
-                        trackChunk.data.currentIndex + eventDataLength
-                    ),
-                    0
-                );
-                const event = new MIDIMessage(
-                    totalTicks,
-                    statusByte,
-                    eventData
-                );
-                track.pushEvent(event);
-            }
+            // Put the event data into the array
+            const eventData = new IndexedByteArray(eventDataLength);
+            eventData.set(
+                trackChunk.data.slice(
+                    trackChunk.data.currentIndex,
+                    trackChunk.data.currentIndex + eventDataLength
+                ),
+                0
+            );
+            const event = new MIDIMessage(totalTicks, statusByte, eventData);
+            track.pushEvent(event);
 
             // Advance the track chunk
             trackChunk.data.currentIndex += eventDataLength;

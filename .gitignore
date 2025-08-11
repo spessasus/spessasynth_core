@@ -59,12 +59,10 @@ $RECYCLE.BIN/
 *.msix
 *.msm
 *.msp
-# random wav files
-*.wav
-*.mid
 # Windows shortcuts
 *.lnk
 
+# Other
 examples/node_modules/
 examples/package-lock.json
 examples/package.json
@@ -74,4 +72,9 @@ unused/
 /unused/reverb.js
 dist/
 /node_modules/
+
+
+# random files
 *.tgz
+*.mid
+*.wav

@@ -56,29 +56,45 @@ export interface RMIDMetadata {
 }
 
 export interface TempoChange {
-    // MIDI ticks of the change.
+    /**
+     * MIDI ticks of the change.
+     */
     ticks: number;
-    // New tempo in BPM.
+    /**
+     * New tempo in BPM.
+     */
     tempo: number;
 }
 
 export interface MIDILoop {
-    // Start of the loop, in MIDI ticks.
+    /**
+     * Start of the loop, in MIDI ticks.
+     */
     start: number;
-    // End of the loop, in MIDI ticks.
+    /**
+     * End of the loop, in MIDI ticks.
+     */
     end: number;
 }
 
 export type MIDIFormat = 0 | 1 | 2;
 
 export interface NoteTime {
-    // The MIDI key number.
+    /**
+     * The MIDI key number.
+     */
     midiNote: number;
-    // Start of the note, in seconds.
+    /**
+     * Start of the note, in seconds.
+     */
     start: number;
-    // Length of the note, in seconds.
+    /**
+     * Length of the note, in seconds.
+     */
     length: number;
-    // The MIDI velocity of the note.
+    /**
+     * The MIDI velocity of the note.
+     */
     velocity: number;
 }
 

@@ -1,6 +1,5 @@
 import { MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
-import { midiMessageTypes } from "./enums";
 
 export class MIDITrack {
     /**
@@ -42,9 +41,6 @@ export class MIDITrack {
      * @param index The index at which to add this event.
      */
     public addEvent(event: MIDIMessage, index: number) {
-        if (event.statusByte === midiMessageTypes.endOfTrack) {
-            throw new Error("End of track is automatically written.");
-        }
         (this.events as MIDIMessage[]).splice(index, 0, event);
     }
 
@@ -61,9 +57,6 @@ export class MIDITrack {
      * @param event The event to add.
      */
     public pushEvent(event: MIDIMessage) {
-        if (event.statusByte === midiMessageTypes.endOfTrack) {
-            throw new Error("End of track is automatically written.");
-        }
         (this.events as MIDIMessage[]).push(event);
     }
 }

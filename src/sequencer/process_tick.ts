@@ -16,29 +16,22 @@ export function processTick(this: SpessaSynthSequencer) {
         const event = track.events[this.eventIndexes[trackIndex]++];
         this.processEvent(event, trackIndex);
 
-        const canLoop = this.loopCount > 0;
-
         // Find the next event
         const nextTrackIndex = this.findFirstEventIndex();
         const nextTrack = this._midiData.tracks[nextTrackIndex];
         // Check for loop
-        if (
-            // Events
-            nextTrack.events.length <= this.eventIndexes[nextTrackIndex] ||
-            // Loop
-            this._midiData.loop.end <= event.ticks
-        ) {
-            if (canLoop) {
-                // Loop
-                if (this.loopCount !== Infinity) {
-                    this.loopCount--;
-                    this.callEvent("loopCountChange", {
-                        newCount: this.loopCount
-                    });
-                }
-                this.setTimeTicks(this._midiData.loop.start);
-                return;
+        if (this.loopCount > 0 && this._midiData.loop.end <= event.ticks) {
+            if (this.loopCount !== Infinity) {
+                this.loopCount--;
+                this.callEvent("loopCountChange", {
+                    newCount: this.loopCount
+                });
             }
+            this.setTimeTicks(this._midiData.loop.start);
+            return;
+        }
+        // Check for end of track
+        if (nextTrack.events.length <= this.eventIndexes[nextTrackIndex]) {
             // Stop the playback
             this.songIsFinished();
             return;

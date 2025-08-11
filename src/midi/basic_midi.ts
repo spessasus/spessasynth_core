@@ -426,7 +426,8 @@ export class BasicMIDI {
             const usedChannels = new Set<number>();
             let trackHasVoiceMessages = false;
 
-            for (const e of track.events) {
+            for (let i = 0; i < track.events.length; i++) {
+                const e = track.events[i];
                 // Check if it's a voice message
                 if (e.statusByte >= 0x80 && e.statusByte < 0xf0) {
                     trackHasVoiceMessages = true;
@@ -496,6 +497,14 @@ export class BasicMIDI {
                 const eventText = readBinaryString(e.data);
                 // Interpret the message
                 switch (e.statusByte) {
+                    case midiMessageTypes.endOfTrack:
+                        if (i !== track.events.length - 1) {
+                            i--;
+                            track.deleteEvent(i);
+                            SpessaSynthWarn("Unexpected EndOfTrack. Removing!");
+                        }
+                        break;
+
                     case midiMessageTypes.setTempo:
                         // Add the tempo change
                         this.tempoChanges.push({
@@ -588,9 +597,6 @@ export class BasicMIDI {
                         }
                         break;
                     }
-
-                    case midiMessageTypes.trackName:
-                        break;
                 }
             }
             // Add used channels

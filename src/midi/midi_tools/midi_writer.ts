@@ -19,6 +19,11 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
         for (const event of track.events) {
             // Ticks stored in MIDI are absolute, but SMF wants relative. Convert them here.
             const deltaTicks = Math.max(0, event.ticks - currentTick);
+            // EndOfTrack is written automatically.
+            if (event.statusByte === midiMessageTypes.endOfTrack) {
+                currentTick += deltaTicks;
+                continue;
+            }
             let messageData: number[];
             // Determine the message
             if (event.statusByte <= midiMessageTypes.sequenceSpecific) {
