@@ -313,3 +313,7 @@ Note that this method also only takes a single object to help with TypeScript ty
 ## SpessaSynthLogging
 
 The parameter `table` has been removed as the `console.table` command is not used.
+
+## AudioToWav
+
+Now takes an `options` object instead of separate optional parameters.

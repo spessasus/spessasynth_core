@@ -2,39 +2,28 @@ import { IndexedByteArray } from "./indexed_array";
 import { writeBinaryStringIndexed } from "./byte_functions/string";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "./riff_chunk";
 import { writeLittleEndianIndexed } from "./byte_functions/little_endian";
-
-interface WaveMetadata {
-    // The song's title.
-    title: string;
-    // The song's artist.
-    artist: string;
-    // The song's album.
-    album: string;
-    // The song's genre.
-    genre: string;
-}
+import { DEFAULT_WAV_WRITE_OPTIONS, type WaveWriteOptions } from "./exports";
+import { fillWithDefaults } from "./fill_with_defaults";
 
 /**
  * Writes an audio into a valid WAV file.
  * @param audioData the audio data channels.
  * @param sampleRate the sample rate, in Hertz.
- * @param normalizeAudio this will find the max sample point and set it to 1, and scale others with it. Recommended
- * @param metadata the metadata to write into the file.
- * @param loop the loop start and end points in seconds. Undefined if no loop should be written.
+ * @param options Additional options for writing the file.
  * @returns the binary file.
  */
 export function audioToWav(
     audioData: Float32Array[],
     sampleRate: number,
-    normalizeAudio = true,
-    metadata: Partial<WaveMetadata> = {},
-    loop?: { start: number; end: number }
+    options: Partial<WaveWriteOptions> = DEFAULT_WAV_WRITE_OPTIONS
 ): ArrayBuffer {
     const length = audioData[0].length;
     const numChannels = audioData.length;
-
     const bytesPerSample = 2; // 16-bit PCM
 
+    const fullOptions = fillWithDefaults(options, DEFAULT_WAV_WRITE_OPTIONS);
+    const loop = fullOptions.loop;
+    const metadata = fullOptions.metadata;
     // Prepare INFO chunk
     let infoChunk = new IndexedByteArray(0);
     const infoOn = Object.keys(metadata).length > 0;
@@ -175,7 +164,7 @@ export function audioToWav(
 
     // Interleave audio data (combine channels)
     let multiplier = 32767;
-    if (normalizeAudio) {
+    if (fullOptions.normalizeAudio) {
         // Find min and max values to prevent clipping when converting to 16 bits
         const numSamples = audioData[0].length;
 

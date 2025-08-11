@@ -15,6 +15,7 @@ import {
     SpessaSynthLogging,
     SpessaSynthWarn
 } from "./loggin";
+import type { MIDILoop } from "../midi/types";
 
 // You shouldn't use these...
 const SpessaSynthCoreUtils = {
@@ -40,3 +41,35 @@ export {
     SpessaSynthLogging,
     SpessaSynthCoreUtils
 };
+
+export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
+    normalizeAudio: true,
+    loop: undefined,
+    metadata: {}
+};
+
+export interface WaveWriteOptions {
+    /**
+     * This will find the max sample point and set it to 1, and scale others with it. Recommended
+     */
+    normalizeAudio: boolean;
+    /**
+     * The loop start and end points in seconds. Undefined if no loop should be written.
+     */
+    loop?: MIDILoop;
+    /**
+     * The metadata to write into the file.
+     */
+    metadata: Partial<WaveMetadata>;
+}
+
+export interface WaveMetadata {
+    // The song's title.
+    title: string;
+    // The song's artist.
+    artist: string;
+    // The song's album.
+    album: string;
+    // The song's genre.
+    genre: string;
+}
