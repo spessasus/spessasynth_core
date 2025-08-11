@@ -72,7 +72,7 @@ Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.m
 This means changing the programs and controllers if they are locked.
 
 ```ts
-midi.applySnapshotToMIDI(snapshot);
+midi.applySnapshot(snapshot);
 ```
 
 - snapshot - the `SynthesizerSnapshot` to use.
@@ -93,7 +93,7 @@ const synth = new Synthetizer(yourContext, yourSoundfontBuffer);
 
 // get the snapshot and apply it
 const snapshot = await synth.getSnapshot();
-mid.applySnapshotToMIDI(snapshot);
+mid.applySnapshot(snapshot);
 
 // write midi 
 const midiBinary = midi.write();

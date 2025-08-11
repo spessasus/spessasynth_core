@@ -278,7 +278,7 @@ const rmidiBinary = midi.writeRMIDI(
 A function for modifying MIDI files.
 See [Writing MIDI files](../writing-files/midi.md#modify) for more info.
 
-### applySnapshotToMIDI
+### applySnapshot
 
 A function for applying a [Synthesizer snapshot](../spessa-synth-processor/synthesizer-snapshot.md) to a MIDI file.
 See [Writing MIDI files](../writing-files/midi.md) for more info.

@@ -304,7 +304,7 @@ export class BasicMIDI {
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
      * @param snapshot the snapshot to apply.
      */
-    public applySnapshotToMIDI(snapshot: SynthesizerSnapshot) {
+    public applySnapshot(snapshot: SynthesizerSnapshot) {
         applySnapshotInternal(this, snapshot);
     }
 

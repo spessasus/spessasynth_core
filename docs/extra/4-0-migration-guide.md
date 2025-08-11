@@ -41,6 +41,7 @@ They behave in exactly the same way.
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
  - `modifyMIDI()` -> `modify()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
+ - `applySnapshotToMIDI()` -> `applySnapshot()`
 
 #### writeRMIDI
 
