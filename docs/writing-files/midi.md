@@ -92,7 +92,7 @@ const synth = new Synthetizer(yourContext, yourSoundfontBuffer);
 // ...
 
 // get the snapshot and apply it
-const snapshot = await synth.getSynthesizerSnapshot();
+const snapshot = await synth.getSnapshot();
 mid.applySnapshotToMIDI(snapshot);
 
 // write midi 

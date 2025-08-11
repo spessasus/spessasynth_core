@@ -238,7 +238,7 @@ export class SpessaSynthProcessor {
     /**
      * Gets a synthesizer snapshot from this processor instance.
      */
-    public getSynthesizerSnapshot(): SynthesizerSnapshot {
+    public getSnapshot(): SynthesizerSnapshot {
         return SynthesizerSnapshot.create(this);
     }
 
