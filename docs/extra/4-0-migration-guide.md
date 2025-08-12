@@ -122,7 +122,24 @@ Enum renamed to `rmidInfoChunks`.
 Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
 Drop-in replacement.
 
-## Sound bank
+
+## BasicSoundBank
+
+A few methods and properties have been renamed for consistency.
+They behave in exactly the same way.
+
+- `getDummySoundfontFile()` -> `getSampleSoundBankFile()`
+- `write()` -> `writeSF2()`
+
+### soundBankInfo
+
+Renamed from `soundFontInfo` to `soundBankInfo`.
+
+Overhaul: now mandatory fields are always required and naming has been changed from the confusing FourCCs to human-readable names such as `name` or `engineer`.
+
+`ifil` and `iver` are no longer strings. They are objects `version` and `romVersion` respectively. The objects contain `major` and `minor` version numbers instead of a stitched together `<major>.<minor>` string.
+
+Creation date is now a `Date`.
 
 ### loadSoundFont
 
@@ -183,15 +200,6 @@ They behave in exactly the same way.
 Preset zones now _require_ an instrument.
 This means that
 `createZone()` now requires one argument: the instrument that belongs to that zone.
-
-### BasicSoundBank
-
-A few methods and properties have been renamed for consistency.
-They behave in exactly the same way.
-
-- `soundFontInfo` -> `soundBankInfo`
-- `getDummySoundfontFile()` -> `getSampleSoundBankFile()`
-- `wriete()` -> `writeSF2()`
 
 ## SpessaSynthProcessor
 

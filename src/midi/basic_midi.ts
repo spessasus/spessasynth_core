@@ -23,7 +23,7 @@ import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_edi
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
-import { midiMessageTypes, type RMIDINFOChunk, rmidInfoChunks } from "./enums";
+import { midiMessageTypes, rmidInfoChunks, type RMIDInfoFourCC } from "./enums";
 import type { KeyRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
@@ -117,7 +117,7 @@ export class BasicMIDI {
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
      * Note that text chunks contain a terminal zero byte.
      */
-    public rmidiInfo: Partial<Record<RMIDINFOChunk, IndexedByteArray>> = {};
+    public rmidiInfo: Partial<Record<RMIDInfoFourCC, IndexedByteArray>> = {};
 
     /**
      * The bank offset used for RMID files.
@@ -339,7 +339,7 @@ export class BasicMIDI {
      * @param infoType The metadata type.
      * @returns the text or undefined.
      */
-    public getRMIDInfo(infoType: RMIDINFOChunk) {
+    public getRMIDInfo(infoType: RMIDInfoFourCC) {
         if (!this.rmidiInfo[infoType]) {
             return undefined;
         }
@@ -392,7 +392,7 @@ export class BasicMIDI {
         this.keyRange = { ...mid.keyRange };
         this.rmidiInfo = {};
         for (const [key, value] of Object.entries(mid.rmidiInfo)) {
-            this.rmidiInfo[key as RMIDINFOChunk] = value?.slice();
+            this.rmidiInfo[key as RMIDInfoFourCC] = value?.slice();
         }
     }
 

@@ -17,6 +17,8 @@ import {
 } from "./loggin";
 import type { MIDILoop } from "../midi/types";
 
+import type { FourCC } from "./riff_chunk";
+
 // You shouldn't use these...
 const SpessaSynthCoreUtils = {
     consoleColors,
@@ -39,7 +41,8 @@ export {
     IndexedByteArray,
     audioToWav,
     SpessaSynthLogging,
-    SpessaSynthCoreUtils
+    SpessaSynthCoreUtils,
+    type FourCC
 };
 
 export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {

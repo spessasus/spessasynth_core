@@ -13,7 +13,12 @@ import {
 } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
-import type { DLSWriteOptions } from "../../types";
+import type {
+    DLSInfoFourCC,
+    DLSWriteOptions,
+    SoundBankInfoData,
+    SoundBankInfoFourCC
+} from "../../types";
 import type { BasicSoundBank } from "../basic_soundbank";
 import { writeIns } from "./ins";
 
@@ -23,8 +28,8 @@ export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
 
 /**
  * Write the soundfont as a .dls file. This may not be 100% accurate.
- * @param targetSoundBank {BasicSoundBank}
- * @param {Partial<DLSWriteOptions>} options - options for writing the file.
+ * @param targetSoundBank
+ * @param options - options for writing the file.
  * @returns the binary file.
  */
 export async function writeDLSInternal(
@@ -65,27 +70,59 @@ export async function writeDLSInternal(
         writeDword(ptblData, offset);
     }
     const ptbl = writeRIFFChunkRaw("ptbl", ptblData);
-
-    targetSoundBank.soundBankInfo.ICMT =
-        (targetSoundBank.soundBankInfo.ICMT ?? "<No descrption>") +
-        "\nConverted from SF2 to DLS using SpessaSynth";
-    targetSoundBank.soundBankInfo.ISFT = "SpessaSynth";
+    targetSoundBank.soundBankInfo.software = "SpessaSynth";
     // Write INFO
-    const infos = [];
-    for (const [info, data] of Object.entries(targetSoundBank.soundBankInfo)) {
-        if (
-            info !== "ICMT" &&
-            info !== "INAM" &&
-            info !== "ICRD" &&
-            info !== "IENG" &&
-            info !== "ICOP" &&
-            info !== "ISFT" &&
-            info !== "ISBJ"
-        ) {
+    const infos: Uint8Array[] = [];
+
+    const writeDLSInfo = (type: DLSInfoFourCC, data: string) => {
+        infos.push(writeRIFFChunkRaw(type, getStringBytes(data, true)));
+    };
+
+    for (const [t, d] of Object.entries(targetSoundBank.soundBankInfo)) {
+        const type = t as SoundBankInfoFourCC;
+        const data = d as SoundBankInfoData[SoundBankInfoFourCC];
+        if (!data) {
             continue;
         }
-        if (typeof data === "string")
-            infos.push(writeRIFFChunkRaw(info, getStringBytes(data, true)));
+        switch (type) {
+            case "name":
+                writeDLSInfo("INAM", data as string);
+                break;
+
+            case "comment":
+                writeDLSInfo("ICMT", data as string);
+                break;
+
+            case "copyright":
+                writeDLSInfo("ICOP", data as string);
+                break;
+
+            case "creationDate":
+                writeDLSInfo("ICRD", (data as Date).toISOString());
+                break;
+
+            case "engineer":
+                writeDLSInfo("IENG", data as string);
+                break;
+
+            case "product":
+                writeDLSInfo("IPRD", data as string);
+                break;
+
+            case "romVersion":
+            case "version":
+            case "soundEngine":
+            case "romInfo":
+                // Not writable
+                break;
+
+            case "software":
+                writeDLSInfo("ISFT", data as string);
+                break;
+
+            case "subject":
+                writeDLSInfo("ISBJ", data as string);
+        }
     }
     const info = writeRIFFChunkParts("INFO", infos, true);
     SpessaSynthInfo("%cSaved successfully!", consoleColors.recognized);

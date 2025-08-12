@@ -192,5 +192,5 @@ export const rmidInfoChunks = {
     bankOffset: "DBNK"
 } as const;
 
-export type RMIDINFOChunk =
+export type RMIDInfoFourCC =
     (typeof rmidInfoChunks)[keyof typeof rmidInfoChunks];

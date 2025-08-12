@@ -11,7 +11,7 @@ import { isXGDrums } from "../../utils/xg_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
-import type { DLSWriteOptions, SoundBankInfo, SoundFont2WriteOptions } from "../types";
+import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2WriteOptions } from "../types";
 import { generatorTypes } from "./generator_types";
 
 /**
@@ -24,9 +24,18 @@ export class BasicSoundBank {
     public static isSF3DecoderReady: Promise<boolean> = stbvorbis.isInitialized;
 
     /**
-     * Sound bank's info stored as name: value. ifil and iver are stored as string representation of float (e.g., 2.1)
+     * Sound bank's info.
      */
-    public readonly soundBankInfo: SoundBankInfo = {};
+    public soundBankInfo: SoundBankInfoData = {
+        name: "Unnamed",
+        creationDate: new Date(),
+        software: "SpessaSynth",
+        soundEngine: "E-mu 10K2",
+        version: {
+            major: 2,
+            minor: 4
+        }
+    };
 
     /**
      * The sound bank's presets.
@@ -54,39 +63,6 @@ export class BasicSoundBank {
      * If the sound bank has custom default modulators (DMOD).
      */
     public customDefaultModulators = false;
-
-    /**
-     * Creates a new basic soundfont template (or copies)
-     */
-    public constructor(data?: { presets: BasicPreset[]; info: SoundBankInfo }) {
-        if (data?.presets) {
-            this.soundBankInfo = data.info;
-            this.addPresets(...data.presets);
-            const instrumentList: BasicInstrument[] = [];
-            for (const preset of data.presets) {
-                for (const zone of preset.zones) {
-                    if (
-                        zone.instrument &&
-                        !instrumentList.includes(zone.instrument)
-                    ) {
-                        instrumentList.push(zone.instrument);
-                    }
-                }
-            }
-            this.addInstruments(...instrumentList);
-
-            const sampleList: BasicSample[] = [];
-
-            for (const instrument of instrumentList) {
-                for (const zone of instrument.zones) {
-                    if (zone.sample && !sampleList.includes(zone.sample)) {
-                        sampleList.push(zone.sample);
-                    }
-                }
-            }
-            this.addSamples(...sampleList);
-        }
-    }
 
     private _isXGBank = false;
 
@@ -126,10 +102,10 @@ export class BasicSoundBank {
             }
         }
 
-        return new BasicSoundBank({
-            presets: presets,
-            info: mainSf.soundBankInfo
-        });
+        const b = new BasicSoundBank();
+        b.addCompletePresets(presets);
+        b.soundBankInfo = { ...mainSf.soundBankInfo };
+        return b;
     }
 
     /**
@@ -169,16 +145,56 @@ export class BasicSoundBank {
 
         font.addPresets(preset);
 
-        font.soundBankInfo.ifil = "2.1";
-        font.soundBankInfo.isng = "E-mu 10K2";
-        font.soundBankInfo.INAM = "Dummy";
+        font.soundBankInfo.name = "Dummy";
         font.flush();
         return await font.writeSF2();
     }
 
     /**
+     * Copies a given sound bank.
+     * @param bank The sound bank to copy.
+     */
+    public static copyFrom(bank: BasicSoundBank) {
+        const copied = new BasicSoundBank();
+        bank.presets.forEach((p) => copied.clonePreset(p));
+        copied.soundBankInfo = { ...bank.soundBankInfo };
+        return copied;
+    }
+
+    /**
+     * Adds complete presets along with their instruments and samples.
+     * @param presets The presets to add.
+     */
+    public addCompletePresets(presets: BasicPreset[]) {
+        this.addPresets(...presets);
+        const instrumentList: BasicInstrument[] = [];
+        for (const preset of presets) {
+            for (const zone of preset.zones) {
+                if (
+                    zone.instrument &&
+                    !instrumentList.includes(zone.instrument)
+                ) {
+                    instrumentList.push(zone.instrument);
+                }
+            }
+        }
+        this.addInstruments(...instrumentList);
+
+        const sampleList: BasicSample[] = [];
+
+        for (const instrument of instrumentList) {
+            for (const zone of instrument.zones) {
+                if (zone.sample && !sampleList.includes(zone.sample)) {
+                    sampleList.push(zone.sample);
+                }
+            }
+        }
+        this.addSamples(...sampleList);
+    }
+
+    /**
      * Write the soundfont as a .dls file. This may not be 100% accurate.
-     * @param {Partial<DLSWriteOptions>} options - options for writing the file.
+     * @param options - options for writing the file.
      * @returns the binary file.
      */
     public async writeDLS(
@@ -460,9 +476,9 @@ export class BasicSoundBank {
         }
         this.removeUnusedElements();
 
-        this.soundBankInfo.ICMT =
+        this.soundBankInfo.comment =
             `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.name}"\n\n` +
-            this.soundBankInfo.ICMT;
+            this.soundBankInfo.comment;
 
         SpessaSynthInfo("%cSoundfont modified!", consoleColors.recognized);
         SpessaSynthGroupEnd();
@@ -672,6 +688,24 @@ export class BasicSoundBank {
                     break;
                 }
             }
+        }
+    }
+
+    protected printInfo() {
+        for (const [info, value] of Object.entries(this.soundBankInfo)) {
+            if (typeof value === "object" && "major" in value) {
+                const v = value as SF2VersionTag;
+                SpessaSynthInfo(
+                    `%c${info}: %c"${v.major}.${v.minor}"`,
+                    consoleColors.info,
+                    consoleColors.recognized
+                );
+            }
+            SpessaSynthInfo(
+                `%c${info}: %c"${(value as string | Date).toString()}"`,
+                consoleColors.info,
+                consoleColors.recognized
+            );
         }
     }
 }

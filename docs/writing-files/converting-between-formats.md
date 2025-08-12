@@ -75,7 +75,7 @@ const output = mid.writeRMIDI(
         // all the values below are examples, showing how to copy MIDI data to the RMI file
         name: mid.name,
         copyright: mid.copyright,
-        engineer: sfont.soundFontInfo["IENG"],
+        engineer: sfont.soundFontInfo["engineer"],
     },
     true // adjust program changes: recommended for self-contained files
 );
@@ -96,7 +96,7 @@ const output = dlsRMID.writeRMIDI(
         // here we try to extract the metadata from the file, then fall back to embedded MIDI
         name: dlsRMID.rmidiInfo["INAM"] || dlsRMID.name,
         copyright: dlsRMID.rmidiInfo["ICOP"] || dlsRMID.copyright,
-        engineer: sfont.soundFontInfo["IENG"],
+        engineer: sfont.soundFontInfo["engineer"],
         artist: dlsRMID.rmidiInfo["IART"],
         // both IPRD and IALB represent album name
         album: dlsRMID.rmidiInfo["IPRD"] || dlsRMID.rmidiInfo["IALB"],

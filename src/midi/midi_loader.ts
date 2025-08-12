@@ -7,7 +7,7 @@ import { readVariableLengthQuantity } from "../utils/byte_functions/variable_len
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readBinaryString, readBinaryStringIndexed } from "../utils/byte_functions/string";
 import { readLittleEndianIndexed } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, type RMIDINFOChunk } from "./enums";
+import { type MIDIMessageType, type RMIDInfoFourCC } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat } from "./types";
@@ -133,14 +133,14 @@ export function loadMIDIFromArrayBufferInternal(
                             true
                         );
                         outputMIDI.rmidiInfo[
-                            infoChunk.header as RMIDINFOChunk
+                            infoChunk.header as RMIDInfoFourCC
                         ] = infoChunk.data;
                     }
                     // Note that there are two album chunks: IPRD and IALB
                     // Spessasynth uses IPRD
                     if (
                         "IALB" in outputMIDI.rmidiInfo &&
-                        !("IPRD" in outputMIDI.rmidiInfo)
+                        !("product" in outputMIDI.rmidiInfo)
                     ) {
                         outputMIDI.rmidiInfo.IPRD = outputMIDI.rmidiInfo
                             .IALB as IndexedByteArray;
@@ -149,7 +149,7 @@ export function loadMIDIFromArrayBufferInternal(
                     // Older RMIDIs written by spessasynth erroneously used ICRT instead of ICRD. Fix this here
                     if (
                         "ICRT" in outputMIDI.rmidiInfo &&
-                        !("ICRD" in outputMIDI.rmidiInfo)
+                        !("creationDate" in outputMIDI.rmidiInfo)
                     ) {
                         outputMIDI.rmidiInfo.ICRD = outputMIDI.rmidiInfo
                             .ICRT as IndexedByteArray;

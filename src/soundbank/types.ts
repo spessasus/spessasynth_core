@@ -12,25 +12,121 @@ export interface SoundBankManagerListEntry {
     bankOffset: number;
 }
 
+export interface SF2VersionTag {
+    major: number;
+    minor: number;
+}
+
+export type GenericBankInfoFourCC =
+    | "INAM"
+    | "ICRD"
+    | "IENG"
+    | "IPRD"
+    | "ICOP"
+    | "ICMT"
+    | "ISFT";
+
+export type SF2InfoFourCC =
+    | GenericBankInfoFourCC
+    | "ifil"
+    | "isng"
+    | "irom"
+    | "iver"
+    | "DMOD"
+    | "LIST";
+
+export type SF2ChunkFourCC =
+    | "pdta"
+    | "xdta"
+    | "sdta"
+    | "smpl"
+    | "sm24"
+    | "phdr"
+    | "pbag"
+    | "pmod"
+    | "pgen"
+    | "inst"
+    | "ibag"
+    | "imod"
+    | "igen"
+    | "shdr";
+
+export type DLSInfoFourCC = GenericBankInfoFourCC | "ISBJ";
+
+export type DLSChunkFourCC =
+    | "dls "
+    | "dlid"
+    | "cdl "
+    | "ptbl"
+    | "vers"
+    | "colh"
+    | "wvpl"
+    | "wsmp"
+    | "data"
+    | "lart"
+    | "lar2"
+    | "art2"
+    | "art1"
+    | "lrgn"
+    | "rgnh"
+    | "wlnk"
+    | "lins"
+    | "ins "
+    | "insh"
+    | "rgn2";
+
 export interface SoundBankInfoData {
-    INAM: string;
-    ICRD: string;
-    IENG: string;
-    IPRD: string;
-    ICOP: string;
-    ICMT: string;
-    ISBJ: string;
-    ifil: string;
-    isng: string;
-    iron: string;
-    iver: string;
-    ISFT: string;
-    DMOD: null;
-    LIST: IndexedByteArray;
+    /**
+     * Name.
+     */
+    name: string;
+    /**
+     * The sound bank's version.
+     */
+    version: SF2VersionTag;
+    /**
+     * Creation date.
+     */
+    creationDate: Date;
+    /**
+     * Sound engine.
+     */
+    soundEngine: string;
+    /**
+     * Author.
+     */
+    engineer?: string;
+    /**
+     * Product.
+     */
+    product?: string;
+    /**
+     * Copyright.
+     */
+    copyright?: string;
+    /**
+     * Comment.
+     */
+    comment?: string;
+    /**
+     * Subject.
+     */
+    subject?: string;
+    /**
+     * ROM information.
+     */
+    romInfo?: string;
+    /**
+     * Software used to edit the file.
+     */
+    software?: string;
+    /**
+     * A tag that only applies to SF2 and will usually be undefined.
+     */
+    romVersion?: SF2VersionTag;
 }
 
 export type SoundBankInfoFourCC = keyof SoundBankInfoData;
-export type SoundBankInfo = Partial<SoundBankInfoData>;
 
 export interface SampleAndGenerators {
     instrumentGenerators: Generator[];

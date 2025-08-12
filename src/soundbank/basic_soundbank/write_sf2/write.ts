@@ -29,6 +29,9 @@ import { MOD_BYTE_SIZE } from "../modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
     ReturnedExtendedSf2Chunks,
+    SF2InfoFourCC,
+    SoundBankInfoData,
+    SoundBankInfoFourCC,
     SoundFont2WriteOptions
 } from "../../types";
 import type { BasicSoundBank } from "../basic_soundbank";
@@ -80,33 +83,99 @@ export async function writeSF2Internal(
      * Write INFO
      */
     const infoArrays: IndexedByteArray[] = [];
-    targetSoundBank.soundBankInfo.ISFT = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    targetSoundBank.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
     if (
         options?.compress ||
         targetSoundBank.samples.some((s) => s.isCompressed)
     ) {
-        targetSoundBank.soundBankInfo.ifil = "3.0"; // Set version to 3
+        // Set version to 3
+        targetSoundBank.soundBankInfo.version.major = 3;
+        targetSoundBank.soundBankInfo.version.minor = 0;
     }
     if (options?.decompress) {
-        targetSoundBank.soundBankInfo.ifil = "2.4"; // Set version to 2.04
+        // Set version to 2.4
+        targetSoundBank.soundBankInfo.version.major = 2;
+        targetSoundBank.soundBankInfo.version.minor = 4;
     }
 
-    for (const [type, data] of Object.entries(targetSoundBank.soundBankInfo)) {
-        const isString = typeof data === "string";
-        if ((type === "ifil" || type === "iver") && isString) {
-            const major = parseInt(data.split(".")[0]);
-            const minor = parseInt(data.split(".")[1]);
-            const ckdata = new IndexedByteArray(4);
-            writeWord(ckdata, major);
-            writeWord(ckdata, minor);
-            infoArrays.push(writeRIFFChunkRaw(type, ckdata));
-        } else if (isString) {
-            infoArrays.push(
-                writeRIFFChunkRaw(
-                    type,
-                    getStringBytes(data, true, true) // Pad with zero and ensure even length
-                )
-            );
+    const writeSF2Info = (type: SF2InfoFourCC, data: string) => {
+        infoArrays.push(
+            writeRIFFChunkRaw(
+                type,
+                getStringBytes(data, true, true) // Pad with zero and ensure even length
+            )
+        );
+    };
+
+    // Special comment case: merge subject and comment
+    const commentText =
+        targetSoundBank.soundBankInfo?.comment ??
+        "" +
+            (targetSoundBank.soundBankInfo.subject
+                ? `
+${targetSoundBank.soundBankInfo.subject}`
+                : "");
+
+    for (const [t, d] of Object.entries(targetSoundBank.soundBankInfo)) {
+        const type = t as SoundBankInfoFourCC;
+        const data = d as SoundBankInfoData[SoundBankInfoFourCC];
+        if (!data) {
+            continue;
+        }
+
+        switch (type) {
+            case "name":
+                writeSF2Info("INAM", data as string);
+                break;
+
+            case "comment":
+                writeSF2Info("ICMT", commentText);
+                break;
+
+            case "copyright":
+                writeSF2Info("ICOP", data as string);
+                break;
+
+            case "creationDate":
+                writeSF2Info("ICRD", (data as Date).toISOString());
+                break;
+
+            case "engineer":
+                writeSF2Info("IENG", data as string);
+                break;
+
+            case "product":
+                writeSF2Info("IPRD", data as string);
+                break;
+
+            case "romInfo":
+                writeSF2Info("irom", data as string);
+                break;
+
+            case "software":
+                writeSF2Info("ISFT", data as string);
+                break;
+
+            case "soundEngine":
+                writeSF2Info("isng", data as string);
+                break;
+
+            case "subject":
+                // Merged with the comment
+                break;
+        }
+
+        // Write versions
+        const ifilData = new IndexedByteArray(4);
+        writeWord(ifilData, targetSoundBank.soundBankInfo.version.major);
+        writeWord(ifilData, targetSoundBank.soundBankInfo.version.minor);
+        infoArrays.push(writeRIFFChunkRaw("ifil", ifilData));
+
+        if (targetSoundBank.soundBankInfo.romVersion) {
+            const ifilData = new IndexedByteArray(4);
+            writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.major);
+            writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.minor);
+            infoArrays.push(writeRIFFChunkRaw("iver", ifilData));
         }
     }
 

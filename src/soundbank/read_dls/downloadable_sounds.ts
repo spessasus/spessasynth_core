@@ -10,13 +10,14 @@ import { consoleColors } from "../../utils/other";
 import {
     findRIFFListType,
     readRIFFChunk,
-    RIFFChunk
+    RIFFChunk,
+    type WAVFourCC
 } from "../../utils/riff_chunk";
 import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { readDLSInstrument } from "./read_instrument";
 import { readDLSSamples } from "./read_samples";
-import type { SoundBankInfoFourCC } from "../types";
+import type { DLSChunkFourCC, DLSInfoFourCC } from "../types";
 
 class DownloadableSounds extends BasicSoundBank {
     // Main array that we read from
@@ -50,45 +51,62 @@ class DownloadableSounds extends BasicSoundBank {
             chunks.push(readRIFFChunk(this.dataArray));
         }
 
-        // Mandatory
-        this.soundBankInfo.ifil = "2.1"; // Always for dls
-        this.soundBankInfo.isng = "E-mu 10K2";
-
         // Set some defaults
-        this.soundBankInfo.INAM = "Unnamed DLS";
-        this.soundBankInfo.IENG = "Unknown";
-        this.soundBankInfo.IPRD = "SpessaSynth DLS";
-        this.soundBankInfo.ICRD = new Date().toDateString();
+        this.soundBankInfo.name = "Unnamed DLS";
+        this.soundBankInfo.product = "SpessaSynth DLS";
+        this.soundBankInfo.comment = "";
 
         // Read info
         const infoChunk = findRIFFListType(chunks, "INFO");
         if (infoChunk) {
             while (infoChunk.data.currentIndex < infoChunk.data.length) {
                 const infoPart = readRIFFChunk(infoChunk.data);
-                (this.soundBankInfo[
-                    infoPart.header as SoundBankInfoFourCC
-                ] as string) = readBinaryStringIndexed(
+                const headerTyped = infoPart.header as DLSInfoFourCC;
+                const text = readBinaryStringIndexed(
                     infoPart.data,
-                    infoPart.size
+                    infoPart.size,
+                    false
                 );
+                switch (headerTyped) {
+                    case "INAM":
+                        this.soundBankInfo.name = text;
+                        break;
+
+                    case "ICRD":
+                        this.soundBankInfo.creationDate = new Date(text);
+                        break;
+
+                    case "ICMT":
+                        this.soundBankInfo.comment = text;
+                        break;
+
+                    case "ISBJ":
+                        this.soundBankInfo.subject = text;
+                        break;
+
+                    case "ICOP":
+                        this.soundBankInfo.copyright = text;
+                        break;
+
+                    case "IENG":
+                        this.soundBankInfo.engineer = text;
+                        break;
+
+                    case "IPRD":
+                        this.soundBankInfo.product = text;
+                        break;
+
+                    case "ISFT":
+                        this.soundBankInfo.software = text;
+                }
             }
         }
-        this.soundBankInfo.ICMT = this.soundBankInfo.ICMT ?? "(No description)";
-        if (this.soundBankInfo.ISBJ) {
-            // Merge it
-            this.soundBankInfo.ICMT += "\n" + this.soundBankInfo.ISBJ;
-            delete this.soundBankInfo.ISBJ;
-        }
-        this.soundBankInfo.ICMT +=
+        this.soundBankInfo.comment =
+            this.soundBankInfo.comment ?? "(No description)";
+        this.soundBankInfo.comment +=
             "\nConverted from DLS to SF2 with SpessaSynth";
 
-        for (const [info, value] of Object.entries(this.soundBankInfo)) {
-            SpessaSynthInfo(
-                `%c"${info}": %c"${value?.toString()}"`,
-                consoleColors.info,
-                consoleColors.recognized
-            );
-        }
+        this.printInfo();
 
         // Read "colh"
         const colhChunk = chunks.find((c) => c.header === "colh");
@@ -132,7 +150,7 @@ class DownloadableSounds extends BasicSoundBank {
         // Sort presets
         this.flush();
         SpessaSynthInfo(
-            `%cParsing finished! %c"${this.soundBankInfo.INAM || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,
+            `%cParsing finished! %c"${this.soundBankInfo.name || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             consoleColors.info,
             consoleColors.recognized,
@@ -173,7 +191,7 @@ class DownloadableSounds extends BasicSoundBank {
      * @param expected {string}
      * @throws error if the check doesn't pass
      */
-    protected verifyText(text: string, expected: string) {
+    protected verifyText(text: string, expected: DLSChunkFourCC | WAVFourCC) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
             this.parsingError(
                 `FourCC error: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"`

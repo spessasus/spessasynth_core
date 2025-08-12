@@ -9,12 +9,12 @@ import { readModulators } from "./modulators";
 import { readRIFFChunk, RIFFChunk } from "../../utils/riff_chunk";
 import { consoleColors } from "../../utils/other";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
-import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
+import { readBinaryString, readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
-import type { SoundBankInfoFourCC } from "../types";
+import type { SF2InfoFourCC } from "../types";
 import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
 
@@ -76,32 +76,31 @@ export class SoundFont2 extends BasicSoundBank {
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
             const chunk = readRIFFChunk(infoChunk.data);
-            let text;
+            const text = readBinaryString(chunk.data, chunk.data.length);
             // Special cases
-            const headerTyped = chunk.header as SoundBankInfoFourCC;
+            const headerTyped = chunk.header as SF2InfoFourCC;
             switch (headerTyped) {
                 case "ifil":
                 case "iver":
-                    text = `${readLittleEndianIndexed(chunk.data, 2)}.${readLittleEndianIndexed(chunk.data, 2)}`;
-                    this.soundBankInfo[headerTyped] = text;
-                    break;
-
-                case "ICMT":
-                    text = readBinaryStringIndexed(
-                        chunk.data,
-                        chunk.data.length,
-                        false
-                    );
-                    this.soundBankInfo[headerTyped] = text;
+                    const major = readLittleEndianIndexed(chunk.data, 2);
+                    const minor = readLittleEndianIndexed(chunk.data, 2);
+                    if (headerTyped === "ifil") {
+                        this.soundBankInfo.version = {
+                            major,
+                            minor
+                        };
+                    } else {
+                        this.soundBankInfo.romVersion = {
+                            major,
+                            minor
+                        };
+                    }
                     break;
 
                 // Dmod: default modulators
                 case "DMOD": {
-                    const newModulators = readModulators(chunk);
-                    text = `Modulators: ${newModulators.length}`;
-
                     // Override default modulators
-                    this.defaultModulators = newModulators;
+                    this.defaultModulators = readModulators(chunk);
                     this.customDefaultModulators = true;
                     break;
                 }
@@ -119,20 +118,45 @@ export class SoundFont2 extends BasicSoundBank {
                     break;
                 }
 
-                default:
-                    text = readBinaryStringIndexed(
-                        chunk.data,
-                        chunk.data.length
+                case "ICRD":
+                    this.soundBankInfo.creationDate = new Date(
+                        readBinaryStringIndexed(chunk.data, chunk.data.length)
                     );
-                    this.soundBankInfo[headerTyped] = text;
-            }
+                    break;
 
-            SpessaSynthInfo(
-                `%c"${chunk.header}": %c"${text}"`,
-                consoleColors.info,
-                consoleColors.recognized
-            );
+                case "ISFT":
+                    this.soundBankInfo.software = text;
+                    break;
+
+                case "IPRD":
+                    this.soundBankInfo.product = text;
+                    break;
+
+                case "IENG":
+                    this.soundBankInfo.engineer = text;
+                    break;
+
+                case "ICOP":
+                    this.soundBankInfo.copyright = text;
+                    break;
+
+                case "INAM":
+                    this.soundBankInfo.name = text;
+                    break;
+
+                case "ICMT":
+                    this.soundBankInfo.comment = text;
+                    break;
+
+                case "irom":
+                    this.soundBankInfo.romInfo = text;
+                    break;
+
+                case "isng":
+                    this.soundBankInfo.soundEngine = text;
+            }
         }
+        this.printInfo();
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
         const xChunks: Partial<{
             phdr: RIFFChunk;
@@ -380,7 +404,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
         this.flush();
         SpessaSynthInfo(
-            `%cParsing finished! %c"${this.soundBankInfo.INAM!}"%c has %c${this.presets.length}%c presets,
+            `%cParsing finished! %c"${this.soundBankInfo.name}"%c has %c${this.presets.length}%c presets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             consoleColors.info,
             consoleColors.recognized,

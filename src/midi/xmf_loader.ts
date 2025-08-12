@@ -11,7 +11,7 @@ import {
 import { consoleColors } from "../utils/other";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
-import { type RMIDINFOChunk, rmidInfoChunks } from "./enums";
+import { rmidInfoChunks, type RMIDInfoFourCC } from "./enums";
 import { inflateSync } from "../externals/fflate/fflate_wrapper";
 import { IndexedByteArray } from "../utils/indexed_array";
 import type { BasicMIDI } from "./basic_midi";
@@ -417,7 +417,7 @@ export function loadXMF(
      * Find the stuff we care about
      */
     const searchNode = (node: XMFNode) => {
-        const checkMeta = (xmf: string, rmid: RMIDINFOChunk) => {
+        const checkMeta = (xmf: string, rmid: RMIDInfoFourCC) => {
             if (
                 node.metadata[xmf] !== undefined &&
                 typeof node.metadata[xmf] === "string"

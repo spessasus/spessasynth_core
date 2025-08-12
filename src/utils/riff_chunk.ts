@@ -1,6 +1,35 @@
 import { IndexedByteArray } from "./indexed_array";
-import { readLittleEndianIndexed, writeDword } from "./byte_functions/little_endian";
-import { readBinaryString, readBinaryStringIndexed, writeBinaryStringIndexed } from "./byte_functions/string";
+import {
+    readLittleEndianIndexed,
+    writeDword
+} from "./byte_functions/little_endian";
+import {
+    readBinaryString,
+    readBinaryStringIndexed,
+    writeBinaryStringIndexed
+} from "./byte_functions/string";
+import type {
+    DLSChunkFourCC,
+    DLSInfoFourCC,
+    SF2ChunkFourCC,
+    SF2InfoFourCC,
+    SoundBankInfoFourCC
+} from "../soundbank/types";
+import type { RMIDInfoFourCC } from "../midi/enums";
+
+export type GenericRIFFFourCC = "RIFF" | "LIST" | "INFO";
+export type WAVFourCC = "wave" | "cue " | "fmt ";
+export type FourCC =
+    | GenericRIFFFourCC
+    | SoundBankInfoFourCC
+    | SF2InfoFourCC
+    | SF2ChunkFourCC
+    | DLSInfoFourCC
+    | DLSChunkFourCC
+    | RMIDInfoFourCC
+    | WAVFourCC
+    // IALB is technically valid to write but spessasynth uses IPRD.
+    | "IALB";
 
 /**
  * Riff_chunk.ts
@@ -11,7 +40,7 @@ export class RIFFChunk {
     /**
      * The chunks FourCC code.
      */
-    public readonly header: string;
+    public readonly header: FourCC;
 
     /**
      * Chunk's size, in bytes.
@@ -26,7 +55,7 @@ export class RIFFChunk {
     /**
      * Creates a new RIFF chunk.
      */
-    public constructor(header: string, size: number, data: IndexedByteArray) {
+    public constructor(header: FourCC, size: number, data: IndexedByteArray) {
         this.header = header;
         this.size = size;
         this.data = data;
@@ -38,9 +67,10 @@ export function readRIFFChunk(
     readData = true,
     forceShift = false
 ): RIFFChunk {
-    const header = readBinaryStringIndexed(dataArray, 4);
+    const header = readBinaryStringIndexed(dataArray, 4) as FourCC;
 
     let size = readLittleEndianIndexed(dataArray, 4);
+    // @ts-expect-error Not all RIFF files are compliant
     if (header === "") {
         // Safeguard against evil DLS files
         // The test case: CrysDLS v1.23.dls
@@ -76,11 +106,14 @@ export function readRIFFChunk(
  * @returns the binary data
  */
 export function writeRIFFChunkRaw(
-    header: string,
+    header: FourCC,
     data: Uint8Array,
     addZeroByte = false,
     isList = false
 ): IndexedByteArray {
+    if (header.length !== 4) {
+        throw new Error(`Invalid header length: ${header}`);
+    }
     let dataStartOffset = 8;
     let headerWritten = header;
     let dataLength = data.length;
@@ -121,7 +154,7 @@ export function writeRIFFChunkRaw(
  * @returns the binary data
  */
 export function writeRIFFChunkParts(
-    header: string,
+    header: FourCC,
     chunks: Uint8Array[],
     isList = false
 ): IndexedByteArray {
