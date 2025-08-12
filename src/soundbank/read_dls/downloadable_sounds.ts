@@ -84,7 +84,7 @@ class DownloadableSounds extends BasicSoundBank {
 
         for (const [info, value] of Object.entries(this.soundBankInfo)) {
             SpessaSynthInfo(
-                `%c"${info}": %c"${value.toString()}"`,
+                `%c"${info}": %c"${value?.toString()}"`,
                 consoleColors.info,
                 consoleColors.recognized
             );

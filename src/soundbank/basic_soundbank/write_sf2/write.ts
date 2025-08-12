@@ -20,6 +20,7 @@ import {
     writeWord
 } from "../../../utils/byte_functions/little_endian";
 import {
+    SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
@@ -74,10 +75,9 @@ export async function writeSF2Internal(
         consoleColors.info,
         consoleColors.recognized
     );
-    SpessaSynthInfo("%cWriting INFO...", consoleColors.info);
+    SpessaSynthGroup("%cWriting INFO...", consoleColors.info);
     /**
      * Write INFO
-     * @type {IndexedByteArray[]}
      */
     const infoArrays: IndexedByteArray[] = [];
     targetSoundBank.soundBankInfo.ISFT = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
@@ -91,14 +91,6 @@ export async function writeSF2Internal(
         targetSoundBank.soundBankInfo.ifil = "2.4"; // Set version to 2.04
     }
 
-    if (options?.writeDefaultModulators) {
-        // Trigger the DMOD write
-        targetSoundBank.soundBankInfo.DMOD = `${targetSoundBank.defaultModulators.length} Modulators`;
-        targetSoundBank.customDefaultModulators = true;
-    } else {
-        delete targetSoundBank.soundBankInfo.DMOD;
-    }
-
     for (const [type, data] of Object.entries(targetSoundBank.soundBankInfo)) {
         const isString = typeof data === "string";
         if ((type === "ifil" || type === "iver") && isString) {
@@ -108,28 +100,6 @@ export async function writeSF2Internal(
             writeWord(ckdata, major);
             writeWord(ckdata, minor);
             infoArrays.push(writeRIFFChunkRaw(type, ckdata));
-        } else if (type === "DMOD") {
-            const mods = targetSoundBank.defaultModulators;
-            SpessaSynthInfo(
-                `%cWriting %c${mods.length}%c default modulators...`,
-                consoleColors.info,
-                consoleColors.recognized,
-                consoleColors.info
-            );
-            const dmodsize = MOD_BYTE_SIZE + mods.length * MOD_BYTE_SIZE;
-            const dmoddata = new IndexedByteArray(dmodsize);
-            for (const mod of mods) {
-                writeWord(dmoddata, mod.getSourceEnum());
-                writeWord(dmoddata, mod.destination);
-                writeWord(dmoddata, mod.transformAmount);
-                writeWord(dmoddata, mod.getSecSrcEnum());
-                writeWord(dmoddata, mod.transformType);
-            }
-
-            // Terminal modulator, is zero
-            writeLittleEndianIndexed(dmoddata, 0, MOD_BYTE_SIZE);
-
-            infoArrays.push(writeRIFFChunkRaw(type, dmoddata));
         } else if (isString) {
             infoArrays.push(
                 writeRIFFChunkRaw(
@@ -140,6 +110,31 @@ export async function writeSF2Internal(
         }
     }
 
+    if (options?.writeDefaultModulators) {
+        const mods = targetSoundBank.defaultModulators;
+        SpessaSynthInfo(
+            `%cWriting %c${mods.length}%c default modulators...`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info
+        );
+        const dmodsize = MOD_BYTE_SIZE + mods.length * MOD_BYTE_SIZE;
+        const dmoddata = new IndexedByteArray(dmodsize);
+        for (const mod of mods) {
+            writeWord(dmoddata, mod.getSourceEnum());
+            writeWord(dmoddata, mod.destination);
+            writeWord(dmoddata, mod.transformAmount);
+            writeWord(dmoddata, mod.getSecSrcEnum());
+            writeWord(dmoddata, mod.transformType);
+        }
+
+        // Terminal modulator, is zero
+        writeLittleEndianIndexed(dmoddata, 0, MOD_BYTE_SIZE);
+
+        infoArrays.push(writeRIFFChunkRaw("DMOD", dmoddata));
+    }
+
+    SpessaSynthGroupEnd();
     SpessaSynthInfo("%cWriting SDTA...", consoleColors.info);
     // Write sdta
     const smplStartOffsets: number[] = [];

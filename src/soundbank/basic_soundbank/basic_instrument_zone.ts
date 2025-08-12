@@ -9,7 +9,6 @@ export class BasicInstrumentZone extends BasicZone {
     public readonly parentInstrument: BasicInstrument;
     /**
      * For tracking on the individual zone level, since multiple presets can refer to the same instrument.
-     * @type {number}
      */
     public useCount: number;
 

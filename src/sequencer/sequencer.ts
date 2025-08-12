@@ -320,7 +320,6 @@ export class SpessaSynthSequencer {
     public loadNewSongList(midiBuffers: BasicMIDI[]) {
         /**
          * Parse the MIDIs (only the array buffers, MIDI is unchanged)
-         * @type {BasicMIDI[]}
          */
         this.songs = midiBuffers;
         if (this.songs.length < 1) {

@@ -25,7 +25,7 @@ export interface SoundBankInfoData {
     iron: string;
     iver: string;
     ISFT: string;
-    DMOD: string;
+    DMOD: null;
     LIST: IndexedByteArray;
 }
 

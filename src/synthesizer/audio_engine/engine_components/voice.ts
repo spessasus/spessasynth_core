@@ -143,7 +143,7 @@ export class Voice {
     public realKey: number;
 
     /**
-     * @type {number} Initial key to glide from, MIDI Note number. If -1, the portamento is OFF.
+     * Initial key to glide from, MIDI Note number. If -1, the portamento is OFF.
      */
     public portamentoFromKey = -1;
 

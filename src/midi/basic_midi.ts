@@ -656,10 +656,6 @@ export class BasicMIDI {
             }
         }
 
-        /**
-         *
-         * @type {{start: number, end: number}}
-         */
         this.loop = { start: loopStart, end: loopEnd };
 
         SpessaSynthInfo(

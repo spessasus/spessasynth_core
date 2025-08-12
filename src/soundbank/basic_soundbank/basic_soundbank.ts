@@ -30,7 +30,6 @@ export class BasicSoundBank {
 
     /**
      * The sound bank's presets.
-     * @type {BasicPreset[]}
      */
     public presets: BasicPreset[] = [];
 

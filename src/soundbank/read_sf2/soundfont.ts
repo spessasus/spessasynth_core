@@ -103,7 +103,6 @@ export class SoundFont2 extends BasicSoundBank {
                     // Override default modulators
                     this.defaultModulators = newModulators;
                     this.customDefaultModulators = true;
-                    this.soundBankInfo[headerTyped] = text;
                     break;
                 }
 
