@@ -109,12 +109,11 @@ export async function writeSF2Internal(
 
     // Special comment case: merge subject and comment
     const commentText =
-        targetSoundBank.soundBankInfo?.comment ??
-        "" +
-            (targetSoundBank.soundBankInfo.subject
-                ? `
+        (targetSoundBank.soundBankInfo?.comment ?? "") +
+        (targetSoundBank.soundBankInfo.subject
+            ? `
 ${targetSoundBank.soundBankInfo.subject}`
-                : "");
+            : "");
 
     for (const [t, d] of Object.entries(targetSoundBank.soundBankInfo)) {
         const type = t as SoundBankInfoFourCC;
