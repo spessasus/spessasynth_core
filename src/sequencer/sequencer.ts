@@ -120,7 +120,7 @@ export class SpessaSynthSequencer {
         this.absoluteStartTime = this.synth.currentSynthTime;
     }
 
-    protected _midiData: BasicMIDI = new BasicMIDI();
+    protected _midiData?: BasicMIDI;
 
     // noinspection JSUnusedGlobalSymbols
     /**
@@ -135,7 +135,7 @@ export class SpessaSynthSequencer {
      * The length of the current sequence in seconds.
      */
     public get duration() {
-        return this._midiData.duration;
+        return this._midiData?.duration ?? 0;
     }
 
     protected _songIndex = 0;
@@ -235,7 +235,7 @@ export class SpessaSynthSequencer {
      * @param time the time to set in seconds.
      */
     public set currentTime(time) {
-        if (!this.hasSongs) {
+        if (!this._midiData) {
             return;
         }
         if (this.paused) {
@@ -272,18 +272,11 @@ export class SpessaSynthSequencer {
     }
 
     /**
-     * Returns true if there are any songs loaded in the sequencer.
-     */
-    protected get hasSongs(): boolean {
-        return this.songs.length > 0;
-    }
-
-    /**
      * Starts or resumes the playback of the sequencer.
      * If the sequencer is paused, it will resume from the paused time.
      */
     public play() {
-        if (!this.hasSongs) {
+        if (!this._midiData) {
             throw new Error("No songs loaded in the sequencer!");
         }
 
@@ -388,7 +381,7 @@ export class SpessaSynthSequencer {
     protected findFirstEventIndex() {
         let index = 0;
         let ticks = Infinity;
-        this._midiData.tracks.forEach((track, i) => {
+        this._midiData!.tracks.forEach((track, i) => {
             if (this.eventIndexes[i] >= track.events.length) {
                 return;
             }
@@ -493,6 +486,9 @@ export class SpessaSynthSequencer {
      * @param ticks the MIDI ticks to set the time to.
      */
     protected setTimeTicks(ticks: number) {
+        if (!this._midiData) {
+            return;
+        }
         this.playingNotes = [];
         const seconds = this._midiData.midiTicksToSeconds(ticks);
         this.callEvent("timeChange", { newTime: seconds });

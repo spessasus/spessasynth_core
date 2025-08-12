@@ -22,7 +22,7 @@ export function processEventInternal(
             return;
         }
     }
-    const track = this._midiData.tracks[trackIndex];
+    const track = this._midiData!.tracks[trackIndex];
     const statusByteData = getEvent(event.statusByte);
     const offset =
         this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
@@ -78,7 +78,7 @@ export function processEventInternal(
 
         case midiMessageTypes.controllerChange:
             // Empty tracks cannot cc change
-            if (this._midiData.isMultiPort && track.channels.size === 0) {
+            if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
             }
             this.synth.controllerChange(
@@ -90,7 +90,7 @@ export function processEventInternal(
 
         case midiMessageTypes.programChange:
             // Empty tracks cannot program change
-            if (this._midiData.isMultiPort && track.channels.size === 0) {
+            if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
             }
             this.synth.programChange(statusByteData.channel, event.data[0]);
@@ -115,10 +115,10 @@ export function processEventInternal(
         case midiMessageTypes.setTempo: {
             let tempoBPM = 60000000 / readBigEndian(event.data, 3);
             this.oneTickToSeconds =
-                60 / (tempoBPM * this._midiData.timeDivision);
+                60 / (tempoBPM * this._midiData!.timeDivision);
             if (this.oneTickToSeconds === 0) {
                 this.oneTickToSeconds =
-                    60 / (120 * this._midiData.timeDivision);
+                    60 / (120 * this._midiData!.timeDivision);
                 SpessaSynthInfo("invalid tempo! falling back to 120 BPM");
                 tempoBPM = 120;
             }

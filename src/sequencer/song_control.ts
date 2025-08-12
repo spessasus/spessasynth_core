@@ -14,7 +14,7 @@ export function assignMIDIPortInternal(
     port: number
 ) {
     // Do not assign ports to empty tracks
-    if (this._midiData.tracks[trackNum].channels.size === 0) {
+    if (this._midiData!.tracks[trackNum].channels.size === 0) {
         return;
     }
 

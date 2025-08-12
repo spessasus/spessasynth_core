@@ -7,6 +7,7 @@ import {
     midiMessageTypes
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
+import type { MIDITrack } from "../midi/midi_track";
 
 // An array with preset default values
 const defaultControllerArray = resetArray.slice(0, 128);
@@ -22,7 +23,7 @@ export function setTimeToInternal(
     time: number,
     ticks: number | undefined = undefined
 ): boolean {
-    if (!this.hasSongs) {
+    if (!this._midiData) {
         return false;
     }
     this.oneTickToSeconds = 60 / (120 * this._midiData.timeDivision);
@@ -103,7 +104,8 @@ export function setTimeToInternal(
     while (true) {
         // Find the next event
         let trackIndex = this.findFirstEventIndex();
-        const track = this._midiData.tracks[trackIndex];
+        // Type assertion is required here because tsc is drunk...
+        const track: MIDITrack = this._midiData.tracks[trackIndex];
         const event = track.events[this.eventIndexes[trackIndex]];
         if (ticks !== undefined) {
             if (event.ticks >= ticks) {

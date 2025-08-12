@@ -7,7 +7,7 @@ import {
     SpessaSynthSequencer
 } from "../../src";
 
-// process arguments
+// Process arguments
 const args = process.argv.slice(2);
 if (args.length !== 3) {
     console.info(
@@ -37,20 +37,20 @@ const outLeft = new Float32Array(sampleCount);
 const outRight = new Float32Array(sampleCount);
 const start = performance.now();
 let filledSamples = 0;
-// note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
+// Note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
 const BUFFER_SIZE = 128;
 let i = 0;
-const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
+const durationRounded = Math.floor(seq.midiData!.duration * 100) / 100;
 const outputArray = [outLeft, outRight];
 while (filledSamples < sampleCount) {
-    // process sequencer
+    // Process sequencer
     seq.processTick();
-    // render
+    // Render
     const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
     synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
     filledSamples += bufferSize;
     i++;
-    // log progress
+    // Log progress
     if (i % 100 === 0) {
         console.info(
             "Rendered",

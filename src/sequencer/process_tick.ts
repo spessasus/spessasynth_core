@@ -5,7 +5,7 @@ import type { SpessaSynthSequencer } from "./sequencer";
  * Call this every rendering quantum to process the sequencer events in real-time.
  */
 export function processTick(this: SpessaSynthSequencer) {
-    if (this.paused) {
+    if (this.paused || !this._midiData) {
         return;
     }
     const currentTime = this.currentTime;
