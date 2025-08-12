@@ -1,6 +1,10 @@
 import { SpessaSynthInfo } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
-import { DEFAULT_SYNTH_METHOD_OPTIONS, EMBEDDED_SOUND_BANK_ID } from "./audio_engine/engine_components/synth_constants";
+import {
+    DEFAULT_SYNTH_METHOD_OPTIONS,
+    EMBEDDED_SOUND_BANK_ID,
+    MIDI_CHANNEL_COUNT
+} from "./audio_engine/engine_components/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/volume_envelope";
 import {
@@ -96,14 +100,14 @@ export class SpessaSynthProcessor {
      * @param syx The system exclusive message as an array of bytes.
      * @param channelOffset The channel offset to apply (default is 0).
      */
-    public systemExclusive: typeof systemExclusiveInternal =
+    public readonly systemExclusive: typeof systemExclusiveInternal =
         systemExclusiveInternal.bind(this) as typeof systemExclusiveInternal;
     /**
      * Executes a full system reset of all controllers.
      * This will reset all controllers to their default values,
      * except for the locked controllers.
      */
-    public resetAllControllers: typeof resetAllControllersInternal =
+    public readonly resetAllControllers: typeof resetAllControllersInternal =
         resetAllControllersInternal.bind(
             this
         ) as typeof resetAllControllersInternal;
@@ -112,7 +116,7 @@ export class SpessaSynthProcessor {
      * @param type The type of the master parameter to set.
      * @param value The value to set for the master parameter.
      */
-    public setMasterParameter: typeof setMasterParameterInternal =
+    public readonly setMasterParameter: typeof setMasterParameterInternal =
         setMasterParameterInternal.bind(
             this
         ) as typeof setMasterParameterInternal;
@@ -122,7 +126,7 @@ export class SpessaSynthProcessor {
      * @param type The type of the master parameter to get.
      * @returns The value of the master parameter.
      */
-    public getMasterParameter: typeof getMasterParameterInternal =
+    public readonly getMasterParameter: typeof getMasterParameterInternal =
         getMasterParameterInternal.bind(
             this
         ) as typeof getMasterParameterInternal;
@@ -130,7 +134,7 @@ export class SpessaSynthProcessor {
      * Gets all master parameters of the synthesizer.
      * @returns All the master parameters.
      */
-    public getAllMasterParameters: typeof getAllMasterParametersInternal =
+    public readonly getAllMasterParameters: typeof getAllMasterParametersInternal =
         getAllMasterParametersInternal.bind(
             this
         ) as typeof getAllMasterParametersInternal;
@@ -146,7 +150,7 @@ export class SpessaSynthProcessor {
      * @remarks
      * This is a public method, but it is only intended to be used by the sequencer.
      */
-    public getVoicesForPreset: typeof getVoicesForPresetInternal =
+    public readonly getVoicesForPreset: typeof getVoicesForPresetInternal =
         getVoicesForPresetInternal.bind(
             this
         ) as typeof getVoicesForPresetInternal;
@@ -154,11 +158,10 @@ export class SpessaSynthProcessor {
      * Kills the specified number of voices based on their priority.
      * @param amount The number of voices to remove.
      */
-    public killVoices: typeof killVoicesIntenral = killVoicesIntenral.bind(
-        this
-    ) as typeof killVoicesIntenral;
+    public readonly killVoices: typeof killVoicesIntenral =
+        killVoicesIntenral.bind(this) as typeof killVoicesIntenral;
     // Protected methods
-    protected getVoices = getVoicesInternal.bind(this);
+    protected readonly getVoices = getVoicesInternal.bind(this);
     // This contains the properties that have to be accessed from the MIDI channels.
     protected privateProps: ProtectedSynthValues;
     /**
@@ -169,7 +172,6 @@ export class SpessaSynthProcessor {
      * Synth's event queue from the main thread
      */
     protected eventQueue: { callback: () => unknown; time: number }[] = [];
-    protected readonly midiOutputsCount: number;
 
     // The time of a single sample, in seconds.
     private readonly sampleTime: number;
@@ -187,11 +189,6 @@ export class SpessaSynthProcessor {
             opts,
             DEFAULT_SYNTH_OPTIONS
         );
-        /**
-         * Midi output count
-         * @type {number}
-         */
-        this.midiOutputsCount = options.midiChannels;
         this.effectsEnabled = options.effectsEnabled;
         this.enableEventSystem = options.enableEventSystem;
         this.currentSynthTime = options.initialTime;
@@ -212,7 +209,7 @@ export class SpessaSynthProcessor {
             FILTER_SMOOTHING_FACTOR * (44100 / sampleRate)
         );
 
-        for (let i = 0; i < this.midiOutputsCount; i++) {
+        for (let i = 0; i < MIDI_CHANNEL_COUNT; i++) {
             // Don't send events as we're creating the initial channels
             this.createMIDIChannelInternal(false);
         }

@@ -231,8 +231,6 @@ export interface SynthProcessorOptions {
     initialTime: number;
     // Indicates if the effects are enabled. This can be changed later.
     effectsEnabled: boolean;
-    // The number of MIDI channels.
-    midiChannels: number;
 }
 
 // The master parameters of the synthesizer.
