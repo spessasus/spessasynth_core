@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { consoleColors } from "../../../utils/other";
 import { getIGEN } from "./igen";
@@ -15,10 +12,7 @@ import { getPGEN } from "./pgen";
 import { getPMOD } from "./pmod";
 import { getPBAG } from "./pbag";
 import { getPHDR } from "./phdr";
-import {
-    writeLittleEndianIndexed,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { writeLittleEndianIndexed, writeWord } from "../../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
@@ -38,7 +32,6 @@ import type { BasicSoundBank } from "../basic_soundbank";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     compress: false,
-    compressionQuality: 0.5,
     compressionFunction: undefined,
     progressFunction: undefined,
     writeDefaultModulators: true,
@@ -72,7 +65,7 @@ export async function writeSF2Internal(
     }
     SpessaSynthGroupCollapsed("%cSaving soundbank...", consoleColors.info);
     SpessaSynthInfo(
-        `%cCompression: %c${options?.compress || "false"}%c quality: %c${options?.compressionQuality || "none"}`,
+        `%cCompression: %c${options?.compress || "false"}%c`,
         consoleColors.info,
         consoleColors.recognized,
         consoleColors.info,

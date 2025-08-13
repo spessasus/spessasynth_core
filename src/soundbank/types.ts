@@ -171,14 +171,9 @@ export interface SoundFont2WriteOptions {
     compress: boolean;
 
     /**
-     * The encode Vorbis function. It can be undefined if not compressed.
+     * The function for compressing samples. It can be undefined if not compressed.
      */
     compressionFunction?: SampleEncodingFunction;
-
-    /**
-     * The Vorbis compression quality (-0.1 to 1). This can be undefined if the compression is disabled.
-     */
-    compressionQuality: number;
 
     /**
      * A function to show progress for writing large banks. It can be undefined.
