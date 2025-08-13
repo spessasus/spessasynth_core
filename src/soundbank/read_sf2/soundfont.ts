@@ -17,6 +17,7 @@ import { readZoneIndexes } from "./zones";
 import type { SF2InfoFourCC } from "../types";
 import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
+import { loadDate } from "../../utils/load_date";
 
 /**
  * Soundfont.ts
@@ -119,7 +120,7 @@ export class SoundFont2 extends BasicSoundBank {
                 }
 
                 case "ICRD":
-                    this.soundBankInfo.creationDate = new Date(
+                    this.soundBankInfo.creationDate = loadDate(
                         readBinaryStringIndexed(chunk.data, chunk.data.length)
                     );
                     break;

@@ -18,6 +18,7 @@ import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endia
 import { readDLSInstrument } from "./read_instrument";
 import { readDLSSamples } from "./read_samples";
 import type { DLSChunkFourCC, DLSInfoFourCC } from "../types";
+import { loadDate } from "../../utils/load_date";
 
 class DownloadableSounds extends BasicSoundBank {
     // Main array that we read from
@@ -73,7 +74,7 @@ class DownloadableSounds extends BasicSoundBank {
                         break;
 
                     case "ICRD":
-                        this.soundBankInfo.creationDate = new Date(text);
+                        this.soundBankInfo.creationDate = loadDate(text);
                         break;
 
                     case "ICMT":

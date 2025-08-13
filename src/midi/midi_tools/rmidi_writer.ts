@@ -452,14 +452,7 @@ export function writeRMIDIInternal(
             )
         );
     } else {
-        const today = new Date().toLocaleString(undefined, {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric"
-        });
+        const today = new Date().toISOString();
         infoContent.push(
             writeRIFFChunkRaw(
                 rmidInfoChunks.creationDate,
