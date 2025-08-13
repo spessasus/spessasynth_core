@@ -562,7 +562,6 @@ export function writeRMIDIInternal(
                 encoder.encode(metadata.midiEncoding)
             )
         );
-        encoding = FORCED_ENCODING;
     }
     // Encoding
     infoContent.push(
