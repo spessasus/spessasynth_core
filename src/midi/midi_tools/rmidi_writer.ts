@@ -376,7 +376,9 @@ function correctBankOffsetInternal(
 export const DEFAULT_RMIDI_WRITE_OPTIONS: RMIDIWriteOptions = {
     bankOffset: 0,
     encoding: "Shift_JIS",
-    metadata: {},
+    metadata: {
+        midiEncoding: "Shift_JIS"
+    },
     correctBankOffset: true,
     soundBank: undefined
 };
