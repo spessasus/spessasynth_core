@@ -16,7 +16,7 @@ console.info("Loaded bank:", bank.soundBankInfo.name);
 
 console.group("Bank information");
 Object.entries(bank.soundBankInfo).forEach(([key, value]) => {
-    console.info(`${key}: ${value?.toString().trim()}`);
+    console.info(`${key}: ${(value as string)?.toString()?.trim()}`);
 });
 
 console.info(`\nPreset count: ${bank.presets.length}`);
