@@ -60,7 +60,7 @@ export interface MuteChannelCallback {
     isMuted: boolean;
 }
 
-export interface PresetListChangeCallbackSingle {
+export interface PresetListEntry {
     /** The name of the preset. */
     name: string;
 
@@ -72,7 +72,7 @@ export interface PresetListChangeCallbackSingle {
 }
 
 // A list of preset changes, each with a name, bank, and program number.
-export type PresetListChangeCallback = PresetListChangeCallbackSingle[];
+export type PresetList = PresetListEntry[];
 
 export interface SynthDisplayCallback {
     /** The data to display. */
@@ -154,7 +154,7 @@ export interface SynthProcessorEventData {
     // This event fires when a channel is muted or unmuted.
     muteChannel: MuteChannelCallback;
     // This event fires when the preset list is changed.
-    presetListChange: PresetListChangeCallback;
+    presetListChange: PresetList;
     // This event fires when all controllers on all channels are reset. There is no data for this event.
     allControllerReset: void;
     // This event fires when a sound bank parsing error occurs.
