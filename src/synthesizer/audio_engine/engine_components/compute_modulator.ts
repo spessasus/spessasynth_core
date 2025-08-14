@@ -1,20 +1,10 @@
-import {
-    getModulatorCurveValue,
-    MOD_PRECOMPUTED_LENGTH
-} from "./modulator_curves";
+import { getModulatorCurveValue, MOD_PRECOMPUTED_LENGTH } from "./modulator_curves";
 import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import {
-    generatorTypes,
-    type ModulatorCurveType,
-    modulatorSources
-} from "../../../soundbank/enums";
+import { generatorTypes, type ModulatorCurveType, modulatorSources } from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";
-import {
-    generatorLimits,
-    type GeneratorType
-} from "../../../soundbank/basic_soundbank/generator_types";
+import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
@@ -65,7 +55,7 @@ export function computeModulator(
                 break;
 
             default:
-                rawSourceValue = controllerTable[index]; // Pitch bend and range are stored in the cc table
+                rawSourceValue = controllerTable[index]; // Pitch wheel and range are stored in the cc table
                 break;
         }
     }
@@ -99,7 +89,7 @@ export function computeModulator(
                 break;
 
             default:
-                rawSecondSrcValue = controllerTable[index]; // Pitch bend and range are stored in the cc table
+                rawSecondSrcValue = controllerTable[index]; // Pitch wheel and range are stored in the cc table
         }
     }
     const secondSrcValue =

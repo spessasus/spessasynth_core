@@ -6,7 +6,7 @@ export const midiMessageTypes = {
     controllerChange: 0xb0,
     programChange: 0xc0,
     channelPressure: 0xd0,
-    pitchBend: 0xe0,
+    pitchWheel: 0xe0,
     systemExclusive: 0xf0,
     timecode: 0xf1,
     songPosition: 0xf2,

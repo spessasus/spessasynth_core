@@ -1,9 +1,6 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import {
-    assignMIDIPortInternal,
-    loadNewSequenceInternal
-} from "./song_control";
+import { assignMIDIPortInternal, loadNewSequenceInternal } from "./song_control";
 import { setTimeToInternal } from "./play";
 import { SpessaSynthWarn } from "../utils/loggin";
 
@@ -478,7 +475,7 @@ export class SpessaSynthSequencer {
         if (!this.externalMIDIPlayback) {
             return;
         }
-        this.sendMIDIMessage([midiMessageTypes.pitchBend | channel, LSB, MSB]);
+        this.sendMIDIMessage([midiMessageTypes.pitchWheel | channel, LSB, MSB]);
     }
 
     /**

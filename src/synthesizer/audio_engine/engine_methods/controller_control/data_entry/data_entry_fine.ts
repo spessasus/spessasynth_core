@@ -30,7 +30,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                     break;
 
                 // Pitch bend range fine tune
-                case registeredParameterTypes.pitchBendRange: {
+                case registeredParameterTypes.pitchWheelRange: {
                     if (dataValue === 0) {
                         break;
                     }
@@ -46,7 +46,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                             7) +
                         dataValue / 128;
                     SpessaSynthInfo(
-                        `%cChannel ${this.channelNumber} bend range. Semitones: %c${actualTune}`,
+                        `%cChannel ${this.channelNumber} pitch wheel range. Semitones: %c${actualTune}`,
                         consoleColors.info,
                         consoleColors.value
                     );

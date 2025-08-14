@@ -71,7 +71,9 @@ export interface PresetListEntry {
     program: number;
 }
 
-// A list of preset changes, each with a name, bank, and program number.
+/**
+ * A list of preset changes, each with a name, bank, and program number.
+ */
 export type PresetList = PresetListEntry[];
 
 export interface SynthDisplayCallback {
@@ -79,7 +81,7 @@ export interface SynthDisplayCallback {
     displayData: Uint8Array;
 
     /** The type of display. */
-    displayType: SynthDisplayType; // The type of display (assuming 'synthDisplayTypes' is defined elsewhere).
+    displayType: SynthDisplayType;
 }
 
 export interface PitchWheelCallback {
@@ -87,7 +89,7 @@ export interface PitchWheelCallback {
     channel: number;
 
     /**
-     * The unsigned 14-bit value of the pitch.
+     * The unsigned 14-bit value of the pitch: 0 - 16384.
      */
     pitch: number;
 }
@@ -111,59 +113,103 @@ export interface PolyPressureCallback {
     pressure: number;
 }
 
-// The error message for sound bank errors.
+/**
+ * The error message for sound bank errors.
+ */
 export type SoundBankErrorCallback = Error;
 
 export type MasterParameterChangeCallback = {
     [P in keyof MasterParameterType]: {
-        // The parameter that was changed.
+        /**
+         * The parameter that was changed.
+         */
         parameter: P;
-        // The new value of this parameter.
+        /**
+         * The new value of this parameter.
+         */
         value: MasterParameterType[P];
     };
 }[keyof MasterParameterType];
 
 export interface ChannelPropertyChangeCallback {
-    // The channel number of the new property.
+    /**
+     * The channel number of the new property.
+     */
     channel: number;
-    // The updated property.
+    /**
+     * The updated property.
+     */
     property: ChannelProperty;
 }
 
 export interface SynthProcessorEventData {
-    // This event fires when a note is played.
+    /**
+     * This event fires when a note is played.
+     */
     noteOn: NoteOnCallback;
-    // This event fires when a note is released.
+    /**
+     * This event fires when a note is released.
+     */
     noteOff: NoteOffCallback;
-    // This event fires when a pitch wheel is changed.
+    /**
+     * This event fires when a pitch wheel is changed.
+     */
     pitchWheel: PitchWheelCallback;
-    // This event fires when a controller is changed.
+    /**
+     * This event fires when a controller is changed.
+     */
     controllerChange: ControllerChangeCallback;
-    // This event fires when a program is changed.
+    /**
+     * This event fires when a program is changed.
+     */
     programChange: ProgramChangeCallback;
-    // This event fires when a channel pressure is changed.
+    /**
+     * This event fires when a channel pressure is changed.
+     */
     channelPressure: ChannelPressureCallback;
-    // This event fires when a polyphonic pressure is changed.
+    /**
+     * This event fires when a polyphonic pressure is changed.
+     */
     polyPressure: PolyPressureCallback;
-    // This event fires when a drum channel is changed.
+    /**
+     * This event fires when a drum channel is changed.
+     */
     drumChange: DrumChangeCallback;
-    // This event fires when all notes on a channel are stopped. There is no data for this event.
+    /**
+     * This event fires when all notes on a channel are stopped. There is no data for this event.
+     */
     stopAll: void;
-    // This event fires when a new channel is created. There is no data for this event.
+    /**
+     * This event fires when a new channel is created. There is no data for this event.
+     */
     newChannel: void;
-    // This event fires when a channel is muted or unmuted.
+    /**
+     * This event fires when a channel is muted or unmuted.
+     */
     muteChannel: MuteChannelCallback;
-    // This event fires when the preset list is changed.
+    /**
+     * This event fires when the preset list is changed.
+     */
     presetListChange: PresetList;
-    // This event fires when all controllers on all channels are reset. There is no data for this event.
+    /**
+     * This event fires when all controllers on all channels are reset. There is no data for this event.
+     */
     allControllerReset: void;
-    // This event fires when a sound bank parsing error occurs.
+    /**
+     * This event fires when a sound bank parsing error occurs.
+     */
     soundBankError: SoundBankErrorCallback;
-    // This event fires when the synthesizer receives a display message.
+    /**
+     * This event fires when the synthesizer receives a display message.
+     */
     synthDisplay: SynthDisplayCallback;
-    // This event fires when a master parameter changes.
+    /**
+     * This event fires when a master parameter changes.
+     */
     masterParameterChange: MasterParameterChangeCallback;
-    // This event fires when a channel property changes.
+    /**
+     * This event fires when a channel property changes.
+     */
     channelPropertyChange: ChannelPropertyChangeCallback;
 }
 
@@ -175,7 +221,9 @@ export type SynthProcessorEvent = {
 }[keyof SynthProcessorEventData];
 
 export interface SynthMethodOptions {
-    // The audio context time when the event should execute, in seconds.
+    /**
+     * The audio context time when the event should execute, in seconds.
+     */
     time: number;
 }
 
@@ -185,10 +233,14 @@ export interface SynthMethodOptions {
 export type MTSProgramTuning = MTSNoteTuning[];
 
 export interface MTSNoteTuning {
-    // The base MIDI note to use, -1 means no change.
+    /**
+     * The base MIDI note to use, -1 means no change.
+     */
     midiNote: number;
 
-    // Additional tuning.
+    /**
+     * Additional tuning.
+     */
     centTuning: number | null;
 }
 
@@ -201,62 +253,109 @@ export interface MTSNoteTuning {
  */
 export type SampleLoopingMode = 0 | 1 | 2 | 3;
 
-// A list of voices for a given key:velocity.
+/**
+ * A list of voices for a given key:velocity.
+ */
 export type VoiceList = Voice[];
 
-// Represents a channel property in real-time.
 export interface ChannelProperty {
-    // The channel's current voice amount.
+    /**
+     * The channel's current voice amount.
+     */
     voicesAmount: number;
-    // The channel's current pitch bend from -8192 do 8192.
-    pitchBend: number;
-    // The pitch bend's range, in semitones.
-    pitchBendRangeSemitones: number;
-    // Indicates whether the channel is muted.
+    /**
+     * The channel's current pitch wheel 0 - 16384.
+     */
+    pitchWheel: number;
+    /**
+     * The pitch wheel's range, in semitones.
+     */
+    pitchWheelRange: number;
+    /**
+     * Indicates whether the channel is muted.
+     */
     isMuted: boolean;
-    // Indicates whether the channel is a drum channel.
+    /**
+     * Indicates whether the channel is a drum channel.
+     */
     isDrum: boolean;
-    // The channel's transposition, in semitones.
+    /**
+     * The channel's transposition, in semitones.
+     */
     transposition: number;
-    // The bank number of the current preset.
+    /**
+     * The bank number of the current preset.
+     */
     bank: number;
-    // The MIDI program number of the current preset.
+    /**
+     * The MIDI program number of the current preset.
+     */
     program: number;
 }
 
 export interface SynthProcessorOptions {
-    // Indicates if the event system is enabled. This can be changed later.
+    /**
+     * Indicates if the event system is enabled. This can be changed later.
+     */
     enableEventSystem: boolean;
-    // The initial time of the synth, in seconds.
+    /**
+     * The initial time of the synth, in seconds.
+     */
     initialTime: number;
-    // Indicates if the effects are enabled. This can be changed later.
+    /**
+     * Indicates if the effects are enabled. This can be changed later.
+     */
     effectsEnabled: boolean;
 }
 
-// The master parameters of the synthesizer.
+/**
+ * The master parameters of the synthesizer.
+ */
 export interface MasterParameterType {
-    // The master gain, from 0 to any number. 1 is 100% volume.
+    /**
+     * The master gain, from 0 to any number. 1 is 100% volume.
+     */
     masterGain: number;
-    // The master pan, from -1 (left) to 1 (right). 0 is center.
+    /**
+     * The master pan, from -1 (left) to 1 (right). 0 is center.
+     */
     masterPan: number;
-    // The maximum number of voices that can be played at once.
+    /**
+     * The maximum number of voices that can be played at once.
+     */
     voiceCap: number;
-    // The interpolation type used for sample playback.
+    /**
+     * The interpolation type used for sample playback.
+     */
     interpolationType: InterpolationType;
-    // The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG)
+    /**
+     * The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG)
+     */
     midiSystem: SynthSystem;
-    // Indicates whether the synthesizer is in monophonic retrigger mode.
-    // This emulates the behavior of Microsoft GS Wavetable Synth,
-    // Where a new note will kill the previous one if it is still playing.
+    /**
+     * Indicates whether the synthesizer is in monophonic retrigger mode.
+     * This emulates the behavior of Microsoft GS Wavetable Synth,
+     * Where a new note will kill the previous one if it is still playing.
+     */
     monophonicRetriggerMode: boolean;
-    // The reverb gain, from 0 to any number. 1 is 100% reverb.
+    /**
+     * The reverb gain, from 0 to any number. 1 is 100% reverb.
+     */
     reverbGain: number;
-    // The chorus gain, from 0 to any number. 1 is 100% chorus.
+    /**
+     * The chorus gain, from 0 to any number. 1 is 100% chorus.
+     */
     chorusGain: number;
-    // Forces note killing instead of releasing. Improves performance in black MIDIs.
+    /**
+     * Forces note killing instead of releasing. Improves performance in black MIDIs.
+     */
     blackMIDIMode: boolean;
-    // The global transposition in semitones. It can be decimal.
+    /**
+     * The global transposition in semitones. It can be decimal.
+     */
     transposition: number;
-    // Synthesizer's device ID for system exclusive messages. Set to -1 to accept all.
+    /**
+     * Synthesizer's device ID for system exclusive messages. Set to -1 to accept all.
+     */
     deviceID: number;
 }

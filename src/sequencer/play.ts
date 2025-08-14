@@ -44,7 +44,7 @@ export function setTimeToInternal(
     /**
      * Save pitch bends here and send them only after
      */
-    const pitchBends = Array<number>(channelsToSave).fill(8192);
+    const pitchWheels = Array<number>(channelsToSave).fill(8192);
 
     /**
      * Save programs here and send them only after
@@ -88,7 +88,7 @@ export function setTimeToInternal(
      */
     function resetAllControllers(chan: number) {
         // Reset pitch bend
-        pitchBends[chan] = 8192;
+        pitchWheels[chan] = 8192;
         if (savedControllers?.[chan] === undefined) {
             return;
         }
@@ -137,8 +137,8 @@ export function setTimeToInternal(
                 break;
 
             // Skip pitch bend
-            case midiMessageTypes.pitchBend:
-                pitchBends[channel] = (event.data[1] << 7) | event.data[0];
+            case midiMessageTypes.pitchWheel:
+                pitchWheels[channel] = (event.data[1] << 7) | event.data[0];
                 break;
 
             case midiMessageTypes.programChange: {
@@ -218,11 +218,11 @@ export function setTimeToInternal(
             channelNumber++
         ) {
             // Restore pitch bends
-            if (pitchBends[channelNumber] !== undefined) {
+            if (pitchWheels[channelNumber] !== undefined) {
                 this.sendMIDIPitchWheel(
                     channelNumber,
-                    pitchBends[channelNumber] >> 7,
-                    pitchBends[channelNumber] & 0x7f
+                    pitchWheels[channelNumber] >> 7,
+                    pitchWheels[channelNumber] & 0x7f
                 );
             }
             if (savedControllers[channelNumber] !== undefined) {
@@ -261,8 +261,11 @@ export function setTimeToInternal(
             channelNumber++
         ) {
             // Restore pitch bends
-            if (pitchBends[channelNumber] !== undefined) {
-                this.synth.pitchWheel(channelNumber, pitchBends[channelNumber]);
+            if (pitchWheels[channelNumber] !== undefined) {
+                this.synth.pitchWheel(
+                    channelNumber,
+                    pitchWheels[channelNumber]
+                );
             }
             if (savedControllers[channelNumber] !== undefined) {
                 // Every controller that has changed

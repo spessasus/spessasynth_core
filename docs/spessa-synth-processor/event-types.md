@@ -188,9 +188,9 @@ type ChannelProperty = {
     // The channel's current voice amount.
     voicesAmount: number;
     // The channel's current pitch bend from -8192 do 8192.
-    pitchBend: number;
+    pitchWheel: number;
     // The pitch bend's range, in semitones.
-    pitchBendRangeSemitones: number;
+    pitchWheelRange: number;
     // Indicates whether the channel is muted.
     isMuted: boolean;
     // Indicates whether the channel is a drum channel.

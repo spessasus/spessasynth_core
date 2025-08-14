@@ -521,7 +521,7 @@ export class SpessaSynthProcessor {
                     }
                     break;
 
-                case midiMessageTypes.pitchBend:
+                case midiMessageTypes.pitchWheel:
                     // LSB | (MSB << 7)
                     this.pitchWheel(channel, (message[2] << 7) | message[1]);
                     break;

@@ -37,27 +37,6 @@ export function arrayToHexString(arr: Iterable<number>): string {
     return hexString;
 }
 
-/**
- * Sanitizes KAR lyrics
- */
-// Export function sanitizeKarLyrics(eventData: Uint8Array): Uint8Array {
-//     // for KAR files:
-//     // https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
-//     // "/" is the newline character
-//     // "\" is also the newline character
-//     // "\" ASCII code is 92
-//     // "/" ASCII code is 47
-//     // newline ASCII code is 10
-//     Const sanitized = [];
-//     For (let byte of eventData) {
-//         If (byte === 47 || byte === 92) {
-//             Byte = 10;
-//         }
-//         Sanitized.push(byte);
-//     }
-//     Return new Uint8Array(sanitized);
-// }
-
 export const consoleColors = {
     warn: "color: orange;",
     unrecognized: "color: red;",

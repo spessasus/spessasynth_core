@@ -703,7 +703,7 @@ export function systemExclusiveInternal(
                                 setupReceivers(
                                     NON_CC_INDEX_OFFSET +
                                         modulatorSources.pitchWheel,
-                                    "pitch bend",
+                                    "pitch wheel",
                                     true
                                 );
                                 break;

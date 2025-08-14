@@ -699,11 +699,11 @@ export class MIDIChannel {
         }
         const data: ChannelProperty = {
             voicesAmount: this.voices.length,
-            pitchBend:
+            pitchWheel:
                 this.midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
                 ],
-            pitchBendRangeSemitones:
+            pitchWheelRange:
                 this.midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
                 ] / 128,

@@ -217,7 +217,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.pitchBend | channel) as MIDIMessageType,
+            (midiMessageTypes.pitchWheel | channel) as MIDIMessageType,
             [LSB, MSB]
         );
     }

@@ -8,7 +8,7 @@ import { customControllers, dataEntryStates } from "../../../../enums";
 import { midiControllers } from "../../../../../midi/enums";
 
 export const registeredParameterTypes = {
-    pitchBendRange: 0x0000,
+    pitchWheelRange: 0x0000,
     fineTuning: 0x0001,
     coarseTuning: 0x0002,
     modulationDepth: 0x0005,
@@ -261,12 +261,12 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     break;
 
                 // Pitch bend range
-                case registeredParameterTypes.pitchBendRange:
+                case registeredParameterTypes.pitchWheelRange:
                     this.midiControllers[
                         NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
                     ] = dataValue << 7;
                     coolInfo(
-                        "Pitch bend range",
+                        "Pitch wheel range",
                         dataValue.toString(),
                         "semitones"
                     );
