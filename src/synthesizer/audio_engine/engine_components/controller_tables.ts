@@ -12,10 +12,14 @@ import { modulatorSources } from "../../../soundbank/enums";
 export const NON_CC_INDEX_OFFSET = 128;
 export const CONTROLLER_TABLE_SIZE = 147;
 
-// An array with preset default values, so we can quickly use set() to reset the controllers
-export const resetArray = new Int16Array(CONTROLLER_TABLE_SIZE).fill(0);
+/**
+ * An array with the default MIDI controller values. Note that these are 14-bit, not 7-bit.
+ */
+export const defaultMIDIControllerValues = new Int16Array(
+    CONTROLLER_TABLE_SIZE
+).fill(0);
 export const setResetValue = (i: MIDIController, v: number) =>
-    (resetArray[i] = v << 7);
+    (defaultMIDIControllerValues[i] = v << 7);
 
 // Values come from Falcosoft MidiPlayer 6
 setResetValue(midiControllers.mainVolume, 100);
@@ -47,7 +51,8 @@ export const PORTAMENTO_CONTROL_UNSET = 1;
 // Since it is only 7-bit, only the values at multiple of 128 are allowed.
 // A value of just 1 indicates no key set, hence no portamento.
 // This is the "initial unset portamento key" flag.
-resetArray[midiControllers.portamentoControl] = PORTAMENTO_CONTROL_UNSET;
+defaultMIDIControllerValues[midiControllers.portamentoControl] =
+    PORTAMENTO_CONTROL_UNSET;
 
 // Pitch wheel
 setResetValue(

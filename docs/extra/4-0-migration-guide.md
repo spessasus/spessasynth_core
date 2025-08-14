@@ -210,6 +210,7 @@ They behave in exactly the same way.
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+
 ### pitchWheel
 
 Now takes a single `pitch` 14-bit value instead of the confusing `MSB` and `LSB` parameters. Same with the `pitchWheel` event.
@@ -220,6 +221,11 @@ Now takes a single `pitch` 14-bit value instead of the confusing `MSB` and `LSB`
 `onChannelPropertyChange` has been replaced with an event `channelPropertyChange`.
 
 `onEventCall` now takes a single object as an argument. This is done to help with TypeScript type narrowing in switch statements.
+
+The event names have been capitalized with camelCase. So, for example `noteon` becomes `noteOn`.
+
+`allControllerReset` event no longer calls CC changes to default values. This was never intended as they are redundant when this controller exists.
+The default reset values can be accessed via the `defaultMIDIControllerValues` export. Locked controllers still get restored.
 
 ### Master parameters
 

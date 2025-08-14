@@ -1,5 +1,5 @@
 import { getEvent } from "../midi/midi_message";
-import { resetArray } from "../synthesizer/audio_engine/engine_components/controller_tables";
+import { defaultMIDIControllerValues } from "../synthesizer/audio_engine/engine_components/controller_tables";
 import { nonResettableCCs } from "../synthesizer/audio_engine/engine_methods/controller_control/reset_controllers";
 import {
     type MIDIController,
@@ -10,7 +10,7 @@ import type { SpessaSynthSequencer } from "./sequencer";
 import type { MIDITrack } from "../midi/midi_track";
 
 // An array with preset default values
-const defaultControllerArray = resetArray.slice(0, 128);
+const defaultControllerArray = defaultMIDIControllerValues.slice(0, 128);
 
 /**
  * Plays the MIDI file to a specific time or ticks.

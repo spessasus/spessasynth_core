@@ -85,10 +85,6 @@ export class MIDIChannel {
     public sysExModulators: DynamicModulatorSystem =
         new DynamicModulatorSystem();
     /**
-     * Indicates whether the sustain (hold) pedal is active.
-     */
-    public holdPedal = false;
-    /**
      * Indicates whether this channel is a drum channel.
      */
     public drumChannel = false;
@@ -163,9 +159,6 @@ export class MIDIChannel {
      * Grants access to protected synth values.
      */
     public synthProps: ProtectedSynthValues;
-
-    // Bind all methods to the instance
-    // (A hacky way to split the class into multiple files)
     // MIDI messages
     /**
      * Sends a "MIDI Note on" message and starts a note.
@@ -173,6 +166,9 @@ export class MIDIChannel {
      * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
      */
     public noteOn = noteOn.bind(this) as typeof noteOn;
+
+    // Bind all methods to the instance
+    // (A hacky way to split the class into multiple files)
     /**
      * Releases a note by its MIDI note number.
      * If the note is in high performance mode and the channel is not a drum channel,
@@ -197,7 +193,6 @@ export class MIDIChannel {
     public resetControllers = resetControllers.bind(
         this
     ) as typeof resetControllers;
-
     /**
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      * Reset controllers according to RP-15 Recommended Practice.
@@ -271,6 +266,14 @@ export class MIDIChannel {
         this.channelNumber = channelNumber;
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
+    }
+
+    /**
+     * Indicates whether the sustain (hold) pedal is active.
+     */
+    public get holdPedal() {
+        // 64 << 7 = 8192
+        return this.midiControllers[midiControllers.sustainPedal] >= 8192;
     }
 
     public get isXGChannel() {

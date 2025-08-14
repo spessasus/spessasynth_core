@@ -2,9 +2,9 @@ import { consoleColors } from "../../../../utils/other";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import {
     customResetArray,
+    defaultMIDIControllerValues,
     NON_CC_INDEX_OFFSET,
-    PORTAMENTO_CONTROL_UNSET,
-    resetArray
+    PORTAMENTO_CONTROL_UNSET
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
 import { getDefaultBank } from "../../../../utils/xg_hacks";
@@ -35,7 +35,8 @@ export function resetAllControllersInternal(
     ) {
         const ch: MIDIChannel = this.midiChannels[channelNumber];
 
-        ch.resetControllers();
+        // Do not send CC changes as we call allControllerReset
+        ch.resetControllers(false);
         // If preset is unlocked, switch to non-drums and call event
         if (
             !ch.lockPreset &&
@@ -138,15 +139,15 @@ export function resetAllControllersInternal(
  * This will reset all controllers to their default values,
  * except for the locked controllers.
  */
-export function resetControllers(this: MIDIChannel) {
+export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.channelOctaveTuning.fill(0);
 
     // Reset the array
-    for (let i = 0; i < resetArray.length; i++) {
+    for (let i = 0; i < defaultMIDIControllerValues.length; i++) {
         if (this.lockedControllers[i]) {
             continue;
         }
-        const resetValue = resetArray[i];
+        const resetValue = defaultMIDIControllerValues[i];
         if (this.midiControllers[i] !== resetValue && i < 127) {
             if (i === midiControllers.portamentoControl) {
                 this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
@@ -158,7 +159,11 @@ export function resetControllers(this: MIDIChannel) {
                 i !== midiControllers.NRPNMsb &&
                 i !== midiControllers.NRPNLsb
             ) {
-                this.controllerChange(i as MIDIController, resetValue >> 7);
+                this.controllerChange(
+                    i as MIDIController,
+                    resetValue >> 7,
+                    sendCCEvents
+                );
             }
         } else {
             // Out of range, do a regular reset
@@ -166,7 +171,6 @@ export function resetControllers(this: MIDIChannel) {
         }
     }
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
-    this.holdPedal = false;
     this.randomPan = false;
 
     this.sysExModulators.resetModulators();
@@ -218,7 +222,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
 
     for (let i = 0; i < 128; i++) {
-        const resetValue = resetArray[i];
+        const resetValue = defaultMIDIControllerValues[i];
         if (
             !nonResettableCCs.has(i as MIDIController) &&
             resetValue !== this.midiControllers[i]

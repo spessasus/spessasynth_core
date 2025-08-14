@@ -7,6 +7,7 @@ import { customControllers, dataEntryStates } from "../../../enums";
  * Handles MIDI controller changes for a channel.
  * @param controllerNumber The MIDI controller number (0-127).
  * @param controllerValue The value of the controller (0-127).
+ * @param sendEvent If an event should be emitted.
  * @remarks
  * This function processes MIDI controller changes, updating the channel's
  * midiControllers table and handling special cases like bank select,
@@ -19,7 +20,8 @@ import { customControllers, dataEntryStates } from "../../../enums";
 export function controllerChange(
     this: MIDIChannel,
     controllerNumber: MIDIController,
-    controllerValue: number
+    controllerValue: number,
+    sendEvent = true
 ) {
     if (controllerNumber > 127) {
         throw new Error("Invalid MIDI Controller.");
@@ -137,10 +139,7 @@ export function controllerChange(
                 break;
 
             case midiControllers.sustainPedal:
-                if (controllerValue >= 64) {
-                    this.holdPedal = true;
-                } else {
-                    this.holdPedal = false;
+                if (controllerValue < 64) {
                     this.sustainedVoices.forEach((v) => {
                         v.release(this.synth.currentSynthTime);
                     });
@@ -155,6 +154,9 @@ export function controllerChange(
                 );
                 break;
         }
+    }
+    if (!sendEvent) {
+        return;
     }
     this.synthProps.callEvent("controllerChange", {
         channel: this.channelNumber,
