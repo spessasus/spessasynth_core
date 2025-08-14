@@ -194,6 +194,9 @@ export class SpessaSynthProcessor {
         this.currentSynthTime = options.initialTime;
         this.sampleRate = sampleRate;
         this.sampleTime = 1 / sampleRate;
+        if (isNaN(options.initialTime) || isNaN(sampleRate)) {
+            throw new Error("Initial time or sample rate is NaN!");
+        }
 
         // Initialize the protected synth values
         this.privateProps = new ProtectedSynthValues(
