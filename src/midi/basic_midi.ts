@@ -93,10 +93,12 @@ export class BasicMIDI {
      * The file name of the MIDI sequence, if provided during parsing.
      */
     public fileName?: string;
+
     /**
      * The format of the MIDI file, which can be 0, 1, or 2, indicating the type of the MIDI file.
      */
     public format: MIDIFormat = 0;
+
     /**
      * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
      * Otherwise, this field is undefined.
@@ -104,27 +106,33 @@ export class BasicMIDI {
      * Note that text chunks contain a terminal zero byte.
      */
     public rmidiInfo: Partial<Record<RMIDInfoFourCC, IndexedByteArray>> = {};
+
     /**
      * The bank offset used for RMID files.
      */
     public bankOffset = 0;
+
     /**
      * If the MIDI file is a Soft Karaoke file (.kar), this flag is set to true.
      * https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
      */
     public isKaraokeFile = false;
+
     /**
      * Indicates if this file is a Multi-Port MIDI file.
      */
     public isMultiPort = false;
+
     /**
      * If the MIDI file is a DLS RMIDI file.
      */
     public isDLSRMIDI = false;
+
     /**
      * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
      */
     public embeddedSoundBank?: ArrayBuffer;
+
     /**
      * The raw, encoded MIDI name, represented as a Uint8Array.
      * Useful when the MIDI file uses a different code page.
@@ -403,6 +411,14 @@ export class BasicMIDI {
 
         // Copying arrays
         this.tempoChanges = [...mid.tempoChanges];
+        this.extraMetadata = mid.extraMetadata.map(
+            (m) =>
+                new MIDIMessage(
+                    m.ticks,
+                    m.statusByte,
+                    new IndexedByteArray(m.data)
+                )
+        );
         this.lyrics = mid.lyrics.map(
             (arr) =>
                 new MIDIMessage(
@@ -792,6 +808,9 @@ export class BasicMIDI {
         this.extraMetadata = this.extraMetadata.filter(
             (c) => c.data.length > 0
         );
+
+        // Sort lyrics (https://github.com/spessasus/spessasynth_core/issues/10)
+        this.lyrics.sort((a, b) => a.ticks - b.ticks);
 
         // If the first event is not at 0 ticks, add a track name
         // https://github.com/spessasus/SpessaSynth/issues/145
