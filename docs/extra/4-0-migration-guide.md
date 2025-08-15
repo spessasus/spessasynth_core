@@ -39,15 +39,35 @@ They behave in exactly the same way.
  - `embeddedSoundFont` -> `embeddedSoundBank`
  - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
+ - `modifyMIDI()` -> `modify()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
+ - `applySnapshotToMIDI()` -> `applySnapshot()`
+
+#### writeRMIDI
+
+Now takes a partial `options` object instead of separate optional arguments.
+
+Now returns `ArrayBuffer` instead of `Uint8Array`.
+
+#### writeMIDI
+
+Now returns `ArrayBuffer` instead of `Uint8Array`.
 
 #### midiName
 
-Renamed to `name`.
+Removed.
 
-If no name is found. It will no longer fall back to `fileName` but be empty instead.
+It was only decoded via `fromCharCode` (due to the requirement of AudioWorkletGlobalScope which does not have the TextDecoder),
+so it often resulted in broken names.
 
-To replicate the old behavior, consider `mid.name || mid.fileName`.
+`getName()` solves this issue and provides all the needed fallbacks (rawName, RMIDInfo and fileName). It's a direct replacement.
+
+#### copyright
+
+Removed in favor of `extraMetadata`. There isn't a consistent way to determine a copyright of a MIDI file as it's often stored in track names or markers.
+Extra metadata separates what copyright was: a stitched string of all meta events that were "interesting".
+
+Like with midiName, `getExtraMetadata()` decodes the text.
 
 #### tracks
 
@@ -72,11 +92,12 @@ Removed, replaced with `MIDITrack.channels`.
 
 #### rawMidiName
 
-Renamed to `rawName` and will now be undefined if a name is not found.
+Renamed to `binaryName` and will now be undefined if a name is not found.
+It is also protected. Use `getName` instead, which handles everything for you.
 
 ### midiNameUsesFileName
 
-Removed. You can compare `name === fileName` or check if `rawName` is undefined.
+Removed. You can compare `getName() === fileName`.
 
 ## Enums
 
@@ -88,12 +109,41 @@ Enum renamed to `midiMessageTypes`.
 
 Enum renamed to `rmidInfoChunks`.
 
+
+### interpolationTypes
+
+- `fourthOrder` -> `hermite`
+
+
+### synthDisplayTypes
+
+- `XGText` -> `yamahaXGText`
+- `SoundCanvasText` -> `soundCanvasText`
+- `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
+
 ## MIDI (Class)
 
 Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
 Drop-in replacement.
 
-## Sound bank
+
+## BasicSoundBank
+
+A few methods and properties have been renamed for consistency.
+They behave in exactly the same way.
+
+- `getDummySoundfontFile()` -> `getSampleSoundBankFile()`
+- `write()` -> `writeSF2()`
+
+### soundBankInfo
+
+Renamed from `soundFontInfo` to `soundBankInfo`.
+
+Overhaul: now mandatory fields are always required and naming has been changed from the confusing FourCCs to human-readable names such as `name` or `engineer`.
+
+`ifil` and `iver` are no longer strings. They are objects `version` and `romVersion` respectively. The objects contain `major` and `minor` version numbers instead of a stitched together `<major>.<minor>` string.
+
+Creation date is now a `Date`.
 
 ### loadSoundFont
 
@@ -155,14 +205,6 @@ Preset zones now _require_ an instrument.
 This means that
 `createZone()` now requires one argument: the instrument that belongs to that zone.
 
-### BasicSoundBank
-
-A few methods and properties have been renamed for consistency.
-They behave in exactly the same way.
-
-- `soundFontInfo` -> `soundBankInfo`
-- `getDummySoundfontFile()` -> `getSampleSoundBankFile()`
-
 ## SpessaSynthProcessor
 
 A few methods and properties have been renamed for consistency.
@@ -172,12 +214,22 @@ They behave in exactly the same way.
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+
+### pitchWheel
+
+Now takes a single `pitch` 14-bit value instead of the confusing `MSB` and `LSB` parameters. Same with the `pitchWheel` event.
+
 ### Events
 
 `onMasterParameterChange` has been replaced with an event `masterParameterChange`.
 `onChannelPropertyChange` has been replaced with an event `channelPropertyChange`.
 
 `onEventCall` now takes a single object as an argument. This is done to help with TypeScript type narrowing in switch statements.
+
+The event names have been capitalized with camelCase. So, for example `noteon` becomes `noteOn`.
+
+`allControllerReset` event no longer calls CC changes to default values. This was never intended as they are redundant when this controller exists.
+The default reset values can be accessed via the `defaultMIDIControllerValues` export. Locked controllers still get restored.
 
 ### Master parameters
 
@@ -221,10 +273,18 @@ They behave in exactly the same way.
 - `rearrangeSoundFonts` -> `priorityOrder` (setter)
 - `getPresetList` -> `presetList` (getter)
 
+#### presetList
+
+`presetName` -> `name`
+
 #### reloadManager
 
 Removed. `addSoundBank` can be used to replace an existing one.
 `reloadManager` could cause issues with embedded sound banks.
+
+### channel configuration
+
+Removed. It only had one property (velocity override) which can be implemented via key modifiers.
 
 ### Synthesizer Snapshot
 
@@ -271,3 +331,7 @@ Note that this method also only takes a single object to help with TypeScript ty
 ## SpessaSynthLogging
 
 The parameter `table` has been removed as the `console.table` command is not used.
+
+## AudioToWav
+
+Now takes an `options` object instead of separate optional parameters.
