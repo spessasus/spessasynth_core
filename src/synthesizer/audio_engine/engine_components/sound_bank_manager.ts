@@ -1,4 +1,4 @@
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
+import { SpessaSynthWarn } from "../../../utils/loggin";
 import { isXGDrums } from "../../../utils/xg_hacks";
 
 import type { SoundBankManagerListEntry } from "../../../soundbank/types";
@@ -63,10 +63,7 @@ export class SoundBankManager {
         }
         const index = this.soundBankList.findIndex((s) => s.id === id);
         if (index === -1) {
-            SpessaSynthInfo(
-                `No sound bank with id of "${id}" found. Aborting!`
-            );
-            return;
+            throw new Error(`No sound bank with id "${id}"`);
         }
         this.soundBankList.splice(index, 1);
         this.generatePresetList();

@@ -55,16 +55,19 @@ Now returns `ArrayBuffer` instead of `Uint8Array`.
 
 #### midiName
 
-Renamed to `name`.
+Removed.
 
-If no name is found. It will no longer fall back to `fileName` but be empty instead.
+It was only decoded via `fromCharCode` (due to the requirement of AudioWorkletGlobalScope which does not have the TextDecoder),
+so it often resulted in broken names.
 
-To replicate the old behavior, consider `mid.name || mid.fileName`.
+`getName()` solves this issue and provides all the needed fallbacks (rawName, RMIDInfo and fileName). It's a direct replacement.
 
 #### copyright
 
 Removed in favor of `extraMetadata`. There isn't a consistent way to determine a copyright of a MIDI file as it's often stored in track names or markers.
 Extra metadata separates what copyright was: a stitched string of all meta events that were "interesting".
+
+Like with midiName, `getExtraMetadata()` decodes the text.
 
 #### tracks
 
@@ -89,11 +92,12 @@ Removed, replaced with `MIDITrack.channels`.
 
 #### rawMidiName
 
-Renamed to `rawName` and will now be undefined if a name is not found.
+Renamed to `binaryName` and will now be undefined if a name is not found.
+It is also protected. Use `getName` instead, which handles everything for you.
 
 ### midiNameUsesFileName
 
-Removed. You can compare `name === fileName` or check if `rawName` is undefined.
+Removed. You can compare `getName() === fileName`.
 
 ## Enums
 

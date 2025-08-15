@@ -19,7 +19,7 @@ export class MIDIBuilder extends BasicMIDI {
     public constructor(name: string, timeDivision = 480, initialTempo = 120) {
         super();
         this.timeDivision = timeDivision;
-        this.name = name;
+        this.binaryName = this.encoder.encode(name);
 
         // Create the first track with the file name
         this.addNewTrack(name);

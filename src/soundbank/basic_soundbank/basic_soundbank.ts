@@ -476,11 +476,7 @@ export class BasicSoundBank {
         }
         this.removeUnusedElements();
 
-        this.soundBankInfo.comment =
-            `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.name}"\n\n` +
-            this.soundBankInfo.comment;
-
-        SpessaSynthInfo("%cSoundfont modified!", consoleColors.recognized);
+        SpessaSynthInfo("%cSound bank modified!", consoleColors.recognized);
         SpessaSynthGroupEnd();
         SpessaSynthGroupEnd();
     }

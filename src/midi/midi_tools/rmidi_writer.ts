@@ -432,16 +432,8 @@ export function writeRMIDIInternal(
         );
         encoding = FORCED_ENCODING;
     } else {
-        if (mid.rawName) {
-            infoContent.push(
-                writeRIFFChunkRaw(rmidInfoChunks.name, mid.rawName, true)
-            );
-        } else {
-            const bytes = encoder.encode(mid.name);
-            infoContent.push(
-                writeRIFFChunkRaw(rmidInfoChunks.name, bytes, true)
-            );
-        }
+        const bytes = encoder.encode(mid.getName());
+        infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.name, bytes, true));
     }
     // Creation date
     if (metadata.creationDate) {

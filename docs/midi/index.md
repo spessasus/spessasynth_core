@@ -50,7 +50,7 @@ console.log(`This sequence is named "${parsedMIDI.name}"`);
 
 !!! Tip
 
-    This property uses basic decoding. If the name is encoded in a different encoding, like shift_jis, it might be better to use rawName.
+    This property uses basic decoding. If the name is encoded in a different encoding, like shift_jis, it might be better to use binaryName.
 
 ### fileName
 
@@ -60,12 +60,12 @@ The name of the MIDI file if provided during the initialization.
 
 A `boolean` indicating if the MIDI name is the same as file name, therefore there's no need to decode it.
 
-### rawName
+### binaryName
 
 The sequence's name, as a raw `Uint8Array`. Useful for handling unusual encodings.
 
 ```ts
-console.log(new TextDecoder("shift-jis").decode(parsedMIDI.rawName)); // ダメなりんご！！
+console.log(new TextDecoder("shift-jis").decode(parsedMIDI.binaryName)); // ダメなりんご！！
 ```
 
 ### copyright

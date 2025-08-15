@@ -6,7 +6,7 @@ import { readRIFFChunk } from "../utils/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readBinaryString, readBinaryStringIndexed } from "../utils/byte_functions/string";
-import { readLittleEndianIndexed } from "../utils/byte_functions/little_endian";
+import { readLittleEndian } from "../utils/byte_functions/little_endian";
 import { type MIDIMessageType, type RMIDInfoFourCC } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
@@ -157,7 +157,7 @@ export function loadMIDIFromArrayBufferInternal(
 
                     outputMIDI.bankOffset = 1; // Defaults to 1
                     if (outputMIDI.rmidiInfo.DBNK) {
-                        outputMIDI.bankOffset = readLittleEndianIndexed(
+                        outputMIDI.bankOffset = readLittleEndian(
                             outputMIDI.rmidiInfo.DBNK,
                             2
                         );
