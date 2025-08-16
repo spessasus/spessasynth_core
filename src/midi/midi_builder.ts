@@ -3,6 +3,36 @@ import { MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { type MIDIMessageType, midiMessageTypes } from "./enums";
 import { MIDITrack } from "./midi_track";
+import type { MIDIFormat } from "./types";
+import { fillWithDefaults } from "../utils/fill_with_defaults";
+
+interface MIDIBuilderOptions {
+    /**
+     * The MIDI file's tick precision (how many ticks fit in a quarter note).
+     */
+    timeDivision: number;
+    /**
+     * The MIDI file's initial tempo in BPM.
+     */
+    initialTempo: number;
+
+    /**
+     * The MIDI file's MIDI track format.
+     */
+    format: MIDIFormat;
+
+    /**
+     * The MIDI file's name. Will be appended to the conductor track.
+     */
+    name: string;
+}
+
+const DEFAULT_MIDI_BUILDER_OPTIONS: MIDIBuilderOptions = {
+    name: "Untitled song",
+    timeDivision: 480,
+    initialTempo: 120,
+    format: 0
+};
 
 /**
  * A class that helps to build a MIDI file from scratch.
@@ -12,18 +42,30 @@ export class MIDIBuilder extends BasicMIDI {
 
     /**
      * Creates a new MIDI file.
-     * @param name The MIDI's name.
-     * @param timeDivision the file's time division (ticks per quarter note).
-     * @param initialTempo the file's initial tempo.
+     * @param options The options for writing the file.
      */
-    public constructor(name: string, timeDivision = 480, initialTempo = 120) {
+    public constructor(
+        options: Partial<MIDIBuilderOptions> = DEFAULT_MIDI_BUILDER_OPTIONS
+    ) {
         super();
-        this.timeDivision = timeDivision;
-        this.binaryName = this.encoder.encode(name);
+        this.rmidiInfo.MENC = this.encoder.encode(
+            "utf-8"
+        ) as Uint8Array<ArrayBuffer>;
+        const fullOptions = fillWithDefaults(
+            options,
+            DEFAULT_MIDI_BUILDER_OPTIONS
+        );
+        if (fullOptions.format === 2) {
+            throw new Error(
+                "MIDI format 2 is not supported in the MIDI builder. Consider using format 1."
+            );
+        }
+        this.timeDivision = fullOptions.format;
+        this.binaryName = this.encoder.encode(fullOptions.name);
 
-        // Create the first track with the file name
-        this.addNewTrack(name);
-        this.addSetTempo(0, initialTempo);
+        // Create the first (conductor) track with the file name
+        this.addNewTrack(fullOptions.name);
+        this.addSetTempo(0, fullOptions.initialTempo);
     }
 
     /**
@@ -50,8 +92,10 @@ export class MIDIBuilder extends BasicMIDI {
      * @param port the new track's port.
      */
     public addNewTrack(name: string, port = 0) {
-        if (this.tracks.length > 1) {
-            this.format = 1;
+        if (this.format === 0 && this.tracks.length > 0) {
+            throw new Error(
+                "Can't add more tracks to MIDI format 0. Consider using format 1."
+            );
         }
         const track = new MIDITrack();
         track.name = name;
@@ -85,6 +129,21 @@ export class MIDIBuilder extends BasicMIDI {
             throw new Error(
                 `Track ${track} does not exist. Add it via addTrack method.`
             );
+        }
+        if (event < midiMessageTypes.noteOff) {
+            // Meta event
+            if (track > 0) {
+                throw new Error(
+                    `Meta events must be added to the first track, not track ${track}.`
+                );
+            }
+        } else {
+            // Voice event
+            if (this.format === 1 && track === 0) {
+                throw new Error(
+                    "Can't add voice messages to the conductor track (0) in format 1. Consider using format 0 using a different track."
+                );
+            }
         }
         this.tracks[track].pushEvent(
             new MIDIMessage(ticks, event, new IndexedByteArray(eventData))

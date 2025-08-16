@@ -95,9 +95,14 @@ Removed, replaced with `MIDITrack.channels`.
 Renamed to `binaryName` and will now be undefined if a name is not found.
 It is also protected. Use `getName` instead, which handles everything for you.
 
-### midiNameUsesFileName
+#### midiNameUsesFileName
 
 Removed. You can compare `getName() === fileName`.
+
+### MIDIBuilder
+
+Now takes an optional `options` object instead of separate option arguments.
+It also enforces correct MIDI formats 0 and 1.
 
 ## Enums
 

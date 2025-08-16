@@ -105,7 +105,8 @@ export class BasicMIDI {
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
      * Note that text chunks contain a terminal zero byte.
      */
-    public rmidiInfo: Partial<Record<RMIDInfoFourCC, IndexedByteArray>> = {};
+    public rmidiInfo: Partial<Record<RMIDInfoFourCC, Uint8Array<ArrayBuffer>>> =
+        {};
 
     /**
      * The bank offset used for RMID files.
@@ -148,9 +149,9 @@ export class BasicMIDI {
         if (!encodingInfo) {
             return undefined;
         }
-        let lengthToRead = encodingInfo.length;
+        let lengthToRead = encodingInfo.byteLength;
         // Some files don't have a terminal zero
-        if (encodingInfo[encodingInfo.length - 1] === 0) {
+        if (encodingInfo[encodingInfo.byteLength - 1] === 0) {
             lengthToRead--;
         }
         return readBinaryString(encodingInfo, lengthToRead);
