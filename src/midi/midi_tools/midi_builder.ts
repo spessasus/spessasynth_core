@@ -1,10 +1,10 @@
-import { BasicMIDI } from "./basic_midi";
-import { MIDIMessage } from "./midi_message";
-import { IndexedByteArray } from "../utils/indexed_array";
-import { type MIDIMessageType, midiMessageTypes } from "./enums";
-import { MIDITrack } from "./midi_track";
-import type { MIDIFormat } from "./types";
-import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { BasicMIDI } from "../basic_midi";
+import { MIDIMessage } from "../midi_message";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { type MIDIMessageType, midiMessageTypes } from "../enums";
+import { MIDITrack } from "../midi_track";
+import type { MIDIFormat } from "../types";
+import { fillWithDefaults } from "../../utils/fill_with_defaults";
 
 interface MIDIBuilderOptions {
     /**

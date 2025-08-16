@@ -20,11 +20,16 @@ export class MIDITrack {
     public events: Omit<MIDIMessage[], "push" | "splice"> = [];
 
     public static copyFrom(track: MIDITrack) {
-        const newTrack = new MIDITrack();
-        newTrack.name = track.name;
-        newTrack.port = track.port;
-        newTrack.channels = new Set(track.channels);
-        newTrack.events = track.events.map(
+        const t = new MIDITrack();
+        t.copyFrom(track);
+        return t;
+    }
+
+    public copyFrom(track: MIDITrack) {
+        this.name = track.name;
+        this.port = track.port;
+        this.channels = new Set(track.channels);
+        this.events = track.events.map(
             (e) =>
                 new MIDIMessage(
                     e.ticks,
@@ -32,7 +37,6 @@ export class MIDITrack {
                     new IndexedByteArray(e.data)
                 )
         );
-        return newTrack;
     }
 
     /**

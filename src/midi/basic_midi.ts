@@ -190,13 +190,21 @@ export class BasicMIDI {
      * @param mid The MIDI to copy.
      * @returns The copied MIDI.
      */
-    public static copyFrom(mid: BasicMIDI): BasicMIDI {
+    public static copyFrom(mid: BasicMIDI) {
         const m = new BasicMIDI();
-        m.copyMetadataFrom(mid);
-
-        m.embeddedSoundBank = mid?.embeddedSoundBank?.slice(0) ?? undefined; // Deep copy
-        m.tracks = mid.tracks.map((track) => MIDITrack.copyFrom(track)); // Deep copy of each track array
+        m.copyFrom(mid);
         return m;
+    }
+
+    /**
+     * Copies a MIDI.
+     * @param mid The MIDI to copy.
+     */
+    public copyFrom(mid: BasicMIDI) {
+        this.copyMetadataFrom(mid);
+
+        this.embeddedSoundBank = mid?.embeddedSoundBank?.slice(0) ?? undefined; // Deep copy
+        this.tracks = mid.tracks.map((track) => MIDITrack.copyFrom(track)); // Deep copy of each track array
     }
 
     /**
@@ -349,6 +357,7 @@ export class BasicMIDI {
         return rawName || this.fileName;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Gets the decoded extra metadata as text and removes any unneeded characters (such as "@T" for karaoke files)
      * @param encoding The encoding to use if the MIDI uses an extended code page.
