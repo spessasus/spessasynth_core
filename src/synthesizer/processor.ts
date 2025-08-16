@@ -298,7 +298,6 @@ export class SpessaSynthProcessor {
         for (const channel of this.midiChannels) {
             channel.stopAllNotes(force);
         }
-        this.privateProps.callEvent("stopAll", undefined);
     }
 
     // noinspection JSUnusedGlobalSymbols

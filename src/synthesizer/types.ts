@@ -118,6 +118,18 @@ export interface PolyPressureCallback {
  */
 export type SoundBankErrorCallback = Error;
 
+export interface StopAllCallback {
+    /**
+     * The MIDI channel number.
+     */
+    channel: number;
+
+    /**
+     * If the channel was force stopped. (no release time)
+     */
+    force: boolean;
+}
+
 export type MasterParameterChangeCallback = {
     [P in keyof MasterParameterType]: {
         /**
@@ -176,9 +188,9 @@ export interface SynthProcessorEventData {
      */
     drumChange: DrumChangeCallback;
     /**
-     * This event fires when all notes on a channel are stopped. There is no data for this event.
+     * This event fires when all notes on a channel are stopped.
      */
-    stopAll: void;
+    stopAll: StopAllCallback;
     /**
      * This event fires when a new channel is created. There is no data for this event.
      */

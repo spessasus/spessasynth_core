@@ -236,6 +236,8 @@ The event names have been capitalized with camelCase. So, for example `noteon` b
 `allControllerReset` event no longer calls CC changes to default values. This was never intended as they are redundant when this controller exists.
 The default reset values can be accessed via the `defaultMIDIControllerValues` export. Locked controllers still get restored.
 
+`stopAll` now specifies a channel number.
+
 ### Master parameters
 
 

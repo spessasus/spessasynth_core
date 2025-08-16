@@ -301,8 +301,8 @@ export class MIDIChannel {
             return;
         }
         if (keyShift !== this.channelTransposeKeyShift) {
-            // Stop all (and emit cc change)
-            this.controllerChange(midiControllers.allNotesOff, 127);
+            // Stop all
+            this.stopAllNotes();
         }
         // Apply transpose
         this.channelTransposeKeyShift = keyShift;
@@ -679,6 +679,10 @@ export class MIDIChannel {
                 v.release(this.synth.currentSynthTime);
             });
         }
+        this.synthProps.callEvent("stopAll", {
+            channel: this.channelNumber,
+            force
+        });
     }
 
     public muteChannel(isMuted: boolean) {
