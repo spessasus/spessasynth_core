@@ -7,8 +7,7 @@ import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
+    SpessaSynthInfo
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import {
@@ -124,7 +123,10 @@ export function readDLSSamples(
                 sampleLoopEnd = sampleLoopStart + loopSize;
             }
         } else {
-            SpessaSynthWarn("No wsmp chunk in wave... using sane defaults.");
+            SpessaSynthInfo(
+                "%cNo wsmp chunk in wave... using sane defaults.",
+                consoleColors.warn
+            );
         }
 
         this.addSamples(

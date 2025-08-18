@@ -87,10 +87,9 @@ export function readRIFFChunk(
     }
     if (readData || forceShift) {
         dataArray.currentIndex += size;
-    }
-
-    if (size % 2 !== 0) {
-        dataArray.currentIndex++;
+        if (size % 2 !== 0) {
+            dataArray.currentIndex++;
+        }
     }
 
     return new RIFFChunk(header, size, chunkData);
