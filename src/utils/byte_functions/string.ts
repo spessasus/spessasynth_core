@@ -5,28 +5,20 @@ import { IndexedByteArray } from "../indexed_array";
  * @param dataArray the array to read from.
  * @param bytes the amount of bytes to read.
  * @param offset the offset in the array to start reading from.
- * @param trimEnd if we should trim once we reach an invalid byte.
  * @returns the string.
  */
 export function readBinaryString(
-    dataArray: number[] | ArrayLike<number>,
+    dataArray: ArrayLike<number>,
     bytes = dataArray.length,
-    offset = 0,
-    trimEnd = true
+    offset = 0
 ) {
     let string = "";
     for (let i = 0; i < bytes; i++) {
         const byte = dataArray[offset + i];
-        if ((byte < 32 || byte > 127) && byte !== 10) {
-            // 10 is "\n"
-            if (trimEnd) {
-                return string;
-            } else {
-                if (byte === 0) {
-                    return string;
-                }
-            }
+        if (byte === 0) {
+            return string;
         }
+
         string += String.fromCharCode(byte);
     }
     return string;
@@ -36,17 +28,15 @@ export function readBinaryString(
  * Reads bytes as an ASCII string from an IndexedByteArray.
  * @param dataArray the IndexedByteArray to read from.
  * @param bytes the amount of bytes to read.
- * @param trimEnd if we should trim once we reach an invalid byte.
  * @returns the string.
  */
 export function readBinaryStringIndexed(
     dataArray: IndexedByteArray,
-    bytes: number,
-    trimEnd = true
+    bytes: number
 ) {
     const startIndex = dataArray.currentIndex;
     dataArray.currentIndex += bytes;
-    return readBinaryString(dataArray, bytes, startIndex, trimEnd);
+    return readBinaryString(dataArray, bytes, startIndex);
 }
 
 /**

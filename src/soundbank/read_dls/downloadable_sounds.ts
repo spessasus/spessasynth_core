@@ -65,8 +65,7 @@ class DownloadableSounds extends BasicSoundBank {
                 const headerTyped = infoPart.header as DLSInfoFourCC;
                 const text = readBinaryStringIndexed(
                     infoPart.data,
-                    infoPart.size,
-                    false
+                    infoPart.size
                 );
                 switch (headerTyped) {
                     case "INAM":

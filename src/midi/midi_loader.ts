@@ -75,7 +75,7 @@ export function loadMIDIFromArrayBufferInternal(
         // Possibly an RMID file (https://github.com/spessasus/sf2-rmidi-specification#readme)
         // Skip size
         binaryData.currentIndex += 8;
-        const rmid = readBinaryStringIndexed(binaryData, 4, false);
+        const rmid = readBinaryStringIndexed(binaryData, 4);
         if (rmid !== "RMID") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(

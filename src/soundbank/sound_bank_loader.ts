@@ -13,7 +13,7 @@ export class SoundBankLoader {
     public static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
         const check = buffer.slice(8, 12);
         const a = new IndexedByteArray(check);
-        const id = readBinaryStringIndexed(a, 4, false).toLowerCase();
+        const id = readBinaryStringIndexed(a, 4).toLowerCase();
         if (id === "dls ") {
             return new DownloadableSounds(buffer);
         }
