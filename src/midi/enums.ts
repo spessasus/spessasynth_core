@@ -174,23 +174,3 @@ export const midiControllers = {
 
 export type MIDIController =
     (typeof midiControllers)[keyof typeof midiControllers];
-
-export const rmidInfoChunks = {
-    name: "INAM",
-    album: "IPRD",
-    artist: "IART",
-    genre: "IGNR",
-    picture: "IPIC",
-    copyright: "ICOP",
-    creationDate: "ICRD",
-    comment: "ICMT",
-    engineer: "IENG",
-    software: "ISFT",
-    subject: "ISBJ",
-    encoding: "IENC",
-    midiEncoding: "MENC",
-    bankOffset: "DBNK"
-} as const;
-
-export type RMIDInfoFourCC =
-    (typeof rmidInfoChunks)[keyof typeof rmidInfoChunks];

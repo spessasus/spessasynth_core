@@ -17,6 +17,12 @@ This is done because spessasynth can load sound bank formats other than SoundFon
 
 ## MIDI
 
+
+### MIDI (Class)
+
+Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
+Drop-in replacement.
+
 ### MIDISequenceData
 
 Removed, BasicMIDI now contains all data.
@@ -37,11 +43,20 @@ They behave in exactly the same way.
 
 
  - `embeddedSoundFont` -> `embeddedSoundBank`
- - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
  - `modifyMIDI()` -> `modify()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
  - `applySnapshotToMIDI()` -> `applySnapshot()`
+
+####  RMIDInfo
+
+Renamed to `rmidiInfo`.
+
+Like `soundBankInfo`, the object's property names are no longer the fourCCs, but human-readable names.
+
+However, they still are stored as `Uint8Array`s due to possibly unknown encodings.
+
+Use `getRMIDInfo` or `setRMIDInfo` to get the decoded JS objects.
 
 #### writeRMIDI
 
@@ -112,7 +127,7 @@ Enum renamed to `midiMessageTypes`.
 
 ### RMIDINFOChunks
 
-Enum renamed to `rmidInfoChunks`.
+Enum removed due to the `rmidInfo` object being reworked.
 
 
 ### interpolationTypes
@@ -125,11 +140,6 @@ Enum renamed to `rmidInfoChunks`.
 - `XGText` -> `yamahaXGText`
 - `SoundCanvasText` -> `soundCanvasText`
 - `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
-
-## MIDI (Class)
-
-Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
-Drop-in replacement.
 
 
 ## BasicSoundBank

@@ -48,9 +48,7 @@ export class MIDIBuilder extends BasicMIDI {
         options: Partial<MIDIBuilderOptions> = DEFAULT_MIDI_BUILDER_OPTIONS
     ) {
         super();
-        this.rmidiInfo.MENC = this.encoder.encode(
-            "utf-8"
-        ) as Uint8Array<ArrayBuffer>;
+        this.setRMIDInfo("midiEncoding", "utf-8");
         const fullOptions = fillWithDefaults(
             options,
             DEFAULT_MIDI_BUILDER_OPTIONS

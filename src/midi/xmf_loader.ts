@@ -11,10 +11,10 @@ import {
 import { consoleColors } from "../utils/other";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
-import { rmidInfoChunks, type RMIDInfoFourCC } from "./enums";
 import { inflateSync } from "../externals/fflate/fflate_wrapper";
 import { IndexedByteArray } from "../utils/indexed_array";
 import type { BasicMIDI } from "./basic_midi";
+import type { RMIDInfoData } from "./types";
 
 const metadataTypes = {
     XMFFileType: 0,
@@ -417,7 +417,10 @@ export function loadXMF(
      * Find the stuff we care about
      */
     const searchNode = (node: XMFNode) => {
-        const checkMeta = (xmf: string, rmid: RMIDInfoFourCC) => {
+        const checkMeta = (
+            xmf: string,
+            rmid: keyof Omit<RMIDInfoData, "picture" | "creationDate">
+        ) => {
             if (
                 node.metadata[xmf] !== undefined &&
                 typeof node.metadata[xmf] === "string"
@@ -426,10 +429,10 @@ export function loadXMF(
             }
         };
         // Meta
-        checkMeta("nodeName", rmidInfoChunks.name);
-        checkMeta("title", rmidInfoChunks.name);
-        checkMeta("copyrightNotice", rmidInfoChunks.copyright);
-        checkMeta("comment", rmidInfoChunks.comment);
+        checkMeta("nodeName", "name");
+        checkMeta("title", "name");
+        checkMeta("copyrightNotice", "copyright");
+        checkMeta("comment", "comment");
         if (node.isFile) {
             switch (node.resourceFormat) {
                 default:

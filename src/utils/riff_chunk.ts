@@ -15,7 +15,8 @@ import type {
     SF2InfoFourCC,
     SoundBankInfoFourCC
 } from "../soundbank/types";
-import type { RMIDInfoFourCC } from "../midi/enums";
+
+import type { RMIDInfoFourCC } from "../midi/types";
 
 export type GenericRIFFFourCC = "RIFF" | "LIST" | "INFO";
 export type WAVFourCC = "wave" | "cue " | "fmt ";
@@ -27,9 +28,7 @@ export type FourCC =
     | DLSInfoFourCC
     | DLSChunkFourCC
     | RMIDInfoFourCC
-    | WAVFourCC
-    // IALB is technically valid to write but spessasynth uses IPRD.
-    | "IALB";
+    | WAVFourCC;
 
 /**
  * Riff_chunk.ts

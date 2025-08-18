@@ -2,35 +2,19 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../utils/riff_chunk";
 import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
-import {
-    isGM2On,
-    isGMOn,
-    isGSDrumsOn,
-    isGSOn,
-    isXGOn
-} from "../../utils/sysex_detector";
-import {
-    midiControllers,
-    type MIDIMessageType,
-    midiMessageTypes,
-    rmidInfoChunks
-} from "../enums";
+import { isGM2On, isGMOn, isGSDrumsOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
+import { midiControllers, type MIDIMessageType, midiMessageTypes } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
-import type { RMIDIWriteOptions } from "../types";
+import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import { getGsOn } from "./get_gs_on";
 import type { SynthSystem } from "../../synthesizer/types";
 
-const FORCED_ENCODING = "utf-8";
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
 function correctBankOffsetInternal(
@@ -375,10 +359,7 @@ function correctBankOffsetInternal(
 
 export const DEFAULT_RMIDI_WRITE_OPTIONS: RMIDIWriteOptions = {
     bankOffset: 0,
-    encoding: "Shift_JIS",
-    metadata: {
-        midiEncoding: "Shift_JIS"
-    },
+    metadata: {},
     correctBankOffset: true,
     soundBank: undefined
 };
@@ -396,7 +377,6 @@ export function writeRMIDIInternal(
     options: RMIDIWriteOptions
 ): ArrayBuffer {
     const metadata = options.metadata;
-    let encoding = options.encoding;
     SpessaSynthGroup("%cWriting the RMIDI File...", consoleColors.info);
     SpessaSynthInfo("metadata", metadata);
     SpessaSynthInfo("Initial bank offset", mid.bankOffset);
@@ -410,158 +390,92 @@ export function writeRMIDIInternal(
     }
     const newMid = new IndexedByteArray(mid.writeMIDI());
 
+    // Apply metadata
+    metadata.name ??= mid.getName();
+    metadata.creationDate ??= new Date();
+    metadata.copyright ??= DEFAULT_COPYRIGHT;
+    metadata.software ??= "SpessaSynth";
+
+    Object.entries(metadata).forEach(
+        <K extends keyof RMIDInfoData>(v: unknown[]) => {
+            const val = v as [K, RMIDInfoData[K]];
+            if (val[1]) {
+                mid.setRMIDInfo(val[0], val[1]);
+            }
+        }
+    );
+
     // Info data for RMID
     const infoContent: Uint8Array[] = [];
-    const encoder = new TextEncoder();
-    // Software (SpessaSynth)
-    infoContent.push(
-        writeRIFFChunkRaw(
-            rmidInfoChunks.software,
-            encoder.encode("SpessaSynth"),
-            true
-        )
-    );
-    // Name
-    if (metadata.name) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.name,
-                encoder.encode(metadata.name),
-                true
-            )
-        );
-        encoding = FORCED_ENCODING;
-    } else {
-        const bytes = encoder.encode(mid.getName());
-        infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.name, bytes, true));
-    }
-    // Creation date
-    if (metadata.creationDate) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.creationDate,
-                encoder.encode(metadata.creationDate),
-                true
-            )
-        );
-    } else {
-        const today = new Date().toISOString();
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.creationDate,
-                getStringBytes(today, true),
-                true
-            )
-        );
-    }
-    // Comment
-    if (metadata.comment) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.comment,
-                encoder.encode(metadata.comment)
-            )
-        );
-    }
-    // Engineer
-    if (metadata.engineer) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.engineer,
-                encoder.encode(metadata.engineer),
-                true
-            )
-        );
-    }
-    // Album
-    if (metadata.album) {
-        // Note that there are two album chunks: IPRD and IALB
-        // Spessasynth uses IPRD, but writes both
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.album,
-                encoder.encode(metadata.album),
-                true
-            )
-        );
-        infoContent.push(
-            writeRIFFChunkRaw("IALB", encoder.encode(metadata.album), true)
-        );
-    }
-    // Artist
-    if (metadata.artist) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.artist,
-                encoder.encode(metadata.artist),
-                true
-            )
-        );
-    }
-    // Genre
-    if (metadata.genre) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.genre,
-                encoder.encode(metadata.genre),
-                true
-            )
-        );
-    }
-    // Picture
-    if (metadata.picture) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.picture,
-                new Uint8Array(metadata.picture)
-            )
-        );
-    }
-    // Copyright
-    if (metadata.copyright) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.copyright,
-                encoder.encode(metadata.copyright),
-                true
-            )
-        );
-    } else {
-        // Use midi copyright if possible
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.copyright,
-                mid.rmidiInfo.ICOP ?? getStringBytes(DEFAULT_COPYRIGHT, true)
-            )
-        );
-    }
+
+    Object.entries(mid.rmidiInfo).forEach((v) => {
+        const type = v[0] as keyof RMIDInfoData;
+        const data = v[1];
+        const writeInfo = (type: RMIDInfoFourCC) => {
+            infoContent.push(writeRIFFChunkRaw(type, data));
+        };
+        switch (type) {
+            case "album":
+                // Note that there are two album chunks: IPRD and IALB
+                // Spessasynth uses IPRD, but writes both
+                writeInfo("IALB");
+                writeInfo("IPRD");
+                break;
+
+            case "software":
+                writeInfo("ISFT");
+                break;
+
+            case "infoEncoding":
+                writeInfo("IENC");
+                break;
+
+            case "creationDate":
+                writeInfo("ICRD");
+                break;
+
+            case "picture":
+                writeInfo("IPIC");
+                break;
+
+            case "name":
+                writeInfo("INAM");
+                break;
+
+            case "artist":
+                writeInfo("IART");
+                break;
+
+            case "genre":
+                writeInfo("IGNR");
+                break;
+
+            case "copyright":
+                writeInfo("ICOP");
+                break;
+
+            case "comment":
+                writeInfo("ICMT");
+                break;
+
+            case "engineer":
+                writeInfo("IENG");
+                break;
+
+            case "subject":
+                writeInfo("ISBJ");
+                break;
+
+            case "midiEncoding":
+                writeInfo("MENC");
+                break;
+        }
+    });
 
     // Bank offset
     const DBNK = new IndexedByteArray(2);
     writeLittleEndianIndexed(DBNK, options.bankOffset, 2);
-    infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.bankOffset, DBNK));
-    // Midi encoding
-    if (metadata.midiEncoding !== undefined) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.midiEncoding,
-                encoder.encode(metadata.midiEncoding)
-            )
-        );
-    }
-    // Encoding
-    infoContent.push(
-        writeRIFFChunkRaw(
-            rmidInfoChunks.encoding,
-            getStringBytes(encoding, true)
-        )
-    );
+    infoContent.push(writeRIFFChunkRaw("DBNK", DBNK));
 
     // Combine and write out
     SpessaSynthInfo("%cFinished!", consoleColors.info);

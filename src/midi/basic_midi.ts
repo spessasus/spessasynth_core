@@ -1,4 +1,4 @@
-import { readBinaryString } from "../utils/byte_functions/string";
+import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
@@ -16,6 +16,7 @@ import type {
     MIDIFormat,
     MIDILoop,
     NoteTime,
+    RMIDInfoData,
     RMIDIWriteOptions,
     TempoChange
 } from "./types";
@@ -23,10 +24,11 @@ import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_edi
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
-import { midiMessageTypes, rmidInfoChunks, type RMIDInfoFourCC } from "./enums";
+import { midiMessageTypes } from "./enums";
 import type { KeyRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { parseDateString } from "../utils/load_date";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -105,8 +107,9 @@ export class BasicMIDI {
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
      * Note that text chunks contain a terminal zero byte.
      */
-    public rmidiInfo: Partial<Record<RMIDInfoFourCC, Uint8Array<ArrayBuffer>>> =
-        {};
+    public rmidiInfo: Partial<
+        Record<keyof RMIDInfoData, Uint8Array<ArrayBuffer>>
+    > = {};
 
     /**
      * The bank offset used for RMID files.
@@ -142,10 +145,10 @@ export class BasicMIDI {
     protected binaryName?: Uint8Array;
 
     /**
-     * The encoding of the MIDI file, if specified.
+     * The encoding of the RMIDI info in file, if specified.
      */
-    public get encoding() {
-        const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
+    public get infoEncoding() {
+        const encodingInfo = this.rmidiInfo.infoEncoding;
         if (!encodingInfo) {
             return undefined;
         }
@@ -338,12 +341,12 @@ export class BasicMIDI {
      */
     public getName(encoding = "Shift_JIS") {
         let rawName = "";
-        const n = this.getRMIDInfo("INAM");
+        const n = this.getRMIDInfo("name");
         if (n) {
             return n.trim();
         }
         if (this.binaryName) {
-            encoding = this.encoding ?? encoding;
+            encoding = this.getRMIDInfo("midiEncoding") ?? encoding;
             try {
                 const decoder = new TextDecoder(encoding);
                 // Trim since "                                                                "
@@ -366,12 +369,40 @@ export class BasicMIDI {
      * RMIDI encoding overrides the provided encoding.
      */
     public getExtraMetadata(encoding = "Shift_JIS") {
-        encoding = this.encoding ?? encoding;
+        encoding = this.infoEncoding ?? encoding;
         const decoder = new TextDecoder(encoding);
         return this.extraMetadata.map((d) => {
             const decoded = decoder.decode(d.data);
             return decoded.replace(/@T|@A/g, "").trim();
         });
+    }
+
+    /**
+     * Sets a given RMIDI info value.
+     * @param infoType The type to set.
+     * @param infoData The value to set it to.
+     * @remarks
+     * This sets the Info encoding to utf-8.
+     */
+    public setRMIDInfo<K extends keyof RMIDInfoData>(
+        infoType: K,
+        infoData: RMIDInfoData[K]
+    ) {
+        this.rmidiInfo.infoEncoding = getStringBytes("utf-8", true);
+        if (infoType === "picture") {
+            // TS2339: Property buffer does not exist on type string | ArrayBuffer | Date
+            // Property buffer does not exist on type string
+            this.rmidiInfo.picture = new Uint8Array(infoData as ArrayBuffer);
+        } else if (infoType === "creationDate") {
+            this.rmidiInfo.creationDate = getStringBytes(
+                (infoData as Date).toISOString(),
+                true
+            );
+        } else {
+            const encoded = new TextEncoder().encode(infoData as string);
+            // Add zero byte
+            this.rmidiInfo[infoType] = new Uint8Array([...encoded, 0]);
+        }
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -380,11 +411,21 @@ export class BasicMIDI {
      * @param infoType The metadata type.
      * @returns the text or undefined.
      */
-    public getRMIDInfo(infoType: Exclude<RMIDInfoFourCC, "IPIC">) {
+    public getRMIDInfo<K extends keyof RMIDInfoData>(
+        infoType: K
+    ): RMIDInfoData[K] | undefined {
         if (!this.rmidiInfo[infoType]) {
             return undefined;
         }
-        const encoding = this.encoding ?? "UTF-8";
+        const encoding = this.infoEncoding ?? "UTF-8";
+
+        if (infoType === "picture") {
+            return this.rmidiInfo[infoType].buffer as RMIDInfoData[K];
+        } else if (infoType === "creationDate") {
+            return parseDateString(
+                readBinaryString(this.rmidiInfo[infoType])
+            ) as RMIDInfoData[K];
+        }
 
         try {
             const decoder = new TextDecoder(encoding);
@@ -393,7 +434,7 @@ export class BasicMIDI {
                 // Do not decode the terminal byte
                 infoBuffer = infoBuffer?.slice(0, infoBuffer.length - 1);
             }
-            return decoder.decode(infoBuffer.buffer).trim();
+            return decoder.decode(infoBuffer.buffer).trim() as RMIDInfoData[K];
         } catch (e) {
             SpessaSynthWarn(
                 `Failed to decode ${infoType} name: ${e as string}`
@@ -444,9 +485,11 @@ export class BasicMIDI {
         this.loop = { ...mid.loop };
         this.keyRange = { ...mid.keyRange };
         this.rmidiInfo = {};
-        for (const [key, value] of Object.entries(mid.rmidiInfo)) {
-            this.rmidiInfo[key as RMIDInfoFourCC] = value?.slice();
-        }
+        Object.entries(mid.rmidiInfo).forEach((v) => {
+            const key = v[0];
+            const value = v[1];
+            this.rmidiInfo[key as keyof RMIDInfoData] = value.slice();
+        });
     }
 
     /**
@@ -465,7 +508,7 @@ export class BasicMIDI {
         this.extraMetadata = [];
 
         let nameDetected = false;
-        if (typeof this.rmidiInfo.INAM !== "undefined") {
+        if (typeof this.rmidiInfo.name !== "undefined") {
             // Name is already provided in RMIDInfo
             nameDetected = true;
         }

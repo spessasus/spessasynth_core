@@ -1,4 +1,4 @@
-// process arguments
+// Process arguments
 import * as fs from "fs";
 import { BasicMIDI, BasicSoundBank, SoundBankLoader } from "../../src";
 
@@ -14,18 +14,18 @@ const sfPath = args[0];
 const midPath = args[1];
 const outPath = args[2];
 
-// await sf3 decoder
+// Await sf3 decoder
 await BasicSoundBank.isSF3DecoderReady;
 
-// load bank and MIDI
+// Load bank and MIDI
 const bank = SoundBankLoader.fromArrayBuffer(fs.readFileSync(sfPath).buffer);
 const midi = BasicMIDI.fromArrayBuffer(fs.readFileSync(midPath).buffer);
 console.info("Loaded bank and MIDI!");
 
-// trim sf2 for midi
+// Trim sf2 for midi
 bank.trimSoundBank(midi);
 
-// write rmidi
+// Write rmid
 const rmidi = midi.writeRMIDI(await bank.writeSF2(), {
     soundBank: bank
 });

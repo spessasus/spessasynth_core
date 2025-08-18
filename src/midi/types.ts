@@ -1,26 +1,26 @@
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 
 /**
- * RMIDMetadata type represents metadata for an RMIDI file.
+ * RMIDInfoData type represents metadata for an RMIDI file.
  */
-export interface RMIDMetadata {
+export interface RMIDInfoData {
     /**
-     * The name of the file.
+     * The name of the song.
      */
     name: string;
 
     /**
-     * The engineer who worked on the file.
+     * The engineer who worked on the sound bank file.
      */
     engineer: string;
 
     /**
-     * The artist.
+     * The artist of the MIDI file.
      */
     artist: string;
 
     /**
-     * The album.
+     * The album of the song.
      */
     album: string;
 
@@ -42,7 +42,7 @@ export interface RMIDMetadata {
     /**
      * The creation date of the file.
      */
-    creationDate: string;
+    creationDate: Date;
 
     /**
      * The copyright of the file.
@@ -50,9 +50,24 @@ export interface RMIDMetadata {
     copyright: string;
 
     /**
-     * The encoding of the inner MIDI file.
+     * The encoding of the RMIDI info.
+     */
+    infoEncoding: string;
+
+    /**
+     * The encoding of the MIDI file's text messages.
      */
     midiEncoding: string;
+
+    /**
+     * The software used to write the file.
+     */
+    software: string;
+
+    /**
+     * The subject of the file.
+     */
+    subject: string;
 }
 
 export interface TempoChange {
@@ -166,13 +181,9 @@ export interface RMIDIWriteOptions {
      */
     bankOffset: number;
     /**
-     * The encoding of the RMIDI info chunk.
+     * The metadata of the file. Optional.
      */
-    encoding: string;
-    /**
-     * The metadata of the file. Optional. If provided, the encoding is forced to utf-8.
-     */
-    metadata: Partial<RMIDMetadata>;
+    metadata: Partial<Omit<RMIDInfoData, "infoEncoding">>;
     /**
      * If the MIDI file should internally be corrected to work with the set bank offset.
      */
@@ -183,3 +194,36 @@ export interface RMIDIWriteOptions {
      */
     soundBank?: BasicSoundBank;
 }
+export type RMIDInfoFourCC =
+    // Name
+    | "INAM"
+    // Album
+    | "IPRD"
+    // Album two
+    | "IALB"
+    // Artist
+    | "IART"
+    // Genre
+    | "IGNR"
+    // Picture
+    | "IPIC"
+    // Copyright
+    | "ICOP"
+    // Creation date
+    | "ICRD"
+    // Creation date (old spessasynth)
+    | "ICRT"
+    // Comment
+    | "ICMT"
+    // Engineer
+    | "IENG"
+    // Software
+    | "ISFT"
+    // Subject
+    | "ISBJ"
+    // Info encoding
+    | "IENC"
+    // MIDI encoding
+    | "MENC"
+    // Bank offset
+    | "DBNK";

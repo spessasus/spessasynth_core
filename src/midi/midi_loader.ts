@@ -7,10 +7,10 @@ import { readVariableLengthQuantity } from "../utils/byte_functions/variable_len
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readBinaryString, readBinaryStringIndexed } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, type RMIDInfoFourCC } from "./enums";
+import { type MIDIMessageType } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
-import type { MIDIFormat } from "./types";
+import type { MIDIFormat, RMIDInfoFourCC } from "./types";
 import { MIDITrack } from "./midi_track";
 
 /**
@@ -92,6 +92,8 @@ export function loadMIDIFromArrayBufferInternal(
         // OutputMIDI is a rmid, load the midi into an array for parsing
         smfFileBinary = riff.data;
 
+        let isSF2RMIDI = false;
+        let foundDbnk = false;
         // Keep loading chunks until we get the "SFBK" header
         while (binaryData.currentIndex <= binaryData.length) {
             const startIndex = binaryData.currentIndex;
@@ -116,6 +118,8 @@ export function loadMIDIFromArrayBufferInternal(
                 if (type === "dls ") {
                     // Assume bank offset of 0 by default. If we find any bank selects, then the offset is 1.
                     outputMIDI.isDLSRMIDI = true;
+                } else {
+                    isSF2RMIDI = true;
                 }
             } else if (currentChunk.header === "LIST") {
                 const type = readBinaryStringIndexed(currentChunk.data, 4);
@@ -124,7 +128,6 @@ export function loadMIDIFromArrayBufferInternal(
                         "%cFound RMIDI INFO chunk!",
                         consoleColors.recognized
                     );
-                    outputMIDI.rmidiInfo = {};
                     while (
                         currentChunk.data.currentIndex <= currentChunk.size
                     ) {
@@ -132,38 +135,86 @@ export function loadMIDIFromArrayBufferInternal(
                             currentChunk.data,
                             true
                         );
-                        outputMIDI.rmidiInfo[
-                            infoChunk.header as RMIDInfoFourCC
-                        ] = infoChunk.data;
-                    }
-                    // Note that there are two album chunks: IPRD and IALB
-                    // Spessasynth uses IPRD
-                    if (
-                        "IALB" in outputMIDI.rmidiInfo &&
-                        !("product" in outputMIDI.rmidiInfo)
-                    ) {
-                        outputMIDI.rmidiInfo.IPRD = outputMIDI.rmidiInfo
-                            .IALB as IndexedByteArray;
-                    }
+                        const headerTyped = infoChunk.header as RMIDInfoFourCC;
+                        const infoData = infoChunk.data;
+                        switch (headerTyped) {
+                            default:
+                                SpessaSynthWarn(
+                                    `Unknown RMIDI Info: ${headerTyped as string}`
+                                );
+                                break;
 
-                    // Older RMIDIs written by spessasynth erroneously used ICRT instead of ICRD. Fix this here
-                    if (
-                        "ICRT" in outputMIDI.rmidiInfo &&
-                        !("creationDate" in outputMIDI.rmidiInfo)
-                    ) {
-                        outputMIDI.rmidiInfo.ICRD = outputMIDI.rmidiInfo
-                            .ICRT as IndexedByteArray;
-                    }
+                            case "INAM":
+                                outputMIDI.rmidiInfo.name = infoData;
+                                break;
 
-                    outputMIDI.bankOffset = 1; // Defaults to 1
-                    if (outputMIDI.rmidiInfo.DBNK) {
-                        outputMIDI.bankOffset = readLittleEndian(
-                            outputMIDI.rmidiInfo.DBNK,
-                            2
-                        );
+                            case "IALB":
+                            case "IPRD":
+                                // Note that there are two album chunks: IPRD and IALB
+                                outputMIDI.rmidiInfo.album = infoData;
+                                break;
+
+                            case "ICRT":
+                            case "ICRD":
+                                // Older RMIDIs written by spessasynth erroneously used ICRT instead of ICRD.
+                                outputMIDI.rmidiInfo.creationDate = infoData;
+                                break;
+
+                            case "IART":
+                                outputMIDI.rmidiInfo.artist = infoData;
+                                break;
+
+                            case "IGNR":
+                                outputMIDI.rmidiInfo.genre = infoData;
+                                break;
+
+                            case "IPIC":
+                                outputMIDI.rmidiInfo.picture = infoData;
+                                break;
+
+                            case "ICOP":
+                                outputMIDI.rmidiInfo.copyright = infoData;
+                                break;
+
+                            case "ICMT":
+                                outputMIDI.rmidiInfo.comment = infoData;
+                                break;
+
+                            case "IENG":
+                                outputMIDI.rmidiInfo.engineer = infoData;
+                                break;
+
+                            case "ISFT":
+                                outputMIDI.rmidiInfo.software = infoData;
+                                break;
+
+                            case "ISBJ":
+                                outputMIDI.rmidiInfo.subject = infoData;
+                                break;
+
+                            case "IENC":
+                                outputMIDI.rmidiInfo.infoEncoding = infoData;
+                                break;
+
+                            case "MENC":
+                                outputMIDI.rmidiInfo.midiEncoding = infoData;
+                                break;
+
+                            case "DBNK":
+                                outputMIDI.bankOffset = readLittleEndian(
+                                    infoData,
+                                    2
+                                );
+                                foundDbnk = true;
+                                break;
+                        }
                     }
                 }
             }
+        }
+
+        if (isSF2RMIDI && !foundDbnk) {
+            outputMIDI.bankOffset = 1; // Defaults to 1
         }
 
         if (outputMIDI.isDLSRMIDI) {
