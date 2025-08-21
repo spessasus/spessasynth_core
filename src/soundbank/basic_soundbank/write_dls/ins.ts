@@ -3,7 +3,6 @@ import { combineZones } from "./combine_zones";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { writeDword } from "../../../utils/byte_functions/little_endian";
 import { writeDLSRegion } from "./rgn2";
-import { writeArticulator } from "./art2";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { getStringBytes } from "../../../utils/byte_functions/string";
@@ -44,10 +43,6 @@ export function writeIns(
 
     const insh = writeRIFFChunkRaw("insh", inshData);
 
-    // Write global zone
-    const art2 = writeArticulator(global);
-    const lar2 = writeRIFFChunkRaw("lar2", art2, false, true);
-
     // Write the region list
     const lrgn = writeRIFFChunkParts(
         "lrgn",
@@ -63,5 +58,5 @@ export function writeIns(
     const info = writeRIFFChunkRaw("INFO", inam, false, true);
 
     SpessaSynthGroupEnd();
-    return writeRIFFChunkParts("ins ", [insh, lrgn, lar2, info], true);
+    return writeRIFFChunkParts("ins ", [insh, lrgn, info], true);
 }
