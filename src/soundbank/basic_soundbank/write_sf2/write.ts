@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
+import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { consoleColors } from "../../../utils/other";
 import { getIGEN } from "./igen";
@@ -15,17 +12,14 @@ import { getPGEN } from "./pgen";
 import { getPMOD } from "./pmod";
 import { getPBAG } from "./pbag";
 import { getPHDR } from "./phdr";
-import {
-    writeLittleEndianIndexed,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { writeLittleEndianIndexed, writeWord } from "../../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
 } from "../../../utils/loggin";
-import { MOD_BYTE_SIZE } from "../modulator";
+import { MOD_BYTE_SIZE, Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "../modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
     ReturnedExtendedSf2Chunks,
@@ -177,7 +171,15 @@ ${targetSoundBank.soundBankInfo.subject}`
         }
     }
 
-    if (options?.writeDefaultModulators) {
+    // Do not write unchanged default modulators
+    const unchangedDefaultModulators = targetSoundBank.defaultModulators.some(
+        (mod) =>
+            SPESSASYNTH_DEFAULT_MODULATORS.findIndex((m) =>
+                Modulator.isIdentical(m, mod, true)
+            ) === -1
+    );
+
+    if (unchangedDefaultModulators && options?.writeDefaultModulators) {
         const mods = targetSoundBank.defaultModulators;
         SpessaSynthInfo(
             `%cWriting %c${mods.length}%c default modulators...`,

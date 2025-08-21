@@ -1,15 +1,14 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeLittleEndianIndexed, writeWord } from "../../../utils/byte_functions/little_endian";
+import {
+    writeLittleEndianIndexed,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
 import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { MOD_BYTE_SIZE } from "../modulator";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { ReturnedExtendedSf2Chunks } from "../../types";
 import type { BasicZone } from "../basic_zone";
 
-/**
- * @param bank {BasicSoundBank}
- * @returns {ReturnedExtendedSf2Chunks}
- */
 export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     // Very similar to igen,
     // Go through all instruments -> zones and write modulators sequentially

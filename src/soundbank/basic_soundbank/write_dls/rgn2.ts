@@ -1,6 +1,12 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import {
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
 import { writeWavesample } from "./wsmp";
 import { writeArticulator } from "./art2";
 import type { BasicSoundBank } from "../basic_soundbank";
@@ -8,12 +14,6 @@ import type { BasicInstrumentZone } from "../basic_instrument_zone";
 import type { BasicGlobalZone } from "../basic_global_zone";
 import { generatorTypes } from "../generator_types";
 
-/**
- * @param bank {BasicSoundBank}
- * @param zone {BasicInstrumentZone}
- * @param globalZone {BasicGlobalZone}
- * @returns {IndexedByteArray}
- */
 export function writeDLSRegion(
     bank: BasicSoundBank,
     zone: BasicInstrumentZone,

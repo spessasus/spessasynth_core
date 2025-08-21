@@ -1,7 +1,7 @@
 import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
-import { defaultModulators, Modulator } from "./modulator";
+import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
 import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
@@ -55,8 +55,8 @@ export class BasicSoundBank {
     /**
      * Sound bank's default modulators.
      */
-    public defaultModulators: Modulator[] = defaultModulators.map((m) =>
-        Modulator.copy(m)
+    public defaultModulators: Modulator[] = SPESSASYNTH_DEFAULT_MODULATORS.map(
+        (m) => Modulator.copy(m)
     );
 
     /**

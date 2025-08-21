@@ -1,19 +1,20 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { combineZones } from "./combine_zones";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
 import { writeDword } from "../../../utils/byte_functions/little_endian";
 import { writeDLSRegion } from "./rgn2";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd
+} from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { BasicPreset } from "../basic_preset";
 
-/**
- * @param bank {BasicSoundBank}
- * @param preset {BasicPreset}
- * @returns {IndexedByteArray}
- */
 export function writeIns(
     bank: BasicSoundBank,
     preset: BasicPreset

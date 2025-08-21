@@ -1,8 +1,4 @@
-import {
-    type GeneratorType,
-    generatorTypes,
-    MAX_GENERATOR
-} from "./generator_types";
+import { type GeneratorType, generatorTypes, MAX_GENERATOR } from "./generator_types";
 import type { ModulatorNumericBool, ModulatorSource } from "../types";
 import {
     type ModulatorCurveType,
@@ -501,5 +497,5 @@ const defaultSpessaSynthModulators = [
     )
 ];
 
-export const defaultModulators: Modulator[] =
+export const SPESSASYNTH_DEFAULT_MODULATORS: Modulator[] =
     defaultSoundFont2Modulators.concat(defaultSpessaSynthModulators);

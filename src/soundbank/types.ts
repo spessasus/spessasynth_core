@@ -182,11 +182,13 @@ export interface SoundFont2WriteOptions {
 
     /**
      * If the DMOD chunk should be written. Recommended.
+     * Note that it will only be written if the modulators are unchanged.
      */
     writeDefaultModulators: boolean;
 
     /**
      * If the XDTA chunk should be written to allow virtually infinite parameters. Recommended.
+     * Note that it will only be written needed.
      */
     writeExtendedLimits: boolean;
 

@@ -7,10 +7,6 @@ import type { ReturnedExtendedSf2Chunks } from "../../types";
 
 const INST_SIZE = 22;
 
-/**
- * @param bank {BasicSoundBank}
- * @returns {ReturnedExtendedSf2Chunks}
- */
 export function getINST(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
     const instSize = bank.instruments.length * INST_SIZE + INST_SIZE;
     const instData = new IndexedByteArray(instSize);
