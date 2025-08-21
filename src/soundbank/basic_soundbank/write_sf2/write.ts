@@ -1,5 +1,8 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { consoleColors } from "../../../utils/other";
 import { getIGEN } from "./igen";
@@ -12,14 +15,21 @@ import { getPGEN } from "./pgen";
 import { getPMOD } from "./pmod";
 import { getPBAG } from "./pbag";
 import { getPHDR } from "./phdr";
-import { writeLittleEndianIndexed, writeWord } from "../../../utils/byte_functions/little_endian";
+import {
+    writeLittleEndianIndexed,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
 } from "../../../utils/loggin";
-import { MOD_BYTE_SIZE, Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "../modulator";
+import {
+    MOD_BYTE_SIZE,
+    Modulator,
+    SPESSASYNTH_DEFAULT_MODULATORS
+} from "../modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
     ReturnedExtendedSf2Chunks,
@@ -100,6 +110,19 @@ export async function writeSF2Internal(
         );
     };
 
+    // Write versions
+    const ifilData = new IndexedByteArray(4);
+    writeWord(ifilData, targetSoundBank.soundBankInfo.version.major);
+    writeWord(ifilData, targetSoundBank.soundBankInfo.version.minor);
+    infoArrays.push(writeRIFFChunkRaw("ifil", ifilData));
+
+    if (targetSoundBank.soundBankInfo.romVersion) {
+        const ifilData = new IndexedByteArray(4);
+        writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.major);
+        writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.minor);
+        infoArrays.push(writeRIFFChunkRaw("iver", ifilData));
+    }
+
     // Special comment case: merge subject and comment
     const commentText =
         (targetSoundBank.soundBankInfo?.comment ?? "") +
@@ -155,19 +178,6 @@ ${targetSoundBank.soundBankInfo.subject}`
             case "subject":
                 // Merged with the comment
                 break;
-        }
-
-        // Write versions
-        const ifilData = new IndexedByteArray(4);
-        writeWord(ifilData, targetSoundBank.soundBankInfo.version.major);
-        writeWord(ifilData, targetSoundBank.soundBankInfo.version.minor);
-        infoArrays.push(writeRIFFChunkRaw("ifil", ifilData));
-
-        if (targetSoundBank.soundBankInfo.romVersion) {
-            const ifilData = new IndexedByteArray(4);
-            writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.major);
-            writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.minor);
-            infoArrays.push(writeRIFFChunkRaw("iver", ifilData));
         }
     }
 
