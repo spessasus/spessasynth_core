@@ -111,7 +111,7 @@ export class SoundBankManager {
             bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));
         for (const sf of this.soundBankList) {
             // Check for the preset (with given offset)
-            const preset = sf.soundBank.getPresetNoFallback(
+            const preset = sf.soundBank.getExactPreset(
                 bankNumber === 128 ? 128 : bankNumber - sf.bankOffset,
                 programNumber,
                 allowXGDrums
@@ -201,7 +201,7 @@ export class SoundBankManager {
              */
             const presets = new Set<string>();
             for (const p of font.soundBank.presets) {
-                const bank = Math.min(128, p.bank + font.bankOffset);
+                const bank = Math.min(128, p.bankMSB + font.bankOffset);
                 const presetString = `${bank}-${p.program}`;
                 if (presets.has(presetString)) {
                     continue;

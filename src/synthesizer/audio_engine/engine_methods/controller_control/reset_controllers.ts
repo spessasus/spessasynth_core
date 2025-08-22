@@ -71,7 +71,7 @@ export function resetAllControllersInternal(
         if (!ch.preset) {
             continue;
         }
-        const presetBank = ch.preset?.bank;
+        const presetBank = ch.preset?.bankMSB;
         // Call program change
         this.privateProps.callEvent("programChange", {
             channel: channelNumber,

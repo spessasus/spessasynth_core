@@ -241,7 +241,7 @@ export class BasicMIDI {
     /**
      * Gets the used programs and keys for this MIDI file with a given sound bank.
      * @param soundbank the sound bank.
-     * @returns The output data is a key-value pair: "bank:program" -> Set<"key-velocity">
+     * @returns The output data is a key-value pair: "bankMSB:bankLSB:isDrum:program" -> Set<"key-velocity">
      */
     public getUsedProgramsAndKeys(
         soundbank: SoundBankManager | BasicSoundBank

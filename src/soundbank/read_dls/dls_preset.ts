@@ -20,14 +20,14 @@ export class DLSPreset extends BasicPreset {
         const bankLSB = ulBank & 127;
         // Switch accordingly
         if (bankMSB > 0) {
-            this.bank = bankMSB;
+            this.bankMSB = bankMSB;
         } else {
-            this.bank = bankLSB;
+            this.bankMSB = bankLSB;
         }
         const isDrums = ulBank >> 31;
         if (isDrums) {
             // Soundfont bank is 128, so we change it here
-            this.bank = 128;
+            this.bankMSB = 128;
         }
 
         this.createZone(this.dlsInstrument);

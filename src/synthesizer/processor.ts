@@ -141,7 +141,7 @@ export class SpessaSynthProcessor {
     /**
      * Gets voices for a preset.
      * @param preset The preset to get voices for.
-     * @param bank The bank to cache the voices in.
+     * @param bankMSB The bank to cache the voices in.
      * @param program Program to cache the voices in.
      * @param midiNote The MIDI note to use.
      * @param velocity The velocity to use.

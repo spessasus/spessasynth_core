@@ -25,7 +25,7 @@ export function programChange(this: MIDIChannel, programNumber: number) {
         preset.name = "SPESSA EMPTY FALLBACK PRESET";
     }
     this.setPreset(preset);
-    this.sentBank = Math.min(128, preset.bank + p.bankOffset);
+    this.sentBank = Math.min(128, preset.bankMSB + p.bankOffset);
     this.synthProps.callEvent("programChange", {
         channel: this.channelNumber,
         program: preset.program,

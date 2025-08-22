@@ -27,7 +27,7 @@ export class SoundFontPreset extends BasicPreset {
         ); // Remove those pesky "000:001"
 
         this.program = readLittleEndianIndexed(presetChunk.data, 2);
-        this.bank = readLittleEndianIndexed(presetChunk.data, 2);
+        this.bankMSB = readLittleEndianIndexed(presetChunk.data, 2);
         this.zoneStartIndex = readLittleEndianIndexed(presetChunk.data, 2);
 
         // Read the dword

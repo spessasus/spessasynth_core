@@ -7,8 +7,9 @@ import type { BasicSoundBank } from "./basic_soundbank";
 import type { Generator } from "./generator";
 import type { KeyRange, SampleAndGenerators } from "../types";
 import type { BasicInstrument } from "./basic_instrument";
+import type { MIDIPatch } from "./midi_patch";
 
-export class BasicPreset {
+export class BasicPreset implements MIDIPatch {
     /**
      * The parent soundbank instance
      * Currently used for determining default modulators and XG status
@@ -20,15 +21,13 @@ export class BasicPreset {
      */
     public name = "";
 
-    /**
-     * The preset's MIDI program number
-     */
     public program = 0;
 
-    /**
-     * The preset's MIDI bank number
-     */
-    public bank = 0;
+    public bankMSB = 0;
+
+    public bankLSB = 0;
+
+    public isDrum = false;
 
     /**
      * The preset's zones
@@ -64,14 +63,16 @@ export class BasicPreset {
     /**
      * Checks if this preset is a drum preset
      * @param allowXG if the Yamaha XG system is allowed
-     * @param allowSFX if the XG SFX drum preset is allowed
      */
-    public isDrumPreset(allowXG: boolean, allowSFX = false): boolean {
+    public isDrumPreset(allowXG: boolean): boolean {
         const xg = allowXG && this.parentSoundBank.isXGBank;
-        // Sfx is not cool
+
         return (
-            this.bank === 128 ||
-            (xg && isXGDrums(this.bank) && (this.bank !== 126 || allowSFX))
+            this.isDrum ||
+            (xg &&
+                isXGDrums(this.bankMSB) &&
+                // SFX is not a drum preset, only for exact match
+                this.bankMSB !== 126)
         );
     }
 
@@ -113,6 +114,19 @@ export class BasicPreset {
                 );
             }
         }
+    }
+
+    /**
+     * Checks if the bank and program numbers are the same for the given preset as this one.
+     * @param preset The preset to check.
+     */
+    public isPatchNumberEqual(preset: BasicPreset) {
+        return (
+            this.program === preset.program &&
+            this.bankLSB === preset.bankLSB &&
+            this.bankMSB === preset.bankMSB &&
+            this.isDrum === preset.isDrum
+        );
     }
 
     /**

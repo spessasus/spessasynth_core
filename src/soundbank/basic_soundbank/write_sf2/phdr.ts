@@ -22,7 +22,7 @@ export function getPHDR(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
         writeBinaryStringIndexed(xphdrData, preset.name.substring(20), 20);
 
         writeWord(phdrData, preset.program);
-        writeWord(phdrData, preset.bank);
+        writeWord(phdrData, preset.bankMSB);
         writeWord(phdrData, presetStart & 0xffff);
 
         xphdrData.currentIndex += 4;

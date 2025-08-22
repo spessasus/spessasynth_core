@@ -27,7 +27,7 @@ console.groupEnd();
 console.group("Preset data:");
 bank.presets.forEach((preset) => {
     console.group(`\n--- ${preset.name} ---`);
-    console.info("Bank:", preset.bank);
+    console.info("Bank:", preset.bankMSB);
     console.info("Program:", preset.program);
 
     console.group("Zones:");

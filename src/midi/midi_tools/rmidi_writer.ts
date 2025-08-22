@@ -2,13 +2,27 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../utils/riff_chunk";
 import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
-import { isGM2On, isGMOn, isGSDrumsOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
-import { midiControllers, type MIDIMessageType, midiMessageTypes } from "../enums";
+import {
+    isGM2On,
+    isGMOn,
+    isGSDrumsOn,
+    isGSOn,
+    isXGOn
+} from "../../utils/sysex_detector";
+import {
+    midiControllers,
+    type MIDIMessageType,
+    midiMessageTypes
+} from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
@@ -197,7 +211,7 @@ function correctBankOffsetInternal(
             let bank = chooseBank(realBank, bankLSB, channel.drums, isXG);
             if (
                 soundBank.presets.findIndex(
-                    (p) => p.bank === bank && p.program === e.data[0]
+                    (p) => p.bankMSB === bank && p.program === e.data[0]
                 ) === -1
             ) {
                 // No preset with this bank. find this program with any bank
@@ -206,7 +220,7 @@ function correctBankOffsetInternal(
                 );
                 let targetBank = bankOffset;
                 if (found) {
-                    targetBank = bankOffset + found.bank;
+                    targetBank = bankOffset + found.bankMSB;
                 }
                 channel.lastBank.data[1] = targetBank;
                 if (channel?.lastBankLSB?.data) {
@@ -330,7 +344,7 @@ function correctBankOffsetInternal(
         );
         const ticks = track.events[indexToAdd].ticks;
         const targetBank =
-            soundBank.getPreset(0, has.program, isSystemXG(system))?.bank +
+            soundBank.getPreset(0, has.program, isSystemXG(system))?.bankMSB +
                 bankOffset || bankOffset;
         track.addEvent(
             new MIDIMessage(

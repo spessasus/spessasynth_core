@@ -27,7 +27,7 @@ interface InternalChannelType {
  * Gets the used programs and keys for this MIDI file with a given sound bank.
  * @param mid
  * @param soundBank  the sound bank.
- * @returns  Record<bank:program, Set<key-velocity>>.
+ * @returns  Record<bankMSB:bankLSB:program, Set<key-velocity>>.
  */
 export function getUsedProgramsAndKeys(
     mid: BasicMIDI,
@@ -68,7 +68,7 @@ export function getUsedProgramsAndKeys(
         if (soundBank instanceof SoundBankManager) {
             const exists: { preset: BasicPreset; bankOffset: number } =
                 soundBank.getPreset(bank, ch.program, isSystemXG(system));
-            existsBank = exists.preset.bank + exists.bankOffset;
+            existsBank = exists.preset.bankMSB + exists.bankOffset;
             existsProgram = exists.preset.program;
         } else {
             const exists = soundBank.getPreset(
@@ -76,7 +76,7 @@ export function getUsedProgramsAndKeys(
                 ch.program,
                 isSystemXG(system)
             );
-            existsBank = exists.bank;
+            existsBank = exists.bankMSB;
             existsProgram = exists.program;
         }
         ch.actualBank = existsBank;
