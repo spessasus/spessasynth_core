@@ -279,10 +279,6 @@ export function getDLSArticulatorFromSf2Modulator(
         );
         return undefined;
     }
-    // Attenuation is the opposite of gain. Invert.
-    if (mod.destination === generatorTypes.initialAttenuation) {
-        sourceDirection = sourceDirection === 1 ? 0 : 1;
-    }
     let control: number | undefined = getDLSSourceFromSf2Source(
         mod.secSrcUsesCC,
         mod.secSrcIndex
