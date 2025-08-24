@@ -18,9 +18,6 @@ import type { SF2InfoFourCC } from "../types";
 import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
 import { parseDateString } from "../../utils/load_date";
-import { BasicPreset } from "../basic_soundbank/basic_preset";
-import { XG_SFX_VOICE } from "../../utils/xg_hacks";
-import { BasicPresetZone } from "../basic_soundbank/basic_preset_zone";
 
 /**
  * Soundfont.ts
@@ -412,33 +409,10 @@ export class SoundFont2 extends BasicSoundBank {
         // Shadow presets with LSB (for XG)
         const hasLSB = this.presets.some((p) => p.bankLSB > 0);
         if (!hasLSB) {
-            SpessaSynthInfo("%cShadowing LSB presets...", consoleColors.info);
-            const shadowed = new Array<BasicPreset>();
+            SpessaSynthInfo("%cCopying MSB to LSBs...", consoleColors.info);
             for (const preset of this.presets) {
-                // Do not shadow presets that do not use LSB variation for XG
-                if (
-                    preset.isAnyDrums ||
-                    preset.bankMSB === XG_SFX_VOICE ||
-                    preset.bankMSB === 0
-                ) {
-                    continue;
-                }
-                const shadow = new BasicPreset(this);
-                shadow.name = preset.name;
-                shadow.bankLSB = preset.bankMSB;
-                shadow.program = preset.program;
-                shadow.globalZone.copyFrom(preset.globalZone);
-                shadow.zones = preset.zones.map((oldZone) => {
-                    const newZone = new BasicPresetZone(
-                        shadow,
-                        oldZone.instrument
-                    );
-                    newZone.copyFrom(oldZone);
-                    return newZone;
-                });
-                shadowed.push(shadow);
+                preset.bankLSB = preset.bankMSB;
             }
-            this.addPresets(...shadowed);
         }
         this.flush();
         SpessaSynthInfo(
