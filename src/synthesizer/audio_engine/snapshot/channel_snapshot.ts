@@ -170,7 +170,7 @@ export class ChannelSnapshot {
         const channelObject =
             spessaSynthProcessor.midiChannels[this.channelNumber];
         channelObject.muteChannel(this.isMuted);
-        channelObject.setDrumFlag(this.drumChannel);
+        channelObject.setDrums(this.drumChannel);
 
         // Restore controllers
         channelObject.midiControllers.set(this.midiControllers);

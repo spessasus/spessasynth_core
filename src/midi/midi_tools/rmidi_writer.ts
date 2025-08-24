@@ -2,19 +2,36 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../utils/riff_chunk";
 import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { isSystemXG } from "../../utils/xg_hacks";
-import { isGM2On, isGMOn, isGSDrumsOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
-import { midiControllers, type MIDIMessageType, midiMessageTypes } from "../enums";
+import {
+    isGM2On,
+    isGMOn,
+    isGSDrumsOn,
+    isGSOn,
+    isXGOn
+} from "../../utils/sysex_detector";
+import {
+    midiControllers,
+    type MIDIMessageType,
+    midiMessageTypes
+} from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import { getGsOn } from "./get_gs_on";
 import type { SynthSystem } from "../../synthesizer/types";
-import { type MIDIPatch, toMIDIString } from "../../soundbank/basic_soundbank/midi_patch";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../../soundbank/basic_soundbank/midi_patch";
 
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
@@ -143,7 +160,7 @@ function correctBankOffsetInternal(
             };
             const targetPreset = soundBank.getPreset(patch, system);
             SpessaSynthInfo(
-                `%cInput patch: %c${toMIDIString(patch)}%c. Channel %c${chNum}%c. Changing patch to ${targetPreset.toString()}.`,
+                `%cInput patch: %c${MIDIPatchTools.toMIDIString(patch)}%c. Channel %c${chNum}%c. Changing patch to ${targetPreset.toString()}.`,
                 consoleColors.info,
                 consoleColors.unrecognized,
                 consoleColors.info,

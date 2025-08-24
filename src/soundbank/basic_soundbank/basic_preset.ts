@@ -8,9 +8,9 @@ import type { Generator } from "./generator";
 import type { KeyRange, SampleAndGenerators } from "../types";
 import type { BasicInstrument } from "./basic_instrument";
 import {
+    type MIDIPatch,
     type MIDIPatchNamed,
-    toMIDIString,
-    toNamedMIDIString
+    MIDIPatchTools
 } from "./midi_patch";
 
 export class BasicPreset implements MIDIPatchNamed {
@@ -132,13 +132,8 @@ export class BasicPreset implements MIDIPatchNamed {
      * Checks if the bank and program numbers are the same for the given preset as this one.
      * @param preset The preset to check.
      */
-    public isPatchNumberEqual(preset: BasicPreset) {
-        return (
-            this.program === preset.program &&
-            this.bankLSB === preset.bankLSB &&
-            this.bankMSB === preset.bankMSB &&
-            this.isGMGSDrum === preset.isGMGSDrum
-        );
+    public matches(preset: MIDIPatch) {
+        return MIDIPatchTools.matches(this, preset);
     }
 
     /**
@@ -305,10 +300,10 @@ export class BasicPreset implements MIDIPatchNamed {
      * BankMSB:bankLSB:program:isGMGSDrum
      */
     public toMIDIString() {
-        return toMIDIString(this);
+        return MIDIPatchTools.toMIDIString(this);
     }
 
     public toString() {
-        return toNamedMIDIString(this);
+        return MIDIPatchTools.toNamedMIDIString(this);
     }
 }

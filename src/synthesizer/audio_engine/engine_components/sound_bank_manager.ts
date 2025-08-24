@@ -3,9 +3,12 @@ import { SpessaSynthWarn } from "../../../utils/loggin";
 import type { SoundBankManagerListEntry } from "../../../soundbank/types";
 import type { BasicSoundBank } from "../../../soundbank/basic_soundbank/basic_soundbank";
 import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import type { SynthSystem } from "../../types";
+import type { PresetListEntry, SynthSystem } from "../../types";
 import { selectPreset } from "../../../soundbank/basic_soundbank/preset_selector";
-import type { MIDIPatch, MIDIPatchNamed } from "../../../soundbank/basic_soundbank/midi_patch";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../../../soundbank/basic_soundbank/midi_patch";
 
 class SoundBankManagerPreset extends BasicPreset {
     public constructor(p: BasicPreset, offset: number) {
@@ -41,7 +44,7 @@ export class SoundBankManager {
         this.presetListChangeCallback = presetListChangeCallback;
     }
 
-    private _presetList: MIDIPatchNamed[] = [];
+    private _presetList: PresetListEntry[] = [];
 
     /**
      * The list of all presets in the sound bank stack.
@@ -149,6 +152,7 @@ export class SoundBankManager {
                 }
             });
         });
+        presetList.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
         this.selectablePresetList = presetList;
         this._presetList = presetList.map((p) => {
             return {
@@ -156,7 +160,8 @@ export class SoundBankManager {
                 bankLSB: p.bankLSB,
                 program: p.program,
                 isGMGSDrum: p.isGMGSDrum,
-                name: p.name
+                name: p.name,
+                isAnyDrums: p.isAnyDrums
             };
         });
         this.presetListChangeCallback();

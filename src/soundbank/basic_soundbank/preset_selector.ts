@@ -37,13 +37,7 @@ export function selectPreset<T extends BasicPreset>(
     }
     let { isGMGSDrum, bankLSB, bankMSB } = patch;
     const { program } = patch;
-    let p = presets.find(
-        (p) =>
-            p.isGMGSDrum === isGMGSDrum &&
-            p.program === program &&
-            p.bankMSB === bankMSB &&
-            p.bankLSB === bankLSB
-    );
+    let p = presets.find((p) => p.matches(patch));
     if (p) {
         return p;
     }

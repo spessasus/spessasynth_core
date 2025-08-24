@@ -1,44 +1,44 @@
-import { SpessaSynthInfo } from '../utils/loggin'
-import { consoleColors } from '../utils/other'
+import { SpessaSynthInfo } from "../utils/loggin";
+import { consoleColors } from "../utils/other";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
-} from './audio_engine/engine_components/synth_constants'
-import { stbvorbis } from '../externals/stbvorbis_sync/stbvorbis_wrapper'
-import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from './audio_engine/engine_components/dsp_chain/volume_envelope'
+} from "./audio_engine/engine_components/synth_constants";
+import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
+import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/volume_envelope";
 import {
     getAllMasterParametersInternal,
     getMasterParameterInternal,
     setMasterParameterInternal
-} from './audio_engine/engine_methods/controller_control/master_parameters'
-import { SoundBankManager } from './audio_engine/engine_components/sound_bank_manager'
-import { PAN_SMOOTHING_FACTOR } from './audio_engine/engine_components/dsp_chain/stereo_panner'
-import { FILTER_SMOOTHING_FACTOR } from './audio_engine/engine_components/dsp_chain/lowpass_filter'
-import { getEvent } from '../midi/midi_message'
-import { IndexedByteArray } from '../utils/indexed_array'
-import { DEFAULT_SYNTH_OPTIONS } from './audio_engine/engine_components/synth_processor_options'
-import { fillWithDefaults } from '../utils/fill_with_defaults'
-import { killVoicesIntenral } from './audio_engine/engine_methods/stopping_notes/voice_killing'
-import { getVoicesForPresetInternal, getVoicesInternal } from './audio_engine/engine_components/voice'
-import { systemExclusiveInternal } from './audio_engine/engine_methods/system_exclusive'
-import { resetAllControllersInternal } from './audio_engine/engine_methods/controller_control/reset_controllers'
-import { SynthesizerSnapshot } from './audio_engine/snapshot/synthesizer_snapshot'
+} from "./audio_engine/engine_methods/controller_control/master_parameters";
+import { SoundBankManager } from "./audio_engine/engine_components/sound_bank_manager";
+import { PAN_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/stereo_panner";
+import { FILTER_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/lowpass_filter";
+import { getEvent } from "../midi/midi_message";
+import { IndexedByteArray } from "../utils/indexed_array";
+import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
+import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { killVoicesIntenral } from "./audio_engine/engine_methods/stopping_notes/voice_killing";
+import { getVoicesForPresetInternal, getVoicesInternal } from "./audio_engine/engine_components/voice";
+import { systemExclusiveInternal } from "./audio_engine/engine_methods/system_exclusive";
+import { resetAllControllersInternal } from "./audio_engine/engine_methods/controller_control/reset_controllers";
+import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
 import type {
     SynthMethodOptions,
     SynthProcessorEvent,
     SynthProcessorEventData,
     SynthProcessorOptions,
     VoiceList
-} from './types'
-import { type MIDIController, type MIDIMessageType, midiMessageTypes } from '../midi/enums'
-import { ProtectedSynthValues } from './audio_engine/engine_components/internal_synth_values'
-import { KeyModifierManager } from './audio_engine/engine_components/key_modifier_manager'
-import type { BasicPreset } from '../soundbank/basic_soundbank/basic_preset'
-import { MIDIChannel } from './audio_engine/engine_components/midi_channel'
-import { SoundBankLoader } from '../soundbank/sound_bank_loader'
-import { customControllers } from './enums'
-import type { MIDIPatch } from '../soundbank/basic_soundbank/midi_patch'
+} from "./types";
+import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../midi/enums";
+import { ProtectedSynthValues } from "./audio_engine/engine_components/internal_synth_values";
+import { KeyModifierManager } from "./audio_engine/engine_components/key_modifier_manager";
+import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
+import { MIDIChannel } from "./audio_engine/engine_components/midi_channel";
+import { SoundBankLoader } from "../soundbank/sound_bank_loader";
+import { customControllers } from "./enums";
+import type { MIDIPatch } from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * Processor.ts
@@ -690,7 +690,7 @@ export class SpessaSynthProcessor {
         if (sendEvent) {
             this.callEvent("newChannel", undefined);
             channel.sendChannelProperty();
-            this.midiChannels[this.midiChannels.length - 1].setDrumFlag(true);
+            this.midiChannels[this.midiChannels.length - 1].setDrums(true);
         }
     }
 

@@ -416,12 +416,17 @@ export class SoundFont2 extends BasicSoundBank {
             const shadowed = new Array<BasicPreset>();
             for (const preset of this.presets) {
                 // Do not shadow presets that do not use LSB variation for XG
-                if (preset.isAnyDrums || preset.bankMSB === XG_SFX_VOICE) {
+                if (
+                    preset.isAnyDrums ||
+                    preset.bankMSB === XG_SFX_VOICE ||
+                    preset.bankMSB === 0
+                ) {
                     continue;
                 }
                 const shadow = new BasicPreset(this);
                 shadow.name = preset.name;
                 shadow.bankLSB = preset.bankMSB;
+                shadow.program = preset.program;
                 shadow.globalZone.copyFrom(preset.globalZone);
                 shadow.zones = preset.zones.map((oldZone) => {
                     const newZone = new BasicPresetZone(
@@ -431,6 +436,7 @@ export class SoundFont2 extends BasicSoundBank {
                     newZone.copyFrom(oldZone);
                     return newZone;
                 });
+                shadowed.push(shadow);
             }
             this.addPresets(...shadowed);
         }

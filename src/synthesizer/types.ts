@@ -58,10 +58,17 @@ export interface MuteChannelCallback {
     isMuted: boolean;
 }
 
+export interface PresetListEntry extends MIDIPatchNamed {
+    /**
+     * Indicates if this preset is any kind of drum preset.
+     */
+    isAnyDrums: boolean;
+}
+
 /**
  * A list of preset changes, each with a name, bank, and program number.
  */
-export type PresetList = MIDIPatchNamed[];
+export type PresetList = PresetListEntry[];
 
 export interface SynthDisplayCallback {
     /** The data to display. */

@@ -15,7 +15,7 @@ import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2Write
 import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
-import type { MIDIPatch } from "./midi_patch";
+import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -94,7 +94,7 @@ export class BasicSoundBank {
                 newPresets.forEach((newPreset) => {
                     if (
                         presets.find((existingPreset) =>
-                            newPreset.isPatchNumberEqual(existingPreset)
+                            newPreset.matches(existingPreset)
                         ) === undefined
                     ) {
                         presets.push(newPreset);
@@ -318,24 +318,7 @@ export class BasicSoundBank {
     }
 
     public flush() {
-        this.presets.sort((a, b) => {
-            // Force drum presets to be last
-            if (a.isGMGSDrum && !b.isGMGSDrum) return 1;
-            if (!a.isGMGSDrum && b.isGMGSDrum) return -1;
-
-            // First, sort by program
-            if (a.program !== b.program) {
-                return a.program - b.program;
-            }
-
-            // Next, sort by bankMSB
-            if (a.bankMSB !== b.bankMSB) {
-                return a.bankMSB - b.bankMSB;
-            }
-
-            // Finally, sort by bankLSB
-            return a.bankLSB - b.bankLSB;
-        });
+        this.presets.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
         this.parseInternal();
     }
 

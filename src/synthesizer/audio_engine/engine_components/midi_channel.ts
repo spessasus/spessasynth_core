@@ -13,7 +13,7 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
+import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -32,6 +32,7 @@ import type { ProtectedSynthValues } from "./internal_synth_values";
 import { midiControllers } from "../../../midi/enums";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
+import { getDrumBank, isSystemXG } from "../../../utils/xg_hacks";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -500,6 +501,36 @@ export class MIDIChannel {
     }
 
     /**
+     * Changes the preset to, or from drums.
+     * @param isDrum
+     */
+    public setDrums(isDrum: boolean) {
+        if (this.lockPreset || !this.preset) {
+            return;
+        }
+        if (this.drumChannel === isDrum) {
+            return;
+        }
+        if (isSystemXG(this.channelSystem)) {
+            if (isDrum) {
+                this.patch.bankMSB = getDrumBank(this.channelSystem);
+                this.patch.bankLSB = 0;
+            } else {
+                if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
+                    throw new Error(
+                        `Cannot disable drums on channel ${this.channelNumber} for XG.`
+                    );
+                }
+                this.patch.bankLSB = 0;
+                this.patch.bankMSB = 0;
+            }
+        } else {
+            this.setGSDrums(true);
+        }
+        this.programChange(this.patch.program);
+    }
+
+    /**
      * Sets the GM/GS drum flag.
      * @param drums
      */
@@ -513,29 +544,6 @@ export class MIDIChannel {
             bankMSB: 0,
             program: this.patch.program
         };
-    }
-
-    /**
-     * Sets drums on channel.
-     */
-    public setDrumFlag(isDrum: boolean) {
-        if (this.lockPreset || !this.preset) {
-            return;
-        }
-        if (this.drumChannel === isDrum) {
-            return;
-        }
-        if (isDrum) {
-            // Clear transpose
-            this.channelTransposeKeyShift = 0;
-            this.drumChannel = true;
-        } else {
-            this.drumChannel = false;
-        }
-        this.synthProps.callEvent("drumChange", {
-            channel: this.channelNumber,
-            isDrumChannel: this.drumChannel
-        });
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -683,6 +691,29 @@ export class MIDIChannel {
         this.synthProps.callEvent("channelPropertyChange", {
             channel: this.channelNumber,
             property: data
+        });
+    }
+
+    /**
+     * Sets drums on channel.
+     */
+    protected setDrumFlag(isDrum: boolean) {
+        if (this.lockPreset || !this.preset) {
+            return;
+        }
+        if (this.drumChannel === isDrum) {
+            return;
+        }
+        if (isDrum) {
+            // Clear transpose
+            this.channelTransposeKeyShift = 0;
+            this.drumChannel = true;
+        } else {
+            this.drumChannel = false;
+        }
+        this.synthProps.callEvent("drumChange", {
+            channel: this.channelNumber,
+            isDrumChannel: this.drumChannel
         });
     }
 }

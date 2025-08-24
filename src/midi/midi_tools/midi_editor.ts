@@ -25,7 +25,7 @@ import type { BasicMIDI } from "../basic_midi";
 import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import type { SynthSystem } from "../../synthesizer/types";
 import { customControllers } from "../../synthesizer/enums";
-import { toMIDIString } from "../../soundbank/basic_soundbank/midi_patch";
+import { MIDIPatchTools } from "../../soundbank/basic_soundbank/midi_patch";
 
 function getControllerChange(
     channel: number,
@@ -290,7 +290,7 @@ export function modifyMIDIInternal(
                             continue;
                         }
                         SpessaSynthInfo(
-                            `%cSetting %c${change.channel}%c to %c${toMIDIString(change)}%c. Track num: %c${trackNum}`,
+                            `%cSetting %c${change.channel}%c to %c${MIDIPatchTools.toMIDIString(change)}%c. Track num: %c${trackNum}`,
                             consoleColors.info,
                             consoleColors.recognized,
                             consoleColors.info,
