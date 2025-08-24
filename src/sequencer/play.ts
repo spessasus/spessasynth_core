@@ -63,13 +63,13 @@ export function setTimeToInternal(
         cc === midiControllers.dataDecrement ||
         cc === midiControllers.dataIncrement ||
         cc === midiControllers.dataEntryMSB ||
-        cc === midiControllers.lsbForControl6DataEntry ||
+        cc === midiControllers.dataEntryLSB ||
         cc === midiControllers.registeredParameterLSB ||
         cc === midiControllers.registeredParameterMSB ||
         cc === midiControllers.nonRegisteredParameterLSB ||
         cc === midiControllers.nonRegisteredParameterMSB ||
         cc === midiControllers.bankSelect ||
-        cc === midiControllers.lsbForControl0BankSelect ||
+        cc === midiControllers.bankSelectLSB ||
         cc === midiControllers.resetAllControllers;
 
     /**

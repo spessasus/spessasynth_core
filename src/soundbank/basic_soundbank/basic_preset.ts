@@ -7,7 +7,11 @@ import type { BasicSoundBank } from "./basic_soundbank";
 import type { Generator } from "./generator";
 import type { KeyRange, SampleAndGenerators } from "../types";
 import type { BasicInstrument } from "./basic_instrument";
-import type { MIDIPatchNamed } from "./midi_patch";
+import {
+    type MIDIPatchNamed,
+    toMIDIString,
+    toNamedMIDIString
+} from "./midi_patch";
 
 export class BasicPreset implements MIDIPatchNamed {
     /**
@@ -301,13 +305,10 @@ export class BasicPreset implements MIDIPatchNamed {
      * BankMSB:bankLSB:program:isGMGSDrum
      */
     public toMIDIString() {
-        if (this.isGMGSDrum) {
-            return `DRUM:${this.program}`;
-        }
-        return `${this.bankMSB}:${this.bankLSB}:${this.program}`;
+        return toMIDIString(this);
     }
 
     public toString() {
-        return `${this.name} ${this.toMIDIString()}`;
+        return toNamedMIDIString(this);
     }
 }

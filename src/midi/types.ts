@@ -1,4 +1,5 @@
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import type { MIDIPatch } from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.
@@ -116,27 +117,11 @@ export interface NoteTime {
 /**
  * Represents a desired program change for a MIDI channel.
  */
-export interface DesiredProgramChange {
+export interface DesiredProgramChange extends MIDIPatch {
     /**
      * The channel number.
      */
     channel: number;
-
-    /**
-     * The program number.
-     */
-    program: number;
-
-    /**
-     * The bank number.
-     */
-    bank: number;
-
-    /**
-     * Indicates if the channel is a drum channel.
-     * If it is, then the bank number is ignored.
-     */
-    isDrum: boolean;
 }
 
 /**

@@ -1,5 +1,5 @@
 import type { SynthSystem } from "../../synthesizer/types";
-import { isSystemXG, isXGDrums } from "../../utils/xg_hacks";
+import { getDrumBank, isSystemXG, isXGDrums } from "../../utils/xg_hacks";
 import type { BasicPreset } from "./basic_preset";
 import type { MIDIPatch } from "./midi_patch";
 
@@ -35,7 +35,8 @@ export function selectPreset<T extends BasicPreset>(
     if (presets.length < 1) {
         throw new Error("No presets!");
     }
-    const { isGMGSDrum, program, bankLSB, bankMSB } = patch;
+    let { isGMGSDrum, bankLSB, bankMSB } = patch;
+    const { program } = patch;
     let p = presets.find(
         (p) =>
             p.isGMGSDrum === isGMGSDrum &&
@@ -48,6 +49,12 @@ export function selectPreset<T extends BasicPreset>(
     }
 
     // No exact match...
+    if (isSystemXG(system) && isGMGSDrum) {
+        // GM/GS drums with XG. This shouldn't happen. Force XG drums.
+        isGMGSDrum = false;
+        bankLSB = 0;
+        bankMSB = getDrumBank(system);
+    }
     if (isGMGSDrum) {
         // GM/GS drums: check for the exact program match
         let p = presets.find((p) => p.isGMGSDrum && p.program === program);

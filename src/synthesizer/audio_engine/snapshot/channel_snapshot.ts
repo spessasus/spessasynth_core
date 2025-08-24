@@ -1,29 +1,15 @@
 import type { SynthSystem } from "../../types";
 import { type SpessaSynthProcessor } from "../../processor";
+import type { MIDIPatchNamed } from "../../../soundbank/basic_soundbank/midi_patch";
 
 /**
  * Represents a snapshot of a single channel's state in the synthesizer.
  */
 export class ChannelSnapshot {
     /**
-     * The channel's MIDI program number.
+     * The MIDI patch that the channel is using.
      */
-    public program: number;
-
-    /**
-     * The channel's bank number.
-     */
-    public bank: number;
-
-    /**
-     * If the bank is LSB. For restoring.
-     */
-    public isBankLSB: boolean;
-
-    /**
-     * The name of the patch currently loaded in the channel.
-     */
-    public patchName: string;
+    public patch: MIDIPatchNamed;
 
     /**
      * Indicates whether the channel's program change is disabled.
@@ -90,10 +76,7 @@ export class ChannelSnapshot {
 
     // Creates a new channel snapshot.
     public constructor(
-        program: number,
-        bank: number,
-        isBankLSB: boolean,
-        patchName: string,
+        patch: MIDIPatchNamed,
         lockPreset: boolean,
         lockedSystem: SynthSystem,
         midiControllers: Int16Array,
@@ -111,10 +94,7 @@ export class ChannelSnapshot {
         drumChannel: boolean,
         channelNumber: number
     ) {
-        this.program = program;
-        this.bank = bank;
-        this.isBankLSB = isBankLSB;
-        this.patchName = patchName;
+        this.patch = patch;
         this.lockPreset = lockPreset;
         this.lockedSystem = lockedSystem;
         this.midiControllers = midiControllers;
@@ -135,10 +115,7 @@ export class ChannelSnapshot {
      */
     public static copyFrom(snapshot: ChannelSnapshot) {
         return new ChannelSnapshot(
-            snapshot.program,
-            snapshot.bank,
-            snapshot.isBankLSB,
-            snapshot.patchName,
+            { ...snapshot.patch },
             snapshot.lockPreset,
             snapshot.lockedSystem,
             snapshot.midiControllers.slice(),
@@ -166,10 +143,10 @@ export class ChannelSnapshot {
         const channelObject = spessaSynthProcessor.midiChannels[channelNumber];
 
         return new ChannelSnapshot(
-            channelObject.preset?.program ?? 0,
-            channelObject.getBankSelect(),
-            channelObject.bankMSB !== channelObject.getBankSelect(),
-            channelObject.preset?.name ?? "undefined",
+            {
+                ...channelObject.patch,
+                name: channelObject?.preset?.name ?? "undefined"
+            },
             channelObject.lockPreset,
             channelObject.lockedSystem,
             channelObject.midiControllers.slice(),
@@ -209,7 +186,8 @@ export class ChannelSnapshot {
 
         // Restore preset and lock
         channelObject.setPresetLock(false);
-        channelObject.programChange(this.program);
+        channelObject.patch = { ...this.patch };
+        channelObject.programChange(this.patch.program);
         channelObject.setPresetLock(this.lockPreset);
         channelObject.lockedSystem = this.lockedSystem;
     }

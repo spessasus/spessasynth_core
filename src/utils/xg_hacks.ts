@@ -14,6 +14,18 @@ export function getDefaultBank(sys: SynthSystem): number {
     return sys === "gm2" ? GM2_DEFAULT_BANK : 0;
 }
 
+export function getDrumBank(sys: SynthSystem): number {
+    switch (sys) {
+        default:
+            throw new Error(`${sys} doesn't have a bank MSB for drums.`);
+
+        case "gm2":
+            return 120;
+        case "xg":
+            return 127;
+    }
+}
+
 /**
  * Checks if this bank number is XG drums
  */
