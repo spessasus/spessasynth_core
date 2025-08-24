@@ -7,13 +7,15 @@ import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
-import { isSystemXG, isXGDrums } from "../../utils/xg_hacks";
+import { isXGDrums } from "../../utils/xg_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2WriteOptions } from "../types";
 import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
+import { selectPreset } from "./preset_selector";
+import type { MIDIPatch } from "./midi_patch";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -298,7 +300,7 @@ export class BasicSoundBank {
         newPreset.name = preset.name;
         newPreset.bankMSB = preset.bankMSB;
         newPreset.bankLSB = preset.bankLSB;
-        newPreset.isDrum = preset.isDrum;
+        newPreset.isGMGSDrum = preset.isGMGSDrum;
         newPreset.program = preset.program;
         newPreset.library = preset.library;
         newPreset.genre = preset.genre;
@@ -317,14 +319,22 @@ export class BasicSoundBank {
 
     public flush() {
         this.presets.sort((a, b) => {
+            // Force drum presets to be last
+            if (a.isGMGSDrum && !b.isGMGSDrum) return 1;
+            if (!a.isGMGSDrum && b.isGMGSDrum) return -1;
+
+            // First, sort by program
+            if (a.program !== b.program) {
+                return a.program - b.program;
+            }
+
+            // Next, sort by bankMSB
             if (a.bankMSB !== b.bankMSB) {
                 return a.bankMSB - b.bankMSB;
             }
-            if (a.bankLSB !== b.bankLSB) {
-                return a.bankLSB - b.bankLSB;
-            }
 
-            return a.program - b.program;
+            // Finally, sort by bankLSB
+            return a.bankLSB - b.bankLSB;
         });
         this.parseInternal();
     }
@@ -384,23 +394,22 @@ export class BasicSoundBank {
             return trimmedIZones;
         };
 
-        SpessaSynthGroup("%cTrimming soundbank...", consoleColors.info);
+        SpessaSynthGroup("%cTrimming sound bank...", consoleColors.info);
         const usedProgramsAndKeys = mid.getUsedProgramsAndKeys(this);
 
         SpessaSynthGroupCollapsed(
-            "%cModifying soundbank...",
+            "%cModifying sound bank...",
             consoleColors.info
         );
         SpessaSynthInfo("Detected keys for midi:", usedProgramsAndKeys);
-        // Modify the soundfont to only include programs and samples that are used
+        // Modify the sound bank to only include programs and samples that are used
         for (
             let presetIndex = 0;
             presetIndex < this.presets.length;
             presetIndex++
         ) {
             const p = this.presets[presetIndex];
-            const string = `${p.bankMSB}:${p.bankLSB}:${p.program}`;
-            const used = usedProgramsAndKeys[string];
+            const used = usedProgramsAndKeys.get(p);
             if (used === undefined) {
                 SpessaSynthInfo(
                     `%cDeleting preset %c${p.name}%c and its zones`,
@@ -520,140 +529,10 @@ export class BasicSoundBank {
     }
 
     /**
-     * Get the appropriate preset, undefined if not found
+     * Get the appropriate preset.
      */
-    public getExactPreset(
-        bankMSB: number,
-        bankLSB: number,
-        program: number,
-        system: SynthSystem,
-        isDrum: boolean
-    ): BasicPreset | undefined {
-        // Look for exact match
-        let p = this.presets.find(
-            (p) =>
-                p.isDrum === isDrum &&
-                p.program === program &&
-                p.bankMSB === bankMSB &&
-                p.bankLSB === bankLSB
-        );
-        if (p) {
-            return p;
-        }
-
-        if (isDrum) {
-            // GM/GS drums: check for the exact program match
-            let p = this.presets.find(
-                (p) => p.isDrumPreset(false) && p.program === program
-            );
-            if (p) {
-                return p;
-            }
-            // No match, pick the first drum preset
-            p = this.presets.find((p) => p.isDrumPreset(false));
-            if (p) {
-                return p;
-            }
-            // ...maybe XG drums?
-            p = this.presets.find((p) => p.isDrumPreset(true));
-            if (p) {
-                return p;
-            }
-            // Pick the first preset...
-            return this.presets[0];
-        }
-        if (isXGDrums(bankMSB)) {
-            // XG drums: Look for exact bank and program match
-            const p = this.presets.find();
-        }
-        if (isDrum) {
-            p = this.presets.find(
-                (p) =>
-                    p.bankMSB === bankNr &&
-                    p.isDrumPreset(allowXGDrums) &&
-                    p.program === programNr
-            );
-        } else {
-            p = this.presets.find(
-                (p) => p.bankMSB === bankNr && p.program === programNr
-            );
-        }
-        if (p) {
-            return p;
-        }
-        // No match...
-        if (isDrum) {
-            if (allowXGDrums) {
-                // Try any drum preset with matching program?
-                const p = this.presets.find(
-                    (p) =>
-                        p.isDrumPreset(allowXGDrums) && p.program === programNr
-                );
-                if (p) {
-                    return p;
-                }
-            }
-        }
-        return undefined;
-    }
-
-    /**
-     * Get the appropriate preset
-     * @param bankMSB
-     * @param bankLSB
-     * @param program
-     * @param system
-     * @param isDrum
-     */
-    public getPreset(
-        bankMSB: number,
-        bankLSB: number,
-        program: number,
-        system: SynthSystem,
-        isDrum: boolean
-    ): BasicPreset {
-        const p = this.getExactPreset(
-            bankMSB,
-            bankLSB,
-            program,
-            system,
-            isDrum
-        );
-        if (p) {
-            return p;
-        }
-        const isDrums = isDrum || (isSystemXG(system) && isXGDrums(bankMSB));
-        // No match...
-        if (isDrums) {
-            // Drum preset: find any preset with bank 128
-            preset = this.presets.find(
-                (p) => p.isDrumPreset(allowXGDrums) && p.program === programNr
-            );
-            // Only allow 128, otherwise it would default to XG SFX
-            preset ??= this.presets.find((p) => p.isDrumPreset(allowXGDrums));
-        } else {
-            // Non-drum preset: find any preset with the given program that is not a drum preset
-            preset = this.presets.find(
-                (p) => p.program === programNr && !p.isDrumPreset(allowXGDrums)
-            );
-        }
-        if (preset) {
-            SpessaSynthInfo(
-                `%cPreset ${bankNr}.${programNr} not found. Replaced with %c${preset.name} (${preset.bankMSB}.${preset.program})`,
-                consoleColors.warn,
-                consoleColors.recognized
-            );
-        }
-
-        // No preset, use the first one available
-        if (!preset) {
-            SpessaSynthInfo(
-                `Preset ${programNr} not found. Defaulting to`,
-                this.presets[0].name
-            );
-            preset = this.presets[0];
-        }
-        return preset;
+    public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
+        return selectPreset(this.presets, patch, system);
     }
 
     // noinspection JSUnusedGlobalSymbols

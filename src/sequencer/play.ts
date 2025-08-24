@@ -62,12 +62,12 @@ export function setTimeToInternal(
     const isCCNonSkippable = (cc: MIDIController) =>
         cc === midiControllers.dataDecrement ||
         cc === midiControllers.dataIncrement ||
-        cc === midiControllers.dataEntryMsb ||
+        cc === midiControllers.dataEntryMSB ||
         cc === midiControllers.lsbForControl6DataEntry ||
-        cc === midiControllers.RPNLsb ||
-        cc === midiControllers.RPNMsb ||
-        cc === midiControllers.NRPNLsb ||
-        cc === midiControllers.NRPNMsb ||
+        cc === midiControllers.registeredParameterLSB ||
+        cc === midiControllers.registeredParameterMSB ||
+        cc === midiControllers.nonRegisteredParameterLSB ||
+        cc === midiControllers.nonRegisteredParameterMSB ||
         cc === midiControllers.bankSelect ||
         cc === midiControllers.lsbForControl0BankSelect ||
         cc === midiControllers.resetAllControllers;

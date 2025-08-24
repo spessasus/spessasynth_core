@@ -4,18 +4,18 @@ import type { MIDIChannel } from "../engine_components/midi_channel";
 
 /**
  * Changes the program (preset) of the channel.
- * @param programNumber The program number (0-127) to change to.
+ * @param program The program number (0-127) to change to.
  */
-export function programChange(this: MIDIChannel, programNumber: number) {
+export function programChange(this: MIDIChannel, program: number) {
     if (this.lockPreset) {
         return;
     }
-    // Always 128 for percussion
-    const bank = this.getBankSelect();
 
-    const isXG = this.isXGChannel;
-    const p = this.synth.soundBankManager.getPreset(bank, programNumber, isXG);
-    let preset = p.preset;
+    this.patch.program = program;
+    let preset = this.synth.soundBankManager.getPreset(
+        this.patch,
+        this.channelSystem
+    );
     if (!preset) {
         SpessaSynthWarn("No presets! Using empty fallback.");
         preset = new BasicPreset(
@@ -24,12 +24,17 @@ export function programChange(this: MIDIChannel, programNumber: number) {
         // Fallback preset, make it scream so it's easy to notice :-)
         preset.name = "SPESSA EMPTY FALLBACK PRESET";
     }
-    this.setPreset(preset);
-    this.sentBank = Math.min(128, preset.bankMSB + p.bankOffset);
+    this.preset = preset;
+    // Do not spread the preset as we don't want to copy it entirely.
     this.synthProps.callEvent("programChange", {
         channel: this.channelNumber,
-        program: preset.program,
-        bank: this.sentBank
+        bankLSB: this.preset.bankLSB,
+        bankMSB: this.preset.bankMSB,
+        program: this.preset.program,
+        isGMGSDrum: this.preset.isGMGSDrum
     });
+    if (preset.isAnyDrums !== this.drumChannel) {
+        this.setDrumFlag(preset.isAnyDrums);
+    }
     this.sendChannelProperty();
 }

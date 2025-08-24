@@ -1,9 +1,28 @@
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import { isXGDrums } from "../../../utils/xg_hacks";
 
 import type { SoundBankManagerListEntry } from "../../../soundbank/types";
 import type { BasicSoundBank } from "../../../soundbank/basic_soundbank/basic_soundbank";
-import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import type { SynthSystem } from "../../types";
+import { selectPreset } from "../../../soundbank/basic_soundbank/preset_selector";
+import type { MIDIPatch, MIDIPatchNamed } from "../../../soundbank/basic_soundbank/midi_patch";
+
+class SoundBankManagerPreset extends BasicPreset {
+    public constructor(p: BasicPreset, offset: number) {
+        super(p.parentSoundBank, p.globalZone);
+        this.bankMSB = offset + p.bankMSB;
+
+        this.name = p.name;
+        this.bankLSB = p.bankLSB;
+        this.isGMGSDrum = p.isGMGSDrum;
+        this.program = p.program;
+
+        this.genre = p.genre;
+        this.morphology = p.morphology;
+        this.library = p.library;
+        this.zones = p.zones;
+    }
+}
 
 export class SoundBankManager {
     /**
@@ -11,6 +30,8 @@ export class SoundBankManager {
      */
     public soundBankList: SoundBankManagerListEntry[] = [];
     private readonly presetListChangeCallback: () => unknown;
+
+    private selectablePresetList: SoundBankManagerPreset[] = [];
 
     /**
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
@@ -20,11 +41,7 @@ export class SoundBankManager {
         this.presetListChangeCallback = presetListChangeCallback;
     }
 
-    private _presetList: {
-        bank: number;
-        name: string;
-        program: number;
-    }[] = [];
+    private _presetList: MIDIPatchNamed[] = [];
 
     /**
      * The list of all presets in the sound bank stack.
@@ -94,89 +111,16 @@ export class SoundBankManager {
 
     /**
      * Gets a given preset from the sound bank stack.
-     * @param bankNumber The bank number of the preset.
-     * @param programNumber The program number of the preset.
-     * @param allowXGDrums If true, allows XG drum presets.
+     * @param patch The MIDI patch to get.
+     * @param system The MIDI system to select the preset for.
      * @returns An object containing the preset and its bank offset.
      */
-    public getPreset(
-        bankNumber: number,
-        programNumber: number,
-        allowXGDrums = false
-    ): { preset: BasicPreset; bankOffset: number } {
+    public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
         if (this.soundBankList.length < 1) {
             throw new Error("No sound banks! Did you forget to add one?");
         }
-        const isDrum =
-            bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));
-        for (const sf of this.soundBankList) {
-            // Check for the preset (with given offset)
-            const preset = sf.soundBank.getExactPreset(
-                bankNumber === 128 ? 128 : bankNumber - sf.bankOffset,
-                programNumber,
-                allowXGDrums
-            );
-            if (preset !== undefined) {
-                return {
-                    preset: preset,
-                    bankOffset: sf.bankOffset
-                };
-            }
-            // If not found, advance to the next sound bank
-        }
-        // If none found, return the first correct preset found
-        if (!isDrum) {
-            for (const sf of this.soundBankList) {
-                const preset = sf.soundBank.presets.find(
-                    (p) =>
-                        p.program === programNumber &&
-                        !p.isDrumPreset(allowXGDrums)
-                );
-                if (preset) {
-                    return {
-                        preset: preset,
-                        bankOffset: sf.bankOffset
-                    };
-                }
-            }
-            // If nothing at all, use the first preset
-            const sf = this.soundBankList[0];
-            return {
-                preset: sf.soundBank.presets[0],
-                bankOffset: sf.bankOffset
-            };
-        } else {
-            for (const sf of this.soundBankList) {
-                // Check for any drum type (127/128) and matching program
-                const p = sf.soundBank.presets.find(
-                    (p) =>
-                        p.isDrumPreset(allowXGDrums) &&
-                        p.program === programNumber
-                );
-                if (p) {
-                    return {
-                        preset: p,
-                        bankOffset: sf.bankOffset
-                    };
-                }
-                // Check for any drum preset
-                const preset = sf.soundBank.presets.find((p) =>
-                    p.isDrumPreset(allowXGDrums)
-                );
-                if (preset) {
-                    return {
-                        preset: preset,
-                        bankOffset: sf.bankOffset
-                    };
-                }
-            }
-            // If nothing at all, use the first preset
-            const sf = this.soundBankList[0];
-            return {
-                preset: sf.soundBank.presets[0],
-                bankOffset: sf.bankOffset
-            };
-        }
+
+        return selectPreset(this.selectablePresetList, patch, system);
     }
 
     // Clears the sound bank list and destroys all sound banks.
@@ -188,38 +132,33 @@ export class SoundBankManager {
     }
 
     private generatePresetList() {
-        /**
-         * <"bank-program", "presetName">
-         */
-        const presetList: Record<string, string> = {};
-        // Gather the presets in reverse and replace if necessary
-        for (let i = this.soundBankList.length - 1; i >= 0; i--) {
-            const font = this.soundBankList[i];
-            /**
-             * Prevent preset names from the same sound bank from being overridden
-             * if the soundfont has two presets with matching bank and program
-             */
-            const presets = new Set<string>();
-            for (const p of font.soundBank.presets) {
-                const bank = Math.min(128, p.bankMSB + font.bankOffset);
-                const presetString = `${bank}-${p.program}`;
-                if (presets.has(presetString)) {
-                    continue;
-                }
-                presets.add(presetString);
-                presetList[presetString] = p.name;
-            }
-        }
+        const presetList = new Array<SoundBankManagerPreset>();
 
-        this._presetList = [];
-        for (const [string, name] of Object.entries(presetList)) {
-            const pb = string.split("-");
-            this._presetList.push({
-                name,
-                program: parseInt(pb[1]),
-                bank: parseInt(pb[0])
+        const addedPresets = new Set<string>();
+        this.soundBankList.forEach((s) => {
+            const bank = s.soundBank;
+            const bankOffset = s.bankOffset;
+            bank.presets.forEach((p) => {
+                const selectablePreset = new SoundBankManagerPreset(
+                    p,
+                    bankOffset
+                );
+                if (!addedPresets.has(selectablePreset.toMIDIString())) {
+                    addedPresets.add(selectablePreset.toMIDIString());
+                    presetList.push(selectablePreset);
+                }
             });
-        }
+        });
+        this.selectablePresetList = presetList;
+        this._presetList = presetList.map((p) => {
+            return {
+                bankMSB: p.bankMSB,
+                bankLSB: p.bankLSB,
+                program: p.program,
+                isGMGSDrum: p.isGMGSDrum,
+                name: p.name
+            };
+        });
         this.presetListChangeCallback();
     }
 }

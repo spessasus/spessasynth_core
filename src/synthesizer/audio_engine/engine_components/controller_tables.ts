@@ -41,10 +41,10 @@ setResetValue(midiControllers.vibratoDelay, 64);
 setResetValue(midiControllers.generalPurposeController6, 64);
 setResetValue(midiControllers.generalPurposeController8, 64);
 
-setResetValue(midiControllers.RPNLsb, 127);
-setResetValue(midiControllers.RPNMsb, 127);
-setResetValue(midiControllers.NRPNLsb, 127);
-setResetValue(midiControllers.NRPNMsb, 127);
+setResetValue(midiControllers.registeredParameterLSB, 127);
+setResetValue(midiControllers.registeredParameterMSB, 127);
+setResetValue(midiControllers.nonRegisteredParameterLSB, 127);
+setResetValue(midiControllers.nonRegisteredParameterMSB, 127);
 
 export const PORTAMENTO_CONTROL_UNSET = 1;
 // Special case: portamento control

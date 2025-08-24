@@ -168,7 +168,7 @@ export class ChannelSnapshot {
         return new ChannelSnapshot(
             channelObject.preset?.program ?? 0,
             channelObject.getBankSelect(),
-            channelObject.bank !== channelObject.getBankSelect(),
+            channelObject.bankMSB !== channelObject.getBankSelect(),
             channelObject.preset?.name ?? "undefined",
             channelObject.lockPreset,
             channelObject.lockedSystem,
@@ -193,7 +193,7 @@ export class ChannelSnapshot {
         const channelObject =
             spessaSynthProcessor.midiChannels[this.channelNumber];
         channelObject.muteChannel(this.isMuted);
-        channelObject.setDrums(this.drumChannel);
+        channelObject.setDrumFlag(this.drumChannel);
 
         // Restore controllers
         channelObject.midiControllers.set(this.midiControllers);
@@ -209,7 +209,6 @@ export class ChannelSnapshot {
 
         // Restore preset and lock
         channelObject.setPresetLock(false);
-        channelObject.setBankSelect(this.bank, this.isBankLSB);
         channelObject.programChange(this.program);
         channelObject.setPresetLock(this.lockPreset);
         channelObject.lockedSystem = this.lockedSystem;

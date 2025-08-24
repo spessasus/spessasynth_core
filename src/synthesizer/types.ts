@@ -1,5 +1,9 @@
 import type { Voice } from "./audio_engine/engine_components/voice";
 import type { InterpolationType, SynthDisplayType } from "./enums";
+import type {
+    MIDIPatch,
+    MIDIPatchNamed
+} from "../soundbank/basic_soundbank/midi_patch";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
@@ -30,15 +34,9 @@ export interface DrumChangeCallback {
     isDrumChannel: boolean;
 }
 
-export interface ProgramChangeCallback {
+export interface ProgramChangeCallback extends MIDIPatch {
     /** The MIDI channel number. */
     channel: number;
-
-    /** The program number. */
-    program: number;
-
-    /** The bank number. */
-    bank: number;
 }
 
 export interface ControllerChangeCallback {
@@ -60,21 +58,10 @@ export interface MuteChannelCallback {
     isMuted: boolean;
 }
 
-export interface PresetListEntry {
-    /** The name of the preset. */
-    name: string;
-
-    /** The bank number. */
-    bank: number;
-
-    /** The program number. */
-    program: number;
-}
-
 /**
  * A list of preset changes, each with a name, bank, and program number.
  */
-export type PresetList = PresetListEntry[];
+export type PresetList = MIDIPatchNamed[];
 
 export interface SynthDisplayCallback {
     /** The data to display. */
@@ -298,7 +285,12 @@ export interface ChannelProperty {
     /**
      * The bank number of the current preset.
      */
-    bank: number;
+    bankMSB: number;
+
+    /**
+     * The bank LSB number of the current preset.
+     */
+    bankLSB: number;
     /**
      * The MIDI program number of the current preset.
      */

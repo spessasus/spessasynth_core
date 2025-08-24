@@ -1,9 +1,11 @@
-export interface MIDIPatch {
+export interface MIDIPatchNamed extends MIDIPatch {
     /**
      * The name of the patch.
      */
     name: string;
+}
 
+export interface MIDIPatch {
     /**
      * The MIDI program number.
      */
@@ -22,5 +24,5 @@ export interface MIDIPatch {
     /**
      * If the preset is marked as GM/GS drum preset. Note that XG drums do not have this flag.
      */
-    isDrum: boolean;
+    isGMGSDrum: boolean;
 }

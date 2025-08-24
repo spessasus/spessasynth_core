@@ -22,13 +22,14 @@ import type {
 } from "./types";
 import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
-import { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes } from "./enums";
 import type { KeyRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString } from "../utils/load_date";
+import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
+import type { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -241,11 +242,11 @@ export class BasicMIDI {
     /**
      * Gets the used programs and keys for this MIDI file with a given sound bank.
      * @param soundbank the sound bank.
-     * @returns The output data is a key-value pair: "bankMSB:bankLSB:isDrum:program" -> Set<"key-velocity">
+     * @returns The output data is a key-value pair: preset -> Set<"key-velocity">
      */
     public getUsedProgramsAndKeys(
-        soundbank: SoundBankManager | BasicSoundBank
-    ): Record<string, Set<string>> {
+        soundbank: BasicSoundBank | SoundBankManager
+    ): Map<BasicPreset, Set<string>> {
         return getUsedProgramsAndKeys(this, soundbank);
     }
 

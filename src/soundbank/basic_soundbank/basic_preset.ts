@@ -7,9 +7,9 @@ import type { BasicSoundBank } from "./basic_soundbank";
 import type { Generator } from "./generator";
 import type { KeyRange, SampleAndGenerators } from "../types";
 import type { BasicInstrument } from "./basic_instrument";
-import type { MIDIPatch } from "./midi_patch";
+import type { MIDIPatchNamed } from "./midi_patch";
 
-export class BasicPreset implements MIDIPatch {
+export class BasicPreset implements MIDIPatchNamed {
     /**
      * The parent soundbank instance
      * Currently used for determining default modulators and XG status
@@ -27,7 +27,7 @@ export class BasicPreset implements MIDIPatch {
 
     public bankLSB = 0;
 
-    public isDrum = false;
+    public isGMGSDrum = false;
 
     /**
      * The preset's zones
@@ -37,7 +37,7 @@ export class BasicPreset implements MIDIPatch {
     /**
      * Preset's global zone
      */
-    public readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
+    public readonly globalZone: BasicGlobalZone;
 
     /**
      * Unused metadata
@@ -55,20 +55,28 @@ export class BasicPreset implements MIDIPatch {
     /**
      * Creates a new preset representation.
      * @param parentSoundBank the sound bank this preset belongs to.
+     * @param globalZone optional, a global zone to use.
      */
-    public constructor(parentSoundBank: BasicSoundBank) {
+    public constructor(
+        parentSoundBank: BasicSoundBank,
+        globalZone = new BasicGlobalZone()
+    ) {
         this.parentSoundBank = parentSoundBank;
+        this.globalZone = globalZone;
+    }
+
+    public get isXGDrums() {
+        return this.parentSoundBank.isXGBank && isXGDrums(this.bankMSB);
     }
 
     /**
      * Checks if this preset is a drum preset
-     * @param allowXG if the Yamaha XG system is allowed
      */
-    public isDrumPreset(allowXG: boolean): boolean {
-        const xg = allowXG && this.parentSoundBank.isXGBank;
+    public get isAnyDrums(): boolean {
+        const xg = this.parentSoundBank.isXGBank;
 
         return (
-            this.isDrum ||
+            this.isGMGSDrum ||
             (xg &&
                 isXGDrums(this.bankMSB) &&
                 // SFX is not a drum preset, only for exact match
@@ -125,7 +133,7 @@ export class BasicPreset implements MIDIPatch {
             this.program === preset.program &&
             this.bankLSB === preset.bankLSB &&
             this.bankMSB === preset.bankMSB &&
-            this.isDrum === preset.isDrum
+            this.isGMGSDrum === preset.isGMGSDrum
         );
     }
 
@@ -287,5 +295,19 @@ export class BasicPreset implements MIDIPatch {
             });
         });
         return parsedGeneratorsAndSamples;
+    }
+
+    /**
+     * BankMSB:bankLSB:program:isGMGSDrum
+     */
+    public toMIDIString() {
+        if (this.isGMGSDrum) {
+            return `DRUM:${this.program}`;
+        }
+        return `${this.bankMSB}:${this.bankLSB}:${this.program}`;
+    }
+
+    public toString() {
+        return `${this.name} ${this.toMIDIString()}`;
     }
 }

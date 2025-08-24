@@ -1,6 +1,7 @@
 /**
  * A manager for custom key overrides for channels
  */
+import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 
 export class KeyModifier {
     /**
@@ -10,28 +11,17 @@ export class KeyModifier {
     /**
      * The patch this key uses. -1 on either means default.
      */
-    public patch: { bank: number; program: number } = { bank: -1, program: -1 };
+    public patch: MIDIPatch = {
+        bankLSB: -1,
+        bankMSB: -1,
+        isGMGSDrum: false,
+        program: -1
+    };
 
     /**
      * Linear gain override for the voice.
      */
     public gain = 1;
-
-    /**
-     * Creates a new KeyModifier.
-     * @param velocity -1 means unchanged.
-     * @param bank -1 means default.
-     * @param program -1 means default.
-     * @param gain linear gain, 1 is default.
-     */
-    public constructor(velocity = -1, bank = -1, program = -1, gain = 1) {
-        this.velocity = velocity;
-        this.patch = {
-            bank: bank,
-            program: program
-        };
-        this.gain = gain;
-    }
 }
 
 export class KeyModifierManager {
@@ -116,7 +106,7 @@ export class KeyModifierManager {
      * @returns  True if the key has an override patch, false otherwise.
      */
     public hasOverridePatch(channel: number, midiNote: number): boolean {
-        const bank = this.keyMappings[channel]?.[midiNote]?.patch?.bank;
+        const bank = this.keyMappings[channel]?.[midiNote]?.patch?.bankMSB;
         return bank !== undefined && bank >= 0;
     }
 
@@ -127,10 +117,7 @@ export class KeyModifierManager {
      * @returns An object containing the bank and program numbers.
      * @throws Error if no modifier is set for the key.
      */
-    public getPatch(
-        channel: number,
-        midiNote: number
-    ): { bank: number; program: number } {
+    public getPatch(channel: number, midiNote: number): MIDIPatch {
         const modifier = this.keyMappings[channel]?.[midiNote];
         if (modifier) {
             return modifier.patch;

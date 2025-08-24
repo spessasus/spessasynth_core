@@ -1,44 +1,44 @@
-import { SpessaSynthInfo } from "../utils/loggin";
-import { consoleColors } from "../utils/other";
+import { SpessaSynthInfo } from '../utils/loggin'
+import { consoleColors } from '../utils/other'
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
-} from "./audio_engine/engine_components/synth_constants";
-import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/volume_envelope";
+} from './audio_engine/engine_components/synth_constants'
+import { stbvorbis } from '../externals/stbvorbis_sync/stbvorbis_wrapper'
+import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from './audio_engine/engine_components/dsp_chain/volume_envelope'
 import {
     getAllMasterParametersInternal,
     getMasterParameterInternal,
     setMasterParameterInternal
-} from "./audio_engine/engine_methods/controller_control/master_parameters";
-import { SoundBankManager } from "./audio_engine/engine_components/sound_bank_manager";
-import { PAN_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/stereo_panner";
-import { FILTER_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/lowpass_filter";
-import { getEvent } from "../midi/midi_message";
-import { IndexedByteArray } from "../utils/indexed_array";
-import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
-import { fillWithDefaults } from "../utils/fill_with_defaults";
-import { isSystemXG } from "../utils/xg_hacks";
-import { killVoicesIntenral } from "./audio_engine/engine_methods/stopping_notes/voice_killing";
-import { getVoicesForPresetInternal, getVoicesInternal } from "./audio_engine/engine_components/voice";
-import { systemExclusiveInternal } from "./audio_engine/engine_methods/system_exclusive";
-import { resetAllControllersInternal } from "./audio_engine/engine_methods/controller_control/reset_controllers";
-import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
+} from './audio_engine/engine_methods/controller_control/master_parameters'
+import { SoundBankManager } from './audio_engine/engine_components/sound_bank_manager'
+import { PAN_SMOOTHING_FACTOR } from './audio_engine/engine_components/dsp_chain/stereo_panner'
+import { FILTER_SMOOTHING_FACTOR } from './audio_engine/engine_components/dsp_chain/lowpass_filter'
+import { getEvent } from '../midi/midi_message'
+import { IndexedByteArray } from '../utils/indexed_array'
+import { DEFAULT_SYNTH_OPTIONS } from './audio_engine/engine_components/synth_processor_options'
+import { fillWithDefaults } from '../utils/fill_with_defaults'
+import { killVoicesIntenral } from './audio_engine/engine_methods/stopping_notes/voice_killing'
+import { getVoicesForPresetInternal, getVoicesInternal } from './audio_engine/engine_components/voice'
+import { systemExclusiveInternal } from './audio_engine/engine_methods/system_exclusive'
+import { resetAllControllersInternal } from './audio_engine/engine_methods/controller_control/reset_controllers'
+import { SynthesizerSnapshot } from './audio_engine/snapshot/synthesizer_snapshot'
 import type {
     SynthMethodOptions,
     SynthProcessorEvent,
     SynthProcessorEventData,
     SynthProcessorOptions,
     VoiceList
-} from "./types";
-import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../midi/enums";
-import { ProtectedSynthValues } from "./audio_engine/engine_components/internal_synth_values";
-import { KeyModifierManager } from "./audio_engine/engine_components/key_modifier_manager";
-import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
-import { MIDIChannel } from "./audio_engine/engine_components/midi_channel";
-import { SoundBankLoader } from "../soundbank/sound_bank_loader";
-import { customControllers } from "./enums";
+} from './types'
+import { type MIDIController, type MIDIMessageType, midiMessageTypes } from '../midi/enums'
+import { ProtectedSynthValues } from './audio_engine/engine_components/internal_synth_values'
+import { KeyModifierManager } from './audio_engine/engine_components/key_modifier_manager'
+import type { BasicPreset } from '../soundbank/basic_soundbank/basic_preset'
+import { MIDIChannel } from './audio_engine/engine_components/midi_channel'
+import { SoundBankLoader } from '../soundbank/sound_bank_loader'
+import { customControllers } from './enums'
+import type { MIDIPatch } from '../soundbank/basic_soundbank/midi_patch'
 
 /**
  * Processor.ts
@@ -402,7 +402,7 @@ export class SpessaSynthProcessor {
             c.lockedControllers = [];
             c.preset = undefined;
         });
-        this.privateProps.cachedVoices.length = 0;
+        this.clearCache();
         this.midiChannels.length = 0;
         this.soundBankManager.destroy();
     }
@@ -581,15 +581,13 @@ export class SpessaSynthProcessor {
 
     /**
      * Gets a specified preset from the sound bank manager.
-     * @param bank the bank number of the preset.
-     * @param program the program number of the preset.
+     * @param patch The patch to get
      */
-    public getPreset(bank: number, program: number): BasicPreset {
+    public getPreset(patch: MIDIPatch): BasicPreset {
         return this.soundBankManager.getPreset(
-            bank,
-            program,
-            isSystemXG(this.privateProps.masterParameters.midiSystem)
-        ).preset;
+            patch,
+            this.privateProps.masterParameters.midiSystem
+        );
     }
 
     /**
@@ -628,37 +626,57 @@ export class SpessaSynthProcessor {
     }
 
     protected getCachedVoice(
-        bank: number,
-        program: number,
+        patch: MIDIPatch,
         midiNote: number,
         velocity: number
     ): VoiceList | undefined {
-        return this.privateProps.cachedVoices?.[bank]?.[program]?.[midiNote]?.[
-            velocity
-        ];
+        let bankMSB = patch.bankMSB;
+        let bankLSB = patch.bankLSB;
+        const { isGMGSDrum, program } = patch;
+        if (isGMGSDrum) {
+            bankMSB = 128;
+            bankLSB = 0;
+        }
+        return this.privateProps.cachedVoices?.[bankMSB]?.[bankLSB]?.[
+            program
+        ]?.[midiNote]?.[velocity];
     }
 
     protected setCachedVoice(
-        bank: number,
-        program: number,
+        patch: MIDIPatch,
         midiNote: number,
         velocity: number,
         voices: VoiceList
     ) {
+        let bankMSB = patch.bankMSB;
+        let bankLSB = patch.bankLSB;
+        const { isGMGSDrum, program } = patch;
+        if (isGMGSDrum) {
+            bankMSB = 128;
+            bankLSB = 0;
+        }
         // Make sure that it exists
-        if (!this.privateProps.cachedVoices[bank]) {
-            this.privateProps.cachedVoices[bank] = [];
+        if (!this.privateProps.cachedVoices[bankMSB]) {
+            this.privateProps.cachedVoices[bankMSB] = [];
         }
-        if (!this.privateProps.cachedVoices[bank][program]) {
-            this.privateProps.cachedVoices[bank][program] = [];
+        if (!this.privateProps.cachedVoices[bankMSB][bankLSB]) {
+            this.privateProps.cachedVoices[bankMSB][bankLSB] = [];
         }
-        if (!this.privateProps.cachedVoices[bank][program][midiNote]) {
-            this.privateProps.cachedVoices[bank][program][midiNote] = [];
+        if (!this.privateProps.cachedVoices[bankMSB][bankLSB][program]) {
+            this.privateProps.cachedVoices[bankMSB][bankLSB][program] = [];
+        }
+        if (
+            !this.privateProps.cachedVoices[bankMSB][bankLSB][program][midiNote]
+        ) {
+            this.privateProps.cachedVoices[bankMSB][bankLSB][program][
+                midiNote
+            ] = [];
         }
 
         // Cache
-        this.privateProps.cachedVoices[bank][program][midiNote][velocity] =
-            voices;
+        this.privateProps.cachedVoices[bankMSB][bankLSB][program][midiNote][
+            velocity
+        ] = voices;
     }
 
     private createMIDIChannelInternal(sendEvent: boolean) {
@@ -672,7 +690,7 @@ export class SpessaSynthProcessor {
         if (sendEvent) {
             this.callEvent("newChannel", undefined);
             channel.sendChannelProperty();
-            this.midiChannels[this.midiChannels.length - 1].setDrums(true);
+            this.midiChannels[this.midiChannels.length - 1].setDrumFlag(true);
         }
     }
 
@@ -691,10 +709,22 @@ export class SpessaSynthProcessor {
     private getDefaultPresets() {
         // Override this to XG, to set the default preset to NOT be XG drums!
         this.privateProps.defaultPreset = this.soundBankManager.getPreset(
-            0,
-            0,
-            true
-        ).preset;
-        this.privateProps.drumPreset = this.getPreset(128, 0);
+            {
+                bankLSB: 0,
+                bankMSB: 0,
+                program: 0,
+                isGMGSDrum: false
+            },
+            "xg"
+        );
+        this.privateProps.drumPreset = this.soundBankManager.getPreset(
+            {
+                bankLSB: 0,
+                bankMSB: 0,
+                program: 0,
+                isGMGSDrum: true
+            },
+            "gs"
+        );
     }
 }

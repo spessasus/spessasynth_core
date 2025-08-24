@@ -2,6 +2,8 @@ import { nonRegisteredMSB } from "./data_entry/data_entry_coarse";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
+import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
+import { isSystemXG } from "../../../../utils/xg_hacks";
 
 /**
  * Handles MIDI controller changes for a channel.
@@ -30,9 +32,9 @@ export function controllerChange(
     // Lsb controller values: append them as the lower nibble of the 14-bit value
     // Excluding bank select and data entry as it's handled separately
     if (
-        controllerNumber >= midiControllers.lsbForControl1ModulationWheel &&
-        controllerNumber <= midiControllers.lsbForControl13EffectControl2 &&
-        controllerNumber !== midiControllers.lsbForControl6DataEntry
+        controllerNumber >= midiControllers.modulationWheelLSB &&
+        controllerNumber <= midiControllers.effectControl2LSB &&
+        controllerNumber !== midiControllers.dataEntryLSB
     ) {
         const actualCCNum = controllerNumber - 32;
         if (this.lockedControllers[actualCCNum]) {
@@ -64,32 +66,45 @@ export function controllerChange(
 
             // Special case: bank select
             case midiControllers.bankSelect:
-                this.setBankSelect(controllerValue);
+                this.patch.bankMSB = controllerValue;
+                // Ensure that for XG, drum channels always are 127
+                // Testcase
+                // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
+                if (
+                    this.channelNumber % 16 === DEFAULT_PERCUSSION &&
+                    isSystemXG(this.channelSystem)
+                ) {
+                    this.patch.bankMSB = 127;
+                }
+
                 break;
 
-            case midiControllers.lsbForControl0BankSelect:
-                this.setBankSelect(controllerValue, true);
+            case midiControllers.bankSelectLSB:
+                this.patch.bankLSB = controllerValue;
                 break;
 
             // Check for RPN and NPRN and data entry
-            case midiControllers.RPNLsb:
+            case midiControllers.registeredParameterLSB:
                 this.dataEntryState = dataEntryStates.RPFine;
                 break;
 
-            case midiControllers.RPNMsb:
+            case midiControllers.registeredParameterMSB:
                 this.dataEntryState = dataEntryStates.RPCoarse;
                 break;
 
-            case midiControllers.NRPNMsb:
+            case midiControllers.nonRegisteredParameterMSB:
                 // Sf spec section 9.6.2
                 this.customControllers[customControllers.sf2NPRNGeneratorLSB] =
                     0;
                 this.dataEntryState = dataEntryStates.NRPCoarse;
                 break;
 
-            case midiControllers.NRPNLsb:
+            case midiControllers.nonRegisteredParameterLSB:
                 if (
-                    this.midiControllers[midiControllers.NRPNMsb] >> 7 ===
+                    this.midiControllers[
+                        midiControllers.nonRegisteredParameterMSB
+                    ] >>
+                        7 ===
                     nonRegisteredMSB.SF2
                 ) {
                     // If a <100 value has already been sent, reset!
@@ -126,11 +141,11 @@ export function controllerChange(
                 this.dataEntryState = dataEntryStates.NRPFine;
                 break;
 
-            case midiControllers.dataEntryMsb:
+            case midiControllers.dataEntryMSB:
                 this.dataEntryCoarse(controllerValue);
                 break;
 
-            case midiControllers.lsbForControl6DataEntry:
+            case midiControllers.dataEntryLSB:
                 this.dataEntryFine(controllerValue);
                 break;
 

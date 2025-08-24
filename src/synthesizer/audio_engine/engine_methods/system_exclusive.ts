@@ -385,7 +385,7 @@ export function systemExclusiveInternal(
                                 // This is the Use for Drum Part sysex (multiple drums)
                                 const isDrums =
                                     messageValue > 0 && syx[5] >> 4 > 0; // If set to other than 0, is a drum channel
-                                channelObject.setDrums(isDrums);
+                                channelObject.setGSDrums(isDrums);
                                 SpessaSynthInfo(
                                     `%cChannel %c${channel}%c ${
                                         isDrums
@@ -522,15 +522,15 @@ export function systemExclusiveInternal(
                                             modulatorSources.pitchWheel
                                     ) {
                                         channelObject.controllerChange(
-                                            midiControllers.RPNMsb,
+                                            midiControllers.registeredParameterMSB,
                                             0x0
                                         );
                                         channelObject.controllerChange(
-                                            midiControllers.RPNLsb,
+                                            midiControllers.registeredParameterLSB,
                                             0x0
                                         );
                                         channelObject.controllerChange(
-                                            midiControllers.dataEntryMsb,
+                                            midiControllers.dataEntryMSB,
                                             Math.floor(centeredValue)
                                         );
                                     } else {
@@ -1023,7 +1023,7 @@ export function systemExclusiveInternal(
                         // Bank-select LSB
                         case 0x02:
                             channelObject.controllerChange(
-                                midiControllers.lsbForControl0BankSelect,
+                                midiControllers.bankSelectLSB,
                                 value
                             );
                             break;

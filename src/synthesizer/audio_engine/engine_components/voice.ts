@@ -17,6 +17,7 @@ import type { SampleLoopingMode, VoiceList } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { AudioSample } from "./audio_sample";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
+import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // Less because filter shenanigans
@@ -250,8 +251,6 @@ export class Voice {
 
 /**
  * @param preset the preset to get voices for
- * @param bank the bank to cache the voices in
- * @param program program to cache the voices in
  * @param midiNote the MIDI note to use
  * @param velocity the velocity to use
  * @param realKey the real MIDI note if the "midiNote" was changed by MIDI Tuning Standard
@@ -260,8 +259,6 @@ export class Voice {
 export function getVoicesForPresetInternal(
     this: SpessaSynthProcessor,
     preset: BasicPreset,
-    bank: number,
-    program: number,
     midiNote: number,
     velocity: number,
     realKey: number
@@ -335,15 +332,6 @@ export function getVoicesForPresetInternal(
             }
 
             // Uncomment to print debug info
-            // SpessaSynthTable([{
-            //     Sample: sampleAndGenerators.sample.sampleName,
-            //     Generators: generators,
-            //     Modulators: sampleAndGenerators.modulators.map(m => Modulator.debugString(m)),
-            //     Velocity: velocity,
-            //     TargetKey: targetKey,
-            //     MidiNote: midiNote,
-            //     AudioSample: audioSample
-            // }]);
             voices.push(
                 new Voice(
                     this.sampleRate,
@@ -360,7 +348,7 @@ export function getVoicesForPresetInternal(
             return voices;
         }, []);
     // Cache the voice
-    this.setCachedVoice(bank, program, midiNote, velocity, voices);
+    this.setCachedVoice(preset, midiNote, velocity, voices);
     return voices.map((v) => Voice.copy(v, this.currentSynthTime, realKey));
 }
 
@@ -386,21 +374,19 @@ export function getVoicesInternal(
         midiNote
     );
 
-    let bank = channelObject.getBankSelect();
-
     let preset = channelObject.preset;
     if (!preset) {
         SpessaSynthWarn(`No preset for channel ${channel}!`);
         return [];
     }
-    let program = preset.program;
+    let patch: MIDIPatch = {
+        ...preset
+    };
     if (overridePatch) {
-        const override = this.keyModifierManager.getPatch(channel, midiNote);
-        bank = override.bank;
-        program = override.program;
+        patch = this.keyModifierManager.getPatch(channel, midiNote);
     }
 
-    const cached = this.getCachedVoice(bank, program, midiNote, velocity);
+    const cached = this.getCachedVoice(patch, midiNote, velocity);
     // If cached, return it!
     if (cached !== undefined) {
         return cached.map((v) => Voice.copy(v, this.currentSynthTime, realKey));
@@ -408,14 +394,7 @@ export function getVoicesInternal(
 
     // Not cached...
     if (overridePatch) {
-        preset = this.getPreset(bank, program);
+        preset = this.getPreset(patch);
     }
-    return this.getVoicesForPreset(
-        preset,
-        bank,
-        program,
-        midiNote,
-        velocity,
-        realKey
-    );
+    return this.getVoicesForPreset(preset, midiNote, velocity, realKey);
 }

@@ -253,25 +253,25 @@ export function modifyMIDIInternal(
                         const centsCoarse = fineTune * 64 + 64;
                         const rpnCoarse = getControllerChange(
                             midiChannel,
-                            midiControllers.RPNMsb,
+                            midiControllers.registeredParameterMSB,
                             0,
                             e.ticks
                         );
                         const rpnFine = getControllerChange(
                             midiChannel,
-                            midiControllers.RPNLsb,
+                            midiControllers.registeredParameterLSB,
                             1,
                             e.ticks
                         );
                         const dataEntryCoarse = getControllerChange(
                             channel,
-                            midiControllers.dataEntryMsb,
+                            midiControllers.dataEntryMSB,
                             centsCoarse,
                             e.ticks
                         );
                         const dataEntryFine = getControllerChange(
                             midiChannel,
-                            midiControllers.lsbForControl6DataEntry,
+                            midiControllers.dataEntryLSB,
                             0,
                             e.ticks
                         );
@@ -329,7 +329,7 @@ export function modifyMIDIInternal(
 
                         // On xg, add lsb
                         if (isSystemXG(system)) {
-                            // Xg drums: msb can be 120, 126 or 127
+                            // XG drums: msb can be 120, 126 or 127
                             if (change.isDrum) {
                                 SpessaSynthInfo(
                                     `%cAdding XG Drum change on track %c${trackNum}`,

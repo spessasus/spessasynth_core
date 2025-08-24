@@ -157,12 +157,12 @@ function correctBankOffsetInternal(
                     soundBank.presets.findIndex(
                         (p) =>
                             p.program === initialProgram &&
-                            p.isDrumPreset(isXG, true)
+                            p.isAnyDrums(isXG, true)
                     ) === -1
                 ) {
                     // Doesn't exist. pick any preset that has bank 128.
                     e.data[0] =
-                        soundBank.presets.find((p) => p.isDrumPreset(isXG))
+                        soundBank.presets.find((p) => p.isAnyDrums(isXG))
                             ?.program ?? 0;
                     SpessaSynthInfo(
                         `%cNo drum preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.data[0]}.`,
@@ -177,13 +177,12 @@ function correctBankOffsetInternal(
                 if (
                     soundBank.presets.findIndex(
                         (p) =>
-                            p.program === initialProgram &&
-                            !p.isDrumPreset(isXG)
+                            p.program === initialProgram && !p.isAnyDrums(isXG)
                     ) === -1
                 ) {
                     // Doesn't exist. pick any preset that does not have bank 128.
                     e.data[0] =
-                        soundBank.presets.find((p) => !p.isDrumPreset(isXG))
+                        soundBank.presets.find((p) => !p.isAnyDrums(isXG))
                             ?.program ?? 0;
                     SpessaSynthInfo(
                         `%cNo preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.data[0]}.`,

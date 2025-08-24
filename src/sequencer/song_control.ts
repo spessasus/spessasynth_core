@@ -70,9 +70,7 @@ export function loadNewSequenceInternal(
     const used = this._midiData.getUsedProgramsAndKeys(
         this.synth.soundBankManager
     );
-    for (const [programBank, combos] of Object.entries(used)) {
-        const [bank, program] = programBank.split(":").map(Number);
-        const preset = this.synth.getPreset(bank, program);
+    used.forEach((combos, preset) => {
         SpessaSynthInfo(
             `%cPreloading used samples on %c${preset.name}%c...`,
             consoleColors.info,
@@ -81,16 +79,9 @@ export function loadNewSequenceInternal(
         );
         for (const combo of combos) {
             const [midiNote, velocity] = combo.split("-").map(Number);
-            this.synth.getVoicesForPreset(
-                preset,
-                bank,
-                program,
-                midiNote,
-                velocity,
-                midiNote
-            );
+            this.synth.getVoicesForPreset(preset, midiNote, velocity, midiNote);
         }
-    }
+    });
     SpessaSynthGroupEnd();
 
     // Copy over the port data
