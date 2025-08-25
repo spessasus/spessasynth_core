@@ -79,11 +79,17 @@ export class MIDIPatchTools {
      * @param patch2
      */
     public static matches(patch1: MIDIPatch, patch2: MIDIPatch) {
+        if (patch1.isGMGSDrum || patch2.isGMGSDrum) {
+            // For drums only compare programs
+            return (
+                patch1.isGMGSDrum === patch2.isGMGSDrum &&
+                patch1.program === patch2.program
+            );
+        }
         return (
             patch1.program === patch2.program &&
             patch1.bankLSB === patch2.bankLSB &&
-            patch1.bankMSB === patch2.bankMSB &&
-            patch1.isGMGSDrum === patch2.isGMGSDrum
+            patch1.bankMSB === patch2.bankMSB
         );
     }
 

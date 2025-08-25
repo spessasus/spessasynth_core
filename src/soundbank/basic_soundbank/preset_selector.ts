@@ -37,19 +37,17 @@ export function selectPreset<T extends BasicPreset>(
     if (presets.length < 1) {
         throw new Error("No presets!");
     }
-    let { isGMGSDrum, bankLSB, bankMSB } = patch;
-    if (isSystemXG(system) && isGMGSDrum) {
+    if (patch.isGMGSDrum && isSystemXG(system)) {
         // GM/GS drums with XG. This shouldn't happen. Force XG drums.
-        isGMGSDrum = false;
-        bankLSB = 0;
-        bankMSB = getDrumBank(system);
         patch = {
             ...patch,
-            isGMGSDrum,
-            bankLSB,
-            bankMSB
+            isGMGSDrum: false,
+            bankLSB: 0,
+            bankMSB: getDrumBank(system)
         };
     }
+    const { isGMGSDrum, bankLSB, bankMSB } = patch;
+
     const { program } = patch;
     let p = presets.find((p) => p.matches(patch));
     if (p) {
@@ -122,6 +120,14 @@ export function selectPreset<T extends BasicPreset>(
         // GS uses MSB so search for that.
         p = matchingPrograms.find((p) => p.bankMSB === bankMSB);
     }
+    if (p) {
+        returnReplacement(p);
+        return p;
+    }
+    // Any matching bank
+    p = matchingPrograms.find(
+        (p) => p.bankLSB === bankLSB || p.bankMSB === bankMSB
+    );
     if (p) {
         returnReplacement(p);
         return p;
