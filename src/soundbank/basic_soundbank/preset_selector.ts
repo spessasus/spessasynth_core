@@ -1,7 +1,9 @@
 import type { SynthSystem } from "../../synthesizer/types";
 import { getDrumBank, isSystemXG, isXGDrums } from "../../utils/xg_hacks";
 import type { BasicPreset } from "./basic_preset";
-import type { MIDIPatch } from "./midi_patch";
+import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
+import { SpessaSynthInfo } from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
 
 function getAnyDrums<T extends BasicPreset>(
     presets: T[],
@@ -36,56 +38,81 @@ export function selectPreset<T extends BasicPreset>(
         throw new Error("No presets!");
     }
     let { isGMGSDrum, bankLSB, bankMSB } = patch;
+    if (isSystemXG(system) && isGMGSDrum) {
+        // GM/GS drums with XG. This shouldn't happen. Force XG drums.
+        isGMGSDrum = false;
+        bankLSB = 0;
+        bankMSB = getDrumBank(system);
+        patch = {
+            ...patch,
+            isGMGSDrum,
+            bankLSB,
+            bankMSB
+        };
+    }
     const { program } = patch;
     let p = presets.find((p) => p.matches(patch));
     if (p) {
         return p;
     }
 
+    const returnReplacement = (pres: T) => {
+        SpessaSynthInfo(
+            `%cPreset %c${MIDIPatchTools.toMIDIString(patch)}%c not found (${system}). Replaced with %c${pres.toString()}`,
+            consoleColors.warn,
+            consoleColors.unrecognized,
+            consoleColors.warn,
+            consoleColors.value
+        );
+    };
+
     // No exact match...
-    if (isSystemXG(system) && isGMGSDrum) {
-        // GM/GS drums with XG. This shouldn't happen. Force XG drums.
-        isGMGSDrum = false;
-        bankLSB = 0;
-        bankMSB = getDrumBank(system);
-    }
     if (isGMGSDrum) {
         // GM/GS drums: check for the exact program match
         let p = presets.find((p) => p.isGMGSDrum && p.program === program);
         if (p) {
+            returnReplacement(p);
             return p;
         }
 
         // No match, pick any matching drum
         p = presets.find((p) => p.isAnyDrums && p.program === program);
         if (p) {
+            returnReplacement(p);
             return p;
         }
 
         // No match, pick the first drum preset, preferring GM/GS
-        return getAnyDrums(presets, false);
+        p = getAnyDrums(presets, false);
+        returnReplacement(p);
+        return p;
     }
     if (isXGDrums(bankMSB) && isSystemXG(system)) {
         // XG drums: Look for exact bank and program match
         let p = presets.find((p) => p.program === program && p.isXGDrums);
         if (p) {
+            returnReplacement(p);
             return p;
         }
 
         // No match, pick any matching drum
         p = presets.find((p) => p.isAnyDrums && p.program === program);
         if (p) {
+            returnReplacement(p);
             return p;
         }
 
         // Pick any drums, preferring XG
-        return getAnyDrums(presets, true);
+        p = getAnyDrums(presets, true);
+        returnReplacement(p);
+        return p;
     }
     // Melodic preset
     const matchingPrograms = presets.filter(
         (p) => p.program === program && !p.isAnyDrums
     );
     if (matchingPrograms.length < 1) {
+        returnReplacement(presets[0]);
         return presets[0];
     }
     if (isSystemXG(system)) {
@@ -96,8 +123,10 @@ export function selectPreset<T extends BasicPreset>(
         p = matchingPrograms.find((p) => p.bankMSB === bankMSB);
     }
     if (p) {
+        returnReplacement(p);
         return p;
     }
     // The first matching program
+    returnReplacement(matchingPrograms[0]);
     return matchingPrograms[0];
 }
