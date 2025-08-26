@@ -1,6 +1,6 @@
 // Process arguments
 import * as fs from "fs";
-import { BasicSoundBank, SoundBankLoader } from "../../src";
+import { BasicSoundBank, type SF2VersionTag, SoundBankLoader } from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 1) {
@@ -16,7 +16,13 @@ console.info("Loaded bank:", bank.soundBankInfo.name);
 
 console.group("Bank information");
 Object.entries(bank.soundBankInfo).forEach(([key, value]) => {
-    console.info(`${key}: ${(value as string)?.toString()?.trim()}`);
+    if (typeof value === "object" && "major" in value && "minor" in value) {
+        console.info(
+            `${key}: ${(value as SF2VersionTag).major}.${(value as SF2VersionTag).minor}`
+        );
+    } else {
+        console.info(`${key}: ${(value as string)?.toString()?.trim()}`);
+    }
 });
 
 console.info(`\nPreset count: ${bank.presets.length}`);
@@ -26,9 +32,7 @@ console.groupEnd();
 
 console.group("Preset data:");
 bank.presets.forEach((preset) => {
-    console.group(`\n--- ${preset.name} ---`);
-    console.info("Bank:", preset.bankMSB);
-    console.info("Program:", preset.program);
+    console.group(`\n--- ${preset.toString()} ---`);
 
     console.group("Zones:");
     console.info("\n--- Global Zone ---");
