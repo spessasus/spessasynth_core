@@ -148,12 +148,9 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
 }
 
 export function resetPreset(this: MIDIChannel) {
-    this.patch = {
-        bankMSB: getDefaultBank(this.channelSystem),
-        bankLSB: 0,
-        isGMGSDrum: false,
-        program: 0
-    };
+    this.setBankMSB(getDefaultBank(this.channelSystem));
+    this.setBankLSB(0);
+    this.setGSDrums(false);
 
     this.setDrums(this.channelNumber % 16 === DEFAULT_PERCUSSION);
     this.programChange(0);

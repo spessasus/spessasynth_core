@@ -556,12 +556,10 @@ export class BasicSoundBank {
         // At least one preset with bank 127, 126 or 120
         // MUST be a valid XG bank.
         // Allowed banks: (see XG specification)
-        // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24,
-        // 25, 27, 28, 29, 30, 31, 32, 33, 40, 41, 48, 56, 57, 58,
-        // 64, 65, 66, 126, 127
+        // Note: XG spec numbers the programs from 1...
         const allowedPrograms = new Set([
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24, 25, 27, 28, 29, 30, 31,
-            32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
         ]);
         for (const preset of this.presets) {
             if (isXGDrums(preset.bankMSB)) {
@@ -570,7 +568,7 @@ export class BasicSoundBank {
                     // Not valid!
                     this._isXGBank = false;
                     SpessaSynthInfo(
-                        `%cThis bank is not valid XG. Preset %c${preset.bankMSB}:${preset.program}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
+                        `%cThis bank is not valid XG. Preset %c${preset.toString()}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
                         consoleColors.info,
                         consoleColors.value,
                         consoleColors.info

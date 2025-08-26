@@ -99,7 +99,11 @@ export class MIDIChannel {
      */
     public dataEntryState: DataEntryState = dataEntryStates.Idle;
 
-    public patch: MIDIPatch = {
+    /**
+     * The currently selected MIDI patch of the channel.
+     * Note that the exact matching preset may not be available, but this represents exactly what MIDI asks for.
+     */
+    public readonly patch: MIDIPatch = {
         bankMSB: 0,
         bankLSB: 0,
         program: 0,
@@ -494,6 +498,9 @@ export class MIDIChannel {
     }
 
     public setPresetLock(locked: boolean) {
+        if (this.lockPreset === locked) {
+            return;
+        }
         this.lockPreset = locked;
         if (locked) {
             this.lockedSystem = this.synthProps.masterParameters.midiSystem;
@@ -507,22 +514,34 @@ export class MIDIChannel {
     public setDrums(isDrum: boolean) {
         if (isSystemXG(this.channelSystem)) {
             if (isDrum) {
-                this.patch.bankMSB = getDrumBank(this.channelSystem);
-                this.patch.bankLSB = 0;
+                this.setBankMSB(getDrumBank(this.channelSystem));
+                this.setBankLSB(0);
             } else {
                 if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
                     throw new Error(
                         `Cannot disable drums on channel ${this.channelNumber} for XG.`
                     );
                 }
-                this.patch.bankLSB = 0;
-                this.patch.bankMSB = 0;
+                this.setBankMSB(0);
+                this.setBankLSB(0);
             }
         } else {
             this.setGSDrums(isDrum);
         }
         this.setDrumFlag(isDrum);
         this.programChange(this.patch.program);
+    }
+
+    /**
+     * Sets the channel to a given MIDI patch.
+     * Note that this executes a program change.
+     * @param patch
+     */
+    public setPatch(patch: MIDIPatch) {
+        this.setBankMSB(patch.bankMSB);
+        this.setBankLSB(patch.bankLSB);
+        this.setGSDrums(patch.isGMGSDrum);
+        this.programChange(patch.program);
     }
 
     /**
@@ -533,12 +552,9 @@ export class MIDIChannel {
         if (drums === this.patch.isGMGSDrum) {
             return;
         }
-        this.patch = {
-            isGMGSDrum: drums,
-            bankLSB: 0,
-            bankMSB: 0,
-            program: this.patch.program
-        };
+        this.setBankLSB(0);
+        this.setBankMSB(0);
+        this.patch.isGMGSDrum = drums;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -687,6 +703,20 @@ export class MIDIChannel {
             channel: this.channelNumber,
             property: data
         });
+    }
+
+    protected setBankMSB(bankMSB: number) {
+        if (this.lockPreset) {
+            return;
+        }
+        this.patch.bankMSB = bankMSB;
+    }
+
+    protected setBankLSB(bankLSB: number) {
+        if (this.lockPreset) {
+            return;
+        }
+        this.patch.bankLSB = bankLSB;
     }
 
     /**

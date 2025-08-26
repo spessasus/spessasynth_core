@@ -66,7 +66,7 @@ export function controllerChange(
 
             // Special case: bank select
             case midiControllers.bankSelect:
-                this.patch.bankMSB = controllerValue;
+                this.setBankMSB(controllerValue);
                 // Ensure that for XG, drum channels always are 127
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
@@ -74,13 +74,13 @@ export function controllerChange(
                     this.channelNumber % 16 === DEFAULT_PERCUSSION &&
                     isSystemXG(this.channelSystem)
                 ) {
-                    this.patch.bankMSB = 127;
+                    this.setBankMSB(127);
                 }
 
                 break;
 
             case midiControllers.bankSelectLSB:
-                this.patch.bankLSB = controllerValue;
+                this.setBankLSB(controllerValue);
                 break;
 
             // Check for RPN and NPRN and data entry

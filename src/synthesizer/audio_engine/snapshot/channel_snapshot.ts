@@ -186,8 +186,7 @@ export class ChannelSnapshot {
 
         // Restore preset and lock
         channelObject.setPresetLock(false);
-        channelObject.patch = { ...this.patch };
-        channelObject.programChange(this.patch.program);
+        channelObject.setPatch(this.patch);
         channelObject.setPresetLock(this.lockPreset);
         channelObject.lockedSystem = this.lockedSystem;
     }

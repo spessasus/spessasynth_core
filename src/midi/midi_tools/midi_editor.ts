@@ -1,14 +1,26 @@
 import { MIDIMessage } from "../midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
 import { getDrumBank, isSystemXG } from "../../utils/midi_hacks";
-import { midiControllers, type MIDIMessageType, midiMessageTypes } from "../enums";
+import {
+    midiControllers,
+    type MIDIMessageType,
+    midiMessageTypes
+} from "../enums";
 import { getGsOn } from "./get_gs_on";
-import type { DesiredChannelTranspose, DesiredControllerChange, DesiredProgramChange } from "../types";
+import type {
+    DesiredChannelTranspose,
+    DesiredControllerChange,
+    DesiredProgramChange
+} from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import type { SynthSystem } from "../../synthesizer/types";
@@ -326,8 +338,8 @@ export function modifyMIDIInternal(
                         }
 
                         // Add bank change
-                        addBank(false, desiredBankLSB);
-                        addBank(true, desiredBankMSB);
+                        addBank(false, desiredBankMSB);
+                        addBank(true, desiredBankLSB);
 
                         if (
                             change.isGMGSDrum &&
@@ -408,6 +420,13 @@ export function modifyMIDIInternal(
                         // This channel has program change. BEGONE!
                         deleteThisEvent();
                     }
+                } else if (isGM2On(e)) {
+                    SpessaSynthInfo(
+                        "%cGM2 system on detected",
+                        consoleColors.info
+                    );
+                    system = "gm2";
+                    addedGs = true; // Flag as true so gs won't get added
                 } else if (isGSOn(e)) {
                     // Check for GS on
                     // That's a GS on, we're done here
@@ -417,11 +436,11 @@ export function modifyMIDIInternal(
                         consoleColors.recognized
                     );
                     break;
-                } else if (isGMOn(e) || isGM2On(e)) {
-                    // Check for GM/2 on
+                } else if (isGMOn(e)) {
+                    // Check for GM on
                     // That's a GM1 system change, remove it!
                     SpessaSynthInfo(
-                        "%cGM/2 on detected, removing!",
+                        "%cGM on detected, removing!",
                         consoleColors.info
                     );
                     deleteThisEvent();
