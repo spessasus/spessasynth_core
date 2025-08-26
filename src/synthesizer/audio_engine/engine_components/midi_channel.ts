@@ -505,12 +505,6 @@ export class MIDIChannel {
      * @param isDrum
      */
     public setDrums(isDrum: boolean) {
-        if (this.lockPreset || !this.preset) {
-            return;
-        }
-        if (this.drumChannel === isDrum) {
-            return;
-        }
         if (isSystemXG(this.channelSystem)) {
             if (isDrum) {
                 this.patch.bankMSB = getDrumBank(this.channelSystem);
@@ -525,8 +519,9 @@ export class MIDIChannel {
                 this.patch.bankMSB = 0;
             }
         } else {
-            this.setGSDrums(true);
+            this.setGSDrums(isDrum);
         }
+        this.setDrumFlag(isDrum);
         this.programChange(this.patch.program);
     }
 

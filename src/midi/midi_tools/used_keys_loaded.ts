@@ -49,7 +49,6 @@ export function getUsedProgramsAndKeys(
 
     for (let i = 0; i < channelsAmount; i++) {
         const isDrum = i % 16 === DEFAULT_PERCUSSION;
-        const bank = i % 16 === DEFAULT_PERCUSSION ? 128 : 0;
         channelPresets.push({
             preset: soundBank.getPreset(
                 {
@@ -60,7 +59,7 @@ export function getUsedProgramsAndKeys(
                 },
                 system
             ),
-            bankMSB: bank,
+            bankMSB: 0,
             bankLSB: 0,
             isDrum
         });

@@ -46,17 +46,27 @@ export function selectPreset<T extends BasicPreset>(
             bankMSB: getDrumBank(system)
         };
     }
-    const { isGMGSDrum, bankLSB, bankMSB } = patch;
+    const { isGMGSDrum, bankLSB, bankMSB, program } = patch;
+    const isXG = isSystemXG(system);
+    const xgDrums = isXGDrums(bankMSB) && isXG;
 
-    const { program } = patch;
+    // Check for exact match
     let p = presets.find((p) => p.matches(patch));
     if (p) {
-        return p;
+        // Special case:
+        // Non XG banks sometimes specify melodic "MT" presets at bank 127,
+        // Which matches XG banks.
+        // Testcase: 4gmgsmt-sf2_04-compat.sf2
+        // Only match if the preset declares itself as drums
+        if (!xgDrums || (xgDrums && p.isXGDrums)) {
+            return p;
+        }
     }
 
+    // Helper to log failed exact matches
     const returnReplacement = (pres: T) => {
         SpessaSynthInfo(
-            `%cPreset %c${MIDIPatchTools.toMIDIString(patch)}%c not found (${system}). Replaced with %c${pres.toString()}`,
+            `%cPreset %c${MIDIPatchTools.toMIDIString(patch)}%c not found. (${system}) Replaced with %c${pres.toString()}`,
             consoleColors.warn,
             consoleColors.unrecognized,
             consoleColors.warn,
@@ -85,7 +95,7 @@ export function selectPreset<T extends BasicPreset>(
         returnReplacement(p);
         return p;
     }
-    if (isXGDrums(bankMSB) && isSystemXG(system)) {
+    if (xgDrums) {
         // XG drums: Look for exact bank and program match
         let p = presets.find((p) => p.program === program && p.isXGDrums);
         if (p) {
@@ -113,7 +123,7 @@ export function selectPreset<T extends BasicPreset>(
         returnReplacement(presets[0]);
         return presets[0];
     }
-    if (isSystemXG(system)) {
+    if (isXG) {
         // XG uses LSB so search for that.
         p = matchingPrograms.find((p) => p.bankLSB === bankLSB);
     } else {

@@ -155,10 +155,7 @@ export function resetPreset(this: MIDIChannel) {
         program: 0
     };
 
-    this.drumChannel = false;
-    if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
-        this.setDrums(true);
-    }
+    this.setDrums(this.channelNumber % 16 === DEFAULT_PERCUSSION);
     this.programChange(0);
 }
 

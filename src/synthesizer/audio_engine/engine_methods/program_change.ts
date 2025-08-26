@@ -25,6 +25,11 @@ export function programChange(this: MIDIChannel, program: number) {
         preset.name = "SPESSA EMPTY FALLBACK PRESET";
     }
     this.preset = preset;
+
+    // Drums first
+    if (preset.isAnyDrums !== this.drumChannel) {
+        this.setDrumFlag(preset.isAnyDrums);
+    }
     // Do not spread the preset as we don't want to copy it entirely.
     this.synthProps.callEvent("programChange", {
         channel: this.channelNumber,
@@ -33,8 +38,5 @@ export function programChange(this: MIDIChannel, program: number) {
         program: this.preset.program,
         isGMGSDrum: this.preset.isGMGSDrum
     });
-    if (preset.isAnyDrums !== this.drumChannel) {
-        this.setDrumFlag(preset.isAnyDrums);
-    }
     this.sendChannelProperty();
 }
