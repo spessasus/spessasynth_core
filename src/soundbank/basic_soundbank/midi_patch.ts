@@ -112,13 +112,13 @@ export class MIDIPatchTools {
     }
 
     public static sorter(a: MIDIPatch, b: MIDIPatch): number {
-        // Force drum presets to be last
-        if (a.isGMGSDrum && !b.isGMGSDrum) return 1;
-        if (!a.isGMGSDrum && b.isGMGSDrum) return -1;
-
         if (a.program !== b.program) {
             return a.program - b.program;
         }
+
+        // Force drum presets to be last
+        if (a.isGMGSDrum && !b.isGMGSDrum) return 1;
+        if (!a.isGMGSDrum && b.isGMGSDrum) return -1;
 
         if (a.bankMSB !== b.bankMSB) {
             return a.bankMSB - b.bankMSB;

@@ -7,7 +7,7 @@ import {
     PORTAMENTO_CONTROL_UNSET
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
-import { getDefaultBank } from "../../../../utils/midi_hacks";
+import { BankSelectHacks } from "../../../../utils/midi_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
 import type { SpessaSynthProcessor } from "../../../processor";
@@ -148,7 +148,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
 }
 
 export function resetPreset(this: MIDIChannel) {
-    this.setBankMSB(getDefaultBank(this.channelSystem));
+    this.setBankMSB(BankSelectHacks.getDefaultBank(this.channelSystem));
     this.setBankLSB(0);
     this.setGSDrums(false);
 

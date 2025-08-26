@@ -3,7 +3,7 @@ import type { MIDIChannel } from "../../engine_components/midi_channel";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
-import { isSystemXG } from "../../../../utils/midi_hacks";
+import { BankSelectHacks } from "../../../../utils/midi_hacks";
 
 /**
  * Handles MIDI controller changes for a channel.
@@ -72,7 +72,7 @@ export function controllerChange(
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
                     this.channelNumber % 16 === DEFAULT_PERCUSSION &&
-                    isSystemXG(this.channelSystem)
+                    BankSelectHacks.isSystemXG(this.channelSystem)
                 ) {
                     this.setBankMSB(127);
                 }

@@ -5,64 +5,69 @@ export const XG_SFX_VOICE = 64;
 const GM2_DEFAULT_BANK = 121;
 
 /**
- * GM2 has a different default bank number
+ * A class for handling various ways of selecting patches (GS, XG, GM2)
  */
-export function getDefaultBank(sys: SynthSystem): number {
-    return sys === "gm2" ? GM2_DEFAULT_BANK : 0;
-}
-
-export function getDrumBank(sys: SynthSystem): number {
-    switch (sys) {
-        default:
-            throw new Error(`${sys} doesn't have a bank MSB for drums.`);
-
-        case "gm2":
-            return 120;
-        case "xg":
-            return 127;
+export class BankSelectHacks {
+    /**
+     * GM2 has a different default bank number
+     */
+    public static getDefaultBank(sys: SynthSystem): number {
+        return sys === "gm2" ? GM2_DEFAULT_BANK : 0;
     }
-}
 
-/**
- * Checks if this bank number is XG drums
- */
-export function isXGDrums(bankMSB: number): boolean {
-    return bankMSB === 120 || bankMSB === 126 || bankMSB === 127;
-}
+    public static getDrumBank(sys: SynthSystem): number {
+        switch (sys) {
+            default:
+                throw new Error(`${sys} doesn't have a bank MSB for drums.`);
 
-/**
- * Checks if this MSB is a valid XG MSB
- */
-export function isValidXGMSB(bankMSB: number): boolean {
-    return (
-        isXGDrums(bankMSB) ||
-        bankMSB === XG_SFX_VOICE ||
-        bankMSB === GM2_DEFAULT_BANK
-    );
-}
-
-export function isSystemXG(system: SynthSystem) {
-    return system === "gm2" || system === "xg";
-}
-
-export function addBankOffset(
-    bankMSB: number,
-    bankOffset: number,
-    xgDrums = true
-) {
-    if (isXGDrums(bankMSB) && xgDrums) {
-        return bankMSB;
+            case "gm2":
+                return 120;
+            case "xg":
+                return 127;
+        }
     }
-    return Math.min(bankMSB + bankOffset, 127);
-}
 
-export function subtrackBankOffset(
-    bankMSB: number,
-    bankOffset: number,
-    xgDrums = true
-) {
-    if (isXGDrums(bankMSB) && xgDrums) {
-        return bankMSB;
+    /**
+     * Checks if this bank number is XG drums
+     */
+    public static isXGDrums(bankMSB: number): boolean {
+        return bankMSB === 120 || bankMSB === 126 || bankMSB === 127;
     }
-    return Math.max(0, bankMSB - bankOffset);
+
+    /**
+     * Checks if this MSB is a valid XG MSB
+     */
+    public static isValidXGMSB(bankMSB: number): boolean {
+        return (
+            this.isXGDrums(bankMSB) ||
+            bankMSB === XG_SFX_VOICE ||
+            bankMSB === GM2_DEFAULT_BANK
+        );
+    }
+
+    public static isSystemXG(system: SynthSystem) {
+        return system === "gm2" || system === "xg";
+    }
+
+    public static addBankOffset(
+        bankMSB: number,
+        bankOffset: number,
+        xgDrums = true
+    ) {
+        if (this.isXGDrums(bankMSB) && xgDrums) {
+            return bankMSB;
+        }
+        return Math.min(bankMSB + bankOffset, 127);
+    }
+
+    public static subtrackBankOffset(
+        bankMSB: number,
+        bankOffset: number,
+        xgDrums = true
+    ) {
+        if (this.isXGDrums(bankMSB) && xgDrums) {
+            return bankMSB;
+        }
+        return Math.max(0, bankMSB - bankOffset);
+    }
 }

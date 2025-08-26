@@ -18,7 +18,7 @@ import type { SF2InfoFourCC } from "../types";
 import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
 import { parseDateString } from "../../utils/load_date";
-import { isValidXGMSB } from "../../utils/midi_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 
 /**
  * Soundfont.ts
@@ -412,7 +412,7 @@ export class SoundFont2 extends BasicSoundBank {
         if (!hasLSB) {
             SpessaSynthInfo("%cCopying MSB to LSBs...", consoleColors.info);
             for (const preset of this.presets) {
-                if (!isValidXGMSB(preset.bankMSB)) {
+                if (!BankSelectHacks.isValidXGMSB(preset.bankMSB)) {
                     preset.bankLSB = preset.bankMSB;
                 }
             }

@@ -9,12 +9,16 @@ import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../../../soundbank/basic_soundbank/midi_patch";
-import { addBankOffset } from "../../../utils/midi_hacks";
+import { BankSelectHacks } from "../../../utils/midi_hacks";
 
 class SoundBankManagerPreset extends BasicPreset {
     public constructor(p: BasicPreset, offset: number) {
         super(p.parentSoundBank, p.globalZone);
-        this.bankMSB = addBankOffset(p.bankMSB, offset, p.isXGDrums);
+        this.bankMSB = BankSelectHacks.addBankOffset(
+            p.bankMSB,
+            offset,
+            p.isXGDrums
+        );
 
         this.name = p.name;
         this.bankLSB = p.bankLSB;

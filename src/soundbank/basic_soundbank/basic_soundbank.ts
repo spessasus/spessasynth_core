@@ -7,7 +7,7 @@ import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
-import { isXGDrums } from "../../utils/midi_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
@@ -562,7 +562,7 @@ export class BasicSoundBank {
             31, 32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
         ]);
         for (const preset of this.presets) {
-            if (isXGDrums(preset.bankMSB)) {
+            if (BankSelectHacks.isXGDrums(preset.bankMSB)) {
                 this._isXGBank = true;
                 if (!allowedPrograms.has(preset.program)) {
                     // Not valid!

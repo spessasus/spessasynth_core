@@ -1,5 +1,5 @@
 import { Modulator } from "./modulator";
-import { isXGDrums } from "../../utils/midi_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 
 import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";
@@ -70,7 +70,10 @@ export class BasicPreset implements MIDIPatchNamed {
     }
 
     public get isXGDrums() {
-        return this.parentSoundBank.isXGBank && isXGDrums(this.bankMSB);
+        return (
+            this.parentSoundBank.isXGBank &&
+            BankSelectHacks.isXGDrums(this.bankMSB)
+        );
     }
 
     /**
@@ -82,7 +85,7 @@ export class BasicPreset implements MIDIPatchNamed {
         return (
             this.isGMGSDrum ||
             (xg &&
-                isXGDrums(this.bankMSB) &&
+                BankSelectHacks.isXGDrums(this.bankMSB) &&
                 // SFX is not a drum preset, only for exact match
                 this.bankMSB !== 126)
         );

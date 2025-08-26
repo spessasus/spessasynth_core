@@ -9,7 +9,7 @@ import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
-import { getDrumBank, isSystemXG } from "../../utils/midi_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
     midiControllers,
     type MIDIMessageType,
@@ -326,14 +326,18 @@ export function modifyMIDIInternal(
                             addEventBefore(bankChange);
                         };
 
-                        if (isSystemXG(system) && change.isGMGSDrum) {
+                        if (
+                            BankSelectHacks.isSystemXG(system) &&
+                            change.isGMGSDrum
+                        ) {
                             // Best I can do is XG drums
                             SpessaSynthInfo(
                                 `%cAdding XG Drum change on track %c${trackNum}`,
                                 consoleColors.recognized,
                                 consoleColors.value
                             );
-                            desiredBankMSB = getDrumBank(system);
+                            desiredBankMSB =
+                                BankSelectHacks.getDrumBank(system);
                             desiredBankLSB = 0;
                         }
 
@@ -343,7 +347,7 @@ export function modifyMIDIInternal(
 
                         if (
                             change.isGMGSDrum &&
-                            !isSystemXG(system) &&
+                            !BankSelectHacks.isSystemXG(system) &&
                             midiChannel !== DEFAULT_PERCUSSION
                         ) {
                             // Add gs drum change

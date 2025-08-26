@@ -1,7 +1,7 @@
 import { arrayToHexString, consoleColors } from "../../../utils/other";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../engine_components/synth_constants";
-import { isSystemXG } from "../../../utils/midi_hacks";
+import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
 import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
@@ -998,7 +998,7 @@ export function systemExclusiveInternal(
                 } else if (syx[3] === 0x08) {
                     // XG part parameter
                     if (
-                        !isSystemXG(
+                        !BankSelectHacks.isSystemXG(
                             this.privateProps.masterParameters.midiSystem
                         )
                     ) {
@@ -1111,7 +1111,9 @@ export function systemExclusiveInternal(
                         displayType: synthDisplayTypes.yamahaXGText
                     });
                 } else if (
-                    isSystemXG(this.privateProps.masterParameters.midiSystem)
+                    BankSelectHacks.isSystemXG(
+                        this.privateProps.masterParameters.midiSystem
+                    )
                 ) {
                     SpessaSynthInfo(
                         `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(syx)}`,
@@ -1120,7 +1122,11 @@ export function systemExclusiveInternal(
                     );
                 }
             } else {
-                if (isSystemXG(this.privateProps.masterParameters.midiSystem)) {
+                if (
+                    BankSelectHacks.isSystemXG(
+                        this.privateProps.masterParameters.midiSystem
+                    )
+                ) {
                     SpessaSynthInfo(
                         `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,

@@ -32,7 +32,7 @@ import type { ProtectedSynthValues } from "./internal_synth_values";
 import { midiControllers } from "../../../midi/enums";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
-import { getDrumBank, isSystemXG } from "../../../utils/midi_hacks";
+import { BankSelectHacks } from "../../../utils/midi_hacks";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -512,9 +512,11 @@ export class MIDIChannel {
      * @param isDrum
      */
     public setDrums(isDrum: boolean) {
-        if (isSystemXG(this.channelSystem)) {
+        if (BankSelectHacks.isSystemXG(this.channelSystem)) {
             if (isDrum) {
-                this.setBankMSB(getDrumBank(this.channelSystem));
+                this.setBankMSB(
+                    BankSelectHacks.getDrumBank(this.channelSystem)
+                );
                 this.setBankLSB(0);
             } else {
                 if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
