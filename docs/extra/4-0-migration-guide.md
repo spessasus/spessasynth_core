@@ -15,6 +15,39 @@ This page documents all the breaking changes in spessasynth_core.
 All variables with `soundfont` in them have been renamed to use `soundBank` instead.
 This is done because spessasynth can load sound bank formats other than SoundFonts as well.
 
+## MIDI Patch System
+
+SpessaSynth 4.0 brings the full bank LSB support in the API.
+
+The system now operates on _MIDI Patches_ - a way of selecting MIDI presets using 4 properties,
+ compatible with GM, GS, XG and GM2. 
+ The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.
+
+The properties are explained below.
+
+### program
+
+The MIDI program number, from 0 to 127.
+
+### bankLSB
+
+Bank LSB controller, 0 to 127. This is mostly used in XG and GM2 for selecting variations of instruments, much like MSB in GS.
+
+Note that the SF2 format does not support writing the bank LSB number so the `wBank` is still interpreted as both and flattened when writing.
+
+### bankMSB
+
+This is what the previous `bank` used to be, but it's now properly split up.
+
+It is used for sound variation in GS, and for channel type in XG and GM2. 
+This means that with bank MSB of 127 for example, a channel in XG mode will turn into a drum channel.
+
+### isGMGSDrum
+
+This flag is exclusive to GM and GS systems. These don't use bank MSB as a drum flag. 
+GM has channel 9 hardcoded as drums, and GS has a system exclusive for setting them.
+This allows XG and GS drums to coexist in a single sound bank and can be thought of as bank 128 in SF2.
+
 ## MIDI
 
 
@@ -206,8 +239,15 @@ Instrument zones now _require_ a sample.
 This means that
 `createZone()` now requires one argument: the sample that belongs to that zone.
 
-
 ### BasicPreset
+
+#### bank
+
+replaced with the MIDI patch system. For `BasicPreset` this means splitting up into three properties:
+
+- bankLSB
+- bankMSB
+- isGMGSDrum
 
 A few methods and properties have been renamed for consistency.
 They behave in exactly the same way.
