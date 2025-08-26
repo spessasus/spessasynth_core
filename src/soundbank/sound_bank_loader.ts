@@ -1,8 +1,8 @@
 import { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { readBinaryStringIndexed } from "../utils/byte_functions/string";
-import { DownloadableSounds } from "./read_dls/downloadable_sounds";
-import { SoundFont2 } from "./read_sf2/soundfont";
+import { DownloadableSounds } from "./downloadable_sounds/read/downloadable_sounds";
+import { SoundFont2 } from "./soundfont/read/soundfont";
 
 export class SoundBankLoader {
     /**

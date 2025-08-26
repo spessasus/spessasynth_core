@@ -1,8 +1,19 @@
-import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
+import {
+    DEFAULT_SF2_WRITE_OPTIONS,
+    writeSF2Internal
+} from "../soundfont/write/write";
 import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
-import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
+import {
+    DEFAULT_DLS_OPTIONS,
+    writeDLSInternal
+} from "../downloadable_sounds/write/write_dls";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
@@ -11,7 +22,12 @@ import { BankSelectHacks } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
-import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2WriteOptions } from "../types";
+import type {
+    DLSWriteOptions,
+    SF2VersionTag,
+    SoundBankInfoData,
+    SoundFont2WriteOptions
+} from "../types";
 import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
