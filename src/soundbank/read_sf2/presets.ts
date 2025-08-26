@@ -30,7 +30,7 @@ export class SoundFontPreset extends BasicPreset {
         const wBank = readLittleEndianIndexed(presetChunk.data, 2);
         this.bankMSB = wBank & 0x7f;
         this.isGMGSDrum = (wBank & 0x80) > 0;
-        this.bankLSB = wBank & 0x7f00;
+        this.bankLSB = wBank >> 8;
 
         this.zoneStartIndex = readLittleEndianIndexed(presetChunk.data, 2);
 
