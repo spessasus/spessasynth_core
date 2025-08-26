@@ -703,12 +703,16 @@ export class BasicMIDI {
             const trackName = track.events.find(
                 (e) => e.statusByte === midiMessageTypes.trackName
             );
-            if (trackName) {
+            // Don't add the first track's name as it's not metadata, it's the name!
+            if (trackName && this.tracks.indexOf(track) > 0) {
                 track.name = readBinaryString(trackName.data);
                 // If the track has no voice messages, its "track name" event (if it has any)
                 // Is some metadata.
                 // Add it to copyright
-                if (!trackHasVoiceMessages) {
+                if (
+                    !trackHasVoiceMessages &&
+                    !track.name.toLowerCase().includes("setup")
+                ) {
                     this.extraMetadata.push(trackName);
                 }
             }
