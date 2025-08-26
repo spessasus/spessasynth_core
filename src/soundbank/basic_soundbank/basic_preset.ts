@@ -1,5 +1,5 @@
 import { Modulator } from "./modulator";
-import { isXGDrums } from "../../utils/xg_hacks";
+import { isXGDrums } from "../../utils/midi_hacks";
 
 import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";

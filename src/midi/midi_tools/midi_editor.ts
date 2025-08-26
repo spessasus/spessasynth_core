@@ -1,26 +1,14 @@
 import { MIDIMessage } from "../midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
-import { getDrumBank, isSystemXG } from "../../utils/xg_hacks";
-import {
-    midiControllers,
-    type MIDIMessageType,
-    midiMessageTypes
-} from "../enums";
+import { getDrumBank, isSystemXG } from "../../utils/midi_hacks";
+import { midiControllers, type MIDIMessageType, midiMessageTypes } from "../enums";
 import { getGsOn } from "./get_gs_on";
-import type {
-    DesiredChannelTranspose,
-    DesiredControllerChange,
-    DesiredProgramChange
-} from "../types";
+import type { DesiredChannelTranspose, DesiredControllerChange, DesiredProgramChange } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import type { SynthSystem } from "../../synthesizer/types";

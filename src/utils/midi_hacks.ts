@@ -44,3 +44,25 @@ export function isValidXGMSB(bankMSB: number): boolean {
 export function isSystemXG(system: SynthSystem) {
     return system === "gm2" || system === "xg";
 }
+
+export function addBankOffset(
+    bankMSB: number,
+    bankOffset: number,
+    xgDrums = true
+) {
+    if (isXGDrums(bankMSB) && xgDrums) {
+        return bankMSB;
+    }
+    return Math.min(bankMSB + bankOffset, 127);
+}
+
+export function subtrackBankOffset(
+    bankMSB: number,
+    bankOffset: number,
+    xgDrums = true
+) {
+    if (isXGDrums(bankMSB) && xgDrums) {
+        return bankMSB;
+    }
+    return Math.max(0, bankMSB - bankOffset);
+}

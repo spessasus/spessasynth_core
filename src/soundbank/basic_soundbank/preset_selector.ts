@@ -1,5 +1,5 @@
 import type { SynthSystem } from "../../synthesizer/types";
-import { getDrumBank, isSystemXG, isXGDrums } from "../../utils/xg_hacks";
+import { getDrumBank, isSystemXG, isXGDrums } from "../../utils/midi_hacks";
 import type { BasicPreset } from "./basic_preset";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
 import { SpessaSynthInfo } from "../../utils/loggin";

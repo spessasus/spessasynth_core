@@ -22,7 +22,15 @@ export function getPHDR(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
         writeBinaryStringIndexed(xphdrData, preset.name.substring(20), 20);
 
         writeWord(phdrData, preset.program);
-        writeWord(phdrData, preset.bankMSB);
+        let wBank = preset.bankMSB;
+        if (preset.isGMGSDrum) {
+            // Drum flag
+            wBank = 0x80;
+        } else if (preset.bankMSB === 0) {
+            // If bank MSB is zero, write bank LSB (XG)
+            wBank = preset.bankLSB;
+        }
+        writeWord(phdrData, wBank);
         writeWord(phdrData, presetStart & 0xffff);
 
         xphdrData.currentIndex += 4;

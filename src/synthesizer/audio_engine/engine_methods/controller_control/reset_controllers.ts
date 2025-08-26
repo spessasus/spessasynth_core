@@ -7,7 +7,7 @@ import {
     PORTAMENTO_CONTROL_UNSET
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
-import { getDefaultBank } from "../../../../utils/xg_hacks";
+import { getDefaultBank } from "../../../../utils/midi_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
 import type { SpessaSynthProcessor } from "../../../processor";

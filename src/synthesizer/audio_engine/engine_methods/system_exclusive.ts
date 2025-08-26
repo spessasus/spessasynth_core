@@ -1,7 +1,7 @@
 import { arrayToHexString, consoleColors } from "../../../utils/other";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../engine_components/synth_constants";
-import { isSystemXG } from "../../../utils/xg_hacks";
+import { isSystemXG } from "../../../utils/midi_hacks";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
 import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";

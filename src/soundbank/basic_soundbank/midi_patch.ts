@@ -70,7 +70,7 @@ export class MIDIPatchTools {
      * @param patch
      */
     public static toNamedMIDIString(patch: MIDIPatchNamed) {
-        return `${MIDIPatchTools.toMIDIString(patch)} ${patch.name} `;
+        return `${MIDIPatchTools.toMIDIString(patch)} ${patch.name}`;
     }
 
     /**

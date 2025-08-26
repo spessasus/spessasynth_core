@@ -7,7 +7,7 @@ import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
-import { isXGDrums } from "../../utils/xg_hacks";
+import { isXGDrums } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
@@ -592,7 +592,7 @@ export class BasicSoundBank {
                 );
             }
             SpessaSynthInfo(
-                `%c${info}: %c"${(value as string | Date).toString()}"`,
+                `%c${info}: %c${(value as string | Date).toLocaleString()}`,
                 consoleColors.info,
                 consoleColors.recognized
             );

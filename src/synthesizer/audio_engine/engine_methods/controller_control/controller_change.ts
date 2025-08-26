@@ -3,7 +3,7 @@ import type { MIDIChannel } from "../../engine_components/midi_channel";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
-import { isSystemXG } from "../../../../utils/xg_hacks";
+import { isSystemXG } from "../../../../utils/midi_hacks";
 
 /**
  * Handles MIDI controller changes for a channel.

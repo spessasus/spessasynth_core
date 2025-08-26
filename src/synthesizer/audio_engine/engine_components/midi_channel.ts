@@ -32,7 +32,7 @@ import type { ProtectedSynthValues } from "./internal_synth_values";
 import { midiControllers } from "../../../midi/enums";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
-import { getDrumBank, isSystemXG } from "../../../utils/xg_hacks";
+import { getDrumBank, isSystemXG } from "../../../utils/midi_hacks";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.

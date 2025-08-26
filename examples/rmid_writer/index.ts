@@ -1,6 +1,11 @@
 // Process arguments
 import * as fs from "fs";
-import { BasicMIDI, BasicSoundBank, SoundBankLoader } from "../../src";
+import {
+    BasicMIDI,
+    BasicSoundBank,
+    SoundBankLoader,
+    SpessaSynthLogging
+} from "../../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 3) {
@@ -16,6 +21,8 @@ const outPath = args[2];
 
 // Await sf3 decoder
 await BasicSoundBank.isSF3DecoderReady;
+
+SpessaSynthLogging(true, true, true);
 
 // Load bank and MIDI
 const bank = SoundBankLoader.fromArrayBuffer(fs.readFileSync(sfPath).buffer);
