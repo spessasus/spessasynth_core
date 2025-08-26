@@ -58,7 +58,7 @@ export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
         ).trim();
     }
     if (presetName.length < 1) {
-        presetName = `unnamed ${(ulBank >> 8) & 127}:${ulInstrument & 127}`;
+        presetName = `unnamed ${preset.toMIDIString()}`;
     }
     preset.name = presetName;
     preset.dlsInstrument.name = presetName;

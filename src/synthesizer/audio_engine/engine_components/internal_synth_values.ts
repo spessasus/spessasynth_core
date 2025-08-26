@@ -74,9 +74,9 @@ export class ProtectedSynthValues {
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting goes like this:
-     * this.cachedVoices[bankNumber][programNumber][midiNote][velocity] = a list of voices for that.
+     * this.cachedVoices[bankMSB][bankLSB][programNumber][midiNote][velocity] = a list of voices for that.
      */
-    public cachedVoices: VoiceList[][][][] = [];
+    public cachedVoices: VoiceList[][][][][] = [];
 
     public constructor(
         eventCallbackHandler: <K extends keyof SynthProcessorEventData>(

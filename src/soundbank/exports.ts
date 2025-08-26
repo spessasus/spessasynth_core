@@ -12,6 +12,7 @@ import { SoundBankLoader } from "./sound_bank_loader";
 
 export * from "./types";
 export * from "./enums";
+export * from "./basic_soundbank/midi_patch";
 
 export {
     Generator,

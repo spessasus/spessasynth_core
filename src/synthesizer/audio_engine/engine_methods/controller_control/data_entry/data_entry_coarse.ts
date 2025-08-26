@@ -44,7 +44,7 @@ const nonRegisteredGSLSB = {
  */
 export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
     // Store in cc table
-    this.midiControllers[midiControllers.dataEntryMsb] = dataValue << 7;
+    this.midiControllers[midiControllers.dataEntryMSB] = dataValue << 7;
     /*
     A note on this vibrato.
     This is a completely custom vibrato, with its own oscillator and parameters.
@@ -91,11 +91,15 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                 return;
             }
             const NRPNCoarse =
-                this.midiControllers[midiControllers.NRPNMsb] >> 7;
-            const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
+                this.midiControllers[
+                    midiControllers.nonRegisteredParameterMSB
+                ] >> 7;
+            const NRPNFine =
+                this.midiControllers[
+                    midiControllers.nonRegisteredParameterLSB
+                ] >> 7;
             const dataEntryFine =
-                this.midiControllers[midiControllers.lsbForControl6DataEntry] >>
-                7;
+                this.midiControllers[midiControllers.dataEntryLSB] >> 7;
             switch (NRPNCoarse) {
                 default:
                     if (dataValue === 64) {
@@ -245,8 +249,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
         case dataEntryStates.RPCoarse:
         case dataEntryStates.RPFine: {
             const rpnValue =
-                this.midiControllers[midiControllers.RPNMsb] |
-                (this.midiControllers[midiControllers.RPNLsb] >> 7);
+                this.midiControllers[midiControllers.registeredParameterMSB] |
+                (this.midiControllers[midiControllers.registeredParameterLSB] >>
+                    7);
             switch (rpnValue) {
                 default:
                     SpessaSynthInfo(

@@ -9,7 +9,7 @@ import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
-import { isSystemXG, isXGDrums, XG_SFX_VOICE } from "../../utils/xg_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
     midiControllers,
     type MIDIMessageType,
@@ -25,6 +25,7 @@ import type { BasicMIDI } from "../basic_midi";
 import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import type { SynthSystem } from "../../synthesizer/types";
 import { customControllers } from "../../synthesizer/enums";
+import { MIDIPatchTools } from "../../soundbank/basic_soundbank/midi_patch";
 
 function getControllerChange(
     channel: number,
@@ -253,25 +254,25 @@ export function modifyMIDIInternal(
                         const centsCoarse = fineTune * 64 + 64;
                         const rpnCoarse = getControllerChange(
                             midiChannel,
-                            midiControllers.RPNMsb,
+                            midiControllers.registeredParameterMSB,
                             0,
                             e.ticks
                         );
                         const rpnFine = getControllerChange(
                             midiChannel,
-                            midiControllers.RPNLsb,
+                            midiControllers.registeredParameterLSB,
                             1,
                             e.ticks
                         );
                         const dataEntryCoarse = getControllerChange(
                             channel,
-                            midiControllers.dataEntryMsb,
+                            midiControllers.dataEntryMSB,
                             centsCoarse,
                             e.ticks
                         );
                         const dataEntryFine = getControllerChange(
                             midiChannel,
-                            midiControllers.lsbForControl6DataEntry,
+                            midiControllers.dataEntryLSB,
                             0,
                             e.ticks
                         );
@@ -288,13 +289,8 @@ export function modifyMIDIInternal(
                         if (!change) {
                             continue;
                         }
-                        const desiredBank = Math.max(
-                            0,
-                            Math.min(change.bank, 127)
-                        );
-                        const desiredProgram = change.program;
                         SpessaSynthInfo(
-                            `%cSetting %c${change.channel}%c to %c${desiredBank}:${desiredProgram}%c. Track num: %c${trackNum}`,
+                            `%cSetting %c${change.channel}%c to %c${MIDIPatchTools.toMIDIString(change)}%c. Track num: %c${trackNum}`,
                             consoleColors.info,
                             consoleColors.recognized,
                             consoleColors.info,
@@ -305,6 +301,9 @@ export function modifyMIDIInternal(
 
                         // Note: this is in reverse.
                         // The output event order is: drums -> lsb -> msb -> program change
+                        let desiredBankMSB = change.bankMSB;
+                        let desiredBankLSB = change.bankLSB;
+                        const desiredProgram = change.program;
 
                         // Add program change
                         const programChange = new MIDIMessage(
@@ -319,7 +318,7 @@ export function modifyMIDIInternal(
                             const bankChange = getControllerChange(
                                 midiChannel,
                                 isLSB
-                                    ? midiControllers.lsbForControl0BankSelect
+                                    ? midiControllers.bankSelectLSB
                                     : midiControllers.bankSelect,
                                 v,
                                 e.ticks
@@ -327,49 +326,37 @@ export function modifyMIDIInternal(
                             addEventBefore(bankChange);
                         };
 
-                        // On xg, add lsb
-                        if (isSystemXG(system)) {
-                            // Xg drums: msb can be 120, 126 or 127
-                            if (change.isDrum) {
-                                SpessaSynthInfo(
-                                    `%cAdding XG Drum change on track %c${trackNum}`,
-                                    consoleColors.recognized,
-                                    consoleColors.value
-                                );
-                                addBank(
-                                    false,
-                                    isXGDrums(desiredBank) ? desiredBank : 127
-                                );
-                                addBank(true, 0);
-                            } else {
-                                // Sfx voice is set via MSB
-                                if (desiredBank === XG_SFX_VOICE) {
-                                    addBank(false, XG_SFX_VOICE);
-                                    addBank(true, 0);
-                                } else {
-                                    // Add variation as LSB
-                                    addBank(false, 0);
-                                    addBank(true, desiredBank);
-                                }
-                            }
-                        } else {
-                            // Add just msb
-                            addBank(false, desiredBank);
+                        if (
+                            BankSelectHacks.isSystemXG(system) &&
+                            change.isGMGSDrum
+                        ) {
+                            // Best I can do is XG drums
+                            SpessaSynthInfo(
+                                `%cAdding XG Drum change on track %c${trackNum}`,
+                                consoleColors.recognized,
+                                consoleColors.value
+                            );
+                            desiredBankMSB =
+                                BankSelectHacks.getDrumBank(system);
+                            desiredBankLSB = 0;
+                        }
 
-                            if (
-                                change.isDrum &&
-                                midiChannel !== DEFAULT_PERCUSSION
-                            ) {
-                                // Add gs drum change
-                                SpessaSynthInfo(
-                                    `%cAdding GS Drum change on track %c${trackNum}`,
-                                    consoleColors.recognized,
-                                    consoleColors.value
-                                );
-                                addEventBefore(
-                                    getDrumChange(midiChannel, e.ticks)
-                                );
-                            }
+                        // Add bank change
+                        addBank(false, desiredBankMSB);
+                        addBank(true, desiredBankLSB);
+
+                        if (
+                            change.isGMGSDrum &&
+                            !BankSelectHacks.isSystemXG(system) &&
+                            midiChannel !== DEFAULT_PERCUSSION
+                        ) {
+                            // Add gs drum change
+                            SpessaSynthInfo(
+                                `%cAdding GS Drum change on track %c${trackNum}`,
+                                consoleColors.recognized,
+                                consoleColors.value
+                            );
+                            addEventBefore(getDrumChange(midiChannel, e.ticks));
                         }
                     }
                 }
@@ -406,7 +393,7 @@ export function modifyMIDIInternal(
                     // Bank maybe?
                     if (
                         ccNum === midiControllers.bankSelect ||
-                        ccNum === midiControllers.lsbForControl0BankSelect
+                        ccNum === midiControllers.bankSelectLSB
                     ) {
                         if (channelsToChangeProgram.has(channel)) {
                             // BEGONE!
@@ -437,6 +424,13 @@ export function modifyMIDIInternal(
                         // This channel has program change. BEGONE!
                         deleteThisEvent();
                     }
+                } else if (isGM2On(e)) {
+                    SpessaSynthInfo(
+                        "%cGM2 system on detected",
+                        consoleColors.info
+                    );
+                    system = "gm2";
+                    addedGs = true; // Flag as true so gs won't get added
                 } else if (isGSOn(e)) {
                     // Check for GS on
                     // That's a GS on, we're done here
@@ -446,11 +440,11 @@ export function modifyMIDIInternal(
                         consoleColors.recognized
                     );
                     break;
-                } else if (isGMOn(e) || isGM2On(e)) {
-                    // Check for GM/2 on
+                } else if (isGMOn(e)) {
+                    // Check for GM on
                     // That's a GM1 system change, remove it!
                     SpessaSynthInfo(
-                        "%cGM/2 on detected, removing!",
+                        "%cGM on detected, removing!",
                         consoleColors.info
                     );
                     deleteThisEvent();
@@ -504,9 +498,7 @@ export function applySnapshotInternal(
         if (channel.lockPreset) {
             programChanges.push({
                 channel: channelNumber,
-                program: channel.program,
-                bank: channel.bank,
-                isDrum: channel.drumChannel
+                ...channel.patch
             });
         }
         // Check for locked controllers and change them appropriately

@@ -2,7 +2,8 @@ import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSE
 import {
     resetControllers,
     resetControllersRP15Compliant,
-    resetParameters
+    resetParameters,
+    resetPreset
 } from "../engine_methods/controller_control/reset_controllers";
 import { renderVoice } from "./dsp_chain/render_voice";
 import { panAndMixVoice } from "./dsp_chain/stereo_panner";
@@ -12,7 +13,6 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { chooseBank, isSystemXG, parseBankSelect } from "../../../utils/xg_hacks";
 import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
@@ -31,6 +31,8 @@ import { consoleColors } from "../../../utils/other";
 import type { ProtectedSynthValues } from "./internal_synth_values";
 import { midiControllers } from "../../../midi/enums";
 import { modulatorSources } from "../../../soundbank/enums";
+import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
+import { BankSelectHacks } from "../../../utils/midi_hacks";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -96,18 +98,17 @@ export class MIDIChannel {
      * The current state of the data entry for the channel.
      */
     public dataEntryState: DataEntryState = dataEntryStates.Idle;
+
     /**
-     * The bank number of the channel (used for patch changes).
+     * The currently selected MIDI patch of the channel.
+     * Note that the exact matching preset may not be available, but this represents exactly what MIDI asks for.
      */
-    public bank = 0;
-    /**
-     * The bank number sent as channel properties.
-     */
-    public sentBank = 0;
-    /**
-     * The bank LSB number of the channel (used for patch changes in XG mode).
-     */
-    public bankLSB = 0;
+    public readonly patch: MIDIPatch = {
+        bankMSB: 0,
+        bankLSB: 0,
+        program: 0,
+        isGMGSDrum: false
+    };
     /**
      * The preset currently assigned to the channel.
      */
@@ -166,8 +167,6 @@ export class MIDIChannel {
      * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
      */
     public noteOn = noteOn.bind(this) as typeof noteOn;
-
-    // Bind all methods to the instance
     // (A hacky way to split the class into multiple files)
     /**
      * Releases a note by its MIDI note number.
@@ -176,6 +175,8 @@ export class MIDIChannel {
      * @param midiNote The MIDI note number to release (0-127).
      */
     public noteOff = noteOff.bind(this) as typeof noteOff;
+
+    // Bind all methods to the instance
     /**
      * Changes the program (preset) of the channel.
      * @param programNumber The program number (0-127) to change to.
@@ -190,16 +191,19 @@ export class MIDIChannel {
      * This will reset all controllers to their default values,
      * except for the locked controllers.
      */
-    public resetControllers = resetControllers.bind(
+    public readonly resetControllers = resetControllers.bind(
         this
     ) as typeof resetControllers;
+
+    public readonly resetPreset = resetPreset.bind(this) as typeof resetPreset;
     /**
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      * Reset controllers according to RP-15 Recommended Practice.
      */
-    public resetControllersRP15Compliant = resetControllersRP15Compliant.bind(
-        this
-    ) as typeof resetControllersRP15Compliant;
+    public readonly resetControllersRP15Compliant =
+        resetControllersRP15Compliant.bind(
+            this
+        ) as typeof resetControllersRP15Compliant;
     /**
      * Reset all parameters to their default values.
      * This includes NRPN and RPN controllers, data entry state,
@@ -276,11 +280,10 @@ export class MIDIChannel {
         return this.midiControllers[midiControllers.sustainPedal] >= 8192;
     }
 
-    public get isXGChannel() {
-        return (
-            isSystemXG(this.synthProps.masterParameters.midiSystem) ||
-            (this.lockPreset && isSystemXG(this.lockedSystem))
-        );
+    protected get channelSystem(): SynthSystem {
+        return this.lockPreset
+            ? this.lockedSystem
+            : this.synthProps.masterParameters.midiSystem;
     }
 
     /**
@@ -495,89 +498,65 @@ export class MIDIChannel {
     }
 
     public setPresetLock(locked: boolean) {
+        if (this.lockPreset === locked) {
+            return;
+        }
         this.lockPreset = locked;
         if (locked) {
             this.lockedSystem = this.synthProps.masterParameters.midiSystem;
         }
     }
 
-    public setBankSelect(bank: number, isLSB = false) {
-        if (this.lockPreset) {
-            return;
-        }
-        if (isLSB) {
-            this.bankLSB = bank;
-        } else {
-            this.bank = bank;
-            const bankLogic = parseBankSelect(
-                this.getBankSelect(),
-                bank,
-                this.synthProps.masterParameters.midiSystem,
-                false,
-                this.drumChannel,
-                this.channelNumber
-            );
-            switch (bankLogic.drumsStatus) {
-                default:
-                case 0:
-                    break;
-
-                case 1:
-                    if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
-                        // Cannot disable drums on channel 9
-                        this.bank = 127;
-                    }
-                    break;
-
-                case 2:
-                    this.setDrums(true);
-                    break;
-            }
-        }
-    }
-
-    public getBankSelect(): number {
-        return chooseBank(
-            this.bank,
-            this.bankLSB,
-            this.drumChannel,
-            this.isXGChannel
-        );
-    }
-
     /**
-     * Changes a preset of this channel.
-     */
-    public setPreset(preset: BasicPreset) {
-        if (this.lockPreset) {
-            return;
-        }
-        this.preset = preset;
-    }
-
-    /**
-     * Sets drums on channel.
+     * Changes the preset to, or from drums.
+     * @param isDrum
      */
     public setDrums(isDrum: boolean) {
-        if (this.lockPreset || !this.preset) {
-            return;
-        }
-        if (this.drumChannel === isDrum) {
-            return;
-        }
-        if (isDrum) {
-            // Clear transpose
-            this.channelTransposeKeyShift = 0;
-            this.drumChannel = true;
+        if (BankSelectHacks.isSystemXG(this.channelSystem)) {
+            if (isDrum) {
+                this.setBankMSB(
+                    BankSelectHacks.getDrumBank(this.channelSystem)
+                );
+                this.setBankLSB(0);
+            } else {
+                if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
+                    throw new Error(
+                        `Cannot disable drums on channel ${this.channelNumber} for XG.`
+                    );
+                }
+                this.setBankMSB(0);
+                this.setBankLSB(0);
+            }
         } else {
-            this.drumChannel = false;
+            this.setGSDrums(isDrum);
         }
-        this.synthProps.callEvent("drumChange", {
-            channel: this.channelNumber,
-            isDrumChannel: this.drumChannel
-        });
-        this.programChange(this.preset.program);
-        this.sendChannelProperty();
+        this.setDrumFlag(isDrum);
+        this.programChange(this.patch.program);
+    }
+
+    /**
+     * Sets the channel to a given MIDI patch.
+     * Note that this executes a program change.
+     * @param patch
+     */
+    public setPatch(patch: MIDIPatch) {
+        this.setBankMSB(patch.bankMSB);
+        this.setBankLSB(patch.bankLSB);
+        this.setGSDrums(patch.isGMGSDrum);
+        this.programChange(patch.program);
+    }
+
+    /**
+     * Sets the GM/GS drum flag.
+     * @param drums
+     */
+    public setGSDrums(drums: boolean) {
+        if (drums === this.patch.isGMGSDrum) {
+            return;
+        }
+        this.setBankLSB(0);
+        this.setBankMSB(0);
+        this.patch.isGMGSDrum = drums;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -715,17 +694,53 @@ export class MIDIChannel {
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
                 ] / 128,
             isMuted: this.isMuted,
-            isDrum: this.drumChannel,
             transposition:
                 this.channelTransposeKeyShift +
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
-            bank: this.sentBank,
-            program: this.preset?.program ?? 0
+            ...this.patch,
+            isDrum: this.drumChannel
         };
         this.synthProps.callEvent("channelPropertyChange", {
             channel: this.channelNumber,
             property: data
+        });
+    }
+
+    protected setBankMSB(bankMSB: number) {
+        if (this.lockPreset) {
+            return;
+        }
+        this.patch.bankMSB = bankMSB;
+    }
+
+    protected setBankLSB(bankLSB: number) {
+        if (this.lockPreset) {
+            return;
+        }
+        this.patch.bankLSB = bankLSB;
+    }
+
+    /**
+     * Sets drums on channel.
+     */
+    protected setDrumFlag(isDrum: boolean) {
+        if (this.lockPreset || !this.preset) {
+            return;
+        }
+        if (this.drumChannel === isDrum) {
+            return;
+        }
+        if (isDrum) {
+            // Clear transpose
+            this.channelTransposeKeyShift = 0;
+            this.drumChannel = true;
+        } else {
+            this.drumChannel = false;
+        }
+        this.synthProps.callEvent("drumChange", {
+            channel: this.channelNumber,
+            isDrumChannel: this.drumChannel
         });
     }
 }

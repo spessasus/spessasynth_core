@@ -1,7 +1,7 @@
 import { arrayToHexString, consoleColors } from "../../../utils/other";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { ALL_CHANNELS_OR_DIFFERENT_ACTION } from "../engine_components/synth_constants";
-import { isSystemXG } from "../../../utils/xg_hacks";
+import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import { NON_CC_INDEX_OFFSET } from "../engine_components/controller_tables";
 import { generatorTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
@@ -385,7 +385,7 @@ export function systemExclusiveInternal(
                                 // This is the Use for Drum Part sysex (multiple drums)
                                 const isDrums =
                                     messageValue > 0 && syx[5] >> 4 > 0; // If set to other than 0, is a drum channel
-                                channelObject.setDrums(isDrums);
+                                channelObject.setGSDrums(isDrums);
                                 SpessaSynthInfo(
                                     `%cChannel %c${channel}%c ${
                                         isDrums
@@ -522,15 +522,15 @@ export function systemExclusiveInternal(
                                             modulatorSources.pitchWheel
                                     ) {
                                         channelObject.controllerChange(
-                                            midiControllers.RPNMsb,
+                                            midiControllers.registeredParameterMSB,
                                             0x0
                                         );
                                         channelObject.controllerChange(
-                                            midiControllers.RPNLsb,
+                                            midiControllers.registeredParameterLSB,
                                             0x0
                                         );
                                         channelObject.controllerChange(
-                                            midiControllers.dataEntryMsb,
+                                            midiControllers.dataEntryMSB,
                                             Math.floor(centeredValue)
                                         );
                                     } else {
@@ -998,7 +998,7 @@ export function systemExclusiveInternal(
                 } else if (syx[3] === 0x08) {
                     // XG part parameter
                     if (
-                        !isSystemXG(
+                        !BankSelectHacks.isSystemXG(
                             this.privateProps.masterParameters.midiSystem
                         )
                     ) {
@@ -1023,7 +1023,7 @@ export function systemExclusiveInternal(
                         // Bank-select LSB
                         case 0x02:
                             channelObject.controllerChange(
-                                midiControllers.lsbForControl0BankSelect,
+                                midiControllers.bankSelectLSB,
                                 value
                             );
                             break;
@@ -1111,7 +1111,9 @@ export function systemExclusiveInternal(
                         displayType: synthDisplayTypes.yamahaXGText
                     });
                 } else if (
-                    isSystemXG(this.privateProps.masterParameters.midiSystem)
+                    BankSelectHacks.isSystemXG(
+                        this.privateProps.masterParameters.midiSystem
+                    )
                 ) {
                     SpessaSynthInfo(
                         `%cUnrecognized Yamaha XG SysEx: %c${arrayToHexString(syx)}`,
@@ -1120,7 +1122,11 @@ export function systemExclusiveInternal(
                     );
                 }
             } else {
-                if (isSystemXG(this.privateProps.masterParameters.midiSystem)) {
+                if (
+                    BankSelectHacks.isSystemXG(
+                        this.privateProps.masterParameters.midiSystem
+                    )
+                ) {
                     SpessaSynthInfo(
                         `%cUnrecognized Yamaha SysEx: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,

@@ -34,9 +34,9 @@ export function writeIns(
     const inshData = new IndexedByteArray(12);
     writeDword(inshData, zones.length); // CRegions
     // Bank MSB is in bits 8-14
-    let ulBank = (preset.bank & 127) << 8;
+    let ulBank = (preset.bankMSB & 127) << 8;
     // Bit 32 means drums
-    if (preset.bank === 128) {
+    if (preset.bankMSB === 128) {
         ulBank |= 1 << 31;
     }
     writeDword(inshData, ulBank); // UlBank
