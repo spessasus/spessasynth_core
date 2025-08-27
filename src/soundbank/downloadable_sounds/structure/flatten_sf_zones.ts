@@ -4,7 +4,7 @@ import { generatorLimits, generatorTypes } from "../../basic_soundbank/generator
 import { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { BasicPreset } from "../../basic_soundbank/basic_preset";
 
-import type { KeyRange } from "../../types";
+import type { GenericRange } from "../../types";
 
 /**
  * Combines preset into instrument zones.
@@ -12,7 +12,7 @@ import type { KeyRange } from "../../types";
  * @param preset the preset to combine.
  * @returns the new instrument
  */
-export function combineZones(preset: BasicPreset): BasicInstrument {
+export function flattenSFZones(preset: BasicPreset): BasicInstrument {
     const addUnique = (main: Generator[], adder: Generator[]) => {
         main.push(
             ...adder.filter(
@@ -21,7 +21,10 @@ export function combineZones(preset: BasicPreset): BasicInstrument {
         );
     };
 
-    const subtractRanges = (r1: KeyRange, r2: KeyRange): KeyRange => {
+    const subtractRanges = (
+        r1: GenericRange,
+        r2: GenericRange
+    ): GenericRange => {
         return { min: Math.max(r1.min, r2.min), max: Math.min(r1.max, r2.max) };
     };
 

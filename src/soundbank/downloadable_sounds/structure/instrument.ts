@@ -1,0 +1,196 @@
+import { DownloadableSoundsArticulation } from "./articulator";
+import { DownloadableSoundsRegion } from "./region";
+import type { MIDIPatchNamed } from "../../basic_soundbank/midi_patch";
+import {
+    findRIFFListType,
+    readRIFFChunk,
+    type RIFFChunk,
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
+import { getStringBytes, readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
+import { readLittleEndianIndexed, writeDword } from "../../../utils/byte_functions/little_endian";
+import { consoleColors } from "../../../utils/other";
+import { DLSVerifier } from "./dls_verifier";
+import type { DLSChunkFourCC } from "../../types";
+import type { DownloadableSoundsSample } from "./sample";
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import type { BasicPreset } from "../../basic_soundbank/basic_preset";
+
+/**
+ * Represents a proper DLS instrument, with regions and articulation.
+ * DLS
+ */
+export class DownloadableSoundsInstrument
+    extends DLSVerifier
+    implements MIDIPatchNamed
+{
+    public readonly articulation = new DownloadableSoundsArticulation();
+    public readonly regions = new Array<DownloadableSoundsRegion>();
+    public readonly name: string;
+    public readonly bankLSB: number;
+    public readonly bankMSB: number;
+    public readonly isGMGSDrum: boolean;
+    public readonly program: number;
+
+    /**
+     *
+     * @param name From LIST:INFO.
+     * @param ulBank Specifies the MIDI bank location. Bits 0-6 are defined as MIDI CC32 and bits 8-14 are
+     * defined as MIDI CC0. Bits 7 and 15-30 are reserved and should be written to zero. If the
+     * F_INSTRUMENT_DRUMS flag (Bit 31) is equal to 1 then the instrument is a drum
+     * instrument; if equal to 0 then the instrument is a melodic instrument.
+     * @param ulInstrument Specifies the MIDI Program Change (PC) value. Bits 0-6 are defined as PC value and bits 7-
+     * 31 are reserved and should be written to zero.
+     */
+    public constructor(name: string, ulBank: number, ulInstrument: number) {
+        super();
+        this.name = name;
+        this.program = ulInstrument & 127;
+        this.bankMSB = (ulBank >>> 8) & 127;
+        this.bankLSB = ulBank & 127;
+        this.isGMGSDrum = ulBank >>> 31 > 0;
+    }
+
+    public static read(samples: DownloadableSoundsSample[], chunk: RIFFChunk) {
+        const chunks = this.verifyAndReadList(chunk, "ins ");
+
+        const instrumentHeader = chunks.find((c) => c.header === "insh");
+        if (!instrumentHeader) {
+            SpessaSynthGroupEnd();
+            throw new Error("No instrument header!");
+        }
+
+        // Read the instrument name in INFO
+        let instrumentName = ``;
+        const infoChunk = findRIFFListType(chunks, "INFO");
+        if (infoChunk) {
+            let info = readRIFFChunk(infoChunk.data);
+            while (info.header !== "INAM") {
+                info = readRIFFChunk(infoChunk.data);
+            }
+            instrumentName = readBinaryStringIndexed(
+                info.data,
+                info.data.length
+            ).trim();
+        }
+        if (instrumentName.length < 1) {
+            instrumentName = `Unnamed Instrument`;
+        }
+
+        // Read instrument header
+        const regions = readLittleEndianIndexed(instrumentHeader.data, 4);
+        const ulBank = readLittleEndianIndexed(instrumentHeader.data, 4);
+        const ulInstrument = readLittleEndianIndexed(instrumentHeader.data, 4);
+        const instrument = new DownloadableSoundsInstrument(
+            instrumentName,
+            ulBank,
+            ulInstrument
+        );
+        SpessaSynthGroupCollapsed(
+            `%cParsing %c"${instrumentName}"%c...`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info
+        );
+
+        // List of regions
+        const regionListChunk = findRIFFListType(chunks, "lrgn");
+        if (!regionListChunk) {
+            SpessaSynthGroupEnd();
+            throw new Error("No region list!");
+        }
+
+        instrument.articulation.read(chunks);
+
+        // Remove generators with default values
+        // GlobalZone.generators = globalZone.generators.filter(
+        //     (g) => g.generatorValue !== generatorLimits[g.generatorType].def
+        // );
+        // Override reverb and chorus with 1000 instead of 200 (if not override)
+        // Reverb
+        // If (
+        //     GlobalZone.modulators.find(
+        //         (m) => m.destination === generatorTypes.reverbEffectsSend
+        //     ) === undefined
+        // ) {
+        //     GlobalZone.addModulators(Modulator.copy(DEFAULT_DLS_REVERB));
+        // }
+        // // Chorus
+        // If (
+        //     GlobalZone.modulators.find(
+        //         (m) => m.destination === generatorTypes.chorusEffectsSend
+        //     ) === undefined
+        // ) {
+        //     GlobalZone.addModulators(Modulator.copy(DEFAULT_DLS_CHORUS));
+        // }
+
+        // Read regions
+        for (let i = 0; i < regions; i++) {
+            const chunk = readRIFFChunk(regionListChunk.data);
+            this.verifyHeader(chunk, "LIST");
+            const type = readBinaryStringIndexed(
+                chunk.data,
+                4
+            ) as DLSChunkFourCC;
+            if (type !== "rgn " && type !== "rgn2") {
+                SpessaSynthGroupEnd();
+                this.parsingError(
+                    `Invalid DLS region! Expected "rgn " or "rgn2" got "${type}"`
+                );
+            }
+
+            const region = DownloadableSoundsRegion.read(samples, chunk);
+            if (region) {
+                instrument.regions.push(region);
+            }
+        }
+        return instrument;
+    }
+
+    public write() {
+        SpessaSynthGroupCollapsed(
+            `%cWriting %c${this.name}%c...`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info
+        );
+        const chunks = [this.writeHeader()];
+
+        const regionChunks = this.regions.map((r) => r.write());
+        chunks.push(writeRIFFChunkParts("lrgn", regionChunks, true));
+
+        // This will mostly be false as SF2 -> DLS can't have both global and local regions,
+        // So it only has global, hence this check.
+        if (this.articulation.length > 0) {
+            chunks.push(this.articulation.write());
+        }
+
+        // Write the name
+        const inam = writeRIFFChunkRaw("INAM", getStringBytes(this.name, true));
+        chunks.push(writeRIFFChunkRaw("INFO", inam, false, true));
+        return writeRIFFChunkParts("ins ", chunks, true);
+    }
+
+    /**
+     * Performs the full DLS to SF2 instrument conversion.
+     */
+    public convertToBasic(): BasicPreset {}
+
+    private writeHeader() {
+        // Insh: instrument header
+        const inshData = new IndexedByteArray(12);
+        writeDword(inshData, this.regions.length); // CRegions
+        // Bank MSB is in bits 8-14
+        let ulBank = (this.bankMSB & 127) << 8;
+        // Bit 32 means drums
+        if (this.bankMSB === 128) {
+            ulBank |= 1 << 31;
+        }
+        writeDword(inshData, ulBank); // UlBank
+        writeDword(inshData, this.program & 127); // UlInstrument
+
+        return writeRIFFChunkRaw("insh", inshData);
+    }
+}

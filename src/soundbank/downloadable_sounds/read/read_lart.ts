@@ -1,10 +1,10 @@
 import { readRIFFChunk, RIFFChunk } from "../../../utils/riff_chunk";
 import { readArticulation } from "./read_articulation";
-import type { DownloadableSounds } from "./downloadable_sounds";
+import type { DLSSoundBank } from "./downloadable_sounds";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
 
 export function readLart(
-    this: DownloadableSounds,
+    this: DLSSoundBank,
     zone: BasicZone,
     lartChunk?: RIFFChunk,
     lar2Chunk?: RIFFChunk

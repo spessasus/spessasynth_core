@@ -20,7 +20,7 @@ import { readDLSSamples } from "./read_samples";
 import type { DLSChunkFourCC, DLSInfoFourCC } from "../../types";
 import { parseDateString } from "../../../utils/load_date";
 
-class DownloadableSounds extends BasicSoundBank {
+class DLSSoundBank extends BasicSoundBank {
     // Main array that we read from
     protected dataArray: IndexedByteArray;
 
@@ -208,4 +208,4 @@ class DownloadableSounds extends BasicSoundBank {
     }
 }
 
-export { DownloadableSounds };
+export { DLSSoundBank };

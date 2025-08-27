@@ -21,10 +21,10 @@ import {
     generatorTypes
 } from "../../basic_soundbank/generator_types";
 import { readRegion } from "./read_region";
-import type { DownloadableSounds } from "./downloadable_sounds";
+import type { DLSSoundBank } from "./downloadable_sounds";
 import { readLart } from "./read_lart";
 
-export function readDLSInstrument(this: DownloadableSounds, chunk: RIFFChunk) {
+export function readDLSInstrument(this: DLSSoundBank, chunk: RIFFChunk) {
     this.verifyHeader(chunk, "LIST");
     this.verifyText(readBinaryStringIndexed(chunk.data, 4), "ins ");
     const chunks: RIFFChunk[] = [];

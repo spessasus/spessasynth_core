@@ -195,7 +195,7 @@ export function writeRIFFChunkParts(
  */
 export function findRIFFListType(
     collection: RIFFChunk[],
-    type: string
+    type: FourCC
 ): RIFFChunk | undefined {
     return collection.find((c) => {
         if (c.header !== "LIST") {

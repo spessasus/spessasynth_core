@@ -5,7 +5,7 @@ import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
 import type { Generator } from "./generator";
-import type { KeyRange, SampleAndGenerators } from "../types";
+import type { GenericRange, SampleAndGenerators } from "../types";
 import type { BasicInstrument } from "./basic_instrument";
 import {
     type MIDIPatch,
@@ -153,7 +153,7 @@ export class BasicPreset implements MIDIPatchNamed {
             return [];
         }
 
-        function isInRange(range: KeyRange, number: number): boolean {
+        function isInRange(range: GenericRange, number: number): boolean {
             return number >= range.min && number <= range.max;
         }
 

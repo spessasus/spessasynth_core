@@ -15,12 +15,9 @@ import {
     signedInt16
 } from "../../../utils/byte_functions/little_endian";
 import { DLSSample } from "./dls_sample";
-import type { DownloadableSounds } from "./downloadable_sounds";
+import type { DLSSoundBank } from "./downloadable_sounds";
 
-export function readDLSSamples(
-    this: DownloadableSounds,
-    waveListChunk: RIFFChunk
-) {
+export function readDLSSamples(this: DLSSoundBank, waveListChunk: RIFFChunk) {
     SpessaSynthGroupCollapsed(
         "%cLoading Wave samples...",
         consoleColors.recognized

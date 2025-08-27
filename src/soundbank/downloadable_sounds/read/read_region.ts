@@ -9,14 +9,14 @@ import {
 } from "../../../utils/riff_chunk";
 import { Generator } from "../../basic_soundbank/generator";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import type { DownloadableSounds } from "./downloadable_sounds";
+import type { DLSSoundBank } from "./downloadable_sounds";
 import type { DLSInstrument } from "./dls_instrument";
 import { readLart } from "./read_lart";
 import type { DLSSample } from "./dls_sample";
 import { generatorTypes } from "../../basic_soundbank/generator_types";
 
 export function readRegion(
-    this: DownloadableSounds,
+    this: DLSSoundBank,
     chunk: RIFFChunk,
     instrument: DLSInstrument
 ) {

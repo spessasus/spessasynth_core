@@ -2,20 +2,20 @@ import { type GeneratorType, generatorTypes } from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
-import type { KeyRange } from "../types";
+import type { GenericRange } from "../types";
 
 export class BasicZone {
     /**
      * The zone's velocity range
      * min -1 means that it is a default value
      */
-    public velRange: KeyRange = { min: -1, max: 127 };
+    public velRange: GenericRange = { min: -1, max: 127 };
 
     /**
      * The zone's key range
      * min -1 means that it is a default value
      */
-    public keyRange: KeyRange = { min: -1, max: 127 };
+    public keyRange: GenericRange = { min: -1, max: 127 };
 
     /**
      * The zone's generators
