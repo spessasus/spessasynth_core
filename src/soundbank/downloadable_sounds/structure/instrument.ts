@@ -1,4 +1,4 @@
-import { DownloadableSoundsArticulation } from "./articulator";
+import { DownloadableSoundsArticulation } from "./articulation";
 import { DownloadableSoundsRegion } from "./region";
 import type { MIDIPatchNamed } from "../../basic_soundbank/midi_patch";
 import {
@@ -16,7 +16,10 @@ import { DLSVerifier } from "./dls_verifier";
 import type { DLSChunkFourCC } from "../../types";
 import type { DownloadableSoundsSample } from "./sample";
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import type { BasicPreset } from "../../basic_soundbank/basic_preset";
+import { BasicPreset } from "../../basic_soundbank/basic_preset";
+import { BasicInstrument } from "../../basic_soundbank/basic_instrument";
+import { BasicSoundBank, generatorLimits, generatorTypes, Modulator } from "../../exports";
+import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./default_dls_modulators";
 
 /**
  * Represents a proper DLS instrument, with regions and articulation.
@@ -104,28 +107,6 @@ export class DownloadableSoundsInstrument
 
         instrument.articulation.read(chunks);
 
-        // Remove generators with default values
-        // GlobalZone.generators = globalZone.generators.filter(
-        //     (g) => g.generatorValue !== generatorLimits[g.generatorType].def
-        // );
-        // Override reverb and chorus with 1000 instead of 200 (if not override)
-        // Reverb
-        // If (
-        //     GlobalZone.modulators.find(
-        //         (m) => m.destination === generatorTypes.reverbEffectsSend
-        //     ) === undefined
-        // ) {
-        //     GlobalZone.addModulators(Modulator.copy(DEFAULT_DLS_REVERB));
-        // }
-        // // Chorus
-        // If (
-        //     GlobalZone.modulators.find(
-        //         (m) => m.destination === generatorTypes.chorusEffectsSend
-        //     ) === undefined
-        // ) {
-        //     GlobalZone.addModulators(Modulator.copy(DEFAULT_DLS_CHORUS));
-        // }
-
         // Read regions
         for (let i = 0; i < regions; i++) {
             const chunk = readRIFFChunk(regionListChunk.data);
@@ -146,6 +127,7 @@ export class DownloadableSoundsInstrument
                 instrument.regions.push(region);
             }
         }
+        SpessaSynthGroupEnd();
         return instrument;
     }
 
@@ -176,7 +158,65 @@ export class DownloadableSoundsInstrument
     /**
      * Performs the full DLS to SF2 instrument conversion.
      */
-    public convertToBasic(): BasicPreset {}
+    public toSFPreset(soundBank: BasicSoundBank) {
+        const preset = new BasicPreset(soundBank);
+        preset.name = this.name;
+        preset.bankMSB = this.bankMSB;
+        preset.bankLSB = this.bankLSB;
+        preset.isGMGSDrum = this.isGMGSDrum;
+        preset.program = this.program;
+
+        const instrument = new BasicInstrument();
+        instrument.name = this.name;
+        preset.createZone(instrument);
+
+        // Global articulation
+        const keyNumToPitch = this.articulation.toSFZone(instrument.globalZone);
+
+        // Override reverb and chorus with 1000 instead of 200
+        // Reverb
+        if (
+            instrument.globalZone.modulators.find(
+                (m) => m.destination === generatorTypes.reverbEffectsSend
+            ) === undefined
+        ) {
+            instrument.globalZone.addModulators(
+                Modulator.copy(DEFAULT_DLS_REVERB)
+            );
+        }
+        // Chorus
+        if (
+            instrument.globalZone.modulators.find(
+                (m) => m.destination === generatorTypes.chorusEffectsSend
+            ) === undefined
+        ) {
+            instrument.globalZone.addModulators(
+                Modulator.copy(DEFAULT_DLS_CHORUS)
+            );
+        }
+
+        // Remove generators with default values
+        instrument.globalZone.generators =
+            instrument.globalZone.generators.filter(
+                (g) => g.generatorValue !== generatorLimits[g.generatorType].def
+            );
+
+        this.regions.forEach((region) =>
+            region.toSFZone(instrument, soundBank.samples)
+        );
+
+        if (keyNumToPitch) {
+            // Apply keyNumToPitch to all zones
+            instrument.zones.forEach((zone) => {
+                DownloadableSoundsArticulation.keyNumToPitchToSFZone(
+                    keyNumToPitch,
+                    zone
+                );
+            });
+        }
+        soundBank.addPresets(preset);
+        soundBank.addInstruments(instrument);
+    }
 
     private writeHeader() {
         // Insh: instrument header

@@ -1,4 +1,3 @@
-import type { DLSChannelType } from "../../enums";
 import { type RIFFChunk, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
@@ -13,7 +12,7 @@ export class WaveLink {
      * stereo pair or for multi-track placement. Each bit position within the ulChannel field specifies
      * a channel placement with bit 0 specifying a mono sample or the left channel of a stereo file.
      */
-    public channel: DLSChannelType = 0;
+    public channel = 1;
 
     /**
      * Specifies the 0 based index of the cue entry in the wave pool table.

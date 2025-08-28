@@ -1,7 +1,6 @@
 import { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { readBinaryStringIndexed } from "../utils/byte_functions/string";
-import { DLSSoundBank } from "./downloadable_sounds/read/downloadable_sounds";
 import { SoundFont2 } from "./soundfont/read/soundfont";
 import { DownloadableSounds } from "./downloadable_sounds/structure/downloadable_sounds";
 
@@ -16,9 +15,13 @@ export class SoundBankLoader {
         const a = new IndexedByteArray(check);
         const id = readBinaryStringIndexed(a, 4).toLowerCase();
         if (id === "dls ") {
-            console.log(DownloadableSounds.read(buffer));
-            return new DLSSoundBank(buffer);
+            return this.loadDLS(buffer);
         }
         return new SoundFont2(buffer, false);
+    }
+
+    private static loadDLS(buffer: ArrayBuffer) {
+        const dls = DownloadableSounds.read(buffer);
+        return dls.toSF();
     }
 }

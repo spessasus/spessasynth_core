@@ -23,6 +23,7 @@ import {
     SpessaSynthInfo,
     SpessaSynthWarn
 } from "../../../utils/loggin";
+import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 
 export class DownloadableSounds extends DLSVerifier {
     public readonly samples = new Array<DownloadableSoundsSample>();
@@ -40,8 +41,7 @@ export class DownloadableSounds extends DLSVerifier {
 
     public static read(buffer: ArrayBuffer) {
         if (!buffer) {
-            this.parsingError("No data provided!");
-            return;
+            throw new Error("No data provided!");
         }
         const dataArray = new IndexedByteArray(buffer);
         SpessaSynthGroup("%cParsing DLS file...", consoleColors.info);
@@ -124,7 +124,7 @@ export class DownloadableSounds extends DLSVerifier {
         const colhChunk = chunks.find((c) => c.header === "colh");
         if (!colhChunk) {
             this.parsingError("No colh chunk!");
-            return;
+            return 5 as never;
         }
         const instrumentAmount = readLittleEndianIndexed(colhChunk.data, 4);
         SpessaSynthInfo(
@@ -137,7 +137,7 @@ export class DownloadableSounds extends DLSVerifier {
         const waveListChunk = findRIFFListType(chunks, "wvpl");
         if (!waveListChunk) {
             this.parsingError("No wvpl chunk!");
-            return;
+            return 5 as never;
         }
         const waveList = this.verifyAndReadList(waveListChunk, "wvpl");
         waveList.forEach((wave) => {
@@ -148,7 +148,7 @@ export class DownloadableSounds extends DLSVerifier {
         const instrumentListChunk = findRIFFListType(chunks, "lins");
         if (!instrumentListChunk) {
             this.parsingError("No lins chunk!");
-            return;
+            return 5 as never;
         }
         const instruments = this.verifyAndReadList(instrumentListChunk, "lins");
         SpessaSynthGroupCollapsed(
@@ -174,7 +174,8 @@ export class DownloadableSounds extends DLSVerifier {
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
-            consoleColors.recognized
+            consoleColors.recognized,
+            consoleColors.info
         );
         SpessaSynthGroupEnd();
         return dls;
@@ -196,5 +197,24 @@ export class DownloadableSounds extends DLSVerifier {
                 consoleColors.recognized
             );
         }
+    }
+
+    public toSF(): BasicSoundBank {
+        SpessaSynthGroup("%cConverting DLS to SF2...", consoleColors.info);
+        const dls = new BasicSoundBank();
+        dls.soundBankInfo.version.minor = 4;
+        dls.soundBankInfo.version.major = 2;
+        dls.soundBankInfo = { ...this.soundBankInfo };
+
+        this.samples.forEach((sample) => {
+            sample.toSFSample(dls);
+        });
+
+        this.instruments.forEach((instrument) => {
+            instrument.toSFPreset(dls);
+        });
+
+        SpessaSynthGroupEnd();
+        return dls;
     }
 }

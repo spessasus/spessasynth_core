@@ -35,13 +35,13 @@ export function writeDLSRegion(
     // FusOptions: 0 it seems
     writeWord(rgnhData, 0);
     // KeyGroup (exclusive class)
-    const exclusive = zone.getGeneratorValue(generatorTypes.exclusiveClass, 0);
+    const exclusive = zone.getGenerator(generatorTypes.exclusiveClass, 0);
     writeWord(rgnhData, exclusive);
     // UsLayer
     writeWord(rgnhData, 0);
     const rgnh = writeRIFFChunkRaw("rgnh", rgnhData);
 
-    let rootKey = zone.getGeneratorValue(
+    let rootKey = zone.getGenerator(
         generatorTypes.overridingRootKey,
         zone.sample.originalKey || 60
     );
@@ -49,9 +49,9 @@ export function writeDLSRegion(
     // A lot of soundfonts like to set scale tuning to 0 in drums and keep the key at 60
     // Since we implement scale tuning via a dls articulator and fluid doesn't support these,
     // Change the root key here
-    const scaleTuning = zone.getGeneratorValue(
+    const scaleTuning = zone.getGenerator(
         generatorTypes.scaleTuning,
-        globalZone.getGeneratorValue(generatorTypes.scaleTuning, 100)
+        globalZone.getGenerator(generatorTypes.scaleTuning, 100)
     );
     if (scaleTuning === 0 && zone.keyRange.max - zone.keyRange.min === 0) {
         rootKey = zone.keyRange.min;
@@ -60,23 +60,20 @@ export function writeDLSRegion(
     // Wave sample (Wsmp)
     const wsmp = writeWavesample(
         rootKey,
-        zone.getGeneratorValue(generatorTypes.fineTune, 0) +
-            zone.getGeneratorValue(generatorTypes.coarseTune, 0) * 100 +
+        zone.getGenerator(generatorTypes.fineTune, 0) +
+            zone.getGenerator(generatorTypes.coarseTune, 0) * 100 +
             zone.sample.pitchCorrection,
-        zone.getGeneratorValue(generatorTypes.initialAttenuation, 0),
+        zone.getGenerator(generatorTypes.initialAttenuation, 0),
         // Calculate loop with offsets
         zone.sample.loopStart +
-            zone.getGeneratorValue(generatorTypes.startloopAddrsOffset, 0) +
-            zone.getGeneratorValue(
-                generatorTypes.startloopAddrsCoarseOffset,
-                0
-            ) *
+            zone.getGenerator(generatorTypes.startloopAddrsOffset, 0) +
+            zone.getGenerator(generatorTypes.startloopAddrsCoarseOffset, 0) *
                 32768,
         zone.sample.loopEnd +
-            zone.getGeneratorValue(generatorTypes.endloopAddrsOffset, 0) +
-            zone.getGeneratorValue(generatorTypes.endloopAddrsCoarseOffset, 0) *
+            zone.getGenerator(generatorTypes.endloopAddrsOffset, 0) +
+            zone.getGenerator(generatorTypes.endloopAddrsCoarseOffset, 0) *
                 32768,
-        zone.getGeneratorValue(generatorTypes.sampleModes, 0)
+        zone.getGenerator(generatorTypes.sampleModes, 0)
     );
 
     // Wave link (wlnk)

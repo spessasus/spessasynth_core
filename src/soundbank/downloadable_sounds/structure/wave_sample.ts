@@ -6,9 +6,12 @@ import {
     writeDword,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
-import type { DLSLoopType } from "../../enums";
+import { type DLSLoopType, DLSLoopTypes, generatorTypes } from "../../enums";
 import { DLSVerifier } from "./dls_verifier";
 import { IndexedByteArray } from "../../../utils/indexed_array";
+import type { BasicZone } from "../../basic_soundbank/basic_zone";
+import { type BasicSample } from "../../basic_soundbank/basic_sample";
+import type { SampleLoopingMode } from "../../../synthesizer/types";
 
 const WSMP_SIZE = 20;
 const WSMP_LOOP_SIZE = 16;
@@ -48,6 +51,7 @@ export class WaveSample extends DLSVerifier {
             chunk.data[chunk.data.currentIndex++],
             chunk.data[chunk.data.currentIndex++]
         );
+
         // LGain: Each unit of gain represents 1/655360 dB
         waveSample.gain = readLittleEndianIndexed(chunk.data, 4) | 0;
         // Skip options
@@ -74,6 +78,74 @@ export class WaveSample extends DLSVerifier {
             });
         }
         return waveSample;
+    }
+
+    /**
+     * Converts the wsmp data into an SF zone
+     * @param zone
+     * @param sample
+     * @private
+     */
+    public toSFZone(zone: BasicZone, sample: BasicSample) {
+        let loopingMode: SampleLoopingMode = 0;
+        const loop = this.loops[0];
+        if (loop) {
+            loopingMode = loop.loopType === DLSLoopTypes.loopAndRelease ? 3 : 1;
+        }
+        if (loopingMode !== 0) {
+            zone.setGenerator(generatorTypes.sampleModes, loopingMode);
+        }
+
+        // Convert to signed and turn into attenuation (invert)
+        const wsmpGain16 = this.gain >> 16;
+        const wsmpAttenuation = -wsmpGain16;
+        // Apply the E-MU attenuation correction here
+        const wsmpAttenuationCorrected = wsmpAttenuation / 0.4;
+
+        if (wsmpAttenuationCorrected !== 0) {
+            zone.addToGenerator(
+                generatorTypes.initialAttenuation,
+                wsmpAttenuationCorrected
+            );
+        }
+
+        // Correct tuning
+        zone.addTuning(this.fineTune - sample.pitchCorrection);
+
+        // Correct loop if needed
+        if (loop) {
+            const diffStart = loop.loopStart - sample.loopStart;
+            const loopEnd = loop.loopStart + loop.loopLength;
+            const diffEnd = loopEnd - sample.loopEnd;
+            if (diffStart !== 0) {
+                const fine = diffStart % 32768;
+                zone.setGenerator(generatorTypes.startloopAddrsOffset, fine);
+                // Coarse generator uses 32768 samples per step
+                const coarse = Math.trunc(diffStart / 32768);
+                if (coarse !== 0) {
+                    zone.setGenerator(
+                        generatorTypes.startloopAddrsCoarseOffset,
+                        coarse
+                    );
+                }
+            }
+            if (diffEnd !== 0) {
+                const fine = diffEnd % 32768;
+                zone.setGenerator(generatorTypes.endloopAddrsOffset, fine);
+                // Coarse generator uses 32768 samples per step
+                const coarse = Math.trunc(diffEnd / 32768);
+                if (coarse !== 0) {
+                    zone.setGenerator(
+                        generatorTypes.endloopAddrsCoarseOffset,
+                        coarse
+                    );
+                }
+            }
+        }
+        // Correct the key if needed
+        if (this.unityNote !== sample.originalKey) {
+            zone.setGenerator(generatorTypes.overridingRootKey, this.unityNote);
+        }
     }
 
     public write() {

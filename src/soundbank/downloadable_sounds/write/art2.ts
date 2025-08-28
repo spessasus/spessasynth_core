@@ -14,7 +14,7 @@ import {
     DEFAULT_DLS_REVERB,
     DLS_1_NO_VIBRATO_MOD,
     DLS_1_NO_VIBRATO_PRESSURE
-} from "../read/default_dls_modulators";
+} from "../structure/default_dls_modulators";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
 import type { Articulator } from "./articulator";
 import { generatorTypes } from "../../basic_soundbank/generator_types";

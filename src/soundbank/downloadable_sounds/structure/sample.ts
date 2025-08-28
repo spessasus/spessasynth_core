@@ -19,6 +19,8 @@ import {
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
+import { DLSSample } from "./dls_sample";
+import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 
 export class DownloadableSoundsSample extends DLSVerifier {
     public waveSample = new WaveSample();
@@ -100,6 +102,38 @@ export class DownloadableSoundsSample extends DLSVerifier {
             sample.waveSample = WaveSample.read(wsmpChunk);
         }
         return sample;
+    }
+
+    public toSFSample(dls: BasicSoundBank) {
+        // DLS allows tuning to be a SHORT (32767 max), while SF uses BYTE (with 99 max -99 min)
+        // Clamp it down and change root key if needed
+        let originalKey = this.waveSample.unityNote;
+        let pitchCorrection = this.waveSample.fineTune;
+        const samplePitchSemitones = Math.trunc(pitchCorrection / 100);
+
+        originalKey += samplePitchSemitones;
+        pitchCorrection -= samplePitchSemitones * 100;
+
+        let loopStart = 0;
+        let loopEnd = 0;
+        const loop = this.waveSample.loops?.[0];
+        if (loop) {
+            loopStart = loop.loopStart;
+            loopEnd = loop.loopStart + loop.loopLength;
+        }
+
+        const sample = new DLSSample(
+            this.name,
+            this.sampleRate,
+            originalKey,
+            pitchCorrection,
+            loopStart,
+            loopEnd,
+            this.dataChunk,
+            this.wFormatTag,
+            this.bytesPerSample
+        );
+        dls.addSamples(sample);
     }
 
     public write() {

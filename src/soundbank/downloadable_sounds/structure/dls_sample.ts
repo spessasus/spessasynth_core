@@ -90,10 +90,6 @@ function readALAW(
 }
 
 export class DLSSample extends BasicSample {
-    /**
-     * In decibels of attenuation, WITHOUT E-MU CORRECTION
-     */
-    public sampleDbAttenuation: number;
     protected wFormatTag: number;
     protected bytesPerSample: number;
 
@@ -109,7 +105,6 @@ export class DLSSample extends BasicSample {
      * @param pitchCorrection
      * @param loopStart sample data points
      * @param loopEnd sample data points
-     * @param sampleDbAttenuation in db
      * @param dataChunk
      * @param wFormatTag
      * @param bytesPerSample
@@ -121,7 +116,6 @@ export class DLSSample extends BasicSample {
         pitchCorrection: number,
         loopStart: number,
         loopEnd: number,
-        sampleDbAttenuation: number,
         dataChunk: RIFFChunk,
         wFormatTag: number,
         bytesPerSample: number
@@ -135,7 +129,6 @@ export class DLSSample extends BasicSample {
             loopStart,
             loopEnd
         );
-        this.sampleDbAttenuation = sampleDbAttenuation;
         this.dataOverridden = false;
         this.rawData = dataChunk.data;
         this.wFormatTag = wFormatTag;

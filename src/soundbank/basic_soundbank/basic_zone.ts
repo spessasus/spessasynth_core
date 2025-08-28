@@ -1,4 +1,4 @@
-import { type GeneratorType, generatorTypes } from "./generator_types";
+import { generatorLimits, type GeneratorType, generatorTypes } from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
@@ -35,17 +35,54 @@ export class BasicZone {
     }
 
     /**
+     * The current tuning in cents.
+     */
+    public get currentTuning() {
+        const currentCoarse = this.getGenerator(generatorTypes.coarseTune, 0);
+        const currentFine = this.getGenerator(generatorTypes.fineTune, 0);
+        return currentCoarse * 100 + currentFine;
+    }
+
+    /**
      * Adds a new generator at the start. Useful for prepending the range generators.
      */
     public prependGenerator(generator: Generator) {
         this.generators.unshift(generator);
     }
 
+    /**
+     * Sets both tuning generators automatically.
+     * @param tuningCents The tuning in cents.
+     */
+    public setTuning(tuningCents: number) {
+        const coarse = Math.trunc(tuningCents / 100);
+        const fine = tuningCents % 100;
+        this.setGenerator(generatorTypes.coarseTune, coarse);
+        this.setGenerator(generatorTypes.fineTune, fine);
+    }
+
+    /**
+     * Adds to current tuning in cents.
+     * @param tuningCents The tuning in cents.
+     */
+    public addTuning(tuningCents: number) {
+        const newTuning = tuningCents + this.currentTuning;
+        this.setTuning(newTuning);
+    }
+
+    /**
+     * Adds to a given generator, or its default value.
+     */
+    public addToGenerator(type: GeneratorType, value: number, validate = true) {
+        const genValue = this.getGenerator(type, generatorLimits[type].def);
+        this.setGenerator(type, value + genValue, validate);
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */
-    public setGenerator(type: GeneratorType, value: number) {
+    public setGenerator(type: GeneratorType, value: number, validate = true) {
         switch (type) {
             case generatorTypes.sampleID:
                 throw new Error("Use setSample()");
@@ -60,13 +97,13 @@ export class BasicZone {
         if (generator) {
             generator.generatorValue = value;
         } else {
-            this.addGenerators(new Generator(type, value));
+            this.addGenerators(new Generator(type, value, validate));
         }
     }
 
     /**
      * Adds generators to the zone.
-     * @param generators {}
+     * @param generators
      */
     public addGenerators(...generators: Generator[]) {
         generators.forEach((g) => {
@@ -91,7 +128,7 @@ export class BasicZone {
         this.modulators.push(...modulators);
     }
 
-    public getGeneratorValue<K>(
+    public getGenerator<K>(
         generatorType: GeneratorType,
         notFoundValue: number | K
     ): number | K {

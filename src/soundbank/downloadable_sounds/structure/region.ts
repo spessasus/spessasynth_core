@@ -1,4 +1,4 @@
-import { DownloadableSoundsArticulation } from "./articulator";
+import { DownloadableSoundsArticulation } from "./articulation";
 import type { GenericRange } from "../../types";
 import { WaveSample } from "./wave_sample";
 import { WaveLink } from "./wave_link";
@@ -18,6 +18,10 @@ import { IndexedByteArray } from "../../../utils/indexed_array";
 import type { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
 import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
+import {
+    generatorLimits,
+    generatorTypes
+} from "../../basic_soundbank/generator_types";
 
 export class DownloadableSoundsRegion extends DLSVerifier {
     public readonly articulation = new DownloadableSoundsArticulation();
@@ -143,8 +147,14 @@ export class DownloadableSoundsRegion extends DLSVerifier {
 
     public toSFZone(
         instrument: BasicInstrument,
-        sample: BasicSample
+        samples: BasicSample[]
     ): BasicInstrumentZone {
+        const sample = samples[this.waveLink.tableIndex];
+        if (!sample) {
+            DownloadableSoundsRegion.parsingError(
+                `Invalid sample index: ${this.waveLink.tableIndex}`
+            );
+        }
         const zone = instrument.createZone(sample);
         zone.keyRange = this.keyRange;
         zone.velRange = this.velRange;
@@ -156,6 +166,17 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             zone.velRange.min = -1;
         }
 
+        // KeyGroup: essentially exclusive class
+        if (this.keyGroup !== 0) {
+            zone.setGenerator(generatorTypes.exclusiveClass, this.keyGroup);
+        }
+
+        this.articulation.toSFZone(zone);
+        this.waveSample.toSFZone(zone, sample);
+        // Remove generators with default values
+        zone.generators = zone.generators.filter(
+            (g) => g.generatorValue !== generatorLimits[g.generatorType].def
+        );
         return zone;
     }
 

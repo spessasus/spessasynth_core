@@ -118,27 +118,3 @@ export const DLSLoopTypes = {
 } as const;
 
 export type DLSLoopType = (typeof DLSLoopTypes)[keyof typeof DLSLoopTypes];
-
-export const DLSChannelTypes = {
-    leftOrMono: 1 << 0,
-    right: 1 << 1,
-    center: 1 << 2,
-    lowFrequencyEnergy: 1 << 3,
-    surroundLeft: 1 << 4,
-    surroundRight: 1 << 5,
-    leftOfCenter: 1 << 6,
-    rightOfCenter: 1 << 7,
-    surroundCenter: 1 << 8,
-    sideLeft: 1 << 9,
-    sideRight: 1 << 10,
-    top: 1 << 11,
-    topFrontLeft: 1 << 12,
-    topFrontCenter: 1 << 13,
-    topFrontRight: 1 << 14,
-    topRearLeft: 1 << 15,
-    topRearCenter: 1 << 16,
-    topRearRight: 1 << 17
-} as const;
-
-export type DLSChannelType =
-    (typeof DLSChannelTypes)[keyof typeof DLSChannelTypes];
