@@ -17,14 +17,25 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../../utils/riff_chunk";
-import { readLittleEndianIndexed, writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
+import {
+    readLittleEndianIndexed,
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
-import { BasicInstrumentZone, Modulator, type ModulatorSource } from "../../exports";
+import {
+    BasicInstrumentZone,
+    Modulator,
+    type ModulatorSource
+} from "../../exports";
 import { midiControllers } from "../../../midi/enums";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
+import {
+    DLS_1_NO_VIBRATO_MOD,
+    DLS_1_NO_VIBRATO_PRESSURE
+} from "./default_dls_modulators";
 
 type KeyToEnv =
     | typeof generatorTypes.keyNumToModEnvDecay

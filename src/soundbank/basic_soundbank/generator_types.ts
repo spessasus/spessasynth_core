@@ -262,11 +262,11 @@ generatorLimits[generatorTypes.sustainModEnv] = {
     nrpn: 1
 };
 generatorLimits[generatorTypes.releaseModEnv] = {
-    min: -7200,
+    min: -12000,
     max: 8000,
     def: -12000,
     nrpn: 2
-}; // Min is set to -7200 to prevent lowpass clicks
+};
 // Key num to mod env
 generatorLimits[generatorTypes.keyNumToModEnvHold] = {
     min: -1200,
@@ -313,11 +313,11 @@ generatorLimits[generatorTypes.sustainVolEnv] = {
     nrpn: 1
 };
 generatorLimits[generatorTypes.releaseVolEnv] = {
-    min: -7200,
+    min: -12000,
     max: 8000,
     def: -12000,
     nrpn: 2
-}; // Min is set to -7200 prevent clicks
+};
 // Key num to vol env
 generatorLimits[generatorTypes.keyNumToVolEnvHold] = {
     min: -1200,
