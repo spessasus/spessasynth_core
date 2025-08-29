@@ -292,7 +292,7 @@ export class ConnectionBlock {
                 break;
             case DLSDestinations.gain:
                 // Turn to centibels and apply emu correction
-                zone.setGenerator(
+                zone.addToGenerator(
                     generatorTypes.initialAttenuation,
                     (value * -10) / 0.4
                 );
@@ -366,14 +366,9 @@ export class ConnectionBlock {
             case DLSDestinations.chorusSend:
                 zone.setGenerator(generatorTypes.chorusEffectsSend, value);
                 break;
-            case DLSDestinations.pitch: {
-                // Split it up
-                const semi = Math.floor(value / 100);
-                const cents = Math.floor(value - semi * 100);
-                zone.setGenerator(generatorTypes.fineTune, cents);
-                zone.setGenerator(generatorTypes.coarseTune, semi);
+            case DLSDestinations.pitch:
+                zone.addTuning(value);
                 break;
-            }
         }
     }
 
@@ -616,8 +611,10 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             zone.sample.originalKey
         );
         zone.setGenerator(generatorTypes.scaleTuning, keyNumToPitch / 128);
-        const tuning = (keyNumToPitch / 128 - 100) * rootKey;
-        zone.addTuning(tuning);
+        if (keyNumToPitch !== 0) {
+            const tuning = (keyNumToPitch / 128 - 100) * rootKey;
+            zone.addTuning(tuning);
+        }
     }
 
     /**

@@ -181,8 +181,6 @@ export class DecodedModulator extends Modulator {
         amount: number,
         transformType: number
     ) {
-        // Decode the source
-
         const isEffectModulator =
             (sourceEnum === 0x00db || sourceEnum === 0x00dd) &&
             secondarySourceEnum === 0x0 &&

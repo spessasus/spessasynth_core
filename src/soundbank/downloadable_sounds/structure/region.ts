@@ -171,8 +171,10 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             zone.setGenerator(generatorTypes.exclusiveClass, this.keyGroup);
         }
 
-        this.articulation.toSFZone(zone);
+        // Wave sample sets the root key, so it needs to be first
+        // Since articulation may use it for keyNumToPitch correction
         this.waveSample.toSFZone(zone, sample);
+        this.articulation.toSFZone(zone);
         // Remove generators with default values
         zone.generators = zone.generators.filter(
             (g) => g.generatorValue !== generatorLimits[g.generatorType].def

@@ -103,15 +103,19 @@ export class WaveSample extends DLSVerifier {
         const wsmpAttenuationCorrected = wsmpAttenuation / 0.4;
 
         if (wsmpAttenuationCorrected !== 0) {
-            zone.addToGenerator(
+            zone.setGenerator(
                 generatorTypes.initialAttenuation,
                 wsmpAttenuationCorrected
             );
         }
 
         // Correct tuning
-        zone.addTuning(this.fineTune - sample.pitchCorrection);
+        zone.setTuning(this.fineTune - sample.pitchCorrection);
 
+        // Correct the key if needed
+        if (this.unityNote !== sample.originalKey) {
+            zone.setGenerator(generatorTypes.overridingRootKey, this.unityNote);
+        }
         // Correct loop if needed
         if (loop) {
             const diffStart = loop.loopStart - sample.loopStart;
@@ -141,10 +145,6 @@ export class WaveSample extends DLSVerifier {
                     );
                 }
             }
-        }
-        // Correct the key if needed
-        if (this.unityNote !== sample.originalKey) {
-            zone.setGenerator(generatorTypes.overridingRootKey, this.unityNote);
         }
     }
 
