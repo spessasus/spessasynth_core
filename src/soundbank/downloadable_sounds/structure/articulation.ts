@@ -17,25 +17,15 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../../utils/riff_chunk";
-import {
-    readLittleEndianIndexed,
-    writeDword,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
-import {
-    BasicInstrumentZone,
-    Modulator,
-    type ModulatorSource
-} from "../../exports";
+import { BasicInstrumentZone, Modulator, type ModulatorSource } from "../../exports";
 import { midiControllers } from "../../../midi/enums";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import {
-    DLS_1_NO_VIBRATO_MOD,
-    DLS_1_NO_VIBRATO_PRESSURE
-} from "./default_dls_modulators";
+import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
+import { bitToBool } from "../../../utils/byte_functions/bit_mask";
 
 type KeyToEnv =
     | typeof generatorTypes.keyNumToModEnvDecay
@@ -69,12 +59,16 @@ class ConnectionSource {
         this.invert = invert;
     }
 
-    public toString() {
-        const sourceString =
+    public get sourceName() {
+        return (
             Object.keys(DLSSources).find(
                 (k) => DLSSources[k as keyof typeof DLSSources] === this.source
-            ) ?? this.source.toString();
-        return `${sourceString} ${this.bipolar ? "bipolar" : "unipolar"} ${this.invert ? "inverted" : ""}`;
+            ) ?? this.source.toString()
+        );
+    }
+
+    public toString() {
+        return `${this.sourceName} ${this.transform} ${this.bipolar ? "bipolar" : "unipolar"} ${this.invert ? "inverted" : "normal"}`;
     }
 
     public toTransformFlag() {
@@ -190,6 +184,7 @@ export class ConnectionBlock {
     ) {
         /*
          2.10 <art2-ck>, Level 2 Articulator Chunk
+         usTransform
          Bits 0-3 specify one of 16 possible output transforms. Bits 4-7 specify one of 16 possible transforms to apply to
          the usControl input. Bits 8 and 9 specify whether the usControl input should be inverted and/or bipolar. Bits 10-13
          specify one of 16 possible transforms to apply to the usSource input. Bit 14 and 15 specify whether the usSource
@@ -199,8 +194,8 @@ export class ConnectionBlock {
         this.transform = (usTransform & 0x0f) as DLSTransform;
 
         const controlTransform = ((usTransform >> 4) & 0x0f) as DLSTransform;
-        const controlBipolar = !!(usTransform >> 8);
-        const controlInvert = !!(usTransform >> 9);
+        const controlBipolar = bitToBool(usTransform, 8);
+        const controlInvert = bitToBool(usTransform, 9);
         this.control = new ConnectionSource(
             usControl as DLSSource,
             controlTransform,
@@ -209,8 +204,8 @@ export class ConnectionBlock {
         );
 
         const sourceTransform = ((usTransform >> 10) & 0x0f) as DLSTransform;
-        const sourceBipolar = !!(usTransform >> 14);
-        const sourceInvert = !!(usTransform >> 15);
+        const sourceBipolar = bitToBool(usTransform, 14);
+        const sourceInvert = bitToBool(usTransform, 15);
 
         this.source = new ConnectionSource(
             usSource as DLSSource,
@@ -233,6 +228,16 @@ export class ConnectionBlock {
         return this.scale >> 16;
     }
 
+    public get destinationName() {
+        return (
+            Object.keys(DLSDestinations).find(
+                (k) =>
+                    DLSDestinations[k as keyof typeof DLSDestinations] ===
+                    this.destination
+            ) ?? this.destination.toString()
+        );
+    }
+
     public static read(artData: IndexedByteArray) {
         return new ConnectionBlock(
             // UsSource
@@ -245,6 +250,15 @@ export class ConnectionBlock {
             readLittleEndianIndexed(artData, 2),
             // LScale
             readLittleEndianIndexed(artData, 4) | 0
+        );
+    }
+
+    public toString() {
+        return (
+            `Source: ${this.source.toString()},\n` +
+            `Control: ${this.control.toString()},\n` +
+            `Scale: ${this.scale} >> 16 = ${this.shortScale},\n` +
+            `Destination: ${this.destinationName}\n`
         );
     }
 
@@ -398,9 +412,7 @@ export class ConnectionBlock {
             const convertedDestination = this.toSFDestination();
             if (!convertedDestination) {
                 // Cannot be a valid modulator
-                SpessaSynthWarn(
-                    `Invalid destination: ${Object.keys(DLSDestinations).find((k) => DLSDestinations[k as keyof typeof DLSDestinations] === this.destination) ?? this.destination}}`
-                );
+                SpessaSynthWarn(`Invalid destination: ${this.destinationName}`);
                 return;
             }
             // The conversion may specify an adjusted value
@@ -471,7 +483,7 @@ export class ConnectionBlock {
      * Checks for an SF generator that consists of DLS source and destination (such as mod LFO and pitch)
      * @returns either a matching SF generator or nothing.
      */
-    private toCombinedSFDestination(): GeneratorType | undefined {
+    public toCombinedSFDestination(): GeneratorType | undefined {
         const source = this.source.source;
         const destination = this.destination;
         if (
@@ -731,93 +743,31 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 connection.toSFGenerator(zone);
                 continue;
             }
-
-            // A few special cases which are generators:
+            // A few special cases which are generators
             if (control === DLSSources.none) {
-                // Mod LFO to pitch
-                if (
-                    source === DLSSources.modLfo &&
-                    destination === DLSDestinations.pitch
-                ) {
-                    zone.setGenerator(
-                        generatorTypes.modLfoToPitch,
-                        generatorAmount
-                    );
-                } else if (
-                    source === DLSSources.modLfo &&
-                    destination === DLSDestinations.gain
-                ) {
-                    // Mod LFO to volume
-                    zone.setGenerator(
-                        generatorTypes.modLfoToVolume,
-                        generatorAmount
-                    );
-                } else if (
-                    source === DLSSources.modLfo &&
-                    destination === DLSDestinations.filterCutoff
-                ) {
-                    // Mod LFO to filter
-                    zone.setGenerator(
-                        generatorTypes.modLfoToFilterFc,
-                        generatorAmount
-                    );
-                } else if (
-                    source === DLSSources.vibratoLfo &&
-                    destination === DLSDestinations.pitch
-                ) {
-                    // Vib lfo to pitch
-                    zone.setGenerator(
-                        generatorTypes.vibLfoToPitch,
-                        generatorAmount
-                    );
-                } else if (
-                    source === DLSSources.modEnv &&
-                    destination === DLSDestinations.pitch
-                ) {
-                    // Mod env to pitch
-                    zone.setGenerator(
-                        generatorTypes.modEnvToPitch,
-                        generatorAmount
-                    );
-                } else if (
-                    source === DLSSources.modEnv &&
-                    destination === DLSDestinations.filterCutoff
-                ) {
-                    // Mod env to filter
-                    zone.setGenerator(
-                        generatorTypes.modEnvToFilterFc,
-                        generatorAmount
-                    );
-                } else if (
-                    source === DLSSources.keyNum &&
-                    destination === DLSDestinations.pitch
-                ) {
-                    // Key to pitch (scale tuning), skip
-                } else if (
-                    source === DLSSources.keyNum &&
-                    destination === DLSDestinations.volEnvHold
-                ) {
-                    // Key to vol env hold, skip
-                } else if (
-                    source === DLSSources.keyNum &&
-                    destination === DLSDestinations.volEnvDecay
-                ) {
-                    // Key to vol env decay, skip
-                } else if (
-                    source === DLSSources.keyNum &&
-                    destination === DLSDestinations.modEnvHold
-                ) {
-                    // Key to mod env hold, skip
-                } else if (
-                    source === DLSSources.keyNum &&
-                    destination === DLSDestinations.modEnvDecay
-                ) {
-                    // Key to mod env decay, skip
+                // THe keyNum source
+                // It usually requires a special treatment
+                if (source === DLSSources.keyNum) {
+                    if (
+                        destination === DLSDestinations.pitch ||
+                        destination === DLSDestinations.modEnvHold ||
+                        destination === DLSDestinations.modEnvDecay ||
+                        destination === DLSDestinations.volEnvHold ||
+                        destination == DLSDestinations.volEnvDecay
+                    ) {
+                        // Skip, will be applied later
+                        continue;
+                    }
                 } else {
-                    // Modulator, transform!
-                    connection.toSFModulator(zone);
+                    const specialGen = connection.toCombinedSFDestination();
+                    if (specialGen) {
+                        zone.setGenerator(specialGen, generatorAmount);
+                        continue;
+                    }
                 }
             }
+            // Modulator, transform!
+            connection.toSFModulator(zone);
         }
 
         // It seems that dls 1 does not have vibrato lfo, so we shall disable it
