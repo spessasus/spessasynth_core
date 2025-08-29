@@ -1,5 +1,6 @@
 import { Generator } from "./basic_soundbank/generator";
 import { Modulator } from "./basic_soundbank/modulator";
+import { ModulatorSource } from "./basic_soundbank/modulator_source";
 import { BasicZone } from "./basic_soundbank/basic_zone";
 import { BasicGlobalZone } from "./basic_soundbank/basic_global_zone";
 import { BasicSample, EmptySample } from "./basic_soundbank/basic_sample";
@@ -17,6 +18,7 @@ export * from "./basic_soundbank/midi_patch";
 export {
     Generator,
     Modulator,
+    ModulatorSource,
     BasicZone,
     BasicGlobalZone,
     BasicSample,

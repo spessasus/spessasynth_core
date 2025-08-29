@@ -1,4 +1,8 @@
-import { generatorLimits, type GeneratorType, generatorTypes } from "./generator_types";
+import {
+    generatorLimits,
+    type GeneratorType,
+    generatorTypes
+} from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
@@ -140,7 +144,7 @@ export class BasicZone {
 
     public copyFrom(zone: BasicZone) {
         this.generators = [...zone.generators];
-        this.modulators = zone.modulators.map((m) => Modulator.copy(m));
+        this.modulators = zone.modulators.map((m) => m.copy());
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };
     }

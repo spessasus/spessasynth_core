@@ -267,28 +267,28 @@ export function getDLSArticulatorFromSf2Modulator(
         return undefined;
     }
     let source: number | undefined = getDLSSourceFromSf2Source(
-        mod.sourceUsesCC,
-        mod.sourceIndex
+        mod.primarySource.isCC ? 1 : 0,
+        mod.primarySource.index
     );
-    let sourceTransformType = mod.sourceCurveType;
-    let sourceBipolar = mod.sourcePolarity;
-    let sourceDirection = mod.sourceDirection;
+    let sourceTransformType = mod.primarySource.curveType;
+    let sourceBipolar = mod.primarySource.isBipolar ? 1 : 0;
+    let sourceDirection = mod.primarySource.isNegative ? 1 : 0;
     if (source === undefined) {
         SpessaSynthWarn(
-            `Invalid source: ${mod.sourceIndex}, CC: ${mod.sourceUsesCC}`
+            `Invalid source: ${mod.primarySource.index}, CC: ${mod.primarySource.isCC}`
         );
         return undefined;
     }
     let control: number | undefined = getDLSSourceFromSf2Source(
-        mod.secSrcUsesCC,
-        mod.secSrcIndex
+        mod.secondarySource.isCC ? 1 : 0,
+        mod.secondarySource.index
     );
-    let controlTransformType = mod.secSrcCurveType;
-    let controlBipolar = mod.secSrcPolarity;
-    let controlDirection = mod.secSrcDirection;
+    let controlTransformType = mod.secondarySource.curveType;
+    let controlBipolar = mod.secondarySource.isBipolar ? 1 : 0;
+    let controlDirection = mod.secondarySource.isNegative ? 1 : 0;
     if (control === undefined) {
         SpessaSynthWarn(
-            `Invalid secondary source: ${mod.secSrcIndex}, CC: ${mod.secSrcUsesCC}`
+            `Invalid secondary source: ${mod.secondarySource.index}, CC: ${mod.secondarySource.isCC}`
         );
         return undefined;
     }

@@ -6,7 +6,6 @@ import {
     type DLSTransform,
     type GeneratorType,
     generatorTypes,
-    type ModulatorCurveType,
     modulatorCurveTypes,
     modulatorSources
 } from "../../enums";
@@ -17,29 +16,33 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../../utils/riff_chunk";
-import { readLittleEndianIndexed, writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
+import {
+    readLittleEndianIndexed,
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
-import { BasicInstrumentZone, Modulator, type ModulatorSource } from "../../exports";
+import {
+    BasicInstrumentZone,
+    Modulator,
+    type ModulatorSourceIndex
+} from "../../exports";
 import { midiControllers } from "../../../midi/enums";
 import { SpessaSynthWarn } from "../../../utils/loggin";
-import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
-import { bitToBool } from "../../../utils/byte_functions/bit_mask";
+import {
+    DLS_1_NO_VIBRATO_MOD,
+    DLS_1_NO_VIBRATO_PRESSURE
+} from "./default_dls_modulators";
+import { bitMaskToBool } from "../../../utils/byte_functions/bit_mask";
+import { ModulatorSource } from "../../basic_soundbank/modulator_source";
 
 type KeyToEnv =
     | typeof generatorTypes.keyNumToModEnvDecay
     | typeof generatorTypes.keyNumToModEnvHold
     | typeof generatorTypes.keyNumToVolEnvDecay
     | typeof generatorTypes.keyNumToVolEnvHold;
-
-interface SFSource {
-    index: ModulatorSource;
-    isCC: boolean;
-    curveType: ModulatorCurveType;
-    isBipolar: boolean;
-    isNegative: boolean;
-}
 
 class ConnectionSource {
     public readonly source: DLSSource;
@@ -79,8 +82,8 @@ class ConnectionSource {
         );
     }
 
-    public toSFSource(): SFSource | undefined {
-        let sourceEnum: ModulatorSource | undefined = undefined;
+    public toSFSource(): ModulatorSource | undefined {
+        let sourceEnum: ModulatorSourceIndex | undefined = undefined;
         let isCC = false;
         switch (this.source) {
             default:
@@ -140,13 +143,13 @@ class ConnectionSource {
         if (sourceEnum === undefined) {
             return undefined;
         }
-        return {
+        return new ModulatorSource(
+            sourceEnum,
+            this.transform,
             isCC,
-            index: sourceEnum,
-            isBipolar: this.bipolar,
-            isNegative: this.invert,
-            curveType: this.transform
-        };
+            this.bipolar,
+            this.invert
+        );
     }
 }
 
@@ -194,8 +197,8 @@ export class ConnectionBlock {
         this.transform = (usTransform & 0x0f) as DLSTransform;
 
         const controlTransform = ((usTransform >> 4) & 0x0f) as DLSTransform;
-        const controlBipolar = bitToBool(usTransform, 8);
-        const controlInvert = bitToBool(usTransform, 9);
+        const controlBipolar = bitMaskToBool(usTransform, 8);
+        const controlInvert = bitMaskToBool(usTransform, 9);
         this.control = new ConnectionSource(
             usControl as DLSSource,
             controlTransform,
@@ -204,8 +207,8 @@ export class ConnectionBlock {
         );
 
         const sourceTransform = ((usTransform >> 10) & 0x0f) as DLSTransform;
-        const sourceBipolar = bitToBool(usTransform, 14);
-        const sourceInvert = bitToBool(usTransform, 15);
+        const sourceBipolar = bitMaskToBool(usTransform, 14);
+        const sourceInvert = bitMaskToBool(usTransform, 15);
 
         this.source = new ConnectionSource(
             usSource as DLSSource,
@@ -378,14 +381,8 @@ export class ConnectionBlock {
         // Output modulator variables
         let amount = this.shortScale;
         let modulatorDestination: GeneratorType;
-        let primarySource: SFSource | undefined;
-        let secondarySource: SFSource = {
-            index: modulatorSources.noController,
-            isCC: false,
-            isNegative: false,
-            isBipolar: false,
-            curveType: modulatorCurveTypes.linear
-        };
+        let primarySource: ModulatorSource | undefined;
+        let secondarySource = new ModulatorSource();
 
         const specialDestination = this.toCombinedSFDestination();
         if (specialDestination) {
@@ -462,16 +459,8 @@ export class ConnectionBlock {
 
         // Get the modulator!
         const mod = new Modulator(
-            primarySource.index,
-            primarySource.curveType,
-            primarySource.isCC ? 1 : 0,
-            primarySource.isBipolar ? 1 : 0,
-            primarySource.isNegative ? 1 : 0,
-            secondarySource.index,
-            secondarySource.curveType,
-            secondarySource.isCC ? 1 : 0,
-            secondarySource.isBipolar ? 1 : 0,
-            secondarySource.isNegative ? 1 : 0,
+            primarySource,
+            secondarySource,
             modulatorDestination,
             amount,
             0
@@ -774,9 +763,9 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         if (this.mode === "dls1") {
             zone.addModulators(
                 // Modulation to vibrato
-                Modulator.copy(DLS_1_NO_VIBRATO_MOD),
+                DLS_1_NO_VIBRATO_MOD.copy(),
                 // Pressure to vibrato
-                Modulator.copy(DLS_1_NO_VIBRATO_PRESSURE)
+                DLS_1_NO_VIBRATO_PRESSURE.copy()
             );
         }
 

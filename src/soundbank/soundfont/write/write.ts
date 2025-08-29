@@ -197,20 +197,16 @@ ${targetSoundBank.soundBankInfo.subject}`
             consoleColors.recognized,
             consoleColors.info
         );
-        const dmodsize = MOD_BYTE_SIZE + mods.length * MOD_BYTE_SIZE;
-        const dmoddata = new IndexedByteArray(dmodsize);
+        const dmodSize = MOD_BYTE_SIZE + mods.length * MOD_BYTE_SIZE;
+        const dmodData = new IndexedByteArray(dmodSize);
         for (const mod of mods) {
-            writeWord(dmoddata, mod.getSourceEnum());
-            writeWord(dmoddata, mod.destination);
-            writeWord(dmoddata, mod.transformAmount);
-            writeWord(dmoddata, mod.getSecSrcEnum());
-            writeWord(dmoddata, mod.transformType);
+            mod.write(dmodData);
         }
 
         // Terminal modulator, is zero
-        writeLittleEndianIndexed(dmoddata, 0, MOD_BYTE_SIZE);
+        writeLittleEndianIndexed(dmodData, 0, MOD_BYTE_SIZE);
 
-        infoArrays.push(writeRIFFChunkRaw("DMOD", dmoddata));
+        infoArrays.push(writeRIFFChunkRaw("DMOD", dmodData));
     }
 
     SpessaSynthGroupEnd();

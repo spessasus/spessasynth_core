@@ -143,8 +143,7 @@ export type SampleEncodingFunction = (
     sampleRate: number
 ) => Promise<Uint8Array>;
 
-export type ModulatorNumericBool = 0 | 1;
-export type ModulatorSource = ModulatorSourceEnum | MIDIController;
+export type ModulatorSourceIndex = ModulatorSourceEnum | MIDIController;
 
 /**
  * A function to track progress during writing.

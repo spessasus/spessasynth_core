@@ -202,6 +202,10 @@ Drop-in replacement.
 
 `modulatorDestination` has been renamed to `destination`.
 
+All properties regarding source have been replaced with a class `ModulatorSource`, which can automatically turn itself into an SF2 enum or transform values.
+
+The static method `copy` has been made local. So `Modulator.copy(mod)` turns into `mod.copy()`
+
 ### BasicSample
 
 A few properties have been renamed for consistency.

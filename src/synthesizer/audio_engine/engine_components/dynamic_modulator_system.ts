@@ -1,7 +1,8 @@
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import { modulatorCurveTypes, type ModulatorSourceEnum, modulatorSources } from "../../../soundbank/enums";
+import { modulatorCurveTypes, type ModulatorSourceEnum } from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";
 import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
+import { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
 
 /**
  * A class for dynamic modulators
@@ -54,16 +55,13 @@ export class DynamicModulatorSystem {
                 isCC = true;
             }
             const modulator = new Modulator(
-                srcNum,
-                modulatorCurveTypes.linear,
-                isCC ? 1 : 0,
-                isBipolar ? 1 : 0,
-                0,
-                modulatorSources.noController,
-                modulatorCurveTypes.linear,
-                0,
-                0,
-                0,
+                new ModulatorSource(
+                    srcNum,
+                    modulatorCurveTypes.linear,
+                    isCC,
+                    isBipolar
+                ),
+                new ModulatorSource(),
                 destination,
                 amount,
                 0

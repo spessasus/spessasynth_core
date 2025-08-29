@@ -17,8 +17,7 @@ for (let i = 0; i < CONVEX_ATTACK.length; i++) {
     CONVEX_ATTACK[i] = getModulatorCurveValue(
         0,
         modulatorCurveTypes.convex,
-        i / 1000,
-        0
+        i / 1000
     );
 }
 
