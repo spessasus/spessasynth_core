@@ -5,6 +5,9 @@ import {
     writeWord
 } from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
+import type { BasicSample } from "../../basic_soundbank/basic_sample";
+import type { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
+import { sampleTypes } from "../../enums";
 
 export class WaveLink {
     /**
@@ -50,6 +53,32 @@ export class WaveLink {
         wlnk.fusOptions = fusOptions;
         wlnk.phaseGroup = phaseGroup;
         return wlnk;
+    }
+
+    public static fromSFZone(
+        samples: BasicSample[],
+        zone: BasicInstrumentZone
+    ) {
+        const index = samples.indexOf(zone.sample);
+        if (index < 0) {
+            throw new Error(
+                `Wave link error: Sample ${zone.sample.name} does not exist in the sample list.`
+            );
+        }
+        const waveLink = new WaveLink(index);
+        switch (zone.sample.sampleType) {
+            default:
+            case sampleTypes.leftSample:
+            case sampleTypes.monoSample:
+                // Left (or mono)
+                waveLink.channel = 1 << 0;
+                break;
+
+            case sampleTypes.rightSample:
+                // Right channel
+                waveLink.channel = 1 << 1;
+        }
+        return waveLink;
     }
 
     public write() {

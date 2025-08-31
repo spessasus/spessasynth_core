@@ -3,7 +3,7 @@ import { WaveSample } from "./wave_sample";
 import {
     findRIFFListType,
     readRIFFChunk,
-    type RIFFChunk,
+    RIFFChunk,
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../../utils/riff_chunk";
@@ -21,6 +21,7 @@ import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { DLSSample } from "./dls_sample";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
+import type { BasicSample } from "../../basic_soundbank/basic_sample";
 
 export class DownloadableSoundsSample extends DLSVerifier {
     public waveSample = new WaveSample();
@@ -104,7 +105,25 @@ export class DownloadableSoundsSample extends DLSVerifier {
         return sample;
     }
 
-    public toSFSample(dls: BasicSoundBank) {
+    public static fromSFSample(sample: BasicSample) {
+        const raw = sample.getRawData(false);
+        const dlsSample = new DownloadableSoundsSample(
+            0x01, // PCM
+            2, // 2 bytes per sample
+            sample.sampleRate,
+            // Get the s16le data
+            new RIFFChunk(
+                "data",
+                raw.length,
+                new IndexedByteArray(raw.buffer as ArrayBuffer)
+            )
+        );
+        dlsSample.name = sample.name;
+        dlsSample.waveSample = WaveSample.fromSFSample(sample);
+        return dlsSample;
+    }
+
+    public toSFSample(soundBank: BasicSoundBank) {
         // DLS allows tuning to be a SHORT (32767 max), while SF uses BYTE (with 99 max -99 min)
         // Clamp it down and change root key if needed
         let originalKey = this.waveSample.unityNote;
@@ -133,7 +152,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
             this.wFormatTag,
             this.bytesPerSample
         );
-        dls.addSamples(sample);
+        soundBank.addSamples(sample);
     }
 
     public write() {

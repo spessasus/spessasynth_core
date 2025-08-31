@@ -13,6 +13,7 @@ import type { BasicZone } from "../../basic_soundbank/basic_zone";
 import { type BasicSample } from "../../basic_soundbank/basic_sample";
 import type { SampleLoopingMode } from "../../../synthesizer/types";
 import { SpessaSynthWarn } from "../../../utils/loggin";
+import type { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
 
 const WSMP_SIZE = 20;
 const WSMP_LOOP_SIZE = 16;
@@ -20,7 +21,7 @@ const WSMP_LOOP_SIZE = 16;
 export class WaveSample extends DLSVerifier {
     /**
      * Specifies the gain to be applied to this sample in 32 bit relative gain units.
-     * Each unit of gain represents 1/655360 dB
+     * Each unit of gain represents 1/655360 dB.
      */
     public gain = 0;
     /**
@@ -96,11 +97,73 @@ export class WaveSample extends DLSVerifier {
         return waveSample;
     }
 
+    public static fromSFSample(sample: BasicSample) {
+        const waveSample = new WaveSample();
+        waveSample.unityNote = sample.originalKey;
+        waveSample.fineTune = sample.pitchCorrection;
+        if (sample.loopEnd !== 0 || sample.loopStart !== 0) {
+            waveSample.loops.push({
+                loopStart: sample.loopStart,
+                loopLength: sample.loopEnd - sample.loopStart,
+                loopType: DLSLoopTypes.forward
+            });
+        }
+        return waveSample;
+    }
+
+    public static fromSFZone(zone: BasicInstrumentZone) {
+        const waveSample = new WaveSample();
+        waveSample.unityNote = zone.getGenerator(
+            generatorTypes.overridingRootKey,
+            zone.sample.originalKey
+        );
+        waveSample.fineTune = zone.fineTuning + zone.sample.pitchCorrection;
+        // E-mu attenuation correction
+        const attenuationCb =
+            zone.getGenerator(generatorTypes.initialAttenuation, 0) * 0.4;
+        // Gain is stored as a 32-bit value, shift here
+        waveSample.gain = -attenuationCb << 16;
+        const loopingMode = zone.getGenerator(
+            generatorTypes.sampleModes,
+            0
+        ) as SampleLoopingMode;
+        // Don't add loops unless needed
+        if (loopingMode !== 0) {
+            // Make sure to get offsets
+            const loopStart =
+                zone.sample.loopStart +
+                zone.getGenerator(generatorTypes.startloopAddrsOffset, 0) +
+                zone.getGenerator(
+                    generatorTypes.startloopAddrsCoarseOffset,
+                    0
+                ) *
+                    32768;
+            const loopEnd =
+                zone.sample.loopEnd +
+                zone.getGenerator(generatorTypes.endloopAddrsOffset, 0) +
+                zone.getGenerator(generatorTypes.endloopAddrsCoarseOffset, 0) *
+                    32768;
+            let dlsLoopType: DLSLoopType;
+            switch (loopingMode) {
+                case 1:
+                default:
+                    dlsLoopType = 0;
+                    break;
+
+                case 3:
+                    dlsLoopType = 1;
+            }
+            waveSample.loops.push({
+                loopType: dlsLoopType,
+                loopStart,
+                loopLength: loopEnd - loopStart
+            });
+        }
+        return waveSample;
+    }
+
     /**
-     * Converts the wsmp data into an SF zone
-     * @param zone
-     * @param sample
-     * @private
+     * Converts the wsmp data into an SF zone.
      */
     public toSFZone(zone: BasicZone, sample: BasicSample) {
         let loopingMode: SampleLoopingMode = 0;
@@ -126,7 +189,7 @@ export class WaveSample extends DLSVerifier {
         }
 
         // Correct tuning
-        zone.setTuning(this.fineTune - sample.pitchCorrection);
+        zone.fineTuning = this.fineTune - sample.pitchCorrection;
 
         // Correct the key if needed
         if (this.unityNote !== sample.originalKey) {

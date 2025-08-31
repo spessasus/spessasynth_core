@@ -66,23 +66,9 @@ export class DownloadableSoundsRegion extends DLSVerifier {
     public readonly waveSample: WaveSample;
     public readonly waveLink: WaveLink;
 
-    public constructor(
-        samples: DownloadableSoundsSample[],
-        waveLink: WaveLink,
-        waveSample?: WaveSample
-    ) {
+    public constructor(waveLink: WaveLink, waveSample: WaveSample) {
         super();
-        const sample = samples[waveLink.tableIndex];
-        if (!sample) {
-            DownloadableSoundsRegion.parsingError(
-                `Invalid sample index: ${waveLink.tableIndex}. Samples available: ${samples.length}`
-            );
-        }
-        if (waveSample) {
-            this.waveSample = waveSample;
-        } else {
-            this.waveSample = sample.waveSample;
-        }
+        this.waveSample = waveSample;
         this.waveLink = waveLink;
     }
 
@@ -90,7 +76,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         const regionChunks = this.verifyAndReadList(chunk, "rgn ", "rgn2");
         // Wsmp: wave sample chunk
         const waveSampleChunk = regionChunks.find((c) => c.header === "wsmp");
-        const waveSample = waveSampleChunk
+        let waveSample = waveSampleChunk
             ? WaveSample.read(waveSampleChunk)
             : undefined;
 
@@ -114,11 +100,15 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             return;
         }
 
-        const region = new DownloadableSoundsRegion(
-            samples,
-            waveLink,
-            waveSample
-        );
+        const sample = samples[waveLink.tableIndex];
+        if (!sample) {
+            DownloadableSoundsRegion.parsingError(
+                `Invalid sample index: ${waveLink.tableIndex}. Samples available: ${samples.length}`
+            );
+        }
+        waveSample ??= sample.waveSample;
+
+        const region = new DownloadableSoundsRegion(waveLink, waveSample);
 
         // Key range
         const keyMin = readLittleEndianIndexed(regionHeader.data, 2);
@@ -150,6 +140,28 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         }
 
         region.articulation.read(regionChunks);
+        return region;
+    }
+
+    public static fromSFZone(
+        zone: BasicInstrumentZone,
+        samples: BasicSample[]
+    ) {
+        const waveSample = WaveSample.fromSFZone(zone);
+        const waveLink = WaveLink.fromSFZone(samples, zone);
+
+        const region = new DownloadableSoundsRegion(waveLink, waveSample);
+
+        // Assign ranges
+        region.keyRange.min = Math.max(zone.keyRange.min, 0);
+        region.keyRange.max = zone.keyRange.max;
+        region.velRange.min = Math.max(zone.velRange.min, 0);
+        region.velRange.max = zone.velRange.max;
+
+        // KeyGroup (exclusive class)
+        region.keyGroup = zone.getGenerator(generatorTypes.exclusiveClass, 0);
+
+        region.articulation.fromSFZone(zone);
         return region;
     }
 
@@ -190,8 +202,6 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             zone.setGenerator(generatorTypes.exclusiveClass, this.keyGroup);
         }
 
-        // Wave sample sets the root key, so it needs to be first
-        // Since articulation may use it for keyNumToPitch correction
         this.waveSample.toSFZone(zone, sample);
         this.articulation.toSFZone(zone);
         // Remove generators with default values

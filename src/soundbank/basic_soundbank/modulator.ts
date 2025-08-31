@@ -108,6 +108,14 @@ export class Modulator {
         this.isDefaultResonantModulator = isDefaultResonantModulator;
     }
 
+    private get destinationName() {
+        return Object.keys(generatorTypes).find(
+            (k) =>
+                generatorTypes[k as keyof typeof generatorTypes] ===
+                this.destination
+        );
+    }
+
     /**
      * Checks if the pair of modulators is identical (in SF2 terms)
      * @param mod1 modulator 1
@@ -126,6 +134,16 @@ export class Modulator {
             mod1.destination === mod2.destination &&
             mod1.transformType === mod2.transformType &&
             (!checkAmount || mod1.transformAmount === mod2.transformAmount)
+        );
+    }
+
+    public toString() {
+        return (
+            `Source: ${this.primarySource.toString()}\n` +
+            `Secondary source: ${this.secondarySource.toString()}\n` +
+            `to: ${this.destinationName}\n` +
+            `amount: ${this.transformAmount}` +
+            (this.transformType === 2 ? "absolute value" : "")
         );
     }
 

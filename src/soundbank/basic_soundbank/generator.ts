@@ -43,6 +43,10 @@ export class Generator {
             }
         }
     }
+
+    public toString() {
+        return `${Object.keys(generatorTypes).find((k) => generatorTypes[k as keyof typeof generatorTypes] === this.generatorType)}: ${this.generatorValue}`;
+    }
 }
 
 /**

@@ -16,6 +16,7 @@ import {
 } from "../../synthesizer/audio_engine/engine_components/modulator_curves";
 import type { Voice } from "../../synthesizer/audio_engine/engine_components/voice";
 import { NON_CC_INDEX_OFFSET } from "../../synthesizer/audio_engine/engine_components/controller_tables";
+import { midiControllers } from "../../midi/enums";
 
 export class ModulatorSource {
     /**
@@ -64,6 +65,31 @@ export class ModulatorSource {
         this.curveType = curveType;
     }
 
+    private get sourceName() {
+        return this.isCC
+            ? (Object.keys(midiControllers).find(
+                  (k) =>
+                      midiControllers[k as keyof typeof midiControllers] ===
+                      this.index
+              ) ?? this.index.toString())
+            : (Object.keys(modulatorSources).find(
+                  (k) =>
+                      modulatorSources[k as keyof typeof modulatorSources] ===
+                      this.index
+              ) ?? this.index.toString());
+    }
+
+    private get curveTypeName() {
+        return (
+            Object.keys(modulatorCurveTypes).find(
+                (k) =>
+                    modulatorCurveTypes[
+                        k as keyof typeof modulatorCurveTypes
+                    ] === this.curveType
+            ) ?? this.curveType.toString()
+        );
+    }
+
     public static fromSourceEnum(sourceEnum: number) {
         const isBipolar = bitMaskToBool(sourceEnum, 9);
         const isNegative = bitMaskToBool(sourceEnum, 8);
@@ -77,6 +103,10 @@ export class ModulatorSource {
             isBipolar,
             isNegative
         );
+    }
+
+    public toString() {
+        return `${this.sourceName} ${this.curveTypeName} ${this.isBipolar ? "bipolar" : "unipolar"} ${this.isNegative ? "negative" : "positive"}`;
     }
 
     public toSourceEnum() {

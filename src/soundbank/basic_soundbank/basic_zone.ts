@@ -39,26 +39,18 @@ export class BasicZone {
     }
 
     /**
-     * The current tuning in cents.
+     * The current tuning in cents, taking in both coarse and fine generators.
      */
-    public get currentTuning() {
+    public get fineTuning() {
         const currentCoarse = this.getGenerator(generatorTypes.coarseTune, 0);
         const currentFine = this.getGenerator(generatorTypes.fineTune, 0);
         return currentCoarse * 100 + currentFine;
     }
 
     /**
-     * Adds a new generator at the start. Useful for prepending the range generators.
+     * The current tuning in cents, taking in both coarse and fine generators.
      */
-    public prependGenerator(generator: Generator) {
-        this.generators.unshift(generator);
-    }
-
-    /**
-     * Sets both tuning generators automatically.
-     * @param tuningCents The tuning in cents.
-     */
-    public setTuning(tuningCents: number) {
+    public set fineTuning(tuningCents: number) {
         const coarse = Math.trunc(tuningCents / 100);
         const fine = tuningCents % 100;
         this.setGenerator(generatorTypes.coarseTune, coarse);
@@ -66,12 +58,10 @@ export class BasicZone {
     }
 
     /**
-     * Adds to current tuning in cents.
-     * @param tuningCents The tuning in cents.
+     * Adds a new generator at the start. Useful for prepending the range generators.
      */
-    public addTuning(tuningCents: number) {
-        const newTuning = tuningCents + this.currentTuning;
-        this.setTuning(newTuning);
+    public prependGenerator(generator: Generator) {
+        this.generators.unshift(generator);
     }
 
     /**
@@ -153,7 +143,9 @@ export class BasicZone {
     }
 
     public copyFrom(zone: BasicZone) {
-        this.generators = [...zone.generators];
+        this.generators = zone.generators.map(
+            (g) => new Generator(g.generatorType, g.generatorValue, false)
+        );
         this.modulators = zone.modulators.map((m) => m.copy());
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };

@@ -18,8 +18,9 @@ import type { DownloadableSoundsSample } from "./sample";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { BasicPreset } from "../../basic_soundbank/basic_preset";
 import { BasicInstrument } from "../../basic_soundbank/basic_instrument";
-import { BasicSoundBank, generatorLimits, generatorTypes } from "../../exports";
+import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes } from "../../exports";
 import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./default_dls_modulators";
+import { flattenSFZones } from "./flatten_sf_zones";
 
 /**
  * Represents a proper DLS instrument, with regions and articulation.
@@ -31,30 +32,11 @@ export class DownloadableSoundsInstrument
 {
     public readonly articulation = new DownloadableSoundsArticulation();
     public readonly regions = new Array<DownloadableSoundsRegion>();
-    public readonly name: string;
-    public readonly bankLSB: number;
-    public readonly bankMSB: number;
-    public readonly isGMGSDrum: boolean;
-    public readonly program: number;
-
-    /**
-     *
-     * @param name From LIST:INFO.
-     * @param ulBank Specifies the MIDI bank location. Bits 0-6 are defined as MIDI CC32 and bits 8-14 are
-     * defined as MIDI CC0. Bits 7 and 15-30 are reserved and should be written to zero. If the
-     * F_INSTRUMENT_DRUMS flag (Bit 31) is equal to 1 then the instrument is a drum
-     * instrument; if equal to 0 then the instrument is a melodic instrument.
-     * @param ulInstrument Specifies the MIDI Program Change (PC) value. Bits 0-6 are defined as PC value and bits 7-
-     * 31 are reserved and should be written to zero.
-     */
-    public constructor(name: string, ulBank: number, ulInstrument: number) {
-        super();
-        this.name = name;
-        this.program = ulInstrument & 127;
-        this.bankMSB = (ulBank >>> 8) & 127;
-        this.bankLSB = ulBank & 127;
-        this.isGMGSDrum = ulBank >>> 31 > 0;
-    }
+    public name = "Unnamed";
+    public bankLSB = 0;
+    public bankMSB = 0;
+    public isGMGSDrum = false;
+    public program = 0;
 
     public static read(samples: DownloadableSoundsSample[], chunk: RIFFChunk) {
         const chunks = this.verifyAndReadList(chunk, "ins ");
@@ -81,16 +63,29 @@ export class DownloadableSoundsInstrument
         if (instrumentName.length < 1) {
             instrumentName = `Unnamed Instrument`;
         }
-
+        const instrument = new DownloadableSoundsInstrument();
+        instrument.name = instrumentName;
         // Read instrument header
         const regions = readLittleEndianIndexed(instrumentHeader.data, 4);
+        /**
+         *
+         * Specifies the MIDI bank location. Bits 0-6 are defined as MIDI CC32 and bits 8-14 are
+         * defined as MIDI CC0. Bits 7 and 15-30 are reserved and should be written to zero. If the
+         * F_INSTRUMENT_DRUMS flag (Bit 31) is equal to 1 then the instrument is a drum
+         * instrument; if equal to 0 then the instrument is a melodic instrument.
+         */
         const ulBank = readLittleEndianIndexed(instrumentHeader.data, 4);
+        /**
+         * Specifies the MIDI Program Change (PC) value. Bits 0-6 are defined as PC value and bits 7-
+         * 31 are reserved and should be written to zero.
+         */
         const ulInstrument = readLittleEndianIndexed(instrumentHeader.data, 4);
-        const instrument = new DownloadableSoundsInstrument(
-            instrumentName,
-            ulBank,
-            ulInstrument
-        );
+
+        instrument.program = ulInstrument & 127;
+        instrument.bankMSB = (ulBank >>> 8) & 127;
+        instrument.bankLSB = ulBank & 127;
+        instrument.isGMGSDrum = ulBank >>> 31 > 0;
+
         SpessaSynthGroupCollapsed(
             `%cParsing %c"${instrumentName}"%c...`,
             consoleColors.info,
@@ -128,6 +123,26 @@ export class DownloadableSoundsInstrument
             }
         }
         SpessaSynthGroupEnd();
+        return instrument;
+    }
+
+    public static fromSFPreset(preset: BasicPreset, samples: BasicSample[]) {
+        const instrument = new DownloadableSoundsInstrument();
+        instrument.name = preset.name;
+        instrument.bankLSB = preset.bankLSB;
+        instrument.bankMSB = preset.bankMSB;
+        instrument.program = preset.program;
+        instrument.isGMGSDrum = preset.isGMGSDrum;
+
+        // Combine preset and instrument zones into a single instrument zone (region) list
+        const inst = flattenSFZones(preset);
+
+        inst.zones.forEach((z) => {
+            instrument.regions.push(
+                DownloadableSoundsRegion.fromSFZone(z, samples)
+            );
+        });
+
         return instrument;
     }
 
@@ -171,7 +186,7 @@ export class DownloadableSoundsInstrument
         preset.createZone(instrument);
 
         // Global articulation
-        const keyNumToPitch = this.articulation.toSFZone(instrument.globalZone);
+        this.articulation.toSFZone(instrument.globalZone);
 
         // Override reverb and chorus with 1000 instead of 200
         // Reverb
@@ -201,15 +216,6 @@ export class DownloadableSoundsInstrument
             region.toSFZone(instrument, soundBank.samples)
         );
 
-        if (keyNumToPitch) {
-            // Apply keyNumToPitch to all zones
-            instrument.zones.forEach((zone) => {
-                DownloadableSoundsArticulation.keyNumToPitchToSFZone(
-                    keyNumToPitch,
-                    zone
-                );
-            });
-        }
         soundBank.addPresets(preset);
         soundBank.addInstruments(instrument);
     }
@@ -219,9 +225,9 @@ export class DownloadableSoundsInstrument
         const inshData = new IndexedByteArray(12);
         writeDword(inshData, this.regions.length); // CRegions
         // Bank MSB is in bits 8-14
-        let ulBank = (this.bankMSB & 127) << 8;
+        let ulBank = ((this.bankMSB & 127) << 8) | (this.bankLSB & 127);
         // Bit 32 means drums
-        if (this.bankMSB === 128) {
+        if (this.isGMGSDrum) {
             ulBank |= 1 << 31;
         }
         writeDword(inshData, ulBank); // UlBank

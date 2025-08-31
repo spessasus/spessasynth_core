@@ -120,9 +120,9 @@ export class BasicSample {
     }
 
     /**
-     * Get raw data for writing the file
-     * @param allowVorbis if vorbis file data is allowed
-     * @return either s16 or vorbis data
+     * Get raw data for writing the file, either a compressed bit stream or signed 16-bit little endian PCM data.
+     * @param allowVorbis if vorbis file data is allowed.
+     * @return either s16le or vorbis data.
      */
     public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.compressedData && allowVorbis && !this.dataOverridden) {

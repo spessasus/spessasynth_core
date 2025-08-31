@@ -2,7 +2,6 @@ import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, Spess
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "../soundfont/write/write";
 import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
-import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "../downloadable_sounds/write/write_dls";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
@@ -16,6 +15,7 @@ import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
+import { DEFAULT_DLS_OPTIONS, DownloadableSounds } from "../downloadable_sounds/structure/downloadable_sounds";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -201,7 +201,8 @@ export class BasicSoundBank {
     public async writeDLS(
         options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
     ): Promise<ArrayBuffer> {
-        return writeDLSInternal(this, options);
+        const dls = DownloadableSounds.fromSF(this);
+        return dls.write(options);
     }
 
     /**

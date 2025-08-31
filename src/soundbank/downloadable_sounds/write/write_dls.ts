@@ -22,7 +22,7 @@ import type {
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { writeIns } from "./ins";
 
-export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
+const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
     progressFunction: undefined
 };
 
