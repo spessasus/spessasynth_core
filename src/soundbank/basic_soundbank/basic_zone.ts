@@ -99,7 +99,17 @@ export class BasicZone {
         }
         const generator = this.generators.find((g) => g.generatorType === type);
         if (generator) {
-            generator.generatorValue = value;
+            if (validate) {
+                const lim = generatorLimits[type];
+                if (lim !== undefined) {
+                    generator.generatorValue = Math.max(
+                        lim.min,
+                        Math.min(lim.max, value)
+                    );
+                }
+            } else {
+                generator.generatorValue = value;
+            }
         } else {
             this.addGenerators(new Generator(type, value, validate));
         }

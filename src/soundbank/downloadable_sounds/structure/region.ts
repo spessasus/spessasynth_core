@@ -49,6 +49,20 @@ export class DownloadableSoundsRegion extends DLSVerifier {
      */
     public keyGroup = 0;
 
+    /**
+     * Specifies flag options for the synthesis of this region.
+     */
+    public fusOptions = 0;
+
+    /**
+     * Indicates the layer of this region for editing purposes. This field facilitates the
+     * organization of overlapping regions into layers for display to the user of a DLS sound editor.
+     * For example, if a piano sound and a string section are overlapped to create a piano/string pad,
+     * all the regions of the piano might be labeled as layer 1, and all the regions of the string
+     * section might be labeled as layer 2
+     */
+    public usLayer = 0;
+
     public readonly waveSample: WaveSample;
     public readonly waveLink: WaveLink;
 
@@ -125,10 +139,15 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         region.velRange.max = velMax;
         region.velRange.min = velMin;
 
-        // FusOptions: no idea about that one???
-        readLittleEndianIndexed(regionHeader.data, 2);
+        // FusOptions
+        region.fusOptions = readLittleEndianIndexed(regionHeader.data, 2);
         // KeyGroup: essentially exclusive class
         region.keyGroup = readLittleEndianIndexed(regionHeader.data, 2);
+
+        // UsLayer
+        if (regionHeader.data.length - regionHeader.data.currentIndex >= 2) {
+            region.usLayer = readLittleEndianIndexed(regionHeader.data, 2);
+        }
 
         region.articulation.read(regionChunks);
         return region;
@@ -191,12 +210,11 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         // VelRange
         writeWord(rgnhData, Math.max(this.velRange.min, 0));
         writeWord(rgnhData, this.velRange.max);
-        // FusOptions: enable self non-exclusive, because why not?
-        writeWord(rgnhData, 1);
+        writeWord(rgnhData, this.fusOptions);
         // KeyGroup (exclusive class)
         writeWord(rgnhData, this.keyGroup);
         // UsLayer
-        writeWord(rgnhData, 0);
+        writeWord(rgnhData, this.usLayer);
         return writeRIFFChunkRaw("rgnh", rgnhData);
     }
 }

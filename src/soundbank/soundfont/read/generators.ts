@@ -9,6 +9,8 @@ export class ReadGenerator extends Generator {
      * Creates a generator
      */
     public constructor(dataArray: IndexedByteArray) {
+        // Note: We skip validation here as some sf2 files use invalid values that end up being correct after applying limits at the modulator level.
+        // Test case: LiveHQ Natural soundfont GM, "Brass" preset (negative attenuation with quiet samples)
         super();
         // 4 bytes:
         // Type, type, type, value

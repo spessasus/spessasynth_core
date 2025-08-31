@@ -8,7 +8,7 @@ export class SoundBankLoader {
     /**
      * Loads a sound bank from a file buffer.
      * @param buffer The binary file buffer to load.
-     * @returns {BasicSoundBank} The loaded sound bank, either a DLSSoundBank or SoundFont2 instance.
+     * @returns The loaded sound bank, a BasicSoundBank instance.
      */
     public static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
         const check = buffer.slice(8, 12);

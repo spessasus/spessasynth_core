@@ -12,6 +12,7 @@ import { IndexedByteArray } from "../../../utils/indexed_array";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
 import { type BasicSample } from "../../basic_soundbank/basic_sample";
 import type { SampleLoopingMode } from "../../../synthesizer/types";
+import { SpessaSynthWarn } from "../../../utils/loggin";
 
 const WSMP_SIZE = 20;
 const WSMP_LOOP_SIZE = 16;
@@ -40,11 +41,23 @@ export class WaveSample extends DLSVerifier {
      */
     public loops = new Array<DLSLoop>();
 
+    /**
+     * Specifies flag options for the digital audio sample.
+     * Default to F_WSMP_NO_COMPRESSION,
+     * according to all DLS files I have.
+     */
+    public fulOptions = 2;
+
     public static read(chunk: RIFFChunk) {
         this.verifyHeader(chunk, "wsmp");
         const waveSample = new WaveSample();
         // CbSize
-        readLittleEndianIndexed(chunk.data, 4);
+        const cbSize = readLittleEndianIndexed(chunk.data, 4);
+        if (cbSize !== WSMP_SIZE) {
+            SpessaSynthWarn(
+                `Wsmp cbSize mismatch: got ${cbSize}, expected ${WSMP_SIZE}.`
+            );
+        }
         waveSample.unityNote = readLittleEndianIndexed(chunk.data, 2);
         // SFineTune
         waveSample.fineTune = signedInt16(
@@ -54,16 +67,19 @@ export class WaveSample extends DLSVerifier {
 
         // LGain: Each unit of gain represents 1/655360 dB
         waveSample.gain = readLittleEndianIndexed(chunk.data, 4) | 0;
-        // Skip options
-        readLittleEndianIndexed(chunk.data, 4);
+        waveSample.fulOptions = readLittleEndianIndexed(chunk.data, 4);
 
         // Read loop count (always one or zero)
         const loopsAmount = readLittleEndianIndexed(chunk.data, 4);
         if (loopsAmount === 0) {
             // No loop
         } else {
-            // Ignore cbSize
-            readLittleEndianIndexed(chunk.data, 4);
+            const cbSize = readLittleEndianIndexed(chunk.data, 4);
+            if (cbSize !== WSMP_LOOP_SIZE) {
+                SpessaSynthWarn(
+                    `CbSize for loop in wsmp mismatch. Expected ${WSMP_SIZE}, got ${cbSize}.`
+                );
+            }
             // Loop type: loop normally or loop until release (like soundfont)
             const loopType = readLittleEndianIndexed(
                 chunk.data,
@@ -157,8 +173,7 @@ export class WaveSample extends DLSVerifier {
         writeWord(wsmpData, this.unityNote);
         writeWord(wsmpData, this.fineTune);
         writeDword(wsmpData, this.gain);
-        // FulOptions: has to be 2, according to all DLS files I have
-        writeDword(wsmpData, 2);
+        writeDword(wsmpData, this.fulOptions);
         // CSampleLoops
         writeDword(wsmpData, this.loops.length);
         this.loops.forEach((loop) => {

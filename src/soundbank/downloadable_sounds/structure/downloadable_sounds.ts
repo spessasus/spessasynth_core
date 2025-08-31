@@ -113,10 +113,6 @@ export class DownloadableSounds extends DLSVerifier {
                 }
             }
         }
-        dls.soundBankInfo.comment =
-            dls.soundBankInfo.comment ?? "(No description)";
-        dls.soundBankInfo.comment +=
-            "\nConverted from DLS to SF2 with SpessaSynth";
 
         this.printInfo(dls);
 
@@ -202,9 +198,13 @@ export class DownloadableSounds extends DLSVerifier {
     public toSF(): BasicSoundBank {
         SpessaSynthGroup("%cConverting DLS to SF2...", consoleColors.info);
         const dls = new BasicSoundBank();
+
         dls.soundBankInfo.version.minor = 4;
         dls.soundBankInfo.version.major = 2;
         dls.soundBankInfo = { ...this.soundBankInfo };
+        dls.soundBankInfo.comment =
+            (dls.soundBankInfo.comment ?? "(No description)") +
+            "\nConverted from DLS to SF2 with SpessaSynth";
 
         this.samples.forEach((sample) => {
             sample.toSFSample(dls);

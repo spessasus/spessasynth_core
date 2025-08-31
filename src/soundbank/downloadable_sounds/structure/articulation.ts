@@ -16,27 +16,17 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../../utils/riff_chunk";
-import {
-    readLittleEndianIndexed,
-    writeDword,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import type { BasicZone } from "../../basic_soundbank/basic_zone";
-import {
-    BasicInstrumentZone,
-    Modulator,
-    type ModulatorSourceIndex
-} from "../../exports";
+import { BasicInstrumentZone, Modulator, type ModulatorSourceIndex } from "../../exports";
 import { midiControllers } from "../../../midi/enums";
-import { SpessaSynthWarn } from "../../../utils/loggin";
-import {
-    DLS_1_NO_VIBRATO_MOD,
-    DLS_1_NO_VIBRATO_PRESSURE
-} from "./default_dls_modulators";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
+import { DLS_1_NO_VIBRATO_MOD, DLS_1_NO_VIBRATO_PRESSURE } from "./default_dls_modulators";
 import { bitMaskToBool } from "../../../utils/byte_functions/bit_mask";
 import { ModulatorSource } from "../../basic_soundbank/modulator_source";
+import { consoleColors } from "../../../utils/other";
 
 type KeyToEnv =
     | typeof generatorTypes.keyNumToModEnvDecay
@@ -62,7 +52,7 @@ class ConnectionSource {
         this.invert = invert;
     }
 
-    public get sourceName() {
+    private get sourceName() {
         return (
             Object.keys(DLSSources).find(
                 (k) => DLSSources[k as keyof typeof DLSSources] === this.source
@@ -70,8 +60,19 @@ class ConnectionSource {
         );
     }
 
+    private get transformName() {
+        return (
+            Object.keys(modulatorCurveTypes).find(
+                (k) =>
+                    modulatorCurveTypes[
+                        k as keyof typeof modulatorCurveTypes
+                    ] === this.transform
+            ) ?? this.transform.toString()
+        );
+    }
+
     public toString() {
-        return `${this.sourceName} ${this.transform} ${this.bipolar ? "bipolar" : "unipolar"} ${this.invert ? "inverted" : "normal"}`;
+        return `${this.sourceName} ${this.transformName} ${this.bipolar ? "bipolar" : "unipolar"} ${this.invert ? "inverted" : "positive"}`;
     }
 
     public toTransformFlag() {
@@ -231,7 +232,18 @@ export class ConnectionBlock {
         return this.scale >> 16;
     }
 
-    public get destinationName() {
+    private get transformName() {
+        return (
+            Object.keys(modulatorCurveTypes).find(
+                (k) =>
+                    modulatorCurveTypes[
+                        k as keyof typeof modulatorCurveTypes
+                    ] === this.transform
+            ) ?? this.transform.toString()
+        );
+    }
+
+    private get destinationName() {
         return (
             Object.keys(DLSDestinations).find(
                 (k) =>
@@ -261,6 +273,7 @@ export class ConnectionBlock {
             `Source: ${this.source.toString()},\n` +
             `Control: ${this.control.toString()},\n` +
             `Scale: ${this.scale} >> 16 = ${this.shortScale},\n` +
+            `Output transform: ${this.transformName}\n` +
             `Destination: ${this.destinationName}\n`
         );
     }
@@ -285,6 +298,11 @@ export class ConnectionBlock {
         const value = this.shortScale;
         switch (destination) {
             default:
+                SpessaSynthInfo(
+                    `%cFailed to convert the articulator into SF generator: %c${this.toString()}`,
+                    consoleColors.warn,
+                    consoleColors.unrecognized
+                );
                 return;
 
             case DLSDestinations.pan:
@@ -429,7 +447,8 @@ export class ConnectionBlock {
             secondarySource = convertedSecondary;
         }
         // Output transform is ignored as it's not a thing in soundfont format
-        // Unless the curve type of source is linear, then output is copied
+        // Unless the curve type of source is linear, then output is copied.
+        // Testcase: Fury.dls (sets concave output transform for the key to attenuation)
         if (
             this.transform !== modulatorCurveTypes.linear &&
             primarySource.curveType === modulatorCurveTypes.linear
@@ -437,18 +456,26 @@ export class ConnectionBlock {
             primarySource.curveType = this.transform;
         }
 
-        // A fix:
-        // Sometimes gain articulators specify positive curve and scale
-        // This turns into positive curve and negative attenuation in SF, which doesn't override default modulators, resulting in silence.
-
         if (modulatorDestination === generatorTypes.initialAttenuation) {
-            if (amount < 0 && !primarySource.isNegative) {
-                amount *= -1;
+            if (
+                this.source.source === DLSSources.velocity ||
+                this.source.source === DLSSources.volume ||
+                this.source.source === DLSSources.expression
+            ) {
+                /*
+                Some DLS banks (example: Fury.dls or 1 - House.rmi) only specify the output transform,
+                while completely omitting the invert flag for this articulator.
+                This results in the modulator rendering the voice inaudible, as the attenuation increases with velocity,
+                which also conflicts with the default velToAtt modulator
+                Yet most software seems to load them fine, so we invert it here.
+                 */
                 primarySource.isNegative = true;
             }
+
             // A corrupted rendition of gm.dls was found under
             // https://sembiance.com/fileFormatSamples/audio/downloadableSoundBank/
-            // Which specifies a whopping -32,768 decibels of attenuation
+            // Name: (GM.dls)
+            // Which specifies a whopping 32,768 centibels of attenuation
             amount = Math.max(960, Math.min(0, amount));
         }
 
@@ -613,7 +640,10 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         zone.setGenerator(generatorTypes.scaleTuning, keyNumToPitch / 128);
         if (keyNumToPitch !== 0) {
             const tuning = (keyNumToPitch / 128 - 100) * rootKey;
-            zone.addTuning(tuning);
+            // Airfont_340.dls Applause fix
+            if (Math.abs(tuning) < 8000) {
+                zone.addTuning(tuning);
+            }
         }
     }
 
@@ -631,8 +661,12 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 const art1 = readRIFFChunk(lart.data);
                 DownloadableSoundsArticulation.verifyHeader(art1, "art1");
                 const artData = art1.data;
-                // CbSize (ignore)
-                readLittleEndianIndexed(artData, 4);
+                const cbSize = readLittleEndianIndexed(artData, 4);
+                if (cbSize !== 8) {
+                    SpessaSynthWarn(
+                        `CbSize in articulation mismatch. Expected 8, got ${cbSize}`
+                    );
+                }
                 const connectionsAmount = readLittleEndianIndexed(artData, 4);
                 for (let i = 0; i < connectionsAmount; i++) {
                     this.connectionBlocks.push(ConnectionBlock.read(artData));
@@ -644,8 +678,12 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 const art2 = readRIFFChunk(lar2.data);
                 DownloadableSoundsArticulation.verifyHeader(art2, "art2");
                 const artData = art2.data;
-                // CbSize (ignore)
-                readLittleEndianIndexed(artData, 4);
+                const cbSize = readLittleEndianIndexed(artData, 4);
+                if (cbSize !== 8) {
+                    SpessaSynthWarn(
+                        `CbSize in articulation mismatch. Expected 8, got ${cbSize}`
+                    );
+                }
                 const connectionsAmount = readLittleEndianIndexed(artData, 4);
                 for (let i = 0; i < connectionsAmount; i++) {
                     this.connectionBlocks.push(ConnectionBlock.read(artData));
