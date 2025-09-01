@@ -703,7 +703,7 @@ export class ConnectionBlock {
             // https://sembiance.com/fileFormatSamples/audio/downloadableSoundBank/
             // Name: (GM.dls)
             // Which specifies a whopping 32,768 centibels of attenuation
-            amount = Math.max(960, Math.min(0, amount));
+            amount = Math.min(960, Math.max(0, amount));
         }
 
         // Get the modulator!
