@@ -275,22 +275,8 @@ export class ConnectionBlock {
         let destination: DLSDestination;
         let amount = generator.generatorValue;
 
-        // Envelope generators are limited to 40 seconds
-        // In timecents, this is 1200 * log2(10) = 6386
-        if (
-            generator.generatorType === generatorTypes.delayVolEnv ||
-            generator.generatorType === generatorTypes.attackVolEnv ||
-            generator.generatorType === generatorTypes.holdVolEnv ||
-            generator.generatorType === generatorTypes.decayVolEnv ||
-            generator.generatorType === generatorTypes.releaseVolEnv ||
-            generator.generatorType === generatorTypes.delayModEnv ||
-            generator.generatorType === generatorTypes.attackModEnv ||
-            generator.generatorType === generatorTypes.holdModEnv ||
-            generator.generatorType === generatorTypes.decayModEnv
-        ) {
-            // Add a small buffer
-            amount = Math.min(amount, 6590);
-        }
+        // Envelope generators are limited to 40 seconds,
+        // However the keyToEnv correction makes us use the full SF range.
 
         if (typeof dlsDestination === "number") {
             destination = dlsDestination;

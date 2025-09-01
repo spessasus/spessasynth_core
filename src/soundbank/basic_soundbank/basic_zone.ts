@@ -1,4 +1,8 @@
-import { generatorLimits, type GeneratorType, generatorTypes } from "./generator_types";
+import {
+    generatorLimits,
+    type GeneratorType,
+    generatorTypes
+} from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
