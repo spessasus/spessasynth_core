@@ -76,7 +76,11 @@ export class BasicZone {
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */
-    public setGenerator(type: GeneratorType, value: number, validate = true) {
+    public setGenerator(
+        type: GeneratorType,
+        value: number | undefined,
+        validate = true
+    ) {
         switch (type) {
             case generatorTypes.sampleID:
                 throw new Error("Use setSample()");
@@ -87,19 +91,17 @@ export class BasicZone {
             case generatorTypes.keyRange:
                 throw new Error("Set the range manually");
         }
-        const generator = this.generators.find((g) => g.generatorType === type);
-        if (generator) {
-            if (validate) {
-                const lim = generatorLimits[type];
-                if (lim !== undefined) {
-                    generator.generatorValue = Math.max(
-                        lim.min,
-                        Math.min(lim.max, value)
-                    );
-                }
-            } else {
-                generator.generatorValue = value;
-            }
+        if (value === undefined) {
+            this.generators = this.generators.filter(
+                (g) => g.generatorType !== type
+            );
+            return;
+        }
+        const index = this.generators.findIndex(
+            (g) => g.generatorType === type
+        );
+        if (index > 0) {
+            this.generators[index] = new Generator(type, value, validate);
         } else {
             this.addGenerators(new Generator(type, value, validate));
         }

@@ -1,13 +1,7 @@
 import { DLSVerifier } from "./dls_verifier";
 import { DownloadableSoundsSample } from "./sample";
 import { DownloadableSoundsInstrument } from "./instrument";
-import type {
-    DLSInfoFourCC,
-    DLSWriteOptions,
-    SF2VersionTag,
-    SoundBankInfoData,
-    SoundBankInfoFourCC
-} from "../types";
+import type { DLSInfoFourCC, DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundBankInfoFourCC } from "../types";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import {
@@ -17,15 +11,9 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../utils/riff_chunk";
-import {
-    getStringBytes,
-    readBinaryStringIndexed
-} from "../../utils/byte_functions/string";
+import { getStringBytes, readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { parseDateString } from "../../utils/load_date";
-import {
-    readLittleEndianIndexed,
-    writeDword
-} from "../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, writeDword } from "../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
@@ -292,7 +280,7 @@ export class DownloadableSounds extends DLSVerifier {
             writeDword(ptblData, offset);
         }
         const ptbl = writeRIFFChunkRaw("ptbl", ptblData);
-        this.soundBankInfo.software = "SpessaSynth";
+        this.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
 
         // Write INFO
         const infos: Uint8Array[] = [];

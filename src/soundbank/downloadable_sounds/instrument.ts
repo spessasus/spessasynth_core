@@ -1,6 +1,6 @@
 import { DownloadableSoundsArticulation } from "./articulation";
 import { DownloadableSoundsRegion } from "./region";
-import type { MIDIPatchNamed } from "../basic_soundbank/midi_patch";
+import { type MIDIPatchNamed } from "../basic_soundbank/midi_patch";
 import {
     findRIFFListType,
     readRIFFChunk,
@@ -9,7 +9,7 @@ import {
     writeRIFFChunkRaw
 } from "../../utils/riff_chunk";
 import { getStringBytes, readBinaryStringIndexed } from "../../utils/byte_functions/string";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../utils/loggin";
+import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../utils/loggin";
 import { readLittleEndianIndexed, writeDword } from "../../utils/byte_functions/little_endian";
 import { consoleColors } from "../../utils/other";
 import { DLSVerifier } from "./dls_verifier";
@@ -132,6 +132,12 @@ export class DownloadableSoundsInstrument
         instrument.bankMSB = preset.bankMSB;
         instrument.program = preset.program;
         instrument.isGMGSDrum = preset.isGMGSDrum;
+        SpessaSynthGroup(
+            `%cConverting %c${preset.toString()}%c to DLS...`,
+            consoleColors.info,
+            consoleColors.value,
+            consoleColors.info
+        );
 
         // Combine preset and instrument zones into a single instrument zone (region) list
         const inst = preset.toFlattenedInstrument();
@@ -141,7 +147,7 @@ export class DownloadableSoundsInstrument
                 DownloadableSoundsRegion.fromSFZone(z, samples)
             );
         });
-
+        SpessaSynthGroupEnd();
         return instrument;
     }
 
@@ -166,6 +172,7 @@ export class DownloadableSoundsInstrument
         // Write the name
         const inam = writeRIFFChunkRaw("INAM", getStringBytes(this.name, true));
         chunks.push(writeRIFFChunkRaw("INFO", inam, false, true));
+        SpessaSynthGroupEnd();
         return writeRIFFChunkParts("ins ", chunks, true);
     }
 
@@ -186,6 +193,13 @@ export class DownloadableSoundsInstrument
 
         // Global articulation
         this.articulation.toSFZone(instrument.globalZone);
+
+        this.regions.forEach((region) =>
+            region.toSFZone(instrument, soundBank.samples)
+        );
+
+        // Globalize!
+        instrument.globalize();
 
         // Override reverb and chorus with 1000 instead of 200
         // Reverb
@@ -210,10 +224,6 @@ export class DownloadableSoundsInstrument
             instrument.globalZone.generators.filter(
                 (g) => g.generatorValue !== generatorLimits[g.generatorType].def
             );
-
-        this.regions.forEach((region) =>
-            region.toSFZone(instrument, soundBank.samples)
-        );
 
         soundBank.addPresets(preset);
         soundBank.addInstruments(instrument);

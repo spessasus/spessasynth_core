@@ -161,9 +161,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
 
         // KeyGroup (exclusive class)
         region.keyGroup = zone.getGenerator(generatorTypes.exclusiveClass, 0);
-
         region.articulation.fromSFZone(zone);
-
         return region;
     }
 
