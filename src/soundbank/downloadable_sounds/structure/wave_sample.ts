@@ -117,6 +117,17 @@ export class WaveSample extends DLSVerifier {
             generatorTypes.overridingRootKey,
             zone.sample.originalKey
         );
+
+        // A lot of soundfonts like to set scale tuning to 0 in drums and keep the key at 60
+        // Since we implement scale tuning via a dls articulator and fluid doesn't support these,
+        // Change the root key here
+        if (
+            zone.getGenerator(generatorTypes.scaleTuning, 100) === 0 &&
+            zone.keyRange.max - zone.keyRange.min === 0
+        ) {
+            waveSample.unityNote = zone.keyRange.min;
+        }
+
         waveSample.fineTune = zone.fineTuning + zone.sample.pitchCorrection;
         // E-mu attenuation correction
         const attenuationCb =

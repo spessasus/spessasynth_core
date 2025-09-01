@@ -148,6 +148,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         samples: BasicSample[]
     ) {
         const waveSample = WaveSample.fromSFZone(zone);
+
         const waveLink = WaveLink.fromSFZone(samples, zone);
 
         const region = new DownloadableSoundsRegion(waveLink, waveSample);
@@ -162,6 +163,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         region.keyGroup = zone.getGenerator(generatorTypes.exclusiveClass, 0);
 
         region.articulation.fromSFZone(zone);
+
         return region;
     }
 

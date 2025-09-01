@@ -205,7 +205,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
 
         for (const connection of this.connectionBlocks) {
             // SF2 uses 16-bit amounts, DLS uses 32-bit scale.
-            const generatorAmount = connection.shortScale;
+            const amount = connection.shortScale;
 
             const source = connection.source.source;
             const control = connection.control.source;
@@ -218,14 +218,16 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             }
             // A few special cases which are generators
             if (control === DLSSources.none) {
-                // THe keyNum source
+                // The keyNum source
                 // It usually requires a special treatment
                 if (source === DLSSources.keyNum) {
+                    // Scale tuning
                     if (destination === DLSDestinations.pitch) {
                         zone.setGenerator(
                             generatorTypes.scaleTuning,
-                            generatorAmount / 128
+                            amount / 128
                         );
+                        continue;
                     }
                     if (
                         destination === DLSDestinations.modEnvHold ||
@@ -239,7 +241,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 } else {
                     const specialGen = connection.toCombinedSFDestination();
                     if (specialGen) {
-                        zone.setGenerator(specialGen, generatorAmount);
+                        zone.setGenerator(specialGen, amount);
                         continue;
                     }
                 }

@@ -37,6 +37,7 @@ export function flattenSFZones(preset: BasicPreset): BasicInstrument {
     };
 
     const outputInstrument = new BasicInstrument();
+    outputInstrument.name = preset.name;
 
     const globalPresetGenerators: Generator[] = [];
     const globalPresetModulators: Modulator[] = [];

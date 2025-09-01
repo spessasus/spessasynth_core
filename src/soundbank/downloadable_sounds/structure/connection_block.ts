@@ -274,15 +274,6 @@ export class ConnectionBlock {
         const source = new ConnectionSource();
         let destination: DLSDestination;
         let amount = generator.generatorValue;
-        if (typeof dlsDestination === "number") {
-            destination = dlsDestination;
-        } else {
-            destination = dlsDestination.destination;
-            amount = dlsDestination.amount;
-
-            source.source = dlsDestination.source;
-            source.bipolar = dlsDestination.isBipolar;
-        }
 
         // Envelope generators are limited to 40 seconds
         // In timecents, this is 1200 * log2(10) = 6386
@@ -297,7 +288,18 @@ export class ConnectionBlock {
             generator.generatorType === generatorTypes.holdModEnv ||
             generator.generatorType === generatorTypes.decayModEnv
         ) {
-            amount = Math.min(amount, 6386);
+            // Add a small buffer
+            amount = Math.min(amount, 6590);
+        }
+
+        if (typeof dlsDestination === "number") {
+            destination = dlsDestination;
+        } else {
+            destination = dlsDestination.destination;
+            amount = dlsDestination.amount;
+
+            source.source = dlsDestination.source;
+            source.bipolar = dlsDestination.isBipolar;
         }
 
         articulation.connectionBlocks.push(
