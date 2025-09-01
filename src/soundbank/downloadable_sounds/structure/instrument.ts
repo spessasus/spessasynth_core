@@ -20,7 +20,6 @@ import { BasicPreset } from "../../basic_soundbank/basic_preset";
 import { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes } from "../../exports";
 import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./default_dls_modulators";
-import { flattenSFZones } from "./flatten_sf_zones";
 
 /**
  * Represents a proper DLS instrument, with regions and articulation.
@@ -135,7 +134,7 @@ export class DownloadableSoundsInstrument
         instrument.isGMGSDrum = preset.isGMGSDrum;
 
         // Combine preset and instrument zones into a single instrument zone (region) list
-        const inst = flattenSFZones(preset);
+        const inst = preset.toFlattenedInstrument();
 
         inst.zones.forEach((z) => {
             instrument.regions.push(

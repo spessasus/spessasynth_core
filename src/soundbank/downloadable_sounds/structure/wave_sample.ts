@@ -118,7 +118,7 @@ export class WaveSample extends DLSVerifier {
             zone.sample.originalKey
         );
 
-        // A lot of soundfonts like to set scale tuning to 0 in drums and keep the key at 60
+        // A lot of sound banks like to set scale tuning to 0 in drums and keep the key at 60
         // Since we implement scale tuning via a dls articulator and fluid doesn't support these,
         // Change the root key here
         if (
@@ -128,6 +128,12 @@ export class WaveSample extends DLSVerifier {
             waveSample.unityNote = zone.keyRange.min;
         }
 
+        /*
+         Note: this may slightly change the generators themselves when doing SF -> DLS -> SF, but the tuning remains the same
+         Testcase: Helicopter from GeneralUser-GS v2.0.1
+         It sets coarse -13 fine 2 which is a total of -1298 cents
+         This then gets converted into -12 coarse and -98 tune which is still correct!
+        */
         waveSample.fineTune = zone.fineTuning + zone.sample.pitchCorrection;
         // E-mu attenuation correction
         const attenuationCb =
