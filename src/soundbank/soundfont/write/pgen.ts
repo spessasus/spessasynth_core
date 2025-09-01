@@ -1,4 +1,7 @@
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian";
+import {
+    writeDword,
+    writeWord
+} from "../../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 

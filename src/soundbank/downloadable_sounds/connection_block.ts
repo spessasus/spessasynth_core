@@ -6,24 +6,24 @@ import {
     DLSSources,
     type DLSTransform,
     modulatorCurveTypes
-} from "../../enums";
-import { IndexedByteArray } from "../../../utils/indexed_array";
+} from "../enums";
+import { IndexedByteArray } from "../../utils/indexed_array";
 import {
     readLittleEndianIndexed,
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian";
-import { bitMaskToBool } from "../../../utils/byte_functions/bit_mask";
-import { Generator } from "../../basic_soundbank/generator";
+} from "../../utils/byte_functions/little_endian";
+import { bitMaskToBool } from "../../utils/byte_functions/bit_mask";
+import { Generator } from "../basic_soundbank/generator";
 import {
     type GeneratorType,
     generatorTypes
-} from "../../basic_soundbank/generator_types";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
-import { BasicZone } from "../../basic_soundbank/basic_zone";
-import { consoleColors } from "../../../utils/other";
-import { ModulatorSource } from "../../basic_soundbank/modulator_source";
-import { Modulator } from "../../basic_soundbank/modulator";
+} from "../basic_soundbank/generator_types";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
+import { BasicZone } from "../basic_soundbank/basic_zone";
+import { consoleColors } from "../../utils/other";
+import { ModulatorSource } from "../basic_soundbank/modulator_source";
+import { Modulator } from "../basic_soundbank/modulator";
 import type { DownloadableSoundsArticulation } from "./articulation";
 import {
     DEFAULT_DLS_CHORUS,
@@ -244,9 +244,14 @@ export class ConnectionBlock {
                 );
             }
         }
-        articulation.connectionBlocks.push(
-            new ConnectionBlock(source, control, destination, 0, amount << 16)
+        const bloc = new ConnectionBlock(
+            source,
+            control,
+            destination,
+            0,
+            amount << 16
         );
+        articulation.connectionBlocks.push(bloc);
     }
 
     public static fromSFGenerator(
@@ -495,7 +500,7 @@ export class ConnectionBlock {
         writeWord(out, this.control.source);
         writeWord(out, this.destination);
         const transformEnum =
-            this.control.transform |
+            this.transform |
             (this.control.toTransformFlag() << 4) |
             (this.source.toTransformFlag() << 10);
         writeWord(out, transformEnum);

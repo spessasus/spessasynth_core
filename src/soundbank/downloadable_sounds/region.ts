@@ -1,27 +1,27 @@
 import { DownloadableSoundsArticulation } from "./articulation";
-import type { GenericRange } from "../../types";
+import type { GenericRange } from "../types";
 import { WaveSample } from "./wave_sample";
 import { WaveLink } from "./wave_link";
 import {
     type RIFFChunk,
     writeRIFFChunkParts,
     writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
-import { SpessaSynthWarn } from "../../../utils/loggin";
+} from "../../utils/riff_chunk";
+import { SpessaSynthWarn } from "../../utils/loggin";
 import {
     readLittleEndianIndexed,
     writeWord
-} from "../../../utils/byte_functions/little_endian";
+} from "../../utils/byte_functions/little_endian";
 import { DLSVerifier } from "./dls_verifier";
 import type { DownloadableSoundsSample } from "./sample";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import type { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
-import type { BasicSample } from "../../basic_soundbank/basic_sample";
-import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
+import type { BasicInstrument } from "../basic_soundbank/basic_instrument";
 import {
     generatorLimits,
     generatorTypes
-} from "../../basic_soundbank/generator_types";
+} from "../basic_soundbank/generator_types";
 
 export class DownloadableSoundsRegion extends DLSVerifier {
     public readonly articulation = new DownloadableSoundsArticulation();

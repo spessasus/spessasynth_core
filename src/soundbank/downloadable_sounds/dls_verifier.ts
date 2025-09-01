@@ -2,10 +2,10 @@ import {
     type FourCC,
     readRIFFChunk,
     type RIFFChunk
-} from "../../../utils/riff_chunk";
-import type { DLSChunkFourCC } from "../../types";
-import { SpessaSynthGroupEnd } from "../../../utils/loggin";
-import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+} from "../../utils/riff_chunk";
+import type { DLSChunkFourCC } from "../types";
+import { SpessaSynthGroupEnd } from "../../utils/loggin";
+import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 
 export abstract class DLSVerifier {
     /**

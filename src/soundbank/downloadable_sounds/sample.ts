@@ -6,22 +6,22 @@ import {
     RIFFChunk,
     writeRIFFChunkParts,
     writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
+} from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian";
+} from "../../utils/byte_functions/little_endian";
 import {
     getStringBytes,
     readBinaryStringIndexed
-} from "../../../utils/byte_functions/string";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import { SpessaSynthInfo } from "../../../utils/loggin";
-import { consoleColors } from "../../../utils/other";
+} from "../../utils/byte_functions/string";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { SpessaSynthInfo } from "../../utils/loggin";
+import { consoleColors } from "../../utils/other";
 import { DLSSample } from "./dls_sample";
-import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
-import type { BasicSample } from "../../basic_soundbank/basic_sample";
+import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
 
 export class DownloadableSoundsSample extends DLSVerifier {
     public waveSample = new WaveSample();

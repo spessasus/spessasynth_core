@@ -15,7 +15,7 @@ import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
-import { DEFAULT_DLS_OPTIONS, DownloadableSounds } from "../downloadable_sounds/structure/downloadable_sounds";
+import { DEFAULT_DLS_OPTIONS, DownloadableSounds } from "../downloadable_sounds/downloadable_sounds";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.

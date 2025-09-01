@@ -1,19 +1,19 @@
-import type { DLSLoop } from "../../types";
-import { type RIFFChunk, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import type { DLSLoop } from "../types";
+import { type RIFFChunk, writeRIFFChunkRaw } from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
     signedInt16,
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian";
-import { type DLSLoopType, DLSLoopTypes, generatorTypes } from "../../enums";
+} from "../../utils/byte_functions/little_endian";
+import { type DLSLoopType, DLSLoopTypes, generatorTypes } from "../enums";
 import { DLSVerifier } from "./dls_verifier";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import type { BasicZone } from "../../basic_soundbank/basic_zone";
-import { type BasicSample } from "../../basic_soundbank/basic_sample";
-import type { SampleLoopingMode } from "../../../synthesizer/types";
-import { SpessaSynthWarn } from "../../../utils/loggin";
-import type { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import type { BasicZone } from "../basic_soundbank/basic_zone";
+import { type BasicSample } from "../basic_soundbank/basic_sample";
+import type { SampleLoopingMode } from "../../synthesizer/types";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
 
 const WSMP_SIZE = 20;
 const WSMP_LOOP_SIZE = 16;

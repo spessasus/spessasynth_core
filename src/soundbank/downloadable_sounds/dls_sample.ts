@@ -1,9 +1,9 @@
-import { BasicSample } from "../../basic_soundbank/basic_sample";
-import { SpessaSynthWarn } from "../../../utils/loggin";
-import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import type { RIFFChunk } from "../../../utils/riff_chunk";
-import { sampleTypes } from "../../enums";
+import { BasicSample } from "../basic_soundbank/basic_sample";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import type { RIFFChunk } from "../../utils/riff_chunk";
+import { sampleTypes } from "../enums";
 
 const W_FORMAT_TAG = {
     PCM: 0x01,

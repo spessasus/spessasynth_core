@@ -1,13 +1,13 @@
-import { type RIFFChunk, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import { type RIFFChunk, writeRIFFChunkRaw } from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
     writeDword,
     writeWord
-} from "../../../utils/byte_functions/little_endian";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import type { BasicSample } from "../../basic_soundbank/basic_sample";
-import type { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
-import { sampleTypes } from "../../enums";
+} from "../../utils/byte_functions/little_endian";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
+import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
+import { sampleTypes } from "../enums";
 
 export class WaveLink {
     /**

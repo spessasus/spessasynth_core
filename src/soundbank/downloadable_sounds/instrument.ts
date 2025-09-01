@@ -1,24 +1,24 @@
 import { DownloadableSoundsArticulation } from "./articulation";
 import { DownloadableSoundsRegion } from "./region";
-import type { MIDIPatchNamed } from "../../basic_soundbank/midi_patch";
+import type { MIDIPatchNamed } from "../basic_soundbank/midi_patch";
 import {
     findRIFFListType,
     readRIFFChunk,
     type RIFFChunk,
     writeRIFFChunkParts,
     writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
-import { getStringBytes, readBinaryStringIndexed } from "../../../utils/byte_functions/string";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
-import { readLittleEndianIndexed, writeDword } from "../../../utils/byte_functions/little_endian";
-import { consoleColors } from "../../../utils/other";
+} from "../../utils/riff_chunk";
+import { getStringBytes, readBinaryStringIndexed } from "../../utils/byte_functions/string";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../utils/loggin";
+import { readLittleEndianIndexed, writeDword } from "../../utils/byte_functions/little_endian";
+import { consoleColors } from "../../utils/other";
 import { DLSVerifier } from "./dls_verifier";
-import type { DLSChunkFourCC } from "../../types";
+import type { DLSChunkFourCC } from "../types";
 import type { DownloadableSoundsSample } from "./sample";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import { BasicPreset } from "../../basic_soundbank/basic_preset";
-import { BasicInstrument } from "../../basic_soundbank/basic_instrument";
-import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes } from "../../exports";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { BasicPreset } from "../basic_soundbank/basic_preset";
+import { BasicInstrument } from "../basic_soundbank/basic_instrument";
+import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes } from "../exports";
 import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./default_dls_modulators";
 
 /**

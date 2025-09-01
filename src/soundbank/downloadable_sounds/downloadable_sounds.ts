@@ -7,33 +7,33 @@ import type {
     SF2VersionTag,
     SoundBankInfoData,
     SoundBankInfoFourCC
-} from "../../types";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import { consoleColors } from "../../../utils/other";
+} from "../types";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { consoleColors } from "../../utils/other";
 import {
     findRIFFListType,
     readRIFFChunk,
     RIFFChunk,
     writeRIFFChunkParts,
     writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
+} from "../../utils/riff_chunk";
 import {
     getStringBytes,
     readBinaryStringIndexed
-} from "../../../utils/byte_functions/string";
-import { parseDateString } from "../../../utils/load_date";
+} from "../../utils/byte_functions/string";
+import { parseDateString } from "../../utils/load_date";
 import {
     readLittleEndianIndexed,
     writeDword
-} from "../../../utils/byte_functions/little_endian";
+} from "../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
     SpessaSynthWarn
-} from "../../../utils/loggin";
-import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
+} from "../../utils/loggin";
+import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 
 export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
     progressFunction: undefined
@@ -49,7 +49,7 @@ export class DownloadableSounds extends DLSVerifier {
         soundEngine: "DLS Level 2.2",
         version: {
             major: 2,
-            minor: 2
+            minor: 4
         }
     };
 

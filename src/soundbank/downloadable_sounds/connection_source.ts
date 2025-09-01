@@ -5,10 +5,10 @@ import {
     modulatorCurveTypes,
     type ModulatorSourceEnum,
     modulatorSources
-} from "../../enums";
-import { ModulatorSource } from "../../basic_soundbank/modulator_source";
-import { type MIDIController, midiControllers } from "../../../midi/enums";
-import type { ModulatorSourceIndex } from "../../types";
+} from "../enums";
+import { ModulatorSource } from "../basic_soundbank/modulator_source";
+import { type MIDIController, midiControllers } from "../../midi/enums";
+import type { ModulatorSourceIndex } from "../types";
 
 export class ConnectionSource {
     public source: DLSSource;
@@ -194,6 +194,7 @@ export class ConnectionSource {
         if (sourceEnum === undefined) {
             return undefined;
         }
+
         return new ModulatorSource(
             sourceEnum,
             this.transform,
