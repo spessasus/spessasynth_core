@@ -57,7 +57,7 @@ export const generatorTypes = {
     coarseTune: 51, // Tune - pitch offset in semitones
     fineTune: 52, // Tune - pitch offset in cents
     sampleID: 53, // Sample - instrument zone only: which sample to use
-    sampleModes: 54, // Sample - 0 = no loop, 1 = loop, 2 = reserved, 3 = loop and play till the end in release phase
+    sampleModes: 54, // Sample - 0 = no loop, 1 = loop, 2 = start on release, 3 = loop and play till the end in release phase
     reserved3: 55, // Reserved
     scaleTuning: 56, // Sample - the degree to which MIDI key number influences pitch, 100 = default
     exclusiveClass: 57, // Sample - = cut = choke group

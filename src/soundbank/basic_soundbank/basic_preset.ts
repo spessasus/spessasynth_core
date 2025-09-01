@@ -7,7 +7,11 @@ import type { BasicSoundBank } from "./basic_soundbank";
 import { Generator } from "./generator";
 import type { GenericRange, SampleAndGenerators } from "../types";
 import { BasicInstrument } from "./basic_instrument";
-import { type MIDIPatch, type MIDIPatchNamed, MIDIPatchTools } from "./midi_patch";
+import {
+    type MIDIPatch,
+    type MIDIPatchNamed,
+    MIDIPatchTools
+} from "./midi_patch";
 import { generatorLimits, generatorTypes } from "./generator_types";
 
 export class BasicPreset implements MIDIPatchNamed {

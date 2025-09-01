@@ -1,8 +1,4 @@
-import {
-    generatorLimits,
-    type GeneratorType,
-    generatorTypes
-} from "./generator_types";
+import { generatorLimits, type GeneratorType, generatorTypes } from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
@@ -114,6 +110,11 @@ export class BasicZone {
             switch (g.generatorType) {
                 default:
                     this.generators.push(g);
+                    break;
+
+                case generatorTypes.sampleID:
+                case generatorTypes.instrument:
+                    // Don't add these, they already have their own properties
                     break;
 
                 case generatorTypes.velRange:
