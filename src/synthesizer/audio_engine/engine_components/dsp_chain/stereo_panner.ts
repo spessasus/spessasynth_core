@@ -80,7 +80,7 @@ export function panAndMixVoice(
     const gainRight = panTableRight[index] * gain * this.synthProps.panRight;
 
     // Disable reverb and chorus if necessary
-    if (this.synth.effectsEnabled) {
+    if (this.synth.enableEffects) {
         const reverbSend =
             voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
         if (reverbSend > 0) {

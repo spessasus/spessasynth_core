@@ -137,6 +137,23 @@ export class Modulator {
         );
     }
 
+    /**
+     * Copies a modulator.
+     * @param mod The modulator to copy.
+     * @returns The copied modulator.
+     */
+    public static copyFrom(mod: Modulator) {
+        return new Modulator(
+            ModulatorSource.copyFrom(mod.primarySource),
+            ModulatorSource.copyFrom(mod.secondarySource),
+            mod.destination,
+            mod.transformAmount,
+            mod.transformType,
+            mod.isEffectModulator,
+            mod.isDefaultResonantModulator
+        );
+    }
+
     public toString() {
         return (
             `Source: ${this.primarySource.toString()}\n` +
@@ -144,22 +161,6 @@ export class Modulator {
             `to: ${this.destinationName}\n` +
             `amount: ${this.transformAmount}` +
             (this.transformType === 2 ? "absolute value" : "")
-        );
-    }
-
-    /**
-     * Copies a modulator.
-     * @returns the copied modulator.
-     */
-    public copy(): Modulator {
-        return new Modulator(
-            this.primarySource.copy(),
-            this.secondarySource.copy(),
-            this.destination,
-            this.transformAmount,
-            this.transformType,
-            this.isEffectModulator,
-            this.isDefaultResonantModulator
         );
     }
 
@@ -177,7 +178,7 @@ export class Modulator {
      * @returns the new modulator
      */
     public sumTransform(modulator: Modulator): Modulator {
-        const m = this.copy();
+        const m = Modulator.copyFrom(this);
         m.transformAmount += modulator.transformAmount;
         return m;
     }

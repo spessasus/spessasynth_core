@@ -24,7 +24,7 @@ const mid = await fs.readFile(midPath);
 const sampleRate = 44100;
 SpessaSynthLogging(true, true, true);
 const synth = new SpessaSynthProcessor(sampleRate, {
-    effectsEnabled: false
+    enableEffects: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),

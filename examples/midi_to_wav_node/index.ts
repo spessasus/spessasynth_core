@@ -22,7 +22,7 @@ const sampleRate = 44100;
 const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
-    effectsEnabled: false
+    enableEffects: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),

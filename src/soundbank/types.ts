@@ -8,13 +8,28 @@ import type { DLSLoopType, ModulatorSourceEnum } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
 
 export interface SoundBankManagerListEntry {
+    /**
+     * The unique string identifier of the sound bank.
+     */
     id: string;
+    /**
+     * The sound bank itself.
+     */
     soundBank: BasicSoundBank;
+    /**
+     * The bank MSB offset for this sound bank.
+     */
     bankOffset: number;
 }
 
 export interface SF2VersionTag {
+    /**
+     * The major revision number of the sound bank.
+     */
     major: number;
+    /**
+     * The minor revision number of this sound bank.
+     */
     minor: number;
 }
 
@@ -133,7 +148,7 @@ export interface SoundBankInfoData {
 
 export type SoundBankInfoFourCC = keyof SoundBankInfoData;
 
-export interface SampleAndGenerators {
+export interface VoiceSynthesisData {
     instrumentGenerators: Generator[];
     presetGenerators: Generator[];
     modulators: Modulator[];

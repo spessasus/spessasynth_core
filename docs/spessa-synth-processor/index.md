@@ -1,6 +1,7 @@
 # SpessaSynthProcessor
-
 The core synthesis engine of SpessaSynth.
+This module converts sound bank and MIDI data into PCM audio data.
+The internal synthesis system is modeled after SoundFont2 synthesis model.
 
 ## Example
 
@@ -13,19 +14,23 @@ seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spess
 const synth = new SpessaSynthProcessor(sampleRate, options);
 ```
 
-- sampleRate - number - sample rate in Hertz, like 44,100Hz.
-- options, an object, explained below:
+- sampleRate - number - sample rate in Hertz, for example 44,100Hz.
+- options - optional configuration, explained below:
 
 ```ts
-type SynthProcessorOptions = {
-    // Indicates if the event system is enabled. This can be changed later.
+interface SynthProcessorOptions {
+    /**
+     * Indicates if the event system is enabled. This can be changed later.
+     */
     enableEventSystem: boolean;
-    // The initial time of the synth, in seconds.
+    /**
+     * The initial time of the synth, in seconds.
+     */
     initialTime: number;
-    // Indicates if the effects are enabled. This can be changed later.
-    effectsEnabled: boolean;
-    // The number of MIDI channels.
-    midiChannels: number;
+    /**
+     * Indicates if the effects are enabled. This can be changed later.
+     */
+    enableEffects: boolean;
 };
 ```
 
@@ -35,46 +40,11 @@ type SynthProcessorOptions = {
 - [Sound Bank Manager](sound-bank-manager.md)
 
 
-## Event System
-
-Processor has a property `onEventCall` which can be defined as a function that
-listens for events.
-
-Parameters:
-
-- eventType - SynthProcessorEventData - the event type.
-- eventData - depends - the event data.
-
-[Refer to the synth event types for all events.](event-types.md)
-
-## options
-
-#### enableEventSystem
-
-Boolean, if the event system is enabled. Default is `true`.
-
-#### initialTime
-
-Number, initial internal synth time in seconds.
-Useful when synchronizing the processor with the audio thread time.
-Default is 0.
-
-#### effectsEnabled
-
-Boolean, if the effects are enabled.
-Disabling means that effect outputs will be filled with zeroes.
-Defaults to `true`.
-
-#### midiChannels
-
-Number, the default number of MIDI channels.
-Defaults to 16.
-
 ## Methods
 
 ### renderAudio
 
-Render float32 audio data to the stereo outputs.
+Render PCM float32 audio data to the stereo outputs.
 
 ```ts
 synth.renderAudio(outputs, reverb, chorus, startIndex = 0, sampleCount = all);
@@ -101,7 +71,7 @@ All `Float32Array`s must be the same length.
 
 ### renderAudioSplit
 
-Render float32 audio data of separate channels at once.
+Render PCM float32 audio data of separate channels + effects.
 
 ```ts
 synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIndex = 0, sampleCount = all);
@@ -125,13 +95,13 @@ All `Float32Array`s must be the same length.
 
 !!! Tip
 
-    If `effectsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
+    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
 
 ### destroySynthProcessor
 
 Delete all internal values and free up the memory.
 
-### createMidiChannel
+### createMIDIChannel
 
 Create a new MIDI channel.
 
@@ -156,7 +126,7 @@ synth.processMessage(message, channelOffset = 0, force, eventOptions);
 
 ### noteOn
 
-Play the given note.
+Start playing note.
 
 ```ts
 synth.noteOn(channel, midiNote, velocity);
@@ -171,7 +141,7 @@ synth.noteOn(channel, midiNote, velocity);
 
 ### noteOff
 
-Stop the given note.
+Stop playing a note.
 
 ```ts
 synth.noteOff(channel, midiNote);
@@ -199,11 +169,11 @@ synth.programChange(channel, programNumber);
 Change the channel's pitch, including the currently playing notes.
 
 ```ts
-synth.pitchWheel(channel, MSB, LSB);
+synth.pitchWheel(channel, pitch);
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
-- MSB and LSB. 7-bit numbers that form a 14-bit pitch bend value calculated as: `(MSB << 7) | LSB`
+- pitch - the 14-bit MIDI pitch value to use (0 - 16,383)
 
 !!! Tip
 
@@ -232,17 +202,16 @@ synth.systemExclusive(messageData, channelOffset = 0);
 Set a given MIDI controller to a given value.
 
 ```ts
-synth.controllerChange(channel, controllerNumber, controllerValue, force = false);
+synth.controllerChange(channel, controllerNumber, controllerValue);
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - controllerNumber - the MIDI CC number of the controller to change.
   Refer
-  to [this table](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#default-supported-controllers)
+  to [this table](../extra/midi-implementation.md#default-supported-controllers)
   for the list of controllers
   supported by default.
 - controllerValue - the value to set the given controller to. Ranges from 0 to 127.
-- force - boolean, if true, overrides locked controllers.
 
 !!! Note
 
@@ -250,7 +219,9 @@ synth.controllerChange(channel, controllerNumber, controllerValue, force = false
 
 ### resetAllControllers
 
-Reset all controllers to their default values and all programs. Essentially a system reset
+Reset all controllers and all programs to their default values. Essentially a system reset.
+This will reset all controllers to their default values,
+except for the locked controllers.
 
 ```ts
 synth.resetAllControllers();
@@ -287,4 +258,127 @@ Stop all voices on all channels.
 synth.stopAllChannels(force = false);
 ```
 
-- force - if true, the voices will be cut instead of releasing smoothly
+- force - if true, the voices will be cut instead of releasing smoothly.
+
+### setMasterParameter
+
+Set a [master parameter.](master-parameter.md)
+
+```ts
+synth.setMasterParameter(type, value);
+```
+
+- type - the type of the parameter to set, a string of the parameter type.
+- value - the value of the parameter to set, depends on the type.
+
+### getMasterParameter
+
+Get a [master parameter.](master-parameter.md)
+
+```ts
+synth.getMasterParameter(type);
+```
+
+- type - the type of the master parameter to get, a string of the parameter type.
+
+Returns the value of the master parameter.
+
+### getAllMasterParameters
+
+Get all master parameters of the synthesizer.
+
+This returns all the master parameters as a type: value object.
+
+### killVoices
+
+Kill (immediately stops without any fading) the specified number of voices based on their priority.
+
+```ts
+synth.killVoices(amount);
+```
+
+- amount - the amount of voices to remove.
+
+### applySynthesizerSnapshot
+
+Apply a [SynthesizerSnapshot](synthesizer-snapshot.md) to this synthesizer.
+
+```ts
+synth.applySynthesizerSnapshot(snapshot);
+```
+
+- snapshot - the snapshot to apply.
+
+### getSnapshot
+
+Get a [SynthesizerSnapshot](synthesizer-snapshot.md) instance of this synthesizer.
+
+
+### setEmbeddedSoundBank
+
+Set the embedded sound bank to this synthesizer.
+
+This method shouldn't generally be used as it is only used by the sequencer.
+Use the sound bank manager directly.
+
+### clearEmbeddedSoundbank
+
+Remove the embedded sound bank from the synthesizer.
+
+## clearCache
+
+Clear the synthesizer's voice cache.
+
+## Properties
+
+### onEventCall
+
+This property can be defined as a function that listens for events.
+
+Parameters the function gets called with:
+
+- eventType - SynthProcessorEventData - the event type.
+- eventData - depends - the event data.
+
+[Refer to the synth event types for all events.](event-types.md)
+
+### midiChannels
+
+All MIDI channels of the synthesizer, an array of `MIDIChannel`.
+
+### soundBankManager
+
+The [sound bank manager](sound-bank-manager.md) of this synthesizer.
+
+### keyModifierManager
+
+The [key modifier manager](key-modifier-manager.md) of this synthesizer.
+
+### totalVoicesAmount
+
+The current total amount of voices that are currently playing, a number.
+
+### processorInitialized
+
+A `Promise` that must be awaited before the processor is used with a compressed sound bank.
+
+### currentSynthTime
+
+The current time of the synthesizer, in seconds.
+
+!!! Warning
+
+    You should not modify this.
+
+### sampleRate
+
+The sample rate in Hertz.
+
+### enableEffects
+
+Enable or disable the effect channels.
+
+### enableEventSystem
+
+Enable or disable the event system.
+Setting this to `false` will cause the synthesizer to not emit any `onEventCall` callbacks.

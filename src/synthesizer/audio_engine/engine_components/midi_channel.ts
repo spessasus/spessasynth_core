@@ -137,10 +137,6 @@ export class MIDIChannel {
         rate: 0
     };
     /**
-     * Indicates whether the channel is muted.
-     */
-    public isMuted = false;
-    /**
      * An array of voices currently active on the channel.
      */
     public voices: VoiceList = [];
@@ -175,7 +171,6 @@ export class MIDIChannel {
      * @param midiNote The MIDI note number to release (0-127).
      */
     public noteOff = noteOff.bind(this) as typeof noteOff;
-
     // Bind all methods to the instance
     /**
      * Changes the program (preset) of the channel.
@@ -194,7 +189,6 @@ export class MIDIChannel {
     public readonly resetControllers = resetControllers.bind(
         this
     ) as typeof resetControllers;
-
     public readonly resetPreset = resetPreset.bind(this) as typeof resetPreset;
     /**
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
@@ -270,6 +264,18 @@ export class MIDIChannel {
         this.channelNumber = channelNumber;
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
+    }
+
+    /**
+     * Indicates whether the channel is muted.
+     */
+    protected _isMuted = false;
+
+    /**
+     * Indicates whether the channel is muted.
+     */
+    public get isMuted() {
+        return this._isMuted;
     }
 
     /**
@@ -497,6 +503,10 @@ export class MIDIChannel {
         );
     }
 
+    /**
+     * Locks or unlocks the preset from MIDI program changes.
+     * @param locked If the preset should be locked.
+     */
     public setPresetLock(locked: boolean) {
         if (this.lockPreset === locked) {
             return;
@@ -509,7 +519,8 @@ export class MIDIChannel {
 
     /**
      * Changes the preset to, or from drums.
-     * @param isDrum
+     * Note that this executes a program change.
+     * @param isDrum If the channel should be a drum preset or not.
      */
     public setDrums(isDrum: boolean) {
         if (BankSelectHacks.isSystemXG(this.channelSystem)) {
@@ -537,7 +548,7 @@ export class MIDIChannel {
     /**
      * Sets the channel to a given MIDI patch.
      * Note that this executes a program change.
-     * @param patch
+     * @param patch The MIDI patch to set the channel to.
      */
     public setPatch(patch: MIDIPatch) {
         this.setBankMSB(patch.bankMSB);
@@ -562,8 +573,8 @@ export class MIDIChannel {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a custom vibrato.
-     * @param depth cents.
-     * @param rate Hz.
+     * @param depth In cents.
+     * @param rate In Hertz.
      * @param delay seconds.
      */
     public setVibrato(depth: number, rate: number, delay: number) {
@@ -577,7 +588,7 @@ export class MIDIChannel {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Yes.
+     * Disables and locks all GS NPRN parameters, including the custom vibrato.
      */
     public disableAndLockGSNRPN() {
         this.lockGSNRPNParams = true;
@@ -664,11 +675,15 @@ export class MIDIChannel {
         });
     }
 
+    /**
+     * Mutes or unmutes a channel.
+     * @param isMuted If the channel should be muted.
+     */
     public muteChannel(isMuted: boolean) {
         if (isMuted) {
             this.stopAllNotes(true);
         }
-        this.isMuted = isMuted;
+        this._isMuted = isMuted;
         this.sendChannelProperty();
         this.synthProps.callEvent("muteChannel", {
             channel: this.channelNumber,

@@ -105,6 +105,21 @@ export class ModulatorSource {
         );
     }
 
+    /**
+     * Copies the modulator source.
+     * @param source The source to copy from.
+     * @returns the copied source.
+     */
+    public static copyFrom(source: ModulatorSource) {
+        return new ModulatorSource(
+            source.index,
+            source.curveType,
+            source.isCC,
+            source.isBipolar,
+            source.isNegative
+        );
+    }
+
     public toString() {
         return `${this.sourceName} ${this.curveTypeName} ${this.isBipolar ? "bipolar" : "unipolar"} ${this.isNegative ? "negative" : "positive"}`;
     }
@@ -174,20 +189,6 @@ export class ModulatorSource {
                 (this.curveType * MOD_CURVE_TYPES_AMOUNT + transformType) +
                 rawValue
         ];
-    }
-
-    /**
-     * Copies the modulator source.
-     * @returns the copied source.
-     */
-    public copy() {
-        return new ModulatorSource(
-            this.index,
-            this.curveType,
-            this.isCC,
-            this.isBipolar,
-            this.isNegative
-        );
     }
 }
 

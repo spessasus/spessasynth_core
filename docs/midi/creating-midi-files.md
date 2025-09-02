@@ -14,7 +14,7 @@ const mid = new MIDIBuilder(name, timeDivision = 480, initialTempo = 120);
 
 The file is initialized with one track.
 
-This class inherits from `MIDI` which means it can simply be passed to [writeMIDI](../writing-files/midi.md#write)
+This class inherits from `MIDI` which means it can simply be passed to [writeMIDI](../writing-files/midi.md#writemidi)
 or [SpessaSynthSequencer](../spessa-synth-sequencer/index.md).
 
 ## Methods

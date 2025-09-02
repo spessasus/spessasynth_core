@@ -34,7 +34,6 @@ import type {
 import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../midi/enums";
 import { ProtectedSynthValues } from "./audio_engine/engine_components/internal_synth_values";
 import { KeyModifierManager } from "./audio_engine/engine_components/key_modifier_manager";
-import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import { MIDIChannel } from "./audio_engine/engine_components/midi_channel";
 import { SoundBankLoader } from "../soundbank/sound_bank_loader";
 import { customControllers } from "./enums";
@@ -82,7 +81,7 @@ export class SpessaSynthProcessor {
     /**
      * Are the chorus and reverb effects enabled?
      */
-    public effectsEnabled = true;
+    public enableEffects = true;
 
     /**
      * Is the event system enabled?
@@ -189,7 +188,7 @@ export class SpessaSynthProcessor {
             opts,
             DEFAULT_SYNTH_OPTIONS
         );
-        this.effectsEnabled = options.effectsEnabled;
+        this.enableEffects = options.enableEffects;
         this.enableEventSystem = options.enableEventSystem;
         this.currentSynthTime = options.initialTime;
         this.sampleRate = sampleRate;
@@ -577,17 +576,6 @@ export class SpessaSynthProcessor {
     // Clears the synthesizer's voice cache.
     public clearCache() {
         this.privateProps.cachedVoices = [];
-    }
-
-    /**
-     * Gets a specified preset from the sound bank manager.
-     * @param patch The patch to get
-     */
-    public getPreset(patch: MIDIPatch): BasicPreset {
-        return this.soundBankManager.getPreset(
-            patch,
-            this.privateProps.masterParameters.midiSystem
-        );
     }
 
     /**

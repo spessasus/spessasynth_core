@@ -8,9 +8,9 @@ Here are some tips about contributing:
 Use the GitHub issue forms and please avoid using the "Blank" template unless absolutely necessary.
 
 ### Contributing a patch/enhancement
-Please see [Developing](https://github.com/spessasus/spessasynth_core/wiki/Developing)
+Please see [Developing](https://spessasus.github.io/spessasynth_core/extra/developer-docs/)
 
 Also, please note that all of spessasynth_core code *must* be able to run in the `AudioWorkletGlobalScope`,
 otherwise the pull request will not be accepted.
-This means that WebWorkers, TextDecoders, etc. are *not allowed.*
+This means that WebWorkers, TextDecoders, etc. are *not allowed.* Or a fallback function must be provided if they are used.
 

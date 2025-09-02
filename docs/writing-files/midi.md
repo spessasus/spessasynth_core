@@ -8,15 +8,15 @@ Below is a basic guide to writing .mid and .rmi files.
 
     Also see [Creating MIDI Files From Scratch](../midi/creating-midi-files.md)
 
-### write
+### writeMIDI
 
-Renders the sequence as a Standard MIDI File. Note: makes heavy use of the running status.
+Writes the sequence as a Standard MIDI File.
 
 ```ts
-midi.write();
+midi.writeMIDI();
 ```
 
-The returned value is an `Uint8Array` - a binary representation of the Standard MIDI File.
+The returned value is an `ArrayBuffer` - a binary representation of the Standard MIDI File.
 
 ### modify
 
@@ -116,20 +116,16 @@ This function writes out an RMIDI file (MIDI + SF2).
 
 ```ts
 const rmidiBinary = midi.writeRMIDI(
-    soundfontBinary,
-    soundfont,
-    bankOffset = 0,
-    encoding = "Shift_JIS",
-    metadata = {},
-    correctBankOffset = true
+    soundBankBinary,
+    configuration
 );
 ```
 
 ### Parameters
 
-#### soundfontBinary
+#### soundBankBinary
 
-an `Uint8Array` of the soundfont to embed, created by `soundfont.write()`.
+The binary sound bank to embed into the file.
 
 #### midi
 
@@ -211,24 +207,27 @@ const sfInput = document.getElementById("soundfont_upload");
 const midiInput = document.getElementById("midi_upload");
 document.getElementById("export").onchange = async () => {
     // get the files
-    const soundfont = loadSoundFont(await sfInput.files[0].arrayBuffer());
+    const soundBank = loadSoundFont(await sfInput.files[0].arrayBuffer());
     const midi = new MIDI(await midiInput.files[0].arrayBuffer());
 
     // trim the soundfont
-    soundfont.trimSoundBank(soundfont);
+    soundBank.trimSoundBank(soundBank);
     // write out with compression to save space (0.5 is medium quality)
-    const soundfontBinary = await soundfont.write({
+    const soundfontBinary = await soundBank.write({
         compress: true,
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
     // get the rmidi
-    const rmidiBinary = midi.writeRMIDI(soundfontBinary, soundfont, 0, 'utf-8', {
-        name: "A cool song",
-        artist: "John",
-        creationDate: new Date().toDateString(),
-        album: "John's songs",
-        genre: "Rock",
-        comment: "My favorite!"
+    const rmidiBinary = midi.writeRMIDI(soundBankBinary, {
+        soundBank,
+        metadata: {
+            name: "A cool song",
+            artist: "John",
+            creationDate: new Date(),
+            album: "John's songs",
+            genre: "Rock",
+            comment: "My favorite!"
+        }
     });
 
     // save the file

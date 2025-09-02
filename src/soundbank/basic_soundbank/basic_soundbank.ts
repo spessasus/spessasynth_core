@@ -59,7 +59,7 @@ export class BasicSoundBank {
      * Sound bank's default modulators.
      */
     public defaultModulators: Modulator[] = SPESSASYNTH_DEFAULT_MODULATORS.map(
-        (m) => m.copy()
+        Modulator.copyFrom.bind(Modulator)
     );
 
     /**

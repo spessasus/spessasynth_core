@@ -197,7 +197,7 @@ export class Voice {
     /**
      * Copies a voice.
      */
-    public static copy(voice: Voice, currentTime: number, realKey: number) {
+    public static copyFrom(voice: Voice, currentTime: number, realKey: number) {
         const sampleToCopy = voice.sample;
         const sample = new AudioSample(
             sampleToCopy.sampleData,
@@ -218,7 +218,7 @@ export class Voice {
             voice.targetKey,
             realKey,
             new Int16Array(voice.generators),
-            voice.modulators.map((m) => m.copy())
+            voice.modulators.map(Modulator.copyFrom.bind(Modulator))
         );
     }
 
@@ -264,11 +264,11 @@ export function getVoicesForPresetInternal(
     realKey: number
 ): VoiceList {
     const voices: VoiceList = preset
-        .getSamplesAndGenerators(midiNote, velocity)
-        .reduce((voices: VoiceList, sampleAndGenerators) => {
-            if (sampleAndGenerators.sample.getAudioData() === undefined) {
+        .getSynthesisData(midiNote, velocity)
+        .reduce((voices: VoiceList, synthesisData) => {
+            if (synthesisData.sample.getAudioData() === undefined) {
                 SpessaSynthWarn(
-                    `Discarding invalid sample: ${sampleAndGenerators.sample.name}`
+                    `Discarding invalid sample: ${synthesisData.sample.name}`
                 );
                 return voices;
             }
@@ -279,8 +279,8 @@ export function getVoicesForPresetInternal(
             for (let i = 0; i < 60; i++) {
                 generators[i] = addAndClampGenerator(
                     i,
-                    sampleAndGenerators.presetGenerators,
-                    sampleAndGenerators.instrumentGenerators
+                    synthesisData.presetGenerators,
+                    synthesisData.instrumentGenerators
                 );
             }
 
@@ -291,7 +291,7 @@ export function getVoicesForPresetInternal(
             );
 
             // Key override
-            let rootKey = sampleAndGenerators.sample.originalKey;
+            let rootKey = synthesisData.sample.originalKey;
             if (generators[generatorTypes.overridingRootKey] > -1) {
                 rootKey = generators[generatorTypes.overridingRootKey];
             }
@@ -302,8 +302,8 @@ export function getVoicesForPresetInternal(
             }
 
             // Determine looping mode now. if the loop is too small, disable
-            const loopStart = sampleAndGenerators.sample.loopStart;
-            const loopEnd = sampleAndGenerators.sample.loopEnd;
+            const loopStart = synthesisData.sample.loopStart;
+            const loopEnd = synthesisData.sample.loopEnd;
             const loopingMode = generators[
                 generatorTypes.sampleModes
             ] as SampleLoopingMode;
@@ -311,14 +311,11 @@ export function getVoicesForPresetInternal(
              * Create the sample
              * offsets are calculated at note on time (to allow for modulation of them)
              */
-            const sampleData = sampleAndGenerators.sample.getAudioData();
+            const sampleData = synthesisData.sample.getAudioData();
             const audioSample: AudioSample = new AudioSample(
                 sampleData,
-                (sampleAndGenerators.sample.sampleRate / this.sampleRate) *
-                    Math.pow(
-                        2,
-                        sampleAndGenerators.sample.pitchCorrection / 1200
-                    ), // Cent tuning
+                (synthesisData.sample.sampleRate / this.sampleRate) *
+                    Math.pow(2, synthesisData.sample.pitchCorrection / 1200), // Cent tuning
                 0,
                 rootKey,
                 loopStart,
@@ -342,14 +339,16 @@ export function getVoicesForPresetInternal(
                     targetKey,
                     realKey,
                     generators,
-                    sampleAndGenerators.modulators.map((m) => m.copy())
+                    synthesisData.modulators.map(
+                        Modulator.copyFrom.bind(Modulator)
+                    )
                 )
             );
             return voices;
         }, []);
     // Cache the voice
     this.setCachedVoice(preset, midiNote, velocity, voices);
-    return voices.map((v) => Voice.copy(v, this.currentSynthTime, realKey));
+    return voices.map((v) => Voice.copyFrom(v, this.currentSynthTime, realKey));
 }
 
 /**
@@ -389,12 +388,17 @@ export function getVoicesInternal(
     const cached = this.getCachedVoice(patch, midiNote, velocity);
     // If cached, return it!
     if (cached !== undefined) {
-        return cached.map((v) => Voice.copy(v, this.currentSynthTime, realKey));
+        return cached.map((v) =>
+            Voice.copyFrom(v, this.currentSynthTime, realKey)
+        );
     }
 
     // Not cached...
     if (overridePatch) {
-        preset = this.getPreset(patch);
+        preset = this.soundBankManager.getPreset(
+            patch,
+            this.privateProps.masterParameters.midiSystem
+        );
     }
     return this.getVoicesForPreset(preset, midiNote, velocity, realKey);
 }

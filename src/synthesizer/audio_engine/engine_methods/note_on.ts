@@ -24,7 +24,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             this.synth.totalVoicesAmount > 200 &&
             velocity < 40) ||
         (this.synthProps.masterParameters.blackMIDIMode && velocity < 10) ||
-        this.isMuted
+        this._isMuted
     ) {
         return;
     }
@@ -132,9 +132,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
             // Replace or add
             if (existingModIndex !== -1) {
-                voice.modulators[existingModIndex] = mod.copy();
+                voice.modulators[existingModIndex] = Modulator.copyFrom(mod);
             } else {
-                voice.modulators.push(mod.copy());
+                voice.modulators.push(Modulator.copyFrom(mod));
             }
         });
 

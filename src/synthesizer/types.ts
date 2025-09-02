@@ -83,7 +83,7 @@ export interface PitchWheelCallback {
     channel: number;
 
     /**
-     * The unsigned 14-bit value of the pitch: 0 - 16384.
+     * The unsigned 14-bit value of the pitch: 0 - 16383.
      */
     pitch: number;
 }
@@ -316,7 +316,7 @@ export interface SynthProcessorOptions {
     /**
      * Indicates if the effects are enabled. This can be changed later.
      */
-    effectsEnabled: boolean;
+    enableEffects: boolean;
 }
 
 /**
@@ -362,7 +362,7 @@ export interface MasterParameterType {
      */
     blackMIDIMode: boolean;
     /**
-     * The global transposition in semitones. It can be decimal.
+     * The global transposition in semitones. It can be decimal to provide microtonal tuning.
      */
     transposition: number;
     /**

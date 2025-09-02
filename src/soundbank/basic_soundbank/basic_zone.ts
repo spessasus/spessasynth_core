@@ -153,7 +153,9 @@ export class BasicZone {
         this.generators = zone.generators.map(
             (g) => new Generator(g.generatorType, g.generatorValue, false)
         );
-        this.modulators = zone.modulators.map((m) => m.copy());
+        this.modulators = zone.modulators.map(
+            Modulator.copyFrom.bind(Modulator)
+        );
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };
     }

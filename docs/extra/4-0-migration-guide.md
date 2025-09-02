@@ -267,12 +267,12 @@ This means that
 ## SpessaSynthProcessor
 
 A few methods and properties have been renamed for consistency.
-They behave in exactly the same way.
 
 - `soundfontManager` -> `soundBankManager`
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+The option `effectsEnabled` has been renamed to `enableEffects`.
 
 ### pitchWheel
 

@@ -19,7 +19,7 @@ import {
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import { BasicZone } from "../basic_soundbank/basic_zone";
-import { BasicInstrumentZone } from "../exports";
+import { BasicInstrumentZone, Modulator } from "../exports";
 import { SpessaSynthWarn } from "../../utils/loggin";
 import {
     DLS_1_NO_VIBRATO_MOD,
@@ -261,9 +261,9 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         if (this.mode === "dls1") {
             zone.addModulators(
                 // Modulation to vibrato
-                DLS_1_NO_VIBRATO_MOD.copy(),
+                Modulator.copyFrom(DLS_1_NO_VIBRATO_MOD),
+                Modulator.copyFrom(DLS_1_NO_VIBRATO_PRESSURE)
                 // Pressure to vibrato
-                DLS_1_NO_VIBRATO_PRESSURE.copy()
             );
         }
 

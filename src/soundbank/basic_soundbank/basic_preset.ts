@@ -5,7 +5,7 @@ import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
 import { Generator } from "./generator";
-import type { GenericRange, SampleAndGenerators } from "../types";
+import type { GenericRange, VoiceSynthesisData } from "../types";
 import { BasicInstrument } from "./basic_instrument";
 import {
     type MIDIPatch,
@@ -123,9 +123,9 @@ export class BasicPreset implements MIDIPatchNamed {
     public preload(keyMin: number, keyMax: number) {
         for (let key = keyMin; key < keyMax + 1; key++) {
             for (let velocity = 0; velocity < 128; velocity++) {
-                this.getSamplesAndGenerators(key, velocity).forEach(
-                    (samAndGen) => {
-                        samAndGen.sample.getAudioData();
+                this.getSynthesisData(key, velocity).forEach(
+                    (synthesisData) => {
+                        synthesisData.sample.getAudioData();
                     }
                 );
             }
@@ -141,15 +141,15 @@ export class BasicPreset implements MIDIPatchNamed {
     }
 
     /**
-     * Returns samples and generators for given note
+     * Returns the synthesis data from this preset
      * @param midiNote the MIDI note number
      * @param velocity the MIDI velocity
      * @returns the returned sound data
      */
-    public getSamplesAndGenerators(
+    public getSynthesisData(
         midiNote: number,
         velocity: number
-    ): SampleAndGenerators[] {
+    ): VoiceSynthesisData[] {
         if (this.zones.length < 1) {
             return [];
         }
@@ -175,7 +175,7 @@ export class BasicPreset implements MIDIPatchNamed {
             );
         }
 
-        const parsedGeneratorsAndSamples: SampleAndGenerators[] = [];
+        const parsedGeneratorsAndSamples: VoiceSynthesisData[] = [];
 
         /**
          * Global zone is always first, so it or nothing
@@ -276,7 +276,7 @@ export class BasicPreset implements MIDIPatchNamed {
                     if (identicalInstrumentModulator !== -1) {
                         // Sum the amounts
                         // This makes a new modulator
-                        // Because otherwise it would overwrite the one in the soundfont!
+                        // Because otherwise it would overwrite the one in the sound bank!
                         finalModulatorList[identicalInstrumentModulator] =
                             finalModulatorList[
                                 identicalInstrumentModulator

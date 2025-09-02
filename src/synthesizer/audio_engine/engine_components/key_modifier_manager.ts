@@ -9,7 +9,7 @@ export class KeyModifier {
      */
     public velocity = -1;
     /**
-     * The patch this key uses. -1 on either means default.
+     * The MIDI patch this key uses. -1 on any property means unchanged.
      */
     public patch: MIDIPatch = {
         bankLSB: -1,
@@ -103,7 +103,7 @@ export class KeyModifierManager {
      * Checks if a MIDI key has an override for the patch.
      * @param channel The MIDI channel number.
      * @param midiNote The MIDI note number (0-127).
-     * @returns  True if the key has an override patch, false otherwise.
+     * @returns True if the key has an override patch, false otherwise.
      */
     public hasOverridePatch(channel: number, midiNote: number): boolean {
         const bank = this.keyMappings[channel]?.[midiNote]?.patch?.bankMSB;

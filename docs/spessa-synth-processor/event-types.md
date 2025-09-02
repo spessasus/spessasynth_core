@@ -59,11 +59,9 @@ This event is triggered when the pitch wheel is altered on any channel.
 
 - `channel`: `number` - the channel that was pitch bent. Usually it ranges from 0 to 16, but it depends on the channel
   count.
-- `MSB`: `number` - Most Significant byte of the message. Ranges from 0 to 127.
-- `LSB`: `number` - least significant byte of the message. Ranges from 0 to 127.
+- `pitch`:  `number` - The unsigned 14-bit value of the pitch: 0 - 16,383.
 
-Note that the two bytes combined like this `MSB << 7 | LSB` will give you the pitch bend value from 0 to 16,383.
-Also note that the pitch bend depends on the pitch bend range, usually two semitones up and down.
+Note that the pitch bend depends on the pitch bend range, usually two semitones up and down.
 
 ### `controllerChange`
 
@@ -81,13 +79,17 @@ after `allcontrollerreset` a `controllerchange` event will be called with `contr
 ### `programChange`
 
 This event is triggered when a program is changed on any channel (usually MIDI program change,
-though [Some SysExes can change it too](https://github.com/spessasus/spessasynth_core/wiki/MIDI-Implementation#xg-part-setup)).
+though [Some SysExes can change it too](../extra/midi-implementation.md#xg-part-setup)).
 It is also called when receiving a system reset message.
 
 - `channel`: `number` - the channel that had its program changed. Usually it ranges from 0 to 16, but it depends on the
   channel count.
 - `program`: `number` - the new MIDI program number. Ranges from 0 to 127.
-- `bank`: `number` - the new bank number of the preset. Ranges from 0 to 127.
+- `bankMSB`: `number` - the new bank MSB number of the preset. Ranges from 0 to 127.
+- `bankLSB`: `number` - the new bank LSB number of the preset. Ranges from 0 to 127.
+- `isGMGSDrum`: `boolean` - if the new preset is a GM or GS drum preset. **This does not determine whether this preset is actually a drum preset.**
+
+Note: the last 4 properties are a [MIDI Patch](midi-patch.md) - a way of identifying the selected preset from the preset list.
 
 ### `channelPressure`
 
@@ -108,7 +110,7 @@ By default, this controls vibrato in SpessaSynth, though it can be changed with 
 ### `drumChange`
 
 This event is triggered when a channel is changed to a drum channel or back to a normal channel.
-Either with a SysEx message or with a MIDI CC message when the synthesizer is in XG mode.
+Either with a SysEx message or with a MIDI CC message when the synthesizer is in XG or GM2 mode.
 
 - `channel`: `number` - the channel that was altered. Usually it ranges from 0 to 16, but it depends on the channel
   count.
@@ -125,7 +127,7 @@ This event has no data.
 This event is triggered when a new channel is added to the synthesizer.
 Either manually,
 or when the sequencer detects
-a [Multi-Port MIDI file.](https://github.com/spessasus/spessasynth_core/wiki/About-Multi-Port)
+a [Multi-Port MIDI file.](../extra/about-multi-port.md)
 
 This event has no data.
 
@@ -144,10 +146,11 @@ This event is triggered when the preset list has been changed or initialized,
 by adding, removing or changing sound banks, or when a MIDI with an embedded sound bank is loaded.
 Note that this is the recommended way of retrieving the preset list, rather than loading the sound bank manually.
 
-- `presetList`: `array` - The sound bank preset list. Each item is an object:
-    - `presetName`: `string` - The name of the preset.
-    - `program`: `number` - The MIDI program number. Ranges from 0 to 127.
-    - `bank`: `number` - The bank number of the preset. Ranges from 0 to 127.
+The event data is the preset list. Each item is a preset list entry:
+
+- The properties of a [MIDI Patch](midi-patch.md).
+- `name`: `string` - The name of the preset.
+- `isAnyDrums`: `boolean` - if this preset is a drum preset. *This is the correct way of distinguishing between drum and melodic presets.
 
 ### `allControllerReset`
 
@@ -160,7 +163,7 @@ described in `controllerchange`).
 
 This event is triggered when the loaded sound bank was invalid.
 
-- `error`: `Error` - The error message from the parser, a JavaScript error object.
+The data is the error message from the parser, a JavaScript error object.
 
 ### `synthDisplay`
 
@@ -184,24 +187,45 @@ This event is triggered when a channel property changes.
 - `property`: `ChannelProperty` - the updated property. Defined as follows:
 
 ```ts
-type ChannelProperty = {
-    // The channel's current voice amount.
+export interface ChannelProperty {
+    /**
+     * The channel's current voice amount.
+     */
     voicesAmount: number;
-    // The channel's current pitch bend from -8192 do 8192.
+    /**
+     * The channel's current pitch wheel 0 - 16384.
+     */
     pitchWheel: number;
-    // The pitch bend's range, in semitones.
+    /**
+     * The pitch wheel's range, in semitones.
+     */
     pitchWheelRange: number;
-    // Indicates whether the channel is muted.
+    /**
+     * Indicates whether the channel is muted.
+     */
     isMuted: boolean;
-    // Indicates whether the channel is a drum channel.
+    /**
+     * Indicates whether the channel is a drum channel.
+     */
     isDrum: boolean;
-    // The channel's transposition, in semitones.
+    /**
+     * The channel's transposition, in semitones.
+     */
     transposition: number;
-    // The bank number of the current preset.
-    bank: number;
-    // The MIDI program number of the current preset.
+    /**
+     * The bank number of the current preset.
+     */
+    bankMSB: number;
+
+    /**
+     * The bank LSB number of the current preset.
+     */
+    bankLSB: number;
+    /**
+     * The MIDI program number of the current preset.
+     */
     program: number;
-};
+}
 ```
 
 ### `masterParameterChange`
@@ -210,5 +234,7 @@ This event is triggered when a master parameter changes.
 
 - `parameter`: `MasterParameterType` - the master parameter type.
 - `value`: varies - the new value of this parameter.
+
+Note that this event usually triggers from the MIDI system change or user's change.
 
 [All master parameters can be found here](master-parameter.md)

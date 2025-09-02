@@ -4,7 +4,7 @@ Represents a singe SoundFont2 preset.
 
 ## Methods
 
-### getSamplesAndGenerators
+### getSynthesisData
 
 Returns the samples and their generators (and modulators) for the given midiNote.
 The name is kept from the time that SpessaSynth did not support modulators.

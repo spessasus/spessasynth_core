@@ -18,7 +18,7 @@ import type { DownloadableSoundsSample } from "./sample";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { BasicPreset } from "../basic_soundbank/basic_preset";
 import { BasicInstrument } from "../basic_soundbank/basic_instrument";
-import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes } from "../exports";
+import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes, Modulator } from "../exports";
 import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./default_dls_modulators";
 
 /**
@@ -224,7 +224,9 @@ export class DownloadableSoundsInstrument
                 (m) => m.destination === generatorTypes.reverbEffectsSend
             ) === undefined
         ) {
-            instrument.globalZone.addModulators(DEFAULT_DLS_REVERB.copy());
+            instrument.globalZone.addModulators(
+                Modulator.copyFrom(DEFAULT_DLS_REVERB)
+            );
         }
         // Chorus
         if (
@@ -232,7 +234,9 @@ export class DownloadableSoundsInstrument
                 (m) => m.destination === generatorTypes.chorusEffectsSend
             ) === undefined
         ) {
-            instrument.globalZone.addModulators(DEFAULT_DLS_CHORUS.copy());
+            instrument.globalZone.addModulators(
+                Modulator.copyFrom(DEFAULT_DLS_CHORUS)
+            );
         }
 
         // Remove generators with default values

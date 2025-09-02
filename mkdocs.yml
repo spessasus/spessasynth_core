@@ -71,6 +71,8 @@ nav:
       - getting-started/index.md
       - SpessaSynthProcessor:
           - spessa-synth-processor/index.md
+          - spessa-synth-processor/midi-channel.md
+          - spessa-synth-processor/midi-patch.md
           - spessa-synth-processor/sound-bank-manager.md
           - spessa-synth-processor/key-modifier-manager.md
           - spessa-synth-processor/synthesizer-snapshot.md
@@ -85,6 +87,8 @@ nav:
           - Generator: sound-bank/generator.md
       - MIDI:
           - midi/index.md
+          - midi/midi-message.md
+          - midi/midi-track.md
           - midi/creating-midi-files.md
       - File Writing:
           - writing-files/wav.md

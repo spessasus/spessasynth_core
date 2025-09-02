@@ -119,7 +119,7 @@ export class SoundBankManager {
 
     /**
      * Gets a given preset from the sound bank stack.
-     * @param patch The MIDI patch to get.
+     * @param patch The MIDI patch to search for.
      * @param system The MIDI system to select the preset for.
      * @returns An object containing the preset and its bank offset.
      */
