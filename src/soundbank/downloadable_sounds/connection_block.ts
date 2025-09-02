@@ -254,6 +254,16 @@ export class ConnectionBlock {
         articulation.connectionBlocks.push(bloc);
     }
 
+    public static copyFrom(inputBlock: ConnectionBlock) {
+        return new ConnectionBlock(
+            ConnectionSource.copyFrom(inputBlock.source),
+            ConnectionSource.copyFrom(inputBlock.control),
+            inputBlock.destination,
+            inputBlock.transform,
+            inputBlock.scale
+        );
+    }
+
     public static fromSFGenerator(
         generator: Generator,
         articulation: DownloadableSoundsArticulation

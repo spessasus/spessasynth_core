@@ -1,7 +1,13 @@
 import { DLSVerifier } from "./dls_verifier";
 import { DownloadableSoundsSample } from "./sample";
 import { DownloadableSoundsInstrument } from "./instrument";
-import type { DLSInfoFourCC, DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundBankInfoFourCC } from "../types";
+import type {
+    DLSInfoFourCC,
+    DLSWriteOptions,
+    SF2VersionTag,
+    SoundBankInfoData,
+    SoundBankInfoFourCC
+} from "../types";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import {
@@ -11,9 +17,15 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../utils/riff_chunk";
-import { getStringBytes, readBinaryStringIndexed } from "../../utils/byte_functions/string";
+import {
+    getStringBytes,
+    readBinaryStringIndexed
+} from "../../utils/byte_functions/string";
 import { parseDateString } from "../../utils/load_date";
-import { readLittleEndianIndexed, writeDword } from "../../utils/byte_functions/little_endian";
+import {
+    readLittleEndianIndexed,
+    writeDword
+} from "../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
@@ -22,6 +34,8 @@ import {
     SpessaSynthWarn
 } from "../../utils/loggin";
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
+import { BankSelectHacks } from "../../utils/midi_hacks";
+import { DownloadableSoundsRegion } from "./region";
 
 export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
     progressFunction: undefined
@@ -164,6 +178,110 @@ export class DownloadableSounds extends DLSVerifier {
             );
         });
         SpessaSynthGroupEnd();
+
+        /*
+         MobileBAE Instrument aliasing
+         https://github.com/spessasus/spessasynth_core/issues/14
+         https://lpcwiki.miraheze.org/wiki/MobileBAE#Proprietary_instrument_aliasing_chunk
+         http://onj3.andrelouis.com/phonetones/Software%20and%20Soundbanks/Soundbanks/Beatnik%20mobileBAE/
+        */
+        const aliasingChunk = chunks.find((c) => c.header === "pgal");
+        if (aliasingChunk) {
+            SpessaSynthInfo(
+                "%cFound the instrument aliasing chunk!",
+                consoleColors.recognized
+            );
+            const pgalData = aliasingChunk.data;
+            // Check for the unused 4 bytes at the start
+            // If the bank starts with 02 00 00 00, skip them
+            if (
+                pgalData[0] === 2 &&
+                pgalData[1] + pgalData[2] + pgalData[3] === 0
+            ) {
+                pgalData.currentIndex += 4;
+            }
+            // Read the drum alias
+            const drumInstrument = dls.instruments.find(
+                (i) => BankSelectHacks.isXGDrums(i.bankMSB) || i.isGMGSDrum
+            );
+            if (!drumInstrument) {
+                SpessaSynthWarn(
+                    "MobileBAE aliasing chunk without a drum preset. Aborting!"
+                );
+                return dls;
+            }
+            const drumAliases = pgalData.slice(
+                pgalData.currentIndex,
+                pgalData.currentIndex + 128
+            );
+            pgalData.currentIndex += 128;
+            for (let keyNum = 0; keyNum < 128; keyNum++) {
+                const alias = drumAliases[keyNum];
+                if (alias === keyNum) {
+                    // Skip the same aliases
+                    continue;
+                }
+                const region = drumInstrument.regions.find(
+                    (r) => r.keyRange.max === alias && r.keyRange.min === alias
+                );
+                if (!region) {
+                    SpessaSynthWarn(
+                        `Invalid drum alias ${keyNum} to ${alias}: region does not exist.`
+                    );
+                    return;
+                }
+                const copied = DownloadableSoundsRegion.copyFrom(region);
+                copied.keyRange.max = keyNum;
+                copied.keyRange.min = keyNum;
+                drumInstrument.regions.push(copied);
+            }
+            // 4 bytes: Unknown purpose, 'footer'.
+            pgalData.currentIndex += 4;
+            while (pgalData.currentIndex < pgalData.length) {
+                const aliasBankNum = readLittleEndianIndexed(pgalData, 2);
+                // Little-endian 16-bit value (only 14 bits used): Upper 7 bits: Bank MSB, lower 7 bits: Bank LSB
+                const aliasBankLSB = aliasBankNum & 0x7f;
+                const aliasBankMSB = (aliasBankNum >> 7) & 0x7f;
+                const aliasProgram = pgalData[pgalData.currentIndex++];
+                let nullByte = pgalData[pgalData.currentIndex++];
+                if (nullByte !== 0) {
+                    SpessaSynthWarn(
+                        `Invalid alias byte. Expected 0, got ${nullByte}`
+                    );
+                }
+                const inputBankNum = readLittleEndianIndexed(pgalData, 2);
+                const inputBankLSB = inputBankNum & 0x7f;
+                const inputBankMSB = (inputBankNum >> 7) & 0x7f;
+                const inputProgram = pgalData[pgalData.currentIndex++];
+                nullByte = pgalData[pgalData.currentIndex++];
+                if (nullByte !== 0) {
+                    SpessaSynthWarn(
+                        `Invalid alias header. Expected 0, got ${nullByte}`
+                    );
+                }
+
+                const inputInstrument = dls.instruments.find(
+                    (inst) =>
+                        inst.bankLSB === inputBankLSB &&
+                        inst.bankMSB === inputBankMSB &&
+                        inst.program === inputProgram &&
+                        !inst.isGMGSDrum
+                );
+                if (!inputInstrument) {
+                    SpessaSynthWarn(
+                        `Invalid alias. Missing instrument: ${inputBankLSB}:${inputBankMSB}:${inputProgram}`
+                    );
+                    continue;
+                }
+
+                const alias =
+                    DownloadableSoundsInstrument.copyFrom(inputInstrument);
+                alias.bankMSB = aliasBankMSB;
+                alias.bankLSB = aliasBankLSB;
+                alias.program = aliasProgram;
+                dls.instruments.push(alias);
+            }
+        }
 
         SpessaSynthInfo(
             `%cParsing finished! %c"${dls.soundBankInfo.name || "UNNAMED"}"%c has %c${dls.instruments.length}%c instruments and %c${dls.samples.length}%c samples.`,

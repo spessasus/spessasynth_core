@@ -49,6 +49,18 @@ export class WaveSample extends DLSVerifier {
      */
     public fulOptions = 2;
 
+    public static copyFrom(inputWaveSample: WaveSample) {
+        const outputWaveSample = new WaveSample();
+        outputWaveSample.unityNote = inputWaveSample.unityNote;
+        outputWaveSample.gain = inputWaveSample.gain;
+        outputWaveSample.fineTune = inputWaveSample.gain;
+        outputWaveSample.loops = inputWaveSample.loops.map((l) => {
+            return { ...l };
+        });
+        outputWaveSample.fulOptions = inputWaveSample.fulOptions;
+        return outputWaveSample;
+    }
+
     public static read(chunk: RIFFChunk) {
         this.verifyHeader(chunk, "wsmp");
         const waveSample = new WaveSample();

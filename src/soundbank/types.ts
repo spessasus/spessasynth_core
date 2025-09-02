@@ -76,7 +76,9 @@ export type DLSChunkFourCC =
     | "ins "
     | "insh"
     | "rgn "
-    | "rgn2";
+    | "rgn2"
+    // Proprietary MobileBAE instrument aliasing chunk
+    | "pgal";
 
 export interface SoundBankInfoData {
     /**

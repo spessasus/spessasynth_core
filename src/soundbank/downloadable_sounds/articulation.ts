@@ -40,6 +40,13 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         return this.connectionBlocks.length;
     }
 
+    public copyFrom(inputArticulation: DownloadableSoundsArticulation) {
+        this.mode = inputArticulation.mode;
+        inputArticulation.connectionBlocks.forEach((block) => {
+            this.connectionBlocks.push(ConnectionBlock.copyFrom(block));
+        });
+    }
+
     public fromSFZone(z: BasicInstrumentZone) {
         this.mode = "dls2";
 

@@ -39,6 +39,14 @@ export class WaveLink {
         this.tableIndex = tableIndex;
     }
 
+    public static copyFrom(waveLink: WaveLink) {
+        const wlnk = new WaveLink(waveLink.tableIndex);
+        wlnk.channel = waveLink.channel;
+        wlnk.phaseGroup = waveLink.phaseGroup;
+        wlnk.fusOptions = waveLink.fusOptions;
+        return wlnk;
+    }
+
     public static read(chunk: RIFFChunk) {
         // Flags
         const fusOptions = readLittleEndianIndexed(chunk.data, 2);

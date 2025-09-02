@@ -47,6 +47,15 @@ export class ConnectionSource {
         );
     }
 
+    public static copyFrom(inputSource: ConnectionSource) {
+        return new ConnectionSource(
+            inputSource.source,
+            inputSource.transform,
+            inputSource.bipolar,
+            inputSource.invert
+        );
+    }
+
     public static fromSFSource(
         source: ModulatorSource
     ): ConnectionSource | undefined {

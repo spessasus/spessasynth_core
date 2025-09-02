@@ -72,6 +72,20 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         this.waveLink = waveLink;
     }
 
+    public static copyFrom(inputRegion: DownloadableSoundsRegion) {
+        const outputRegion = new DownloadableSoundsRegion(
+            WaveLink.copyFrom(inputRegion.waveLink),
+            WaveSample.copyFrom(inputRegion.waveSample)
+        );
+        outputRegion.keyGroup = inputRegion.keyGroup;
+        outputRegion.keyRange = { ...inputRegion.keyRange };
+        outputRegion.velRange = { ...inputRegion.velRange };
+        outputRegion.usLayer = inputRegion.usLayer;
+        outputRegion.fusOptions = inputRegion.fusOptions;
+        outputRegion.articulation.copyFrom(inputRegion.articulation);
+        return outputRegion;
+    }
+
     public static read(samples: DownloadableSoundsSample[], chunk: RIFFChunk) {
         const regionChunks = this.verifyAndReadList(chunk, "rgn ", "rgn2");
         // Wsmp: wave sample chunk

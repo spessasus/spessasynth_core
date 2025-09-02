@@ -37,6 +37,22 @@ export class DownloadableSoundsInstrument
     public isGMGSDrum = false;
     public program = 0;
 
+    public static copyFrom(inputInstrument: DownloadableSoundsInstrument) {
+        const outputInstrument = new DownloadableSoundsInstrument();
+        outputInstrument.name = inputInstrument.name;
+        outputInstrument.isGMGSDrum = inputInstrument.isGMGSDrum;
+        outputInstrument.bankMSB = inputInstrument.bankMSB;
+        outputInstrument.bankLSB = inputInstrument.bankLSB;
+        outputInstrument.program = inputInstrument.program;
+        outputInstrument.articulation.copyFrom(inputInstrument.articulation);
+        inputInstrument.regions.forEach((region) => {
+            outputInstrument.regions.push(
+                DownloadableSoundsRegion.copyFrom(region)
+            );
+        });
+        return outputInstrument;
+    }
+
     public static read(samples: DownloadableSoundsSample[], chunk: RIFFChunk) {
         const chunks = this.verifyAndReadList(chunk, "ins ");
 
