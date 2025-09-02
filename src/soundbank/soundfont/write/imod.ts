@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeLittleEndianIndexed,
-    writeWord
-} from "../../../utils/byte_functions/little_endian";
+import { writeLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { MOD_BYTE_SIZE } from "../../basic_soundbank/modulator";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
@@ -25,11 +22,7 @@ export function getIMOD(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
 
     const writeZone = (z: BasicZone) => {
         for (const mod of z.modulators) {
-            writeWord(imodData, mod.getSourceEnum());
-            writeWord(imodData, mod.destination);
-            writeWord(imodData, mod.transformAmount);
-            writeWord(imodData, mod.getSecSrcEnum());
-            writeWord(imodData, mod.transformType);
+            mod.write(imodData);
         }
     };
 

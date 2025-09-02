@@ -1,9 +1,9 @@
-import { BasicSample } from "../../basic_soundbank/basic_sample";
-import { SpessaSynthWarn } from "../../../utils/loggin";
-import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
-import { IndexedByteArray } from "../../../utils/indexed_array";
-import type { RIFFChunk } from "../../../utils/riff_chunk";
-import { sampleTypes } from "../../enums";
+import { BasicSample } from "../basic_soundbank/basic_sample";
+import { SpessaSynthWarn } from "../../utils/loggin";
+import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import type { RIFFChunk } from "../../utils/riff_chunk";
+import { sampleTypes } from "../enums";
 
 const W_FORMAT_TAG = {
     PCM: 0x01,
@@ -90,10 +90,6 @@ function readALAW(
 }
 
 export class DLSSample extends BasicSample {
-    /**
-     * In decibels of attenuation, WITHOUT E-MU CORRECTION
-     */
-    public sampleDbAttenuation: number;
     protected wFormatTag: number;
     protected bytesPerSample: number;
 
@@ -109,7 +105,6 @@ export class DLSSample extends BasicSample {
      * @param pitchCorrection
      * @param loopStart sample data points
      * @param loopEnd sample data points
-     * @param sampleDbAttenuation in db
      * @param dataChunk
      * @param wFormatTag
      * @param bytesPerSample
@@ -121,7 +116,6 @@ export class DLSSample extends BasicSample {
         pitchCorrection: number,
         loopStart: number,
         loopEnd: number,
-        sampleDbAttenuation: number,
         dataChunk: RIFFChunk,
         wFormatTag: number,
         bytesPerSample: number
@@ -135,7 +129,6 @@ export class DLSSample extends BasicSample {
             loopStart,
             loopEnd
         );
-        this.sampleDbAttenuation = sampleDbAttenuation;
         this.dataOverridden = false;
         this.rawData = dataChunk.data;
         this.wFormatTag = wFormatTag;

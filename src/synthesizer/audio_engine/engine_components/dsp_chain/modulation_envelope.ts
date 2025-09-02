@@ -17,8 +17,7 @@ for (let i = 0; i < CONVEX_ATTACK.length; i++) {
     CONVEX_ATTACK[i] = getModulatorCurveValue(
         0,
         modulatorCurveTypes.convex,
-        i / 1000,
-        0
+        i / 1000
     );
 }
 
@@ -124,8 +123,12 @@ export class ModulationEnvelope {
                 voice.modulatedGenerators[generatorTypes.holdModEnv]
         );
 
+        // Min is set to -7200 to prevent lowpass clicks
         const releaseTime = timecentsToSeconds(
-            voice.modulatedGenerators[generatorTypes.releaseModEnv]
+            Math.max(
+                voice.modulatedGenerators[generatorTypes.releaseModEnv],
+                -7200
+            )
         );
         // Release time is from the full level to 0%
         // To get the actual time, multiply by the release start level

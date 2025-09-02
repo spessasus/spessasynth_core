@@ -132,9 +132,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
             // Replace or add
             if (existingModIndex !== -1) {
-                voice.modulators[existingModIndex] = Modulator.copy(mod);
+                voice.modulators[existingModIndex] = mod.copy();
             } else {
-                voice.modulators.push(Modulator.copy(mod));
+                voice.modulators.push(mod.copy());
             }
         });
 

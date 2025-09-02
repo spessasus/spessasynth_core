@@ -3,6 +3,8 @@ import {
     type GeneratorType,
     generatorTypes
 } from "./generator_types";
+import type { IndexedByteArray } from "../../utils/indexed_array";
+import { writeWord } from "../../utils/byte_functions/little_endian";
 
 export const GEN_BYTE_SIZE = 4;
 
@@ -42,6 +44,16 @@ export class Generator {
                 );
             }
         }
+    }
+
+    public write(genData: IndexedByteArray) {
+        // Name is deceptive, it works on negatives
+        writeWord(genData, this.generatorType);
+        writeWord(genData, this.generatorValue);
+    }
+
+    public toString() {
+        return `${Object.keys(generatorTypes).find((k) => generatorTypes[k as keyof typeof generatorTypes] === this.generatorType)}: ${this.generatorValue}`;
     }
 }
 

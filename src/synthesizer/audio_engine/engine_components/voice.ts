@@ -218,7 +218,7 @@ export class Voice {
             voice.targetKey,
             realKey,
             new Int16Array(voice.generators),
-            voice.modulators.map((m) => Modulator.copy(m))
+            voice.modulators.map((m) => m.copy())
         );
     }
 
@@ -342,7 +342,7 @@ export function getVoicesForPresetInternal(
                     targetKey,
                     realKey,
                     generators,
-                    sampleAndGenerators.modulators.map((m) => Modulator.copy(m))
+                    sampleAndGenerators.modulators.map((m) => m.copy())
                 )
             );
             return voices;

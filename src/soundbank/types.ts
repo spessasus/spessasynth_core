@@ -4,7 +4,8 @@ import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { IndexedByteArray } from "../utils/indexed_array";
 import type { MIDIController } from "../midi/enums";
-import type { ModulatorSourceEnum } from "./enums";
+import type { DLSLoopType, ModulatorSourceEnum } from "./enums";
+import type { WAVFourCC } from "../utils/riff_chunk";
 
 export interface SoundBankManagerListEntry {
     id: string;
@@ -54,6 +55,7 @@ export type SF2ChunkFourCC =
 export type DLSInfoFourCC = GenericBankInfoFourCC | "ISBJ";
 
 export type DLSChunkFourCC =
+    | WAVFourCC
     | "dls "
     | "dlid"
     | "cdl "
@@ -73,7 +75,10 @@ export type DLSChunkFourCC =
     | "lins"
     | "ins "
     | "insh"
-    | "rgn2";
+    | "rgn "
+    | "rgn2"
+    // Proprietary MobileBAE instrument aliasing chunk
+    | "pgal";
 
 export interface SoundBankInfoData {
     /**
@@ -140,8 +145,7 @@ export type SampleEncodingFunction = (
     sampleRate: number
 ) => Promise<Uint8Array>;
 
-export type ModulatorNumericBool = 0 | 1;
-export type ModulatorSource = ModulatorSourceEnum | MIDIController;
+export type ModulatorSourceIndex = ModulatorSourceEnum | MIDIController;
 
 /**
  * A function to track progress during writing.
@@ -228,7 +232,20 @@ export interface DLSWriteOptions {
     progressFunction?: ProgressFunction;
 }
 
-export interface KeyRange {
+export interface GenericRange {
     min: number;
     max: number;
+}
+
+export interface DLSLoop {
+    loopType: DLSLoopType;
+    /*
+    Specifies the start point of the loop in samples as an absolute offset from the beginning of the
+    data in the <data-ck> subchunk of the <wave-list> wave file chunk.
+     */
+    loopStart: number;
+    /*
+    Specifies the length of the loop in samples.
+     */
+    loopLength: number;
 }

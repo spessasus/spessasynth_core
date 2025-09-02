@@ -44,11 +44,9 @@ export function getPGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
                     )
                 );
             }
-            if (!z.instrument) {
-                return size;
-            }
             // Write the instrument id
-            z.addGenerators(
+            // (Force, don't use .addGenerators which filters it out)
+            z.generators.push(
                 new Generator(
                     generatorTypes.instrument,
                     bank.instruments.indexOf(z.instrument),

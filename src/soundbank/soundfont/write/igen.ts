@@ -43,11 +43,9 @@ export function getIGEN(bank: BasicSoundBank): ReturnedExtendedSf2Chunks {
                     )
                 );
             }
-            if (!z.sample) {
-                return sum;
-            }
             // Add sample id
-            z.addGenerators(
+            // (Force, don't use .addGenerators which filters it out)
+            z.generators.push(
                 new Generator(
                     generatorTypes.sampleID,
                     bank.samples.indexOf(z.sample),

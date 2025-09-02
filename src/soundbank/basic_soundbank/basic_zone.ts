@@ -1,21 +1,25 @@
-import { type GeneratorType, generatorTypes } from "./generator_types";
+import {
+    generatorLimits,
+    type GeneratorType,
+    generatorTypes
+} from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
-import type { KeyRange } from "../types";
+import type { GenericRange } from "../types";
 
 export class BasicZone {
     /**
      * The zone's velocity range
      * min -1 means that it is a default value
      */
-    public velRange: KeyRange = { min: -1, max: 127 };
+    public velRange: GenericRange = { min: -1, max: 127 };
 
     /**
      * The zone's key range
      * min -1 means that it is a default value
      */
-    public keyRange: KeyRange = { min: -1, max: 127 };
+    public keyRange: GenericRange = { min: -1, max: 127 };
 
     /**
      * The zone's generators
@@ -35,17 +39,48 @@ export class BasicZone {
     }
 
     /**
+     * The current tuning in cents, taking in both coarse and fine generators.
+     */
+    public get fineTuning() {
+        const currentCoarse = this.getGenerator(generatorTypes.coarseTune, 0);
+        const currentFine = this.getGenerator(generatorTypes.fineTune, 0);
+        return currentCoarse * 100 + currentFine;
+    }
+
+    /**
+     * The current tuning in cents, taking in both coarse and fine generators.
+     */
+    public set fineTuning(tuningCents: number) {
+        const coarse = Math.trunc(tuningCents / 100);
+        const fine = tuningCents % 100;
+        this.setGenerator(generatorTypes.coarseTune, coarse);
+        this.setGenerator(generatorTypes.fineTune, fine);
+    }
+
+    /**
      * Adds a new generator at the start. Useful for prepending the range generators.
      */
     public prependGenerator(generator: Generator) {
         this.generators.unshift(generator);
     }
 
+    /**
+     * Adds to a given generator, or its default value.
+     */
+    public addToGenerator(type: GeneratorType, value: number, validate = true) {
+        const genValue = this.getGenerator(type, generatorLimits[type].def);
+        this.setGenerator(type, value + genValue, validate);
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */
-    public setGenerator(type: GeneratorType, value: number) {
+    public setGenerator(
+        type: GeneratorType,
+        value: number | undefined,
+        validate = true
+    ) {
         switch (type) {
             case generatorTypes.sampleID:
                 throw new Error("Use setSample()");
@@ -56,23 +91,36 @@ export class BasicZone {
             case generatorTypes.keyRange:
                 throw new Error("Set the range manually");
         }
-        const generator = this.generators.find((g) => g.generatorType === type);
-        if (generator) {
-            generator.generatorValue = value;
+        if (value === undefined) {
+            this.generators = this.generators.filter(
+                (g) => g.generatorType !== type
+            );
+            return;
+        }
+        const index = this.generators.findIndex(
+            (g) => g.generatorType === type
+        );
+        if (index > 0) {
+            this.generators[index] = new Generator(type, value, validate);
         } else {
-            this.addGenerators(new Generator(type, value));
+            this.addGenerators(new Generator(type, value, validate));
         }
     }
 
     /**
      * Adds generators to the zone.
-     * @param generators {}
+     * @param generators
      */
     public addGenerators(...generators: Generator[]) {
         generators.forEach((g) => {
             switch (g.generatorType) {
                 default:
                     this.generators.push(g);
+                    break;
+
+                case generatorTypes.sampleID:
+                case generatorTypes.instrument:
+                    // Don't add these, they already have their own properties
                     break;
 
                 case generatorTypes.velRange:
@@ -91,7 +139,7 @@ export class BasicZone {
         this.modulators.push(...modulators);
     }
 
-    public getGeneratorValue<K>(
+    public getGenerator<K>(
         generatorType: GeneratorType,
         notFoundValue: number | K
     ): number | K {
@@ -102,8 +150,10 @@ export class BasicZone {
     }
 
     public copyFrom(zone: BasicZone) {
-        this.generators = [...zone.generators];
-        this.modulators = zone.modulators.map((m) => Modulator.copy(m));
+        this.generators = zone.generators.map(
+            (g) => new Generator(g.generatorType, g.generatorValue, false)
+        );
+        this.modulators = zone.modulators.map((m) => m.copy());
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };
     }

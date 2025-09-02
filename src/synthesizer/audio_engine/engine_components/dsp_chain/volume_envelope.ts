@@ -1,7 +1,4 @@
-import {
-    decibelAttenuationToGain,
-    timecentsToSeconds
-} from "../unit_converter";
+import { decibelAttenuationToGain, timecentsToSeconds } from "../unit_converter";
 import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
@@ -180,8 +177,12 @@ export class VolumeEnvelope {
         env.decayDuration =
             timecentsToSamples(fullChange + keyNumAddition) * fraction;
 
+        // Min is set to -7200 prevent clicks
         env.releaseDuration = timecentsToSamples(
-            voice.modulatedGenerators[generatorTypes.releaseVolEnv]
+            Math.max(
+                -7200,
+                voice.modulatedGenerators[generatorTypes.releaseVolEnv]
+            )
         );
 
         // Calculate absolute end times for the values

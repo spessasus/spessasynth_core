@@ -44,6 +44,9 @@ export const modulatorTransformTypes = {
 export type ModulatorTransformType =
     (typeof modulatorTransformTypes)[keyof typeof modulatorTransformTypes];
 
+// Source curve type maps to a soundfont curve type in section 2.10, table 9
+export type DLSTransform = ModulatorCurveType;
+
 export const DLSSources = {
     none: 0x0,
     modLfo: 0x1,
@@ -90,6 +93,7 @@ export const DLSDestinations = {
 
     volEnvAttack: 0x206, // Volume envelope attack
     volEnvDecay: 0x207, // Volume envelope decay
+    reservedEG1: 0x208, // Reserved
     volEnvRelease: 0x209, // Volume envelope release
     volEnvSustain: 0x20a, // Volume envelope sustain
     volEnvDelay: 0x20b, // Volume envelope delay
@@ -97,6 +101,7 @@ export const DLSDestinations = {
 
     modEnvAttack: 0x30a, // Modulation envelope attack
     modEnvDecay: 0x30b, // Modulation envelope decay
+    reservedEG2: 0x30c, // Reserved
     modEnvRelease: 0x30d, // Modulation envelope release
     modEnvSustain: 0x30e, // Modulation envelope sustain
     modEnvDelay: 0x30f, // Modulation envelope delay
@@ -108,3 +113,10 @@ export const DLSDestinations = {
 
 export type DLSDestination =
     (typeof DLSDestinations)[keyof typeof DLSDestinations];
+
+export const DLSLoopTypes = {
+    forward: 0x0000,
+    loopAndRelease: 0x0001
+} as const;
+
+export type DLSLoopType = (typeof DLSLoopTypes)[keyof typeof DLSLoopTypes];

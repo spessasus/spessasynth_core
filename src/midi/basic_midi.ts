@@ -24,7 +24,7 @@ import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_edi
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes } from "./enums";
-import type { KeyRange } from "../soundbank/types";
+import type { GenericRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString } from "../utils/load_date";
@@ -75,7 +75,7 @@ export class BasicMIDI {
     /**
      * The MIDI key range used in the sequence, represented by a minimum and maximum note value.
      */
-    public keyRange: KeyRange = { min: 0, max: 127 };
+    public keyRange: GenericRange = { min: 0, max: 127 };
 
     /**
      * The tick position of the last voice event (such as note-on, note-off, or control change) in the sequence.
