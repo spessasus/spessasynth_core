@@ -1,13 +1,7 @@
 import { DLSVerifier } from "./dls_verifier";
 import { DownloadableSoundsSample } from "./sample";
 import { DownloadableSoundsInstrument } from "./instrument";
-import type {
-    DLSInfoFourCC,
-    DLSWriteOptions,
-    SF2VersionTag,
-    SoundBankInfoData,
-    SoundBankInfoFourCC
-} from "../types";
+import type { DLSInfoFourCC, DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundBankInfoFourCC } from "../types";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import {
@@ -17,15 +11,9 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../utils/riff_chunk";
-import {
-    getStringBytes,
-    readBinaryStringIndexed
-} from "../../utils/byte_functions/string";
+import { getStringBytes, readBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { parseDateString } from "../../utils/load_date";
-import {
-    readLittleEndianIndexed,
-    writeDword
-} from "../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, writeDword } from "../../utils/byte_functions/little_endian";
 import {
     SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
@@ -55,7 +43,7 @@ export class DownloadableSounds extends DLSVerifier {
         }
     };
 
-    public static read(buffer: ArrayBuffer) {
+    public static read(buffer: ArrayBuffer): DownloadableSounds {
         if (!buffer) {
             throw new Error("No data provided!");
         }
@@ -228,7 +216,7 @@ export class DownloadableSounds extends DLSVerifier {
                     SpessaSynthWarn(
                         `Invalid drum alias ${keyNum} to ${alias}: region does not exist.`
                     );
-                    return;
+                    continue;
                 }
                 const copied = DownloadableSoundsRegion.copyFrom(region);
                 copied.keyRange.max = keyNum;
