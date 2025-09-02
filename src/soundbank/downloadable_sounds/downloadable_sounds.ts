@@ -491,6 +491,7 @@ export class DownloadableSounds extends DLSVerifier {
         this.instruments.forEach((instrument) => {
             instrument.toSFPreset(soundBank);
         });
+        soundBank.flush();
 
         SpessaSynthInfo("%cConversion complete!", consoleColors.recognized);
         SpessaSynthGroupEnd();
