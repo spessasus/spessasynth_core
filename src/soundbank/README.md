@@ -3,9 +3,10 @@
 The code here is responsible for parsing the SoundFont2/DLS file and
 providing an easy way to get the data out.
 
-- `basic_soundfont` folder contains the classes that represent a sound bank file. 
-It also contains the code for writing the files.
+- `sound_bank_loader.ts` is the entry point to loading sound bank files.
 
-- `read_sf2` folder contains the code for reading a `.sf2` file.
+- `basic_soundbank` folder contains the classes that represent a sound bank file.
 
-- `dls` folder contains the code for reading a `.dls` file (and converting in into a soundfont representation).
+- `soundfont` folder contains the code for reading and writing a `.sf2` file.
+
+- `dls` folder contains the code for reading and writing a `.dls` file (and converting in into a BasicSoundBank representation).

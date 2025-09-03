@@ -30,7 +30,11 @@ In spessasynth_lib: `npm uninstall spessasynth_core; npm install /path/to/your/f
 
 Then in SpessaSynth: `npm uninstall spessasynth_lib; npm install /path/to/your/file.tgz`
 
-!!! Caution
+!!! Tip
+
+    Consider making a shell script to automate this!
+
+!!! Danger
 
     Source maps in audioWorklet don't seem to work on Firefox.
     You must use a Chromium-based browser instead.
@@ -38,6 +42,3 @@ Then in SpessaSynth: `npm uninstall spessasynth_lib; npm install /path/to/your/f
 ### Create a pull request
 
 After everything works as planned, open the pull request.
-
-*Note: consider running `npm run release` in both `spessasynth_lib` and `SpessaSynth` to disable the development mode
-once you are done.*

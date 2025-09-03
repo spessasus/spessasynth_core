@@ -18,7 +18,6 @@ const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer);
 
 ### tracks
 
-
 The tracks in the sequence, represented as an array of [MIDI tracks](midi-track.md)
 
 ### timeDivision
@@ -249,7 +248,7 @@ This updates parameters like `fistNoteOn`, `lastVoiceEventTick` or `loop`.
 midi.flush();
 ```
 
-!!! Caution
+!!! Warning
 
     Not calling `flush` after making significant changes to the track may result in unexpected behavior.
 
@@ -293,7 +292,7 @@ See [Writing MIDI files](../writing-files/midi.md#writemidi) for more info.
 midi.writeMIDI();
 ```
 
-The returned value is an `ArrayBuffer` - a binary representation of the .mid-file.
+The returned value is an `ArrayBuffer` - a binary representation of the file.
 
 ### writeRMIDI
 
@@ -308,6 +307,9 @@ const rmidiBinary = midi.writeRMIDI(
 ```
 
 - See [Writing MIDI files](../writing-files/midi.md#writermidi) for more info.
+
+
+The returned value is an `ArrayBuffer` - a binary representation of the file.
 
 ### modify
 

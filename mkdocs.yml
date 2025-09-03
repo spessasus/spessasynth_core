@@ -78,7 +78,9 @@ nav:
           - spessa-synth-processor/synthesizer-snapshot.md
           - spessa-synth-processor/event-types.md
           - spessa-synth-processor/master-parameter.md
-      - SpessaSynthSequencer: spessa-synth-sequencer/index.md
+      - SpessaSynthSequencer:
+          - spessa-synth-sequencer/index.md
+          - spessa-synth-sequencer/event-types.md
       - Sound banks:
           - sound-bank/index.md
           - sound-bank/preset.md

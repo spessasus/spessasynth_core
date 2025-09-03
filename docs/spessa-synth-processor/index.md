@@ -59,7 +59,7 @@ synth.renderAudio(outputs, reverb, chorus, startIndex = 0, sampleCount = all);
 
 All `Float32Array`s must be the same length.
 
-!!! Caution
+!!! Warning
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
@@ -87,7 +87,7 @@ synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIn
 
 All `Float32Array`s must be the same length.
 
-!!! Caution
+!!! Warning
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.

@@ -66,7 +66,7 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 - rmidInfoChunks - all the default RMIDI info chunk codes.
 - midiControllers - an enum for all MIDI controllers.
-- messageTypes - an enum for all the MIDI event status bytes recognized.
+- midiMessageTypes - an enum for all the MIDI event status bytes recognized.
 
 ### Others
 

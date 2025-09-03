@@ -4,7 +4,7 @@ This class represents a single MIDI message.
 
 ## Properties
 
-### Ticks
+### ticks
 
 The absolute amount of MIDI Ticks from the start of the track.
 

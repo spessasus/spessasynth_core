@@ -140,7 +140,7 @@ It allows you to:
 #### Read and write SoundFont2 files
 
 - **Easy info access:** *Just
-  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundfontinfo)*
+  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundbankinfo)*
 - **Smart trimming:** Trim the sound bank to only include samples used in the MIDI *(down to key and velocity!)*
 - **SF3 conversion:** *Compress SoundFont2 files to SoundFont3 with variable quality!*
 - **Easy saving:** *Also just [one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)*

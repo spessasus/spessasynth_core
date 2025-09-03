@@ -26,7 +26,7 @@ export class SpessaSynthSequencer {
     /**
      * The synthesizer connected to the sequencer.
      */
-    public synth: SpessaSynthProcessor;
+    public readonly synth: SpessaSynthProcessor;
     /**
      * If the MIDI messages should be sent to an event instead of the synth.
      * This is used by spessasynth_lib to pass them over to Web MIDI API.
@@ -51,7 +51,7 @@ export class SpessaSynthSequencer {
     public onEventCall?: (event: SequencerEvent) => unknown;
     /**
      * Processes a single MIDI tick.
-     * Call this every rendering quantum to process the sequencer events in real-time.
+     * You should call this every rendering quantum to process the sequencer events in real-time.
      */
     public processTick: typeof processTick = processTick.bind(
         this

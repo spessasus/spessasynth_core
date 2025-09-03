@@ -86,17 +86,17 @@ Below is a basic example of writing a modified MIDI file
 
 ```ts
 // create your midi and synthesizer
-const midi = new MIDI(yourBufferGoesHere);
-const synth = new Synthetizer(yourContext, yourSoundfontBuffer);
+const midi = BasicMIDI.fromArrayBuffer(yourBufferGoesHere);
+const synth = new SpessaSynthProcessor(44100);
 
 // ...
 
 // get the snapshot and apply it
-const snapshot = await synth.getSnapshot();
-mid.applySnapshot(snapshot);
+const snapshot = SynthesizerSnapshot.create(synth);
+midi.applySnapshot(snapshot);
 
 // write midi 
-const midiBinary = midi.write();
+const midiBinary = midi.writeMIDI();
 
 // save the file
 const blob = new Blob([midiBinary.buffer], {type: "audio/midi"});
@@ -129,7 +129,7 @@ The binary sound bank to embed into the file.
 
 #### midi
 
-`MIDI` to embed.
+`BasicMIDI` to embed.
 
 #### soundfont
 
@@ -166,7 +166,7 @@ from the MIDI.
 - midiEncoding - `string` - The encoding of the inner MIDI file. Make sure to pick a value that is acceptable by the
   `TextDecoder`
 
-!!! Caution
+!!! Warning
 
     Providing *any* of the metadata fields overrides the encoding with `utf-8`.
     This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
@@ -207,13 +207,13 @@ const sfInput = document.getElementById("soundfont_upload");
 const midiInput = document.getElementById("midi_upload");
 document.getElementById("export").onchange = async () => {
     // get the files
-    const soundBank = loadSoundFont(await sfInput.files[0].arrayBuffer());
-    const midi = new MIDI(await midiInput.files[0].arrayBuffer());
+    const soundBank = SoundBankLoader.fromArrayBuffer(await sfInput.files[0].arrayBuffer());
+    const midi = BasicMIDI.fromArrayBuffer(await midiInput.files[0].arrayBuffer());
 
     // trim the soundfont
     soundBank.trimSoundBank(soundBank);
     // write out with compression to save space (0.5 is medium quality)
-    const soundfontBinary = await soundBank.write({
+    const soundfontBinary = await soundBank.writeSF2({
         compress: true,
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
