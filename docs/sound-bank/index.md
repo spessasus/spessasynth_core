@@ -1,4 +1,4 @@
-# Sound Bank
+# BasicSoundBank
 
 This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
 
@@ -28,7 +28,7 @@ The returned value is the parsed `BasicSoundBank`, described below.
 
 ### getPreset
 
-Returns the matching [`Preset` class](preset.md) instance.
+Returns the matching [`BasicPreset` class](preset.md) instance.
 
 ```ts
 const preset = soundBank.getPreset(bankNr, presetNr);

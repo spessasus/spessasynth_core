@@ -11,14 +11,14 @@ export class ReadGenerator extends Generator {
     public constructor(dataArray: IndexedByteArray) {
         // Note: We skip validation here as some sf2 files use invalid values that end up being correct after applying limits at the modulator level.
         // Test case: LiveHQ Natural soundfont GM, "Brass" preset (negative attenuation with quiet samples)
-        super();
         // 4 bytes:
         // Type, type, type, value
         const i = dataArray.currentIndex;
-        this.generatorType = ((dataArray[i + 1] << 8) |
+        const generatorType = ((dataArray[i + 1] << 8) |
             dataArray[i]) as GeneratorType;
-        this.generatorValue = signedInt16(dataArray[i + 2], dataArray[i + 3]);
+        const generatorValue = signedInt16(dataArray[i + 2], dataArray[i + 3]);
         dataArray.currentIndex += 4;
+        super(generatorType, generatorValue, false);
     }
 }
 

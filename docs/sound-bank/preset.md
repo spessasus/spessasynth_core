@@ -1,66 +1,38 @@
-# Preset class
+# BasicPreset
 
-Represents a singe SoundFont2 preset.
+Represents a single preset (MIDI instrument)
+
+
+## Properties
+
+!!! Note
+
+    This class is also a [MIDI patch](../spessa-synth-processor/midi-patch.md) and contains all of its properties.
+
+### name
+
+The preset's name as a string.
+
+### globalZone
+
+A 
 
 ## Methods
 
 ### getSynthesisData
 
-Returns the samples and their generators (and modulators) for the given midiNote.
-The name is kept from the time that SpessaSynth did not support modulators.
+Returns the SF2 synthesis data for a given note and velocity.
 
 ```ts
-const samplesAndGenerators = preset.getSampleAndGenerators(midiNote);
+const synthesisData = preset.getSynthesisData(midiNote, velocity);
 ```
 
-- midiNote - the note to get generators from. Ranges from 0 to 127.
+- midiNote - the note to get data for. Ranges from 0 to 127.
+- velocity - the velocity to get data for. Ranges from 0 to 127.
 
-The returned value is as follows:
+The returned value is an array of objects:
 
-```ts
-const samplesAndGenerators = [
-    {
-        instrumentGenerators: [Generator, /*...*/ Generator], // only the instrument generators, local replace global
-        presetGenerators: [Generator, /*...*/ Generator], // only the preset generators, local replace global
-        modulators: [Modulator, /*...*/ Modulator], // summed and replaced modulators, ready to use
-        sample: Sample // the sample object
-    },
-
-    /*...*/
-
-    {
-        instrumentGenerators: [Generator, /*...*/ Generator],
-        presetGenerators: [Generator, /*...*/ Generator],
-        modulators: [Modulator, /*...*/ Modulator], // summed and replaced modulators, ready to use
-        sample: Sample
-    }
-];
-```
-
-More info about the `Generator` class is [here](generator.md)
-
-## Properties
-
-### name
-
-The preset's name as string.
-
-```ts
-console.log(preset.name); // for example: "Drawbar Organ"
-```
-
-### bank
-
-The preset's bank number. Used in MIDI `Bank Select` controller.
-
-```ts
-console.log(preset.bank); // for example: 0
-```
-
-### program
-
-The preset's MIDI program number. Used in MIDI `Program Change` message.
-
-```ts
-console.log(preset.program); // for example: 16
-```
+- instrumentGenerators - an array of [`Generator`](generator.md)s.
+- presetGenerators - an array of [`Generator`](generator.md)s.
+- modulators - an array of [`Generator`](modulator.md)s.
+- sample - a [`BasicSample`](sample.md)

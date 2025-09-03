@@ -10,23 +10,23 @@ import type { GenericRange } from "../types";
 
 export class BasicZone {
     /**
-     * The zone's velocity range
+     * The zone's velocity range.
      * min -1 means that it is a default value
      */
     public velRange: GenericRange = { min: -1, max: 127 };
 
     /**
-     * The zone's key range
-     * min -1 means that it is a default value
+     * The zone's key range.
+     * min -1 means that it is a default value.
      */
     public keyRange: GenericRange = { min: -1, max: 127 };
 
     /**
-     * The zone's generators
+     * The zone's generators.
      */
     public generators: Generator[] = [];
     /**
-     * The zone's modulators
+     * The zone's modulators.
      */
     public modulators: Modulator[] = [];
 

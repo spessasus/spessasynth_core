@@ -81,10 +81,11 @@ nav:
       - SpessaSynthSequencer: spessa-synth-sequencer/index.md
       - Sound banks:
           - sound-bank/index.md
-          - Preset: sound-bank/preset.md
-          - Sample: sound-bank/sample.md
-          - Modulator: sound-bank/modulator.md
-          - Generator: sound-bank/generator.md
+          - sound-bank/preset.md
+          - sound-bank/sample.md
+          - sound-bank/zone.md
+          - sound-bank/modulator.md
+          - sound-bank/generator.md
       - MIDI:
           - midi/index.md
           - midi/midi-message.md

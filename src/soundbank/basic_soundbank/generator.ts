@@ -24,11 +24,7 @@ export class Generator {
      * @param value generator value
      * @param validate if the limits should be validated
      */
-    public constructor(
-        type: GeneratorType = generatorTypes.INVALID,
-        value = 0,
-        validate = true
-    ) {
+    public constructor(type: GeneratorType, value: number, validate = true) {
         this.generatorType = type;
         if (value === undefined) {
             throw new Error("No value provided.");
