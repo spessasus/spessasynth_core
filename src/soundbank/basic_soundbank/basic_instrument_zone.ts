@@ -1,6 +1,9 @@
 import { BasicZone } from "./basic_zone";
 import type { BasicInstrument } from "./basic_instrument";
 import type { BasicSample } from "./basic_sample";
+import { Generator } from "./generator";
+import type { BasicSoundBank } from "./basic_soundbank";
+import { generatorTypes } from "./generator_types";
 
 export class BasicInstrumentZone extends BasicZone {
     /**
@@ -48,5 +51,21 @@ export class BasicInstrumentZone extends BasicZone {
         }
         this._sample = sample;
         sample.linkTo(this.parentInstrument);
+    }
+
+    public getGenCount(): number {
+        return super.getGenCount() + 1; // SampleID generator
+    }
+
+    public getSFGenerators(bank: BasicSoundBank): Generator[] {
+        const gens = super.getSFGenerators(bank);
+        gens.push(
+            new Generator(
+                generatorTypes.sampleID,
+                bank.samples.indexOf(this.sample),
+                false
+            )
+        );
+        return gens;
     }
 }

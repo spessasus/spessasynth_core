@@ -7,6 +7,15 @@ import { Generator } from "./generator";
 import { Modulator } from "./modulator";
 
 import type { GenericRange } from "../types";
+import type { IndexedByteArray } from "../../utils/indexed_array";
+import type {
+    ExtendedSF2Chunks,
+    SoundFontWriteIndexes
+} from "../soundfont/write/types";
+import type { BasicSoundBank } from "./basic_soundbank";
+import { writeWord } from "../../utils/byte_functions/little_endian";
+
+export const BAG_BYTE_SIZE = 4;
 
 export class BasicZone {
     /**
@@ -55,13 +64,6 @@ export class BasicZone {
         const fine = tuningCents % 100;
         this.setGenerator(generatorTypes.coarseTune, coarse);
         this.setGenerator(generatorTypes.fineTune, fine);
-    }
-
-    /**
-     * Adds a new generator at the start. Useful for prepending the range generators.
-     */
-    public prependGenerator(generator: Generator) {
-        this.generators.unshift(generator);
     }
 
     /**
@@ -158,5 +160,86 @@ export class BasicZone {
         );
         this.velRange = { ...zone.velRange };
         this.keyRange = { ...zone.keyRange };
+    }
+
+    public getGenCount() {
+        let count = this.generators.filter(
+            (g) =>
+                g.generatorType !== generatorTypes.sampleID &&
+                g.generatorType !== generatorTypes.instrument &&
+                g.generatorType !== generatorTypes.keyRange &&
+                g.generatorType !== generatorTypes.velRange
+        ).length;
+        if (this.hasVelRange) {
+            count++;
+        }
+        if (this.hasKeyRange) {
+            count++;
+        }
+        return count;
+    }
+
+    public write(
+        genData: IndexedByteArray,
+        modData: IndexedByteArray,
+        bagData: ExtendedSF2Chunks,
+        indexes: SoundFontWriteIndexes,
+        bank: BasicSoundBank
+    ) {
+        const generatorIndex = indexes.gen;
+        const modulatorIndex = indexes.mod;
+        // Bottom WORD: regular ibag
+        writeWord(bagData.pdta, generatorIndex & 0xffff);
+        writeWord(bagData.pdta, modulatorIndex & 0xffff);
+        // Top WORD: extended ibag
+        writeWord(bagData.xdta, generatorIndex >> 16);
+        writeWord(bagData.xdta, modulatorIndex >> 16);
+        indexes.bag++;
+
+        // Write generators and modulators
+        const gens = this.getSFGenerators(bank);
+        gens.forEach((g) => g.write(genData, indexes));
+        this.modulators.forEach((m) => m.write(modData, indexes));
+    }
+
+    /**
+     * Filters the generators and prepends the range generators.
+     */
+    protected getSFGenerators(bank: BasicSoundBank) {
+        const generators = this.generators.filter(
+            (g) =>
+                g.generatorType !== generatorTypes.sampleID &&
+                g.generatorType !== generatorTypes.instrument &&
+                g.generatorType !== generatorTypes.keyRange &&
+                g.generatorType !== generatorTypes.velRange
+        );
+
+        // Instrument and preset zones use this parameter!
+        // So "use" it here to please eslint
+        if (!bank) {
+            throw new Error("No bank provided! ");
+        }
+        void bank;
+
+        // Unshift vel then key (to make key first)
+        if (this.hasVelRange) {
+            generators.unshift(
+                new Generator(
+                    generatorTypes.velRange,
+                    (this.velRange.max << 8) | Math.max(this.velRange.min, 0),
+                    false
+                )
+            );
+        }
+        if (this.hasKeyRange) {
+            generators.unshift(
+                new Generator(
+                    generatorTypes.keyRange,
+                    (this.keyRange.max << 8) | Math.max(this.keyRange.min, 0),
+                    false
+                )
+            );
+        }
+        return generators;
     }
 }

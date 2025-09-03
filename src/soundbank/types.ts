@@ -2,7 +2,6 @@ import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import type { Generator } from "./basic_soundbank/generator";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
-import type { IndexedByteArray } from "../utils/indexed_array";
 import type { MIDIController } from "../midi/enums";
 import type { DLSLoopType, ModulatorSourceEnum } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
@@ -215,26 +214,6 @@ export interface SoundFont2WriteOptions {
      * If an SF3 bank should be decompressed back to SF2. Not recommended.
      */
     decompress: boolean;
-}
-
-/**
- * Returned structure containing extended SF2 chunks.
- */
-export interface ReturnedExtendedSf2Chunks {
-    /**
-     * The PDTA part of the chunk.
-     */
-    pdta: IndexedByteArray;
-
-    /**
-     * The XDTA (https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md) part of the chunk.
-     */
-    xdta: IndexedByteArray;
-
-    /**
-     * The highest index written (0 if not applicable). Used for determining whether the XDTA chunk is necessary.
-     */
-    highestIndex: number;
 }
 
 /**

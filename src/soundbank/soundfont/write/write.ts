@@ -5,16 +5,8 @@ import {
 } from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { consoleColors } from "../../../utils/other";
-import { getIGEN } from "./igen";
 import { getSDTA } from "./sdta";
 import { getSHDR } from "./shdr";
-import { getIMOD } from "./imod";
-import { getIBAG } from "./ibag";
-import { getINST } from "./inst";
-import { getPGEN } from "./pgen";
-import { getPMOD } from "./pmod";
-import { getPBAG } from "./pbag";
-import { getPHDR } from "./phdr";
 import {
     writeLittleEndianIndexed,
     writeWord
@@ -32,13 +24,14 @@ import {
 } from "../../basic_soundbank/modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
-    ReturnedExtendedSf2Chunks,
     SF2InfoFourCC,
     SoundBankInfoData,
     SoundBankInfoFourCC,
     SoundFont2WriteOptions
 } from "../../types";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
+import type { ExtendedSF2Chunks } from "./types";
+import { writeSF2Elements } from "./write_sf2_elements";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     compress: false,
@@ -51,12 +44,12 @@ export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
 
 /**
  * Writes the sound bank as an SF2 file.
- * @param targetSoundBank
+ * @param bank
  * @param writeOptions the options for writing.
  * @returns the binary file data.
  */
 export async function writeSF2Internal(
-    targetSoundBank: BasicSoundBank,
+    bank: BasicSoundBank,
     writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
 ): Promise<ArrayBuffer> {
     const options: SoundFont2WriteOptions = fillWithDefaults(
@@ -86,19 +79,16 @@ export async function writeSF2Internal(
      * Write INFO
      */
     const infoArrays: IndexedByteArray[] = [];
-    targetSoundBank.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
-    if (
-        options?.compress ||
-        targetSoundBank.samples.some((s) => s.isCompressed)
-    ) {
+    bank.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    if (options?.compress || bank.samples.some((s) => s.isCompressed)) {
         // Set version to 3
-        targetSoundBank.soundBankInfo.version.major = 3;
-        targetSoundBank.soundBankInfo.version.minor = 0;
+        bank.soundBankInfo.version.major = 3;
+        bank.soundBankInfo.version.minor = 0;
     }
     if (options?.decompress) {
         // Set version to 2.4
-        targetSoundBank.soundBankInfo.version.major = 2;
-        targetSoundBank.soundBankInfo.version.minor = 4;
+        bank.soundBankInfo.version.major = 2;
+        bank.soundBankInfo.version.minor = 4;
     }
 
     const writeSF2Info = (type: SF2InfoFourCC, data: string) => {
@@ -112,26 +102,26 @@ export async function writeSF2Internal(
 
     // Write versions
     const ifilData = new IndexedByteArray(4);
-    writeWord(ifilData, targetSoundBank.soundBankInfo.version.major);
-    writeWord(ifilData, targetSoundBank.soundBankInfo.version.minor);
+    writeWord(ifilData, bank.soundBankInfo.version.major);
+    writeWord(ifilData, bank.soundBankInfo.version.minor);
     infoArrays.push(writeRIFFChunkRaw("ifil", ifilData));
 
-    if (targetSoundBank.soundBankInfo.romVersion) {
+    if (bank.soundBankInfo.romVersion) {
         const ifilData = new IndexedByteArray(4);
-        writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.major);
-        writeWord(ifilData, targetSoundBank.soundBankInfo.romVersion.minor);
+        writeWord(ifilData, bank.soundBankInfo.romVersion.major);
+        writeWord(ifilData, bank.soundBankInfo.romVersion.minor);
         infoArrays.push(writeRIFFChunkRaw("iver", ifilData));
     }
 
     // Special comment case: merge subject and comment
     const commentText =
-        (targetSoundBank.soundBankInfo?.comment ?? "") +
-        (targetSoundBank.soundBankInfo.subject
+        (bank.soundBankInfo?.comment ?? "") +
+        (bank.soundBankInfo.subject
             ? `
-${targetSoundBank.soundBankInfo.subject}`
+${bank.soundBankInfo.subject}`
             : "");
 
-    for (const [t, d] of Object.entries(targetSoundBank.soundBankInfo)) {
+    for (const [t, d] of Object.entries(bank.soundBankInfo)) {
         const type = t as SoundBankInfoFourCC;
         const data = d as SoundBankInfoData[SoundBankInfoFourCC];
         if (!data) {
@@ -182,7 +172,7 @@ ${targetSoundBank.soundBankInfo.subject}`
     }
 
     // Do not write unchanged default modulators
-    const unchangedDefaultModulators = targetSoundBank.defaultModulators.some(
+    const unchangedDefaultModulators = bank.defaultModulators.some(
         (mod) =>
             SPESSASYNTH_DEFAULT_MODULATORS.findIndex((m) =>
                 Modulator.isIdentical(m, mod, true)
@@ -190,7 +180,7 @@ ${targetSoundBank.soundBankInfo.subject}`
     );
 
     if (unchangedDefaultModulators && options?.writeDefaultModulators) {
-        const mods = targetSoundBank.defaultModulators;
+        const mods = bank.defaultModulators;
         SpessaSynthInfo(
             `%cWriting %c${mods.length}%c default modulators...`,
             consoleColors.info,
@@ -215,7 +205,7 @@ ${targetSoundBank.soundBankInfo.subject}`
     const smplStartOffsets: number[] = [];
     const smplEndOffsets: number[] = [];
     const sdtaChunk = await getSDTA(
-        targetSoundBank,
+        bank,
         smplStartOffsets,
         smplEndOffsets,
         options.compress,
@@ -229,37 +219,28 @@ ${targetSoundBank.soundBankInfo.subject}`
     // Go in reverse so the indexes are correct
     // Instruments
     SpessaSynthInfo("%cWriting SHDR...", consoleColors.info);
-    const shdrChunk = getSHDR(
-        targetSoundBank,
-        smplStartOffsets,
-        smplEndOffsets
-    );
-    SpessaSynthInfo("%cWriting IGEN...", consoleColors.info);
-    const igenChunk = getIGEN(targetSoundBank);
-    SpessaSynthInfo("%cWriting IMOD...", consoleColors.info);
-    const imodChunk = getIMOD(targetSoundBank);
-    SpessaSynthInfo("%cWriting IBAG...", consoleColors.info);
-    const ibagChunk = getIBAG(targetSoundBank);
-    SpessaSynthInfo("%cWriting INST...", consoleColors.info);
-    const instChunk = getINST(targetSoundBank);
-    SpessaSynthInfo("%cWriting PGEN...", consoleColors.info);
-    // Presets
-    const pgenChunk = getPGEN(targetSoundBank);
-    SpessaSynthInfo("%cWriting PMOD...", consoleColors.info);
-    const pmodChunk = getPMOD(targetSoundBank);
-    SpessaSynthInfo("%cWriting PBAG...", consoleColors.info);
-    const pbagChunk = getPBAG(targetSoundBank);
-    SpessaSynthInfo("%cWriting PHDR...", consoleColors.info);
-    const phdrChunk = getPHDR(targetSoundBank);
-    const chunks: ReturnedExtendedSf2Chunks[] = [
-        phdrChunk,
-        pbagChunk,
-        pmodChunk,
-        pgenChunk,
-        instChunk,
-        ibagChunk,
-        imodChunk,
-        igenChunk,
+    const shdrChunk = getSHDR(bank, smplStartOffsets, smplEndOffsets);
+
+    // Note:
+    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+
+    SpessaSynthGroup("%cWriting instruments...", consoleColors.info);
+    const instData = writeSF2Elements(bank, false);
+    SpessaSynthGroupEnd();
+
+    SpessaSynthGroup("%cWriting presets...", consoleColors.info);
+    const presData = writeSF2Elements(bank, true);
+    SpessaSynthGroupEnd();
+
+    const chunks: ExtendedSF2Chunks[] = [
+        presData.hdr,
+        presData.bag,
+        presData.mod,
+        presData.gen,
+        instData.hdr,
+        instData.bag,
+        instData.mod,
+        instData.gen,
         shdrChunk
     ];
     // Combine in the sfspec order
@@ -268,18 +249,18 @@ ${targetSoundBank.soundBankInfo.subject}`
         chunks.map((c) => c.pdta),
         true
     );
-    const maxIndex = Math.max(...chunks.map((c) => c.highestIndex));
 
     const writeXdta =
         options.writeExtendedLimits &&
-        (maxIndex > 0xffff ||
-            targetSoundBank.presets.some((p) => p.name.length > 20) ||
-            targetSoundBank.instruments.some((i) => i.name.length > 20) ||
-            targetSoundBank.samples.some((s) => s.name.length > 20));
+        (instData.writeXdta ||
+            presData.writeXdta ||
+            bank.presets.some((p) => p.name.length > 20) ||
+            bank.instruments.some((i) => i.name.length > 20) ||
+            bank.samples.some((s) => s.name.length > 20));
 
     if (writeXdta) {
         SpessaSynthInfo(
-            `%cWriting the xdta chunk! Max index: %c${maxIndex}`,
+            `%cWriting the xdta chunk as writeExendedLimits is enabled and at least one condition was met.`,
             consoleColors.info,
             consoleColors.value
         );

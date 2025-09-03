@@ -7,13 +7,14 @@ import {
 import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
 import { SF3_BIT_FLIT } from "../read/samples";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
-import type { ReturnedExtendedSf2Chunks } from "../../types";
+
+import type { ExtendedSF2Chunks } from "./types";
 
 export function getSHDR(
     bank: BasicSoundBank,
     smplStartOffsets: number[],
     smplEndOffsets: number[]
-): ReturnedExtendedSf2Chunks {
+): ExtendedSF2Chunks {
     const sampleLength = 46;
     const shdrSize = sampleLength * (bank.samples.length + 1); // +1 because EOP
     const shdrData = new IndexedByteArray(shdrSize);
@@ -72,7 +73,6 @@ export function getSHDR(
     const xshdr = writeRIFFChunkRaw("shdr", xshdrData);
     return {
         pdta: shdr,
-        xdta: xshdr,
-        highestIndex: maxSampleLink
+        xdta: xshdr
     };
 }
