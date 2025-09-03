@@ -47,7 +47,7 @@ export type ModulatorTransformType =
 // Source curve type maps to a soundfont curve type in section 2.10, table 9
 export type DLSTransform = ModulatorCurveType;
 
-export const DLSSources = {
+export const dlsSources = {
     none: 0x0,
     modLfo: 0x1,
     velocity: 0x2,
@@ -72,9 +72,9 @@ export const DLSSources = {
     coarseTune: 0x102
 } as const;
 
-export type DLSSource = (typeof DLSSources)[keyof typeof DLSSources];
+export type DLSSource = (typeof dlsSources)[keyof typeof dlsSources];
 
-export const DLSDestinations = {
+export const dlsDestinations = {
     none: 0x0, // No destination
     gain: 0x1, // Linear gain
     reserved: 0x2, // Reserved
@@ -112,7 +112,7 @@ export const DLSDestinations = {
 } as const;
 
 export type DLSDestination =
-    (typeof DLSDestinations)[keyof typeof DLSDestinations];
+    (typeof dlsDestinations)[keyof typeof dlsDestinations];
 
 export const DLSLoopTypes = {
     forward: 0x0000,

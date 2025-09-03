@@ -13,7 +13,7 @@ export class Generator {
     /**
      * The generator's SF2 type.
      */
-    public generatorType: GeneratorType = generatorTypes.INVALID;
+    public generatorType: GeneratorType;
     /**
      * The generator's 16-bit value.
      */

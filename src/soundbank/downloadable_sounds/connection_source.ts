@@ -1,6 +1,6 @@
 import {
     type DLSSource,
-    DLSSources,
+    dlsSources,
     type DLSTransform,
     modulatorCurveTypes,
     type ModulatorSourceEnum,
@@ -17,7 +17,7 @@ export class ConnectionSource {
     public invert: boolean;
 
     public constructor(
-        source: DLSSource = DLSSources.none,
+        source: DLSSource = dlsSources.none,
         transform: DLSTransform = modulatorCurveTypes.linear,
         bipolar = false,
         invert = false
@@ -30,8 +30,8 @@ export class ConnectionSource {
 
     private get sourceName() {
         return (
-            Object.keys(DLSSources).find(
-                (k) => DLSSources[k as keyof typeof DLSSources] === this.source
+            Object.keys(dlsSources).find(
+                (k) => dlsSources[k as keyof typeof dlsSources] === this.source
             ) ?? this.source.toString()
         );
     }
@@ -64,57 +64,57 @@ export class ConnectionSource {
             // DLS only supports a specific set of controllers
             switch (source.index as MIDIController) {
                 case midiControllers.modulationWheel:
-                    sourceEnum = DLSSources.modulationWheel;
+                    sourceEnum = dlsSources.modulationWheel;
                     break;
 
                 case midiControllers.mainVolume:
-                    sourceEnum = DLSSources.volume;
+                    sourceEnum = dlsSources.volume;
                     break;
 
                 case midiControllers.pan:
-                    sourceEnum = DLSSources.pan;
+                    sourceEnum = dlsSources.pan;
                     break;
 
                 case midiControllers.expressionController:
-                    sourceEnum = DLSSources.expression;
+                    sourceEnum = dlsSources.expression;
                     break;
 
                 case midiControllers.chorusDepth:
-                    sourceEnum = DLSSources.chorus;
+                    sourceEnum = dlsSources.chorus;
                     break;
 
                 case midiControllers.reverbDepth:
-                    sourceEnum = DLSSources.reverb;
+                    sourceEnum = dlsSources.reverb;
                     break;
             }
         } else {
             switch (source.index as ModulatorSourceEnum) {
                 case modulatorSources.noController:
-                    sourceEnum = DLSSources.none;
+                    sourceEnum = dlsSources.none;
                     break;
 
                 case modulatorSources.noteOnKeyNum:
-                    sourceEnum = DLSSources.keyNum;
+                    sourceEnum = dlsSources.keyNum;
                     break;
 
                 case modulatorSources.noteOnVelocity:
-                    sourceEnum = DLSSources.velocity;
+                    sourceEnum = dlsSources.velocity;
                     break;
 
                 case modulatorSources.pitchWheel:
-                    sourceEnum = DLSSources.pitchWheel;
+                    sourceEnum = dlsSources.pitchWheel;
                     break;
 
                 case modulatorSources.pitchWheelRange:
-                    sourceEnum = DLSSources.pitchWheelRange;
+                    sourceEnum = dlsSources.pitchWheelRange;
                     break;
 
                 case modulatorSources.polyPressure:
-                    sourceEnum = DLSSources.polyPressure;
+                    sourceEnum = dlsSources.polyPressure;
                     break;
 
                 case modulatorSources.channelPressure:
-                    sourceEnum = DLSSources.channelPressure;
+                    sourceEnum = dlsSources.channelPressure;
             }
         }
         // Unable to convert into DLS
@@ -147,56 +147,56 @@ export class ConnectionSource {
         let isCC = false;
         switch (this.source) {
             default:
-            case DLSSources.modLfo:
-            case DLSSources.vibratoLfo:
-            case DLSSources.coarseTune:
-            case DLSSources.fineTune:
-            case DLSSources.modEnv:
+            case dlsSources.modLfo:
+            case dlsSources.vibratoLfo:
+            case dlsSources.coarseTune:
+            case dlsSources.fineTune:
+            case dlsSources.modEnv:
                 return undefined; // Cannot be this in sf2
 
-            case DLSSources.keyNum:
+            case dlsSources.keyNum:
                 sourceEnum = modulatorSources.noteOnKeyNum;
                 break;
-            case DLSSources.none:
+            case dlsSources.none:
                 sourceEnum = modulatorSources.noController;
                 break;
-            case DLSSources.modulationWheel:
+            case dlsSources.modulationWheel:
                 sourceEnum = midiControllers.modulationWheel;
                 isCC = true;
                 break;
-            case DLSSources.pan:
+            case dlsSources.pan:
                 sourceEnum = midiControllers.pan;
                 isCC = true;
                 break;
-            case DLSSources.reverb:
+            case dlsSources.reverb:
                 sourceEnum = midiControllers.reverbDepth;
                 isCC = true;
                 break;
-            case DLSSources.chorus:
+            case dlsSources.chorus:
                 sourceEnum = midiControllers.chorusDepth;
                 isCC = true;
                 break;
-            case DLSSources.expression:
+            case dlsSources.expression:
                 sourceEnum = midiControllers.expressionController;
                 isCC = true;
                 break;
-            case DLSSources.volume:
+            case dlsSources.volume:
                 sourceEnum = midiControllers.mainVolume;
                 isCC = true;
                 break;
-            case DLSSources.velocity:
+            case dlsSources.velocity:
                 sourceEnum = modulatorSources.noteOnVelocity;
                 break;
-            case DLSSources.polyPressure:
+            case dlsSources.polyPressure:
                 sourceEnum = modulatorSources.polyPressure;
                 break;
-            case DLSSources.channelPressure:
+            case dlsSources.channelPressure:
                 sourceEnum = modulatorSources.channelPressure;
                 break;
-            case DLSSources.pitchWheel:
+            case dlsSources.pitchWheel:
                 sourceEnum = modulatorSources.pitchWheel;
                 break;
-            case DLSSources.pitchWheelRange:
+            case dlsSources.pitchWheelRange:
                 sourceEnum = modulatorSources.pitchWheelRange;
                 break;
         }

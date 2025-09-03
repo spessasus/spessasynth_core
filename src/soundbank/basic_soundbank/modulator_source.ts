@@ -145,7 +145,7 @@ export class ModulatorSource {
     }
 
     /**
-     * Gets the current value from this source
+     * Gets the current value from this source.
      * @param midiControllers The MIDI controller + modulator source array.
      * @param voice The voice to get the data for.
      */

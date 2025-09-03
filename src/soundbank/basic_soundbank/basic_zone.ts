@@ -197,7 +197,7 @@ export class BasicZone {
         indexes.bag++;
 
         // Write generators and modulators
-        const gens = this.getSFGenerators(bank);
+        const gens = this.getWriteGenerators(bank);
         gens.forEach((g) => g.write(genData, indexes));
         this.modulators.forEach((m) => m.write(modData, indexes));
     }
@@ -205,7 +205,7 @@ export class BasicZone {
     /**
      * Filters the generators and prepends the range generators.
      */
-    protected getSFGenerators(bank: BasicSoundBank) {
+    protected getWriteGenerators(bank: BasicSoundBank) {
         const generators = this.generators.filter(
             (g) =>
                 g.generatorType !== generatorTypes.sampleID &&

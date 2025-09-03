@@ -95,14 +95,14 @@ export class BasicSample {
     }
 
     /**
-     * Indicates if the sample is compressed using vorbis SF3
+     * Indicates if the sample is compressed using vorbis SF3.
      */
     public get isCompressed(): boolean {
         return this.compressedData !== undefined;
     }
 
     /**
-     * If the sample is linked to another sample
+     * If the sample is linked to another sample.
      */
     public get isLinked(): boolean {
         return (
@@ -131,7 +131,9 @@ export class BasicSample {
         return this.encodeS16LE();
     }
 
-    // Resamples the audio data to a given sample rate
+    /**
+     * Resamples the audio data to a given sample rate.
+     */
     public resampleData(newSampleRate: number) {
         let audioData = this.getAudioData();
         const ratio = newSampleRate / this.sampleRate;
@@ -178,8 +180,8 @@ export class BasicSample {
     }
 
     /**
-     * Sets the sample type and unlinks if needed
-     * @param type the type to use
+     * Sets the sample type and unlinks if needed.
+     * @param type The type to set it to.
      */
     public setSampleType(type: SampleType) {
         this.sampleType = type;
@@ -199,7 +201,7 @@ export class BasicSample {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Unlinks a sample from its link
+     * Unlinks the sample from its stereo link if it has any.
      */
     public unlinkSample() {
         this.setSampleType(sampleTypes.monoSample);
@@ -207,9 +209,9 @@ export class BasicSample {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Links a stereo sample
-     * @param sample the sample to link to
-     * @param type either left, right or linked
+     * Links a stereo sample.
+     * @param sample the sample to link to.
+     * @param type either left, right or linked.
      */
     public setLinkedSample(sample: BasicSample, type: SampleType) {
         // Sanity check
@@ -278,7 +280,7 @@ export class BasicSample {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Replaces the audio data _in-place_.
+     * Replaces the audio data *in-place*.
      * @param audioData The new audio data as Float32.
      * @param sampleRate The new sample rate, in Hertz.
      */

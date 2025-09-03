@@ -121,7 +121,7 @@ export class Modulator {
      * Checks if the pair of modulators is identical (in SF2 terms)
      * @param mod1 modulator 1
      * @param mod2 modulator 2
-     * @param checkAmount if the amount should be checked too (SF2 specification says to not check it)
+     * @param checkAmount if the amount should be checked too.
      * @returns if they are identical
      */
     public static isIdentical(

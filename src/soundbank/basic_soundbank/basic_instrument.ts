@@ -69,11 +69,13 @@ export class BasicInstrument {
     public readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
     /**
      * Instrument's linked presets (the presets that use it)
-     * note that duplicates are allowed since one preset can use the same instrument multiple times
+     * note that duplicates are allowed since one preset can use the same instrument multiple times.
      */
     public readonly linkedTo: BasicPreset[] = [];
 
-    // How many presets is this instrument used by
+    /**
+     * How many presets is this instrument used by
+     */
     public get useCount(): number {
         return this.linkedTo.length;
     }
@@ -153,7 +155,8 @@ export class BasicInstrument {
 
     /**
      * Globalizes the instrument *in-place.*
-     * This means trying to move as many generators and modulators to the global zone as possible to reduce clutter and the count of parameters.
+     * This means trying to move as many generators and modulators
+     * to the global zone as possible to reduce clutter and the count of parameters.
      */
     public globalize() {
         const globalZone = this.globalZone;

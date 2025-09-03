@@ -7,7 +7,7 @@ import { generatorTypes } from "./generator_types";
 
 export class BasicInstrumentZone extends BasicZone {
     /**
-     * The parent instrument.
+     * The instrument this zone belongs to.
      */
     public readonly parentInstrument: BasicInstrument;
     /**
@@ -57,8 +57,8 @@ export class BasicInstrumentZone extends BasicZone {
         return super.getGenCount() + 1; // SampleID generator
     }
 
-    public getSFGenerators(bank: BasicSoundBank): Generator[] {
-        const gens = super.getSFGenerators(bank);
+    public getWriteGenerators(bank: BasicSoundBank): Generator[] {
+        const gens = super.getWriteGenerators(bank);
         gens.push(
             new Generator(
                 generatorTypes.sampleID,

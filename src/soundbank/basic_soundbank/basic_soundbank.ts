@@ -70,15 +70,15 @@ export class BasicSoundBank {
     private _isXGBank = false;
 
     /**
-     * Checks for XG drum sets and considers if this soundfont is XG.
+     * Checks for XG drum sets and considers if this sound bank is XG.
      */
     public get isXGBank() {
         return this._isXGBank;
     }
 
     /**
-     * Merges soundfonts with the given order. Keep in mind that the info read is copied from the first one
-     * @param soundBanks the soundfonts to merge, the first overwrites the last
+     * Merges sound banks with the given order. Keep in mind that the info read is copied from the first one
+     * @param soundBanks the sound banks to merge, the first overwrites the last
      */
     public static mergeSoundBanks(
         ...soundBanks: BasicSoundBank[]
@@ -110,7 +110,7 @@ export class BasicSoundBank {
     }
 
     /**
-     * Creates a simple soundfont with one saw wave preset.
+     * Creates a simple sound bank with one saw wave preset.
      */
     public static async getSampleSoundBankFile(): Promise<ArrayBuffer> {
         const font = new BasicSoundBank();
@@ -194,7 +194,7 @@ export class BasicSoundBank {
     }
 
     /**
-     * Write the soundfont as a .dls file. This may not be 100% accurate.
+     * Write the sound bank as a .dls file. This may not be 100% accurate.
      * @param options - options for writing the file.
      * @returns the binary file.
      */
@@ -229,9 +229,9 @@ export class BasicSoundBank {
     }
 
     /**
-     * Clones samples into this bank
-     * @param sample samples to copy
-     * @returns copied sample, if a sample exists with that name, it is returned instead
+     * Clones a sample into this bank.
+     * @param sample The sample to copy.
+     * @returns the copied sample, if a sample exists with that name, it is returned instead
      */
     public cloneSample(sample: BasicSample): BasicSample {
         const duplicate = this.samples.find((s) => s.name === sample.name);
@@ -264,8 +264,8 @@ export class BasicSoundBank {
     }
 
     /**
-     * Clones an instruments into this bank
-     * @returns the copied instrument, if an instrument exists with that name, it is returned instead
+     * Recursively clones an instrument into this sound bank, as well as its samples.
+     * @returns the copied instrument, if an instrument exists with that name, it is returned instead.
      */
     public cloneInstrument(instrument: BasicInstrument): BasicInstrument {
         const duplicate = this.instruments.find(
@@ -289,8 +289,8 @@ export class BasicSoundBank {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Clones presets into this sound bank
-     * @returns the copied preset, if a preset exists with that name, it is returned instead
+     * Recursively clones a preset into this sound bank, as well as its instruments and samples.
+     * @returns the copied preset, if a preset exists with that name, it is returned instead.
      */
     public clonePreset(preset: BasicPreset): BasicPreset {
         const duplicate = this.presets.find((p) => p.name === preset.name);
@@ -318,14 +318,17 @@ export class BasicSoundBank {
         return newPreset;
     }
 
+    /**
+     * Updates internal values.
+     */
     public flush() {
         this.presets.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
         this.parseInternal();
     }
 
     /**
-     * Trims a sound bank to only contain samples in a given MIDI file
-     * @param mid {BasicMIDI} - the MIDI file
+     * Trims a sound bank to only contain samples in a given MIDI file.
+     * @param mid - the MIDI file
      */
     public trimSoundBank(mid: BasicMIDI) {
         const trimInstrumentZones = (
@@ -517,22 +520,6 @@ export class BasicSoundBank {
      */
     public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
         return selectPreset(this.presets, patch, system);
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Gets preset by name
-     */
-    public getPresetByName(presetName: string): BasicPreset {
-        let preset = this.presets.find((p) => p.name === presetName);
-        if (!preset) {
-            SpessaSynthInfo(
-                "Preset not found. Defaulting to:",
-                this.presets[0].name
-            );
-            preset = this.presets[0];
-        }
-        return preset;
     }
 
     public destroySoundBank() {

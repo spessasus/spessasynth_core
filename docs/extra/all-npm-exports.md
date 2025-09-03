@@ -52,8 +52,8 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - generatorLimits - an object, the key specifies the type, the value is min, max and def (default) values for this
   generator.
 - sampleTypes - all `sfSampleType`s defined in the SF2 specification.
-- DLSSources - an enum for DLS sources as defined in the DLS level 2 specification.
-- DLSDestinations - an enum for DLS destinations as defined in the DLS level 2 specification.
+- dlsSources - an enum for DLS sources as defined in the DLS level 2 specification.
+- dlsDestinations - an enum for DLS destinations as defined in the DLS level 2 specification.
 
 ## MIDI
 

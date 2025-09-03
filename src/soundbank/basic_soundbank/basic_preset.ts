@@ -107,14 +107,16 @@ export class BasicPreset implements MIDIPatchNamed {
         );
     }
 
-    // Unlinks everything from this preset
+    /**
+     * Unlinks everything from this preset.
+     */
     public delete() {
         this.zones.forEach((z) => z.instrument?.unlinkFrom(this));
     }
 
     /**
-     * Deletes an instrument zone from this preset
-     * @param index the zone's index to delete
+     * Deletes an instrument zone from this preset.
+     * @param index the zone's index to delete.
      */
     public deleteZone(index: number) {
         this.zones[index]?.instrument?.unlinkFrom(this);
@@ -133,7 +135,7 @@ export class BasicPreset implements MIDIPatchNamed {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Preloads all samples for a given range
+     * Preloads (loads and caches synthesis data) for a given key range.
      */
     public preload(keyMin: number, keyMax: number) {
         for (let key = keyMin; key < keyMax + 1; key++) {

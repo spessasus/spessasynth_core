@@ -1,7 +1,7 @@
 import {
     type DLSDestination,
-    DLSDestinations,
-    DLSSources,
+    dlsDestinations,
+    dlsSources,
     type GeneratorType,
     generatorTypes
 } from "../enums";
@@ -224,12 +224,12 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 continue;
             }
             // A few special cases which are generators
-            if (control === DLSSources.none) {
+            if (control === dlsSources.none) {
                 // The keyNum source
                 // It usually requires a special treatment
-                if (source === DLSSources.keyNum) {
+                if (source === dlsSources.keyNum) {
                     // Scale tuning
-                    if (destination === DLSDestinations.pitch) {
+                    if (destination === dlsDestinations.pitch) {
                         zone.setGenerator(
                             generatorTypes.scaleTuning,
                             amount / 128
@@ -237,10 +237,10 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                         continue;
                     }
                     if (
-                        destination === DLSDestinations.modEnvHold ||
-                        destination === DLSDestinations.modEnvDecay ||
-                        destination === DLSDestinations.volEnvHold ||
-                        destination == DLSDestinations.volEnvDecay
+                        destination === dlsDestinations.modEnvHold ||
+                        destination === dlsDestinations.modEnvDecay ||
+                        destination === dlsDestinations.volEnvHold ||
+                        destination == dlsDestinations.volEnvDecay
                     ) {
                         // Skip, will be applied later
                         continue;
@@ -269,7 +269,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
 
         // Perform correction for the key to something generators
         for (const connection of this.connectionBlocks) {
-            if (connection.source.source !== DLSSources.keyNum) {
+            if (connection.source.source !== dlsSources.keyNum) {
                 continue;
             }
             const generatorAmount = connection.shortScale;
@@ -277,40 +277,40 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 default:
                     continue;
 
-                case DLSDestinations.volEnvHold:
+                case dlsDestinations.volEnvHold:
                     // Key to vol env hold
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToVolEnvHold,
                         generatorTypes.holdVolEnv,
-                        DLSDestinations.volEnvHold
+                        dlsDestinations.volEnvHold
                     );
                     break;
 
-                case DLSDestinations.volEnvDecay:
+                case dlsDestinations.volEnvDecay:
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToVolEnvDecay,
                         generatorTypes.decayVolEnv,
-                        DLSDestinations.volEnvDecay
+                        dlsDestinations.volEnvDecay
                     );
                     break;
 
-                case DLSDestinations.modEnvHold:
+                case dlsDestinations.modEnvHold:
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToModEnvHold,
                         generatorTypes.holdModEnv,
-                        DLSDestinations.modEnvHold
+                        dlsDestinations.modEnvHold
                     );
                     break;
 
-                case DLSDestinations.modEnvDecay:
+                case dlsDestinations.modEnvDecay:
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToModEnvDecay,
                         generatorTypes.decayModEnv,
-                        DLSDestinations.modEnvDecay
+                        dlsDestinations.modEnvDecay
                     );
                     break;
             }

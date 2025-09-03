@@ -82,9 +82,11 @@ nav:
       - Sound banks:
           - sound-bank/index.md
           - sound-bank/preset.md
+          - sound-bank/instrument.md
           - sound-bank/sample.md
           - sound-bank/zone.md
           - sound-bank/modulator.md
+          - sound-bank/modulator-source.md
           - sound-bank/generator.md
       - MIDI:
           - midi/index.md

@@ -24,35 +24,194 @@ const soundBank = SoundBankLoader.fromArrayBuffer(buffer);
 
 The returned value is the parsed `BasicSoundBank`, described below.
 
+## Properties
+
+### isSF3DecoderReady
+
+A Promise object indicating if the SF3/SF2Pack decoder is ready.
+Make sure to await it if you are loading SF3/SF2Pack files.
+It only needs to be awaited once, globally. Then all banks can be loaded synchronously.
+
+!!! Note
+
+    this property is _static_.
+
+### soundBankInfo
+
+The metadata of this sound bank, described below
+
+#### name
+
+The sound bank's name.
+
+#### version
+
+The sound bank's version, stored as an object:
+- major - the major revision, number.
+- minor - the minor revision, number.
+
+#### creationDate
+
+The creation date of this sound bank, a `Date` object.
+
+!!! Note
+
+    Note that if the date text is invalid, the current date will be used instead.
+    If you have a valid date in your sound bank, and it still fails to parse, please open an issue!
+
+#### soundEngine
+
+The sound engine name
+
+!!! Note
+
+    The other properties of soundBankInfo listed below are all *optional*!
+    
+#### engineer
+
+The engineer (creator) of the sound bank
+
+
+#### product
+
+The product information.
+
+#### copyright
+
+The copyright information.
+
+#### comment
+
+The comment, usually the description.
+
+#### subject
+
+The subject of the file. This only appears in DLS files.
+
+#### romInfo
+
+ROM Bank information.
+
+#### romVersion
+
+A tag that only applies to SF2 and will usually be undefined.
+
+Stored like the `version` field.
+
+#### software
+
+Software used to edit the file.
+
+### presets
+
+An array of all presets in the bank, ordered by bank and preset number.
+An array of `BasicPreset`s.
+
+### instruments
+
+An array of all instruments in the bank.
+An array of `BasicInstrument`s.
+
+### samples
+
+An array of all samples in the bank.
+An array of `BasicSample`s.
+
+### defaultModulators
+
+All the default modulators for this bank. A list of [`Modulator`s](modulator.md)
+
+### customDefaultModulators
+
+A boolean,
+indicating if the bank uses
+the [DMOD chunk.](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md)
+
+### isXGBank
+
+Checks for XG drum sets and considers if this sound bank is XG-compatible.
+
 ## Methods
 
-### getPreset
+### mergeSoundBanks
 
-Returns the matching [`BasicPreset` class](preset.md) instance.
-
-```ts
-const preset = soundBank.getPreset(bankNr, presetNr);
-```
-
-- `bankNr` - MIDI bank number, typically set with the `Bank Select` controller.
-- `presetNr` - MIDI program number, usually set with the `Program Change` message.
-
-If the matching preset is not found, the first preset will be returned.
-If the requested bank is 128, the first preset with bank 128 will be returned (drums).
-
-### getPresetByName
-
-Returns the matching [`Preset` class](preset.md) instance.
+Merges multiple sound banks, adding (not replacing) presets on top of the previous ones, and returns a new soundBank.
 
 ```ts
-const preset = soundBank.getPresetByName(name);
+BasicSoundBank.mergeSoundBanks(soundbank1, soundbank2, soundbank3, /* more here... */);
 ```
 
-- `name` - The name of the preset as a string. If not found, the first preset will be returned.
+- parameters - `BasicSoundBank` instances. The first is used as a base, and the rest are
+  added on top.
+
+The return value is a new `BasicSoundBank`.
+
+The INFO data is taken from the first sound bank.
+
+!!! Note
+
+    This method is _static_.
+
+### getDummySoundBankFile
+
+Creates a simple sound bank with a single saw wave preset.
+```ts
+const sfBinary = await BasicSoundBank.getDummySoundBankFile();
+```
+
+The returned value is an `ArrayBuffer` - the binary representation of an .sf2 file.
+
+!!! Note
+
+    This method is _static_ and _asynchronous_
+
+### copyFrom
+
+Copies a given sound bank.
+
+```ts
+BasicSoundBank.copyFrom(bank);
+```
+
+- bank - the bank to copy.
+
+### addCompletePresets
+
+Adds complete presets along with their instruments and samples.
+
+```ts
+bank.addCompletePresets(presets);
+```
+
+- presets - an array of `BasicPreset`s to add.
+
+### writeDLS
+
+Writes out a DLS Level 2 sound bank. The returned value is an `ArrayBuffer` - the binary of the file.
+
+```ts
+const dls = await soundBank.writeDLS(options);
+```
+
+- `options` - An optional object:
+    - `progressFunction` - [See this for a detailed explanation](#progressfunction)
+
+!!! Danger
+
+    This method is limited.
+    [See this for more info.](../extra/dls-conversion-problem.md)
+
+!!! Important
+
+    This method is _asynchronous._
+
+!!! Warning
+
+    This method is memory and CPU intensive with large sound banks.
 
 ### writeSF2
 
-Write out an SF2 or SF3 file. The return value is an `Uint8Array` - the binary of the file.
+Write out an SF2 or SF3 file. The return value is an `ArrayBuffer` - the binary of the file.
 
 ```ts
 const binary = await soundBank.writeSF2(options);
@@ -78,7 +237,7 @@ const binary = await soundBank.writeSF2(options);
 
 !!! Important
 
-    This function is _asynchronous._
+    This method is _asynchronous._
 
 !!! Note
 
@@ -88,187 +247,89 @@ const binary = await soundBank.writeSF2(options);
 
     This method is memory and CPU intensive with large sound banks, especially if compression is enabled.
 
-### writeDLS
+### addPresets
 
-Writes out a DLS Level 2 sound bank. The returned value is an `Uint8Array` - the binary of the file.
+Adds presets to the sound bank.
 
-```ts
-const dls = await soundBank.writeDLS(options);
-```
+### addInstruments
 
-- `options` - An optional object:
-    - `progressFunction` - [See this for a detailed explanation](#progressfunction)
+Adds instruments to the sound bank.
 
-!!! Caution
+### addSamples
 
-    This method is experimental and may produce corrupted files.
-    [See this for more info.](../extra/dls-conversion-problem.md)
+Adds samples to the sound bank.
 
-!!! Important
+### cloneSample
 
-    This method is _asynchronous._
+Clones the sample into this sound bank.
 
-!!!Warning
+- sample - the sample to copy.
 
-    This method is memory and CPU intensive with large sound banks.
+Returns the copied sample, if a sample exists with that name, it is returned instead.
 
-### mergeSoundfonts
+### cloneInstrument
 
-Merges multiple SoundFonts, adding (not replacing) presets on top of the previous ones, and returns a new soundBank.
+Recursively clones an instrument into this sound bank, as well as its samples.
 
-```ts
-BasicSoundBank.mergeSoundBanks(soundfont1, soundfont2, soundfont3, /* more here... */);
-```
+- instrument - the instrument to copy.
 
-- `soundfonts` - `BasicSoundBank` instances, with any number of inputs. The first is used as a base, and the rest are
-  added on top.
+Returns the copied instrument, if an instrument exists with that name, it is returned instead.
 
-The return value is a new `BasicSoundBank`.
+### clonePreset
 
-The INFO data is taken from the first sound bank
+Recursively clones a preset into this sound bank, as well as its instruments and samples.
 
-!!! Note
+- preset - the preset to copy.
 
-    This method is _static_.
+Returns the copied preset, if a preset exists with that name, it is returned instead.
+
+
+### flush
+
+Updates internal values. Call after updating the preset list.
 
 ### trimSoundBank
 
-Trims the SoundFont _in place_ to only include samples used in the MIDI sequence,
-down to the exact key-velocity combinations.
+Trims a sound bank to only contain samples in a given MIDI file.
 
 ```ts
 soundBank.trimSoundBank(midi);
 ```
 
-- `midi` - `MIDI` - The MIDI file for which to trim the soundBank.
+- `midi` - `BasicMIDI` - The MIDI file for which to trim the soundBank.
 
-### getDummySoundfontFile
+### removeUnusedElements
 
-Creates a fake soundfont with a single saw wave preset.
-Useful when a synthesizer initialization is needed but the proper soundfont is not ready yet.
+Removes all unused elements (samples and instruments)
 
-```ts
-const sfBinary = await BasicSoundBank.getDummySoundfontFile();
-```
+### deleteInstrument
 
-- the returned value is an `ArrayBuffer` - the binary represenation of a soundfont file.
+Deletes a given instrument from the sound bank.
 
-!!! Note
+### deletePreset
 
-    This method is _static_ and _asynchronous_
+Deletes a given preset from the sound bank.
 
-## Properties
+### deleteSample
 
-### isSF3DecoderReady
+Deletes a given sample from the sound bank.
 
-A Promise object indicating if the SF3/SF2Pack decoder is ready.
-Make sure to await it if you are loading SF3/SF2Pack files.
-It only needs to be awaited once, globally. Then all banks can be loaded synchronously.
+### getPreset
 
-!!! Note
-
-    this property is _static_.
-
-### presets
-
-An array of all presets in the bank, ordered by bank and preset number.
+Returns the matching [`BasicPreset` class](preset.md) instance.
 
 ```ts
-console.log(soundBank.presets);
+soundBank.getPreset(patch, system);
 ```
 
-### instruments
+- patch - the [MIDI Patch](../spessa-synth-processor/midi-patch.md) to select.
+- system - the MIDI system to select for (`gm`, `gs`, `xg`, `gm2`). If you're unsure, pick `gs`.
 
-An array of all instruments in the bank, not ordered.
+### destroySoundBank
 
-```ts
-console.log(soundBank.instruments);
-```
+Deletes everything irreversibly.
 
-### samples
-
-An array of all samples in the bank, not ordered.
-
-An array of all instruments in the bank, not ordered.
-
-```ts
-console.log(soundBank.instruments);
-```
-
-### soundFontInfo
-
-Represents the SoundFont2's `INFO` chunk data. Stored as an object like this:
-
-```ts
-const infoData = {
-    chunk: /* the read's 4-letter code, e.g. */ "INAM",
-    infoText: /* the read's data as text, e.g. */ "My cool SoundFont"
-}
-```
-
-Check out [this website](https://mrtenz.github.io/soundfont2/getting-started/soundfont2-structure.html#info-chunk) for
-more information.
-
-!!! Important
-
-    `ifil` and `iver` are stored as strings like this: `major.minor`.
-    For example, major 2 minor 1 will be `2.1`
-
-### defaultModulators
-
-All the default modulators for this bank. A list of [Modulator Objects](modulator.md)
-
-### customDefaultModulators
-
-A boolean,
-indicating if the bank uses
-the [DMOD chunk.](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md)
-
-## Sound bank Internal Structure
-
-The following describes the internal structure of the sound bank and includes some methods not mentioned above. Useful
-for
-editing the sound bank.
-
-### BasicSoundBank structure
-
-- `soundFontInfo` (described above)
-- `instruments` (BasicInstrument[]) -> All instruments.
-    - `name` (string) -> The name of the instrument.
-        - `globalZone` (BasicGlobalZone) -> The global zone of this instrument.
-        - `keyRange` ({min: number, max: number}) -> Key range of the zone.
-        - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-        - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
-        - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
-        - `linkedPresets` (BasicPreset[]) -> All the presets that are using this instrument.
-          Note that there may be duplicates of the same preset if it uses the sample multiple times.
-            - `name` (InstrumentZone[]) -> All zones of the instrument.
-            - `keyRange` ({min: number, max: number}) -> Key range of the zone.
-            - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-            - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
-            - `modulators` ([Modulator](modulator.md)) -> Modulators of the zone.
-            - `globalZone` (BasicZone) -> The global zone of this instrument.
-            - `sample` (BasicSample) -> The sample of the zone. Undefined if global.
-            - See [Sample class](sample.md)
-- `samples` ([BasicSample](sample.md)[]) -> All samples.
-- `presets` ([BasicPreset](preset.md)[]) -> All presets.
-    - `name` (string) -> The name of the preset.
-    - `program` (number) -> The preset's MIDI program.
-    - `bank` (number) -> The preset's MIDI bank.
-    - `library` (number) -> Generally unused but preserved.
-    - `genre` (number) -> Generally unused but preserved.
-    - `morphology` (number) -> Generally unused but preserved.
-    - `globalZone` (BasicGlobalZone) -> The global zone of this preset.
-        - `keyRange` ({min: number, max: number}) -> Key range of the zone.
-        - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-        - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
-        - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
-    - `name` (PresetZone[]) -> All zones of the preset.
-        - `keyRange` ({min: number, max: number}) -> Key range of the zone.
-        - `velRange` ({min: number, max: number}) -> Velocity range of the zone.
-        - `generators` ([Generator](generator.md)[]) -> Generators of the zone.
-        - `modulators` ([Modulator](modulator.md)[]) -> Modulators of the zone.
-        - `instrument` (BasicInstrument) -> The zone's instrument. Undefined if global.
+## Extra info
 
 ### progressFunction
 
