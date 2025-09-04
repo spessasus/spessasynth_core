@@ -713,7 +713,6 @@ export class MIDIChannel {
                 this.channelTransposeKeyShift +
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
-            ...this.patch,
             isDrum: this.drumChannel
         };
         this.synthProps.callEvent("channelPropertyChange", {

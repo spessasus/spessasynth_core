@@ -1,9 +1,6 @@
 import type { Voice } from "./audio_engine/engine_components/voice";
 import type { InterpolationType, SynthDisplayType } from "./enums";
-import type {
-    MIDIPatch,
-    MIDIPatchNamed
-} from "../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatch, MIDIPatchNamed } from "../soundbank/basic_soundbank/midi_patch";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
@@ -289,19 +286,6 @@ export interface ChannelProperty {
      * The channel's transposition, in semitones.
      */
     transposition: number;
-    /**
-     * The bank number of the current preset.
-     */
-    bankMSB: number;
-
-    /**
-     * The bank LSB number of the current preset.
-     */
-    bankLSB: number;
-    /**
-     * The MIDI program number of the current preset.
-     */
-    program: number;
 }
 
 export interface SynthProcessorOptions {

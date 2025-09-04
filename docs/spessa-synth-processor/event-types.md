@@ -212,19 +212,6 @@ export interface ChannelProperty {
      * The channel's transposition, in semitones.
      */
     transposition: number;
-    /**
-     * The bank number of the current preset.
-     */
-    bankMSB: number;
-
-    /**
-     * The bank LSB number of the current preset.
-     */
-    bankLSB: number;
-    /**
-     * The MIDI program number of the current preset.
-     */
-    program: number;
 }
 ```
 
