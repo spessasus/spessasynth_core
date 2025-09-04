@@ -1,9 +1,6 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import {
-    assignMIDIPortInternal,
-    loadNewSequenceInternal
-} from "./song_control";
+import { assignMIDIPortInternal, loadNewSequenceInternal } from "./song_control";
 import { setTimeToInternal } from "./play";
 import { SpessaSynthWarn } from "../utils/loggin";
 
@@ -156,7 +153,7 @@ export class SpessaSynthSequencer {
      */
     public set songIndex(value: number) {
         this._songIndex = value;
-        this._songIndex %= this.songs.length;
+        this._songIndex = Math.max(0, value % this.songs.length);
         this.loadCurrentSong();
     }
 
