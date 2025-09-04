@@ -1,33 +1,36 @@
-# Generator class
+# Generator
 
-This class represents a single generator.
+This class represents a single generator (a static parameter).
 
 ## Properties
 
 ### generatorType
 
-An enum, see below.
-
-```js
-console.log(generator.generatorType); // 48 - initial attenuation
-```
+The type of this generator. One of the predefined values.
+A number.
 
 ### generatorValue
 
-The generator's value can be negative.
+The generator's value, which can be negative. 
+A number.
 
-```js
-console.log(generator.generatorValue); // -10
-```
+## Methods
+
+### toString
+
+Converts the generator into a human-readable string with the name instead of number.
 
 ## All generator types
 
 Below are all defined generator types as of soundfont 2.04.
 
+They are accesible through the `generatorTypes` enum.
+The limits and default values are accessible through the `generatorLimits` constant.
+
 !!! Important
 
-    Generator 48 (Initial Attenuation) applies a 0.04 multiplier instead of 0.1 multiplier like in the spec. 
-    Every soundfont synth does this to remain compatible, unfortunately.
+    Generator 48 (Initial Attenuation) applies a 0.04 multiplier instead of 0.1 multiplier like in the spec to get the true dB value.
+    Every SoundFont synth does this for compatibility reasons.
 
 | Generator ID | Generator Name                          | Minimum Value | Maximum Value | Default Value | Description                                                                               |
 |--------------|-----------------------------------------|---------------|---------------|---------------|-------------------------------------------------------------------------------------------|

@@ -15,7 +15,46 @@ This page documents all the breaking changes in spessasynth_core.
 All variables with `soundfont` in them have been renamed to use `soundBank` instead.
 This is done because spessasynth can load sound bank formats other than SoundFonts as well.
 
+## MIDI Patch System
+
+SpessaSynth 4.0 brings the full bank LSB support in the API.
+
+The system now operates on _MIDI Patches_ - a way of selecting MIDI presets using 4 properties,
+ compatible with GM, GS, XG and GM2. 
+ The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.
+
+The properties are explained below.
+
+### program
+
+The MIDI program number, from 0 to 127.
+
+### bankLSB
+
+Bank LSB controller, 0 to 127. This is mostly used in XG and GM2 for selecting variations of instruments, much like MSB in GS.
+
+Note that the SF2 format does not support writing the bank LSB number so the `wBank` is still interpreted as both and flattened when writing.
+
+### bankMSB
+
+This is what the previous `bank` used to be, but it's now properly split up.
+
+It is used for sound variation in GS, and for channel type in XG and GM2. 
+This means that with bank MSB of 127 for example, a channel in XG mode will turn into a drum channel.
+
+### isGMGSDrum
+
+This flag is exclusive to GM and GS systems. These don't use bank MSB as a drum flag. 
+GM has channel 9 hardcoded as drums, and GS has a system exclusive for setting them.
+This allows XG and GS drums to coexist in a single sound bank and can be thought of as bank 128 in SF2.
+
 ## MIDI
+
+
+### MIDI (Class)
+
+Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
+Drop-in replacement.
 
 ### MIDISequenceData
 
@@ -37,11 +76,20 @@ They behave in exactly the same way.
 
 
  - `embeddedSoundFont` -> `embeddedSoundBank`
- - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
  - `modifyMIDI()` -> `modify()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
  - `applySnapshotToMIDI()` -> `applySnapshot()`
+
+####  RMIDInfo
+
+Renamed to `rmidiInfo`.
+
+Like `soundBankInfo`, the object's property names are no longer the fourCCs, but human-readable names.
+
+However, they still are stored as `Uint8Array`s due to possibly unknown encodings.
+
+Use `getRMIDInfo` or `setRMIDInfo` to get the decoded JS objects.
 
 #### writeRMIDI
 
@@ -95,9 +143,14 @@ Removed, replaced with `MIDITrack.channels`.
 Renamed to `binaryName` and will now be undefined if a name is not found.
 It is also protected. Use `getName` instead, which handles everything for you.
 
-### midiNameUsesFileName
+#### midiNameUsesFileName
 
 Removed. You can compare `getName() === fileName`.
+
+### MIDIBuilder
+
+Now takes an optional `options` object instead of separate option arguments.
+It also enforces correct MIDI formats 0 and 1.
 
 ## Enums
 
@@ -107,7 +160,7 @@ Enum renamed to `midiMessageTypes`.
 
 ### RMIDINFOChunks
 
-Enum renamed to `rmidInfoChunks`.
+Enum removed due to the `rmidInfo` object being reworked.
 
 
 ### interpolationTypes
@@ -120,11 +173,6 @@ Enum renamed to `rmidInfoChunks`.
 - `XGText` -> `yamahaXGText`
 - `SoundCanvasText` -> `soundCanvasText`
 - `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
-
-## MIDI (Class)
-
-Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
-Drop-in replacement.
 
 
 ## BasicSoundBank
@@ -153,6 +201,10 @@ Drop-in replacement.
 ### Modulator
 
 `modulatorDestination` has been renamed to `destination`.
+
+All properties regarding source have been replaced with a class `ModulatorSource`, which can automatically turn itself into an SF2 enum or transform values.
+
+The static method `copy` has been made local. So `Modulator.copy(mod)` turns into `mod.copy()`
 
 ### BasicSample
 
@@ -191,8 +243,15 @@ Instrument zones now _require_ a sample.
 This means that
 `createZone()` now requires one argument: the sample that belongs to that zone.
 
-
 ### BasicPreset
+
+#### bank
+
+replaced with the MIDI patch system. For `BasicPreset` this means splitting up into three properties:
+
+- bankLSB
+- bankMSB
+- isGMGSDrum
 
 A few methods and properties have been renamed for consistency.
 They behave in exactly the same way.
@@ -208,12 +267,12 @@ This means that
 ## SpessaSynthProcessor
 
 A few methods and properties have been renamed for consistency.
-They behave in exactly the same way.
 
 - `soundfontManager` -> `soundBankManager`
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+The option `effectsEnabled` has been renamed to `enableEffects`.
 
 ### pitchWheel
 
@@ -230,6 +289,8 @@ The event names have been capitalized with camelCase. So, for example `noteon` b
 
 `allControllerReset` event no longer calls CC changes to default values. This was never intended as they are redundant when this controller exists.
 The default reset values can be accessed via the `defaultMIDIControllerValues` export. Locked controllers still get restored.
+
+`stopAll` now specifies a channel number.
 
 ### Master parameters
 

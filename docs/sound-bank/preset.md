@@ -1,66 +1,126 @@
-# Preset class
+# BasicPreset
 
-Represents a singe SoundFont2 preset.
+Represents a single preset (MIDI instrument)
 
-## Methods
+!!! Danger
 
-### getSamplesAndGenerators
-
-Returns the samples and their generators (and modulators) for the given midiNote.
-The name is kept from the time that SpessaSynth did not support modulators.
-
-```js
-const samplesAndGenerators = preset.getSampleAndGenerators(midiNote);
-```
-
-- midiNote - the note to get generators from. Ranges from 0 to 127.
-
-The returned value is as follows:
-
-```js
-const samplesAndGenerators = [
-    {
-        instrumentGenerators: [Generator, /*...*/ Generator], // only the instrument generators, local replace global
-        presetGenerators: [Generator, /*...*/ Generator], // only the preset generators, local replace global
-        modulators: [Modulator, /*...*/ Modulator], // summed and replaced modulators, ready to use
-        sample: Sample // the sample object
-    },
-
-    /*...*/
-
-    {
-        instrumentGenerators: [Generator, /*...*/ Generator],
-        presetGenerators: [Generator, /*...*/ Generator],
-        modulators: [Modulator, /*...*/ Modulator], // summed and replaced modulators, ready to use
-        sample: Sample
-    }
-];
-```
-
-More info about the `Generator` class is [here](generator.md)
+    Properties and methods not listed here are internal only and should not be used.
 
 ## Properties
 
-### presetName
+!!! Note
 
-The preset's name as string.
+    This class is a [MIDI patch](../spessa-synth-processor/midi-patch.md) and contains all of its properties.
 
-```js
-console.log(preset.presetName); // for example: "Drawbar Organ"
+### name
+
+The preset's name as a string.
+
+### globalZone
+
+The global zone for this preset, a `BasicZone`.
+
+### zones
+
+The zones of this preset, an array of `BasicPresetZone`s.
+
+### isXGDrums
+
+A boolean indicating if this preset is an XG drum preset.
+
+### isAnyDrums
+
+A boolean indicating if this preset is a drum preset.
+
+### library
+
+Unused numeric metadata.
+
+### genre
+
+Unused numeric metadata.
+
+### morphology
+
+Unused numeric data.
+
+## Methods
+
+### createZone
+
+Creates a new preset zone and returns it.
+
+```ts
+preset.createZone(instrument);
 ```
 
-### bank
+ - instrument - the instrument to use in the zone.
 
-The preset's bank number. Used in MIDI `Bank Select` controller.
+### deleteZone
 
-```js
-console.log(preset.bank); // for example: 0
+Deletes a zone from this preset.
+
+```ts
+preset.deleteZone(index);
 ```
 
-### program
+- index - the zero-based index of the zone to delete.
 
-The preset's MIDI program number. Used in MIDI `Program Change` message.
+### delete
 
-```js
-console.log(preset.program); // for example: 16
+Unlinks everything from this preset.
+
+### preload
+
+Preloads (loads and caches synthesis data) for a given key range.
+
+```ts
+preset.preload(keyMin, keyMax);
 ```
+
+- keyMin, keyMax - the range of MIDI notes.
+
+### matches
+
+Checks if the bank and program numbers are the same for the given preset as this one.
+
+```ts
+preset.matches(patch);
+```
+
+- path - a MIDI patch to check.
+
+### toMIDIString
+
+Returns a MIDI Patch formatted string.
+
+
+### toString
+
+Returns a MIDI Patch formatted string and preset's name combined.
+
+### toFlattenedInstrument
+
+Combines preset into an instrument, flattening the preset zones into instrument zones.
+This is a really complex function that attempts to work around the DLS limitations of only having the instrument layer.
+
+It returns the `BasicInstrument` containing the flattened zones.
+In theory, it should exactly the same as this preset.
+
+### getSynthesisData
+
+Returns the SF2 synthesis data for a given note and velocity.
+
+```ts
+const synthesisData = preset.getSynthesisData(midiNote, velocity);
+```
+
+- midiNote - the note to get data for. Ranges from 0 to 127.
+- velocity - the velocity to get data for. Ranges from 0 to 127.
+
+The returned value is an array of objects:
+
+- instrumentGenerators - an array of [`Generator`](generator.md)s.
+- presetGenerators - an array of [`Generator`](generator.md)s.
+- modulators - an array of [`Generator`](modulator.md)s.
+- sample - a [`BasicSample`](sample.md)

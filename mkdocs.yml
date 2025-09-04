@@ -1,4 +1,4 @@
-site_name: spessasynth_core docs
+site_name: spessasynth_core documentation
 site_description: Documentation for the spessasynth_core JavaScript SoundFont2/DLS MIDI Library.
 site_author: spessasus
 site_url: https://spessasus.github.io/spessasynth_core
@@ -71,27 +71,37 @@ nav:
       - getting-started/index.md
       - SpessaSynthProcessor:
           - spessa-synth-processor/index.md
+          - spessa-synth-processor/midi-channel.md
+          - spessa-synth-processor/midi-patch.md
           - spessa-synth-processor/sound-bank-manager.md
           - spessa-synth-processor/key-modifier-manager.md
-          - spessa-synth-processor/event-types.md
           - spessa-synth-processor/synthesizer-snapshot.md
-      - SpessaSynthSequencer: spessa-synth-sequencer/index.md
+          - spessa-synth-processor/event-types.md
+          - spessa-synth-processor/master-parameter.md
+      - SpessaSynthSequencer:
+          - spessa-synth-sequencer/index.md
+          - spessa-synth-sequencer/event-types.md
       - Sound banks:
           - sound-bank/index.md
-          - Preset: sound-bank/preset.md
-          - Sample: sound-bank/sample.md
-          - Modulator: sound-bank/modulator.md
-          - Generator: sound-bank/generator.md
+          - sound-bank/preset.md
+          - sound-bank/instrument.md
+          - sound-bank/sample.md
+          - sound-bank/zone.md
+          - sound-bank/modulator.md
+          - sound-bank/modulator-source.md
+          - sound-bank/generator.md
       - MIDI:
           - midi/index.md
+          - midi/midi-message.md
+          - midi/midi-track.md
           - midi/creating-midi-files.md
       - File Writing:
           - writing-files/wav.md
           - writing-files/midi.md
           - writing-files/converting-between-formats.md
+      - extra/midi-implementation.md
 
   - Extra Info:
-      - extra/midi-implementation.md
       - extra/all-npm-exports.md
       - extra/developer-docs.md
       - extra/console-output.md

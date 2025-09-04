@@ -4,17 +4,20 @@ SpessaSynth allows you to create MIDI files from scratch via `MIDIBuilder`
 
 ## Initialization
 
-```js
-const mid = new MIDIBuilder(name, timeDivision = 480, initialTempo = 120);
+```ts
+const mid = new MIDIBuilder(options);
 ```
 
-- `name` - `string` - the MIDI's name. The first event of the first track will be the track name with this.
+All options are optional:
+
+- `name` - `string` - the MIDI's name. The first event of the first track will be the track name with this. Defaults to `Untitled song`
 - `timeDivision` - `number`, optional - the MIDI's time division. Defaults to 480.
 - `initialTempo` - `number`, optional - the MIDI's initial tempo in beats per minute. Defaults to 120 BPM.
+- `format` - `0|1` - the MIDI file track format. Format 0 allows only one track while format 1 allows more.
 
 The file is initialized with one track.
 
-This class inherits from `MIDI` which means it can simply be passed to [writeMIDI](../writing-files/midi.md#writemidi)
+This class inherits from `BasicMIDI` which means it can simply be passed to [writeMIDI](../writing-files/midi.md#writemidi)
 or [SpessaSynthSequencer](../spessa-synth-sequencer/index.md).
 
 ## Methods
@@ -23,11 +26,11 @@ or [SpessaSynthSequencer](../spessa-synth-sequencer/index.md).
 
 Updates the internal values of the file, making it ready for playback.
 
-!!! Caution
+!!! Danger
 
     You MUST ALWAYS run this function after you finish creating the file!
 
-```js
+```ts
 mid.flush();
 ```
 
@@ -35,7 +38,7 @@ mid.flush();
 
 Adds a new MIDI track. Changes the format to 1.
 
-```js
+```ts
 mid.addNewTrack(name, port = 0);
 ```
 
@@ -46,7 +49,7 @@ mid.addNewTrack(name, port = 0);
 
 Adds a new MIDI event.
 
-```js
+```ts
 mid.addEvent(ticks, track, event, eventData);
 ```
 
@@ -56,7 +59,7 @@ mid.addEvent(ticks, track, event, eventData);
   message.
 - `eventData` - `Uint8Array` or `number[]` - the message's binary data.
 
-!!! Caution
+!!! Warning
 
     For meta messages, the `event` is the SECOND status byte, not the 0xFF!
     For system exclusives, the status byte is F0, and it must be excluded from `eventData`!
@@ -65,7 +68,7 @@ mid.addEvent(ticks, track, event, eventData);
 
 Adds a new "set tempo" message.
 
-```js
+```ts
 mid.addSetTempo(ticks, tempo);
 ```
 
@@ -76,7 +79,7 @@ mid.addSetTempo(ticks, tempo);
 
 Adds a new "note on" message.
 
-```js
+```ts
 mid.addNoteOn(ticks, track, channel, midiNote, velocity);
 ```
 
@@ -91,7 +94,7 @@ mid.addNoteOn(ticks, track, channel, midiNote, velocity);
 
 Adds a new "note off" message.
 
-```js
+```ts
 mid.addNoteOff(ticks, track, channel, midiNote);
 ```
 
@@ -104,7 +107,7 @@ mid.addNoteOff(ticks, track, channel, midiNote);
 
 Adds a new "program change" message.
 
-```js
+```ts
 mid.addProgramChange(ticks, track, channel, programNumber)
 ```
 
@@ -117,7 +120,7 @@ mid.addProgramChange(ticks, track, channel, programNumber)
 
 Adds a new "controller change" message.
 
-```js
+```ts
 mid.addControllerChange(ticks, track, channel, controllerNumber, controllerValue);
 ```
 
@@ -134,7 +137,7 @@ mid.addControllerChange(ticks, track, channel, controllerNumber, controllerValue
 
 Adds a new "pitch wheel" message.
 
-```js
+```ts
 mid.addPitchWheel(ticks, track, channel, MSB, LSB);
 ```
 
@@ -151,9 +154,11 @@ mid.addPitchWheel(ticks, track, channel, MSB, LSB);
 
 The below code produces a file that plays C Major scale.
 
-```js
+```ts
 // Create a new MIDI file
-const mid = new MIDIBuilder("C Major Scale", 480, 240);
+const mid = new MIDIBuilder({
+    name: "C Major Scale"
+});
 
 // Add the C Major scale notes
 mid.addNoteOn(0, 0, 0, 60, 127);

@@ -1,14 +1,12 @@
 # Managing the console output
 
-By default, SpessaSynth prints out a lot of stuff to console.
-Here's how you can disable it:
+SpessaSynth can print out additional info to the console or print nothing at all.
+Here's how you can set it:
 
-### Main thread
+## SpessaSynthLogging
 
-#### SpessaSynthLogging
-
-```js
-SpessaSynthLogging(enableInfo, enableWarning, enableGroup, enableTable);
+```ts
+SpessaSynthLogging(enableInfo, enableWarning, enableGroup);
 ```
 
 All the input variables are booleans corresponding to the things SpessaSynth logs.
@@ -16,12 +14,5 @@ All the input variables are booleans corresponding to the things SpessaSynth log
 - Info - all general info such as parsing sound banks, midi files, RPN changes, etc.
 - Warnings - all messages unrecognized by the synthesizer, other warnings
 - group - the groups for parsing the sound banks and midi files.
-- table - the debug table when `enableDebugging` is set to `true` for `synth.noteOn`
-
-### Synthetizer
-
-```js
-synth.setLogLevel(enableInfo, enableWarning, enableGroup, enableTable);
-```
 
 Same arguments as above.

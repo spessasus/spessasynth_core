@@ -1,6 +1,6 @@
-# MIDI Loader
+# BasicMIDI
 
-This is the module responsible for parsing MIDI files.
+BasicMIDI parser and represents a single MIDI sequence.
 
 !!! Tip
 
@@ -8,82 +8,40 @@ This is the module responsible for parsing MIDI files.
 
 ## Initialization
 
-```js
-const parsedMIDI = new MIDI(arrayBuffer);
+```ts
+const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer);
 ```
 
-- arrayBuffer - an `arrayBuffer` anstance of the midi file.
+- arrayBuffer - an `arrayBuffer` instance of the MIDI file.
 
 ## Properties
 
-### tracksAmount
+### tracks
 
-The number of tracks in the file.
-
-```js
-console.log(`this file has ${parsedMIDI.tracksAmount}`);
-```
-
-### trackNames
-
-The track names of the MIDI file. If a track doesn't have a name, it will have an empty string.
-
-```js
-console.log(`First track is called ${parsedMIDI.trackNames[0]}`);
-```
+The tracks in the sequence, represented as an array of [MIDI tracks](midi-track.md)
 
 ### timeDivision
 
 The time division of the midi file. MIDI ticks per quarter note.
+Essentially the resolution of the file.
 
-```js
-console.log(`this sequence's time division is ${parsedMIDI.timeDivision}`);
-```
+### duration
 
-### midiName
+The sequence's duration in seconds.
 
-The sequence's name. The first track's `Track Name`'s event text.
+!!! Note
 
-```js
-console.log(`This sequence is named "${parsedMIDI.midiName}"`);
-```
-
-!!! Tip
-
-    This property uses basic decoding. If the name is encoded in a different encoding, like shift_jis, it might be better to use rawMidiName.
-
-### fileName
-
-The name of the MIDI file if provided during the initialization.
-
-### midiNameUsesFileName
-
-A `boolean` indicating if the MIDI name is the same as file name, therefore there's no need to decode it.
-
-### rawMidiName
-
-The sequence's name, as a raw `Uint8Array`. Useful for handling unusual encodings.
-
-```js
-console.log(new TextDecoder("shift-jis").decode(parsedMIDI.rawMidiName)); // ダメなりんご！！
-```
-
-### copyright
-
-The decoded copyright and description of the file.
-Individual messages are separated with a newline. Note: this not only includes the copyright events, but also others.
-Treat this like "additional information" about the file.
-
-```js
-console.log(`Midi file description: ${parsedMIDI.copyright}`);
-```
+    The MIDI file's duration is the start of the file to `midi.lastVoiceEventTick`.
+    To alter the end time, 
+    add a controller change (preferably an unused CC, like CC#50) at the time you want the file to end,
+    then run `midi.flush()`
 
 ### tempoChanges
 
 Ordered from last to first, all the tempo changes in the file.
 It will always contain at least one tempo change (the default 120BPM at zero ticks).
 
-```js
+```ts
 [
     {
         tempo: 140 /* tempo in BPM */,
@@ -100,211 +58,205 @@ It will always contain at least one tempo change (the default 120BPM at zero tic
 ];
 ```
 
+### extraMetadata
+
+Any extra metadata found in the file.
+These messages were deemed "interesting" by the parsing algorithm and can be displayed by the MIDI player as some form of metadata.
+ 
+An array of [MIDI messages](midi-message.md).
+
+### lyrics
+
+An array containing the lyrics of the sequence.
+
+An array of [MIDI messages](midi-message.md).
+
+### firstNoteOn
+
+The tick position of the first note-on event in the MIDI sequence.
+
+
+### keyRange
+
+The maximum key range of the sequence.
+
+An object:
+
+- min - the lowest MIDI note number in the sequence.
+- max - the highest MIDI note number in the sequence.
+
+
+### lastVoiceEventTick
+
+The MIDI tick number of the last voice event in the sequence.
+Treated as the last event in the sequence, *even if the end of track is later.*
+
+!!! Note
+
+    To alter the end time, 
+    add a controller change (preferably an unused CC, like CC#50) at the time you want the file to end,
+    then run `midi.flush()`
+
+
+### portChannelOffsetMap
+
+The channel offsets for each MIDI port, using
+the [SpessaSynth method](../extra/about-multi-port.md#spessasynth-implementation)
+
+The index is the port number and the value is the channel offset.
+
 ### loop
 
 The points of the loop detected in the MIDI file in ticks.
-If there's nothing detected, the loop will start from the first note on event and end will be the last note off.
+If there's nothing detected, the loop will start from the first note on event and end will be the last voice message.
 Current looping detection is: CC 2/4, 116/117 and "start," "loopStart" and "loopEnd" markers.
 
-```js
-console.log(parsedMIDI.loop); // {start: 1294, end: 49573}
-```
+
+### fileName
+
+The name of the MIDI file if provided during the initialization.
+
+String or undefined.
 
 ### format
 
 The [MIDI file format.](https://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html#BM2_2) Usually 0 or
 1, rarely 2.
 
-```js
-console.log(parsedMIDI.format); // 1
-```
 
-### firstNoteOn
+### rmidiInfo
 
-The MIDI tick number of the first noteOn event in the sequence. It can be used to skip the initial silence.
+The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
+Otherwise, this object is empty.
+Info type: Chunk data as a binary array.
+Note that text chunks contain a terminal zero byte.
 
-```js
-console.log(parsedMIDI.firstNoteOn); // 1294
-```
-
-### lastVoiceEventTick
-
-The MIDI tick number of the last voice event in the sequence.
-Treated as the last event in the sequence, even if the end of track is later.
-
-```js
-console.log(parsedMIDI.lastVoiceEventTick); // 14518
-```
-
-### duration
-
-The sequence's duration in seconds.
-
-```js
-console.log(parsedMIDI.duration); // 125.64;
-```
-
-!!! Important
-
-    The MIDI file's duration is the start of the file to `midi.lastVoiceEventTick`.
-    To alter the end time, 
-    add a controller change (preferably an unused CC, like CC#50) at the time you want the file to end,
-    then run `midi.flush()`
-
-### midiPorts
-
-The detected midi ports for each track. Each port represents a batch of 16 channels.
-
-```js
-console.log(parsedMIDI.midiPorts); // [0, 0, 0, 1, 1, 2, ...]
-```
-
-### midiPortChannelOffsets
-
-The channel offsets for each MIDI port, using
-the [SpessaSynth method](../extra/about-multi-port.md#spessasynth-implementation)
-
-```js
-console.log(parsedMIDI.midiPortChannelOffsets); // [16, 0, 48, 32, ...]
-```
-
-### usedChannelsOnTrack
-
-All the channels that each track refers to. An array of `Set`s.
-
-```js
-console.log(parsedMIDI.usedChannelsOnTrack) // [ Set[0, 1, 2, 3, 4] ] - this sequence has 1 track which plays on channels 0, 1, 2, 3 and 4
-```
-
-### keyRange
-
-The key range of the sequence. The lowest pressed key and highest.
-
-```js
-console.log(parsedMIDI.keyRange); // {min: 0, max: 127}
-```
-
-### lyrics
-
-The detected lyrics, stored as binary text data, as MIDIs can use different encodings.
-Stored as an array of `Uint8Array`s, each is a single lyrics event.
-
-### RMID Related
-
-!!! Tip
+!!! Note
 
     See [SF2 RMIDI Extension Specification](https://github.com/spessasus/sf2-rmidi-specification#readme) for more info.
 
-#### embeddedSoundFont
-
-An `ArrayBuffer` representation of the embedded soundfont in an RMID file. If no soundfont or not RMID, undefined.
-This can be either SoundFont binary or DLS binary.
-
-!!! WARNING
-
-    If the embedded soundfont is defined, `Sequencer` will automatically pass it to the synthesizer.
-    If you want to avoid this behavior, make sure you set it to undefined before passing the rmid file.
-
-#### bankOffset
+### bankOffset
 
 A `number` representing the bank offset of the file. Only applies to RMID, for normal MIDIs it's set to 0.
 
-#### RMIDInfo
+### isKaraokeFile
 
-An `Object` representing the INFO chunk of an RMID
-file. [See this for more information](https://github.com/spessasus/sf2-rmidi-specification#info-chunk).
+If the MIDI file is a Soft Karaoke file (.kar), this is set to true.
+https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
 
-### tracks
 
-The actual MIDI sequence data. Described below.
+### isDLSRMIDI
+
+If the MIDI file is a DLS RMIDI file.
+
+### embeddedSoundBank
+
+An `ArrayBuffer` the binary representation of the embedded sound bank in an RMID file.
+This will be undefined in songs that do not have it.
+
+!!! WARNING
+
+    If the embedded sound bank is defined, `Sequencer` will automatically pass it to the synthesizer.
+    If you want to avoid this behavior, make sure you set it to undefined before passing the BasicMIDI.
+
+### infoEncoding
+
+The encoding of the RMIDI info in file (for example `Shift_JIS` or `utf-8`), if specified. Otherwise undefined
 
 ## Methods
 
-### flush
+### fromArrayBuffer
 
-Updates internal values. Call this after editing the contents of `midi.tracks`.
+Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
 
-```js
-midi.flush();
+
+```ts
+BasicMIDI.fromArrayBuffer(arrayBuffer, filename = "");
 ```
 
-!!! Caution
+- arrayBuffer - the ArrayBuffer containing the binary file data.
+- fileName - the optional name of the file, will be used if the MIDI file does not have a name.
 
-    Not calling `flush` after making significant changes to the track may result in unexpected behavior.
+!!! Note
 
-### MIDIticksToSeconds
+    This method is *static.*
+    
+### fromFile
+
+Loads a MIDI file (SMF, RMIDI, XMF) from a given file.
+
+```ts
+BasicMIDI.fromFile(file);
+```
+
+- file - the `File` object to load.
+
+!!! Note
+
+    This method is *static.*
+    
+### copyFrom
+
+Copies the sequence (deep copy).
+
+```ts
+BasicMIDI.copyFrom(mid);
+```
+
+- mid - The BasicMIDI to copy.
+
+!!! Note
+
+    This method is *static.*
+
+### midiTicksToSeconds
 
 Calculates time in seconds given the MIDI ticks.
 
-```js
-midi.MIDIticksToSeconds(ticks);
+```ts
+midi.midiTicksToSeconds(ticks);
 ```
 
 - ticks - `number` - the time in MIDI ticks.
 
 The returned value is the time in seconds from the start of the MIDI to the given tick.
 
-### writeMIDI
-
-Renders the sequence as a .mid-file.
-See [Writing MIDI files](../writing-files/midi.md#writemidi) for more info.
-
-```js
-midi.writeMIDI();
-```
-
-The returned value is an `Uint8Array` - a binary representation of the .mid-file.
-
-### writeRMIDI
-
-This function writes out an RMIDI file (MIDI + SF2).
-[See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
-
-```js
-const rmidiBinary = midi.writeRMIDI(
-    soundfontBinary,
-    soundfont,
-    bankOffset = 0,
-    encoding = "Shift_JIS",
-    metadata = {},
-    correctBankOffset = true
-);
-```
-
-- See [Writing MIDI files](../writing-files/midi.md#writermidi) for more info.
-
-### modifyMIDI
-
-A function for modifying MIDI files.
-See [Writing MIDI files](../writing-files/midi.md#modifymidi) for more info.
-
-### applySnapshotToMIDI
-
-A function for applying a [Synthesizer snapshot](../spessa-synth-processor/synthesizer-snapshot.md) to a MIDI file.
-See [Writing MIDI files](../writing-files/midi.md) for more info.
-
 ### getUsedProgramsAndKeys
 
 Goes through the MIDI file and returns all used program numbers and MIDI key:velocity combinations for them,
 for a given sound bank (used for capital tone fallback).
 
-```js
-const used = midi.getUsedProgramsAndKeys(soundfont);
+```ts
+const used = midi.getUsedProgramsAndKeys(soundBank);
 ```
 
-- soundfont - `BasicSoundBank` - an instance of the parsed soundbank to "play" the MIDI with.
+- soundBank - `BasicSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
 
-The returned value is `Object<string, Set<string>>`. That is:
+The returned value is `Map<BasicPreset, Set<string>>`. That is:
 
-- The key is a string representing a given preset that was used as `bank:program`, e.g., `8:16` (bank 8, program 16)
-- The value is a `Set` of all unique combinations played on this preset, formatted as `key-velocity`, e.g., `60:120` (
+- The key is a `BasicPreset`, the patch that was used by the song.
+- The value is a `Set` of all unique combinations played on this preset, formatted as `key-velocity`, e.g., `60-120` (
   key 60, velocity 120)
+
+### flush
+
+Updates all parameters. Call this after editing the contents of `midi.tracks` (the events).
+
+This updates parameters like `fistNoteOn`, `lastVoiceEventTick` or `loop`.
+
+```ts
+midi.flush();
+```
+
+!!! Warning
+
+    Not calling `flush` after making significant changes to the track may result in unexpected behavior.
 
 ### getNoteTimes
 
 Returns nicely formatted note data for easy sequence visualization.
 
-```js
+```ts
 const data = midi.getNoteTimes(minDrumLength = 0);
 ```
 
@@ -315,14 +267,14 @@ The returned value is an array of 16 arrays. Each of these represents one of the
 
 Each channel is a list of notes, represented as objects with properties:
 
-- midiNote - number - the MIDI key number
-- velocity - number - the MIDI velocity
-- start - number - the absolute note start time in seconds
-- length - number - the note length in seconds
+- midiNote - number - the MIDI key number,
+- velocity - number - the MIDI velocity,
+- start - number - start of the note, in seconds.
+- length - number - length of the note, in seconds.
 
 Example:
 
-```js
+```ts
 const data = [
     [{midiNote: 60, velocity: 100, start: 0.5, length: 0.25}], // channel 1
     // other 14 channels...
@@ -330,43 +282,97 @@ const data = [
 ];
 ```
 
-## How the file is stored
 
-The file is stored as an array of tracks, accesible via `parsedMIDI.tracks`.
-Each track is an array of events.
-Each event is a `MIDIMessage` class, which is defined as follows;
+### writeMIDI
 
-```js
-class MIDIMessage {
-    /**
-     * absolute amount of MIDI Ticks from the start of the track
-     * @type {number}
-     */
-    ticks;
+Renders the sequence as a Standard MIDI File (.mid)
+See [Writing MIDI files](../writing-files/midi.md#writemidi) for more info.
 
-    /**
-     * the status byte of the message as a number from 0 to 255
-     * @type {number}
-     */
-    messageStatusByte;
-
-    /**
-     * @type {IndexedByteArray}
-     */
-    messageData;
-}
+```ts
+midi.writeMIDI();
 ```
 
-- ticks - absolute amount of MIDI Ticks from the start of the track.
-- messageStatusByte - the status byte of the message as a number from 0 to 255.
-  [Learn more here](https://www.recordingblogs.com/wiki/status-byte-of-a-midi-message) [and here](https://www.recordingblogs.com/wiki/midi-meta-messages).
+The returned value is an `ArrayBuffer` - a binary representation of the file.
 
-!!! Important
+### writeRMIDI
 
-    Note that for Meta Events, the status byte is the SECOND status byte, not the 0xFF!
+This function writes out an RMIDI file (MIDI + SF2).
+[See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
-- messageData - a `IndexedByteArray`(Pretty much exactly the same as `Uint8Array`) instance of the event's binary data.
+```ts
+const rmidiBinary = midi.writeRMIDI(
+    soundBankBinary,
+    configuration
+);
+```
 
-!!! Caution
+- See [Writing MIDI files](../writing-files/midi.md#writermidi) for more info.
 
-    Not calling `flush` after making significant changes to the track data may result in unexpected behavior.
+
+The returned value is an `ArrayBuffer` - a binary representation of the file.
+
+### modify
+
+A function for modifying MIDI files.
+See [Writing MIDI files](../writing-files/midi.md#modify) for more info.
+
+### applySnapshot
+
+A function for applying a [Synthesizer snapshot](../spessa-synth-processor/synthesizer-snapshot.md) to a MIDI file.
+See [Writing MIDI files](../writing-files/midi.md) for more info.
+
+### getName
+
+Gets the MIDI's decoded name.
+
+```ts
+midi.getName(encoding = "Shift_JIS");
+```
+
+- encoding - The encoding to use if the MIDI uses an extended code page.
+
+Note that RMIDI encoding overrides the provided encoding.
+
+The returned value is a string - the name of the song or the file name if it's not specified. Otherwise, empty.
+
+### getExtraMetadata
+
+Gets the decoded extra metadata as text and removes any unneeded characters (such as "@T" for karaoke files).
+
+```ts
+midi.getExtraMetadata(encoding = "Shift_JIS");
+```
+
+- encoding - The encoding to use if the MIDI uses an extended code page.
+
+Note that RMIDI encoding overrides the provided encoding.
+
+The returned value is an array of strings - each `extraMetadata` decoded and sanitized.
+
+### setRMIDInfo
+
+Sets a given RMIDI info value.
+
+```ts
+midi.setRMIDInfo(infoType, infoData);
+```
+
+- infoType - the type to set.
+- infoData - the value to set it to.
+
+!!! Note
+
+    This sets the info encoding to utf-8.
+    
+
+### getRMIDInfo
+
+Gets a given chunk from the RMIDI information, undefined if it does not exist.
+
+```ts
+midi.getRMIDInfo(infoType);
+```
+
+- infoType - the type to get.
+
+Returns string, Date, ArrayBuffer or undefined.

@@ -1,0 +1,36 @@
+import { IndexedByteArray } from "../../../utils/indexed_array";
+import { RIFFChunk } from "../../../utils/riff_chunk";
+import { signedInt16 } from "../../../utils/byte_functions/little_endian";
+import { Generator } from "../../basic_soundbank/generator";
+import type { GeneratorType } from "../../basic_soundbank/generator_types";
+
+export class ReadGenerator extends Generator {
+    /**
+     * Creates a generator
+     */
+    public constructor(dataArray: IndexedByteArray) {
+        // Note: We skip validation here as some sf2 files use invalid values that end up being correct after applying limits at the modulator level.
+        // Test case: LiveHQ Natural soundfont GM, "Brass" preset (negative attenuation with quiet samples)
+        // 4 bytes:
+        // Type, type, type, value
+        const i = dataArray.currentIndex;
+        const generatorType = ((dataArray[i + 1] << 8) |
+            dataArray[i]) as GeneratorType;
+        const generatorValue = signedInt16(dataArray[i + 2], dataArray[i + 3]);
+        dataArray.currentIndex += 4;
+        super(generatorType, generatorValue, false);
+    }
+}
+
+/**
+ * Reads the generators
+ */
+export function readGenerators(generatorChunk: RIFFChunk): Generator[] {
+    const gens = [];
+    while (generatorChunk.data.length > generatorChunk.data.currentIndex) {
+        gens.push(new ReadGenerator(generatorChunk.data));
+    }
+    // Remove terminal
+    gens.pop();
+    return gens;
+}

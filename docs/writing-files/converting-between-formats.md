@@ -18,9 +18,9 @@ and efficiently.
     This example uses soundfont3 compression.
     Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
-```js
-const sfont = loadSoundFont(input);
-const output = await sfont.write({
+```ts
+const sfont = SoundBankLoader.fromArrayBuffer(input);
+const output = await sfont.writeSF2({
     compress: true,
     compressionFunction: SampleEncodingFunction // make sure to get the function for compression
 });
@@ -28,44 +28,44 @@ const output = await sfont.write({
 
 ## DLS to SF2
 
-```js
-const sfont = loadSoundFont(input);
-const output = await sfont.write();
+```ts
+const sfont = SoundBankLoader.fromArrayBuffer(input);
+const output = await sfont.writeSF2();
 ```
 
 ## SF2 To DLS
 
 Make sure to read about [the DLS conversion problem](../extra/dls-conversion-problem.md)
 
-```js
-const sfont = loadSoundFont(input);
+```ts
+const sfont = SoundBankLoader.fromArrayBuffer(input);
 const output = await sfont.writeDLS();
 ```
 
 ## RMI To MIDI
 
-```js
-const RMID = new MIDI(input);
-const output = await RMID.writeMIDI();
+```ts
+const rmid = BasicMIDI.fromArrayBuffer(input);
+const output = await rmid.writeSF2();
 ```
 
 ## RMI To SF2/SF3
 
-```js
-const RMID = new MIDI(input);
-const sfont = loadSoundFont(RMID.embeddedSoundFont);
-const output = await sfont.write();
+```ts
+const rmid = BasicMIDI.fromArrayBuffer(input);
+const sfont = SoundBankLoader.fromArrayBuffer(rmid.embeddedSoundBank);
+const output = await sfont.writeSF2();
 ```
 
 ## SF2/DLS + MIDI To RMI
 
-This uses two inputs, `input1` for MIDI and `input2` for SoundFont.
+This uses two inputs, `input1` for MIDI and `input2` for the sound bank.
 
-```js
-const mid = new MIDI(input1);
-const sfont = loadSoundFont(input2);
+```ts
+const mid = BasicMIDI.fromArrayBuffer(input1);
+const sfont = SoundBankLoader.fromArrayBuffer(input2);
 // compress this if you want
-const sfontBinary = await sfont.write();
+const sfontBinary = await sfont.writeSF2();
 const output = mid.writeRMIDI(
     sfontBinary,
     sfont,
@@ -73,9 +73,9 @@ const output = mid.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // all the values below are examples, showing how to copy MIDI data to the RMI file
-        name: mid.midiName,
-        copyright: mid.copyright,
-        engineer: sfont.soundFontInfo["IENG"],
+        name: mid.getName(),
+        copyright: mid.getExtraMetadata(),
+        engineer: sfont.soundBankInfo.engineer,
     },
     true // adjust program changes: recommended for self-contained files
 );
@@ -83,10 +83,10 @@ const output = mid.writeRMIDI(
 
 ## DLS RMI To SF2 RMI
 
-```js
-const dlsRMID = new MIDI(input);
-const sfont = loadSoundFont(dlsRMID.embeddedSoundFont);
-const sfontBinary = await sfont.write();
+```ts
+const dlsRMID = BasicMIDI.fromArrayBuffer(input);
+const sfont = SoundBankLoader.fromArrayBuffer(dlsRMID.embeddedSoundBank);
+const sfontBinary = await sfont.writeSF2();
 const output = dlsRMID.writeRMIDI(
     sfontBinary,
     sfont,
@@ -94,16 +94,15 @@ const output = dlsRMID.writeRMIDI(
     "utf-8", // encoding: utf-8 recommended
     {
         // here we try to extract the metadata from the file, then fall back to embedded MIDI
-        name: dlsRMID.RMIDInfo["INAM"] || dlsRMID.midiName,
-        copyright: dlsRMID.RMIDInfo["ICOP"] || dlsRMID.copyright,
-        engineer: sfont.soundFontInfo["IENG"],
-        artist: dlsRMID.RMIDInfo["IART"],
-        // both IPRD and IALB represent album name
-        album: dlsRMID.RMIDInfo["IPRD"] || dlsRMID.RMIDInfo["IALB"],
-        genre: dlsRMID.RMIDInfo["IGNR"],
-        comment: dlsRMID.RMIDInfo["ICMT"],
+        name: dlsRMID.getName(),
+        copyright: dlsRMID.rmidiInfo.copyright || dlsRMID.getExtraMetadata(),
+        engineer: sfont.soundBankInfo.engineer,
+        artist: dlsRMID.getRMIDInfo("artist"),
+        album: dlsRMID.getRMIDInfo("album"),
+        genre: dlsRMID.getRMIDInfo("genre"),
+        comment: dlsRMID.getRMIDInfo("comment"),
         // either use the embedded one or today                     
-        creationDate: dlsRMID.RMIDInfo["ICRD"] || new Date().toDateString()
+        creationDate: dlsRMID.getRMIDInfo("creationDate") ?? new Date()
     },
     false // adjust program changes: I recommend false for that one
 );

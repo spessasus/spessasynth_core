@@ -22,14 +22,19 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
         - spessasynth_lib
         - SpessaSynth
 
-8. Execute `chmod +x *.sh` in `spessasynth_lib` and `SpessaSynth`
-9. Execute `npm run debug` in `SpessaSynth` and `spessasynth_lib`
-
 ### Start coding
 
-To test your changes, run `npm run build` in `SpessaSynth` again and hard-reload the page via `Ctrl + Shift + R`.
+To test your changes, run `local-build`. This will create a `.tgz` file with the core package.
 
-!!! Caution
+In spessasynth_lib: `npm uninstall spessasynth_core; npm install /path/to/your/file.tgz` then `local-build` as well.
+
+Then in SpessaSynth: `npm uninstall spessasynth_lib; npm install /path/to/your/file.tgz`
+
+!!! Tip
+
+    Consider making a shell script to automate this!
+
+!!! Danger
 
     Source maps in audioWorklet don't seem to work on Firefox.
     You must use a Chromium-based browser instead.
@@ -37,6 +42,3 @@ To test your changes, run `npm run build` in `SpessaSynth` again and hard-reload
 ### Create a pull request
 
 After everything works as planned, open the pull request.
-
-*Note: consider running `npm run release` in both `spessasynth_lib` and `SpessaSynth` to disable the development mode
-once you are done.*

@@ -3,7 +3,10 @@
 <img src='https://raw.githubusercontent.com/spessasus/SpessaSynth/refs/heads/master/src/website/spessasynth_logo_rounded.png' width='300' alt='SpessaSynth logo'>
 </p>
 
-**A powerful SF2/DLS/MIDI JavaScript library. It works with any modern JS environment that supports WebAssembly.**
+*A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports
+WebAssembly.*
+
+
 
 It allows you to:
 
@@ -13,13 +16,14 @@ It allows you to:
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
-### Install
 
-```shell
-npm install --save spessasynth_core
-```
+
+### v4.0.0 TypeScript Update is here! 
+
+[**Read about breaking changes here.**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
 
 > **Tip:**
+> 
 > Looking for an easy-to-use WebAudioAPI browser wrapper?
 > Try [spessasynth_lib](https://github.com/spessasus/spessasynth_lib)!
 
@@ -49,6 +53,7 @@ npm install --save spessasynth_core
 - **Easy to Use:** *Basic setup is
   just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)*
 - **No dependencies:** *Batteries included!*
+- **TypeScript definitions:** *Autocompletion in IDEs!*
 
 ### Powerful MIDI Synthesizer
 
@@ -135,7 +140,7 @@ npm install --save spessasynth_core
 #### Read and write SoundFont2 files
 
 - **Easy info access:** *Just
-  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundfontinfo)*
+  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundbankinfo)*
 - **Smart trimming:** Trim the sound bank to only include samples used in the MIDI *(down to key and velocity!)*
 - **SF3 conversion:** *Compress SoundFont2 files to SoundFont3 with variable quality!*
 - **Easy saving:** *Also just [one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)*
@@ -190,6 +195,7 @@ npm install --save spessasynth_core
 - [RecordingBlogs](https://www.recordingblogs.com/) - for detailed explanations on MIDI messages
 - [stbvorbis.js](https://github.com/hajimehoshi/stbvorbis.js) - for the Vorbis decoder
 - [fflate](https://github.com/101arrowz/fflate) - for the MIT DEFLATE implementation
+- [tsup](https://github.com/egoist/tsup) - for the TypeScript bundler
 - [foo_midi](https://github.com/stuerp/foo_midi) - for useful resources on XMF file format
 - [Falcosoft](https://falcosoft.hu) - for help with the RMIDI format
 - [Christian Collins](https://schristiancollins.com) - for various bug reports regarding the synthesizer
@@ -199,66 +205,93 @@ npm install --save spessasynth_core
 
 ### Short example: MIDI to wav converter
 
-```js
+```ts
 import * as fs from "node:fs";
-import {MIDI, SpessaSynthProcessor, SpessaSynthSequencer, audioToWav, loadSoundFont} from "spessasynth_core";
+import {
+    audioToWav,
+    BasicMIDI,
+    SoundBankLoader,
+    SpessaSynthProcessor,
+    SpessaSynthSequencer
+} from "../../src";
 
 // process arguments
 const args = process.argv.slice(2);
 if (args.length !== 3) {
-    console.log("Usage: node index.js <soundfont path> <midi path> <wav output path>");
+    console.info(
+        "Usage: tsx index.ts <soundbank path> <midi path> <wav output path>"
+    );
     process.exit();
 }
 const sf = fs.readFileSync(args[0]);
 const mid = fs.readFileSync(args[1]);
-const midi = new MIDI(mid);
+const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const sampleRate = 44100;
-const sampleCount = 44100 * (midi.duration + 2);
+const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
-    effectsEnabled: false
+    enableEffects: false
 });
-synth.soundfontManager.reloadManager(loadSoundFont(sf));
+synth.soundBankManager.reloadManager(
+    SoundBankLoader.fromArrayBuffer(sf.buffer)
+);
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
-seq.loop = false;
+seq.play();
+
 const outLeft = new Float32Array(sampleCount);
 const outRight = new Float32Array(sampleCount);
 const start = performance.now();
 let filledSamples = 0;
 // note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
-const bufSize = 128;
+const BUFFER_SIZE = 128;
 let i = 0;
-while (filledSamples + bufSize < sampleCount) {
-    const bufLeft = new Float32Array(bufSize);
-    const bufRight = new Float32Array(bufSize);
+const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
+const outputArray = [outLeft, outRight];
+while (filledSamples < sampleCount) {
     // process sequencer
     seq.processTick();
-    const arr = [bufLeft, bufRight];
     // render
-    synth.renderAudio(arr, arr, arr);
-    // write out
-    outLeft.set(bufLeft, filledSamples);
-    outRight.set(bufRight, filledSamples);
-    filledSamples += bufSize;
+    const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
+    synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+    filledSamples += bufferSize;
     i++;
     // log progress
     if (i % 100 === 0) {
-        console.log("Rendered", seq.currentTime, "/", midi.duration);
+        console.info(
+            "Rendered",
+            Math.floor(seq.currentTime * 100) / 100,
+            "/",
+            durationRounded
+        );
     }
 }
-console.log("Rendered in", Math.floor(performance.now() - start), "ms");
-const wave = audioToWav({
-    leftChannel: outLeft,
-    rightChannel: outRight,
-    sampleRate: sampleRate
+const rendered = Math.floor(performance.now() - start);
+console.info(
+    "Rendered in",
+    rendered,
+    `ms (${Math.floor(((midi.duration * 1000) / rendered) * 100) / 100}x)`
+);
+const wave = audioToWav([outLeft, outRight], sampleRate);
+fs.writeFile(args[2], new Uint8Array(wave), () => {
+    console.log(`File written to ${args[2]}`);
 });
-fs.writeFileSync(args[2], new Buffer(wave));
-process.exit();
+
 ```
 
-# License
+### Building
+
+To build the NPM package, do:
+
+```bash
+npm install
+npm run build
+```
+
+The files will be placed in the `dist` folder.
+
+## License
 
 Copyright © 2025 Spessasus
 Licensed under the Apache-2.0 License.

@@ -10,25 +10,25 @@ Below is a basic guide to writing .mid and .rmi files.
 
 ### writeMIDI
 
-Renders the sequence as a Standard MIDI File. Note: makes heavy use of the running status.
+Writes the sequence as a Standard MIDI File.
 
-```js
+```ts
 midi.writeMIDI();
 ```
 
-The returned value is an `Uint8Array` - a binary representation of the Standard MIDI File.
+The returned value is an `ArrayBuffer` - a binary representation of the Standard MIDI File.
 
-### modifyMIDI
+### modify
 
 Allows easily modifying the sequence's programs and controllers.
 
-```js
-midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
+```ts
+midi.modify(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
 ```
 
 - desiredProgramChanges - an array of objects, defined as follows:
 
-```js
+```ts
 /**
  * @typedef desiredProgramChange {Object}
  * @property {number} channel - the channel to modify. Note that this allows going over 16 if the MIDI is a multi port file
@@ -40,7 +40,7 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 
 - desiredControllerChanges - an array of objects, defined as follows:
 
-```js
+```ts
 /**
  * @typedef desiredControllerChange {Object}
  * @property {number} channel - same as above.
@@ -53,7 +53,7 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 - desiredChannelsToClear - an array of numbers, indicating the channel number to effectively mute.
 - desiredChannelsToTranspose - an array of objects, defined as follows:
 
-```js
+```ts
 /**
  * @typedef desiredTranspose {Object}
  * @property {number} channel - same as above.
@@ -71,8 +71,8 @@ midi.modifyMIDI(desiredProgramChanges, desiredControllerChanges, desiredChannels
 Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence *in place*.
 This means changing the programs and controllers if they are locked.
 
-```js
-midi.applySnapshotToMIDI(snapshot);
+```ts
+midi.applySnapshot(snapshot);
 ```
 
 - snapshot - the `SynthesizerSnapshot` to use.
@@ -84,16 +84,16 @@ this will remove all program changes for channel 1 and add one at the start to c
 
 Below is a basic example of writing a modified MIDI file
 
-```js
+```ts
 // create your midi and synthesizer
-const midi = new MIDI(yourBufferGoesHere);
-const synth = new Synthetizer(yourContext, yourSoundfontBuffer);
+const midi = BasicMIDI.fromArrayBuffer(yourBufferGoesHere);
+const synth = new SpessaSynthProcessor(44100);
 
 // ...
 
 // get the snapshot and apply it
-const snapshot = await synth.getSynthesizerSnapshot();
-mid.applySnapshotToMIDI(snapshot);
+const snapshot = SynthesizerSnapshot.create(synth);
+midi.applySnapshot(snapshot);
 
 // write midi 
 const midiBinary = midi.writeMIDI();
@@ -103,7 +103,7 @@ const blob = new Blob([midiBinary.buffer], {type: "audio/midi"});
 const url = URL.createObjectURL(blob);
 const a = document.createElement("a");
 a.href = url;
-a.download = midi.midiName + ".mid";
+a.download = midi.name + ".mid";
 a.click();
 ```
 
@@ -114,26 +114,22 @@ a.click();
 This function writes out an RMIDI file (MIDI + SF2).
 [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
-```js
+```ts
 const rmidiBinary = midi.writeRMIDI(
-    soundfontBinary,
-    soundfont,
-    bankOffset = 0,
-    encoding = "Shift_JIS",
-    metadata = {},
-    correctBankOffset = true
+    soundBankBinary,
+    configuration
 );
 ```
 
 ### Parameters
 
-#### soundfontBinary
+#### soundBankBinary
 
-an `Uint8Array` of the soundfont to embed, created by `soundfont.write()`.
+The binary sound bank to embed into the file.
 
 #### midi
 
-`MIDI` to embed.
+`BasicMIDI` to embed.
 
 #### soundfont
 
@@ -170,7 +166,7 @@ from the MIDI.
 - midiEncoding - `string` - The encoding of the inner MIDI file. Make sure to pick a value that is acceptable by the
   `TextDecoder`
 
-!!! Caution
+!!! Warning
 
     Providing *any* of the metadata fields overrides the encoding with `utf-8`.
     This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
@@ -206,29 +202,32 @@ Below is a simple example for exporting an RMIDI file
     This example uses soundfont3 compression.
     Make sure you've [read this](../sound-bank/index.md#compressionfunction)
 
-```js
+```ts
 const sfInput = document.getElementById("soundfont_upload");
 const midiInput = document.getElementById("midi_upload");
 document.getElementById("export").onchange = async () => {
     // get the files
-    const soundfont = loadSoundFont(await sfInput.files[0].arrayBuffer());
-    const midi = new MIDI(await midiInput.files[0].arrayBuffer());
+    const soundBank = SoundBankLoader.fromArrayBuffer(await sfInput.files[0].arrayBuffer());
+    const midi = BasicMIDI.fromArrayBuffer(await midiInput.files[0].arrayBuffer());
 
     // trim the soundfont
-    soundfont.trimSoundBank(soundfont);
+    soundBank.trimSoundBank(soundBank);
     // write out with compression to save space (0.5 is medium quality)
-    const soundfontBinary = await soundfont.write({
+    const soundfontBinary = await soundBank.writeSF2({
         compress: true,
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
     // get the rmidi
-    const rmidiBinary = midi.writeRMIDI(soundfontBinary, soundfont, 0, 'utf-8', {
-        name: "A cool song",
-        artist: "John",
-        creationDate: new Date().toDateString(),
-        album: "John's songs",
-        genre: "Rock",
-        comment: "My favorite!"
+    const rmidiBinary = midi.writeRMIDI(soundBankBinary, {
+        soundBank,
+        metadata: {
+            name: "A cool song",
+            artist: "John",
+            creationDate: new Date(),
+            album: "John's songs",
+            genre: "Rock",
+            comment: "My favorite!"
+        }
     });
 
     // save the file
@@ -236,7 +235,7 @@ document.getElementById("export").onchange = async () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = midi.midiName + ".rmi";
+    a.download = midi.name + ".rmi";
     a.click();
 }
 ```
