@@ -117,7 +117,15 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             this.mode = "dls1";
             while (lart.data.currentIndex < lart.data.length) {
                 const art1 = readRIFFChunk(lart.data);
-                DownloadableSoundsArticulation.verifyHeader(art1, "art1");
+                // Note:
+                // DLS Specification says that lar2 should only have art2, but a DirectMusic Producer example
+                // "FarmGame.dls" has 'art1' in there.
+                // Hence, we allow art2 in lart and art1 in lar2.
+                DownloadableSoundsArticulation.verifyHeader(
+                    art1,
+                    "art1",
+                    "art2"
+                );
                 const artData = art1.data;
                 const cbSize = readLittleEndianIndexed(artData, 4);
                 if (cbSize !== 8) {
@@ -134,7 +142,15 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             this.mode = "dls2";
             while (lar2.data.currentIndex < lar2.data.length) {
                 const art2 = readRIFFChunk(lar2.data);
-                DownloadableSoundsArticulation.verifyHeader(art2, "art2");
+                // Note:
+                // DLS Specification says that lar2 should only have art2, but a DirectMusic Producer example
+                // "FarmGame.dls" has 'art1' in there.
+                // Hence, we allow art2 in lart and art1 in lar2.
+                DownloadableSoundsArticulation.verifyHeader(
+                    art2,
+                    "art2",
+                    "art1"
+                );
                 const artData = art2.data;
                 const cbSize = readLittleEndianIndexed(artData, 4);
                 if (cbSize !== 8) {
