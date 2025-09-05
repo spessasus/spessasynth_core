@@ -50,7 +50,7 @@ zone.setGenerator(type, value, validate = true);
 ```
 
 - type - the one of the SF2 generator types, a number. `generatorTypes` enum contains all of them.
-- value - the value to set it to, a number. Set to `undefined` to delete the generator (unset).
+- value - the value to set it to, a number. Set to `null` to delete the generator (unset).
 - validate - optional validation for the limits defined in the SF2 specification. recommended.
 
 ### getGenerator

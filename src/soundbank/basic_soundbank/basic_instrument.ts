@@ -3,17 +3,10 @@ import { BasicInstrumentZone } from "./basic_instrument_zone";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { type BasicPreset } from "./basic_preset";
 import type { BasicSample } from "./basic_sample";
-import {
-    generatorLimits,
-    type GeneratorType,
-    generatorTypes
-} from "./generator_types";
+import { generatorLimits, type GeneratorType, generatorTypes } from "./generator_types";
 import { MOD_BYTE_SIZE, Modulator } from "./modulator";
 import type { IndexedByteArray } from "../../utils/indexed_array";
-import type {
-    ExtendedSF2Chunks,
-    SoundFontWriteIndexes
-} from "../soundfont/write/types";
+import type { ExtendedSF2Chunks, SoundFontWriteIndexes } from "../soundfont/write/types";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { BasicSoundBank } from "./basic_soundbank";
@@ -243,7 +236,7 @@ export class BasicInstrument {
                     if (genValue !== undefined) {
                         if (genValue === targetValue) {
                             // That exact value exists. Since it's global now, remove it
-                            z.setGenerator(checkedType, undefined);
+                            z.setGenerator(checkedType, null);
                         }
                     } else {
                         // That type does not exist at all here.
