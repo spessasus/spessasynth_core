@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    readLittleEndianIndexed,
-    signedInt8
-} from "../../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, signedInt8 } from "../../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
@@ -142,7 +139,7 @@ export class SoundFontSample extends BasicSample {
             // Check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
             if (linked.linkedSample) {
                 SpessaSynthInfo(
-                    `%cInvalid linked sample for ${this.name}: Already linked to ${linked.linkedSample.name}`,
+                    `%cInvalid linked sample for ${this.name}: ${linked.name} is already linked to ${linked.linkedSample.name}`,
                     consoleColors.warn
                 );
                 this.unlinkSample();

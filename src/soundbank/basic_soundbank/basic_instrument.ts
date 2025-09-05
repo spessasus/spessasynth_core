@@ -3,10 +3,17 @@ import { BasicInstrumentZone } from "./basic_instrument_zone";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { type BasicPreset } from "./basic_preset";
 import type { BasicSample } from "./basic_sample";
-import { generatorLimits, type GeneratorType, generatorTypes } from "./generator_types";
+import {
+    generatorLimits,
+    type GeneratorType,
+    generatorTypes
+} from "./generator_types";
 import { MOD_BYTE_SIZE, Modulator } from "./modulator";
 import type { IndexedByteArray } from "../../utils/indexed_array";
-import type { ExtendedSF2Chunks, SoundFontWriteIndexes } from "../soundfont/write/types";
+import type {
+    ExtendedSF2Chunks,
+    SoundFontWriteIndexes
+} from "../soundfont/write/types";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { BasicSoundBank } from "./basic_soundbank";

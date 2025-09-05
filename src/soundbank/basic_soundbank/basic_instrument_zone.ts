@@ -59,13 +59,13 @@ export class BasicInstrumentZone extends BasicZone {
 
     public getWriteGenerators(bank: BasicSoundBank): Generator[] {
         const gens = super.getWriteGenerators(bank);
-        gens.push(
-            new Generator(
-                generatorTypes.sampleID,
-                bank.samples.indexOf(this.sample),
-                false
-            )
-        );
+        const sampleID = bank.samples.indexOf(this.sample);
+        if (sampleID < 0) {
+            throw new Error(
+                `${this.sample.name} does not exist in ${bank.soundBankInfo.name}! Cannot write sampleID generator.`
+            );
+        }
+        gens.push(new Generator(generatorTypes.sampleID, sampleID, false));
         return gens;
     }
 }

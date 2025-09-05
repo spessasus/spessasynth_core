@@ -1,6 +1,6 @@
 {
   "name": "spessasynth_core",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "description": "MIDI and SoundFont2/DLS library with no compromises",
   "type": "module",
   "main": "dist/index.js",
@@ -12,7 +12,7 @@
     "build:fast": "rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
     "build": "npm run test:types && npm run build:fast",
     "test:types": "npm run lint && tsc -b ",
-    "prepack": "npm run build:fast",
+    "prepack": "npm run build:fast && rimraf -rf *.tgz",
     "prepublishOnly": "npm run build"
   },
   "repository": {

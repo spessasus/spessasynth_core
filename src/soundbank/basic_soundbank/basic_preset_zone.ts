@@ -58,12 +58,14 @@ export class BasicPresetZone extends BasicZone {
                 "Instrument ID cannot be determined without the sound bank itself."
             );
         }
+        const instrumentID = bank.instruments.indexOf(this.instrument);
+        if (instrumentID < 0) {
+            throw new Error(
+                `${this.instrument.name} does not exist in ${bank.soundBankInfo.name}! Cannot write instrument generator.`
+            );
+        }
         gens.push(
-            new Generator(
-                generatorTypes.instrument,
-                bank.instruments.indexOf(this.instrument),
-                false
-            )
+            new Generator(generatorTypes.instrument, instrumentID, false)
         );
         return gens;
     }

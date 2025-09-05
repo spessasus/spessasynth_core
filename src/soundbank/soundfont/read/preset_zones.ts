@@ -30,6 +30,11 @@ export class SoundFontPresetZone extends BasicPresetZone {
         } else {
             throw new Error("No instrument ID found in preset zone.");
         }
+        if (!instrument) {
+            throw new Error(
+                `Invalid instrument ID: ${instrumentID.generatorValue}`
+            );
+        }
         super(preset, instrument);
         this.addGenerators(...generators);
         this.addModulators(...modulators);
