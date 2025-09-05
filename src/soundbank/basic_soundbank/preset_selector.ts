@@ -29,6 +29,12 @@ function getAnyDrums<T extends BasicPreset>(
     );
 }
 
+/**
+ * A sophisticated preset selection system based on the MIDI Patch system
+ * @param presets The preset list.
+ * @param patch The patch to select.
+ * @param system The MIDI system to select for.
+ */
 export function selectPreset<T extends BasicPreset>(
     presets: T[],
     patch: MIDIPatch,
@@ -120,6 +126,7 @@ export function selectPreset<T extends BasicPreset>(
         (p) => p.program === program && !p.isAnyDrums
     );
     if (matchingPrograms.length < 1) {
+        // The first preset
         returnReplacement(presets[0]);
         return presets[0];
     }
@@ -134,10 +141,9 @@ export function selectPreset<T extends BasicPreset>(
         returnReplacement(p);
         return p;
     }
-    // Any matching bank
-    p = matchingPrograms.find(
-        (p) => p.bankLSB === bankLSB || p.bankMSB === bankMSB
-    );
+    const bank = Math.max(bankMSB, bankLSB);
+    // Any matching bank.
+    p = matchingPrograms.find((p) => p.bankLSB === bank || p.bankMSB === bank);
     if (p) {
         returnReplacement(p);
         return p;
