@@ -29,6 +29,11 @@ export class SoundFontInstrumentZone extends BasicInstrumentZone {
         } else {
             throw new Error("No sample ID found in instrument zone.");
         }
+        if (!sample) {
+            throw new Error(
+                `Invalid sample ID: ${sampleID.generatorValue}, available samples: ${samples.length}`
+            );
+        }
         super(inst, sample);
         this.addGenerators(...generators);
         this.addModulators(...modulators);

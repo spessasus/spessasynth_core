@@ -32,7 +32,7 @@ export class SoundFontPresetZone extends BasicPresetZone {
         }
         if (!instrument) {
             throw new Error(
-                `Invalid instrument ID: ${instrumentID.generatorValue}`
+                `Invalid instrument ID: ${instrumentID.generatorValue}, available instruments: ${instruments.length}`
             );
         }
         super(preset, instrument);
