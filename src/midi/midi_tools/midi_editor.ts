@@ -105,26 +105,6 @@ export function modifyMIDIInternal(
     // Go through all events one by one
     let system: SynthSystem = "gs";
     let addedGs = false;
-    /**
-     * Indexes for tracks
-     */
-    const eventIndexes: number[] = Array<number>(midi.tracks.length).fill(0);
-    let remainingTracks = midi.tracks.length;
-
-    function findFirstEventIndex() {
-        let index = 0;
-        let ticks = Infinity;
-        midi.tracks.forEach((track, i) => {
-            if (eventIndexes[i] >= track.events.length) {
-                return;
-            }
-            if (track.events[eventIndexes[i]].ticks < ticks) {
-                index = i;
-                ticks = track.events[eventIndexes[i]].ticks;
-            }
-        });
-        return index;
-    }
 
     // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     /**
@@ -184,15 +164,9 @@ export function modifyMIDIInternal(
         fineTranspose[transpose.channel] = fine;
     });
 
-    while (remainingTracks > 0) {
-        const trackNum = findFirstEventIndex();
+    midi.iterate((e, trackNum, eventIndexes) => {
         const track = midi.tracks[trackNum];
-        if (eventIndexes[trackNum] >= track.events.length) {
-            remainingTracks--;
-            continue;
-        }
-        const index = eventIndexes[trackNum]++;
-        const e = track.events[index];
+        const index = eventIndexes[trackNum];
 
         const deleteThisEvent = () => {
             track.deleteEvent(index);
@@ -207,14 +181,14 @@ export function modifyMIDIInternal(
         const portOffset = midiPortChannelOffsets[midiPorts[trackNum]] || 0;
         if (e.statusByte === midiMessageTypes.midiPort) {
             assignMIDIPort(trackNum, e.data[0]);
-            continue;
+            return;
         }
         // Don't clear meta
         if (
             e.statusByte <= midiMessageTypes.sequenceSpecific &&
             e.statusByte >= midiMessageTypes.sequenceNumber
         ) {
-            continue;
+            return;
         }
         const status = e.statusByte & 0xf0;
         const midiChannel = e.statusByte & 0xf;
@@ -222,7 +196,7 @@ export function modifyMIDIInternal(
         // Clear channel?
         if (desiredChannelsToClear.includes(channel)) {
             deleteThisEvent();
-            continue;
+            return;
         }
         switch (status) {
             case midiMessageTypes.noteOn:
@@ -287,7 +261,7 @@ export function modifyMIDIInternal(
                             (c) => c.channel === channel
                         );
                         if (!change) {
-                            continue;
+                            return;
                         }
                         SpessaSynthInfo(
                             `%cSetting %c${change.channel}%c to %c${MIDIPatchTools.toMIDIString(change)}%c. Track num: %c${trackNum}`,
@@ -373,7 +347,7 @@ export function modifyMIDIInternal(
                 if (channelsToChangeProgram.has(channel)) {
                     // This channel has program change. BEGONE!
                     deleteThisEvent();
-                    continue;
+                    return;
                 }
                 break;
 
@@ -388,7 +362,7 @@ export function modifyMIDIInternal(
                     if (changes !== undefined) {
                         // This controller is locked, BEGONE CHANGE!
                         deleteThisEvent();
-                        continue;
+                        return;
                     }
                     // Bank maybe?
                     if (
@@ -451,7 +425,7 @@ export function modifyMIDIInternal(
                     addedGs = false;
                 }
         }
-    }
+    });
     // Check for gs
     if (!addedGs && desiredProgramChanges.length > 0) {
         // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)

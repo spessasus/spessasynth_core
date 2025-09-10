@@ -11,11 +11,11 @@ export class BankSelectHacks {
     /**
      * GM2 has a different default bank number
      */
-    public static getDefaultBank(sys: SynthSystem): number {
+    public static getDefaultBank(sys: SynthSystem) {
         return sys === "gm2" ? GM2_DEFAULT_BANK : 0;
     }
 
-    public static getDrumBank(sys: SynthSystem): number {
+    public static getDrumBank(sys: SynthSystem) {
         switch (sys) {
             default:
                 throw new Error(`${sys} doesn't have a bank MSB for drums.`);
@@ -30,14 +30,14 @@ export class BankSelectHacks {
     /**
      * Checks if this bank number is XG drums
      */
-    public static isXGDrums(bankMSB: number): boolean {
+    public static isXGDrums(bankMSB: number) {
         return bankMSB === 120 || bankMSB === 126 || bankMSB === 127;
     }
 
     /**
      * Checks if this MSB is a valid XG MSB
      */
-    public static isValidXGMSB(bankMSB: number): boolean {
+    public static isValidXGMSB(bankMSB: number) {
         return (
             this.isXGDrums(bankMSB) ||
             bankMSB === XG_SFX_VOICE ||

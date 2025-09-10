@@ -8,7 +8,6 @@ import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import type { SynthSystem } from "../../synthesizer/types";
 import { type MIDIController, midiControllers, midiMessageTypes } from "../enums";
 import type { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
-import type { MIDIMessage } from "../midi_message";
 
 interface InternalChannelType {
     preset: BasicPreset;
@@ -63,42 +62,12 @@ export function getUsedProgramsAndKeys(
      */
     const usedProgramsAndKeys = new Map<BasicPreset, Set<string>>();
 
-    /**
-     * Indexes for tracks
-     */
-    const eventIndexes: number[] = Array<number>(mid.tracks.length).fill(0);
-    let remainingTracks = mid.tracks.length;
-
-    function findFirstEventIndex() {
-        let index = 0;
-        let ticks = Infinity;
-        mid.tracks.forEach(({ events: track }, i) => {
-            if (eventIndexes[i] >= track.length) {
-                return;
-            }
-            if (track[eventIndexes[i]].ticks < ticks) {
-                index = i;
-                ticks = track[eventIndexes[i]].ticks;
-            }
-        });
-        return index;
-    }
-
     const ports = mid.tracks.map((t) => t.port);
-    // Initialize
-    while (remainingTracks > 0) {
-        const trackNum = findFirstEventIndex();
-        const track = mid.tracks[trackNum].events;
-        if (eventIndexes[trackNum] >= track.length) {
-            remainingTracks--;
-            continue;
-        }
-        const event: MIDIMessage = track[eventIndexes[trackNum]];
-        eventIndexes[trackNum]++;
 
+    mid.iterate((event, trackNum) => {
         if (event.statusByte === midiMessageTypes.midiPort) {
             ports[trackNum] = event.data[0];
-            continue;
+            return;
         }
         const status = event.statusByte & 0xf0;
         if (
@@ -107,7 +76,7 @@ export function getUsedProgramsAndKeys(
             status !== midiMessageTypes.programChange &&
             status !== midiMessageTypes.systemExclusive
         ) {
-            continue;
+            return;
         }
         const channel =
             (event.statusByte & 0xf) +
@@ -130,7 +99,7 @@ export function getUsedProgramsAndKeys(
                 {
                     switch (event.data[0] as MIDIController) {
                         default:
-                            continue;
+                            return;
 
                         case midiControllers.bankSelectLSB:
                             ch.bankLSB = event.data[1];
@@ -145,7 +114,7 @@ export function getUsedProgramsAndKeys(
             case midiMessageTypes.noteOn:
                 if (event.data[1] === 0) {
                     // That's a note off
-                    continue;
+                    return;
                 }
 
                 let combos = usedProgramsAndKeys.get(ch.preset);
@@ -187,7 +156,7 @@ export function getUsedProgramsAndKeys(
                                 consoleColors.recognized
                             );
                         }
-                        continue;
+                        return;
                     }
                     const sysexChannel =
                         [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
@@ -199,7 +168,7 @@ export function getUsedProgramsAndKeys(
                 }
                 break;
         }
-    }
+    });
 
     usedProgramsAndKeys.forEach((combos, preset) => {
         if (combos.size === 0) {

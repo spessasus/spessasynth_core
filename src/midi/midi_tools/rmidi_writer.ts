@@ -46,29 +46,9 @@ function correctBankOffsetInternal(
     // Since midi player6 doesn't seem to default to 0 when non-existent...
     let system: SynthSystem = "gm";
     /**
-     * The unwanted system messages such as gm/gm2 on
+     * The unwanted system messages such as gm on
      */
     const unwantedSystems: { tNum: number; e: MIDIMessage }[] = [];
-    /**
-     * Indexes for tracks
-     */
-    const eventIndexes: number[] = Array<number>(mid.tracks.length).fill(0);
-    let remainingTracks = mid.tracks.length;
-
-    const findFirstEventIndex = () => {
-        let index = 0;
-        let ticks = Infinity;
-        mid.tracks.forEach((track, i) => {
-            if (eventIndexes[i] >= track.events.length) {
-                return;
-            }
-            if (track.events[eventIndexes[i]].ticks < ticks) {
-                index = i;
-                ticks = track.events[eventIndexes[i]].ticks;
-            }
-        });
-        return index;
-    };
 
     // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     const ports = Array<number>(mid.tracks.length).fill(0);
@@ -89,20 +69,12 @@ function correctBankOffsetInternal(
             hasBankSelect: false
         });
     }
-    while (remainingTracks > 0) {
-        const trackNum = findFirstEventIndex();
-        const track = mid.tracks[trackNum];
-        if (eventIndexes[trackNum] >= track.events.length) {
-            remainingTracks--;
-            continue;
-        }
-        const e = track.events[eventIndexes[trackNum]];
-        eventIndexes[trackNum]++;
 
+    mid.iterate((e, trackNum) => {
         const portOffset = mid.portChannelOffsetMap[ports[trackNum]];
         if (e.statusByte === midiMessageTypes.midiPort) {
             ports[trackNum] = e.data[0];
-            continue;
+            return;
         }
         const status = e.statusByte & 0xf0;
         if (
@@ -110,7 +82,7 @@ function correctBankOffsetInternal(
             status !== midiMessageTypes.programChange &&
             status !== midiMessageTypes.systemExclusive
         ) {
-            continue;
+            return;
         }
 
         if (status === midiMessageTypes.systemExclusive) {
@@ -131,7 +103,7 @@ function correctBankOffsetInternal(
                 } else if (isGM2On(e)) {
                     system = "gm2";
                 }
-                continue;
+                return;
             }
             const sysexChannel =
                 [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
@@ -140,7 +112,7 @@ function correctBankOffsetInternal(
             channelsInfo[sysexChannel].drums = !!(
                 e.data[7] > 0 && e.data[5] >> 4
             );
-            continue;
+            return;
         }
 
         // Program change
@@ -173,11 +145,11 @@ function correctBankOffsetInternal(
             if (targetPreset.isGMGSDrum && BankSelectHacks.isSystemXG(system)) {
                 // GM/GS drums returned, leave as is
                 // (drums are already set since we got GMGS, just the sound bank doesn't have any XG.)
-                continue;
+                return;
             }
 
             if (channel.lastBank === undefined) {
-                continue;
+                return;
             }
             channel.lastBank.data[1] = BankSelectHacks.addBankOffset(
                 targetPreset.bankMSB,
@@ -185,17 +157,17 @@ function correctBankOffsetInternal(
                 targetPreset.isXGDrums
             );
             if (channel.lastBankLSB === undefined) {
-                continue;
+                return;
             }
             channel.lastBankLSB.data[1] = targetPreset.bankLSB;
-            continue;
+            return;
         }
 
         // Controller change
         // We only care about bank-selects
         const isLSB = e.data[0] === midiControllers.bankSelectLSB;
         if (e.data[0] !== midiControllers.bankSelect && !isLSB) {
-            continue;
+            return;
         }
         // Bank select
         channel.hasBankSelect = true;
@@ -205,7 +177,7 @@ function correctBankOffsetInternal(
         } else {
             channel.lastBank = e;
         }
-    }
+    });
 
     // Add missing bank selects
     // Add all bank selects that are missing for this track
@@ -293,8 +265,8 @@ function correctBankOffsetInternal(
         );
     });
 
-    // Make sure to put xg if gm
-    if (system !== "gs" && !BankSelectHacks.isSystemXG(system)) {
+    // Make sure to put gs if gm
+    if (system === "gm" && !BankSelectHacks.isSystemXG(system)) {
         for (const m of unwantedSystems) {
             const track = mid.tracks[m.tNum];
             track.deleteEvent(track.events.indexOf(m.e));

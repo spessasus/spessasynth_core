@@ -446,6 +446,51 @@ export class BasicMIDI {
     }
 
     /**
+     * Iterates over the MIDI file, ordered by the time the events happen.
+     * @param callback The callback function to process each event.
+     */
+    public iterate(
+        callback: (
+            event: MIDIMessage,
+            trackNumber: number,
+            eventIndexes: number[]
+        ) => unknown
+    ) {
+        /**
+         * Indexes for tracks
+         */
+        const eventIndexes: number[] = Array<number>(this.tracks.length).fill(
+            0
+        );
+        let remainingTracks = this.tracks.length;
+        const findFirstEventIndex = () => {
+            let index = 0;
+            let ticks = Infinity;
+            this.tracks.forEach(({ events: track }, i) => {
+                if (eventIndexes[i] >= track.length) {
+                    return;
+                }
+                if (track[eventIndexes[i]].ticks < ticks) {
+                    index = i;
+                    ticks = track[eventIndexes[i]].ticks;
+                }
+            });
+            return index;
+        };
+        while (remainingTracks > 0) {
+            const trackNum = findFirstEventIndex();
+            const track = this.tracks[trackNum].events;
+            if (eventIndexes[trackNum] >= track.length) {
+                remainingTracks--;
+                continue;
+            }
+            const event: MIDIMessage = track[eventIndexes[trackNum]];
+            callback(event, trackNum, eventIndexes);
+            eventIndexes[trackNum]++;
+        }
+    }
+
+    /**
      * INTERNAL USE ONLY!
      */
     protected copyMetadataFrom(mid: BasicMIDI) {

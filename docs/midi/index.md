@@ -376,3 +376,17 @@ midi.getRMIDInfo(infoType);
 - infoType - the type to get.
 
 Returns string, Date, ArrayBuffer or undefined.
+
+
+### iterate
+
+Iterates over the MIDI file, ordered by the time the events happen.
+
+```ts
+midi.iterate(callback);
+```
+
+- callback - a custom defined callback function for each event. The parameters are as follows:
+    - event - the `MIDIMessage`.
+    - trackNumber - the track number of this event.
+    - eventIndexes - the current event indexes for each track. If your function deletes or adds new events, make sure to update the indexes accordingly!
