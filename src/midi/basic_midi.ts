@@ -596,8 +596,8 @@ export class BasicMIDI {
                 switch (e.statusByte) {
                     case midiMessageTypes.endOfTrack:
                         if (i !== track.events.length - 1) {
-                            i--;
                             track.deleteEvent(i);
+                            i--;
                             SpessaSynthWarn("Unexpected EndOfTrack. Removing!");
                         }
                         break;
