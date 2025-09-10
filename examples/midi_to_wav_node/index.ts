@@ -68,5 +68,5 @@ console.info(
 );
 const wave = audioToWav([outLeft, outRight], sampleRate);
 fs.writeFile(args[2], new Uint8Array(wave), () => {
-    console.log(`File written to ${args[2]}`);
+    console.info(`File written to ${args[2]}`);
 });

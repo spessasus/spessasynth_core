@@ -1,20 +1,12 @@
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
+import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import { isGSDrumsOn, isXGOn } from "../../utils/sysex_detector";
+import { isGM2On, isGMOn, isGSDrumsOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import type { SynthSystem } from "../../synthesizer/types";
-import {
-    type MIDIController,
-    midiControllers,
-    midiMessageTypes
-} from "../enums";
+import { type MIDIController, midiControllers, midiMessageTypes } from "../enums";
 import type { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import type { MIDIMessage } from "../midi_message";
 
@@ -174,6 +166,24 @@ export function getUsedProgramsAndKeys(
                             system = "xg";
                             SpessaSynthInfo(
                                 "%cXG on detected!",
+                                consoleColors.recognized
+                            );
+                        } else if (isGM2On(event)) {
+                            system = "gm2";
+                            SpessaSynthInfo(
+                                "%cGM2 on detected!",
+                                consoleColors.recognized
+                            );
+                        } else if (isGMOn(event)) {
+                            system = "gm";
+                            SpessaSynthInfo(
+                                "%cGM on detected!",
+                                consoleColors.recognized
+                            );
+                        } else if (isGSOn(event)) {
+                            system = "gs";
+                            SpessaSynthInfo(
+                                "%cGS on detected!",
                                 consoleColors.recognized
                             );
                         }
