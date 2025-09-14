@@ -193,10 +193,12 @@ export class DownloadableSounds extends DLSVerifier {
             );
             const pgalData = aliasingChunk.data;
             // Check for the unused 4 bytes at the start
-            // If the bank starts with 02 00 00 00, skip them
+            // If the bank doesn't start with 00 01 02 03, skip them
             if (
-                pgalData[0] === 2 &&
-                pgalData[1] + pgalData[2] + pgalData[3] === 0
+                pgalData[0] !== 0 ||
+                pgalData[1] !== 1 ||
+                pgalData[2] !== 2 ||
+                pgalData[3] !== 3
             ) {
                 pgalData.currentIndex += 4;
             }
