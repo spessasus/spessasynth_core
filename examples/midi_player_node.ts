@@ -4,7 +4,7 @@ import {
     SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
-} from "../../src";
+} from "../src";
 import * as fs from "fs/promises";
 import { Readable } from "node:stream";
 import Speaker from "speaker";

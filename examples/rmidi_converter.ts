@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import { BasicMIDI } from "../../src";
+import { BasicMIDI } from "../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 1) {

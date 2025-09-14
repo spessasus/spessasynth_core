@@ -7,7 +7,7 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "node examples/midi_to_wav_node/index.ts",
+    "test": "node examples/midi_to_wav_node.ts",
     "lint": "eslint src",
     "build:fast": "rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
     "build": "npm run test:types && npm run build:fast",

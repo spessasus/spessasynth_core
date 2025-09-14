@@ -5,7 +5,7 @@ import {
     SoundBankLoader,
     SpessaSynthProcessor,
     SpessaSynthSequencer
-} from "../../src";
+} from "../src";
 
 // Process arguments
 const args = process.argv.slice(2);

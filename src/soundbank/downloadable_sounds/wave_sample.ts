@@ -1,6 +1,11 @@
 import type { DLSLoop } from "../types";
 import { type RIFFChunk, writeRIFFChunkRaw } from "../../utils/riff_chunk";
-import { readLittleEndianIndexed, signedInt16, writeDword, writeWord } from "../../utils/byte_functions/little_endian";
+import {
+    readLittleEndianIndexed,
+    signedInt16,
+    writeDword,
+    writeWord
+} from "../../utils/byte_functions/little_endian";
 import { type DLSLoopType, DLSLoopTypes, generatorTypes } from "../enums";
 import { DLSVerifier } from "./dls_verifier";
 import { IndexedByteArray } from "../../utils/indexed_array";

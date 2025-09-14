@@ -5,7 +5,7 @@ import {
     BasicSoundBank,
     SoundBankLoader,
     SpessaSynthLogging
-} from "../../src";
+} from "../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 3) {

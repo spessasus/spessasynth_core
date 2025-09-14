@@ -1,6 +1,6 @@
 // Process arguments
 import * as fs from "fs";
-import { BasicSoundBank, type SF2VersionTag, SoundBankLoader } from "../../src";
+import { BasicSoundBank, type SF2VersionTag, SoundBankLoader } from "../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 1) {

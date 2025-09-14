@@ -28,4 +28,4 @@ The metadata uses the `INFO` chunk to write the information. It is encoded with 
 
 ## Example code
 
-Refer to `examples/midi_to_wav_node/index.ts` for an example of rendering audio data to a wav file.
+Refer to `examples/midi_to_wav_node.ts` for an example of rendering audio data to a wav file.
