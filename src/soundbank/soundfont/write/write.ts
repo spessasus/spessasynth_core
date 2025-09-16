@@ -243,7 +243,7 @@ ${bank.soundBankInfo.subject}`
         instData.gen,
         shdrChunk
     ];
-    // Combine in the sfspec order
+    // Combine in the soundfont spec order
     const pdtaChunk = writeRIFFChunkParts(
         "pdta",
         chunks.map((c) => c.pdta),

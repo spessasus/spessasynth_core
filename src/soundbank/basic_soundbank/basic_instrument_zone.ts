@@ -53,10 +53,6 @@ export class BasicInstrumentZone extends BasicZone {
         sample.linkTo(this.parentInstrument);
     }
 
-    public getGenCount(): number {
-        return super.getGenCount() + 1; // SampleID generator
-    }
-
     public getWriteGenerators(bank: BasicSoundBank): Generator[] {
         const gens = super.getWriteGenerators(bank);
         const sampleID = bank.samples.indexOf(this.sample);

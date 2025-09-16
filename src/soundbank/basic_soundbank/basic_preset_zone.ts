@@ -47,10 +47,6 @@ export class BasicPresetZone extends BasicZone {
         this._instrument.linkTo(this.parentPreset);
     }
 
-    public getGenCount(): number {
-        return super.getGenCount() + 1; // Instrument generator
-    }
-
     public getWriteGenerators(bank: BasicSoundBank): Generator[] {
         const gens = super.getWriteGenerators(bank);
         if (!bank) {

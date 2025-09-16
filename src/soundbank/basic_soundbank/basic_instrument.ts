@@ -8,18 +8,11 @@ import {
     type GeneratorType,
     generatorTypes
 } from "./generator_types";
-import { MOD_BYTE_SIZE, Modulator } from "./modulator";
-import type { IndexedByteArray } from "../../utils/indexed_array";
-import type {
-    ExtendedSF2Chunks,
-    SoundFontWriteIndexes
-} from "../soundfont/write/types";
+import { Modulator } from "./modulator";
+import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { writeWord } from "../../utils/byte_functions/little_endian";
-import type { BasicSoundBank } from "./basic_soundbank";
 import { consoleColors } from "../../utils/other";
-import { BAG_BYTE_SIZE } from "./basic_zone";
-import { GEN_BYTE_SIZE } from "./generator";
 
 export const INST_BYTE_SIZE = 22;
 
@@ -304,43 +297,13 @@ export class BasicInstrument {
         }
     }
 
-    public getSize() {
-        const modCount =
-            this.zones.reduce(
-                (count, zone) => zone.modulators.length + count,
-                0
-            ) + this.globalZone.modulators.length;
-        const genCount =
-            this.zones.reduce((count, zone) => zone.getGenCount() + count, 0) +
-            this.globalZone.getGenCount();
-        return {
-            mod: modCount * MOD_BYTE_SIZE,
-            bag: (this.zones.length + 1) * BAG_BYTE_SIZE, // global zone
-            gen: genCount * GEN_BYTE_SIZE,
-            hdr: INST_BYTE_SIZE
-        };
-    }
-
-    public write(
-        genData: IndexedByteArray,
-        modData: IndexedByteArray,
-        bagData: ExtendedSF2Chunks,
-        instData: ExtendedSF2Chunks,
-        indexes: SoundFontWriteIndexes,
-        bank: BasicSoundBank
-    ) {
+    public write(instData: ExtendedSF2Chunks, index: number) {
         SpessaSynthInfo(`%cWriting ${this.name}...`, consoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(instData.pdta, this.name.substring(0, 20), 20);
         writeBinaryStringIndexed(instData.xdta, this.name.substring(20), 20);
         // Inst start index
-        writeWord(instData.pdta, indexes.hdr & 0xffff);
-        writeWord(instData.xdta, indexes.hdr >>> 16);
-        indexes.hdr += this.zones.length + 1; // + global zone
-
-        this.globalZone.write(genData, modData, bagData, indexes, bank);
-        this.zones.forEach((z) =>
-            z.write(genData, modData, bagData, indexes, bank)
-        );
+        writeWord(instData.pdta, index & 0xffff);
+        writeWord(instData.xdta, index >>> 16);
     }
 }

@@ -1,10 +1,10 @@
-import { MOD_BYTE_SIZE, Modulator } from "./modulator";
+import { Modulator } from "./modulator";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 
 import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
-import { GEN_BYTE_SIZE, Generator } from "./generator";
+import { Generator } from "./generator";
 import type { GenericRange, VoiceSynthesisData } from "../types";
 import { BasicInstrument } from "./basic_instrument";
 import {
@@ -13,12 +13,7 @@ import {
     MIDIPatchTools
 } from "./midi_patch";
 import { generatorLimits, generatorTypes } from "./generator_types";
-import { BAG_BYTE_SIZE } from "./basic_zone";
-import type { IndexedByteArray } from "../../utils/indexed_array";
-import type {
-    ExtendedSF2Chunks,
-    SoundFontWriteIndexes
-} from "../soundfont/write/types";
+import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
@@ -155,23 +150,6 @@ export class BasicPreset implements MIDIPatchNamed {
      */
     public matches(preset: MIDIPatch) {
         return MIDIPatchTools.matches(this, preset);
-    }
-
-    public getSize() {
-        const modCount =
-            this.zones.reduce(
-                (count, zone) => zone.modulators.length + count,
-                0
-            ) + this.globalZone.modulators.length;
-        const genCount =
-            this.zones.reduce((count, zone) => zone.getGenCount() + count, 0) +
-            this.globalZone.getGenCount();
-        return {
-            mod: modCount * MOD_BYTE_SIZE,
-            bag: (this.zones.length + 1) * BAG_BYTE_SIZE, // global zone
-            gen: genCount * GEN_BYTE_SIZE,
-            hdr: PHDR_BYTE_SIZE
-        };
     }
 
     /**
@@ -545,14 +523,13 @@ export class BasicPreset implements MIDIPatchNamed {
         return outputInstrument;
     }
 
-    public write(
-        genData: IndexedByteArray,
-        modData: IndexedByteArray,
-        bagData: ExtendedSF2Chunks,
-        phdrData: ExtendedSF2Chunks,
-        indexes: SoundFontWriteIndexes,
-        bank: BasicSoundBank
-    ) {
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Writes the SF2 header
+     * @param phdrData
+     * @param index
+     */
+    public write(phdrData: ExtendedSF2Chunks, index: number) {
         SpessaSynthInfo(`%cWriting ${this.name}...`, consoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(phdrData.pdta, this.name.substring(0, 20), 20);
@@ -571,20 +548,13 @@ export class BasicPreset implements MIDIPatchNamed {
         // Skip wBank and wProgram
         phdrData.xdta.currentIndex += 4;
 
-        writeWord(phdrData.pdta, indexes.hdr & 0xffff);
-        writeWord(phdrData.xdta, indexes.hdr >> 16);
+        writeWord(phdrData.pdta, index & 0xffff);
+        writeWord(phdrData.xdta, index >> 16);
 
         // 3 unused dword, spec says to keep em so we do
         writeDword(phdrData.pdta, this.library);
         writeDword(phdrData.pdta, this.genre);
         writeDword(phdrData.pdta, this.morphology);
         phdrData.xdta.currentIndex += 12;
-
-        indexes.hdr += this.zones.length + 1; // + global zone
-
-        this.globalZone.write(genData, modData, bagData, indexes, bank);
-        this.zones.forEach((z) =>
-            z.write(genData, modData, bagData, indexes, bank)
-        );
     }
 }
