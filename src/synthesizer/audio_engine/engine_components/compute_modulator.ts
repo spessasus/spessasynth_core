@@ -90,10 +90,15 @@ export function computeModulators(
         // All modulators mode: compute all modulators
         modulatedGenerators.set(generators);
         modulators.forEach((mod) => {
-            modulatedGenerators[mod.destination] += computeModulator(
-                this.midiControllers,
-                mod,
-                voice
+            // Prevent -32k overflow
+            // Testcase: gm.dls polysynth
+            modulatedGenerators[mod.destination] = Math.min(
+                32767,
+                Math.max(
+                    -32768,
+                    modulatedGenerators[mod.destination] +
+                        computeModulator(this.midiControllers, mod, voice)
+                )
             );
         });
         // Apply limits
@@ -140,20 +145,21 @@ export function computeModulators(
             const destination = mod.destination;
             if (!computedDestinations.has(destination)) {
                 // Reset this destination
-                modulatedGenerators[destination] = generators[destination];
+                let outputValue = generators[destination];
                 // Compute our modulator
                 computeModulator(this.midiControllers, mod, voice);
                 // Sum the values of all modulators for this destination
                 modulators.forEach((m) => {
                     if (m.destination === destination) {
-                        modulatedGenerators[destination] += m.currentValue;
+                        outputValue += m.currentValue;
                     }
                 });
-                // Apply limits
+                // Apply the limits instantly to prevent -32k overflow
+                // Testcase: gm.dls polysynth
                 const limits = generatorLimits[destination];
                 modulatedGenerators[destination] = Math.max(
                     limits.min,
-                    Math.min(modulatedGenerators[destination], limits.max)
+                    Math.min(outputValue, limits.max)
                 );
                 computedDestinations.add(destination);
             }

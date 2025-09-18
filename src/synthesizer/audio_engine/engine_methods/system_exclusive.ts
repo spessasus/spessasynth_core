@@ -929,13 +929,6 @@ export function systemExclusiveInternal(
                                     "synthDisplay",
                                     Array.from(syx)
                                 );
-                                SpessaSynthInfo(
-                                    `%cRoland SC Display Dot Matrix via: %c${arrayToHexString(
-                                        syx
-                                    )}`,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
                             } else {
                                 // This is some other GS sysex...
                                 notRecognized();
