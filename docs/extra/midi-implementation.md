@@ -58,7 +58,7 @@ Below is the list of controllers supported by default.
 | 38                   | Data Entry LSB                      | Data entry value (0 - 127)                                                                               | This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values. | none          |
 | 64                   | Sustain Pedal                       | 0 - 63 is off, 64 - 127 is on                                                                            | Holds the noteOff messages until the pedal is off, then stops them all at once.                                                                                        | 0 (off)       |
 | 65                   | Portamento On/Off                   | 0 - 63 is off, 64 - 127 is on                                                                            | Controls if the portamento is enabled or not.                                                                                                                          | on            |
-| 71                   | Filter Reasonance                   | The resonance (0 - 127) 0 is 25 dB less, 64 is unchanged, 127 is 25 dB more          ⚠️NON-STANDARD!⚠️   | Controls the filter resonance of the given patch.                                                                                                                      | 64            |
+| 71                   | Filter Resonance                    | The resonance (0 - 127) 0 is 25 dB less, 64 is unchanged, 127 is 25 dB more          ⚠️NON-STANDARD!⚠️   | Controls the filter resonance of the given patch.                                                                                                                      | 64            |
 | 72                   | Attack Time                         | The attack time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest          ⚠️NON-STANDARD!⚠️   | Controls the attack time for the given patch.                                                                                                                          | 64            |
 | 73                   | Release Time                        | The release time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest         ⚠️NON-STANDARD!⚠️   | Controls the release time for the given patch.                                                                                                                         | 64            |
 | 74                   | Brightness                          | The brightness (0 - 127) 0 is muffled, 64 is no additional filter, 127 is most clear ⚠️NON-STANDARD!⚠️   | Controls the brightness (lowpass frequency) of the given patch.                                                                                                        | 64            |
@@ -163,10 +163,10 @@ Here are some useful resources about this:
 There are a few differences from fluidsynth's implementation:
 
 - LSB 16 overrides the `fineTune` generator instead of emitting a pitch-wheel event
-- Effect generators get overriden directly rather than passing through the modulator
+- Effect generators get overridden directly rather than passing through the modulator
 - Filter cutoff and Q have been tuned slightly differently
 
-## System Exlusives
+## System Exclusives
 
 ### Supported System Exclusives
 
@@ -270,17 +270,17 @@ RT means realtime and NRT means non-realtime.
 
 ### Portamento Implementation
 
-SpessaSynth attempts to mimick the old SC-55 Portamento behavior.
+SpessaSynth attempts to mimic the old SC-55 Portamento behavior.
 
 That is:
 
 - Portamento Time is only 7-bit.
-- Portamento Control gets overriden with the last portamento key.
+- Portamento Control gets overridden with the last portamento key.
 - Portamento Time uses
   the [following table by John Novak](https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020) and
   linearly interpolates it.
 - Portamento Time depends on the distance of the keys.
   The final calculation is `portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 30` for now.
-  If you know a more accurate algortihm, please let me know!
+  If you know a more accurate algorithm, please let me know!
 - Portamento is **experimental.** It can be disabled, and it may not work correctly as I do not own an actual SC-55 to
   test it with.

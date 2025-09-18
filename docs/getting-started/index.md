@@ -16,7 +16,7 @@ const synth = new SpessaSynthProcessor()
 
 ## Understanding the audio loop
 
-Spessasynth_core provides very *raw* access to the audio data, outputing float PCM samples.
+Spessasynth_core provides very *raw* access to the audio data, outputting float PCM samples.
 These samples can then be sent to speakers, saved somewhere or processed, generally in a loop.
 
 ### Example MIDI player audio loop
@@ -76,9 +76,9 @@ Here is what this code does:
 
 - Import necessary modules
 - Read the files passed to the command line
-- Initalize the processor
-- Initalize the sequencer
-- Initalize the output buffers
+- Initialize the processor
+- Initialize the sequencer
+- Initialize the output buffers
 - Render loop:
     - Process sequencer
     - Initialize buffer arrays

@@ -24,7 +24,7 @@ Converts the generator into a human-readable string with the name instead of num
 
 Below are all defined generator types as of soundfont 2.04.
 
-They are accesible through the `generatorTypes` enum.
+They are accessible through the `generatorTypes` enum.
 The limits and default values are accessible through the `generatorLimits` constant.
 
 !!! Important
