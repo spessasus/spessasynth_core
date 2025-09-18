@@ -748,14 +748,11 @@ export function systemExclusiveInternal(
                                 } else if (messageValue === 0x7f) {
                                     // GS mode off
                                     SpessaSynthInfo(
-                                        "%cGS system off, switching to GM2",
+                                        "%cGS system off, switching to GM",
                                         consoleColors.info
                                     );
                                     this.resetAllControllers(false);
-                                    this.setMasterParameter(
-                                        "midiSystem",
-                                        "gm2"
-                                    );
+                                    this.setMasterParameter("midiSystem", "gm");
                                 }
                                 break;
 

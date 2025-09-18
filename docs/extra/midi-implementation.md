@@ -193,27 +193,37 @@ Below is the list of currently implemented System Exclusive messages.
 
 ### Supported Bank systems
 
+See the [MIDI Patch system](../spessa-synth-processor/midi-patch.md) for more information.
+
 #### GM
+
+General MIDI (Level 1).
 
 Ignores all bank-selects.
 
-#### GM2
-
-Same as XG, except bank select defaults to 121.
-
 #### GS
 
-Default. Bank MSB processed directly, LSB is ignored. For GS drum channels, only bank 128 is allowed.
+Roland GS, default. 
+
+Bank MSB processed directly, LSB is ignored.
+SysEx can be used to turn a channel into a drum channel.
+
+
+#### GM2
+
+General MIDI Level 2.
+
+Bank LSB and MSB are processed. 
+MSB can be used to turn a channel into a drum channel.
+Drums will be selected according to the [XG Validity](../spessa-synth-processor/midi-patch.md#xg-validity)
 
 #### XG
 
-If bank MSB is 120, 126 or 127, the channel is set to drums.
-If MSB is 64, it is used.
-Otherwise, LSB is used as the bank number.
+Yamaha XG.
 
-The bank will be classified as an XG bank if it only contains valid drum programs on banks 120, 126 and 127.
-If not, the bank will be forced to 128.
-Note that XG Drums (on bank 127 instead of 128) are used if available.
+Bank LSB and MSB are processed. 
+MSB can be used to turn a channel into a drum channel.
+Drums will be selected according to the [XG Validity](../spessa-synth-processor/midi-patch.md#xg-validity)
 
 ### GS Parameters
 
@@ -221,7 +231,7 @@ Below are the supported GS SysEx Parameters.
 
 | Name                    | Description                                                                      |
 |-------------------------|----------------------------------------------------------------------------------|
-| Use for drums part      | Can turn the desired channel into a drum channel.                                |
+| Use for drums part      | Turns a specified channel into a drum channel.                                   |
 | Master Pan              | Controls the overall synth's stereo panning.                                     |
 | Master Volume           | Controls the overall synth's volume.                                             | 
 | Master Reverb           | Controls the overall synth's reverb level.                                       | 

@@ -37,3 +37,12 @@ This allows XG and GS drums to coexist in a single sound bank and can be thought
 
     The `isGMGSDrum` flag being set does *not* necessarily mean that this patch is a drum patch!
     The preset list change event provides an additional property `isAnyDrums` which correctly identifies drums across all MIDI systems.
+    
+
+## XG Validity
+
+Each sound bank is validated for XG compatibility.
+That is, contains only allowed program numbers in the XG standard for the drum presets.
+This is done because some sound bank set the bank MSB of 127 for Roland MT presets.
+
+If a sound bank fails to meet that check, the GM/GS drum presets will be used instead of the GM2/XG drums.
