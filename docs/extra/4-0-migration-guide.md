@@ -170,9 +170,7 @@ Enum removed due to the `rmidInfo` object being reworked.
 
 ### synthDisplayTypes
 
-- `XGText` -> `yamahaXGText`
-- `SoundCanvasText` -> `soundCanvasText`
-- `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
+Removed. The `synthdisplay` now provides the entire message data.
 
 
 ## BasicSoundBank

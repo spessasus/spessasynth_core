@@ -5,17 +5,6 @@ export const interpolationTypes = {
 } as const;
 export type InterpolationType =
     (typeof interpolationTypes)[keyof typeof interpolationTypes];
-// Types of synthesizer message displays.
-export const synthDisplayTypes = {
-    // This message type is used to display text on the SoundCanvas display.
-    soundCanvasText: 0,
-    // This message type is used to display text on a Yamaha XG synthesizer.
-    yamahaXGText: 1,
-    // This message type is used to display a dot matrix display (pixelated graphics) on a SoundCanvas synthesizer.
-    soundCanvasDotMatrix: 2
-} as const;
-export type SynthDisplayType =
-    (typeof synthDisplayTypes)[keyof typeof synthDisplayTypes];
 
 // Data entry states for the MIDI data entry system.
 // These states are used to track the current state of data entry for MIDI controllers.

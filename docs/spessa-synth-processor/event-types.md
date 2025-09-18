@@ -169,15 +169,7 @@ The data is the error message from the parser, a JavaScript error object.
 
 This event is triggered when a SysEx to display some text has been received.
 
-- `displayData`: `Uint8Array` - the data to display, as raw bytes extracted from the MIDI SysEx message.
-- `displayType`: `string` - the type of display. It can be one of the following:
-    - 0 → Sound Canvas Text: The display data is ASCII text for Roland Sound Canvas.
-    - 1 → XG Display Letters: Note that the first byte is the sixth byte of the message,
-      also called "Display Letters" is included in the `displayData`.
-      It is not the part of the text itself, but contains some information that you may want to parse.
-      Refer to the XG specification for more information.
-    - 2 → Sound Canvas Dot Display: The Sound Canvas Dot Display message. Usually used for the SC-55 and SC-88. Read
-      page 193 from SC-88Pro owner's manual for more information.
+The data is a number array of the entire system exclusive, excluding the `F0` status byte.
 
 ### `channelPropertyChange`
 

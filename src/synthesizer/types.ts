@@ -1,6 +1,9 @@
 import type { Voice } from "./audio_engine/engine_components/voice";
-import type { InterpolationType, SynthDisplayType } from "./enums";
-import type { MIDIPatch, MIDIPatchNamed } from "../soundbank/basic_soundbank/midi_patch";
+import type { InterpolationType } from "./enums";
+import type {
+    MIDIPatch,
+    MIDIPatchNamed
+} from "../soundbank/basic_soundbank/midi_patch";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
@@ -67,13 +70,10 @@ export interface PresetListEntry extends MIDIPatchNamed {
  */
 export type PresetList = PresetListEntry[];
 
-export interface SynthDisplayCallback {
-    /** The data to display. */
-    displayData: Uint8Array;
-
-    /** The type of display. */
-    displayType: SynthDisplayType;
-}
+/**
+ * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
+ */
+type SynthDisplayCallback = number[];
 
 export interface PitchWheelCallback {
     /** The MIDI channel number. */

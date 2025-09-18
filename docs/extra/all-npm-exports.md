@@ -19,7 +19,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 - masterParameterType - for setting master parameters.
 - interpolationTypes - the available interpolation types.
-- synthDisplayTypes - for the `synthdisplay` event.
 - ChannelSnapshot - a subclass of SynthesizerSnapshot, a snapshot of a single MIDI channel in the thread.
 - DEFAULT_PERCUSSION - the default drum channel, i.e. channel 9.
 - VOICE_CAP - the default voice cap of the synthesizer. Currently, 350.
