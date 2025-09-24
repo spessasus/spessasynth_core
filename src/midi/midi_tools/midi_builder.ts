@@ -58,7 +58,9 @@ export class MIDIBuilder extends BasicMIDI {
                 "MIDI format 2 is not supported in the MIDI builder. Consider using format 1."
             );
         }
-        this.timeDivision = fullOptions.format;
+
+        this.timeDivision = fullOptions.timeDivision;
+        this.format = fullOptions.format;
         this.binaryName = this.encoder.encode(fullOptions.name);
 
         // Create the first (conductor) track with the file name
