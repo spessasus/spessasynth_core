@@ -23,6 +23,7 @@ const mid = await fs.readFile(midPath);
 
 const sampleRate = 44100;
 SpessaSynthLogging(true, true, true);
+console.info("Initializing synthesizer...");
 const synth = new SpessaSynthProcessor(sampleRate, {
     enableEffects: false
 });
@@ -32,6 +33,7 @@ synth.soundBankManager.addSoundBank(
 );
 await synth.processorInitialized;
 
+console.info("Parsing MIDI file...");
 const midi = BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer);
 console.info(`Now playing: ${midi.getName()}`);
 const seq = new SpessaSynthSequencer(synth);

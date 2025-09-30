@@ -374,11 +374,4 @@ export function loadMIDIFromArrayBufferInternal(
     // Parse the events (no need to sort as they are already sorted by the SMF specification)
     outputMIDI.flush(false);
     SpessaSynthGroupEnd();
-    SpessaSynthInfo(
-        `%cMIDI file parsed. Total tick time: %c${outputMIDI.lastVoiceEventTick}%c, total seconds time: %c${outputMIDI.duration}`,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.recognized
-    );
 }

@@ -2,7 +2,7 @@ import { getStringBytes, readBinaryString } from "../utils/byte_functions/string
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
-import { consoleColors } from "../utils/other";
+import { consoleColors, formatTime } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
 import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./midi_tools/rmidi_writer";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
@@ -41,7 +41,7 @@ export class BasicMIDI {
     public tracks: MIDITrack[] = [];
 
     /**
-     * The time division of the sequence, representing the number of ticks per beat.
+     * The time division of the sequence, representing the number of MIDI ticks per beat.
      */
     public timeDivision = 0;
 
@@ -52,7 +52,7 @@ export class BasicMIDI {
 
     /**
      * The tempo changes in the sequence, ordered from the last change to the first.
-     * Each change is represented by an object with a tick position and a tempo value in beats per minute.
+     * Each change is represented by an object with a MIDI tick position and a tempo value in beats per minute.
      */
     public tempoChanges: TempoChange[] = [{ ticks: 0, tempo: 120 }];
 
@@ -218,25 +218,36 @@ export class BasicMIDI {
      * @returns The time in seconds.
      */
     public midiTicksToSeconds(ticks: number): number {
-        let totalSeconds = 0;
-
-        while (ticks > 0) {
-            // Tempo changes are reversed, so the first element is the last tempo change
-            // And the last element is the first tempo change
-            // (always at tick 0 and tempo 120)
-            // Find the last tempo change that has occurred
-            const tempo = this.tempoChanges.find((v) => v.ticks < ticks);
-            if (!tempo) {
-                return totalSeconds;
-            }
-
-            // Calculate the difference and tempo time
-            const timeSinceLastTempo = ticks - tempo.ticks;
-            totalSeconds +=
-                (timeSinceLastTempo * 60) / (tempo.tempo * this.timeDivision);
-            ticks -= timeSinceLastTempo;
+        ticks = Math.max(ticks, 0);
+        if (this.tempoChanges.length < 1) {
+            // One is added automatically, but the user may have tampered with it
+            throw new Error(
+                "There are no tempo changes in the sequence. At least one is needed."
+            );
         }
 
+        // Sanity check
+        if (this.tempoChanges[this.tempoChanges.length - 1].ticks !== 0) {
+            throw new Error(
+                `The last tempo change is not at 0 ticks. Got ${this.tempoChanges[this.tempoChanges.length - 1].ticks} ticks.`
+            );
+        }
+
+        // Tempo changes are reversed, so the first element is the last tempo change
+        // And the last element is the first tempo change
+        // (always at tick 0 and tempo 120)
+        // Find the last tempo change that has occurred
+        let tempoIndex = this.tempoChanges.findIndex((v) => v.ticks <= ticks);
+
+        let totalSeconds = 0;
+        while (tempoIndex < this.tempoChanges.length) {
+            const tempo = this.tempoChanges[tempoIndex++];
+            // Calculate the difference and tempo time
+            const ticksSinceLastTempo = ticks - tempo.ticks;
+            totalSeconds +=
+                (ticksSinceLastTempo * 60) / (tempo.tempo * this.timeDivision);
+            ticks = tempo.ticks;
+        }
         return totalSeconds;
     }
 
@@ -934,13 +945,22 @@ export class BasicMIDI {
             );
         }
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
+        if (this.duration === 0) {
+            throw new Error("The MIDI file no duration.");
+        }
 
         // Invalidate raw name if empty
         if (this.binaryName && this.binaryName.length < 1) {
             this.binaryName = undefined;
         }
 
-        SpessaSynthInfo("%cSuccess!", consoleColors.recognized);
+        SpessaSynthInfo(
+            `%cMIDI file parsed. Total tick time: %c${this.lastVoiceEventTick}%c, total seconds time: %c${formatTime(Math.ceil(this.duration)).time}`,
+            consoleColors.info,
+            consoleColors.recognized,
+            consoleColors.info,
+            consoleColors.recognized
+        );
         SpessaSynthGroupEnd();
     }
 }

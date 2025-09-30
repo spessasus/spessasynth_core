@@ -73,7 +73,7 @@ export interface RMIDInfoData {
 
 export interface TempoChange {
     /**
-     * MIDI ticks of the change.
+     * MIDI ticks of the change, absolute value from the start of the MIDI file.
      */
     ticks: number;
     /**

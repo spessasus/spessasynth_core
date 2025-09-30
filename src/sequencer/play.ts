@@ -1,4 +1,4 @@
-import { getEvent } from "../midi/midi_message";
+import { getEvent, MIDIMessage } from "../midi/midi_message";
 import { defaultMIDIControllerValues } from "../synthesizer/audio_engine/engine_components/controller_tables";
 import { nonResettableCCs } from "../synthesizer/audio_engine/engine_methods/controller_control/reset_controllers";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 import type { MIDITrack } from "../midi/midi_track";
+import { readBigEndian } from "../utils/byte_functions/big_endian";
 
 // An array with preset default values
 const defaultControllerArray = defaultMIDIControllerValues.slice(0, 128);
@@ -81,6 +82,13 @@ export function setTimeToInternal(
             Array.from(defaultControllerArray) as MIDIController[]
         );
     }
+
+    // Save tempo changes
+    // Testcase:
+    // Piano Concerto No. 2 in G minor, Op 16 - I. Cadenza (Ky6000).mid
+    // With 46k changes!
+    let savedTempo: MIDIMessage | undefined = undefined;
+    let savedTempoTrack = 0;
 
     /**
      * RP-15 compliant reset
@@ -188,6 +196,14 @@ export function setTimeToInternal(
                 }
                 break;
             }
+
+            case midiMessageTypes.setTempo:
+                const tempoBPM = 60000000 / readBigEndian(event.data, 3);
+                this.oneTickToSeconds =
+                    60 / (tempoBPM * this._midiData.timeDivision);
+                savedTempo = event;
+                savedTempoTrack = trackIndex;
+                break;
 
             default:
                 this.processEvent(event, trackIndex);
@@ -305,10 +321,18 @@ export function setTimeToInternal(
         }
     }
 
-    // Restoring paused time
+    // Restoring tempo
+    if (savedTempo) {
+        this.callEvent("metaEvent", {
+            event: savedTempo,
+            trackIndex: savedTempoTrack
+        });
+    }
 
+    // Restoring paused time
     if (this.paused) {
         this.pausedTime = this.playedTime;
     }
+
     return true;
 }
