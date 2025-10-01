@@ -561,9 +561,20 @@ export class BasicMIDI {
          */
         let karaokeHasTitle = false;
 
-        this.keyRange = { max: 0, min: 127 };
-
+        // Reset values
+        // https://github.com/spessasus/spessasynth_core/issues/20
+        this.tempoChanges = [{ ticks: 0, tempo: 120 }];
         this.extraMetadata = [];
+        this.lyrics = [];
+        this.firstNoteOn = 0;
+        this.keyRange = { max: 0, min: 127 };
+        this.lastVoiceEventTick = 0;
+        this.portChannelOffsetMap = [0];
+        this.loop = { start: 0, end: 0 };
+        // Do not reset RMIDI info (parsed in MIDI loader)
+        // Do not reset bank offset (parsed in MIDI loader)
+        this.isKaraokeFile = false;
+        this.isMultiPort = false;
 
         let nameDetected = false;
         if (typeof this.rmidiInfo.name !== "undefined") {
