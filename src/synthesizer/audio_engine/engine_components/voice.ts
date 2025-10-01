@@ -17,7 +17,6 @@ import type { SampleLoopingMode, VoiceList } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { AudioSample } from "./audio_sample";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
-import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // Less because filter shenanigans
@@ -263,6 +262,14 @@ export function getVoicesForPresetInternal(
     velocity: number,
     realKey: number
 ): VoiceList {
+    const cached = this.getCachedVoice(preset, midiNote, velocity);
+    // If cached, return it!
+    if (cached !== undefined) {
+        return cached.map((v) =>
+            Voice.copyFrom(v, this.currentSynthTime, realKey)
+        );
+    }
+    // Not cached...
     const voices: VoiceList = preset
         .getSynthesisData(midiNote, velocity)
         .reduce((voices: VoiceList, synthesisData) => {
@@ -324,8 +331,11 @@ export function getVoicesForPresetInternal(
                 loopingMode
             );
             // Velocity override
+            // Note: use a separate velocity to not override the cached velocity
+            // Testcase: LiveHQ Natural SoundFont GM - the Glockenspiel preset
+            let voiceVelocity = velocity;
             if (generators[generatorTypes.velocity] > -1) {
-                velocity = generators[generatorTypes.velocity];
+                voiceVelocity = generators[generatorTypes.velocity];
             }
 
             // Uncomment to print debug info
@@ -334,7 +344,7 @@ export function getVoicesForPresetInternal(
                     this.sampleRate,
                     audioSample,
                     midiNote,
-                    velocity,
+                    voiceVelocity,
                     this.currentSynthTime,
                     targetKey,
                     realKey,
@@ -378,23 +388,8 @@ export function getVoicesInternal(
         SpessaSynthWarn(`No preset for channel ${channel}!`);
         return [];
     }
-    let patch: MIDIPatch = {
-        ...preset
-    };
     if (overridePatch) {
-        patch = this.keyModifierManager.getPatch(channel, midiNote);
-    }
-
-    const cached = this.getCachedVoice(patch, midiNote, velocity);
-    // If cached, return it!
-    if (cached !== undefined) {
-        return cached.map((v) =>
-            Voice.copyFrom(v, this.currentSynthTime, realKey)
-        );
-    }
-
-    // Not cached...
-    if (overridePatch) {
+        const patch = this.keyModifierManager.getPatch(channel, midiNote);
         preset = this.soundBankManager.getPreset(
             patch,
             this.privateProps.masterParameters.midiSystem

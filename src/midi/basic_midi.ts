@@ -584,10 +584,6 @@ export class BasicMIDI {
                 // Check if it's a voice message
                 if (e.statusByte >= 0x80 && e.statusByte < 0xf0) {
                     trackHasVoiceMessages = true;
-                    // Voice messages are 7-bit always
-                    for (let j = 0; j < e.data.length; j++) {
-                        e.data[j] = Math.min(127, e.data[j]);
-                    }
                     // Last voice event tick
                     if (e.ticks > this.lastVoiceEventTick) {
                         this.lastVoiceEventTick = e.ticks;
