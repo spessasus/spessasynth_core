@@ -141,12 +141,19 @@ export function selectPreset<T extends BasicPreset>(
         returnReplacement(p);
         return p;
     }
-    const bank = Math.max(bankMSB, bankLSB);
-    // Any matching bank.
-    p = matchingPrograms.find((p) => p.bankLSB === bank || p.bankMSB === bank);
-    if (p) {
-        returnReplacement(p);
-        return p;
+    // Special XG case: 64 on LSB can't default to 64 MSB.
+    // Testcase: Cybergate.mid
+    // Selects 64 LSB on warm pad, on DLSbyXG.dls it gets replaced with Bird 2 SFX
+    if (bankLSB !== 64 || !isXG) {
+        const bank = Math.max(bankMSB, bankLSB);
+        // Any matching bank.
+        p = matchingPrograms.find(
+            (p) => p.bankLSB === bank || p.bankMSB === bank
+        );
+        if (p) {
+            returnReplacement(p);
+            return p;
+        }
     }
     // The first matching program
     returnReplacement(matchingPrograms[0]);

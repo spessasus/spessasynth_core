@@ -83,5 +83,6 @@ export function portamentoTimeToSeconds(
 ): number {
     // This seems to work fine for the MIDIs I have.
     // Why? No idea, but it does. :-)
-    return getLookup(time) * (distance / 30);
+    // Note: Some tests about portamento were compared to SC-VA and SYXG50
+    return getLookup(time) * (distance / 36);
 }

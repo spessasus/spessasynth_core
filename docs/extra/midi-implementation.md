@@ -280,7 +280,7 @@ That is:
   the [following table by John Novak](https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020) and
   linearly interpolates it.
 - Portamento Time depends on the distance of the keys.
-  The final calculation is `portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 30` for now.
+  The final calculation is `portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 36` for now.
   If you know a more accurate algorithm, please let me know!
 - Portamento is **experimental.** It can be disabled, and it may not work correctly as I do not own an actual SC-55 to
   test it with.
