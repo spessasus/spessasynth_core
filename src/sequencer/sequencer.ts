@@ -76,10 +76,14 @@ export class SpessaSynthSequencer {
      */
     protected pausedTime?: number = -1;
     /**
-     * Absolute time of the sequencer when it started playing.
-     * It is based on the synth's current time.
+     * The time of the song at the last update point (e.g. pause, seek, rate change)
      */
-    protected absoluteStartTime = 0;
+    protected timeAtLastUpdate = 0;
+
+    /**
+     * The synth's time at the last update point.
+     */
+    protected synthTimeAtLastUpdate = 0;
     /**
      * Currently playing notes (for pausing and resuming)
      */
@@ -114,7 +118,7 @@ export class SpessaSynthSequencer {
      */
     public constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
-        this.absoluteStartTime = this.synth.currentSynthTime;
+        this.synthTimeAtLastUpdate = this.synth.currentSynthTime;
     }
 
     protected _midiData?: BasicMIDI;
@@ -205,9 +209,14 @@ export class SpessaSynthSequencer {
      * @param value the playback rate to set.
      */
     public set playbackRate(value: number) {
-        const time = this.currentTime;
+        if (!this.paused) {
+            // If playing, commit the time passed with the old rate
+            const timeSinceLast = this.synth.currentSynthTime - this.synthTimeAtLastUpdate;
+            this.timeAtLastUpdate += timeSinceLast * this._playbackRate;
+            this.synthTimeAtLastUpdate = this.synth.currentSynthTime;
+        }
+        // If paused, the new rate will be applied on resume
         this._playbackRate = value;
-        this.currentTime = time;
     }
 
     /**
@@ -215,15 +224,11 @@ export class SpessaSynthSequencer {
      * This is the time in seconds since the sequencer started playing.
      */
     public get currentTime() {
-        // Return the paused time if it's set to something other than undefined
         if (this.pausedTime !== undefined) {
             return this.pausedTime;
         }
-
-        return (
-            (this.synth.currentSynthTime - this.absoluteStartTime) *
-            this._playbackRate
-        );
+        const timeSinceLast = this.synth.currentSynthTime - this.synthTimeAtLastUpdate;
+        return this.timeAtLastUpdate + timeSinceLast * this._playbackRate;
     }
 
     /**
@@ -238,6 +243,10 @@ export class SpessaSynthSequencer {
         if (this.paused) {
             this.pausedTime = time;
         }
+        // Update the timekeeping state for the new seek position
+        this.timeAtLastUpdate = time;
+        this.synthTimeAtLastUpdate = this.synth.currentSynthTime;
+
         if (time > this._midiData.duration || time < 0) {
             // Time is 0
             if (this.skipToFirstNoteOn) {
@@ -257,7 +266,6 @@ export class SpessaSynthSequencer {
                 return;
             }
             this.setTimeTo(time);
-            this.recalculateStartTime(time);
         }
     }
 
@@ -284,8 +292,9 @@ export class SpessaSynthSequencer {
 
         // Unpause if paused
         if (this.paused) {
-            // Adjust the start time
-            this.recalculateStartTime(this.pausedTime ?? 0);
+            // Set the start time to the current synth time, and the musical time to the paused time
+            this.timeAtLastUpdate = this.pausedTime ?? 0;
+            this.synthTimeAtLastUpdate = this.synth.currentSynthTime;
         }
         if (!this.externalMIDIPlayback) {
             this.playingNotes.forEach((n) => {
@@ -490,18 +499,11 @@ export class SpessaSynthSequencer {
         const seconds = this._midiData.midiTicksToSeconds(ticks);
         this.callEvent("timeChange", { newTime: seconds });
         const isNotFinished = this.setTimeTo(0, ticks);
-        this.recalculateStartTime(this.playedTime);
+        // Update timekeeping state after seeking
+        this.timeAtLastUpdate = this.playedTime;
+        this.synthTimeAtLastUpdate = this.synth.currentSynthTime;
         if (!isNotFinished) {
             return;
         }
-    }
-
-    /**
-     * Recalculates the absolute start time of the sequencer.
-     * @param time the time in seconds to recalculate the start time for.
-     */
-    protected recalculateStartTime(time: number) {
-        this.absoluteStartTime =
-            this.synth.currentSynthTime - time / this._playbackRate;
     }
 }
