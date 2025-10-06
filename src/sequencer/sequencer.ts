@@ -208,9 +208,10 @@ export class SpessaSynthSequencer {
      * @param value the playback rate to set.
      */
     public set playbackRate(value: number) {
-        const time = this.currentTime;
+        const t = this.currentTime;
         this._playbackRate = value;
-        this.currentTime = time;
+        console.log("RATE", t);
+        this.recalculateStartTime(t);
     }
 
     /**
