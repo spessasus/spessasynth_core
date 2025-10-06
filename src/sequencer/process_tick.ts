@@ -31,7 +31,11 @@ export function processTick(this: SpessaSynthSequencer) {
             return;
         }
         // Check for end of track
-        if (nextTrack.events.length <= this.eventIndexes[nextTrackIndex]) {
+        if (
+            nextTrack.events.length <= this.eventIndexes[nextTrackIndex] ||
+            // https://github.com/spessasus/spessasynth_core/issues/21
+            event.ticks >= this._midiData.lastVoiceEventTick
+        ) {
             // Stop the playback
             this.songIsFinished();
             return;
