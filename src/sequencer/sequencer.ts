@@ -1,8 +1,10 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import { assignMIDIPortInternal, loadNewSequenceInternal } from "./song_control";
+import {
+    assignMIDIPortInternal,
+    loadNewSequenceInternal
+} from "./song_control";
 import { setTimeToInternal } from "./play";
-import { SpessaSynthWarn } from "../utils/loggin";
 
 import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
@@ -252,9 +254,7 @@ export class SpessaSynthSequencer {
             this.playingNotes = [];
             this.callEvent("timeChange", { newTime: time });
             if (this._midiData.duration === 0) {
-                SpessaSynthWarn("No duration!");
-                this.callEvent("pause", { isFinished: true });
-                return;
+                throw new Error("The provided sequence has a duration of 0.");
             }
             this.setTimeTo(time);
             this.recalculateStartTime(time);
