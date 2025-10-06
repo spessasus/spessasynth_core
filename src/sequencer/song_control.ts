@@ -47,6 +47,13 @@ export function loadNewSequenceInternal(
         throw new Error("This MIDI has no tracks!");
     }
 
+    if (parsedMidi.duration === 0) {
+        // https://github.com/spessasus/SpessaSynth/issues/106
+        SpessaSynthWarn("This MIDI file has a duration of exactly 0 seconds.");
+        this.pausedTime = 0;
+        return;
+    }
+
     this.oneTickToSeconds = 60 / (120 * parsedMidi.timeDivision);
     this._midiData = parsedMidi;
 

@@ -11,6 +11,7 @@ import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { midiControllers, midiMessageTypes } from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
+import { SpessaSynthWarn } from "../utils/loggin";
 
 export class SpessaSynthSequencer {
     /**
@@ -253,9 +254,6 @@ export class SpessaSynthSequencer {
         } else {
             this.playingNotes = [];
             this.callEvent("timeChange", { newTime: time });
-            if (this._midiData.duration === 0) {
-                throw new Error("The provided sequence has a duration of 0.");
-            }
             this.setTimeTo(time);
             this.recalculateStartTime(time);
         }
@@ -274,7 +272,10 @@ export class SpessaSynthSequencer {
      */
     public play() {
         if (!this._midiData) {
-            throw new Error("No songs loaded in the sequencer!");
+            SpessaSynthWarn(
+                "No songs loaded in the sequencer. Ignoring the play call."
+            );
+            return;
         }
 
         // Reset the time

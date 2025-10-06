@@ -952,9 +952,6 @@ export class BasicMIDI {
             );
         }
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
-        if (this.duration === 0) {
-            throw new Error("The MIDI file no duration.");
-        }
 
         // Invalidate raw name if empty
         if (this.binaryName && this.binaryName.length < 1) {
