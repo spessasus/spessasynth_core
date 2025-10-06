@@ -6,6 +6,7 @@ import {
     SpessaSynthSequencer
 } from "../src";
 import * as fs from "fs/promises";
+import { formatTime } from "../src/utils/other";
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -42,6 +43,6 @@ console.timeEnd("MIDI parsed in");
 console.time("New song loaded in");
 seq.loadNewSongList([midi]);
 console.timeEnd("New song loaded in");
-console.time("New song loaded in");
-seq.loadNewSongList([midi]);
-console.timeEnd("New song loaded in");
+console.info(
+    `Duration: ${midi.duration} seconds = ${formatTime(midi.duration).time}`
+);
