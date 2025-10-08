@@ -24,6 +24,7 @@ export interface SequencerEventData {
 
     /**
      * Called when the playback stops.
+     * @deprecated use songEnded instead.
      */
     pause: {
         /**
@@ -31,6 +32,11 @@ export interface SequencerEventData {
          */
         isFinished: boolean;
     };
+
+    /**
+     * Called when the playback stops.
+     */
+    songEnded: object;
 
     /**
      * Called when the song changes.

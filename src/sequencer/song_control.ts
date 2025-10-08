@@ -51,11 +51,13 @@ export function loadNewSequenceInternal(
         // https://github.com/spessasus/SpessaSynth/issues/106
         SpessaSynthWarn("This MIDI file has a duration of exactly 0 seconds.");
         this.pausedTime = 0;
+        this.isFinished = true;
         return;
     }
 
     this.oneTickToSeconds = 60 / (120 * parsedMidi.timeDivision);
     this._midiData = parsedMidi;
+    this.isFinished = false;
 
     // Clear old embedded bank if exists
     this.synth.clearEmbeddedBank();
@@ -72,24 +74,34 @@ export function loadNewSequenceInternal(
         );
     }
 
-    SpessaSynthGroupCollapsed("%cPreloading samples...", consoleColors.info);
-    // Smart preloading: load only samples used in the midi!
-    const used = this._midiData.getUsedProgramsAndKeys(
-        this.synth.soundBankManager
-    );
-    used.forEach((combos, preset) => {
-        SpessaSynthInfo(
-            `%cPreloading used samples on %c${preset.name}%c...`,
-            consoleColors.info,
-            consoleColors.recognized,
+    if (this.preload) {
+        SpessaSynthGroupCollapsed(
+            "%cPreloading samples...",
             consoleColors.info
         );
-        for (const combo of combos) {
-            const [midiNote, velocity] = combo.split("-").map(Number);
-            this.synth.getVoicesForPreset(preset, midiNote, velocity, midiNote);
-        }
-    });
-    SpessaSynthGroupEnd();
+        // Smart preloading: load only samples used in the midi!
+        const used = this._midiData.getUsedProgramsAndKeys(
+            this.synth.soundBankManager
+        );
+        used.forEach((combos, preset) => {
+            SpessaSynthInfo(
+                `%cPreloading used samples on %c${preset.name}%c...`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info
+            );
+            for (const combo of combos) {
+                const [midiNote, velocity] = combo.split("-").map(Number);
+                this.synth.getVoicesForPreset(
+                    preset,
+                    midiNote,
+                    velocity,
+                    midiNote
+                );
+            }
+        });
+        SpessaSynthGroupEnd();
+    }
 
     // Copy over the port data
     this.currentMIDIPorts = this._midiData.tracks.map((t) => t.port);

@@ -21,7 +21,18 @@ It also gets called when a song gets changed.
     
 - newTime: number - the new time in seconds.
 
+### songEnded
+
+Called when the song has finished playing.
+
+An empty object is returned for now.
+
 ### pause
+
+
+!!! Danger
+
+    This event is *deprecated*. Please use `songEnded` instead, for parity with spessasynth_lib.
 
 Called when the playback stops.
 

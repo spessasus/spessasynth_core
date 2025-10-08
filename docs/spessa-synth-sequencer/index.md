@@ -102,6 +102,14 @@ This field can be set to trigger a change.
 
 A boolean indicating if the sequencer is currently paused.
 
+### isFinished
+
+A boolean indicating if the sequencer has finished playing.
+
+### preload
+
+A boolean indicating if the smart preloading should be enabled. It is highly recommended.
+
 ## Methods
 
 ### play

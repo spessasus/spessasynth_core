@@ -45,6 +45,17 @@ export class SpessaSynthSequencer {
     public skipToFirstNoteOn = true;
 
     /**
+     * Indicates if the sequencer has finished playing.
+     */
+    public isFinished = false;
+
+    /**
+     * Indicates if the synthesizer should preload the voices for the newly loaded sequence.
+     * Recommended.
+     */
+    public preload = false;
+
+    /**
      * Called when the sequencer calls an event.
      * @param event The event
      */
@@ -337,10 +348,15 @@ export class SpessaSynthSequencer {
             return;
         }
         this.stop();
+        // Remove in next breaking release
         this.callEvent("pause", { isFinished });
+        if (isFinished) {
+            this.callEvent("songEnded", {});
+        }
     }
 
     protected songIsFinished() {
+        this.isFinished = true;
         if (this.songs.length === 1) {
             this.pauseInternal(true);
             return;
