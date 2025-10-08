@@ -9,10 +9,11 @@ BasicMIDI parser and represents a single MIDI sequence.
 ## Initialization
 
 ```ts
-const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer);
+const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer, altName = "");
 ```
 
 - arrayBuffer - an `arrayBuffer` instance of the MIDI file.
+- altName - the *optional* name of the file, will be used if the MIDI file does not have a name.
 
 ## Properties
 
