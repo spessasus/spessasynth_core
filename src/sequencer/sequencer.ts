@@ -526,7 +526,7 @@ export class SpessaSynthSequencer {
             return;
         }
         channel %= 16;
-        this.sendMIDIMessage([midiMessageTypes.noteOff | channel, midiNote]);
+        this.sendMIDIMessage([midiMessageTypes.noteOff | channel, midiNote, 64]);
     }
 
     protected sendMIDICC(channel: number, type: MIDIController, value: number) {
