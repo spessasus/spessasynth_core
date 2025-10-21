@@ -37,6 +37,13 @@ This is used by spessasynth_lib to pass them over to Web MIDI API.
 
 If true, MIDI events will be emitted.
 
+### retriggerPausedNotes
+
+If the notes that were playing when the sequencer was paused should be re-triggered.
+This will re-trigger the notes at the same velocity when unpausing the sequencer.
+
+Defaults to true.
+
 ### loopCount
 
 The loop count of the sequencer.

@@ -37,6 +37,13 @@ export class SpessaSynthSequencer {
      * This is used by spessasynth_lib to pass them over to Web MIDI API.
      */
     public externalMIDIPlayback = false;
+
+    /**
+     * If the notes that were playing when the sequencer was paused should be re-triggered.
+     * Defaults to true.
+     */
+    public retriggerPausedNotes = false;
+
     /**
      * The loop count of the sequencer.
      * If infinite, it will loop forever.
@@ -304,9 +311,11 @@ export class SpessaSynthSequencer {
             // Adjust the start time
             this.recalculateStartTime(this.pausedTime ?? 0);
         }
-        this.playingNotes.forEach((n) => {
-            this.sendMIDINoteOn(n.channel, n.midiNote, n.velocity);
-        });
+        if (this.retriggerPausedNotes) {
+            this.playingNotes.forEach((n) => {
+                this.sendMIDINoteOn(n.channel, n.midiNote, n.velocity);
+            });
+        }
         this.pausedTime = undefined;
     }
 
