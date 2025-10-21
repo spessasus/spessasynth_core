@@ -29,12 +29,8 @@ export function setTimeToInternal(
     }
     this.oneTickToSeconds = 60 / (120 * this._midiData.timeDivision);
     // Reset everything
-    if (this.externalMIDIPlayback) {
-        this.sendMIDIReset();
-    } else {
-        this.synth.resetAllControllers();
-        this.synth.stopAllChannels(false);
-    }
+
+    this.sendMIDIReset();
     this.playedTime = 0;
     this.eventIndexes = Array<number>(this._midiData.tracks.length).fill(0);
 
@@ -178,15 +174,7 @@ export function setTimeToInternal(
                     ) {
                         resetAllControllers(channel);
                     }
-                    if (this.externalMIDIPlayback) {
-                        this.sendMIDICC(channel, controllerNumber, ccV);
-                    } else {
-                        this.synth.controllerChange(
-                            channel,
-                            controllerNumber,
-                            ccV
-                        );
-                    }
+                    this.sendMIDICC(channel, controllerNumber, ccV);
                 } else {
                     savedControllers[channel] ??= Array.from(
                         defaultControllerArray
@@ -227,96 +215,37 @@ export function setTimeToInternal(
     }
 
     // Restoring saved controllers
-    if (this.externalMIDIPlayback) {
-        for (
-            let channelNumber = 0;
-            channelNumber < channelsToSave;
-            channelNumber++
-        ) {
-            // Restore pitch bends
-            if (pitchWheels[channelNumber] !== undefined) {
-                this.sendMIDIPitchWheel(
-                    channelNumber,
-                    pitchWheels[channelNumber] >> 7,
-                    pitchWheels[channelNumber] & 0x7f
-                );
-            }
-            if (savedControllers[channelNumber] !== undefined) {
-                // Every controller that has changed
-                savedControllers[channelNumber].forEach((value, index) => {
-                    if (
-                        value !== defaultControllerArray[index] &&
-                        !isCCNonSkippable(index as MIDIController)
-                    ) {
-                        this.sendMIDICC(channelNumber, index, value);
-                    }
-                });
-            }
-            // Restore programs
-            if (
-                programs[channelNumber].program >= 0 &&
-                programs[channelNumber].actualBank >= 0
-            ) {
-                const bank = programs[channelNumber].actualBank;
-                this.sendMIDICC(
-                    channelNumber,
-                    midiControllers.bankSelect,
-                    bank
-                );
-                this.sendMIDIProgramChange(
-                    channelNumber,
-                    programs[channelNumber].program
-                );
-            }
+    // For all synth channels
+    for (let channel = 0; channel < channelsToSave; channel++) {
+        // Restore pitch bends
+        if (pitchWheels[channel] !== undefined) {
+            this.sendMIDIPitchWheel(channel, pitchWheels[channel]);
         }
-    } else {
-        // For all synth channels
-        for (
-            let channelNumber = 0;
-            channelNumber < channelsToSave;
-            channelNumber++
-        ) {
-            // Restore pitch bends
-            if (pitchWheels[channelNumber] !== undefined) {
-                this.synth.pitchWheel(
-                    channelNumber,
-                    pitchWheels[channelNumber]
-                );
-            }
-            if (savedControllers[channelNumber] !== undefined) {
-                // Every controller that has changed
-                savedControllers[channelNumber].forEach((value, index) => {
-                    if (
-                        value !== defaultControllerArray[index] &&
-                        !isCCNonSkippable(index as MIDIController)
-                    ) {
-                        this.synth.controllerChange(
-                            channelNumber,
-                            index as MIDIController,
-                            value
-                        );
-                    }
-                });
-            }
-            // Restore programs
-            if (programs[channelNumber].actualBank >= 0) {
-                const p = programs[channelNumber];
-                if (p.program !== -1) {
-                    // A program change has occurred, apply the actual bank when program change was executed
-                    this.synth.controllerChange(
-                        channelNumber,
-                        midiControllers.bankSelect,
-                        p.actualBank
-                    );
-                    this.synth.programChange(channelNumber, p.program);
-                } else {
-                    // No program change, apply the current bank select
-                    this.synth.controllerChange(
-                        channelNumber,
-                        midiControllers.bankSelect,
-                        p.bank
-                    );
+        if (savedControllers[channel] !== undefined) {
+            // Every controller that has changed
+            savedControllers[channel].forEach((value, index) => {
+                if (
+                    value !== defaultControllerArray[index] &&
+                    !isCCNonSkippable(index as MIDIController)
+                ) {
+                    this.sendMIDICC(channel, index as MIDIController, value);
                 }
+            });
+        }
+        // Restore programs
+        if (programs[channel].actualBank >= 0) {
+            const p = programs[channel];
+            if (p.program !== -1) {
+                // A program change has occurred, apply the actual bank when program change was executed
+                this.sendMIDICC(
+                    channel,
+                    midiControllers.bankSelect,
+                    p.actualBank
+                );
+                this.sendMIDIProgramChange(channel, p.program);
+            } else {
+                // No program change, apply the current bank select
+                this.sendMIDICC(channel, midiControllers.bankSelect, p.bank);
             }
         }
     }
