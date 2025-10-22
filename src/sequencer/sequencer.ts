@@ -526,7 +526,11 @@ export class SpessaSynthSequencer {
             return;
         }
         channel %= 16;
-        this.sendMIDIMessage([midiMessageTypes.noteOff | channel, midiNote, 64]);
+        this.sendMIDIMessage([
+            midiMessageTypes.noteOff | channel,
+            midiNote,
+            64 // Make sure to send velocity as well
+        ]);
     }
 
     protected sendMIDICC(channel: number, type: MIDIController, value: number) {
