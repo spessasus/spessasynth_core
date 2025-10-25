@@ -9,9 +9,14 @@ import { setTimeToInternal } from "./play";
 import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
-import { midiControllers, midiMessageTypes } from "../midi/enums";
+import {
+    type MIDIController,
+    midiControllers,
+    midiMessageTypes
+} from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
 import { SpessaSynthWarn } from "../utils/loggin";
+import { arrayToHexString } from "../utils/other";
 
 export class SpessaSynthSequencer {
     /**
@@ -32,6 +37,13 @@ export class SpessaSynthSequencer {
      * This is used by spessasynth_lib to pass them over to Web MIDI API.
      */
     public externalMIDIPlayback = false;
+
+    /**
+     * If the notes that were playing when the sequencer was paused should be re-triggered.
+     * Defaults to true.
+     */
+    public retriggerPausedNotes = false;
+
     /**
      * The loop count of the sequencer.
      * If infinite, it will loop forever.
@@ -299,9 +311,9 @@ export class SpessaSynthSequencer {
             // Adjust the start time
             this.recalculateStartTime(this.pausedTime ?? 0);
         }
-        if (!this.externalMIDIPlayback) {
+        if (this.retriggerPausedNotes) {
             this.playingNotes.forEach((n) => {
-                this.synth.noteOn(n.channel, n.midiNote, n.velocity);
+                this.sendMIDINoteOn(n.channel, n.midiNote, n.velocity);
             });
         }
         this.pausedTime = undefined;
@@ -371,22 +383,7 @@ export class SpessaSynthSequencer {
      */
     protected stop() {
         this.pausedTime = this.currentTime;
-        // Disable sustain
-        for (let i = 0; i < 16; i++) {
-            this.synth.controllerChange(i, midiControllers.sustainPedal, 0);
-        }
-        this.synth.stopAllChannels();
-        if (this.externalMIDIPlayback) {
-            for (const note of this.playingNotes) {
-                this.sendMIDIMessage([
-                    midiMessageTypes.noteOff | note.channel % 16,
-                    note.midiNote
-                ]);
-            }
-            for (let c = 0; c < MIDI_CHANNEL_COUNT; c++) {
-                this.sendMIDICC(c, midiControllers.allNotesOff, 0);
-            }
-        }
+        this.sendMIDIAllOff();
     }
 
     /**
@@ -419,25 +416,42 @@ export class SpessaSynthSequencer {
 
     protected sendMIDIMessage(message: number[]) {
         if (!this.externalMIDIPlayback) {
+            SpessaSynthWarn(
+                `Attempting to send ${arrayToHexString(message)} to the synthesizer via sendMIDIMessage. This shouldn't happen!`
+            );
             return;
         }
         this.callEvent("midiMessage", { message });
     }
 
-    protected sendMIDIReset() {
-        this.sendMIDIMessage([midiMessageTypes.reset]);
-        for (let ch = 0; ch < MIDI_CHANNEL_COUNT; ch++) {
-            this.sendMIDIMessage([
-                midiMessageTypes.controllerChange | ch,
-                midiControllers.allSoundOff,
-                0
-            ]);
-            this.sendMIDIMessage([
-                midiMessageTypes.controllerChange | ch,
-                midiControllers.resetAllControllers,
-                0
-            ]);
+    protected sendMIDIAllOff() {
+        // Disable sustain
+        for (let i = 0; i < 16; i++) {
+            this.sendMIDICC(i, midiControllers.sustainPedal, 0);
         }
+        if (!this.externalMIDIPlayback) {
+            this.synth.stopAllChannels();
+            return;
+        }
+        // External
+        // Off all playing notes
+        this.playingNotes.forEach((note) => {
+            this.sendMIDINoteOff(note.channel, note.midiNote);
+        });
+        // Send off controllers
+        for (let c = 0; c < MIDI_CHANNEL_COUNT; c++) {
+            this.sendMIDICC(c, midiControllers.allNotesOff, 0);
+            this.sendMIDICC(c, midiControllers.allSoundOff, 0);
+        }
+    }
+
+    protected sendMIDIReset() {
+        this.sendMIDIAllOff();
+        if (!this.externalMIDIPlayback) {
+            this.synth.resetAllControllers();
+            return;
+        }
+        this.sendMIDIMessage([midiMessageTypes.reset]);
     }
 
     protected loadCurrentSong() {
@@ -456,43 +470,6 @@ export class SpessaSynthSequencer {
             this.shuffledSongIndexes.push(index);
             indexes.splice(indexes.indexOf(index), 1);
         }
-    }
-
-    protected sendMIDICC(channel: number, type: number, value: number) {
-        channel %= 16;
-        if (!this.externalMIDIPlayback) {
-            return;
-        }
-        this.sendMIDIMessage([
-            midiMessageTypes.controllerChange | channel,
-            type,
-            value
-        ]);
-    }
-
-    protected sendMIDIProgramChange(channel: number, program: number) {
-        channel %= 16;
-        if (!this.externalMIDIPlayback) {
-            return;
-        }
-        this.sendMIDIMessage([
-            midiMessageTypes.programChange | channel,
-            program
-        ]);
-    }
-
-    /**
-     * Sets the pitch of the given channel
-     * @param channel usually 0-15: the channel to change pitch
-     * @param MSB SECOND byte of the MIDI pitchWheel message
-     * @param LSB FIRST byte of the MIDI pitchWheel message
-     */
-    protected sendMIDIPitchWheel(channel: number, MSB: number, LSB: number) {
-        channel %= 16;
-        if (!this.externalMIDIPlayback) {
-            return;
-        }
-        this.sendMIDIMessage([midiMessageTypes.pitchWheel | channel, LSB, MSB]);
     }
 
     /**
@@ -520,5 +497,82 @@ export class SpessaSynthSequencer {
     protected recalculateStartTime(time: number) {
         this.absoluteStartTime =
             this.synth.currentSynthTime - time / this._playbackRate;
+    }
+
+    /*
+    SEND MIDI METHOD ABSTRACTIONS
+    These abstract the difference between spessasynth and external MIDI
+     */
+    protected sendMIDINoteOn(
+        channel: number,
+        midiNote: number,
+        velocity: number
+    ) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.noteOn(channel, midiNote, velocity);
+            return;
+        }
+        channel %= 16;
+        this.sendMIDIMessage([
+            midiMessageTypes.noteOn | channel,
+            midiNote,
+            velocity
+        ]);
+    }
+
+    protected sendMIDINoteOff(channel: number, midiNote: number) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.noteOff(channel, midiNote);
+            return;
+        }
+        channel %= 16;
+        this.sendMIDIMessage([
+            midiMessageTypes.noteOff | channel,
+            midiNote,
+            64 // Make sure to send velocity as well
+        ]);
+    }
+
+    protected sendMIDICC(channel: number, type: MIDIController, value: number) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.controllerChange(channel, type, value);
+            return;
+        }
+        channel %= 16;
+        this.sendMIDIMessage([
+            midiMessageTypes.controllerChange | channel,
+            type,
+            value
+        ]);
+    }
+
+    protected sendMIDIProgramChange(channel: number, program: number) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.programChange(channel, program);
+            return;
+        }
+        channel %= 16;
+        this.sendMIDIMessage([
+            midiMessageTypes.programChange | channel,
+            program
+        ]);
+    }
+
+    /**
+     * Sets the pitch of the given channel
+     * @param channel usually 0-15: the channel to change pitch
+     * @param pitch the 14-bit pitch value
+     */
+    protected sendMIDIPitchWheel(channel: number, pitch: number) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.pitchWheel(channel, pitch);
+            return;
+        }
+        channel %= 16;
+        this.sendMIDIMessage([
+            midiMessageTypes.pitchWheel | channel,
+            pitch & 0x7f,
+            pitch >> 7
+        ]);
     }
 }

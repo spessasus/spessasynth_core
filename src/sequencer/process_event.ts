@@ -27,7 +27,12 @@ export function processEventInternal(
     const offset =
         this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
     statusByteData.channel += offset;
-    // Process the event
+    /*
+     Process the event
+     Note: We do not use the .sendMessage on the synth here
+     as it does not allow us to use more than 16 channels,
+     which we need since the sequencer handles multi-port stuff, not the synth!
+    */
     switch (statusByteData.status) {
         case midiMessageTypes.noteOn: {
             const velocity = event.data[1];
