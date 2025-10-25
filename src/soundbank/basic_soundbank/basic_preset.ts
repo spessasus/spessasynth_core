@@ -94,11 +94,7 @@ export class BasicPreset implements MIDIPatchNamed {
         const xg = this.parentSoundBank.isXGBank;
 
         return (
-            this.isGMGSDrum ||
-            (xg &&
-                BankSelectHacks.isXGDrums(this.bankMSB) &&
-                // SFX is not a drum preset, only for exact match
-                this.bankMSB !== 126)
+            this.isGMGSDrum || (xg && BankSelectHacks.isXGDrums(this.bankMSB))
         );
     }
 

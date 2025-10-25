@@ -28,10 +28,15 @@ export class BankSelectHacks {
     }
 
     /**
-     * Checks if this bank number is XG drums
+     * Checks if this bank number is XG drums.
      */
     public static isXGDrums(bankMSB: number) {
-        return bankMSB === 120 || bankMSB === 126 || bankMSB === 127;
+        /*
+        Note: we omit 126 (XG SFX Drums) here, as they are unwanted most of the time.
+        If they are really wanted, the direct match will match them anyway.
+        Testcase: Timbres of heaven, selecting 0:127:30 picked XG SFX.
+         */
+        return bankMSB === 120 || bankMSB === 127;
     }
 
     /**

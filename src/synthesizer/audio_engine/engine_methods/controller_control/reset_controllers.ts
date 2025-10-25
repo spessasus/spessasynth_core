@@ -26,11 +26,22 @@ export function resetAllControllersInternal(
     if (log) {
         SpessaSynthInfo("%cResetting all controllers!", consoleColors.info);
     }
+    // Call here because there are returns in this function.
     this.privateProps.callEvent("allControllerReset", undefined);
     this.setMasterParameter("midiSystem", DEFAULT_SYNTH_MODE);
+    // Reset private props
+    this.privateProps.tunings.length = 0;
+    for (let i = 0; i < 128; i++) {
+        this.privateProps.tunings.push([]);
+    }
+    this.setMIDIVolume(1);
+    this.privateProps.reverbSend = 1;
+    this.privateProps.chorusSend = 1;
+
     if (!this.privateProps.drumPreset || !this.privateProps.defaultPreset) {
         return;
     }
+    // Reset channels
     for (
         let channelNumber = 0;
         channelNumber < this.midiChannels.length;
@@ -88,13 +99,6 @@ export function resetAllControllersInternal(
             });
         }
     }
-    this.privateProps.tunings.length = 0;
-    this.privateProps.tunings.length = 0;
-    for (let i = 0; i < 128; i++) {
-        this.privateProps.tunings.push([]);
-    }
-
-    this.setMIDIVolume(1);
 }
 
 /**

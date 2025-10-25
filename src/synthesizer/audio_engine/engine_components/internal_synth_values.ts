@@ -24,26 +24,28 @@ export class ProtectedSynthValues {
     public midiVolume = 1;
     /**
      * Set via system exclusive.
+     * Note: Remember to reset in system reset!
      */
     public reverbSend = 1;
     /**
      * Set via system exclusive.
+     * Note: Remember to reset in system reset!
      */
     public chorusSend = 1;
     /**
-     * The pan of the left channel
+     * The pan of the left channel.
      */
     public panLeft = 0.5;
     /**
-     * The pan of the right channel
+     * The pan of the right channel.
      */
     public panRight = 0.5;
     /**
-     * Synth's default (reset) preset
+     * Synth's default (reset) preset.
      */
     public defaultPreset: BasicPreset | undefined;
     /**
-     * Synth's default (reset) drum preset
+     * Synth's default (reset) drum preset.
      */
     public drumPreset: BasicPreset | undefined;
 
