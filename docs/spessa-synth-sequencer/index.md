@@ -117,6 +117,8 @@ A boolean indicating if the sequencer has finished playing.
 
 A boolean indicating if the smart preloading should be enabled. It is highly recommended.
 
+Defaults to true.
+
 ## Methods
 
 ### play

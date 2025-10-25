@@ -65,7 +65,7 @@ export class SpessaSynthSequencer {
      * Indicates if the synthesizer should preload the voices for the newly loaded sequence.
      * Recommended.
      */
-    public preload = false;
+    public preload = true;
 
     /**
      * Called when the sequencer calls an event.
