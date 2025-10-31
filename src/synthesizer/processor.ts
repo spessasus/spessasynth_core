@@ -552,7 +552,8 @@ export class SpessaSynthProcessor {
                     break;
 
                 case midiMessageTypes.reset:
-                    this.stopAllChannels(true);
+                    // Do not **force** stop channels (breaks seamless loops, for example th06)
+                    this.stopAllChannels();
                     this.resetAllControllers();
                     break;
 
