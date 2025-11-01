@@ -1,68 +1,68 @@
 {
-  "name": "spessasynth_core",
-  "version": "4.0.19",
-  "description": "MIDI and SoundFont2/DLS library with no compromises",
-  "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "test": "node examples/midi_to_wav_node.ts",
-    "lint": "eslint src",
-    "build:fast": "rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
-    "build": "npm run test:types && npm run build:fast",
-    "test:types": "npm run lint && tsc -b ",
-    "prepack": "npm run build:fast && rimraf -rf *.tgz",
-    "prepublishOnly": "npm run build"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/spessasus/spessasynth_core.git"
-  },
-  "keywords": [
-    "soundfont",
-    "synthesizer",
-    "synth",
-    "sf2",
-    "sf3",
-    "dls",
-    "dls-to-sf2",
-    "midi",
-    "rmi",
-    "midi-player",
-    "midi-file",
-    "midi-editor",
-    "player",
-    "soundfont2",
-    "soundfont3",
-    "audio-to-wav"
-  ],
-  "author": {
-    "name": "spessasus",
-    "email": "spesekspesek@gmail.com",
-    "url": "https://github.com/spessasus"
-  },
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/spessasus/spessasynth_core/issues",
-    "email": "spesekspesek@gmail.com"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "package.json"
-  ],
-  "homepage": "https://github.com/spessasus/spessasynth_core#readme",
-  "devDependencies": {
-    "@eslint/js": "^9.32.0",
-    "@types/node": "^24.2.1",
-    "eslint": "^9.32.0",
-    "globals": "^16.3.0",
-    "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0"
-  }
+    "name": "spessasynth_core",
+    "version": "4.0.20",
+    "description": "MIDI and SoundFont2/DLS library with no compromises",
+    "type": "module",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "test": "node examples/midi_to_wav_node.ts",
+        "lint": "eslint src",
+        "build:fast": "rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
+        "build": "npm run test:types && npm run build:fast",
+        "test:types": "npm run lint && tsc -b ",
+        "prepack": "npm run build:fast && rimraf -rf *.tgz",
+        "prepublishOnly": "npm run build"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/spessasus/spessasynth_core.git"
+    },
+    "keywords": [
+        "soundfont",
+        "synthesizer",
+        "synth",
+        "sf2",
+        "sf3",
+        "dls",
+        "dls-to-sf2",
+        "midi",
+        "rmi",
+        "midi-player",
+        "midi-file",
+        "midi-editor",
+        "player",
+        "soundfont2",
+        "soundfont3",
+        "audio-to-wav"
+    ],
+    "author": {
+        "name": "spessasus",
+        "email": "spesekspesek@gmail.com",
+        "url": "https://github.com/spessasus"
+    },
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/spessasus/spessasynth_core/issues",
+        "email": "spesekspesek@gmail.com"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE",
+        "package.json"
+    ],
+    "homepage": "https://github.com/spessasus/spessasynth_core#readme",
+    "devDependencies": {
+        "@eslint/js": "^9.32.0",
+        "@types/node": "^24.2.1",
+        "eslint": "^9.32.0",
+        "globals": "^16.3.0",
+        "prettier": "^3.6.2",
+        "rimraf": "^6.0.1",
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.38.0"
+    }
 }

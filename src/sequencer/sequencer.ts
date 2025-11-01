@@ -42,7 +42,7 @@ export class SpessaSynthSequencer {
      * If the notes that were playing when the sequencer was paused should be re-triggered.
      * Defaults to true.
      */
-    public retriggerPausedNotes = false;
+    public retriggerPausedNotes = true;
 
     /**
      * The loop count of the sequencer.
