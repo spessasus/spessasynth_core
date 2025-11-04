@@ -10,6 +10,12 @@ export interface SequencerEventData {
          * The binary MIDI message.
          */
         message: Iterable<number>;
+
+        /**
+         * The synthesizer's current time when this event was sent.
+         * Use this for scheduling MIDI messages to your external MIDI device.
+         */
+        time: number;
     };
     /**
      * Called when the time is changed.

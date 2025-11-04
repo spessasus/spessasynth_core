@@ -421,7 +421,10 @@ export class SpessaSynthSequencer {
             );
             return;
         }
-        this.callEvent("midiMessage", { message });
+        this.callEvent("midiMessage", {
+            message,
+            time: this.synth.currentSynthTime
+        });
     }
 
     protected sendMIDIAllOff() {
