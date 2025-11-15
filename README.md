@@ -206,16 +206,16 @@ It allows you to:
 ### Short example: MIDI to wav converter
 
 ```ts
-import * as fs from "node:fs";
+import * as fs from "fs/promises";
 import {
     audioToWav,
     BasicMIDI,
     SoundBankLoader,
     SpessaSynthProcessor,
     SpessaSynthSequencer
-} from "../../src";
+} from "spessasynth_core";
 
-// process arguments
+// Process arguments
 const args = process.argv.slice(2);
 if (args.length !== 3) {
     console.info(
@@ -223,8 +223,8 @@ if (args.length !== 3) {
     );
     process.exit();
 }
-const sf = fs.readFileSync(args[0]);
-const mid = fs.readFileSync(args[1]);
+const sf = await fs.readFile(args[0]);
+const mid = await fs.readFile(args[1]);
 const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const sampleRate = 44100;
 const sampleCount = Math.ceil(44100 * (midi.duration + 2));
@@ -232,8 +232,9 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     enableEventSystem: false,
     enableEffects: false
 });
-synth.soundBankManager.reloadManager(
-    SoundBankLoader.fromArrayBuffer(sf.buffer)
+synth.soundBankManager.addSoundBank(
+    SoundBankLoader.fromArrayBuffer(sf.buffer),
+    "main"
 );
 await synth.processorInitialized;
 const seq = new SpessaSynthSequencer(synth);
@@ -244,20 +245,20 @@ const outLeft = new Float32Array(sampleCount);
 const outRight = new Float32Array(sampleCount);
 const start = performance.now();
 let filledSamples = 0;
-// note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
+// Note: buffer size is recommended to be very small, as this is the interval between modulator updates and LFO updates
 const BUFFER_SIZE = 128;
 let i = 0;
-const durationRounded = Math.floor(seq.midiData.duration * 100) / 100;
+const durationRounded = Math.floor(seq.midiData!.duration * 100) / 100;
 const outputArray = [outLeft, outRight];
 while (filledSamples < sampleCount) {
-    // process sequencer
+    // Process sequencer
     seq.processTick();
-    // render
+    // Render
     const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
     synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
     filledSamples += bufferSize;
     i++;
-    // log progress
+    // Log progress
     if (i % 100 === 0) {
         console.info(
             "Rendered",
@@ -274,10 +275,8 @@ console.info(
     `ms (${Math.floor(((midi.duration * 1000) / rendered) * 100) / 100}x)`
 );
 const wave = audioToWav([outLeft, outRight], sampleRate);
-fs.writeFile(args[2], new Uint8Array(wave), () => {
-    console.log(`File written to ${args[2]}`);
-});
-
+await fs.writeFile(args[2], new Uint8Array(wave));
+console.info(`File written to ${args[2]}`);
 ```
 
 ### Building

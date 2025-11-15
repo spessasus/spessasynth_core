@@ -1,4 +1,4 @@
-import * as fs from "node:fs";
+import * as fs from "fs/promises";
 import {
     audioToWav,
     BasicMIDI,
@@ -15,8 +15,8 @@ if (args.length !== 3) {
     );
     process.exit();
 }
-const sf = fs.readFileSync(args[0]);
-const mid = fs.readFileSync(args[1]);
+const sf = await fs.readFile(args[0]);
+const mid = await fs.readFile(args[1]);
 const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const sampleRate = 44100;
 const sampleCount = Math.ceil(44100 * (midi.duration + 2));
@@ -67,6 +67,5 @@ console.info(
     `ms (${Math.floor(((midi.duration * 1000) / rendered) * 100) / 100}x)`
 );
 const wave = audioToWav([outLeft, outRight], sampleRate);
-fs.writeFile(args[2], new Uint8Array(wave), () => {
-    console.info(`File written to ${args[2]}`);
-});
+await fs.writeFile(args[2], new Uint8Array(wave));
+console.info(`File written to ${args[2]}`);

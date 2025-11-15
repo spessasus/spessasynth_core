@@ -1,5 +1,5 @@
 // Process arguments
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import {
     BasicMIDI,
     BasicSoundBank,
@@ -25,8 +25,10 @@ await BasicSoundBank.isSF3DecoderReady;
 SpessaSynthLogging(true, true, true);
 
 // Load bank and MIDI
-const bank = SoundBankLoader.fromArrayBuffer(fs.readFileSync(sfPath).buffer);
-const midi = BasicMIDI.fromArrayBuffer(fs.readFileSync(midPath).buffer);
+const bank = SoundBankLoader.fromArrayBuffer(
+    (await fs.readFile(sfPath)).buffer
+);
+const midi = BasicMIDI.fromArrayBuffer((await fs.readFile(midPath)).buffer);
 console.info("Loaded bank and MIDI!");
 
 // Trim sf2 for midi
@@ -36,6 +38,5 @@ bank.trimSoundBank(midi);
 const rmidi = midi.writeRMIDI(await bank.writeSF2(), {
     soundBank: bank
 });
-fs.writeFile(outPath, new Uint8Array(rmidi), () => {
-    console.info(`File written to ${outPath}`);
-});
+await fs.writeFile(outPath, new Uint8Array(rmidi));
+console.info(`File written to ${outPath}`);
