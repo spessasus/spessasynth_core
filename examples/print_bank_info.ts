@@ -1,5 +1,5 @@
 // Process arguments
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import { BasicSoundBank, type SF2VersionTag, SoundBankLoader } from "../src";
 
 const args = process.argv.slice(2);
@@ -9,7 +9,7 @@ if (args.length !== 1) {
 }
 
 const filePath = args[0];
-const file = fs.readFileSync(filePath);
+const file = await fs.readFile(filePath);
 await BasicSoundBank.isSF3DecoderReady;
 const bank = SoundBankLoader.fromArrayBuffer(file.buffer);
 console.info("Loaded bank:", bank.soundBankInfo.name);

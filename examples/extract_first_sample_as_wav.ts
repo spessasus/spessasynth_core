@@ -1,4 +1,4 @@
-import * as fs from "node:fs";
+import * as fs from "fs/promises";
 import { audioToWav, SoundBankLoader } from "../src";
 
 // process arguments
@@ -9,10 +9,10 @@ if (args.length !== 2) {
 }
 
 const output = args[1];
-const file = fs.readFileSync(args[0]);
+const file = await fs.readFile(args[0]);
 const bank = SoundBankLoader.fromArrayBuffer(file.buffer);
 const sample = bank.samples[0];
 console.info("Exporting sample:", sample.name, "...");
 const wav = audioToWav([sample.getAudioData()], sample.sampleRate);
-fs.writeFileSync(output, new Uint8Array(wav));
-console.info("Done!");
+await fs.writeFile(output, new Uint8Array(wav));
+console.info(`File written to ${output}`);
