@@ -129,14 +129,7 @@ export class MIDIBuilder extends BasicMIDI {
                 `Track ${track} does not exist. Add it via addTrack method.`
             );
         }
-        if (event < midiMessageTypes.noteOff) {
-            // Meta event
-            if (track > 0) {
-                throw new Error(
-                    `Meta events must be added to the first track, not track ${track}.`
-                );
-            }
-        } else {
+        if (event >= midiMessageTypes.noteOff) {
             // Voice event
             if (this.format === 1 && track === 0) {
                 throw new Error(
