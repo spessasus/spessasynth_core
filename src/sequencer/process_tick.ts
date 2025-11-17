@@ -27,7 +27,11 @@ export function processTick(this: SpessaSynthSequencer) {
                     newCount: this.loopCount
                 });
             }
-            this.setTimeTicks(this._midiData.loop.start);
+            if (this._midiData.loop.type === "soft") {
+                this.jumpToTick(this._midiData.loop.start);
+            } else {
+                this.setTimeTicks(this._midiData.loop.start);
+            }
             return;
         }
         // Check for end of track

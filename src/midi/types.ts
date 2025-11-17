@@ -82,6 +82,8 @@ export interface TempoChange {
     tempo: number;
 }
 
+export type MIDILoopType = "soft" | "hard";
+
 export interface MIDILoop {
     /**
      * Start of the loop, in MIDI ticks.
@@ -91,6 +93,17 @@ export interface MIDILoop {
      * End of the loop, in MIDI ticks.
      */
     end: number;
+
+    /**
+     * The type of the loop detected:
+     * - Soft - the playback will immediately jump to the loop start pointer without any further processing.
+     * - Hard - the playback will quickly process all messages from
+     * the start of the file to ensure that synthesizer is in the correct state.
+     * This is the default behavior.
+     *
+     * Soft loop types are enabled for Touhou and GameMaker loop points.
+     */
+    type: MIDILoopType;
 }
 
 export type MIDIFormat = 0 | 1 | 2;

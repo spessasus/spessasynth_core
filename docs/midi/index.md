@@ -112,6 +112,24 @@ The points of the loop detected in the MIDI file in ticks.
 If there's nothing detected, the loop will start from the first note on event and end will be the last voice message.
 Current looping detection is: CC 2/4, 116/117 and "start," "loopStart" and "loopEnd" markers.
 
+#### start
+
+The start of the loop, in MIDI ticks.
+
+#### end
+
+The end of the loop, in MIDI ticks.
+
+#### type
+
+The type of the loop detected:
+
+- `soft` - the playback will immediately jump to the loop start pointer without any further processing.
+- `hard` - the playback will quickly process all messages from
+the start of the file to ensure that synthesizer is in the correct state.
+This is the default behavior.
+
+Soft loop types are enabled by default for Touhou and GameMaker loop points.
 
 ### fileName
 

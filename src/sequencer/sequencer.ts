@@ -46,8 +46,8 @@ export class SpessaSynthSequencer {
 
     /**
      * The loop count of the sequencer.
-     * If infinite, it will loop forever.
-     * If zero, the loop is disabled.
+     * If set to Infinity, it will loop forever.
+     * If set to zero, the loop is disabled.
      */
     public loopCount = 0;
     /**
@@ -497,6 +497,32 @@ export class SpessaSynthSequencer {
     protected recalculateStartTime(time: number) {
         this.absoluteStartTime =
             this.synth.currentSynthTime - time / this._playbackRate;
+    }
+
+    /**
+     * Jumps to a MIDI tick without any further processing.
+     * @param tick The MIDI tick to jump to.
+     * @protected
+     */
+    protected jumpToTick(tick: number) {
+        if (!this._midiData) {
+            return;
+        }
+        const seconds = this._midiData.midiTicksToSeconds(tick);
+        this.callEvent("timeChange", { newTime: seconds });
+
+        // Recalculate time and reset indexes
+        this.recalculateStartTime(seconds);
+        this.playedTime = seconds;
+        this.eventIndexes.length = 0;
+        for (const track of this._midiData.tracks) {
+            this.eventIndexes.push(
+                Math.max(
+                    0,
+                    track.events.findIndex((e) => e.ticks >= tick)
+                )
+            );
+        }
     }
 
     /*
