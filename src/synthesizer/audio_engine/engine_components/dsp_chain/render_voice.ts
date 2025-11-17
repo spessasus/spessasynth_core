@@ -8,6 +8,7 @@ import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
+import { midiControllers } from "../../../../midi/enums";
 
 /**
  * Renders a voice to the stereo output buffer
@@ -161,16 +162,18 @@ export function renderVoice(
     }
 
     // Channel vibrato (GS NRPN)
-    if (this.channelVibrato.depth > 0) {
+    if (
+        // Only enabled when modulation wheel is disabled (to prevent overlap)
+        this.midiControllers[midiControllers.modulationWheel] == 0 &&
+        this.channelVibrato.depth > 0
+    ) {
         // Same as others
-        const channelVibrato = getLFOValue(
-            voice.startTime + this.channelVibrato.delay,
-            this.channelVibrato.rate,
-            timeNow
-        );
-        if (channelVibrato) {
-            cents += channelVibrato * this.channelVibrato.depth;
-        }
+        cents +=
+            getLFOValue(
+                voice.startTime + this.channelVibrato.delay,
+                this.channelVibrato.rate,
+                timeNow
+            ) * this.channelVibrato.depth;
     }
 
     // Mod env

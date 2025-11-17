@@ -141,7 +141,11 @@ After which any changes received through the NRPN (including the one that trigge
 This behavior has existed since the beginning of this program as a way to enhance the TH MIDI files,
 the original target of SpessaSynth.
 
-[It can be disabled.](https://github.com/spessasus/spessasynth_lib/blob/b0716295820fc6b2e8873a1b0871ca6a0266ea02/src/synthetizer/worklet_processor.js#L281-L292)
+**It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
+This can be useful as setting CC#1 to something like 1 (which is usually imperceptible), 
+will fully disable the extra vibrato.
+
+[Custom vibrato can be fully disabled as well.](https://github.com/spessasus/spessasynth_lib/blob/b0716295820fc6b2e8873a1b0871ca6a0266ea02/src/synthetizer/worklet_processor.js#L281-L292)
 
 #### SoundFont2 NRPN
 
