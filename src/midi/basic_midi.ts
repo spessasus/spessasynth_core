@@ -15,6 +15,7 @@ import type {
     DesiredProgramChange,
     MIDIFormat,
     MIDILoop,
+    MIDILoopType,
     NoteTime,
     RMIDInfoData,
     RMIDIWriteOptions,
@@ -91,7 +92,7 @@ export class BasicMIDI {
     /**
      * The loop points (in ticks) of the sequence, including both start and end points.
      */
-    public loop: MIDILoop = { start: 0, end: 0 };
+    public loop: MIDILoop = { start: 0, end: 0, type: "hard" };
 
     /**
      * The file name of the MIDI sequence, if provided during parsing.
@@ -570,7 +571,7 @@ export class BasicMIDI {
         this.keyRange = { max: 0, min: 127 };
         this.lastVoiceEventTick = 0;
         this.portChannelOffsetMap = [0];
-        this.loop = { start: 0, end: 0 };
+        this.loop = { start: 0, end: 0, type: "hard" };
         // Do not reset RMIDI info (parsed in MIDI loader)
         // Do not reset bank offset (parsed in MIDI loader)
         this.isKaraokeFile = false;
@@ -585,6 +586,7 @@ export class BasicMIDI {
         // Loop tracking
         let loopStart = null;
         let loopEnd = null;
+        let loopType: MIDILoopType = "hard";
 
         for (const track of this.tracks) {
             const usedChannels = new Set<number>();
@@ -619,6 +621,7 @@ export class BasicMIDI {
                                 // EMIDI/XMI
                                 case 117:
                                     if (loopEnd === null) {
+                                        loopType = "soft";
                                         loopEnd = e.ticks;
                                     } else {
                                         // This controller has occurred more than once;
@@ -820,7 +823,7 @@ export class BasicMIDI {
             loopEnd = this.lastVoiceEventTick;
         }
 
-        this.loop = { start: loopStart, end: loopEnd };
+        this.loop = { start: loopStart, end: loopEnd, type: loopType };
 
         SpessaSynthInfo(
             `%cLoop points: start: %c${this.loop.start}%c end: %c${this.loop.end}`,

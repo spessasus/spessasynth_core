@@ -15,7 +15,6 @@ import {
     SpessaSynthLogging,
     SpessaSynthWarn
 } from "./loggin";
-import type { MIDILoop } from "../midi/types";
 
 import type { FourCC } from "./riff_chunk";
 
@@ -59,7 +58,16 @@ export interface WaveWriteOptions {
     /**
      * The loop start and end points in seconds. Undefined if no loop should be written.
      */
-    loop?: MIDILoop;
+    loop?: {
+        /**
+         * The start point in seconds.
+         */
+        start: number;
+        /**
+         * The end point in seconds.
+         */
+        end: number;
+    };
     /**
      * The metadata to write into the file.
      */
