@@ -387,7 +387,7 @@ export class SpessaSynthSequencer {
     }
 
     /**
-     * @returns the index of the first to the current played time
+     * @returns The track number of the next closest event, based on eventIndexes.
      */
     protected findFirstEventIndex() {
         let index = 0;
@@ -508,6 +508,7 @@ export class SpessaSynthSequencer {
         if (!this._midiData) {
             return;
         }
+        this.sendMIDIAllOff();
         const seconds = this._midiData.midiTicksToSeconds(tick);
         this.callEvent("timeChange", { newTime: seconds });
 
@@ -516,12 +517,9 @@ export class SpessaSynthSequencer {
         this.playedTime = seconds;
         this.eventIndexes.length = 0;
         for (const track of this._midiData.tracks) {
-            this.eventIndexes.push(
-                Math.max(
-                    0,
-                    track.events.findIndex((e) => e.ticks >= tick)
-                )
-            );
+            const idx = track.events.findIndex((e) => e.ticks >= tick);
+            // Not length - 1 since we want to mark the track as finished
+            this.eventIndexes.push(idx < 0 ? track.events.length : idx);
         }
     }
 
