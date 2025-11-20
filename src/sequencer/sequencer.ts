@@ -1,19 +1,12 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import {
-    assignMIDIPortInternal,
-    loadNewSequenceInternal
-} from "./song_control";
+import { assignMIDIPortInternal, loadNewSequenceInternal } from "./song_control";
 import { setTimeToInternal } from "./play";
 
 import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
-import {
-    type MIDIController,
-    midiControllers,
-    midiMessageTypes
-} from "../midi/enums";
+import { type MIDIController, midiControllers, midiMessageTypes } from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
 import { SpessaSynthWarn } from "../utils/loggin";
 import { arrayToHexString } from "../utils/other";
@@ -501,15 +494,15 @@ export class SpessaSynthSequencer {
 
     /**
      * Jumps to a MIDI tick without any further processing.
-     * @param tick The MIDI tick to jump to.
+     * @param targetTicks The MIDI tick to jump to.
      * @protected
      */
-    protected jumpToTick(tick: number) {
+    protected jumpToTick(targetTicks: number) {
         if (!this._midiData) {
             return;
         }
         this.sendMIDIAllOff();
-        const seconds = this._midiData.midiTicksToSeconds(tick);
+        const seconds = this._midiData.midiTicksToSeconds(targetTicks);
         this.callEvent("timeChange", { newTime: seconds });
 
         // Recalculate time and reset indexes
@@ -517,10 +510,18 @@ export class SpessaSynthSequencer {
         this.playedTime = seconds;
         this.eventIndexes.length = 0;
         for (const track of this._midiData.tracks) {
-            const idx = track.events.findIndex((e) => e.ticks >= tick);
+            const idx = track.events.findIndex((e) => e.ticks >= targetTicks);
             // Not length - 1 since we want to mark the track as finished
             this.eventIndexes.push(idx < 0 ? track.events.length : idx);
         }
+
+        // Correct tempo
+        // Some softy-looped files (example: th06_06.mid) have slightly mismatched tempos
+        const targetTempo = this._midiData.tempoChanges.find(
+            (t) => t.ticks <= targetTicks
+        )!;
+        this.oneTickToSeconds =
+            60 / (targetTempo.tempo * this._midiData.timeDivision);
     }
 
     /*
