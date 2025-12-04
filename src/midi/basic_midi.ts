@@ -825,6 +825,14 @@ export class BasicMIDI {
 
         this.loop = { start: loopStart, end: loopEnd, type: loopType };
 
+        // Loop fix:
+        // Rarely loopEnd is declared via meta, just after the last voice event, treat the loop event as voice
+        // Testcase: 7. Bad Apple!! (icebhm23230 - XG).mid
+        this.lastVoiceEventTick = Math.max(
+            this.lastVoiceEventTick,
+            this.loop.end
+        );
+
         SpessaSynthInfo(
             `%cLoop points: start: %c${this.loop.start}%c end: %c${this.loop.end}`,
             consoleColors.info,
