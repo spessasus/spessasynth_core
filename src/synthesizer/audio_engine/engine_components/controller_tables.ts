@@ -28,6 +28,7 @@ setResetValue(midiControllers.expressionController, 127);
 setResetValue(midiControllers.pan, 64);
 
 setResetValue(midiControllers.portamentoOnOff, 127);
+setResetValue(midiControllers.softPedal, 0);
 
 setResetValue(midiControllers.filterResonance, 64);
 setResetValue(midiControllers.releaseTime, 64);

@@ -78,16 +78,16 @@ Useful for debugging.
 
 Below is the table of modulator sources if the usesCC flag is set to 0.
 
-| Index | Name               |
-|-------|--------------------|
-| 0     | No controller = 1  |
-| 2     | Note on velocity   |
-| 3     | Note on key number |
-| 10    | Poly pressure      |
-| 13    | Channel pressure   |
-| 14    | Pitch Wheel        |
-| 16    | Pitch Wheel range  |
-| 127   | Link (UNSUPPORTED) |
+| Index | Name               | Description                                                                                                                                                                                                         |
+|-------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0     | No controller = 1  | Always returns 1.                                                                                                                                                                                                   |
+| 2     | Note on velocity   | The MIDI velocity the note was pressed with.                                                                                                                                                                        |
+| 3     | Note on key number | The MIDI key number received.                                                                                                                                                                                       |
+| 10    | Poly pressure      | The MIDI poly pressure message received for this note number.                                                                                                                                                       |
+| 13    | Channel pressure   | The MIDI channel pressure message received for this channel.                                                                                                                                                        |
+| 14    | Pitch Wheel        | The pitch wheel value, 14-bit.                                                                                                                                                                                      |
+| 16    | Pitch Wheel range  | The range of the pitch wheel, in semitones.                                                                                                                                                                         |
+| 127   | Link (UNSUPPORTED) | Other modulator. This feature is underspecified and not implemented, [similarly to fluidsynth](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec). |
 
 ## Modulator curve types
 
@@ -108,23 +108,40 @@ Below is the default modulator list for SpessaSynth.
 
 Note: cB - centibels, 1/10 of a decibel
 
-| Source                                     | Secondary source                           | Destination              | Transform amount  | Notes              |
-|--------------------------------------------|--------------------------------------------|--------------------------|-------------------|--------------------|
-| Note On velocity Negative Unipolar Concave | No controller                              | Initial attenuation      | 960           cB  | SF2 Default        |
-| Modulation Wheel Positive Unipolar Linear  | No controller                              | Vibrato LFO to pitch     | 50         cents  | SF2 Default        |
-| Volume Negative Unipolar Concave           | No controller                              | Initial attenuation      | 960           cB  | SF2 Default        |
-| Channel Pressure Positive Unipolar Linear  | No controller                              | Vibrato LFO to pitch     | 50         cents  | SF2 Default        |
-| Pitch Wheel Positive Bipolar Linear        | Pitch wheel range Positive Unipolar Linear | Fine tune                | 12700      cents  | SF2 Default        |
-| Pan Positive Bipolar Linear                | No controller                              | Pan                      | 500      percent  | SF2 Default        |
-| Expression Negative Unipolar Concave       | No controller                              | Initial attenuation      | 960           cB  | SF2 Default        |
-| Reverb depth Negative Unipolar Linear      | No controller                              | Reverb effects send      | 200       percent | SF2 Default        |
-| Chorus depth Negative Unipolar Linear      | No controller                              | Chorus effects send      | 200       percent | SF2 Default        |
-| Poly Pressure Positive Unipolar Linear     | No controller                              | Vibrato LFO to pitch     | 50         cents  | ⚠️ NOT STANDARD ⚠️ |
-| CC 92 depth Positive Unipolar Linear       | No controller                              | Mod LFO to volume        | 24            cB  | ⚠️ NOT STANDARD ⚠️ |
-| CC 72 Positive Bipolar Convex              | No controller                              | Volume envelope attack   | 6000   timecents  | ⚠️ NOT STANDARD ⚠️ |
-| CC 73 Positive Bipolar Linear              | No controller                              | Volume envelope release  | 3600   timecents  | ⚠️ NOT STANDARD ⚠️ |
-| CC 74 Positive Bipolar Linear              | No controller                              | Initial Filter Cutoff    | 6000   abs cents  | ⚠️ NOT STANDARD ⚠️ |
-| CC 71 Positive Bipolar Linear              | No controller                              | Initial Filter Resonance | 250           cB  | ⚠️ NOT STANDARD ⚠️ |
+### SF2 Default
+
+These are the default modulators, as defined by the SF2.04 specification.
+Note that the [velocity to filter modulator is intentionally omitted](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+
+| Source                       | Source Transform          | Secondary source                           | Destination              | Transform amount       |
+|------------------------------|---------------------------|--------------------------------------------|--------------------------|------------------------|
+| Note On Velocity             | Negative Unipolar Concave | -                                          | Initial attenuation      | 960           cB       |
+| **CC 1** (Modulation Wheel)  | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch     | 50         cents       |
+| **CC 7** (Volume)            | Negative Unipolar Concave | -                                          | Initial attenuation      | 960           cB       |
+| **CC 13** (Channel Pressure) | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch     | 50         cents       |
+| Pitch Wheel                  | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune                | 12700      cents       |
+| **CC 10** (Pan)              | Positive Bipolar Linear   | -                                          | Pan                      | 500      percent       |
+| **CC 11** (Expression)       | Negative Unipolar Concave | -                                          | Initial attenuation      | 960           cB       |
+| **CC 91** (Reverb Depth)     | Negative Unipolar Linear  | -                                          | Reverb effects send      | 200       percent      |
+| **CC 93** (Chorus Depth)     | Negative Unipolar Linear  | -                                          | Chorus effects send      | 200       percent      |
+
+
+### Custom modulators
+
+SpessaSynth applies a few extra modulators for extended compatibility with various MIDI standards.
+
+| Source                       | Source Transform          | Secondary source                           | Destination              | Transform amount       |
+|------------------------------|---------------------------|--------------------------------------------|--------------------------|------------------------|
+| Poly Pressure                | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch     | 50         cents       |
+| **CC 8** (Balance)           | Positive Bipolar Linear   | -                                          | Pan                      | 500          percent   |
+| **CC 67** (Soft Pedal)       | Switch Unipolar Positive  | -                                          | Initial attenuation      | 50            cB       |
+| **CC 67** (Soft Pedal)       | Switch Unipolar Positive  | -                                          | Initial Filter Cutoff    | -2400        abs cents |
+| **CC 71** (Filter Resonance) | Positive Bipolar Linear   | -                                          | Initial Filter Resonance | 250           cB       |
+| **CC 72** (Vol Env Attack)   | Positive Bipolar Convex   | -                                          | Volume envelope attack   | 6000   timecents       |
+| **CC 73** (Vol Env Release)  | Positive Bipolar Linear   | -                                          | Volume envelope release  | 3600   timecents       |
+| **CC 74** (Filter Cutoff)    | Positive Bipolar Linear   | -                                          | Initial Filter Cutoff    | 6000   abs cents       |
+| **CC 75** (Vol Env Decay)    | Positive Bipolar Linear   | -                                          | Volume envelope decay    | 3600   timecents       |
+| **CC 92** (Tremolo Depth)    | Positive Unipolar Linear  | -                                          | Mod LFO to volume        | 24            cB       |
 
 ### Resonant modulator
 
