@@ -619,16 +619,9 @@ export class SpessaSynthProcessor {
         midiNote: number,
         velocity: number
     ): VoiceList | undefined {
-        let bankMSB = patch.bankMSB;
-        let bankLSB = patch.bankLSB;
-        const { isGMGSDrum, program } = patch;
-        if (isGMGSDrum) {
-            bankMSB = 128;
-            bankLSB = 0;
-        }
-        return this.privateProps.cachedVoices?.[bankMSB]?.[bankLSB]?.[
-            program
-        ]?.[midiNote]?.[velocity];
+        return this.privateProps.cachedVoices?.[
+            this.getCachedVoiceIndex(patch, midiNote, velocity)
+        ];
     }
 
     protected setCachedVoice(
@@ -637,6 +630,16 @@ export class SpessaSynthProcessor {
         velocity: number,
         voices: VoiceList
     ) {
+        this.privateProps.cachedVoices[
+            this.getCachedVoiceIndex(patch, midiNote, velocity)
+        ] = voices;
+    }
+
+    private getCachedVoiceIndex(
+        patch: MIDIPatch,
+        midiNote: number,
+        velocity: number
+    ) {
         let bankMSB = patch.bankMSB;
         let bankLSB = patch.bankLSB;
         const { isGMGSDrum, program } = patch;
@@ -644,28 +647,14 @@ export class SpessaSynthProcessor {
             bankMSB = 128;
             bankLSB = 0;
         }
-        // Make sure that it exists
-        if (!this.privateProps.cachedVoices[bankMSB]) {
-            this.privateProps.cachedVoices[bankMSB] = [];
-        }
-        if (!this.privateProps.cachedVoices[bankMSB][bankLSB]) {
-            this.privateProps.cachedVoices[bankMSB][bankLSB] = [];
-        }
-        if (!this.privateProps.cachedVoices[bankMSB][bankLSB][program]) {
-            this.privateProps.cachedVoices[bankMSB][bankLSB][program] = [];
-        }
-        if (
-            !this.privateProps.cachedVoices[bankMSB][bankLSB][program][midiNote]
-        ) {
-            this.privateProps.cachedVoices[bankMSB][bankLSB][program][
-                midiNote
-            ] = [];
-        }
-
-        // Cache
-        this.privateProps.cachedVoices[bankMSB][bankLSB][program][midiNote][
-            velocity
-        ] = voices;
+        // 128x128x128x128x128 array!
+        return (
+            bankMSB + // 128 ^ 0
+            bankLSB * 128 + // 128 ^ 1
+            program * 16384 + // 128 ^ 2
+            2097152 * midiNote + // 128 ^ 3
+            268435456 * velocity
+        ); // 128 ^ 4
     }
 
     private createMIDIChannelInternal(sendEvent: boolean) {
