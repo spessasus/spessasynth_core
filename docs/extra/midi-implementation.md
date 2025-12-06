@@ -10,26 +10,26 @@ This describes what messages SpessaSynth can receive.
 
      ⚠️NON-STANDARD!⚠️ means that this is an additional modulator that is not specified in the SF2 specification.
 
-| Message           | Supported? | Notes                                                                          |
-|-------------------|------------|--------------------------------------------------------------------------------|
-| Note On           | ✔️         |                                                                                |
-| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                     |
-| Note Aftertouch   | ✔️         | 50 cents of vibrato ⚠️NON-STANDARD!⚠️                                          |
-| Controller Change | ✔️         | [See below](#default-supported-controllers)                                    |
-| Program Change    | ✔️         | GM, GM2, GS, XG                                                                |
-| Channel Pressure  | ✔️         | 50 cents of vibrato                                                            |
-| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents)                     |
-| System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                      |
-| Time Code         | ❌          | Not Applicable                                                                 |
-| Song Position     | ❌          | Not Applicable                                                                 |
-| Song Select       | ❌          | Not Applicable                                                                 |
-| Tune Request      | ❌          | Not Applicable                                                                 |
-| MIDI Clock        | ❌          | Not Applicable                                                                 |
-| MIDI Start        | ❌          | Not Applicable                                                                 |
-| MIDI Continue     | ❌          | Not Applicable                                                                 |
-| MIDI Stop         | ❌          | Not Applicable                                                                 |
-| Active Sense      | ❌          | Not Applicable                                                                 |
-| System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message |
+| Message           | Supported? | Notes                                                                                                                |
+|-------------------|------------|----------------------------------------------------------------------------------------------------------------------|
+| Note On           | ✔️         |                                                                                                                      |
+| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                                                           |
+| Note Aftertouch   | ✔️         | Recognized, but no special behavior (Per SF2 specification). Has to be defined with modulators or system exclusives. |
+| Controller Change | ✔️         | [See below](#default-supported-controllers)                                                                          |
+| Program Change    | ✔️         | GM, GM2, GS, XG                                                                                                      |
+| Channel Pressure  | ✔️         | 50 cents of vibrato                                                                                                  |
+| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents)                                                           |
+| System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                                                            |
+| Time Code         | ❌          | Not Applicable                                                                                                       |
+| Song Position     | ❌          | Not Applicable                                                                                                       |
+| Song Select       | ❌          | Not Applicable                                                                                                       |
+| Tune Request      | ❌          | Not Applicable                                                                                                       |
+| MIDI Clock        | ❌          | Not Applicable                                                                                                       |
+| MIDI Start        | ❌          | Not Applicable                                                                                                       |
+| MIDI Continue     | ❌          | Not Applicable                                                                                                       |
+| MIDI Stop         | ❌          | Not Applicable                                                                                                       |
+| Active Sense      | ❌          | Not Applicable                                                                                                       |
+| System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message                                       |
 
 ## Controllers
 

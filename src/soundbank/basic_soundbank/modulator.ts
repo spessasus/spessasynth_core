@@ -303,21 +303,6 @@ const defaultSoundFont2Modulators = [
 
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
-    // Poly pressure to vibrato
-    new DecodedModulator(
-        getModSourceEnum(
-            modulatorCurveTypes.linear,
-            false,
-            false,
-            false,
-            modulatorSources.polyPressure
-        ),
-        0x0,
-        generatorTypes.vibLfoToPitch,
-        50,
-        0
-    ),
-
     // Cc 92 (tremolo) to modLFO volume
     new DecodedModulator(
         getModSourceEnum(
