@@ -389,7 +389,7 @@ const defaultSpessaSynthModulators = [
         ), // Linear forwards bipolar cc 74
         0x0, // No controller
         generatorTypes.initialFilterFc,
-        6000,
+        9600,
         0
     ),
 
@@ -398,7 +398,7 @@ const defaultSpessaSynthModulators = [
         defaultResonantModSource,
         0x0, // No controller
         generatorTypes.initialFilterQ,
-        250,
+        200,
         0
     ),
 

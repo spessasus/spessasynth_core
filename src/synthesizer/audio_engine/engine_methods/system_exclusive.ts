@@ -973,12 +973,42 @@ export function systemExclusiveInternal(
                 // XG system parameter
                 if (syx[3] === 0x00 && syx[4] === 0x00) {
                     switch (syx[5]) {
+                        // Master tune
+                        case 0x00:
+                            {
+                                const tune =
+                                    ((syx[6] & 15) << 12) |
+                                    ((syx[7] & 15) << 8) |
+                                    ((syx[8] & 15) << 4) |
+                                    (syx[9] & 15);
+                                const cents = (tune - 1024) / 10;
+                                this.setMasterTuning(cents);
+                                SpessaSynthInfo(
+                                    `%cXG master tune. Cents: %c${cents}`,
+                                    consoleColors.info,
+                                    consoleColors.recognized
+                                );
+                            }
+                            break;
+
                         // Master volume
                         case 0x04: {
                             const vol = syx[6];
                             this.setMIDIVolume(vol / 127);
                             SpessaSynthInfo(
                                 `%cXG master volume. Volume: %c${vol}`,
+                                consoleColors.info,
+                                consoleColors.recognized
+                            );
+                            break;
+                        }
+
+                        // Master attenuation
+                        case 0x05: {
+                            const vol = 127 - syx[6];
+                            this.setMIDIVolume(vol / 127);
+                            SpessaSynthInfo(
+                                `%cXG master attenuation. Volume: %c${vol}`,
                                 consoleColors.info,
                                 consoleColors.recognized
                             );
@@ -1096,6 +1126,46 @@ export function systemExclusiveInternal(
                         case 0x12:
                             channelObject.controllerChange(
                                 midiControllers.chorusDepth,
+                                value
+                            );
+                            break;
+
+                        // Filter cutoff
+                        case 0x18:
+                            channelObject.controllerChange(
+                                midiControllers.brightness,
+                                value
+                            );
+                            break;
+
+                        // Filter resonance
+                        case 0x19:
+                            channelObject.controllerChange(
+                                midiControllers.filterResonance,
+                                value
+                            );
+                            break;
+
+                        // Attack time
+                        case 0x1a:
+                            channelObject.controllerChange(
+                                midiControllers.attackTime,
+                                value
+                            );
+                            break;
+
+                        // Decay time
+                        case 0x1b:
+                            channelObject.controllerChange(
+                                midiControllers.decayTime,
+                                value
+                            );
+                            break;
+
+                        // Release time
+                        case 0x1c:
+                            channelObject.controllerChange(
+                                midiControllers.releaseTime,
                                 value
                             );
                             break;

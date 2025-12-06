@@ -193,7 +193,9 @@ Below is the list of currently implemented System Exclusive messages.
 | Roland SC Display Text | The text that SC-88 MIDIs display on the device. `synthdisplay` will be called.   |
 | Roland SC Dot Matrix   | A dot matrix display for the Sound Canvas devices. `synthdisplay` will be called. |
 | XG Display Letters     | The text that XG MIDIs display on the device. `synthdisplay` will be called.      |
+| XG Master Tune         | Controls the overall synth's tuning.                                              |
 | XG Master Volume       | Controls the overall synth's volume.                                              |
+| XG Master Attenuator   | Controls the overall synth's attenuation (inverse of volume).                     |
 | XG Master Transpose    | Controls the overall synth's transposition.                                       |
 | XG Part Setup          | See [this for more info](#xg-part-setup)                                          |
 | MIDI Tuning Standard   | See [this for more info](#midi-tuning-standard)                                   |
@@ -263,6 +265,11 @@ Below are the supported part setup messages for XG.
 | 0E           | Pan (0 is random for every voice) |
 | 13           | Reverb                            |
 | 12           | Chorus                            |
+| 18           | Filter Cutoff                     |
+| 19           | Filter Resonance                  |
+| 1A           | Attack Time                       |
+| 1B           | Decay Time                        |
+| 1C           | Release Time                      |
 
 ### MIDI Tuning Standard
 
