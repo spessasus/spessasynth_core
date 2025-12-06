@@ -24,9 +24,10 @@ export const nonRegisteredMSB = {
 /**
  * https://cdn.roland.com/assets/media/pdf/SC-88PRO_OM.pdf
  * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ * These also seem to match XG
  * @enum {number}
  */
-const nonRegisteredGSLSB = {
+const nonRegisteredLSB = {
     vibratoRate: 0x08,
     vibratoDepth: 0x09,
     vibratoDelay: 0x0a,
@@ -35,6 +36,7 @@ const nonRegisteredGSLSB = {
     TVFFilterResonance: 0x21,
 
     EGAttackTime: 0x63,
+    EGDecayTime: 0x64,
     EGReleaseTime: 0x66
 };
 
@@ -85,7 +87,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
         case dataEntryStates.Idle:
             break;
 
-        // Process GS NRPNs
+        // Process NRPNs
         case dataEntryStates.NRPFine: {
             if (this.lockGSNRPNParams) {
                 return;
@@ -121,7 +123,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     );
                     break;
 
-                // Part parameters: vibrato, cutoff
+                // Part parameters
                 case nonRegisteredMSB.partParameter:
                     switch (NRPNFine) {
                         default:
@@ -142,8 +144,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // Vibrato rate
-                        case nonRegisteredGSLSB.vibratoRate:
+                        // Vibrato rate (custom vibrato)
+                        case nonRegisteredLSB.vibratoRate:
                             if (dataValue === 64) {
                                 return;
                             }
@@ -156,8 +158,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // Vibrato depth
-                        case nonRegisteredGSLSB.vibratoDepth:
+                        // Vibrato depth (custom vibrato)
+                        case nonRegisteredLSB.vibratoDepth:
                             if (dataValue === 64) {
                                 return;
                             }
@@ -170,8 +172,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
-                        // Vibrato delay
-                        case nonRegisteredGSLSB.vibratoDelay:
+                        // Vibrato delay (custom vibrato)
+                        case nonRegisteredLSB.vibratoDelay:
                             if (dataValue === 64) {
                                 return;
                             }
@@ -185,7 +187,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             break;
 
                         // Filter cutoff
-                        case nonRegisteredGSLSB.TVFFilterCutoff:
+                        case nonRegisteredLSB.TVFFilterCutoff:
                             // Affect the "brightness" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.brightness,
@@ -194,8 +196,21 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             coolInfo("Filter cutoff", dataValue.toString(), "");
                             break;
 
+                        case nonRegisteredLSB.TVFFilterResonance:
+                            // Affect the "resonance" controller as we have a default modulator that controls it
+                            this.controllerChange(
+                                midiControllers.filterResonance,
+                                dataValue
+                            );
+                            coolInfo(
+                                "Filter resonance",
+                                dataValue.toString(),
+                                ""
+                            );
+                            break;
+
                         // Attack time
-                        case nonRegisteredGSLSB.EGAttackTime:
+                        case nonRegisteredLSB.EGAttackTime:
                             // Affect the "attack time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.attackTime,
@@ -208,8 +223,17 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             );
                             break;
 
+                        case nonRegisteredLSB.EGDecayTime:
+                            // Affect the "decay time" controller as we have a default modulator that controls it
+                            this.controllerChange(
+                                midiControllers.decayTime,
+                                dataValue
+                            );
+                            coolInfo("EG decay time", dataValue.toString(), "");
+                            break;
+
                         // Release time
-                        case nonRegisteredGSLSB.EGReleaseTime:
+                        case nonRegisteredLSB.EGReleaseTime:
                             // Affect the "release time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.releaseTime,

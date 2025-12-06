@@ -122,14 +122,15 @@ Below is the list of currently implemented Non-Registered Parameters.
 Note that all these are non-standard GM.
 **These only apply for GS**
 
-| NRPN MSB | NRPN LSB | Name              | Explanation                                                                                 | Default        |
-|----------|----------|-------------------|---------------------------------------------------------------------------------------------|----------------|
-| 0x1      | 0x8      | Vibrato rate      | Controls the vibrato rate. The calculation to hertz is as follows: `hz = (value / 64) * 8`  | 0 (disabled)   |
-| 0x1      | 0x9      | Vibrato depth     | Controls the vibrato depth. Depth in cents is as calculated as follows: `cents = value / 2` | 0 (disabled)   |
-| 0x1      | 0xA      | Vibrato delay     | Controls the vibrato delay. Calculation to seconds is as follows: `s = (64 / value) / 3`    | 0 (disabled)   |
-| 0x1      | 0x20     | TVF Filter Cutoff | Controls the filter cutoff using the CC 74 (brightness)                                     | 64 (no change) |
-| 0x01     | 0x66     | EG Release Time   | Controls the volume envelope release time using CC 72                                       | 64 (no change) |
-| 0x01     | 0x64     | EG Attack Time    | Controls the volume envelope attack time using CC 73                                        | 64 (no change) |
+| NRPN MSB | NRPN LSB | Name                   | Explanation                                                                                 | Default        |
+|----------|----------|------------------------|---------------------------------------------------------------------------------------------|----------------|
+| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. The calculation to hertz is as follows: `hz = (value / 64) * 8`  | 0 (disabled)   |
+| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. Depth in cents is as calculated as follows: `cents = value / 2` | 0 (disabled)   |
+| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. Calculation to seconds is as follows: `s = (64 / value) / 3`    | 0 (disabled)   |
+| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)                                     | 64 (no change) |
+| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance)                            | 64 (no change) |
+| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72                                       | 64 (no change) |
+| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73                                        | 64 (no change) |
 
 #### Custom Vibrato
 
