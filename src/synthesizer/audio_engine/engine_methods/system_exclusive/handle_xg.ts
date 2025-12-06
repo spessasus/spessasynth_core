@@ -4,6 +4,7 @@ import { SpessaSynthInfo } from "../../../../utils/loggin";
 import { consoleColors } from "../../../../utils/other";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
 import { midiControllers } from "../../../../midi/enums";
+import { customControllers } from "../../../enums";
 
 /**
  * Handles a XG system exclusive
@@ -96,7 +97,7 @@ export function handleXG(
                 consoleColors.warn,
                 consoleColors.unrecognized
             );
-        } else if (a1 === 0x08 && a2 === 0x00) {
+        } else if (a1 === 0x08 /* A2 is the channel number*/) {
             // XG part parameter
             if (
                 !BankSelectHacks.isSystemXG(
@@ -144,7 +145,10 @@ export function handleXG(
                     if (channelObject.drumChannel) {
                         break;
                     }
-                    channelObject.channelTransposeKeyShift = value - 64;
+                    channelObject.setCustomController(
+                        customControllers.channelKeyShift,
+                        value - 64
+                    );
                     break;
                 }
 
@@ -201,6 +205,30 @@ export function handleXG(
                     );
                     break;
 
+                // Vibrato rate
+                case 0x15:
+                    channelObject.controllerChange(
+                        midiControllers.vibratoRate,
+                        value
+                    );
+                    break;
+
+                // Vibrato depth
+                case 0x16:
+                    channelObject.controllerChange(
+                        midiControllers.vibratoDepth,
+                        value
+                    );
+                    break;
+
+                // Vibrato delay
+                case 0x17:
+                    channelObject.controllerChange(
+                        midiControllers.vibratoDelay,
+                        value
+                    );
+                    break;
+
                 // Filter cutoff
                 case 0x18:
                     channelObject.controllerChange(
@@ -243,11 +271,12 @@ export function handleXG(
 
                 default:
                     SpessaSynthInfo(
-                        `%cUnrecognized Yamaha XG Part Setup: %c${syx[5]
+                        `%cUnsupported Yamaha XG Part Setup: %c${syx[5]
                             .toString(16)
-                            .toUpperCase()}`,
+                            .toUpperCase()}%c for channel ${channel}`,
                         consoleColors.warn,
-                        consoleColors.unrecognized
+                        consoleColors.unrecognized,
+                        consoleColors.warn
                     );
             }
         } else if (

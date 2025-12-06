@@ -266,6 +266,9 @@ Below are the supported part setup messages for XG.
 | 0E           | Pan (0 is random for every voice) |
 | 13           | Reverb                            |
 | 12           | Chorus                            |
+| 15           | Vibrato Rate                      |
+| 16           | Vibrato Depth                     |
+| 17           | Vibrato Decay                     |
 | 18           | Filter Cutoff                     |
 | 19           | Filter Resonance                  |
 | 1A           | Attack Time                       |
