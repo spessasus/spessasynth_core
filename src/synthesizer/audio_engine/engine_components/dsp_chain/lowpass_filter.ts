@@ -13,8 +13,8 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
  */
 
 // Latest test: 06-12-2025 for the 9600 cent cc74 change (XG accurate)
-// Lowered from 0.1 to 0.04
-export const FILTER_SMOOTHING_FACTOR = 0.04;
+// Lowered from 0.1 to 0.03
+export const FILTER_SMOOTHING_FACTOR = 0.03;
 
 // Represents a single cached coefficient.
 interface CachedCoefficient {

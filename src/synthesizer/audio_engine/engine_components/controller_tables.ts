@@ -27,8 +27,9 @@ setResetValue(midiControllers.balance, 64);
 setResetValue(midiControllers.expressionController, 127);
 setResetValue(midiControllers.pan, 64);
 
+// Portamento is on by default, but time is set to 0 so it's effectively off
 setResetValue(midiControllers.portamentoOnOff, 127);
-setResetValue(midiControllers.softPedal, 0);
+// For control, see reset_controllers.ts
 
 setResetValue(midiControllers.filterResonance, 64);
 setResetValue(midiControllers.releaseTime, 64);
@@ -46,14 +47,6 @@ setResetValue(midiControllers.registeredParameterLSB, 127);
 setResetValue(midiControllers.registeredParameterMSB, 127);
 setResetValue(midiControllers.nonRegisteredParameterLSB, 127);
 setResetValue(midiControllers.nonRegisteredParameterMSB, 127);
-
-export const PORTAMENTO_CONTROL_UNSET = 1;
-// Special case: portamento control
-// Since it is only 7-bit, only the values at multiple of 128 are allowed.
-// A value of just 1 indicates no key set, hence no portamento.
-// This is the "initial unset portamento key" flag.
-defaultMIDIControllerValues[midiControllers.portamentoControl] =
-    PORTAMENTO_CONTROL_UNSET;
 
 // Pitch wheel
 setResetValue(

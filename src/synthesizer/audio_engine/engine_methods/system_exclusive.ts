@@ -174,10 +174,10 @@ export function systemExclusiveInternal(
                     // Gm system related
                     if (syx[3] === 0x01) {
                         SpessaSynthInfo("%cGM1 system on", consoleColors.info);
-                        this.setMasterParameter("midiSystem", "gm");
+                        this.resetAllControllers("gm");
                     } else if (syx[3] === 0x03) {
                         SpessaSynthInfo("%cGM2 system on", consoleColors.info);
-                        this.setMasterParameter("midiSystem", "gm2");
+                        this.resetAllControllers("gm2");
                     } else {
                         SpessaSynthInfo(
                             "%cGM system off, defaulting to GS",
@@ -757,22 +757,14 @@ export function systemExclusiveInternal(
                                                 "%cGS Reset received!",
                                                 consoleColors.info
                                             );
-                                            this.resetAllControllers(false);
-                                            this.setMasterParameter(
-                                                "midiSystem",
-                                                "gs"
-                                            );
+                                            this.resetAllControllers("gs");
                                         } else if (messageValue === 0x7f) {
                                             // GS mode off
                                             SpessaSynthInfo(
                                                 "%cGS system off, switching to GM",
                                                 consoleColors.info
                                             );
-                                            this.resetAllControllers(false);
-                                            this.setMasterParameter(
-                                                "midiSystem",
-                                                "gm"
-                                            );
+                                            this.resetAllControllers("gm");
                                         }
                                         break;
 
@@ -1027,14 +1019,14 @@ export function systemExclusiveInternal(
                             break;
                         }
 
+                        //
                         // XG on
                         case 0x7e:
                             SpessaSynthInfo(
                                 "%cXG system on",
                                 consoleColors.info
                             );
-                            this.resetAllControllers(false);
-                            this.setMasterParameter("midiSystem", "xg");
+                            this.resetAllControllers("xg");
                             break;
                     }
                 } else if (syx[3] === 0x08) {

@@ -681,7 +681,7 @@ export class SpessaSynthProcessor {
         this.midiChannels.forEach((c) => {
             c.setPresetLock(false);
         });
-        this.resetAllControllers(false);
+        this.resetAllControllers();
     }
 
     private getDefaultPresets() {
