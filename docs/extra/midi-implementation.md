@@ -102,6 +102,11 @@ Below are all the controller values which are not zero when the controllers are 
 | 81        | General Purpose Controller 6 | 64          |
 | 83        | General Purpose Controller 8 | 64          |
 
+!!! TIP
+
+    Note that the reverb is set to 0 unlike the recommended 40 in the GM2 standard.
+    This is done to provide a clean output for any file that doesn't explicitly request reverb.
+
 ## Parameter Numbers
 
 ### Supported Registered Parameters
@@ -122,27 +127,35 @@ Below is the list of currently implemented Non-Registered Parameters.
 Note that all these are non-standard GM.
 **These only apply for GS**
 
-| NRPN MSB | NRPN LSB | Name                   | Explanation                                                                                 | Default        |
-|----------|----------|------------------------|---------------------------------------------------------------------------------------------|----------------|
-| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. The calculation to hertz is as follows: `hz = (value / 64) * 8`  | 0 (disabled)   |
-| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. Depth in cents is as calculated as follows: `cents = value / 2` | 0 (disabled)   |
-| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. Calculation to seconds is as follows: `s = (64 / value) / 3`    | 0 (disabled)   |
-| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)                                     | 64 (no change) |
-| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance)                            | 64 (no change) |
-| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72                                       | 64 (no change) |
-| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73                                        | 64 (no change) |
+| NRPN MSB | NRPN LSB | Name                   | Explanation                                                      | Default        |
+|----------|----------|------------------------|------------------------------------------------------------------|----------------|
+| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                      | 0 (disabled)   |
+| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                     | 0 (disabled)   |
+| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                     | 0 (disabled)   |
+| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)          | 64 (no change) |
+| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance) | 64 (no change) |
+| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72            | 64 (no change) |
+| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73             | 64 (no change) |
 
 #### Custom Vibrato
 
 The NPRN vibrato messages have special behavior.
+On synth start and reset it is disabled.
 Any value other than 64 received for any of the states activates it with the default settings:
 
 - depth = 50 cents
 - rate = 8 Hz
 - delay = 0.6s
 
-After which any changes received through the NRPN (including the one that triggered it) are enabled.
-This behavior has existed since the beginning of this program as a way to enhance the TH MIDI files,
+After which any changes received through the NRPN (including the one that triggered it) are processed.
+
+Calculation for the specific NPRN parameters are as follows (value is the data entry MSB value from 0 to 127):
+
+- Rate: `Hz = (value / 64) * 8`
+- Depth: `cents = value / 2`
+- Delay: `seconds = (64 / value) / 3`
+
+This behavior has existed since the beginning of this program as a way to enhance Touhou Project MIDI files,
 the original target of SpessaSynth.
 
 **It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
