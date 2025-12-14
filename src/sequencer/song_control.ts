@@ -1,5 +1,5 @@
 import { consoleColors, formatTime } from "../utils/other";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
+import { SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthSequencer } from "./sequencer";
 
@@ -72,35 +72,11 @@ export function loadNewSequenceInternal(
             this._midiData.embeddedSoundBank,
             this._midiData.bankOffset
         );
-    }
 
-    if (this.preload) {
-        SpessaSynthGroupCollapsed(
-            "%cPreloading samples...",
-            consoleColors.info
-        );
-        // Smart preloading: load only samples used in the midi!
-        const used = this._midiData.getUsedProgramsAndKeys(
-            this.synth.soundBankManager
-        );
-        used.forEach((combos, preset) => {
-            SpessaSynthInfo(
-                `%cPreloading used samples on %c${preset.name}%c...`,
-                consoleColors.info,
-                consoleColors.recognized,
-                consoleColors.info
-            );
-            for (const combo of combos) {
-                const [midiNote, velocity] = combo.split("-").map(Number);
-                this.synth.getVoicesForPreset(
-                    preset,
-                    midiNote,
-                    velocity,
-                    midiNote
-                );
-            }
-        });
-        SpessaSynthGroupEnd();
+        // Preload if it has an embedded sound bank
+        if (this.preload) {
+            this._midiData.preloadSynth(this.synth);
+        }
     }
 
     // Copy over the port data

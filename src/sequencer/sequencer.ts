@@ -1,15 +1,26 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import { assignMIDIPortInternal, loadNewSequenceInternal } from "./song_control";
+import {
+    assignMIDIPortInternal,
+    loadNewSequenceInternal
+} from "./song_control";
 import { setTimeToInternal } from "./play";
 
 import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
-import { type MIDIController, midiControllers, midiMessageTypes } from "../midi/enums";
+import {
+    type MIDIController,
+    midiControllers,
+    midiMessageTypes
+} from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
-import { SpessaSynthWarn } from "../utils/loggin";
-import { arrayToHexString } from "../utils/other";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthWarn
+} from "../utils/loggin";
+import { arrayToHexString, consoleColors } from "../utils/other";
 
 export class SpessaSynthSequencer {
     /**
@@ -335,6 +346,17 @@ export class SpessaSynthSequencer {
         this._songIndex = 0;
         this.shuffleSongIndexes();
         this.callEvent("songListChange", { newSongList: [...this.songs] });
+        // Preload all songs (without embedded sound banks)
+        if (this.preload) {
+            SpessaSynthGroup("%cPreloading all songs...", consoleColors.info);
+            this.songs.forEach((song) => {
+                if (song.embeddedSoundBank === undefined) {
+                    song.preloadSynth(this.synth);
+                }
+            });
+            SpessaSynthGroupEnd();
+        }
+
         this.loadCurrentSong();
     }
 
