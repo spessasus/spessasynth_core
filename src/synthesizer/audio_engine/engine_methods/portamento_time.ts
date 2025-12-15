@@ -39,9 +39,10 @@ const portamentoLookup: Record<number, number> = {
     127: 480.0
 } as const;
 
-function getLookup(value: number): number {
+function portaTimeToRate(value: number): number {
+    let portaTime = 0;
     if (portamentoLookup[value] !== undefined) {
-        return portamentoLookup[value];
+        portaTime = portamentoLookup[value];
     }
     // Get the nearest lower and upper points from the lookup table
     let lower = null;
@@ -63,12 +64,11 @@ function getLookup(value: number): number {
         const upperTime = portamentoLookup[upper];
 
         // Linear interpolation
-        return (
+        portaTime =
             lowerTime +
-            ((value - lower) * (upperTime - lowerTime)) / (upper - lower)
-        );
+            ((value - lower) * (upperTime - lowerTime)) / (upper - lower);
     }
-    return 0;
+    return portaTime / 40;
 }
 
 /**
@@ -82,7 +82,8 @@ export function portamentoTimeToSeconds(
     distance: number
 ): number {
     // This seems to work fine for the MIDIs I have.
-    // Why? No idea, but it does. :-)
-    // Note: Some tests about portamento were compared to SC-VA and SYXG50
-    return getLookup(time) * (distance / 36);
+    // Note: Some tests about portamento were compared to SC-VA and S-YXG50
+    // PortaTimeToRate is the constant rate of the portamento, as that's how the synths work
+    // We multiply it by the distance
+    return portaTimeToRate(time) * distance;
 }

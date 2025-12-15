@@ -1,7 +1,13 @@
 import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo,
+    SpessaSynthWarn
+} from "../utils/loggin";
 import { consoleColors, formatTime } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
 import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./midi_tools/rmidi_writer";
@@ -31,6 +37,7 @@ import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString } from "../utils/load_date";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import type { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
+import type { SpessaSynthProcessor } from "../synthesizer/processor";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -261,6 +268,34 @@ export class BasicMIDI {
         soundbank: BasicSoundBank | SoundBankManager
     ): Map<BasicPreset, Set<string>> {
         return getUsedProgramsAndKeys(this, soundbank);
+    }
+
+    /**
+     * Preloads all voices for this sequence in a given synth.
+     * This caches all the needed voices for playing back this sequencer, resulting in a smooth playback.
+     * The sequencer calls this function by default when loading the songs.
+     * @param synth
+     */
+    public preloadSynth(synth: SpessaSynthProcessor) {
+        SpessaSynthGroupCollapsed(
+            `%cPreloading samples...`,
+            consoleColors.info
+        );
+        // Smart preloading: load only samples used in the midi!
+        const used = this.getUsedProgramsAndKeys(synth.soundBankManager);
+        used.forEach((combos, preset) => {
+            SpessaSynthInfo(
+                `%cPreloading used samples on %c${preset.name}%c...`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info
+            );
+            for (const combo of combos) {
+                const [midiNote, velocity] = combo.split("-").map(Number);
+                synth.getVoicesForPreset(preset, midiNote, velocity, midiNote);
+            }
+        });
+        SpessaSynthGroupEnd();
     }
 
     /**

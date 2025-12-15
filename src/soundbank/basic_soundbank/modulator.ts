@@ -303,21 +303,6 @@ const defaultSoundFont2Modulators = [
 
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
-    // Poly pressure to vibrato
-    new DecodedModulator(
-        getModSourceEnum(
-            modulatorCurveTypes.linear,
-            false,
-            false,
-            false,
-            modulatorSources.polyPressure
-        ),
-        0x0,
-        generatorTypes.vibLfoToPitch,
-        50,
-        0
-    ),
-
     // Cc 92 (tremolo) to modLFO volume
     new DecodedModulator(
         getModSourceEnum(
@@ -363,6 +348,21 @@ const defaultSpessaSynthModulators = [
         0
     ),
 
+    // Cc 75 (decay time) to vol env decay
+    new DecodedModulator(
+        getModSourceEnum(
+            modulatorCurveTypes.linear,
+            true,
+            false,
+            true,
+            midiControllers.decayTime
+        ), // Linear forward bipolar cc 75
+        0x0, // No controller
+        generatorTypes.decayVolEnv,
+        3600,
+        0
+    ),
+
     // Cc 74 (brightness) to filterFc
     new DecodedModulator(
         getModSourceEnum(
@@ -374,7 +374,7 @@ const defaultSpessaSynthModulators = [
         ), // Linear forwards bipolar cc 74
         0x0, // No controller
         generatorTypes.initialFilterFc,
-        6000,
+        9600,
         0
     ),
 
@@ -383,7 +383,51 @@ const defaultSpessaSynthModulators = [
         defaultResonantModSource,
         0x0, // No controller
         generatorTypes.initialFilterQ,
-        250,
+        200,
+        0
+    ),
+
+    // Cc 67 (soft pedal) to attenuation
+    new DecodedModulator(
+        getModSourceEnum(
+            modulatorCurveTypes.switch,
+            false,
+            false,
+            true,
+            midiControllers.softPedal
+        ), // Switch unipolar positive 67
+        0x0, // No controller
+        generatorTypes.initialAttenuation,
+        50,
+        0
+    ),
+    // Cc 67 (soft pedal) to filter fc
+    new DecodedModulator(
+        getModSourceEnum(
+            modulatorCurveTypes.switch,
+            false,
+            false,
+            true,
+            midiControllers.softPedal
+        ), // Switch unipolar positive 67
+        0x0, // No controller
+        generatorTypes.initialFilterFc,
+        -2400,
+        0
+    ),
+
+    // Cc 8 (balance) to pan
+    new DecodedModulator(
+        getModSourceEnum(
+            modulatorCurveTypes.linear,
+            true,
+            false,
+            true,
+            midiControllers.balance
+        ), // Linear bipolar positive 8
+        0x0, // No controller
+        generatorTypes.pan,
+        500,
         0
     )
 ];

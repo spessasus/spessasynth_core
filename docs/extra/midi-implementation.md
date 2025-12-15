@@ -10,26 +10,26 @@ This describes what messages SpessaSynth can receive.
 
      ⚠️NON-STANDARD!⚠️ means that this is an additional modulator that is not specified in the SF2 specification.
 
-| Message           | Supported? | Notes                                                                          |
-|-------------------|------------|--------------------------------------------------------------------------------|
-| Note On           | ✔️         |                                                                                |
-| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                     |
-| Note Aftertouch   | ✔️         | 50 cents of vibrato ⚠️NON-STANDARD!⚠️                                          |
-| Controller Change | ✔️         | [See below](#default-supported-controllers)                                    |
-| Program Change    | ✔️         | GM, GM2, GS, XG                                                                |
-| Channel Pressure  | ✔️         | 50 cents of vibrato                                                            |
-| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents)                     |
-| System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                      |
-| Time Code         | ❌          | Not Applicable                                                                 |
-| Song Position     | ❌          | Not Applicable                                                                 |
-| Song Select       | ❌          | Not Applicable                                                                 |
-| Tune Request      | ❌          | Not Applicable                                                                 |
-| MIDI Clock        | ❌          | Not Applicable                                                                 |
-| MIDI Start        | ❌          | Not Applicable                                                                 |
-| MIDI Continue     | ❌          | Not Applicable                                                                 |
-| MIDI Stop         | ❌          | Not Applicable                                                                 |
-| Active Sense      | ❌          | Not Applicable                                                                 |
-| System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message |
+| Message           | Supported? | Notes                                                                                                                |
+|-------------------|------------|----------------------------------------------------------------------------------------------------------------------|
+| Note On           | ✔️         |                                                                                                                      |
+| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                                                           |
+| Note Aftertouch   | ✔️         | Recognized, but no special behavior (Per SF2 specification). Has to be defined with modulators or system exclusives. |
+| Controller Change | ✔️         | [See below](#default-supported-controllers)                                                                          |
+| Program Change    | ✔️         | GM, GM2, GS, XG                                                                                                      |
+| Channel Pressure  | ✔️         | 50 cents of vibrato                                                                                                  |
+| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents)                                                           |
+| System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                                                            |
+| Time Code         | ❌          | Not Applicable                                                                                                       |
+| Song Position     | ❌          | Not Applicable                                                                                                       |
+| Song Select       | ❌          | Not Applicable                                                                                                       |
+| Tune Request      | ❌          | Not Applicable                                                                                                       |
+| MIDI Clock        | ❌          | Not Applicable                                                                                                       |
+| MIDI Start        | ❌          | Not Applicable                                                                                                       |
+| MIDI Continue     | ❌          | Not Applicable                                                                                                       |
+| MIDI Stop         | ❌          | Not Applicable                                                                                                       |
+| Active Sense      | ❌          | Not Applicable                                                                                                       |
+| System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message                                       |
 
 ## Controllers
 
@@ -50,18 +50,21 @@ Below is the list of controllers supported by default.
 | 1                    | Modulation Wheel                    | The modulation depth (0 - 127) mapped to max 50 cents of detune                                          | Controls the vibrato for the given patch.                                                                                                                              | 0             |
 | 5                    | Portamento Time                     | The portamento time (0 - 127)                                                                            | Controls the portamento time. [See portamento implementation](#portamento-implementation) A value of 0 effectively disables portamento.                                | 0             |
 | 6                    | Data Entry MSB                      | Data entry value (0 - 127)                                                                               | This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values. | none          |
+| 8                    | Balance                             | 0 is left, 64 is middle, 127 is right                                                                    | Controls the channel's stereo balance.                                                                                                                                 | 64            |
 | 7                    | Main Volume                         | The volume (0 - 127) 0 is silent, 127 is normal volume                                                   | Changes the channel's volume.                                                                                                                                          | 100           |
-| 10                   | Pan                                 | 0 is left, 64 is middle, 127 is right                                                                    | Controls the channel's stereo balance                                                                                                                                  | 64            |
+| 10                   | Pan                                 | 0 is left, 64 is middle, 127 is right                                                                    | Controls the channel's stereo pan.                                                                                                                                     | 64            |
 | 11                   | Expression controller               | The expression (0 - 127) 0 is silent, 127 is normal volume                                               | Works exactly like Main Volume, but it's independent.                                                                                                                  | 127           |
 | 32                   | Bank Select LSB                     | The bank number (0 - 127)                                                                                | Changes the bank number that is used in programChange. Note that it doesn't change the preset on its own. [See this for more info](#supported-bank-systems)            | 0             |
 | 33 - 64 excluding 38 | Controller LSB values               | The lower nibble of the value (0 - 127)                                                                  | Allows precise control of values such as volume, expression, pan. Extends the precision from 0 - 127 to 0 - 16384 (!)                                                  | 0             |
 | 38                   | Data Entry LSB                      | Data entry value (0 - 127)                                                                               | This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values. | none          |
-| 64                   | Sustain Pedal                       | 0 - 63 is off, 64 - 127 is on                                                                            | Holds the noteOff messages until the pedal is off, then stops them all at once.                                                                                        | 0 (off)       |
-| 65                   | Portamento On/Off                   | 0 - 63 is off, 64 - 127 is on                                                                            | Controls if the portamento is enabled or not.                                                                                                                          | on            |
+| 64                   | Sustain Pedal                       | 0 - 63 is off, 64 - 127 is on                                                                            | Holds the noteOff messages until the pedal is off, then stops them all at once.                                                                                        | OFF           |
+| 65                   | Portamento On/Off                   | 0 - 63 is off, 64 - 127 is on                                                                            | Controls if the portamento is enabled or not.                                                                                                                          | ON            |
+| 67                   | Soft Pedal                          | 0 - 63 is off, 64 - 127 is on                                                                            | Attenuates the channel and applies a low-pass filter.                                                                                                                  | OFF           |
 | 71                   | Filter Resonance                    | The resonance (0 - 127) 0 is 25 dB less, 64 is unchanged, 127 is 25 dB more          ⚠️NON-STANDARD!⚠️   | Controls the filter resonance of the given patch.                                                                                                                      | 64            |
 | 72                   | Attack Time                         | The attack time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest          ⚠️NON-STANDARD!⚠️   | Controls the attack time for the given patch.                                                                                                                          | 64            |
 | 73                   | Release Time                        | The release time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest         ⚠️NON-STANDARD!⚠️   | Controls the release time for the given patch.                                                                                                                         | 64            |
 | 74                   | Brightness                          | The brightness (0 - 127) 0 is muffled, 64 is no additional filter, 127 is most clear ⚠️NON-STANDARD!⚠️   | Controls the brightness (lowpass frequency) of the given patch.                                                                                                        | 64            |
+| 75                   | Decay time                          | The decay time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest           ⚠️NON-STANDARD!⚠️   | Controls the decay time for the given patch.                                                                                                                           | 64            |
 | 84                   | Portamento Control                  | The key number glide should start from (0 - 127)                                                         | Controls the portamento target key. [See portamento implementation](#portamento-implementation)                                                                        | 0             |
 | 91                   | Effects 1 Depth (reverb)            | The reverb depth (0 - 127) [See important info](../sound-bank/modulator.md#reverb-and-chorus-modulators) | Controls the reverb effect send for the given channel.                                                                                                                 | 0             |
 | 92                   | Effects 2 Depth (tremolo)           | The tremolo depth (0 - 127) mapped to 25dB of loudness variation                     ⚠️NON-STANDARD!⚠️   | Controls the tremolo (trembling) effect for the given patch.                                                                                                           | 0             |
@@ -99,6 +102,11 @@ Below are all the controller values which are not zero when the controllers are 
 | 81        | General Purpose Controller 6 | 64          |
 | 83        | General Purpose Controller 8 | 64          |
 
+!!! TIP
+
+    Note that the reverb is set to 0 unlike the recommended 40 in the GM2 standard.
+    This is done to provide a clean output for any file that doesn't explicitly request reverb.
+
 ## Parameter Numbers
 
 ### Supported Registered Parameters
@@ -119,26 +127,35 @@ Below is the list of currently implemented Non-Registered Parameters.
 Note that all these are non-standard GM.
 **These only apply for GS**
 
-| NRPN MSB | NRPN LSB | Name              | Explanation                                                                                 | Default        |
-|----------|----------|-------------------|---------------------------------------------------------------------------------------------|----------------|
-| 0x1      | 0x8      | Vibrato rate      | Controls the vibrato rate. The calculation to hertz is as follows: `hz = (value / 64) * 8`  | 0 (disabled)   |
-| 0x1      | 0x9      | Vibrato depth     | Controls the vibrato depth. Depth in cents is as calculated as follows: `cents = value / 2` | 0 (disabled)   |
-| 0x1      | 0xA      | Vibrato delay     | Controls the vibrato delay. Calculation to seconds is as follows: `s = (64 / value) / 3`    | 0 (disabled)   |
-| 0x1      | 0x20     | TVF Filter Cutoff | Controls the filter cutoff using the CC 74 (brightness)                                     | 64 (no change) |
-| 0x01     | 0x66     | EG Release Time   | Controls the volume envelope release time using CC 72                                       | 64 (no change) |
-| 0x01     | 0x64     | EG Attack Time    | Controls the volume envelope attack time using CC 73                                        | 64 (no change) |
+| NRPN MSB | NRPN LSB | Name                   | Explanation                                                      | Default        |
+|----------|----------|------------------------|------------------------------------------------------------------|----------------|
+| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                      | 0 (disabled)   |
+| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                     | 0 (disabled)   |
+| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                     | 0 (disabled)   |
+| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)          | 64 (no change) |
+| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance) | 64 (no change) |
+| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72            | 64 (no change) |
+| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73             | 64 (no change) |
 
 #### Custom Vibrato
 
 The NPRN vibrato messages have special behavior.
+On synth start and reset it is disabled.
 Any value other than 64 received for any of the states activates it with the default settings:
 
 - depth = 50 cents
 - rate = 8 Hz
 - delay = 0.6s
 
-After which any changes received through the NRPN (including the one that triggered it) are enabled.
-This behavior has existed since the beginning of this program as a way to enhance the TH MIDI files,
+After which any changes received through the NRPN (including the one that triggered it) are processed.
+
+Calculation for the specific NPRN parameters are as follows (value is the data entry MSB value from 0 to 127):
+
+- Rate: `Hz = (value / 64) * 8`
+- Depth: `cents = value / 2`
+- Delay: `seconds = (64 / value) / 3`
+
+This behavior has existed since the beginning of this program as a way to enhance Touhou Project MIDI files,
 the original target of SpessaSynth.
 
 **It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
@@ -190,7 +207,9 @@ Below is the list of currently implemented System Exclusive messages.
 | Roland SC Display Text | The text that SC-88 MIDIs display on the device. `synthdisplay` will be called.   |
 | Roland SC Dot Matrix   | A dot matrix display for the Sound Canvas devices. `synthdisplay` will be called. |
 | XG Display Letters     | The text that XG MIDIs display on the device. `synthdisplay` will be called.      |
+| XG Master Tune         | Controls the overall synth's tuning.                                              |
 | XG Master Volume       | Controls the overall synth's volume.                                              |
+| XG Master Attenuator   | Controls the overall synth's attenuation (inverse of volume).                     |
 | XG Master Transpose    | Controls the overall synth's transposition.                                       |
 | XG Part Setup          | See [this for more info](#xg-part-setup)                                          |
 | MIDI Tuning Standard   | See [this for more info](#midi-tuning-standard)                                   |
@@ -260,6 +279,14 @@ Below are the supported part setup messages for XG.
 | 0E           | Pan (0 is random for every voice) |
 | 13           | Reverb                            |
 | 12           | Chorus                            |
+| 15           | Vibrato Rate                      |
+| 16           | Vibrato Depth                     |
+| 17           | Vibrato Decay                     |
+| 18           | Filter Cutoff                     |
+| 19           | Filter Resonance                  |
+| 1A           | Attack Time                       |
+| 1B           | Decay Time                        |
+| 1C           | Release Time                      |
 
 ### MIDI Tuning Standard
 

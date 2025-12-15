@@ -116,6 +116,7 @@ A boolean indicating if the sequencer has finished playing.
 ### preload
 
 A boolean indicating if the smart preloading should be enabled. It is highly recommended.
+This causes the sequencer to [preload](../midi/index.md#preloadsynth) all the songs when loading them (except for those with embedded sound banks).
 
 Defaults to true.
 

@@ -1,10 +1,7 @@
-import { consoleColors } from "../../../../utils/other";
-import { SpessaSynthInfo } from "../../../../utils/loggin";
 import {
     customResetArray,
     defaultMIDIControllerValues,
-    NON_CC_INDEX_OFFSET,
-    PORTAMENTO_CONTROL_UNSET
+    NON_CC_INDEX_OFFSET
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
@@ -13,6 +10,7 @@ import type { MIDIChannel } from "../../engine_components/midi_channel";
 import type { SpessaSynthProcessor } from "../../../processor";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { modulatorSources } from "../../../../soundbank/enums";
+import type { SynthSystem } from "../../../types";
 
 /**
  * Executes a full system reset of all controllers.
@@ -21,14 +19,11 @@ import { modulatorSources } from "../../../../soundbank/enums";
  */
 export function resetAllControllersInternal(
     this: SpessaSynthProcessor,
-    log = true
+    system: SynthSystem = DEFAULT_SYNTH_MODE
 ) {
-    if (log) {
-        SpessaSynthInfo("%cResetting all controllers!", consoleColors.info);
-    }
     // Call here because there are returns in this function.
     this.privateProps.callEvent("allControllerReset", undefined);
-    this.setMasterParameter("midiSystem", DEFAULT_SYNTH_MODE);
+    this.setMasterParameter("midiSystem", system);
     // Reset private props
     this.privateProps.tunings.length = 0;
     for (let i = 0; i < 128; i++) {
@@ -101,6 +96,18 @@ export function resetAllControllersInternal(
     }
 }
 
+export function resetPortamento(this: MIDIChannel, sendCC: boolean) {
+    if (this.lockedControllers[midiControllers.portamentoControl]) return;
+    // Portamento has a quirk:
+    // For XG, control is set to 60
+    // For others, it's set to nothing (no portamento on first note-on)
+    if (this.channelSystem === "xg") {
+        this.controllerChange(midiControllers.portamentoControl, 60, sendCC);
+    } else {
+        this.controllerChange(midiControllers.portamentoControl, 0, sendCC);
+    }
+}
+
 /**
  * Reset all controllers for channel.
  * This will reset all controllers to their default values,
@@ -110,33 +117,32 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.channelOctaveTuning.fill(0);
 
     // Reset the array
-    for (let i = 0; i < defaultMIDIControllerValues.length; i++) {
-        if (this.lockedControllers[i]) {
+    for (let cc = 0; cc < defaultMIDIControllerValues.length; cc++) {
+        if (this.lockedControllers[cc]) {
             continue;
         }
-        const resetValue = defaultMIDIControllerValues[i];
-        if (this.midiControllers[i] !== resetValue && i < 127) {
-            if (i === midiControllers.portamentoControl) {
-                this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
-            } else if (
-                i !== midiControllers.portamentoControl &&
-                i !== midiControllers.dataEntryMSB &&
-                i !== midiControllers.registeredParameterMSB &&
-                i !== midiControllers.registeredParameterLSB &&
-                i !== midiControllers.nonRegisteredParameterMSB &&
-                i !== midiControllers.nonRegisteredParameterLSB
+        const resetValue = defaultMIDIControllerValues[cc];
+        if (this.midiControllers[cc] !== resetValue && cc < 127) {
+            if (
+                cc !== midiControllers.portamentoControl &&
+                cc !== midiControllers.dataEntryMSB &&
+                cc !== midiControllers.registeredParameterMSB &&
+                cc !== midiControllers.registeredParameterLSB &&
+                cc !== midiControllers.nonRegisteredParameterMSB &&
+                cc !== midiControllers.nonRegisteredParameterLSB
             ) {
                 this.controllerChange(
-                    i as MIDIController,
+                    cc as MIDIController,
                     resetValue >> 7,
                     sendCCEvents
                 );
             }
         } else {
             // Out of range, do a regular reset
-            this.midiControllers[i] = resetValue;
+            this.midiControllers[cc] = resetValue;
         }
     }
+    resetPortamento.call(this, sendCCEvents);
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
     this.randomPan = false;
 
@@ -203,13 +209,12 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
             !nonResettableCCs.has(i as MIDIController) &&
             resetValue !== this.midiControllers[i]
         ) {
-            if (i === midiControllers.portamentoControl) {
-                this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
-            } else {
+            if (i !== midiControllers.portamentoControl) {
                 this.controllerChange(i as MIDIController, resetValue >> 7);
             }
         }
     }
+    resetPortamento.call(this, true);
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
 }

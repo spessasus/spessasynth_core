@@ -257,6 +257,18 @@ The returned value is `Map<BasicPreset, Set<string>>`. That is:
 - The value is a `Set` of all unique combinations played on this preset, formatted as `key-velocity`, e.g., `60-120` (
   key 60, velocity 120)
 
+### preloadSynth
+
+Preloads a given `SpessaSynthProcessor` instance.
+This caches all the needed voices for playing back this sequencer, resulting in a smooth playback.
+The sequencer calls this function by default when loading the songs. ([it can be disabled](../spessa-synth-sequencer/index.md#preload)).
+
+```ts
+midi.preloadSynth(synth);
+```
+
+- synth - a `SpessaSynthProcessor` instance to preload.
+
 ### flush
 
 Updates all parameters. Call this after editing the contents of `midi.tracks` (the events).
