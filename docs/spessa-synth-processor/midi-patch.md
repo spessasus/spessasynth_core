@@ -39,7 +39,7 @@ This allows XG and GS drums to coexist in a single sound bank and can be thought
     The preset list change event provides an additional property `isAnyDrums` which correctly identifies drums across all MIDI systems.
     
 
-## XG Validity
+## XG Validity Test
 
 Each sound bank is validated for XG compatibility.
 That is, contains only allowed program numbers in the XG standard for the drum presets.

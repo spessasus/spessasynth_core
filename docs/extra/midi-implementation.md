@@ -160,18 +160,19 @@ the original target of SpessaSynth.
 
 **It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
 This can be useful as setting CC#1 to something like 1 (which is usually imperceptible), 
-will fully disable the extra vibrato.
+will disable the extra vibrato for this channel.
 
-[Custom vibrato can be fully disabled as well.](https://github.com/spessasus/spessasynth_lib/blob/b0716295820fc6b2e8873a1b0871ca6a0266ea02/src/synthetizer/worklet_processor.js#L281-L292)
+[Custom vibrato can be disabled globally as well.](../spessa-synth-processor/midi-channel.md#disableandlockgsnprn)
 
 #### SoundFont2 NRPN
 
-As of 3.26.15, spessasynth supports the standard SF2 NRPN implementation.
+As of 3.26.15, spessasynth supports the standard SF2 NRPN implementation, 
+as defined in Section 9.6 of the SoundFont2.04 specification.
 
 #### AWE32 NRPN Compatibility Layer
 
 As of 3.26.11, spessasynth supports emulation of the AWE32 NRPN generator modification.
-The parameter interpretation is similar to fluidsynth's emulation,
+The implementation is similar to fluidsynth's emulation,
 as it has been tested and found relatively accurate to the sound cards.
 Here are some useful resources about this:
 
@@ -183,9 +184,9 @@ Here are some useful resources about this:
 
 There are a few differences from fluidsynth's implementation:
 
-- LSB 16 overrides the `fineTune` generator instead of emitting a pitch-wheel event
-- Effect generators get overridden directly rather than passing through the modulator
-- Filter cutoff and Q have been tuned slightly differently
+- LSB 16 overrides the `fineTune` generator instead of emitting a pitch-wheel event.
+- Effect generators get overridden directly rather than passing through the modulator.
+- Filter cutoff and Q have been tuned slightly differently.
 
 ## System Exclusives
 
@@ -222,7 +223,7 @@ See the [MIDI Patch system](../spessa-synth-processor/midi-patch.md) for more in
 
 General MIDI (Level 1).
 
-Ignores all bank-selects.
+Ignores all bank select messages.
 
 #### GS
 
@@ -238,7 +239,7 @@ General MIDI Level 2.
 
 Bank LSB and MSB are processed. 
 MSB can be used to turn a channel into a drum channel.
-Drums will be selected according to the [XG Validity](../spessa-synth-processor/midi-patch.md#xg-validity)
+Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
 
 #### XG
 
@@ -246,72 +247,73 @@ Yamaha XG.
 
 Bank LSB and MSB are processed. 
 MSB can be used to turn a channel into a drum channel.
-Drums will be selected according to the [XG Validity](../spessa-synth-processor/midi-patch.md#xg-validity)
+Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
 
 ### GS Parameters
 
 Below are the supported GS SysEx Parameters.
 
-| Name                    | Description                                                                      |
-|-------------------------|----------------------------------------------------------------------------------|
-| Use for drums part      | Turns a specified channel into a drum channel.                                   |
-| Master Pan              | Controls the overall synth's stereo panning.                                     |
-| Master Volume           | Controls the overall synth's volume.                                             | 
-| Master Reverb           | Controls the overall synth's reverb level.                                       | 
-| Master Chorus           | Controls the overall synth's chorus level.                                       | 
-| Key Shift               | Transposes the keys by a given amount.                                           |
-| Reverb Level            | Same as CC 91 (reverb depth)                                                     | 
-| Chorus Level            | Same as CC 92 (chorus depth)                                                     |
-| Pan Position            | Same as CC 10 (pan position) except 0 mean random pan for every voice.           | 
-| Scale Tuning            | Similar to MTS Scale Octave Tuning.                                              |
-| Controller to Parameter | Defines how a controller affects the sound. See page 198 of the SC-88Pro Manual. |
+| Name                    | Description                                                                                                                            |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| Use for drums part      | Turns a specified channel into a drum channel.                                                                                         |
+| Master Pan              | Controls the overall synth's stereo panning.                                                                                           |
+| Master Volume           | Controls the overall synth's volume.                                                                                                   | 
+| Master Reverb           | Controls the overall synth's reverb level.                                                                                             | 
+| Master Chorus           | Controls the overall synth's chorus level.                                                                                             | 
+| Key Shift               | Transposes the keys by a given amount.                                                                                                 |
+| Reverb Level            | Same as CC 91 (reverb depth)                                                                                                           | 
+| Chorus Level            | Same as CC 92 (chorus depth)                                                                                                           |
+| Pan Position            | Same as CC 10 (pan position). A value of 0 means random panning for every voice.                                                       | 
+| Scale Tuning            | Similar to MTS Scale Octave Tuning.                                                                                                    |
+| Controller to Parameter | Defines how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system. |
 
 ### XG Part Setup
 
 Below are the supported part setup messages for XG.
 
-| Number (hex) | Name                              |
-|--------------|-----------------------------------|
-| 01           | Bank Select MSB                   |
-| 02           | Bank Select LSB                   |
-| 03           | Program change                    |
-| 0B           | Volume                            |
-| 0E           | Pan (0 is random for every voice) |
-| 13           | Reverb                            |
-| 12           | Chorus                            |
-| 15           | Vibrato Rate                      |
-| 16           | Vibrato Depth                     |
-| 17           | Vibrato Decay                     |
-| 18           | Filter Cutoff                     |
-| 19           | Filter Resonance                  |
-| 1A           | Attack Time                       |
-| 1B           | Decay Time                        |
-| 1C           | Release Time                      |
+| Number (hex) | Name                                                   |
+|--------------|--------------------------------------------------------|
+| 01           | Bank Select MSB                                        |
+| 02           | Bank Select LSB                                        |
+| 03           | Program change                                         |
+| 0B           | Volume                                                 |
+| 0E           | Pan A value of 0 means random panning for every voice. |
+| 13           | Reverb                                                 |
+| 12           | Chorus                                                 |
+| 15           | Vibrato Rate                                           |
+| 16           | Vibrato Depth                                          |
+| 17           | Vibrato Decay                                          |
+| 18           | Filter Cutoff                                          |
+| 19           | Filter Resonance                                       |
+| 1A           | Attack Time                                            |
+| 1B           | Decay Time                                             |
+| 1C           | Release Time                                           |
 
 ### MIDI Tuning Standard
 
-Below are the supported sysExes of the MTS.
-RT means realtime and NRT means non-realtime.
+Below are the supported messages for the MTS.
+RT means realtime and NRT means non-realtime (both are treated as realtime).
 
-- Bulk Tuning Dump
-- Scale Octave Tuning (1 byte) (RT/NRT)
-- Scale Octave Tuning (2 bytes) (RT/NRT)
-- Single Note Tuning change (RT)
-- Single Note Tuning Change (RT/NRT)
+| Name                                   | Description                                     |
+|----------------------------------------|-------------------------------------------------|
+| Bulk Tuning Dump                       | Tuning dump for all 128 notes                   |
+| Scale Octave Tuning (1 byte) (RT/NRT)  | Tuning a single octave, applies to all of them. |
+ | Scale Octave Tuning (2 bytes) (RT/NRT) | Same as above.                                  |
+ | Single Note Tuning change (RT/NRT)     | Tunes a single note.                            |
 
 ### Portamento Implementation
 
-SpessaSynth attempts to mimic the old SC-55 Portamento behavior.
+SpessaSynth attempts to recreate the old Sound Canvas/Yamaha XG portamento behavior.
 
 That is:
 
 - Portamento Time is only 7-bit.
 - Portamento Control gets overridden with the last portamento key.
+- For XG, the initial key to glide from is 60, for other systems there's no initial glide.
 - Portamento Time uses
   the [following table by John Novak](https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020) and
   linearly interpolates it.
 - Portamento Time depends on the distance of the keys.
-  The final calculation is `portamentoSeconds = linearInterpolateTable(portamentoTime) * keyDistance / 36` for now.
+  The final calculation is `portamentoSeconds = (linearInterpolation(cc5) / 40) * keyDistance`
   If you know a more accurate algorithm, please let me know!
-- Portamento is **experimental.** It can be disabled, and it may not work correctly as I do not own an actual SC-55 to
-  test it with.
+- Portamento is **experimental,** although I've found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
