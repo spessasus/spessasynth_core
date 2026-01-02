@@ -38,7 +38,7 @@ It only needs to be awaited once, globally. Then all banks can be loaded synchro
 
 ### soundBankInfo
 
-The metadata of this sound bank, described below
+The metadata of this sound bank as an object with properties described below.
 
 #### name
 
@@ -47,6 +47,7 @@ The sound bank's name.
 #### version
 
 The sound bank's version, stored as an object:
+
 - major - the major revision, number.
 - minor - the minor revision, number.
 
@@ -61,15 +62,16 @@ The creation date of this sound bank, a `Date` object.
 
 #### soundEngine
 
-The sound engine name
+The sound engine name.
 
 !!! Note
 
     The other properties of soundBankInfo listed below are all *optional*!
+    They may be undefined.
     
 #### engineer
 
-The engineer (creator) of the sound bank
+The engineer (creator) of the sound bank.
 
 
 #### product
@@ -90,11 +92,11 @@ The subject of the file. This only appears in DLS files.
 
 #### romInfo
 
-ROM Bank information.
+ROM Bank information. (SF2 only)
 
 #### romVersion
 
-A tag that only applies to SF2 and will usually be undefined.
+A tag that only applies to SF2 and will usually be undefined. (SF2 only)
 
 Stored like the `version` field.
 
