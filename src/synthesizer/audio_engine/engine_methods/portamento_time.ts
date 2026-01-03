@@ -32,11 +32,11 @@ const PORTA_DIVISION_CONSTANT = 40;
 /**
  * @param cc the CC#5 value (should not be decimal)
  * (PCHIP cubic spline - smooth & exact), optimized with fewer operations than full binear search and interpolation.
- * Created by Benjamin Rosseaux,
+ * Created by Benjamin Rosseaux.
  */
 function portaTimeToRate(cc: number): number {
     if (cc < 1) {
-        // Original code has smoothing here but since CC#5 is an integer, it is not needed here.
+        // Original code has smoothing here but since CC#5 is an integer, it is not needed.
         return 0;
     } else {
         // PCHIP cubic spline in log-log space - smooth & exact
