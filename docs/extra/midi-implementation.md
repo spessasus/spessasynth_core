@@ -307,13 +307,11 @@ SpessaSynth attempts to recreate the old Sound Canvas/Yamaha XG portamento behav
 
 That is:
 
-- Portamento Time is only 7-bit.
+- Portamento Time is only 7-bit. (only CC#5 is processed)
 - Portamento Control gets overridden with the last portamento key.
 - For XG, the initial key to glide from is 60, for other systems there's no initial glide.
-- Portamento Time uses
-  the [following table by John Novak](https://github.com/dosbox-staging/dosbox-staging/pull/2705#issue-1827830020) and
-  linearly interpolates it.
 - Portamento Time depends on the distance of the keys.
-  The final calculation is `portamentoSeconds = (linearInterpolation(cc5) / 40) * keyDistance`
-  If you know a more accurate algorithm, please let me know!
+  The final calculation is `portamentoSeconds = portaTimeToRate(cc5) * keyDistance`
+- The details of the `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/engine_methods/portamento_time.ts)
+- If you know a more accurate algorithm, please let me know!
 - Portamento is **experimental,** although I've found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
