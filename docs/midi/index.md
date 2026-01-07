@@ -240,6 +240,20 @@ midi.midiTicksToSeconds(ticks);
 
 The returned value is the time in seconds from the start of the MIDI to the given tick.
 
+
+### secondsToMIDITicks
+
+Calculates time in MIDI ticks given seconds.
+
+```ts
+midi.secondsToMIDITicks(seconds);
+```
+
+- seconds - `number` - the time in seconds.
+
+The returned value is the time in MIDI ticks from the start of the MIDI to the given second.
+Note that the returned value will always be rounded to the nearest integer.
+
 ### getUsedProgramsAndKeys
 
 Goes through the MIDI file and returns all used program numbers and MIDI key:velocity combinations for them,

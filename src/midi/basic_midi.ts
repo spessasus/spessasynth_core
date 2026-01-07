@@ -260,6 +260,59 @@ export class BasicMIDI {
     }
 
     /**
+     * Converts seconds to time in MIDI ticks.
+     * @param seconds The time in seconds.
+     * @returns The time in MIDI ticks.
+     */
+    public secondsToMIDITicks(seconds: number): number {
+        seconds = Math.max(seconds, 0);
+        if (seconds === 0) return 0;
+        if (this.tempoChanges.length < 1) {
+            // One is added automatically, but the user may have tampered with it
+            throw new Error(
+                "There are no tempo changes in the sequence. At least one is needed."
+            );
+        }
+
+        // Sanity check
+        if (this.tempoChanges[this.tempoChanges.length - 1].ticks !== 0) {
+            throw new Error(
+                `The last tempo change is not at 0 ticks. Got ${this.tempoChanges[this.tempoChanges.length - 1].ticks} ticks.`
+            );
+        }
+
+        // Tempo changes are reversed, so the first element is the last tempo change
+        // And the last element is the first tempo change
+        // (always at tick 0 and tempo 120)
+
+        let remainingSeconds = seconds;
+        let totalTicks = 0;
+        for (let i = this.tempoChanges.length - 1; i >= 0; i--) {
+            const currentTempo = this.tempoChanges[i];
+            const next: TempoChange | undefined = this.tempoChanges[i - 1];
+
+            const ticksToNextTempo = next
+                ? next.ticks - currentTempo.ticks
+                : Infinity;
+
+            const oneTickToSeconds =
+                60 / (currentTempo.tempo * this.timeDivision);
+            const secondsToNextTempo = ticksToNextTempo * oneTickToSeconds;
+
+            // In this tempo change
+            if (remainingSeconds <= secondsToNextTempo) {
+                totalTicks += Math.round(remainingSeconds / oneTickToSeconds);
+                return totalTicks;
+            }
+
+            // Not in this tempo change
+            totalTicks += ticksToNextTempo;
+            remainingSeconds -= secondsToNextTempo;
+        }
+        return totalTicks;
+    }
+
+    /**
      * Gets the used programs and keys for this MIDI file with a given sound bank.
      * @param soundbank the sound bank.
      * @returns The output data is a key-value pair: preset -> Set<"key-velocity">
