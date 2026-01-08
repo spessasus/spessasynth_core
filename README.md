@@ -292,7 +292,7 @@ The files will be placed in the `dist` folder.
 
 ## License
 
-Copyright © 2025 Spessasus
+Copyright © 2026 Spessasus
 Licensed under the Apache-2.0 License.
 
 #### Legal
