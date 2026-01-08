@@ -262,7 +262,7 @@ synth.stopAllChannels(force = false);
 
 ### setMasterParameter
 
-Set a [master parameter.](master-parameter.md)
+Set a [master parameter value.](master-parameter.md)
 
 ```ts
 synth.setMasterParameter(type, value);
@@ -273,7 +273,7 @@ synth.setMasterParameter(type, value);
 
 ### getMasterParameter
 
-Get a [master parameter.](master-parameter.md)
+Get a [master parameter value.](master-parameter.md)
 
 ```ts
 synth.getMasterParameter(type);

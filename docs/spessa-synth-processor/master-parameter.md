@@ -4,7 +4,6 @@ Master parameters can be used to set parameters that affect the entire synthesiz
 
 They are described below.
 
-
 ### masterGain
 The master gain, from 0 to any number. 1 is 100% volume.
 
@@ -43,3 +42,8 @@ The global transposition in semitones. It can be decimal to provide microtonal t
 
 ### deviceID
 Synthesizer's device ID for system exclusive messages. Set to -1 to accept all by default.
+
+## See also
+
+- [Setting a master parameter](index.md#setmasterparameter)
+- [Getting a master parameter](index.md#getmasterparameter)
