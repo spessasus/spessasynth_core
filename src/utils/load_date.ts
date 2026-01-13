@@ -93,7 +93,9 @@ export function parseDateString(dateString: string) {
     }
 
     // Remove "st" , "nd" , "rd",  "th", etc.
-    const filtered = dateString.replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1");
+    const filtered = dateString
+        .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
+        .replace(/\s+at\s+/i, " ");
     const date = new Date(filtered);
     if (isNaN(date.getTime())) {
         const translated = tryTranslate(dateString);
