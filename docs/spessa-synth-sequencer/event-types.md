@@ -13,6 +13,8 @@ The lists list properties of the object.
 Called when a MIDI message is sent and externalMIDIPlayback is true.
 
 - message: number[] - the binary MIDI message
+- time: number - the synthesizer's current time when this event was sent.
+Use this for scheduling MIDI messages to your external MIDI device.
 
 ### timeChange
 
