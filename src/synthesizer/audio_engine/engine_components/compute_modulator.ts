@@ -15,13 +15,12 @@ const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
 
 /**
  * Computes a given modulator
- * @param controllerTable all midi controllers as 14bit values + the non-controller indexes, starting at 128
  * @param modulator the modulator to compute
  * @param voice the voice belonging to the modulator
  * @returns the computed value
  */
 export function computeModulator(
-    controllerTable: Int16Array,
+    this: MIDIChannel,
     modulator: Modulator,
     voice: Voice
 ): number {
@@ -30,11 +29,13 @@ export function computeModulator(
         return 0;
     }
     const sourceValue = modulator.primarySource.getValue(
-        controllerTable,
+        this.midiControllers,
+        this.pitchWheels,
         voice
     );
     const secondSrcValue = modulator.secondarySource.getValue(
-        controllerTable,
+        this.midiControllers,
+        this.pitchWheels,
         voice
     );
 
@@ -97,7 +98,7 @@ export function computeModulators(
                 Math.max(
                     -32768,
                     modulatedGenerators[mod.destination] +
-                        computeModulator(this.midiControllers, mod, voice)
+                        this.computeModulator(mod, voice)
                 )
             );
         });
@@ -147,7 +148,7 @@ export function computeModulators(
                 // Reset this destination
                 let outputValue = generators[destination];
                 // Compute our modulator
-                computeModulator(this.midiControllers, mod, voice);
+                this.computeModulator(mod, voice);
                 // Sum the values of all modulators for this destination
                 modulators.forEach((m) => {
                     if (m.destination === destination) {

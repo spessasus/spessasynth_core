@@ -147,9 +147,14 @@ export class ModulatorSource {
     /**
      * Gets the current value from this source.
      * @param midiControllers The MIDI controller + modulator source array.
+     * @param pitchWheels The per-note MIDI pitch wheel values.
      * @param voice The voice to get the data for.
      */
-    public getValue(midiControllers: Int16Array, voice: Voice) {
+    public getValue(
+        midiControllers: Int16Array,
+        pitchWheels: Int16Array,
+        voice: Voice
+    ) {
         // The raw 14-bit value (0 - 16,383)
         let rawValue;
         if (this.isCC) {
@@ -170,6 +175,10 @@ export class ModulatorSource {
 
                 case modulatorSources.polyPressure:
                     rawValue = voice.pressure << 7;
+                    break;
+
+                case modulatorSources.pitchWheel:
+                    rawValue = pitchWheels[voice.realKey];
                     break;
 
                 default:

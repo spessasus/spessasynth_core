@@ -74,7 +74,8 @@ export function resetAllControllersInternal(
                 ];
             this.privateProps.callEvent("pitchWheel", {
                 channel: channelNumber,
-                pitch: val
+                pitch: val,
+                midiNote: -1
             });
         }
 

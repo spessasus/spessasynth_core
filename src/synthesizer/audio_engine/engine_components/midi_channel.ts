@@ -15,7 +15,7 @@ import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
 import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
-import { computeModulators } from "./compute_modulator";
+import { computeModulator, computeModulators } from "./compute_modulator";
 import {
     generatorLimits,
     GENERATORS_AMOUNT,
@@ -38,7 +38,7 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
  * This class represents a single MIDI Channel within the synthesizer.
  */
 export class MIDIChannel {
-    /*
+    /**
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
      * such as volume, pan, modulation, etc.
@@ -46,12 +46,18 @@ export class MIDIChannel {
      * A bit of an explanation:
      * The controller table is stored as an int16 array, it stores 14-bit values.
      * This controller table is then extended with the modulatorSources section,
-     * for example, pitch range and pitch range depth.
-     * This allows us for precise control range and supports full pitch-wheel resolution.
+     * for example, and pitch wheel depth.
+     * This allows us for precise control range and supports full 14-bit controller resolution.
+     * Note that the pitch wheel is unused as the "pichWheels" array contains per-note pitch wheels.
      */
     public readonly midiControllers: Int16Array = new Int16Array(
         CONTROLLER_TABLE_SIZE
     );
+
+    /**
+     * An array for the MIDI 2.0 Per-note pitch wheels.
+     */
+    public readonly pitchWheels = new Int16Array(128);
 
     /**
      * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
@@ -248,6 +254,7 @@ export class MIDIChannel {
     protected renderVoice = renderVoice.bind(this);
     protected panAndMixVoice = panAndMixVoice.bind(this);
     protected computeModulators = computeModulators.bind(this);
+    protected computeModulator = computeModulator.bind(this);
 
     /**
      * Constructs a new MIDI channel.
@@ -388,8 +395,9 @@ export class MIDIChannel {
     /**
      * Sets the pitch of the given channel.
      * @param pitch The pitch (0 - 16384)
+     * @param midiNote The MIDI note number, pass -1 to use the channel pitch wheel
      */
-    public pitchWheel(pitch: number) {
+    public pitchWheel(pitch: number, midiNote = -1) {
         if (
             this.lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
@@ -399,16 +407,26 @@ export class MIDIChannel {
         }
         this.synthProps.callEvent("pitchWheel", {
             channel: this.channelNumber,
-            pitch
+            pitch,
+            midiNote
         });
-        this.midiControllers[
-            NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-        ] = pitch;
-        this.voices.forEach((v) =>
-            // Compute pitch modulators
-            this.computeModulators(v, 0, modulatorSources.pitchWheel)
-        );
-        this.sendChannelProperty();
+        if (midiNote === -1) {
+            this.pitchWheels.fill(pitch);
+            this.midiControllers[
+                NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
+            ] = pitch;
+            this.sendChannelProperty();
+            for (const v of this.voices)
+                // Compute pitch modulators
+                this.computeModulators(v, 0, modulatorSources.pitchWheel);
+        } else {
+            this.pitchWheels[midiNote] = pitch;
+            for (const v of this.voices) {
+                if (v.realKey !== midiNote) continue;
+                // Compute pitch modulators only for the specific note voices
+                this.computeModulators(v, 0, modulatorSources.pitchWheel);
+            }
+        }
     }
 
     /**

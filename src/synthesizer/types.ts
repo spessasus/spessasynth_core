@@ -83,6 +83,11 @@ export interface PitchWheelCallback {
      * The unsigned 14-bit value of the pitch: 0 - 16383.
      */
     pitch: number;
+
+    /**
+     * If the pitch wheel was note-specific, this is the MIDI note number that was altered. Set to -1 otherwise.
+     */
+    midiNote: number;
 }
 
 export interface ChannelPressureCallback {
