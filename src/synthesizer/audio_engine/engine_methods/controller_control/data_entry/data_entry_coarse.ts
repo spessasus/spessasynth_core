@@ -289,7 +289,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                     );
                     break;
 
-                // Pitch bend range
+                // Pitch wheel range
                 case registeredParameterTypes.pitchWheelRange:
                     this.midiControllers[
                         NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange

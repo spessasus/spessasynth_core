@@ -199,7 +199,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     // Reset tunings
     this.channelOctaveTuning.fill(0);
 
-    // Reset pitch bend
+    // Reset pitch wheel
     this.pitchWheel(8192);
 
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
