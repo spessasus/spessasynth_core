@@ -61,7 +61,7 @@ This event is triggered when the pitch wheel is altered on any channel.
   count.
 - `pitch`:  `number` - The unsigned 14-bit value of the pitch: 0 - 16,383.
 
-Note that the pitch bend depends on the pitch bend range, usually two semitones up and down.
+Note that the pitch wheel depends on the pitch wheel range, usually two semitones up and down.
 
 ### `controllerChange`
 

@@ -144,7 +144,7 @@ mid.addPitchWheel(ticks, track, channel, MSB, LSB);
 - `ticks` - `number` - the MIDI tick time of the event.
 - `track` - `number` - the track to use.
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
-- `MSB` and `LSB` - both `number` - 7-bit numbers that form a 14-bit pitch bend value.
+- `MSB` and `LSB` - both `number` - 7-bit numbers that form a 14-bit pitch wheel value.
 
 !!! Tip
 

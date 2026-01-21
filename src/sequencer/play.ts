@@ -34,12 +34,12 @@ export function setTimeToInternal(
     this.playedTime = 0;
     this.eventIndexes = Array<number>(this._midiData.tracks.length).fill(0);
 
-    // We save the pitch bends, programs and controllers here
+    // We save the pitch wheels, programs and controllers here
     // To only send them once after going through the events
 
     const channelsToSave = this.synth.midiChannels.length;
     /**
-     * Save pitch bends here and send them only after
+     * Save pitch wheels here and send them only after
      */
     const pitchWheels = Array<number>(channelsToSave).fill(8192);
 
@@ -91,7 +91,7 @@ export function setTimeToInternal(
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      */
     function resetAllControllers(chan: number) {
-        // Reset pitch bend
+        // Reset pitch wheel
         pitchWheels[chan] = 8192;
         if (savedControllers?.[chan] === undefined) {
             return;
@@ -140,7 +140,7 @@ export function setTimeToInternal(
             case midiMessageTypes.noteOff:
                 break;
 
-            // Skip pitch bend
+            // Skip pitch wheel
             case midiMessageTypes.pitchWheel:
                 pitchWheels[channel] = (event.data[1] << 7) | event.data[0];
                 break;
@@ -217,7 +217,7 @@ export function setTimeToInternal(
     // Restoring saved controllers
     // For all synth channels
     for (let channel = 0; channel < channelsToSave; channel++) {
-        // Restore pitch bends
+        // Restore pitch wheels
         if (pitchWheels[channel] !== undefined) {
             this.sendMIDIPitchWheel(channel, pitchWheels[channel]);
         }

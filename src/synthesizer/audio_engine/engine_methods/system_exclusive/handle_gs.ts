@@ -1,13 +1,13 @@
-import type { SpessaSynthProcessor } from '../../../processor'
-import { type SysExAcceptedArray, sysExLogging, sysExNotRecognized } from './helpers'
+import type { SpessaSynthProcessor } from "../../../processor";
+import { type SysExAcceptedArray, sysExLogging, sysExNotRecognized } from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import { arrayToHexString, consoleColors } from "../../../../utils/other";
-import { customControllers } from '../../../enums'
-import { midiControllers } from '../../../../midi/enums'
-import { NON_CC_INDEX_OFFSET } from '../../engine_components/controller_tables'
-import { type ModulatorSourceEnum, modulatorSources } from '../../../../soundbank/enums'
-import { generatorTypes } from '../../../../soundbank/basic_soundbank/generator_types'
-import { readBinaryString } from '../../../../utils/byte_functions/string'
+import { customControllers } from "../../../enums";
+import { midiControllers } from "../../../../midi/enums";
+import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
+import { type ModulatorSourceEnum, modulatorSources } from "../../../../soundbank/enums";
+import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import { readBinaryString } from "../../../../utils/byte_functions/string";
 
 /**
  * Handles a GS system exclusive
@@ -185,7 +185,7 @@ export function handleGS(
                                     // See https://github.com/spessasus/SpessaSynth/issues/154
                                     // Pitch control
                                     // Special case:
-                                    // If the source is a pitch wheel, it's a strange way of setting the bend range
+                                    // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
                                     // Testcase: th07_03.mid
                                     if (
                                         source ===
@@ -379,7 +379,7 @@ export function handleGS(
                                 break;
 
                             case 0x10:
-                                // Pitch bend
+                                // Pitch wheel
                                 setupReceivers(
                                     NON_CC_INDEX_OFFSET +
                                         modulatorSources.pitchWheel,

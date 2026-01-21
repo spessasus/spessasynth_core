@@ -29,7 +29,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                 default:
                     break;
 
-                // Pitch bend range fine tune
+                // Pitch wheel range fine tune
                 case registeredParameterTypes.pitchWheelRange: {
                     if (dataValue === 0) {
                         break;
