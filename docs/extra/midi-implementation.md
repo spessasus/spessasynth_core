@@ -188,6 +188,11 @@ There are a few differences from fluidsynth's implementation:
 - Effect generators get overridden directly rather than passing through the modulator.
 - Filter cutoff and Q have been tuned slightly differently.
 
+### Per-note Pitch Wheel
+
+As of 4.0.26 SpessaSynth supports per-note Pitch Wheel as a part of the MIDI 2.0 specification.
+Note that this is API-only, there are no MIDI messages that allow for changing it for now.
+
 ## System Exclusives
 
 ### Supported System Exclusives
