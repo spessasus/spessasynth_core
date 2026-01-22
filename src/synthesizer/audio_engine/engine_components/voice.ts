@@ -126,7 +126,7 @@ export class Voice {
     public currentTuningCalculated = 1;
 
     /**
-     * From -500 to 500.
+     * From -500 to 500. Used for smoothing.
      */
     public currentPan = 0;
 
@@ -157,6 +157,18 @@ export class Voice {
      * Exclusive class number for hi-hats etc.
      */
     public exclusiveClass = 0;
+
+    /**
+     * In timecents, where zero means disabled (use the modulatedGenerators table).
+     * Used for exclusive notes and killing notes.
+     */
+    public overrideReleaseVolEnv = 0;
+
+    /**
+     * In timecents, where zero means disabled (use the modulatedGenerators table).
+     * Used for exclusive notes and killing notes.
+     */
+    public overrideReleaseModEnv = 0;
 
     /**
      * Creates a Voice.
@@ -218,11 +230,10 @@ export class Voice {
      * Releases the voice as exclusiveClass.
      */
     public exclusiveRelease(currentTime: number) {
-        this.modulatedGenerators[generatorTypes.releaseVolEnv] =
-            EXCLUSIVE_CUTOFF_TIME; // Make the release nearly instant
-        this.modulatedGenerators[generatorTypes.releaseModEnv] =
-            EXCLUSIVE_MOD_CUTOFF_TIME;
-        this.scheduleRelease(currentTime, MIN_EXCLUSIVE_LENGTH);
+        this.overrideReleaseVolEnv = EXCLUSIVE_CUTOFF_TIME; // Make the release nearly instant
+        this.overrideReleaseModEnv = EXCLUSIVE_MOD_CUTOFF_TIME;
+        this.isInRelease = false;
+        this.releaseVoice(currentTime, MIN_EXCLUSIVE_LENGTH);
     }
 
     /**
@@ -230,12 +241,8 @@ export class Voice {
      * @param currentTime
      * @param minNoteLength minimum note length in seconds
      */
-    public scheduleRelease(
-        currentTime: number,
-        minNoteLength = MIN_NOTE_LENGTH
-    ) {
-        // Already scheduled (if not, this.releaseStartTime is Infinity)
-        this.releaseStartTime = Math.min(currentTime, this.releaseStartTime);
+    public releaseVoice(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {
+        this.releaseStartTime = currentTime;
         // Check if the note is shorter than the min note time, if so, extend it
         if (this.releaseStartTime - this.startTime < minNoteLength) {
             this.releaseStartTime = this.startTime + minNoteLength;

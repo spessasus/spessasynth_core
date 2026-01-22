@@ -20,10 +20,7 @@ import { IndexedByteArray } from "../utils/indexed_array";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { killVoicesIntenral } from "./audio_engine/engine_methods/stopping_notes/voice_killing";
-import {
-    getVoicesForPresetInternal,
-    getVoicesInternal
-} from "./audio_engine/engine_components/voice";
+import { getVoicesForPresetInternal, getVoicesInternal } from "./audio_engine/engine_components/voice";
 import { systemExclusiveInternal } from "./audio_engine/engine_methods/system_exclusive";
 import { resetAllControllersInternal } from "./audio_engine/engine_methods/controller_control/reset_controllers";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
@@ -34,11 +31,7 @@ import type {
     SynthProcessorOptions,
     VoiceList
 } from "./types";
-import {
-    type MIDIController,
-    type MIDIMessageType,
-    midiMessageTypes
-} from "../midi/enums";
+import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../midi/enums";
 import { ProtectedSynthValues } from "./audio_engine/engine_components/internal_synth_values";
 import { KeyModifierManager } from "./audio_engine/engine_components/key_modifier_manager";
 import { MIDIChannel } from "./audio_engine/engine_components/midi_channel";
@@ -592,7 +585,7 @@ export class SpessaSynthProcessor {
 
     // Clears the synthesizer's voice cache.
     public clearCache() {
-        this.privateProps.cachedVoices = [];
+        this.privateProps.cachedVoices.clear();
     }
 
     /**
@@ -635,9 +628,9 @@ export class SpessaSynthProcessor {
         midiNote: number,
         velocity: number
     ): VoiceList | undefined {
-        return this.privateProps.cachedVoices?.[
+        return this.privateProps.cachedVoices.get(
             this.getCachedVoiceIndex(patch, midiNote, velocity)
-        ];
+        );
     }
 
     protected setCachedVoice(
@@ -646,9 +639,10 @@ export class SpessaSynthProcessor {
         velocity: number,
         voices: VoiceList
     ) {
-        this.privateProps.cachedVoices[
-            this.getCachedVoiceIndex(patch, midiNote, velocity)
-        ] = voices;
+        this.privateProps.cachedVoices.set(
+            this.getCachedVoiceIndex(patch, midiNote, velocity),
+            voices
+        );
     }
 
     private getCachedVoiceIndex(

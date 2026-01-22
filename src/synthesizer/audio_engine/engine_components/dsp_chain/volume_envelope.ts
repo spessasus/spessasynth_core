@@ -1,7 +1,4 @@
-import {
-    decibelAttenuationToGain,
-    timecentsToSeconds
-} from "../unit_converter";
+import { decibelAttenuationToGain, timecentsToSeconds } from "../unit_converter";
 import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
@@ -14,8 +11,6 @@ export const VOLUME_ENVELOPE_SMOOTHING_FACTOR = 0.01;
 
 const DB_SILENCE = 100;
 const PERCEIVED_DB_SILENCE = 90;
-// Around 96 dB of attenuation
-const PERCEIVED_GAIN_SILENCE = 0.000_015; // Can't go lower than that (see #50)
 
 /**
  * VOL ENV STATES:
@@ -32,7 +27,7 @@ export class VolumeEnvelope {
     /**
      * The sample rate in Hz.
      */
-    public sampleRate: number;
+    public readonly sampleRate: number;
     /**
      * The current attenuation of the envelope in dB.
      */
@@ -44,58 +39,60 @@ export class VolumeEnvelope {
     /**
      * The envelope's current time in samples.
      */
-    protected currentSampleTime = 0;
+    private currentSampleTime = 0;
     /**
      * The dB attenuation of the envelope when it entered the release stage.
      */
-    protected releaseStartDb: number = DB_SILENCE;
+    private releaseStartDb: number = DB_SILENCE;
     /**
      * The time in samples relative to the start of the envelope.
      */
-    protected releaseStartTimeSamples = 0;
-    /**
-     * The current gain applied to the voice in the release stage.
-     */
-    protected currentReleaseGain = 1;
+    private releaseStartTimeSamples = 0;
     /**
      * The attack duration in samples.
      */
-    protected attackDuration = 0;
+    private attackDuration = 0;
     /**
      * The decay duration in samples.
      */
-    protected decayDuration = 0;
+    private decayDuration = 0;
     /**
      * The release duration in samples.
      */
-    protected releaseDuration = 0;
+    private releaseDuration = 0;
     /**
      * The voice's sustain amount in dB, relative to attenuation.
      */
-    protected sustainDbRelative = 0;
+    private sustainDbRelative = 0;
     /**
      * The time in samples to the end of delay stage, relative to the start of the envelope.
      */
-    protected delayEnd = 0;
+    private delayEnd = 0;
     /**
      * The time in samples to the end of attack stage, relative to the start of the envelope.
      */
-    protected attackEnd = 0;
+    private attackEnd = 0;
     /**
      * The time in samples to the end of hold stage, relative to the start of the envelope.
      */
-    protected holdEnd = 0;
+    private holdEnd = 0;
     /**
      * The time in samples to the end of decay stage, relative to the start of the envelope.
      */
-    protected decayEnd = 0;
+    private decayEnd = 0;
+
+    /**
+     * If the volume envelope has ever entered the release phase.
+     * @private
+     */
+    private enteredRelease = false;
 
     /**
      * If sustain stage is silent,
      * then we can turn off the voice when it is silent.
      * We can't do that with modulated as it can silence the volume and then raise it again, and the voice must keep playing.
      */
-    protected canEndOnSilentSustain = false;
+    private canEndOnSilentSustain = false;
 
     /**
      * @param sampleRate Hz
@@ -119,7 +116,7 @@ export class VolumeEnvelope {
         const decibelOffset = centibelOffset / 10;
 
         // RELEASE PHASE
-        if (voice.isInRelease) {
+        if (this.enteredRelease) {
             // How much time has passed since release was started?
             let elapsedRelease =
                 this.currentSampleTime - this.releaseStartTimeSamples;
@@ -137,15 +134,15 @@ export class VolumeEnvelope {
                 const db =
                     (elapsedRelease / this.releaseDuration) * dbDifference +
                     this.releaseStartDb;
-                this.currentReleaseGain = decibelAttenuationToGain(
-                    db + decibelOffset
+                this.currentAttenuationDb = db + decibelOffset;
+                audioBuffer[i] *= decibelAttenuationToGain(
+                    this.currentAttenuationDb
                 );
-                audioBuffer[i] *= this.currentReleaseGain;
                 this.currentSampleTime++;
                 elapsedRelease++;
             }
 
-            if (this.currentReleaseGain <= PERCEIVED_GAIN_SILENCE) {
+            if (this.currentAttenuationDb >= PERCEIVED_DB_SILENCE) {
                 voice.finished = true;
             }
             return;
@@ -255,98 +252,26 @@ export class VolumeEnvelope {
      * @param voice the voice this envelope belongs to.
      */
     public startRelease(voice: Voice) {
+        // Set the release start time to now
         this.releaseStartTimeSamples = this.currentSampleTime;
-        this.currentReleaseGain = decibelAttenuationToGain(
-            this.currentAttenuationDb
-        );
-        this.recalculateRelease(voice);
-    }
 
-    /**
-     * Initialize the volume envelope
-     * @param voice The voice this envelope belongs to
-     */
-    public init(voice: Voice) {
-        this.canEndOnSilentSustain =
-            voice.modulatedGenerators[generatorTypes.sustainVolEnv] / 10 >=
-            PERCEIVED_DB_SILENCE;
-
-        // Calculate absolute times (they can change so we have to recalculate every time
-        this.sustainDbRelative = Math.min(
-            DB_SILENCE,
-            voice.modulatedGenerators[generatorTypes.sustainVolEnv] / 10
-        );
-        const sustainDb = Math.min(DB_SILENCE, this.sustainDbRelative);
-
-        // Calculate durations
-        this.attackDuration = this.timecentsToSamples(
-            voice.modulatedGenerators[generatorTypes.attackVolEnv]
-        );
-
-        // Decay: sf spec page 35: the time is for change from attenuation to -100dB,
-        // Therefore, we need to calculate the real time
-        // (changing from attenuation to sustain instead of -100dB)
-        const keyNumAddition =
-            (60 - voice.targetKey) *
-            voice.modulatedGenerators[generatorTypes.keyNumToVolEnvDecay];
-        const fraction = sustainDb / DB_SILENCE;
-        this.decayDuration =
-            this.timecentsToSamples(
-                voice.modulatedGenerators[generatorTypes.decayVolEnv] +
-                    keyNumAddition
-            ) * fraction;
-
-        this.recalculateRelease(voice);
-
-        // Calculate absolute end times for the values
-        this.delayEnd = this.timecentsToSamples(
-            voice.modulatedGenerators[generatorTypes.delayVolEnv]
-        );
-        this.attackEnd = this.attackDuration + this.delayEnd;
-
-        // Make sure to take keyNumToVolEnvHold into account!
-        const holdExcursion =
-            (60 - voice.targetKey) *
-            voice.modulatedGenerators[generatorTypes.keyNumToVolEnvHold];
-        this.holdEnd =
-            this.timecentsToSamples(
-                voice.modulatedGenerators[generatorTypes.holdVolEnv] +
-                    holdExcursion
-            ) + this.attackEnd;
-
-        this.decayEnd = this.decayDuration + this.holdEnd;
-
-        // If this is the first recalculation and the voice has no attack or delay time, set current db to peak
-        if (this.state === 0 && this.attackEnd === 0) {
-            // This.currentAttenuationDb = this.attenuationTarget;
-            this.state = 2;
-        }
-    }
-
-    private timecentsToSamples(tc: number) {
-        return Math.max(
-            0,
-            Math.floor(timecentsToSeconds(tc) * this.sampleRate)
-        );
-    }
-
-    /**
-     * Recalculates the envelope's release time (for killing notes)
-     * @param voice the voice this envelope belongs to
-     */
-    private recalculateRelease(voice: Voice) {
+        const timecents =
+            voice.overrideReleaseVolEnv ||
+            voice.modulatedGenerators[generatorTypes.releaseVolEnv];
         // Min is set to -7200 prevent clicks
         this.releaseDuration = this.timecentsToSamples(
-            Math.max(
-                -7200,
-                voice.modulatedGenerators[generatorTypes.releaseVolEnv]
-            )
+            Math.max(-7200, timecents)
         );
 
-        // Check if voice is in release
-        if (voice.isInRelease) {
-            // No interpolation this time: force update to actual attenuation and calculate release start from there
-            //This.attenuation = Math.min(DB_SILENCE, this.attenuationTarget);
+        if (this.enteredRelease) {
+            // The envelope is already in release, but we request an update
+            // This can happen with exclusiveClass for example
+            // Don't compute the releaseStartDb as it's tracked in currentAttenuationDb
+            this.releaseStartDb = this.currentAttenuationDb;
+        } else {
+            // The envelope now enters the release phase from the current gain
+            // Compute the current gain level in decibel attenuation
+
             const sustainDb = Math.max(
                 0,
                 Math.min(DB_SILENCE, this.sustainDbRelative)
@@ -411,19 +336,84 @@ export class VolumeEnvelope {
                 0,
                 Math.min(this.releaseStartDb, DB_SILENCE)
             );
-            if (this.releaseStartDb >= PERCEIVED_DB_SILENCE) {
-                voice.finished = true;
-            }
-            this.currentReleaseGain = decibelAttenuationToGain(
-                this.releaseStartDb
-            );
-
-            // Release: sf spec page 35: the time is for change from attenuation to -100dB,
-            // Therefore, we need to calculate the real time
-            // (changing from release start to -100dB instead of from peak to -100dB)
-            const releaseFraction =
-                (DB_SILENCE - this.releaseStartDb) / DB_SILENCE;
-            this.releaseDuration *= releaseFraction;
+            this.currentAttenuationDb = this.releaseStartDb;
         }
+        this.enteredRelease = true;
+
+        // Release: sf spec page 35: the time is for change from attenuation to -100dB,
+        // Therefore, we need to calculate the real time
+        // (changing from release start to -100dB instead of from peak to -100dB)
+        const releaseFraction = (DB_SILENCE - this.releaseStartDb) / DB_SILENCE;
+        this.releaseDuration *= releaseFraction;
+        // Sanity check
+        if (this.releaseStartDb >= PERCEIVED_DB_SILENCE) {
+            voice.finished = true;
+        }
+    }
+
+    /**
+     * Initialize the volume envelope
+     * @param voice The voice this envelope belongs to
+     */
+    public init(voice: Voice) {
+        this.canEndOnSilentSustain =
+            voice.modulatedGenerators[generatorTypes.sustainVolEnv] / 10 >=
+            PERCEIVED_DB_SILENCE;
+
+        // Calculate absolute times (they can change so we have to recalculate every time
+        this.sustainDbRelative = Math.min(
+            DB_SILENCE,
+            voice.modulatedGenerators[generatorTypes.sustainVolEnv] / 10
+        );
+        const sustainDb = Math.min(DB_SILENCE, this.sustainDbRelative);
+
+        // Calculate durations
+        this.attackDuration = this.timecentsToSamples(
+            voice.modulatedGenerators[generatorTypes.attackVolEnv]
+        );
+
+        // Decay: sf spec page 35: the time is for change from attenuation to -100dB,
+        // Therefore, we need to calculate the real time
+        // (changing from attenuation to sustain instead of -100dB)
+        const keyNumAddition =
+            (60 - voice.targetKey) *
+            voice.modulatedGenerators[generatorTypes.keyNumToVolEnvDecay];
+        const fraction = sustainDb / DB_SILENCE;
+        this.decayDuration =
+            this.timecentsToSamples(
+                voice.modulatedGenerators[generatorTypes.decayVolEnv] +
+                    keyNumAddition
+            ) * fraction;
+
+        // Calculate absolute end times for the values
+        this.delayEnd = this.timecentsToSamples(
+            voice.modulatedGenerators[generatorTypes.delayVolEnv]
+        );
+        this.attackEnd = this.attackDuration + this.delayEnd;
+
+        // Make sure to take keyNumToVolEnvHold into account!
+        const holdExcursion =
+            (60 - voice.targetKey) *
+            voice.modulatedGenerators[generatorTypes.keyNumToVolEnvHold];
+        this.holdEnd =
+            this.timecentsToSamples(
+                voice.modulatedGenerators[generatorTypes.holdVolEnv] +
+                    holdExcursion
+            ) + this.attackEnd;
+
+        this.decayEnd = this.decayDuration + this.holdEnd;
+
+        // If this is the first recalculation and the voice has no attack or delay time, set current db to peak
+        if (this.state === 0 && this.attackEnd === 0) {
+            // This.currentAttenuationDb = this.attenuationTarget;
+            this.state = 2;
+        }
+    }
+
+    private timecentsToSamples(tc: number) {
+        return Math.max(
+            0,
+            Math.floor(timecentsToSeconds(tc) * this.sampleRate)
+        );
     }
 }

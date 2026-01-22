@@ -77,7 +77,7 @@ export class ProtectedSynthValues {
      * Cached voices for all presets for this synthesizer.
      * Nesting is calculated in getCachedVoiceIndex, returns a list of voices for this note.
      */
-    public cachedVoices: VoiceList[] = [];
+    public readonly cachedVoices = new Map<number, VoiceList>();
 
     public constructor(
         eventCallbackHandler: <K extends keyof SynthProcessorEventData>(

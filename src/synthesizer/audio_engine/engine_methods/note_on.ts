@@ -54,7 +54,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Monophonic retrigger
     if (this.synthProps.masterParameters.monophonicRetriggerMode) {
-        this.killNote(midiNote, -7200);
+        this.killNote(midiNote);
     }
 
     // Key velocity override
@@ -158,12 +158,11 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         const exclusive = voice.exclusiveClass;
         if (exclusive !== 0) {
             // Kill all voices with the same exclusive class
-            for (const v of this.exclusiveVoices) {
+            for (const v of channelVoices) {
                 if (v.exclusiveClass === exclusive) {
                     v.exclusiveRelease(this.synth.currentSynthTime);
                 }
             }
-            this.exclusiveVoices.push(voice);
         }
         // Compute all modulators
         this.computeModulators(voice);
