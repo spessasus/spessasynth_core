@@ -1,4 +1,8 @@
-import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
+import {
+    CONTROLLER_TABLE_SIZE,
+    CUSTOM_CONTROLLER_TABLE_SIZE,
+    NON_CC_INDEX_OFFSET
+} from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -13,7 +17,10 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
+import {
+    DEFAULT_PERCUSSION,
+    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
+} from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -25,7 +32,12 @@ import {
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
 import type { SpessaSynthProcessor } from "../../processor";
-import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
+import {
+    type CustomController,
+    customControllers,
+    type DataEntryState,
+    dataEntryStates
+} from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { ProtectedSynthValues } from "./internal_synth_values";
@@ -219,6 +231,10 @@ export class MIDIChannel {
         this
     ) as typeof dataEntryCoarse;
     /**
+     * An array of voices that have an exclusive class set.
+     */
+    protected exclusiveVoices: VoiceList = [];
+    /**
      * Will be updated every time something tuning-related gets changed.
      * This is used to avoid a big addition for every voice rendering call.
      */
@@ -404,10 +420,8 @@ export class MIDIChannel {
         this.midiControllers[
             NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
         ] = pitch;
-        this.voices.forEach((v) =>
-            // Compute pitch modulators
-            this.computeModulators(v, 0, modulatorSources.pitchWheel)
-        );
+        for (const v of this.voices)
+            this.computeModulators(v, 0, modulatorSources.pitchWheel);
         this.sendChannelProperty();
     }
 

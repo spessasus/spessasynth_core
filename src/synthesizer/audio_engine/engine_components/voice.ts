@@ -234,7 +234,8 @@ export class Voice {
         currentTime: number,
         minNoteLength = MIN_NOTE_LENGTH
     ) {
-        this.releaseStartTime = currentTime;
+        // Already scheduled (if not, this.releaseStartTime is Infinity)
+        this.releaseStartTime = Math.min(currentTime, this.releaseStartTime);
         // Check if the note is shorter than the min note time, if so, extend it
         if (this.releaseStartTime - this.startTime < minNoteLength) {
             this.releaseStartTime = this.startTime + minNoteLength;

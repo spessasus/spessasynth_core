@@ -158,11 +158,12 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         const exclusive = voice.exclusiveClass;
         if (exclusive !== 0) {
             // Kill all voices with the same exclusive class
-            for (const v of channelVoices) {
+            for (const v of this.exclusiveVoices) {
                 if (v.exclusiveClass === exclusive) {
                     v.exclusiveRelease(this.synth.currentSynthTime);
                 }
             }
+            this.exclusiveVoices.push(voice);
         }
         // Compute all modulators
         this.computeModulators(voice);

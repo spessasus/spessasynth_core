@@ -1,4 +1,7 @@
-import { decibelAttenuationToGain, timecentsToSeconds } from "../unit_converter";
+import {
+    decibelAttenuationToGain,
+    timecentsToSeconds
+} from "../unit_converter";
 import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 

@@ -1,6 +1,9 @@
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    generatorLimits,
+    type GeneratorType
+} from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
