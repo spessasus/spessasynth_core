@@ -42,7 +42,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         if (this.holdPedal) {
             this.sustainedVoices.push(v);
         } else {
-            v.release(this.synth.currentSynthTime);
+            v.scheduleRelease(this.synth.currentSynthTime);
         }
     }
     this.synthProps.callEvent("noteOff", {

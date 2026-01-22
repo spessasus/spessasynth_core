@@ -183,10 +183,7 @@ export class Voice {
         this.startTime = currentTime;
         this.targetKey = targetKey;
         this.realKey = realKey;
-        this.volumeEnvelope = new VolumeEnvelope(
-            sampleRate,
-            generators[generatorTypes.sustainVolEnv]
-        );
+        this.volumeEnvelope = new VolumeEnvelope(sampleRate);
     }
 
     /**
@@ -221,13 +218,11 @@ export class Voice {
      * Releases the voice as exclusiveClass.
      */
     public exclusiveRelease(currentTime: number) {
-        this.release(currentTime, MIN_EXCLUSIVE_LENGTH);
         this.modulatedGenerators[generatorTypes.releaseVolEnv] =
             EXCLUSIVE_CUTOFF_TIME; // Make the release nearly instant
         this.modulatedGenerators[generatorTypes.releaseModEnv] =
             EXCLUSIVE_MOD_CUTOFF_TIME;
-        VolumeEnvelope.recalculate(this);
-        ModulationEnvelope.recalculate(this);
+        this.scheduleRelease(currentTime, MIN_EXCLUSIVE_LENGTH);
     }
 
     /**
@@ -235,7 +230,10 @@ export class Voice {
      * @param currentTime
      * @param minNoteLength minimum note length in seconds
      */
-    public release(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {
+    public scheduleRelease(
+        currentTime: number,
+        minNoteLength = MIN_NOTE_LENGTH
+    ) {
         this.releaseStartTime = currentTime;
         // Check if the note is shorter than the min note time, if so, extend it
         if (this.releaseStartTime - this.startTime < minNoteLength) {

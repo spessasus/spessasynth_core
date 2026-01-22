@@ -1,11 +1,6 @@
-import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import { generatorTypes } from "../../../soundbank/enums";
-import {
-    generatorLimits,
-    type GeneratorType
-} from "../../../soundbank/basic_soundbank/generator_types";
+import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
@@ -116,24 +111,11 @@ export function computeModulators(
                 Math.max(limit.min, modulatedGenerators[gen])
             );
         }
-        VolumeEnvelope.recalculate(voice);
         ModulationEnvelope.recalculate(voice);
         return;
     }
 
     // Optimized mode: calculate only modulators that use the given source
-    const volumeEnvelopeNeedsRecalculation = new Set<GeneratorType>([
-        generatorTypes.initialAttenuation,
-        generatorTypes.delayVolEnv,
-        generatorTypes.attackVolEnv,
-        generatorTypes.holdVolEnv,
-        generatorTypes.decayVolEnv,
-        generatorTypes.sustainVolEnv,
-        generatorTypes.releaseVolEnv,
-        generatorTypes.keyNumToVolEnvHold,
-        generatorTypes.keyNumToVolEnvDecay
-    ]);
-
     const computedDestinations = new Set<GeneratorType>();
 
     const sourceCC = !!sourceUsesCC;
@@ -167,15 +149,6 @@ export function computeModulators(
                 computedDestinations.add(destination);
             }
         }
-    }
-
-    // Recalculate volume envelope if necessary
-    if (
-        [...computedDestinations].some((dest) =>
-            volumeEnvelopeNeedsRecalculation.has(dest)
-        )
-    ) {
-        VolumeEnvelope.recalculate(voice);
     }
 
     ModulationEnvelope.recalculate(voice);

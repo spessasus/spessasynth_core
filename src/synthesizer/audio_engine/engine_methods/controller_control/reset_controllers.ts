@@ -3,10 +3,7 @@ import {
     defaultMIDIControllerValues,
     NON_CC_INDEX_OFFSET
 } from "../../engine_components/controller_tables";
-import {
-    DEFAULT_PERCUSSION,
-    DEFAULT_SYNTH_MODE
-} from "../../engine_components/synth_constants";
+import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
@@ -147,6 +144,9 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     resetPortamento.call(this, sendCCEvents);
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
     this.randomPan = false;
+
+    // Reset pitch wheel
+    this.pitchWheel(8192);
 
     this.sysExModulators.resetModulators();
 

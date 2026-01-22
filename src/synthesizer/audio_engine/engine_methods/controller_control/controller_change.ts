@@ -180,7 +180,7 @@ export function controllerChange(
             case midiControllers.sustainPedal: {
                 if (controllerValue < 64) {
                     for (const v of this.sustainedVoices) {
-                        v.release(this.synth.currentSynthTime);
+                        v.scheduleRelease(this.synth.currentSynthTime);
                     }
                     this.sustainedVoices = [];
                 }

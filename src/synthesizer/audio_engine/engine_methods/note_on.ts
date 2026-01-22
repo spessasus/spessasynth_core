@@ -166,6 +166,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         }
         // Compute all modulators
         this.computeModulators(voice);
+
         // Modulate sample offsets (these are not real time)
         const cursorStartOffset =
             voice.modulatedGenerators[generatorTypes.startAddrsOffset] +
@@ -185,9 +186,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             voice.modulatedGenerators[generatorTypes.endloopAddrsOffset] +
             voice.modulatedGenerators[generatorTypes.endloopAddrsCoarseOffset] *
                 32_768;
-        const sample = voice.sample;
-        // Apply them
 
+        // Clamp the sample offsets
+        const sample = voice.sample;
         const lastSample = sample.sampleData.length - 1;
         sample.cursor = clamp(sample.cursor + cursorStartOffset, 0, lastSample);
         sample.end = clamp(sample.end + endOffset, 0, lastSample);
@@ -212,10 +213,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             sample.loopingMode = 0;
             sample.isLooping = false;
         }
-        // Set the current attenuation to target,
-        // As it's interpolated (we don't want 0 attenuation for even a split second)
-        voice.volumeEnvelope.attenuation =
-            voice.volumeEnvelope.attenuationTargetGain;
+        // Initialize the volume envelope (non-realtime)
+        voice.volumeEnvelope.init(voice);
+
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(
             -500,

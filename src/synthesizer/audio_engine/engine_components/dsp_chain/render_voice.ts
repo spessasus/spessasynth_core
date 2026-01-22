@@ -1,4 +1,3 @@
-import { VolumeEnvelope } from "./volume_envelope";
 import { ModulationEnvelope } from "./modulation_envelope";
 import { absCentsToHz, timecentsToSeconds } from "../unit_converter";
 import { getLFOValue } from "./lfo";
@@ -44,7 +43,7 @@ export function renderVoice(
     ) {
         // Release the voice here
         voice.isInRelease = true;
-        VolumeEnvelope.startRelease(voice);
+        voice.volumeEnvelope.startRelease(voice);
         ModulationEnvelope.startRelease(voice);
         if (voice.sample.loopingMode === 3) {
             voice.sample.isLooping = false;
@@ -98,7 +97,8 @@ export function renderVoice(
 
     // Low pass excursion with LFO and mod envelope
     let lowpassExcursion = 0;
-    let volumeExcursionCentibels = 0;
+    let volumeExcursionCentibels =
+        voice.modulatedGenerators[generatorTypes.initialAttenuation];
 
     // Vibrato LFO
     const vibPitchDepth =
@@ -204,12 +204,7 @@ export function renderVoice(
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.sample.loopingMode === 2 && !voice.isInRelease) {
-        VolumeEnvelope.apply(
-            voice,
-            bufferOut,
-            volumeExcursionCentibels,
-            this.synthProps.volumeEnvelopeSmoothingFactor
-        );
+        voice.volumeEnvelope.apply(voice, bufferOut, volumeExcursionCentibels);
         return voice.finished;
     }
 
@@ -229,12 +224,7 @@ export function renderVoice(
     );
 
     // Vol env
-    VolumeEnvelope.apply(
-        voice,
-        bufferOut,
-        volumeExcursionCentibels,
-        this.synthProps.volumeEnvelopeSmoothingFactor
-    );
+    voice.volumeEnvelope.apply(voice, bufferOut, volumeExcursionCentibels);
 
     this.panAndMixVoice(
         voice,
