@@ -124,7 +124,7 @@ export class ChannelSnapshot {
             snapshot.lockVibrato,
             { ...snapshot.channelVibrato },
             snapshot.channelTransposeKeyShift,
-            snapshot.channelOctaveTuning,
+            snapshot.channelOctaveTuning.slice(),
             snapshot.isMuted,
             snapshot.drumChannel,
             snapshot.channelNumber
@@ -134,7 +134,7 @@ export class ChannelSnapshot {
     /**
      * Creates a snapshot of the channel's state.
      * @param spessaSynthProcessor The synthesizer processor containing the channel.
-     * @param channelNumber The channel number to snapshot.
+     * @param channelNumber The channel number to take a snapshot of.
      */
     public static create(
         spessaSynthProcessor: SpessaSynthProcessor,

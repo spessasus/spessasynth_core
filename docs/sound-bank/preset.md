@@ -107,12 +107,12 @@ This is a really complex function that attempts to work around the DLS limitatio
 It returns the `BasicInstrument` containing the flattened zones.
 In theory, it should exactly the same as this preset.
 
-### getSynthesisData
+### getVoiceParameters
 
-Returns the SF2 synthesis data for a given note and velocity.
+Returns the voice synthesis data for a given note and velocity.
 
 ```ts
-const synthesisData = preset.getSynthesisData(midiNote, velocity);
+const synthesisData = preset.getVoiceParameters(midiNote, velocity);
 ```
 
 - midiNote - the note to get data for. Ranges from 0 to 127.
@@ -120,7 +120,6 @@ const synthesisData = preset.getSynthesisData(midiNote, velocity);
 
 The returned value is an array of objects:
 
-- instrumentGenerators - an array of [`Generator`](generator.md)s.
-- presetGenerators - an array of [`Generator`](generator.md)s.
-- modulators - an array of [`Generator`](modulator.md)s.
+- generators - an `Int16Array` containing the generator values at their respective indexes (`generators[type] = value`). Note that the E-mu attenuation correction is already performed.
+- modulators - an array of [`Modulator`](modulator.md)s.
 - sample - a [`BasicSample`](sample.md)
