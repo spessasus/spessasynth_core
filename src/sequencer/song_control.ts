@@ -86,9 +86,9 @@ export function loadNewSequenceInternal(
     this.midiPortChannelOffset = 0;
     this.midiPortChannelOffsets = {};
     // Assign port offsets
-    this._midiData.tracks.forEach((track, trackIndex) => {
+    for (const [trackIndex, track] of this._midiData.tracks.entries()) {
         this.assignMIDIPort(trackIndex, track.port);
-    });
+    }
     this.firstNoteTime = this._midiData.midiTicksToSeconds(
         this._midiData.firstNoteOn
     );

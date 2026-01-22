@@ -75,7 +75,7 @@ export class MIDIBuilder extends BasicMIDI {
     public addSetTempo(ticks: number, tempo: number) {
         const array = new IndexedByteArray(3);
 
-        tempo = 60000000 / tempo;
+        tempo = 60_000_000 / tempo;
 
         // Extract each byte in big-endian order
         array[0] = (tempo >> 16) & 0xff;
@@ -129,13 +129,14 @@ export class MIDIBuilder extends BasicMIDI {
                 `Track ${track} does not exist. Add it via addTrack method.`
             );
         }
-        if (event >= midiMessageTypes.noteOff) {
-            // Voice event
-            if (this.format === 1 && track === 0) {
-                throw new Error(
-                    "Can't add voice messages to the conductor track (0) in format 1. Consider using format 0 using a different track."
-                );
-            }
+        if (
+            event >= midiMessageTypes.noteOff && // Voice event
+            this.format === 1 &&
+            track === 0
+        ) {
+            throw new Error(
+                "Can't add voice messages to the conductor track (0) in format 1. Consider using format 0 using a different track."
+            );
         }
         this.tracks[track].pushEvent(
             new MIDIMessage(ticks, event, new IndexedByteArray(eventData))

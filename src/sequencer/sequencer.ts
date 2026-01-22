@@ -316,9 +316,9 @@ export class SpessaSynthSequencer {
             this.recalculateStartTime(this.pausedTime ?? 0);
         }
         if (this.retriggerPausedNotes) {
-            this.playingNotes.forEach((n) => {
+            for (const n of this.playingNotes) {
                 this.sendMIDINoteOn(n.channel, n.midiNote, n.velocity);
-            });
+            }
         }
         this.pausedTime = undefined;
     }
@@ -340,7 +340,7 @@ export class SpessaSynthSequencer {
          * Parse the MIDIs (only the array buffers, MIDI is unchanged)
          */
         this.songs = midiBuffers;
-        if (this.songs.length < 1) {
+        if (this.songs.length === 0) {
             return;
         }
         this._songIndex = 0;
@@ -349,11 +349,11 @@ export class SpessaSynthSequencer {
         // Preload all songs (without embedded sound banks)
         if (this.preload) {
             SpessaSynthGroup("%cPreloading all songs...", consoleColors.info);
-            this.songs.forEach((song) => {
+            for (const song of this.songs) {
                 if (song.embeddedSoundBank === undefined) {
                     song.preloadSynth(this.synth);
                 }
-            });
+            }
             SpessaSynthGroupEnd();
         }
 
@@ -407,16 +407,16 @@ export class SpessaSynthSequencer {
     protected findFirstEventIndex() {
         let index = 0;
         let ticks = Infinity;
-        this._midiData!.tracks.forEach((track, i) => {
+        for (const [i, track] of this._midiData!.tracks.entries()) {
             if (this.eventIndexes[i] >= track.events.length) {
-                return;
+                continue;
             }
             const event = track.events[this.eventIndexes[i]];
             if (event.ticks < ticks) {
                 index = i;
                 ticks = event.ticks;
             }
-        });
+        }
         return index;
     }
 
@@ -453,9 +453,9 @@ export class SpessaSynthSequencer {
         }
         // External
         // Off all playing notes
-        this.playingNotes.forEach((note) => {
+        for (const note of this.playingNotes) {
             this.sendMIDINoteOff(note.channel, note.midiNote);
-        });
+        }
         // Send off controllers
         for (let c = 0; c < MIDI_CHANNEL_COUNT; c++) {
             this.sendMIDICC(c, midiControllers.allNotesOff, 0);
@@ -537,7 +537,7 @@ export class SpessaSynthSequencer {
         for (const track of this._midiData.tracks) {
             const idx = track.events.findIndex((e) => e.ticks >= targetTicks);
             // Not length - 1 since we want to mark the track as finished
-            this.eventIndexes.push(idx < 0 ? track.events.length : idx);
+            this.eventIndexes.push(idx === -1 ? track.events.length : idx);
         }
 
         // Correct tempo

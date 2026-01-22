@@ -96,36 +96,44 @@ export class DownloadableSounds extends DLSVerifier {
                     infoPart.size
                 );
                 switch (headerTyped) {
-                    case "INAM":
+                    case "INAM": {
                         dls.soundBankInfo.name = text;
                         break;
+                    }
 
-                    case "ICRD":
+                    case "ICRD": {
                         dls.soundBankInfo.creationDate = parseDateString(text);
                         break;
+                    }
 
-                    case "ICMT":
+                    case "ICMT": {
                         dls.soundBankInfo.comment = text;
                         break;
+                    }
 
-                    case "ISBJ":
+                    case "ISBJ": {
                         dls.soundBankInfo.subject = text;
                         break;
+                    }
 
-                    case "ICOP":
+                    case "ICOP": {
                         dls.soundBankInfo.copyright = text;
                         break;
+                    }
 
-                    case "IENG":
+                    case "IENG": {
                         dls.soundBankInfo.engineer = text;
                         break;
+                    }
 
-                    case "IPRD":
+                    case "IPRD": {
                         dls.soundBankInfo.product = text;
                         break;
+                    }
 
-                    case "ISFT":
+                    case "ISFT": {
                         dls.soundBankInfo.software = text;
+                    }
                 }
             }
         }
@@ -152,9 +160,9 @@ export class DownloadableSounds extends DLSVerifier {
             return 5 as never;
         }
         const waveList = this.verifyAndReadList(waveListChunk, "wvpl");
-        waveList.forEach((wave) => {
+        for (const wave of waveList) {
             dls.samples.push(DownloadableSoundsSample.read(wave));
-        });
+        }
 
         // Read the instrument list
         const instrumentListChunk = findRIFFListType(chunks, "lins");
@@ -172,11 +180,11 @@ export class DownloadableSounds extends DLSVerifier {
                 `Colh reported invalid amount of instruments. Detected ${instruments.length}, expected ${instrumentAmount}`
             );
         }
-        instruments.forEach((ins) => {
+        for (const ins of instruments) {
             dls.instruments.push(
                 DownloadableSoundsInstrument.read(dls.samples, ins)
             );
-        });
+        }
         SpessaSynthGroupEnd();
 
         /*
@@ -313,14 +321,14 @@ export class DownloadableSounds extends DLSVerifier {
             (dls.soundBankInfo.comment ?? "(No description)") +
             "\nConverted from SF2 to DLS with SpessaSynth";
 
-        bank.samples.forEach((s) => {
+        for (const s of bank.samples) {
             dls.samples.push(DownloadableSoundsSample.fromSFSample(s));
-        });
-        bank.presets.forEach((p) => {
+        }
+        for (const p of bank.presets) {
             dls.instruments.push(
                 DownloadableSoundsInstrument.fromSFPreset(p, bank.samples)
             );
-        });
+        }
 
         SpessaSynthInfo("%cConversion complete!", consoleColors.recognized);
         SpessaSynthGroupEnd();
@@ -416,43 +424,52 @@ export class DownloadableSounds extends DLSVerifier {
                 continue;
             }
             switch (type) {
-                case "name":
+                case "name": {
                     writeDLSInfo("INAM", data as string);
                     break;
+                }
 
-                case "comment":
+                case "comment": {
                     writeDLSInfo("ICMT", data as string);
                     break;
+                }
 
-                case "copyright":
+                case "copyright": {
                     writeDLSInfo("ICOP", data as string);
                     break;
+                }
 
-                case "creationDate":
+                case "creationDate": {
                     writeDLSInfo("ICRD", (data as Date).toISOString());
                     break;
+                }
 
-                case "engineer":
+                case "engineer": {
                     writeDLSInfo("IENG", data as string);
                     break;
+                }
 
-                case "product":
+                case "product": {
                     writeDLSInfo("IPRD", data as string);
                     break;
+                }
 
                 case "romVersion":
                 case "version":
                 case "soundEngine":
-                case "romInfo":
+                case "romInfo": {
                     // Not writable
                     break;
+                }
 
-                case "software":
+                case "software": {
                     writeDLSInfo("ISFT", data as string);
                     break;
+                }
 
-                case "subject":
+                case "subject": {
                     writeDLSInfo("ISBJ", data as string);
+                }
             }
         }
         const info = writeRIFFChunkParts("INFO", infos, true);
@@ -486,13 +503,13 @@ export class DownloadableSounds extends DLSVerifier {
             (soundBank.soundBankInfo.comment ?? "(No description)") +
             "\nConverted from DLS to SF2 with SpessaSynth";
 
-        this.samples.forEach((sample) => {
+        for (const sample of this.samples) {
             sample.toSFSample(soundBank);
-        });
+        }
 
-        this.instruments.forEach((instrument) => {
+        for (const instrument of this.instruments) {
             instrument.toSFPreset(soundBank);
-        });
+        }
         soundBank.flush();
 
         SpessaSynthInfo("%cConversion complete!", consoleColors.recognized);

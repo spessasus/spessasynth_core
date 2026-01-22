@@ -1,5 +1,4 @@
 import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
-import type { Generator } from "./basic_soundbank/generator";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
@@ -147,9 +146,8 @@ export interface SoundBankInfoData {
 
 export type SoundBankInfoFourCC = keyof SoundBankInfoData;
 
-export interface VoiceSynthesisData {
-    instrumentGenerators: Generator[];
-    presetGenerators: Generator[];
+export interface VoiceParameters {
+    generators: Int16Array;
     modulators: Modulator[];
     sample: BasicSample;
 }

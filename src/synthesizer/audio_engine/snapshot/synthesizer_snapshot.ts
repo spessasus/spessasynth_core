@@ -72,9 +72,9 @@ export class SynthesizerSnapshot {
         const entries = Object.entries(
             this.masterParameters
         ) as MasterParameterPair<keyof MasterParameterType>[];
-        entries.forEach(([parameter, value]) => {
+        for (const [parameter, value] of entries) {
             processor.setMasterParameter(parameter, value);
-        });
+        }
 
         // Restore key modifiers
         processor.keyModifierManager.setMappings(this.keyMappings);
@@ -85,8 +85,8 @@ export class SynthesizerSnapshot {
         }
 
         // Restore channels
-        this.channelSnapshots.forEach((channelSnapshot) => {
+        for (const channelSnapshot of this.channelSnapshots) {
             channelSnapshot.apply(processor);
-        });
+        }
     }
 }

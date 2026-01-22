@@ -20,7 +20,10 @@ import { IndexedByteArray } from "../utils/indexed_array";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { killVoicesIntenral } from "./audio_engine/engine_methods/stopping_notes/voice_killing";
-import { getVoicesForPresetInternal, getVoicesInternal } from "./audio_engine/engine_components/voice";
+import {
+    getVoicesForPresetInternal,
+    getVoicesInternal
+} from "./audio_engine/engine_components/voice";
 import { systemExclusiveInternal } from "./audio_engine/engine_methods/system_exclusive";
 import { resetAllControllersInternal } from "./audio_engine/engine_methods/controller_control/reset_controllers";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
@@ -31,7 +34,11 @@ import type {
     SynthProcessorOptions,
     VoiceList
 } from "./types";
-import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../midi/enums";
+import {
+    type MIDIController,
+    type MIDIMessageType,
+    midiMessageTypes
+} from "../midi/enums";
 import { ProtectedSynthValues } from "./audio_engine/engine_components/internal_synth_values";
 import { KeyModifierManager } from "./audio_engine/engine_components/key_modifier_manager";
 import { MIDIChannel } from "./audio_engine/engine_components/midi_channel";
@@ -193,8 +200,8 @@ export class SpessaSynthProcessor {
         this.currentSynthTime = options.initialTime;
         this.sampleRate = sampleRate;
         this.sampleTime = 1 / sampleRate;
-        if (isNaN(options.initialTime) || isNaN(sampleRate)) {
-            throw new Error("Initial time or sample rate is NaN!");
+        if (Number.isNaN(options.initialTime) || Number.isNaN(sampleRate)) {
+            throw new TypeError("Initial time or sample rate is NaN!");
         }
 
         // Initialize the protected synth values
@@ -204,11 +211,11 @@ export class SpessaSynthProcessor {
             this.killVoices.bind(this),
             // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
             // Volume envelope smoothing factor
-            VOLUME_ENVELOPE_SMOOTHING_FACTOR * (44100 / sampleRate),
+            VOLUME_ENVELOPE_SMOOTHING_FACTOR * (44_100 / sampleRate),
             // Pan smoothing factor
-            PAN_SMOOTHING_FACTOR * (44100 / sampleRate),
+            PAN_SMOOTHING_FACTOR * (44_100 / sampleRate),
             // Filter smoothing factor
-            FILTER_SMOOTHING_FACTOR * (44100 / sampleRate)
+            FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate)
         );
 
         for (let i = 0; i < MIDI_CHANNEL_COUNT; i++) {
@@ -319,7 +326,7 @@ export class SpessaSynthProcessor {
         this.renderAudioSplit(
             reverb,
             chorus,
-            Array(16).fill(outputs) as Float32Array[][],
+            new Array(16).fill(outputs) as Float32Array[][],
             startIndex,
             sampleCount
         );
@@ -358,10 +365,10 @@ export class SpessaSynthProcessor {
 
         // For every channel
         this.totalVoicesAmount = 0;
-        this.midiChannels.forEach((channel, index) => {
-            if (channel.voices.length < 1 || channel.isMuted) {
+        for (const [index, channel] of this.midiChannels.entries()) {
+            if (channel.voices.length === 0 || channel.isMuted) {
                 // There's nothing to do!
-                return;
+                continue;
             }
             const voiceCount = channel.voices.length;
             const ch = index % 16;
@@ -383,7 +390,7 @@ export class SpessaSynthProcessor {
             if (channel.voices.length !== voiceCount) {
                 channel.sendChannelProperty();
             }
-        });
+        }
 
         // Advance the time appropriately
         this.currentSynthTime += quantumSize * this.sampleTime;
@@ -395,12 +402,12 @@ export class SpessaSynthProcessor {
      *  This is irreversible, so use with caution.
      */
     public destroySynthProcessor() {
-        this.midiChannels.forEach((c) => {
+        for (const c of this.midiChannels) {
             c.voices.length = 0;
             c.sustainedVoices.length = 0;
             c.lockedControllers = [];
             c.preset = undefined;
-        });
+        }
         this.clearCache();
         this.midiChannels.length = 0;
         this.soundBankManager.destroy();
@@ -511,54 +518,63 @@ export class SpessaSynthProcessor {
                     break;
                 }
 
-                case midiMessageTypes.noteOff:
+                case midiMessageTypes.noteOff: {
                     if (force) {
                         this.midiChannels[channel].killNote(message[1]);
                     } else {
                         this.noteOff(channel, message[1]);
                     }
                     break;
+                }
 
-                case midiMessageTypes.pitchWheel:
+                case midiMessageTypes.pitchWheel: {
                     // LSB | (MSB << 7)
                     this.pitchWheel(channel, (message[2] << 7) | message[1]);
                     break;
+                }
 
-                case midiMessageTypes.controllerChange:
+                case midiMessageTypes.controllerChange: {
                     this.controllerChange(
                         channel,
                         message[1] as MIDIController,
                         message[2]
                     );
                     break;
+                }
 
-                case midiMessageTypes.programChange:
+                case midiMessageTypes.programChange: {
                     this.programChange(channel, message[1]);
                     break;
+                }
 
-                case midiMessageTypes.polyPressure:
+                case midiMessageTypes.polyPressure: {
                     this.polyPressure(channel, message[0], message[1]);
                     break;
+                }
 
-                case midiMessageTypes.channelPressure:
+                case midiMessageTypes.channelPressure: {
                     this.channelPressure(channel, message[1]);
                     break;
+                }
 
-                case midiMessageTypes.systemExclusive:
+                case midiMessageTypes.systemExclusive: {
                     this.systemExclusive(
                         new IndexedByteArray(message.slice(1)),
                         channelOffset
                     );
                     break;
+                }
 
-                case midiMessageTypes.reset:
+                case midiMessageTypes.reset: {
                     // Do not **force** stop channels (breaks seamless loops, for example th06)
                     this.stopAllChannels();
                     this.resetAllControllers();
                     break;
+                }
 
-                default:
+                default: {
                     break;
+                }
             }
         };
 
@@ -651,9 +667,9 @@ export class SpessaSynthProcessor {
         return (
             bankMSB + // 128 ^ 0
             bankLSB * 128 + // 128 ^ 1
-            program * 16384 + // 128 ^ 2
-            2097152 * midiNote + // 128 ^ 3
-            268435456 * velocity
+            program * 16_384 + // 128 ^ 2
+            2_097_152 * midiNote + // 128 ^ 3
+            268_435_456 * velocity
         ); // 128 ^ 4
     }
 
@@ -668,7 +684,7 @@ export class SpessaSynthProcessor {
         if (sendEvent) {
             this.callEvent("newChannel", undefined);
             channel.sendChannelProperty();
-            this.midiChannels[this.midiChannels.length - 1].setDrums(true);
+            channel.setDrums(true);
         }
     }
 
@@ -678,9 +694,9 @@ export class SpessaSynthProcessor {
         this.privateProps.callEvent("presetListChange", mainFont);
         this.getDefaultPresets();
         // Unlock presets
-        this.midiChannels.forEach((c) => {
+        for (const c of this.midiChannels) {
             c.setPresetLock(false);
-        });
+        }
         this.resetAllControllers();
     }
 

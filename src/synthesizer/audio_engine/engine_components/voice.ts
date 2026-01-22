@@ -7,12 +7,8 @@ import { SpessaSynthWarn } from "../../../utils/loggin";
 import { LowpassFilter } from "./dsp_chain/lowpass_filter";
 import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
-import { addAndClampGenerator } from "../../../soundbank/basic_soundbank/generator";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import {
-    GENERATORS_AMOUNT,
-    generatorTypes
-} from "../../../soundbank/basic_soundbank/generator_types";
+import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode, VoiceList } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { AudioSample } from "./audio_sample";
@@ -270,92 +266,71 @@ export function getVoicesForPresetInternal(
         );
     }
     // Not cached...
-    const voices: VoiceList = preset
-        .getSynthesisData(midiNote, velocity)
-        .reduce((voices: VoiceList, synthesisData) => {
-            if (synthesisData.sample.getAudioData() === undefined) {
-                SpessaSynthWarn(
-                    `Discarding invalid sample: ${synthesisData.sample.name}`
-                );
-                return voices;
-            }
+    // Create the voices
+    const voices = new Array<Voice>();
+    for (const voiceParams of preset.getVoiceParameters(midiNote, velocity)) {
+        const sample = voiceParams.sample;
+        if (sample.getAudioData() === undefined) {
+            SpessaSynthWarn(`Discarding invalid sample: ${sample.name}`);
+            continue;
+        }
+        const generators = voiceParams.generators;
 
-            // Create the generator list
-            const generators = new Int16Array(GENERATORS_AMOUNT);
-            // Apply and sum the gens
-            for (let i = 0; i < 60; i++) {
-                generators[i] = addAndClampGenerator(
-                    i,
-                    synthesisData.presetGenerators,
-                    synthesisData.instrumentGenerators
-                );
-            }
+        // Key override
+        let rootKey = sample.originalKey;
+        if (generators[generatorTypes.overridingRootKey] > -1) {
+            rootKey = generators[generatorTypes.overridingRootKey];
+        }
 
-            // EMU initial attenuation correction, multiply initial attenuation by 0.4!
-            // All EMU sound cards have this quirk, and all sf2 editors and players emulate it too
-            generators[generatorTypes.initialAttenuation] = Math.floor(
-                generators[generatorTypes.initialAttenuation] * 0.4
-            );
+        let targetKey = midiNote;
+        if (generators[generatorTypes.keyNum] > -1) {
+            targetKey = generators[generatorTypes.keyNum];
+        }
 
-            // Key override
-            let rootKey = synthesisData.sample.originalKey;
-            if (generators[generatorTypes.overridingRootKey] > -1) {
-                rootKey = generators[generatorTypes.overridingRootKey];
-            }
+        // Determine looping mode now. if the loop is too small, disable
+        const loopStart = sample.loopStart;
+        const loopEnd = sample.loopEnd;
+        const loopingMode = generators[
+            generatorTypes.sampleModes
+        ] as SampleLoopingMode;
 
-            let targetKey = midiNote;
-            if (generators[generatorTypes.keyNum] > -1) {
-                targetKey = generators[generatorTypes.keyNum];
-            }
+        // Create the sample for the wavetable oscillator
+        // Offsets are calculated at note on time (to allow for modulation of them)
+        const sampleData = sample.getAudioData();
+        const audioSample = new AudioSample(
+            sampleData,
+            (sample.sampleRate / this.sampleRate) *
+                Math.pow(2, sample.pitchCorrection / 1200), // Cent tuning
+            0,
+            rootKey,
+            loopStart,
+            loopEnd,
+            Math.floor(sampleData.length) - 1,
+            loopingMode
+        );
 
-            // Determine looping mode now. if the loop is too small, disable
-            const loopStart = synthesisData.sample.loopStart;
-            const loopEnd = synthesisData.sample.loopEnd;
-            const loopingMode = generators[
-                generatorTypes.sampleModes
-            ] as SampleLoopingMode;
-            /**
-             * Create the sample
-             * offsets are calculated at note on time (to allow for modulation of them)
-             */
-            const sampleData = synthesisData.sample.getAudioData();
-            const audioSample: AudioSample = new AudioSample(
-                sampleData,
-                (synthesisData.sample.sampleRate / this.sampleRate) *
-                    Math.pow(2, synthesisData.sample.pitchCorrection / 1200), // Cent tuning
-                0,
-                rootKey,
-                loopStart,
-                loopEnd,
-                Math.floor(sampleData.length) - 1,
-                loopingMode
-            );
-            // Velocity override
-            // Note: use a separate velocity to not override the cached velocity
-            // Testcase: LiveHQ Natural SoundFont GM - the Glockenspiel preset
-            let voiceVelocity = velocity;
-            if (generators[generatorTypes.velocity] > -1) {
-                voiceVelocity = generators[generatorTypes.velocity];
-            }
+        // Velocity override
+        // Note: use a separate velocity to not override the cached velocity
+        // Testcase: LiveHQ Natural SoundFont GM - the Glockenspiel preset
+        let voiceVelocity = velocity;
+        if (generators[generatorTypes.velocity] > -1) {
+            voiceVelocity = generators[generatorTypes.velocity];
+        }
 
-            // Uncomment to print debug info
-            voices.push(
-                new Voice(
-                    this.sampleRate,
-                    audioSample,
-                    midiNote,
-                    voiceVelocity,
-                    this.currentSynthTime,
-                    targetKey,
-                    realKey,
-                    generators,
-                    synthesisData.modulators.map(
-                        Modulator.copyFrom.bind(Modulator)
-                    )
-                )
-            );
-            return voices;
-        }, []);
+        voices.push(
+            new Voice(
+                this.sampleRate,
+                audioSample,
+                midiNote,
+                voiceVelocity,
+                this.currentSynthTime,
+                targetKey,
+                realKey,
+                generators,
+                voiceParams.modulators.map(Modulator.copyFrom.bind(Modulator))
+            )
+        );
+    }
     // Cache the voice
     this.setCachedVoice(preset, midiNote, velocity, voices);
     return voices.map((v) => Voice.copyFrom(v, this.currentSynthTime, realKey));

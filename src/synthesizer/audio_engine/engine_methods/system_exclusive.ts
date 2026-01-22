@@ -26,38 +26,41 @@ export function systemExclusiveInternal(
         // The device ID can be set to "all" which it is by default
         this.privateProps.masterParameters.deviceID !==
             ALL_CHANNELS_OR_DIFFERENT_ACTION &&
-        syx[1] !== 0x7f // 0x7f means broadcast, i.e. all MIDI devices
+        syx[1] !== 0x7f && // 0x7f means broadcast, i.e. all MIDI devices
+        this.privateProps.masterParameters.deviceID !== syx[1]
     ) {
-        if (this.privateProps.masterParameters.deviceID !== syx[1]) {
-            // Not our device ID
-            return;
-        }
+        // Not our device ID
+        return;
     }
 
     switch (manufacturer) {
-        default:
+        default: {
             SpessaSynthInfo(
                 `%cUnrecognized SysEx: %c${arrayToHexString(syx)} (unknown manufacturer)`,
                 consoleColors.warn,
                 consoleColors.unrecognized
             );
             break;
+        }
 
         // Non realtime GM
         case 0x7e:
         // Realtime GM
-        case 0x7f:
+        case 0x7f: {
             handleGM.call(this, syx, channelOffset);
             break;
+        }
 
         // Roland
-        case 0x41:
+        case 0x41: {
             handleGS.call(this, syx, channelOffset);
             break;
+        }
 
         // Yamaha
-        case 0x43:
+        case 0x43: {
             handleXG.call(this, syx, channelOffset);
             break;
+        }
     }
 }

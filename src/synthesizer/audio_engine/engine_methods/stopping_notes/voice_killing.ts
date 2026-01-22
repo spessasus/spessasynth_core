@@ -56,7 +56,7 @@ export function killVoicesIntenral(this: SpessaSynthProcessor, amount: number) {
 
     for (const { channel, voice } of voicesToRemove) {
         const index = channel.voices.indexOf(voice);
-        if (index > -1) {
+        if (index !== -1) {
             channel.voices.splice(index, 1);
         }
     }

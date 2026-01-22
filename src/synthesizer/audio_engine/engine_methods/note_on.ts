@@ -7,6 +7,9 @@ import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_typ
 import { midiControllers } from "../../../midi/enums";
 import { customControllers } from "../../enums";
 
+const clamp = (num: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, num));
+
 /**
  * Sends a "MIDI Note on" message and starts a note.
  * @param midiNote The MIDI note number (0-127).
@@ -112,7 +115,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Add voices
     const channelVoices = this.voices;
-    voices.forEach((voice) => {
+    for (const voice of voices) {
         // Apply portamento
         voice.portamentoFromKey = portamentoFromKey;
         voice.portamentoDuration = portamentoDuration;
@@ -124,39 +127,42 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.gain = voiceGain;
 
         // Dynamic modulators (if none, this won't iterate over anything)
-        this.sysExModulators.modulatorList.forEach((m) => {
+        for (const m of this.sysExModulators.modulatorList) {
             const mod = m.mod;
             const existingModIndex = voice.modulators.findIndex((voiceMod) =>
                 Modulator.isIdentical(voiceMod, mod)
             );
 
             // Replace or add
-            if (existingModIndex !== -1) {
-                voice.modulators[existingModIndex] = Modulator.copyFrom(mod);
-            } else {
+            if (existingModIndex === -1) {
                 voice.modulators.push(Modulator.copyFrom(mod));
+            } else {
+                voice.modulators[existingModIndex] = Modulator.copyFrom(mod);
             }
-        });
+        }
 
         // Apply generator override
         if (this.generatorOverridesEnabled) {
-            this.generatorOverrides.forEach((overrideValue, generatorType) => {
+            for (const [
+                generatorType,
+                overrideValue
+            ] of this.generatorOverrides.entries()) {
                 if (overrideValue === GENERATOR_OVERRIDE_NO_CHANGE_VALUE) {
-                    return;
+                    continue;
                 }
                 voice.generators[generatorType] = overrideValue;
-            });
+            }
         }
 
         // Apply exclusive class
         const exclusive = voice.exclusiveClass;
         if (exclusive !== 0) {
             // Kill all voices with the same exclusive class
-            channelVoices.forEach((v) => {
+            for (const v of channelVoices) {
                 if (v.exclusiveClass === exclusive) {
                     v.exclusiveRelease(this.synth.currentSynthTime);
                 }
-            });
+            }
         }
         // Compute all modulators
         this.computeModulators(voice);
@@ -164,43 +170,47 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         const cursorStartOffset =
             voice.modulatedGenerators[generatorTypes.startAddrsOffset] +
             voice.modulatedGenerators[generatorTypes.startAddrsCoarseOffset] *
-                32768;
+                32_768;
         const endOffset =
             voice.modulatedGenerators[generatorTypes.endAddrOffset] +
             voice.modulatedGenerators[generatorTypes.endAddrsCoarseOffset] *
-                32768;
+                32_768;
         const loopStartOffset =
             voice.modulatedGenerators[generatorTypes.startloopAddrsOffset] +
             voice.modulatedGenerators[
                 generatorTypes.startloopAddrsCoarseOffset
             ] *
-                32768;
+                32_768;
         const loopEndOffset =
             voice.modulatedGenerators[generatorTypes.endloopAddrsOffset] +
             voice.modulatedGenerators[generatorTypes.endloopAddrsCoarseOffset] *
-                32768;
-        const sm = voice.sample;
+                32_768;
+        const sample = voice.sample;
         // Apply them
-        const clamp = (num: number) =>
-            Math.max(0, Math.min(sm.sampleData.length - 1, num));
-        sm.cursor = clamp(sm.cursor + cursorStartOffset);
-        sm.end = clamp(sm.end + endOffset);
-        sm.loopStart = clamp(sm.loopStart + loopStartOffset);
-        sm.loopEnd = clamp(sm.loopEnd + loopEndOffset);
+
+        const lastSample = sample.sampleData.length - 1;
+        sample.cursor = clamp(sample.cursor + cursorStartOffset, 0, lastSample);
+        sample.end = clamp(sample.end + endOffset, 0, lastSample);
+        sample.loopStart = clamp(
+            sample.loopStart + loopStartOffset,
+            0,
+            lastSample
+        );
+        sample.loopEnd = clamp(sample.loopEnd + loopEndOffset, 0, lastSample);
         // Swap loops if needed
-        if (sm.loopEnd < sm.loopStart) {
-            const temp = sm.loopStart;
-            sm.loopStart = sm.loopEnd;
-            sm.loopEnd = temp;
+        if (sample.loopEnd < sample.loopStart) {
+            const temp = sample.loopStart;
+            sample.loopStart = sample.loopEnd;
+            sample.loopEnd = temp;
         }
-        if (sm.loopEnd - sm.loopStart < 1) {
-            // Disable loop if enabled
+        if (
+            sample.loopEnd - sample.loopStart < 1 && // Disable loop if enabled
             // Don't disable on release mode. Testcase:
             // https://github.com/spessasus/SpessaSynth/issues/174
-            if (sm.loopingMode === 1 || sm.loopingMode === 3) {
-                sm.loopingMode = 0;
-                sm.isLooping = false;
-            }
+            (sample.loopingMode === 1 || sample.loopingMode === 3)
+        ) {
+            sample.loopingMode = 0;
+            sample.isLooping = false;
         }
         // Set the current attenuation to target,
         // As it's interpolated (we don't want 0 attenuation for even a split second)
@@ -211,7 +221,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             -500,
             Math.min(500, voice.modulatedGenerators[generatorTypes.pan])
         ); //  -500 to 500
-    });
+    }
 
     this.synth.totalVoicesAmount += voices.length;
     // Cap the voices

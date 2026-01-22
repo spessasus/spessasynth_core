@@ -117,11 +117,10 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.channelOctaveTuning.fill(0);
 
     // Reset the array
-    for (let cc = 0; cc < defaultMIDIControllerValues.length; cc++) {
+    for (const [cc, resetValue] of defaultMIDIControllerValues.entries()) {
         if (this.lockedControllers[cc]) {
             continue;
         }
-        const resetValue = defaultMIDIControllerValues[cc];
         if (this.midiControllers[cc] !== resetValue && cc < 127) {
             if (
                 cc !== midiControllers.portamentoControl &&
@@ -207,11 +206,10 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
         const resetValue = defaultMIDIControllerValues[i];
         if (
             !nonResettableCCs.has(i as MIDIController) &&
-            resetValue !== this.midiControllers[i]
+            resetValue !== this.midiControllers[i] &&
+            i !== midiControllers.portamentoControl
         ) {
-            if (i !== midiControllers.portamentoControl) {
-                this.controllerChange(i as MIDIController, resetValue >> 7);
-            }
+            this.controllerChange(i as MIDIController, resetValue >> 7);
         }
     }
     resetPortamento.call(this, true);

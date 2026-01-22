@@ -53,7 +53,8 @@ export function panAndMixVoice(
     chorusRight: Float32Array,
     startIndex: number
 ) {
-    if (isNaN(inputBuffer[0])) {
+    // Safety net
+    if (Number.isNaN(inputBuffer[0])) {
         return;
     }
     /**

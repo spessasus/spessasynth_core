@@ -1,4 +1,7 @@
-import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
+import {
+    getStringBytes,
+    readBinaryString
+} from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import {
@@ -10,7 +13,10 @@ import {
 } from "../utils/loggin";
 import { consoleColors, formatTime } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
-import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./midi_tools/rmidi_writer";
+import {
+    DEFAULT_RMIDI_WRITE_OPTIONS,
+    writeRMIDIInternal
+} from "./midi_tools/rmidi_writer";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
@@ -27,7 +33,10 @@ import type {
     RMIDIWriteOptions,
     TempoChange
 } from "./types";
-import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
+import {
+    applySnapshotInternal,
+    modifyMIDIInternal
+} from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes } from "./enums";
@@ -227,7 +236,7 @@ export class BasicMIDI {
      */
     public midiTicksToSeconds(ticks: number): number {
         ticks = Math.max(ticks, 0);
-        if (this.tempoChanges.length < 1) {
+        if (this.tempoChanges.length === 0) {
             // One is added automatically, but the user may have tampered with it
             throw new Error(
                 "There are no tempo changes in the sequence. At least one is needed."
@@ -267,7 +276,7 @@ export class BasicMIDI {
     public secondsToMIDITicks(seconds: number): number {
         seconds = Math.max(seconds, 0);
         if (seconds === 0) return 0;
-        if (this.tempoChanges.length < 1) {
+        if (this.tempoChanges.length === 0) {
             // One is added automatically, but the user may have tampered with it
             throw new Error(
                 "There are no tempo changes in the sequence. At least one is needed."
@@ -336,7 +345,7 @@ export class BasicMIDI {
         );
         // Smart preloading: load only samples used in the midi!
         const used = this.getUsedProgramsAndKeys(synth.soundBankManager);
-        used.forEach((combos, preset) => {
+        for (const [preset, combos] of used.entries()) {
             SpessaSynthInfo(
                 `%cPreloading used samples on %c${preset.name}%c...`,
                 consoleColors.info,
@@ -347,7 +356,7 @@ export class BasicMIDI {
                 const [midiNote, velocity] = combo.split("-").map(Number);
                 synth.getVoicesForPreset(preset, midiNote, velocity, midiNote);
             }
-        });
+        }
         SpessaSynthGroupEnd();
     }
 
@@ -455,8 +464,10 @@ export class BasicMIDI {
                 // Is not a valid name
                 // MIDI file with that name: th07_10.mid
                 rawName = decoder.decode(this.binaryName).trim();
-            } catch (e) {
-                SpessaSynthWarn(`Failed to decode MIDI name: ${e as string}`);
+            } catch (error) {
+                SpessaSynthWarn(
+                    `Failed to decode MIDI name: ${error as string}`
+                );
             }
         }
         return rawName || this.fileName;
@@ -475,7 +486,7 @@ export class BasicMIDI {
         const decoder = new TextDecoder(encoding);
         return this.extraMetadata.map((d) => {
             const decoded = decoder.decode(d.data);
-            return decoded.replace(/@T|@A/g, "").trim();
+            return decoded.replaceAll(/@T|@A/g, "").trim();
         });
     }
 
@@ -534,12 +545,12 @@ export class BasicMIDI {
             let infoBuffer = this.rmidiInfo[infoType];
             if (infoBuffer[infoBuffer.length - 1] === 0) {
                 // Do not decode the terminal byte
-                infoBuffer = infoBuffer?.slice(0, infoBuffer.length - 1);
+                infoBuffer = infoBuffer?.slice(0, -1);
             }
             return decoder.decode(infoBuffer.buffer).trim() as RMIDInfoData[K];
-        } catch (e) {
+        } catch (error) {
             SpessaSynthWarn(
-                `Failed to decode ${infoType} name: ${e as string}`
+                `Failed to decode ${infoType} name: ${error as string}`
             );
             return undefined;
         }
@@ -559,22 +570,20 @@ export class BasicMIDI {
         /**
          * Indexes for tracks
          */
-        const eventIndexes: number[] = Array<number>(this.tracks.length).fill(
-            0
-        );
+        const eventIndexes = new Array<number>(this.tracks.length).fill(0);
         let remainingTracks = this.tracks.length;
         const findFirstEventIndex = () => {
             let index = 0;
             let ticks = Infinity;
-            this.tracks.forEach(({ events: track }, i) => {
+            for (const [i, { events: track }] of this.tracks.entries()) {
                 if (eventIndexes[i] >= track.length) {
-                    return;
+                    continue;
                 }
                 if (track[eventIndexes[i]].ticks < ticks) {
                     index = i;
                     ticks = track[eventIndexes[i]].ticks;
                 }
-            });
+            }
             return index;
         };
         while (remainingTracks > 0) {
@@ -632,11 +641,11 @@ export class BasicMIDI {
         this.loop = { ...mid.loop };
         this.keyRange = { ...mid.keyRange };
         this.rmidiInfo = {};
-        Object.entries(mid.rmidiInfo).forEach((v) => {
+        for (const v of Object.entries(mid.rmidiInfo)) {
             const key = v[0];
             const value = v[1];
-            this.rmidiInfo[key as keyof RMIDInfoData] = value.slice();
-        });
+            this.rmidiInfo[key as keyof RMIDInfoData] = new Uint8Array(value);
+        }
     }
 
     /**
@@ -666,7 +675,7 @@ export class BasicMIDI {
         this.isMultiPort = false;
 
         let nameDetected = false;
-        if (typeof this.rmidiInfo.name !== "undefined") {
+        if (this.rmidiInfo.name !== undefined) {
             // Name is already provided in RMIDInfo
             nameDetected = true;
         }
@@ -693,21 +702,22 @@ export class BasicMIDI {
                     // Interpret the voice message
                     switch (e.statusByte & 0xf0) {
                         // Cc change: loop points
-                        case midiMessageTypes.controllerChange:
+                        case midiMessageTypes.controllerChange: {
                             switch (e.data[0]) {
                                 // Touhou
                                 case 2:
                                 // RPG Maker
                                 case 111:
                                 // EMIDI/XMI
-                                case 116:
+                                case 116: {
                                     loopStart = e.ticks;
                                     break;
+                                }
 
                                 // Touhou
                                 case 4:
                                 // EMIDI/XMI
-                                case 117:
+                                case 117: {
                                     if (loopEnd === null) {
                                         loopType = "soft";
                                         loopEnd = e.ticks;
@@ -718,8 +728,9 @@ export class BasicMIDI {
                                         loopEnd = 0;
                                     }
                                     break;
+                                }
 
-                                case 0:
+                                case 0: {
                                     // Check RMID
                                     if (
                                         this.isDLSRMIDI &&
@@ -732,8 +743,10 @@ export class BasicMIDI {
                                         );
                                         this.bankOffset = 1;
                                     }
+                                }
                             }
                             break;
+                        }
 
                         // Note on: used notes tracking and key range
                         case midiMessageTypes.noteOn: {
@@ -754,48 +767,55 @@ export class BasicMIDI {
                 const eventText = readBinaryString(e.data);
                 // Interpret the message
                 switch (e.statusByte) {
-                    case midiMessageTypes.endOfTrack:
+                    case midiMessageTypes.endOfTrack: {
                         if (i !== track.events.length - 1) {
                             track.deleteEvent(i);
                             i--;
                             SpessaSynthWarn("Unexpected EndOfTrack. Removing!");
                         }
                         break;
+                    }
 
-                    case midiMessageTypes.setTempo:
+                    case midiMessageTypes.setTempo: {
                         // Add the tempo change
                         this.tempoChanges.push({
                             ticks: e.ticks,
-                            tempo: 60000000 / readBigEndian(e.data, 3)
+                            tempo: 60_000_000 / readBigEndian(e.data, 3)
                         });
                         break;
+                    }
 
-                    case midiMessageTypes.marker:
+                    case midiMessageTypes.marker: {
                         // Check for loop markers
                         {
                             const text = eventText.trim().toLowerCase();
                             switch (text) {
-                                default:
+                                default: {
                                     break;
+                                }
 
                                 case "start":
-                                case "loopstart":
+                                case "loopstart": {
                                     loopStart = e.ticks;
                                     break;
+                                }
 
-                                case "loopend":
+                                case "loopend": {
                                     loopEnd = e.ticks;
+                                }
                             }
                         }
                         break;
+                    }
 
-                    case midiMessageTypes.copyright:
+                    case midiMessageTypes.copyright: {
                         this.extraMetadata.push(e);
 
                         break;
+                    }
                     // Fallthrough
 
-                    case midiMessageTypes.lyric:
+                    case midiMessageTypes.lyric: {
                         // Note here: .kar files sometimes just use...
                         // Lyrics instead of text because why not (of course)
                         // Perform the same check for @KMIDI KARAOKE FILE
@@ -816,6 +836,7 @@ export class BasicMIDI {
                             // Add lyrics like a regular midi file
                             this.lyrics.push(e);
                         }
+                    }
 
                     // Kar: treat the same as text
                     // Fallthrough
@@ -839,13 +860,13 @@ export class BasicMIDI {
                                 checkedText.startsWith("@T") ||
                                 checkedText.startsWith("@A")
                             ) {
-                                if (!karaokeHasTitle) {
+                                if (karaokeHasTitle) {
+                                    // Append to metadata
+                                    this.extraMetadata.push(e);
+                                } else {
                                     this.binaryName = e.data.slice(2);
                                     karaokeHasTitle = true;
                                     nameDetected = true;
-                                } else {
-                                    // Append to metadata
-                                    this.extraMetadata.push(e);
                                 }
                             } else if (!checkedText.startsWith("@")) {
                                 // Non @: the lyrics
@@ -966,10 +987,8 @@ export class BasicMIDI {
         // (which doesn't play anything) and use the additional 16 for the actual ports.
         let defaultPort = Infinity;
         for (const track of this.tracks) {
-            if (track.port !== -1) {
-                if (defaultPort > track.port) {
-                    defaultPort = track.port;
-                }
+            if (track.port !== -1 && defaultPort > track.port) {
+                defaultPort = track.port;
             }
         }
         if (defaultPort === Infinity) {
@@ -1000,11 +1019,11 @@ export class BasicMIDI {
                 // If more than 1 track and the first track has no notes,
                 // Just find the first trackName in the first track.
                 if (
-                    this.tracks[0].events.find(
+                    !this.tracks[0].events.some(
                         (message) =>
                             message.statusByte >= midiMessageTypes.noteOn &&
                             message.statusByte < midiMessageTypes.polyPressure
-                    ) === undefined
+                    )
                 ) {
                     const name = this.tracks[0].events.find(
                         (message) =>
@@ -1053,7 +1072,7 @@ export class BasicMIDI {
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
 
         // Invalidate raw name if empty
-        if (this.binaryName && this.binaryName.length < 1) {
+        if (this.binaryName?.length === 0) {
             this.binaryName = undefined;
         }
 

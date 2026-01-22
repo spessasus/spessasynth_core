@@ -3,6 +3,12 @@ import { writeBigEndian } from "../../utils/byte_functions/big_endian";
 import type { BasicMIDI } from "../basic_midi";
 import { midiMessageTypes } from "../enums";
 
+const writeText = (text: string, arr: number[]) => {
+    for (let i = 0; i < text.length; i++) {
+        arr.push(text.charCodeAt(i));
+    }
+};
+
 /**
  * Exports the midi as a standard MIDI file
  * @param midi the MIDI to write
@@ -62,40 +68,34 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
                 messageData.push(...event.data);
             }
             // Write VLQ
-            binaryTrack.push(...writeVariableLengthQuantity(deltaTicks));
-            // Write the message
-            binaryTrack.push(...messageData);
+            binaryTrack.push(
+                ...writeVariableLengthQuantity(deltaTicks),
+                ...messageData
+            );
             currentTick += deltaTicks;
         }
         // Write endOfTrack
-        binaryTrack.push(0);
-        binaryTrack.push(0xff);
-        binaryTrack.push(midiMessageTypes.endOfTrack);
-        binaryTrack.push(0);
+        binaryTrack.push(0, 0xff, midiMessageTypes.endOfTrack, 0);
         binaryTrackData.push(new Uint8Array(binaryTrack));
     }
-
-    const writeText = (text: string, arr: number[]) => {
-        for (let i = 0; i < text.length; i++) {
-            arr.push(text.charCodeAt(i));
-        }
-    };
 
     // Write the file
     const binaryData: number[] = [];
     // Write header
     writeText("MThd", binaryData); // MThd
-    binaryData.push(...writeBigEndian(6, 4)); // Length
-    binaryData.push(0, midi.format); // Format
-    binaryData.push(...writeBigEndian(midi.tracks.length, 2)); // Num tracks
-    binaryData.push(...writeBigEndian(midi.timeDivision, 2)); // Time division
+    binaryData.push(
+        ...writeBigEndian(6, 4),
+        0,
+        midi.format, // Format
+        ...writeBigEndian(midi.tracks.length, 2), // Num tracks
+        ...writeBigEndian(midi.timeDivision, 2) // Time division
+    );
 
     // Write tracks
     for (const track of binaryTrackData) {
         // Write track header
         writeText("MTrk", binaryData); // MTrk
-        binaryData.push(...writeBigEndian(track.length, 4)); // Length
-        binaryData.push(...track); // Write data
+        binaryData.push(...writeBigEndian(track.length, 4), ...track); // Write data
     }
     return new Uint8Array(binaryData).buffer;
 }

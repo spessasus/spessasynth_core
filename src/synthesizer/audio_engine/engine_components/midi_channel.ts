@@ -1,4 +1,8 @@
-import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
+import {
+    CONTROLLER_TABLE_SIZE,
+    CUSTOM_CONTROLLER_TABLE_SIZE,
+    NON_CC_INDEX_OFFSET
+} from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -13,7 +17,10 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
+import {
+    DEFAULT_PERCUSSION,
+    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
+} from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -25,7 +32,12 @@ import {
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
 import type { SpessaSynthProcessor } from "../../processor";
-import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
+import {
+    type CustomController,
+    customControllers,
+    type DataEntryState,
+    dataEntryStates
+} from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { ProtectedSynthValues } from "./internal_synth_values";
@@ -58,7 +70,7 @@ export class MIDIChannel {
      * (i.e., not allowed changing).
      * A locked controller cannot be modified.
      */
-    public lockedControllers: boolean[] = Array(CONTROLLER_TABLE_SIZE).fill(
+    public lockedControllers: boolean[] = new Array(CONTROLLER_TABLE_SIZE).fill(
         false
     ) as boolean[];
 
@@ -420,9 +432,8 @@ export class MIDIChannel {
             NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
         ] = pressure << 7;
         this.updateChannelTuning();
-        this.voices.forEach((v) =>
-            this.computeModulators(v, 0, modulatorSources.channelPressure)
-        );
+        for (const v of this.voices)
+            this.computeModulators(v, 0, modulatorSources.channelPressure);
         this.synthProps.callEvent("channelPressure", {
             channel: this.channelNumber,
             pressure: pressure
@@ -437,13 +448,13 @@ export class MIDIChannel {
      * @param pressure 0 - 127, the pressure value to set for the note.
      */
     public polyPressure(midiNote: number, pressure: number) {
-        this.voices.forEach((v) => {
+        for (const v of this.voices) {
             if (v.midiNote !== midiNote) {
-                return;
+                continue;
             }
             v.pressure = pressure;
             this.computeModulators(v, 0, modulatorSources.polyPressure);
-        });
+        }
         this.synthProps.callEvent("polyPressure", {
             channel: this.channelNumber,
             midiNote: midiNote,
@@ -610,10 +621,10 @@ export class MIDIChannel {
         this.generatorOverrides[gen] = value;
         this.generatorOverridesEnabled = true;
         if (realtime) {
-            this.voices.forEach((v) => {
+            for (const v of this.voices) {
                 v.generators[gen] = value;
                 this.computeModulators(v);
-            });
+            }
         }
     }
 
@@ -625,9 +636,9 @@ export class MIDIChannel {
     public setGeneratorOffset(gen: GeneratorType, value: number) {
         this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
         this.generatorOffsetsEnabled = true;
-        this.voices.forEach((v) => {
+        for (const v of this.voices) {
             this.computeModulators(v);
-        });
+        }
     }
 
     /**
@@ -635,17 +646,17 @@ export class MIDIChannel {
      * @param midiNote The note to stop.
      * @param releaseTime in timecents, defaults to -12000 (very short release).
      */
-    public killNote(midiNote: number, releaseTime = -12000) {
+    public killNote(midiNote: number, releaseTime = -12_000) {
         // Adjust midiNote by channel key shift
         midiNote += this.customControllers[customControllers.channelKeyShift];
 
-        this.voices.forEach((v) => {
+        for (const v of this.voices) {
             if (v.realKey !== midiNote) {
-                return;
+                continue;
             }
             v.modulatedGenerators[generatorTypes.releaseVolEnv] = releaseTime; // Set release to be very short
             v.release(this.synth.currentSynthTime);
-        });
+        }
     }
 
     /**
@@ -659,15 +670,15 @@ export class MIDIChannel {
             this.sustainedVoices.length = 0;
             this.sendChannelProperty();
         } else {
-            this.voices.forEach((v) => {
+            for (const v of this.voices) {
                 if (v.isInRelease) {
-                    return;
+                    continue;
                 }
                 v.release(this.synth.currentSynthTime);
-            });
-            this.sustainedVoices.forEach((v) => {
+            }
+            for (const v of this.sustainedVoices) {
                 v.release(this.synth.currentSynthTime);
-            });
+            }
         }
         this.synthProps.callEvent("stopAll", {
             channel: this.channelNumber,

@@ -46,7 +46,7 @@ export function handleGM(
                 case 0x01: {
                     // Main volume
                     const vol = (syx[5] << 7) | syx[4];
-                    this.setMIDIVolume(vol / 16384);
+                    this.setMIDIVolume(vol / 16_384);
                     SpessaSynthInfo(
                         `%cMaster Volume. Volume: %c${vol}`,
                         consoleColors.info,
@@ -96,17 +96,18 @@ export function handleGM(
                     break;
                 }
 
-                default:
+                default: {
                     SpessaSynthInfo(
                         `%cUnrecognized MIDI Device Control Real-time message: %c${arrayToHexString(syx)}`,
                         consoleColors.warn,
                         consoleColors.unrecognized
                     );
+                }
             }
             break;
         }
 
-        case 0x09:
+        case 0x09: {
             // Gm system related
             if (syx[3] === 0x01) {
                 SpessaSynthInfo("%cGM1 system on", consoleColors.info);
@@ -122,6 +123,7 @@ export function handleGM(
                 this.setMasterParameter("midiSystem", "gs");
             }
             break;
+        }
 
         // MIDI Tuning standard
         // https://midi.org/midi-tuning-updated-specification
@@ -257,14 +259,16 @@ export function handleGM(
                     break;
                 }
 
-                default:
+                default: {
                     sysExNotRecognized(syx, "MIDI Tuning Standard");
                     break;
+                }
             }
             break;
         }
 
-        default:
+        default: {
             sysExNotRecognized(syx, "General MIDI");
+        }
     }
 }

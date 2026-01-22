@@ -4,8 +4,8 @@
  */
 
 // Timecent lookup table
-const MIN_TIMECENT = -15000;
-const MAX_TIMECENT = 15000;
+const MIN_TIMECENT = -15_000;
+const MAX_TIMECENT = 15_000;
 const timecentLookupTable = new Float32Array(MAX_TIMECENT - MIN_TIMECENT + 1);
 for (let i = 0; i < timecentLookupTable.length; i++) {
     const timecents = MIN_TIMECENT + i;
@@ -18,15 +18,15 @@ for (let i = 0; i < timecentLookupTable.length; i++) {
  * @returns The time in seconds.
  */
 export function timecentsToSeconds(timecents: number): number {
-    if (timecents <= -32767) {
+    if (timecents <= -32_767) {
         return 0;
     }
     return timecentLookupTable[timecents - MIN_TIMECENT];
 }
 
 // Abs cent lookup table
-const MIN_ABS_CENT = -20000; // FreqVibLfo
-const MAX_ABS_CENT = 16500; // FilterFc
+const MIN_ABS_CENT = -20_000; // FreqVibLfo
+const MAX_ABS_CENT = 16_500; // FilterFc
 const absoluteCentLookupTable = new Float32Array(
     MAX_ABS_CENT - MIN_ABS_CENT + 1
 );
@@ -45,7 +45,7 @@ export function absCentsToHz(cents: number): number {
     if (cents < MIN_ABS_CENT || cents > MAX_ABS_CENT) {
         return 440 * Math.pow(2, (cents - 6900) / 1200);
     }
-    return absoluteCentLookupTable[~~cents - MIN_ABS_CENT];
+    return absoluteCentLookupTable[Math.trunc(cents) - MIN_ABS_CENT];
 }
 
 // Decibel lookup table (2 points of precision)

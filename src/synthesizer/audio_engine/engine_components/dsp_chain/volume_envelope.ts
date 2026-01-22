@@ -1,4 +1,7 @@
-import { decibelAttenuationToGain, timecentsToSeconds } from "../unit_converter";
+import {
+    decibelAttenuationToGain,
+    timecentsToSeconds
+} from "../unit_converter";
 import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
@@ -12,7 +15,7 @@ export const VOLUME_ENVELOPE_SMOOTHING_FACTOR = 0.01;
 const DB_SILENCE = 100;
 const PERCEIVED_DB_SILENCE = 90;
 // Around 96 dB of attenuation
-const PERCEIVED_GAIN_SILENCE = 0.000015; // Can't go lower than that (see #50)
+const PERCEIVED_GAIN_SILENCE = 0.000_015; // Can't go lower than that (see #50)
 
 /**
  * VOL ENV STATES:
@@ -222,9 +225,10 @@ export class VolumeEnvelope {
                 timecentsToSamples(fullChange + keyNumAddition) * fraction;
 
             switch (env.state) {
-                case 0:
+                case 0: {
                     env.releaseStartDb = DB_SILENCE;
                     break;
+                }
 
                 case 1: {
                     // Attack phase: get linear gain of the attack phase when release started
@@ -241,21 +245,24 @@ export class VolumeEnvelope {
                     break;
                 }
 
-                case 2:
+                case 2: {
                     env.releaseStartDb = 0;
                     break;
+                }
 
-                case 3:
+                case 3: {
                     env.releaseStartDb =
                         (1 -
                             (env.decayEnd - env.releaseStartTimeSamples) /
                                 env.decayDuration) *
                         sustainDb;
                     break;
+                }
 
-                case 4:
+                case 4: {
                     env.releaseStartDb = sustainDb;
                     break;
+                }
             }
             env.releaseStartDb = Math.max(
                 0,
@@ -332,7 +339,7 @@ export class VolumeEnvelope {
 
         let filledBuffer = 0;
         switch (env.state) {
-            case 0:
+            case 0: {
                 // Delay phase, no sound is produced
                 while (env.currentSampleTime < env.delayEnd) {
                     env.currentAttenuationDb = DB_SILENCE;
@@ -344,9 +351,10 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
+            }
             // Fallthrough
 
-            case 1:
+            case 1: {
                 // Attack phase: ramp from 0 to attenuation
                 while (env.currentSampleTime < env.attackEnd) {
                     // Attenuation interpolation
@@ -372,9 +380,10 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
+            }
             // Fallthrough
 
-            case 2:
+            case 2: {
                 // Hold/peak phase: stay at attenuation
                 while (env.currentSampleTime < env.holdEnd) {
                     // Attenuation interpolation
@@ -393,9 +402,10 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
+            }
             // Fallthrough
 
-            case 3:
+            case 3: {
                 // Decay phase: linear ramp from attenuation to sustain
                 while (env.currentSampleTime < env.decayEnd) {
                     // Attenuation interpolation
@@ -420,9 +430,10 @@ export class VolumeEnvelope {
                     }
                 }
                 env.state++;
+            }
             // Fallthrough
 
-            case 4:
+            case 4: {
                 if (
                     env.canEndOnSilentSustain &&
                     env.sustainDbRelative >= PERCEIVED_DB_SILENCE
@@ -447,6 +458,7 @@ export class VolumeEnvelope {
                         return;
                     }
                 }
+            }
         }
     }
 }

@@ -38,16 +38,16 @@ export function renderVoice(
     sampleCount: number
 ): boolean {
     // Check if release
-    if (!voice.isInRelease) {
-        // If not in release, check if the release time is
-        if (timeNow >= voice.releaseStartTime) {
-            // Release the voice here
-            voice.isInRelease = true;
-            VolumeEnvelope.startRelease(voice);
-            ModulationEnvelope.startRelease(voice);
-            if (voice.sample.loopingMode === 3) {
-                voice.sample.isLooping = false;
-            }
+    if (
+        !voice.isInRelease && // If not in release, check if the release time is
+        timeNow >= voice.releaseStartTime
+    ) {
+        // Release the voice here
+        voice.isInRelease = true;
+        VolumeEnvelope.startRelease(voice);
+        ModulationEnvelope.startRelease(voice);
+        if (voice.sample.loopingMode === 3) {
+            voice.sample.isLooping = false;
         }
     }
 

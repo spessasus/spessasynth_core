@@ -25,18 +25,21 @@ export class WavetableOscillator {
             return;
         }
         switch (interpolation) {
-            case interpolationTypes.hermite:
+            case interpolationTypes.hermite: {
                 this.getSampleHermite(voice, outputBuffer, step);
                 return;
+            }
 
             case interpolationTypes.linear:
-            default:
+            default: {
                 this.getSampleLinear(voice, outputBuffer, step);
                 return;
+            }
 
-            case interpolationTypes.nearestNeighbor:
+            case interpolationTypes.nearestNeighbor: {
                 WavetableOscillator.getSampleNearest(voice, outputBuffer, step);
                 return;
+            }
         }
     }
 

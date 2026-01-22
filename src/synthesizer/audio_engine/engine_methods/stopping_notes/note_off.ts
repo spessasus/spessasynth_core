@@ -21,22 +21,22 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         this.customControllers[customControllers.channelKeyShift];
 
     // If high performance mode, kill notes instead of stopping them
-    if (this.synthProps.masterParameters.blackMIDIMode) {
-        // If the channel is percussion channel, do not kill the notes
-        if (!this.drumChannel) {
-            this.killNote(realKey, -6950);
-            this.synthProps.callEvent("noteOff", {
-                midiNote: midiNote,
-                channel: this.channelNumber
-            });
-            return;
-        }
+    if (
+        this.synthProps.masterParameters.blackMIDIMode && // If the channel is percussion channel, do not kill the notes
+        !this.drumChannel
+    ) {
+        this.killNote(realKey, -6950);
+        this.synthProps.callEvent("noteOff", {
+            midiNote: midiNote,
+            channel: this.channelNumber
+        });
+        return;
     }
 
     const channelVoices = this.voices;
-    channelVoices.forEach((v) => {
+    for (const v of channelVoices) {
         if (v.realKey !== realKey || v.isInRelease) {
-            return;
+            continue;
         }
         // If hold pedal, move to sustain
         if (this.holdPedal) {
@@ -44,7 +44,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         } else {
             v.release(this.synth.currentSynthTime);
         }
-    });
+    }
     this.synthProps.callEvent("noteOff", {
         midiNote: midiNote,
         channel: this.channelNumber

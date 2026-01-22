@@ -77,14 +77,17 @@ export class BasicZone {
         validate = true
     ) {
         switch (type) {
-            case generatorTypes.sampleID:
+            case generatorTypes.sampleID: {
                 throw new Error("Use setSample()");
-            case generatorTypes.instrument:
+            }
+            case generatorTypes.instrument: {
                 throw new Error("Use setInstrument()");
+            }
 
             case generatorTypes.velRange:
-            case generatorTypes.keyRange:
+            case generatorTypes.keyRange: {
                 throw new Error("Set the range manually");
+            }
         }
         if (value === null) {
             this.generators = this.generators.filter(
@@ -95,10 +98,10 @@ export class BasicZone {
         const index = this.generators.findIndex(
             (g) => g.generatorType === type
         );
-        if (index >= 0) {
-            this.generators[index] = new Generator(type, value, validate);
-        } else {
+        if (index === -1) {
             this.addGenerators(new Generator(type, value, validate));
+        } else {
+            this.generators[index] = new Generator(type, value, validate);
         }
     }
 
@@ -107,27 +110,31 @@ export class BasicZone {
      * @param generators
      */
     public addGenerators(...generators: Generator[]) {
-        generators.forEach((g) => {
+        for (const g of generators) {
             switch (g.generatorType) {
-                default:
+                default: {
                     this.generators.push(g);
                     break;
+                }
 
                 case generatorTypes.sampleID:
-                case generatorTypes.instrument:
+                case generatorTypes.instrument: {
                     // Don't add these, they already have their own properties
                     break;
+                }
 
-                case generatorTypes.velRange:
+                case generatorTypes.velRange: {
                     this.velRange.min = g.generatorValue & 0x7f;
                     this.velRange.max = (g.generatorValue >> 8) & 0x7f;
                     break;
+                }
 
-                case generatorTypes.keyRange:
+                case generatorTypes.keyRange: {
                     this.keyRange.min = g.generatorValue & 0x7f;
                     this.keyRange.max = (g.generatorValue >> 8) & 0x7f;
+                }
             }
-        });
+        }
     }
 
     public addModulators(...modulators: Modulator[]) {

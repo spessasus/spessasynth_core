@@ -1,5 +1,8 @@
 import { SpessaSynthProcessor } from "../../../processor";
-import type { MasterParameterChangeCallback, MasterParameterType } from "../../../types";
+import type {
+    MasterParameterChangeCallback,
+    MasterParameterType
+} from "../../../types";
 
 /**
  * Sets a master parameter of the synthesizer.
@@ -23,20 +26,25 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
             break;
         }
 
-        case "masterGain":
+        case "masterGain": {
             break;
+        }
 
-        case "voiceCap":
+        case "voiceCap": {
             break;
+        }
 
-        case "interpolationType":
+        case "interpolationType": {
             break;
+        }
 
-        case "midiSystem":
+        case "midiSystem": {
             break;
+        }
 
-        case "monophonicRetriggerMode":
+        case "monophonicRetriggerMode": {
             break;
+        }
 
         case "transposition": {
             const semitones = value as number;

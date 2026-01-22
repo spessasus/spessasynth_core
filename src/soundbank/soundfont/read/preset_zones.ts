@@ -24,7 +24,7 @@ export class SoundFontPresetZone extends BasicPresetZone {
         const instrumentID = generators.find(
             (g) => g.generatorType === generatorTypes.instrument
         );
-        let instrument = undefined;
+        let instrument;
         if (instrumentID) {
             instrument = instruments[instrumentID.generatorValue];
         } else {
@@ -66,9 +66,7 @@ export function applyPresetZones(
             const mods = presetMods.slice(modsStart, modsEnd);
             // Check for global zone
             if (
-                gens.find(
-                    (g) => g.generatorType === generatorTypes.instrument
-                ) !== undefined
+                gens.some((g) => g.generatorType === generatorTypes.instrument)
             ) {
                 // Regular zone
                 preset.createSoundFontZone(mods, gens, instruments);

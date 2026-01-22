@@ -68,7 +68,7 @@ export class WaveLink {
         zone: BasicInstrumentZone
     ) {
         const index = samples.indexOf(zone.sample);
-        if (index < 0) {
+        if (index === -1) {
             throw new Error(
                 `Wave link error: Sample ${zone.sample.name} does not exist in the sample list.`
             );
@@ -77,14 +77,16 @@ export class WaveLink {
         switch (zone.sample.sampleType) {
             default:
             case sampleTypes.leftSample:
-            case sampleTypes.monoSample:
+            case sampleTypes.monoSample: {
                 // Left (or mono)
-                waveLink.channel = 1 << 0;
+                waveLink.channel = Math.trunc(1);
                 break;
+            }
 
-            case sampleTypes.rightSample:
+            case sampleTypes.rightSample: {
                 // Right channel
                 waveLink.channel = 1 << 1;
+            }
         }
         return waveLink;
     }

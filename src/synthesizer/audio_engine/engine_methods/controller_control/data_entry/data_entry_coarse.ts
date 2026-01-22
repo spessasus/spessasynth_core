@@ -8,11 +8,11 @@ import { customControllers, dataEntryStates } from "../../../../enums";
 import { midiControllers } from "../../../../../midi/enums";
 
 export const registeredParameterTypes = {
-    pitchWheelRange: 0x0000,
-    fineTuning: 0x0001,
-    coarseTuning: 0x0002,
-    modulationDepth: 0x0005,
-    resetParameters: 0x3fff
+    pitchWheelRange: 0x00_00,
+    fineTuning: 0x00_01,
+    coarseTuning: 0x00_02,
+    modulationDepth: 0x00_05,
+    resetParameters: 0x3f_ff
 };
 
 export const nonRegisteredMSB = {
@@ -40,6 +40,38 @@ const nonRegisteredLSB = {
     EGReleaseTime: 0x66
 };
 
+// A helper function to log info in a nice way
+const coolInfo = (
+    chanNum: number,
+    what: string,
+    value: string | number,
+    type: string
+) => {
+    if (type.length > 0) {
+        type = " " + type;
+    }
+    SpessaSynthInfo(
+        `%c${what} for %c${chanNum}%c is now set to %c${value}%c${type}.`,
+        consoleColors.info,
+        consoleColors.recognized,
+        consoleColors.info,
+        consoleColors.value,
+        consoleColors.info
+    );
+};
+
+const addDefaultVibrato = (chan: MIDIChannel) => {
+    if (
+        chan.channelVibrato.delay === 0 &&
+        chan.channelVibrato.rate === 0 &&
+        chan.channelVibrato.depth === 0
+    ) {
+        chan.channelVibrato.depth = 50;
+        chan.channelVibrato.rate = 8;
+        chan.channelVibrato.delay = 0.6;
+    }
+};
+
 /**
  * Executes a data entry coarse (MSB) change for the current channel.
  * @param dataValue The value to set for the data entry coarse controller (0-127).
@@ -56,36 +88,12 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
     It was implemented very early in SpessaSynth's development,
     because I wanted support for Touhou MIDIs :-)
      */
-    const addDefaultVibrato = () => {
-        if (
-            this.channelVibrato.delay === 0 &&
-            this.channelVibrato.rate === 0 &&
-            this.channelVibrato.depth === 0
-        ) {
-            this.channelVibrato.depth = 50;
-            this.channelVibrato.rate = 8;
-            this.channelVibrato.delay = 0.6;
-        }
-    };
 
-    // A helper function to log info in a nice way
-    const coolInfo = (what: string, value: string | number, type: string) => {
-        if (type.length > 0) {
-            type = " " + type;
-        }
-        SpessaSynthInfo(
-            `%c${what} for %c${this.channelNumber}%c is now set to %c${value}%c${type}.`,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info,
-            consoleColors.value,
-            consoleColors.info
-        );
-    };
     switch (this.dataEntryState) {
         default:
-        case dataEntryStates.Idle:
+        case dataEntryStates.Idle: {
             break;
+        }
 
         // Process NRPNs
         case dataEntryStates.NRPFine: {
@@ -103,7 +111,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
             const dataEntryFine =
                 this.midiControllers[midiControllers.dataEntryLSB] >> 7;
             switch (NRPNCoarse) {
-                default:
+                default: {
                     if (dataValue === 64) {
                         // Default value
                         return;
@@ -122,11 +130,12 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         consoleColors.value
                     );
                     break;
+                }
 
                 // Part parameters
-                case nonRegisteredMSB.partParameter:
+                case nonRegisteredMSB.partParameter: {
                     switch (NRPNFine) {
-                        default:
+                        default: {
                             if (dataValue === 64) {
                                 // Default value
                                 return;
@@ -143,113 +152,140 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 consoleColors.value
                             );
                             break;
+                        }
 
                         // Vibrato rate (custom vibrato)
-                        case nonRegisteredLSB.vibratoRate:
+                        case nonRegisteredLSB.vibratoRate: {
                             if (dataValue === 64) {
                                 return;
                             }
-                            addDefaultVibrato();
+                            addDefaultVibrato(this);
                             this.channelVibrato.rate = (dataValue / 64) * 8;
                             coolInfo(
+                                this.channelNumber,
                                 "Vibrato rate",
                                 `${dataValue} = ${this.channelVibrato.rate}`,
                                 "Hz"
                             );
                             break;
+                        }
 
                         // Vibrato depth (custom vibrato)
-                        case nonRegisteredLSB.vibratoDepth:
+                        case nonRegisteredLSB.vibratoDepth: {
                             if (dataValue === 64) {
                                 return;
                             }
-                            addDefaultVibrato();
+                            addDefaultVibrato(this);
                             this.channelVibrato.depth = dataValue / 2;
                             coolInfo(
+                                this.channelNumber,
                                 "Vibrato depth",
                                 `${dataValue} = ${this.channelVibrato.depth}`,
                                 "cents of detune"
                             );
                             break;
+                        }
 
                         // Vibrato delay (custom vibrato)
-                        case nonRegisteredLSB.vibratoDelay:
+                        case nonRegisteredLSB.vibratoDelay: {
                             if (dataValue === 64) {
                                 return;
                             }
-                            addDefaultVibrato();
+                            addDefaultVibrato(this);
                             this.channelVibrato.delay = dataValue / 64 / 3;
                             coolInfo(
+                                this.channelNumber,
                                 "Vibrato delay",
                                 `${dataValue} = ${this.channelVibrato.delay}`,
                                 "seconds"
                             );
                             break;
+                        }
 
                         // Filter cutoff
-                        case nonRegisteredLSB.TVFFilterCutoff:
+                        case nonRegisteredLSB.TVFFilterCutoff: {
                             // Affect the "brightness" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.brightness,
                                 dataValue
                             );
-                            coolInfo("Filter cutoff", dataValue.toString(), "");
+                            coolInfo(
+                                this.channelNumber,
+                                "Filter cutoff",
+                                dataValue.toString(),
+                                ""
+                            );
                             break;
+                        }
 
-                        case nonRegisteredLSB.TVFFilterResonance:
+                        case nonRegisteredLSB.TVFFilterResonance: {
                             // Affect the "resonance" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.filterResonance,
                                 dataValue
                             );
                             coolInfo(
+                                this.channelNumber,
                                 "Filter resonance",
                                 dataValue.toString(),
                                 ""
                             );
                             break;
+                        }
 
                         // Attack time
-                        case nonRegisteredLSB.EGAttackTime:
+                        case nonRegisteredLSB.EGAttackTime: {
                             // Affect the "attack time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.attackTime,
                                 dataValue
                             );
                             coolInfo(
+                                this.channelNumber,
                                 "EG attack time",
                                 dataValue.toString(),
                                 ""
                             );
                             break;
+                        }
 
-                        case nonRegisteredLSB.EGDecayTime:
+                        case nonRegisteredLSB.EGDecayTime: {
                             // Affect the "decay time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.decayTime,
                                 dataValue
                             );
-                            coolInfo("EG decay time", dataValue.toString(), "");
+                            coolInfo(
+                                this.channelNumber,
+                                "EG decay time",
+                                dataValue.toString(),
+                                ""
+                            );
                             break;
+                        }
 
                         // Release time
-                        case nonRegisteredLSB.EGReleaseTime:
+                        case nonRegisteredLSB.EGReleaseTime: {
                             // Affect the "release time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.releaseTime,
                                 dataValue
                             );
                             coolInfo(
+                                this.channelNumber,
                                 "EG release time",
                                 dataValue.toString(),
                                 ""
                             );
                             break;
+                        }
                     }
                     break;
+                }
 
-                case nonRegisteredMSB.awe32:
+                case nonRegisteredMSB.awe32: {
                     break;
+                }
 
                 // SF2 NRPN
                 case nonRegisteredMSB.SF2: {
@@ -277,7 +313,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                 (this.midiControllers[midiControllers.registeredParameterLSB] >>
                     7);
             switch (rpnValue) {
-                default:
+                default: {
                     SpessaSynthInfo(
                         `%cUnrecognized RPN for %c${this.channelNumber}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
                         consoleColors.warn,
@@ -288,18 +324,21 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         consoleColors.value
                     );
                     break;
+                }
 
                 // Pitch wheel range
-                case registeredParameterTypes.pitchWheelRange:
+                case registeredParameterTypes.pitchWheelRange: {
                     this.midiControllers[
                         NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
                     ] = dataValue << 7;
                     coolInfo(
+                        this.channelNumber,
                         "Pitch wheel range",
                         dataValue.toString(),
                         "semitones"
                     );
                     break;
+                }
 
                 // Coarse tuning
                 case registeredParameterTypes.coarseTuning: {
@@ -310,6 +349,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         semitones
                     );
                     coolInfo(
+                        this.channelNumber,
                         "Coarse tuning",
                         semitones.toString(),
                         "semitones"
@@ -318,20 +358,23 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                 }
 
                 // Fine-tuning
-                case registeredParameterTypes.fineTuning:
+                case registeredParameterTypes.fineTuning: {
                     // Note: this will not work properly unless the lsb is sent!
                     // Here we store the raw value to then adjust in fine
                     this.setTuning(dataValue - 64, false);
                     break;
+                }
 
                 // Modulation depth
-                case registeredParameterTypes.modulationDepth:
+                case registeredParameterTypes.modulationDepth: {
                     this.setModulationDepth(dataValue * 100);
                     break;
+                }
 
-                case registeredParameterTypes.resetParameters:
+                case registeredParameterTypes.resetParameters: {
                     this.resetParameters();
                     break;
+                }
             }
         }
     }

@@ -2,7 +2,10 @@ import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { generatorTypes } from "../../../soundbank/enums";
-import { generatorLimits, type GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    generatorLimits,
+    type GeneratorType
+} from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 
@@ -89,18 +92,18 @@ export function computeModulators(
     if (sourceUsesCC === -1) {
         // All modulators mode: compute all modulators
         modulatedGenerators.set(generators);
-        modulators.forEach((mod) => {
+        for (const mod of modulators) {
             // Prevent -32k overflow
             // Testcase: gm.dls polysynth
             modulatedGenerators[mod.destination] = Math.min(
-                32767,
+                32_767,
                 Math.max(
-                    -32768,
+                    -32_768,
                     modulatedGenerators[mod.destination] +
                         computeModulator(this.midiControllers, mod, voice)
                 )
             );
-        });
+        }
         // Apply limits
         for (let gen = 0; gen < modulatedGenerators.length; gen++) {
             const limit = generatorLimits[gen];
@@ -135,7 +138,7 @@ export function computeModulators(
 
     const sourceCC = !!sourceUsesCC;
 
-    modulators.forEach((mod) => {
+    for (const mod of modulators) {
         if (
             (mod.primarySource.isCC === sourceCC &&
                 mod.primarySource.index === sourceIndex) ||
@@ -149,11 +152,11 @@ export function computeModulators(
                 // Compute our modulator
                 computeModulator(this.midiControllers, mod, voice);
                 // Sum the values of all modulators for this destination
-                modulators.forEach((m) => {
+                for (const m of modulators) {
                     if (m.destination === destination) {
                         outputValue += m.currentValue;
                     }
-                });
+                }
                 // Apply the limits instantly to prevent -32k overflow
                 // Testcase: gm.dls polysynth
                 const limits = generatorLimits[destination];
@@ -164,7 +167,7 @@ export function computeModulators(
                 computedDestinations.add(destination);
             }
         }
-    });
+    }
 
     // Recalculate volume envelope if necessary
     if (

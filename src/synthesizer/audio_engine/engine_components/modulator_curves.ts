@@ -8,7 +8,7 @@ import {
 } from "../../../soundbank/enums";
 
 // The length of the precomputed curve tables
-export const MODULATOR_RESOLUTION = 16384;
+export const MODULATOR_RESOLUTION = 16_384;
 
 export const MOD_CURVE_TYPES_AMOUNT = Object.keys(modulatorCurveTypes).length;
 /**
@@ -57,14 +57,15 @@ export function getModulatorCurveValue(
         value = 1 - value;
     }
     switch (curveType) {
-        case modulatorCurveTypes.linear:
+        case modulatorCurveTypes.linear: {
             if (isBipolar) {
                 // Bipolar curve
                 return value * 2 - 1;
             }
             return value;
+        }
 
-        case modulatorCurveTypes.switch:
+        case modulatorCurveTypes.switch: {
             // Switch
             value = value > 0.5 ? 1 : 0;
             if (isBipolar) {
@@ -72,27 +73,30 @@ export function getModulatorCurveValue(
                 return value * 2 - 1;
             }
             return value;
+        }
 
-        case modulatorCurveTypes.concave:
+        case modulatorCurveTypes.concave: {
             // Look up the value
             if (isBipolar) {
                 value = value * 2 - 1;
                 if (value < 0) {
-                    return -concave[~~(value * -MODULATOR_RESOLUTION)];
+                    return -concave[Math.trunc(value * -MODULATOR_RESOLUTION)];
                 }
-                return concave[~~(value * MODULATOR_RESOLUTION)];
+                return concave[Math.trunc(value * MODULATOR_RESOLUTION)];
             }
-            return concave[~~(value * MODULATOR_RESOLUTION)];
+            return concave[Math.trunc(value * MODULATOR_RESOLUTION)];
+        }
 
-        case modulatorCurveTypes.convex:
+        case modulatorCurveTypes.convex: {
             // Look up the value
             if (isBipolar) {
                 value = value * 2 - 1;
                 if (value < 0) {
-                    return -convex[~~(value * -MODULATOR_RESOLUTION)];
+                    return -convex[Math.trunc(value * -MODULATOR_RESOLUTION)];
                 }
-                return convex[~~(value * MODULATOR_RESOLUTION)];
+                return convex[Math.trunc(value * MODULATOR_RESOLUTION)];
             }
-            return convex[~~(value * MODULATOR_RESOLUTION)];
+            return convex[Math.trunc(value * MODULATOR_RESOLUTION)];
+        }
     }
 }

@@ -23,7 +23,7 @@ export class SoundFontInstrumentZone extends BasicInstrumentZone {
         const sampleID = generators.find(
             (g) => g.generatorType === generatorTypes.sampleID
         );
-        let sample = undefined;
+        let sample;
         if (sampleID) {
             sample = samples[sampleID.generatorValue];
         } else {
@@ -64,7 +64,7 @@ export function applyInstrumentZones(
             const modsEnd = modStartIndexes[modIndex];
             const mods = instrumentModulators.slice(modsStart, modsEnd);
             // Check for global zone
-            if (gens.find((g) => g.generatorType === generatorTypes.sampleID)) {
+            if (gens.some((g) => g.generatorType === generatorTypes.sampleID)) {
                 // Regular zone
                 instrument.createSoundFontZone(mods, gens, samples);
             } else {

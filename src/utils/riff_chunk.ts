@@ -76,15 +76,9 @@ export function readRIFFChunk(
         // https://github.com/spessasus/spessasynth_core/issues/5
         size = 0;
     }
-    let chunkData: IndexedByteArray;
-    if (readData) {
-        chunkData = dataArray.slice(
-            dataArray.currentIndex,
-            dataArray.currentIndex + size
-        );
-    } else {
-        chunkData = new IndexedByteArray(0);
-    }
+    const chunkData = readData
+        ? dataArray.slice(dataArray.currentIndex, dataArray.currentIndex + size)
+        : new IndexedByteArray(0);
     if (readData || forceShift) {
         dataArray.currentIndex += size;
         if (size % 2 !== 0) {
@@ -181,10 +175,10 @@ export function writeRIFFChunkParts(
         // List type (e.g. "INFO")
         writeBinaryStringIndexed(outArray, header);
     }
-    chunks.forEach((c) => {
+    for (const c of chunks) {
         outArray.set(c, dataOffset);
         dataOffset += c.length;
-    });
+    }
     return outArray;
 }
 

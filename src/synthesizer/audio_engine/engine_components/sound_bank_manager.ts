@@ -103,16 +103,16 @@ export class SoundBankManager {
      */
     public addSoundBank(font: BasicSoundBank, id: string, bankOffset = 0) {
         const foundBank = this.soundBankList.find((s) => s.id === id);
-        if (foundBank !== undefined) {
-            // Replace
-            foundBank.soundBank = font;
-            foundBank.bankOffset = bankOffset;
-        } else {
+        if (foundBank === undefined) {
             this.soundBankList.push({
                 id: id,
                 soundBank: font,
                 bankOffset: bankOffset
             });
+        } else {
+            // Replace
+            foundBank.soundBank = font;
+            foundBank.bankOffset = bankOffset;
         }
         this.generatePresetList();
     }
@@ -124,7 +124,7 @@ export class SoundBankManager {
      * @returns An object containing the preset and its bank offset.
      */
     public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
-        if (this.soundBankList.length < 1) {
+        if (this.soundBankList.length === 0) {
             throw new Error("No sound banks! Did you forget to add one?");
         }
 
@@ -133,9 +133,9 @@ export class SoundBankManager {
 
     // Clears the sound bank list and destroys all sound banks.
     public destroy() {
-        this.soundBankList.forEach((s) => {
+        for (const s of this.soundBankList) {
             s.soundBank.destroySoundBank();
-        });
+        }
         this.soundBankList = [];
     }
 
@@ -143,10 +143,10 @@ export class SoundBankManager {
         const presetList = new Array<SoundBankManagerPreset>();
 
         const addedPresets = new Set<string>();
-        this.soundBankList.forEach((s) => {
+        for (const s of this.soundBankList) {
             const bank = s.soundBank;
             const bankOffset = s.bankOffset;
-            bank.presets.forEach((p) => {
+            for (const p of bank.presets) {
                 const selectablePreset = new SoundBankManagerPreset(
                     p,
                     bankOffset
@@ -155,8 +155,8 @@ export class SoundBankManager {
                     addedPresets.add(selectablePreset.toMIDIString());
                     presetList.push(selectablePreset);
                 }
-            });
-        });
+            }
+        }
         presetList.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
         this.selectablePresetList = presetList;
         this._presetList = presetList.map((p) => {

@@ -43,7 +43,7 @@ export class LowpassFilter {
     /**
      * Current cutoff frequency in absolute cents.
      */
-    public currentInitialFc = 13500;
+    public currentInitialFc = 13_500;
     /**
      * Filter coefficient 1.
      */
@@ -127,17 +127,17 @@ export class LowpassFilter {
             voice.modulatedGenerators[generatorTypes.initialFilterFc];
         const filter: LowpassFilter = voice.filter;
 
-        if (!filter.initialized) {
-            // Filter initialization, set the current fc to target
-            filter.initialized = true;
-            filter.currentInitialFc = initialFc;
-        } else {
+        if (filter.initialized) {
             /* Note:
              * We only smooth out the initialFc part,
              * the modulation envelope and LFO excursions are not smoothed.
              */
             filter.currentInitialFc +=
                 (initialFc - filter.currentInitialFc) * smoothingFactor;
+        } else {
+            // Filter initialization, set the current fc to target
+            filter.initialized = true;
+            filter.currentInitialFc = initialFc;
         }
 
         // The final cutoff for this calculation
@@ -151,11 +151,11 @@ export class LowpassFilter {
          * the filter can only be dynamic if the initial filter is not open
          */
         if (
-            filter.currentInitialFc > 13499 &&
-            targetCutoff > 13499 &&
+            filter.currentInitialFc > 13_499 &&
+            targetCutoff > 13_499 &&
             modulatedResonance === 0
         ) {
-            filter.currentInitialFc = 13500;
+            filter.currentInitialFc = 13_500;
             return; // Filter is open
         }
 
@@ -259,10 +259,10 @@ export class LowpassFilter {
 }
 
 // Precompute all the cutoffs for 0q (most common)
-const dummy = new LowpassFilter(44100);
+const dummy = new LowpassFilter(44_100);
 dummy.resonanceCb = 0;
 // Sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
-for (let i = 1500; i < 13500; i++) {
+for (let i = 1500; i < 13_500; i++) {
     dummy.currentInitialFc = i;
     LowpassFilter.calculateCoefficients(dummy, i);
 }
