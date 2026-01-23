@@ -149,6 +149,15 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
 
     this.sysExModulators.resetModulators();
 
+    // Reset pitch wheels
+    if (
+        !this.lockedControllers[
+            NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
+        ]
+    ) {
+        this.pitchWheels.fill(8192);
+    }
+
     // Reset custom controllers
     // Special case: transpose does not get affected
     const transpose =
