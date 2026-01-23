@@ -234,10 +234,7 @@ export class VolumeEnvelope {
                     voice.finished = true;
                 }
                 // Sustain phase: stay at sustain
-                // Console.log("start of buffer, target", gainTarget);
                 while (true) {
-                    // Console.log(voice.currentGain);
-
                     // Stay at sustain
                     this.attenuationCb = this.sustainCb;
 

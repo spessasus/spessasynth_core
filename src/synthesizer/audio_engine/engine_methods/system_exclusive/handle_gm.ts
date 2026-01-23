@@ -11,21 +11,17 @@ import { readBinaryString } from "../../../../utils/byte_functions/string";
  * @param byte3 The third byte (the least significant bits).
  * @return An object containing the MIDI note and the cent tuning value.
  */
-function getTuning(
-    byte1: number,
-    byte2: number,
-    byte3: number
-): { midiNote: number; centTuning: number | null } {
+function getTuning(byte1: number, byte2: number, byte3: number): number {
     const midiNote = byte1;
     const fraction = (byte2 << 7) | byte3; // Combine byte2 and byte3 into a 14-bit number
 
     // No change
     if (byte1 === 0x7f && byte2 === 0x7f && byte3 === 0x7f) {
-        return { midiNote: -1, centTuning: null };
+        return -1;
     }
 
-    // Calculate cent tuning
-    return { midiNote: midiNote, centTuning: fraction * 0.0061 };
+    // Calculate cent tuning (divide cents by 100 so it works in semitones)
+    return midiNote + fraction * 0.000_061;
 }
 
 /**
@@ -147,13 +143,14 @@ export function handleGM(
                         return;
                     }
                     // 128 frequencies follow
-                    for (let i = 0; i < 128; i++) {
+                    for (let midiNote = 0; midiNote < 128; midiNote++) {
                         // Set the given tuning to the program
-                        this.privateProps.tunings[program][i] = getTuning(
-                            syx[currentMessageIndex++],
-                            syx[currentMessageIndex++],
-                            syx[currentMessageIndex++]
-                        );
+                        this.privateProps.tunings[program * 128 + midiNote] =
+                            getTuning(
+                                syx[currentMessageIndex++],
+                                syx[currentMessageIndex++],
+                                syx[currentMessageIndex++]
+                            );
                     }
                     SpessaSynthInfo(
                         `%cBulk Tuning Dump %c${tuningName}%c Program: %c${program}`,
@@ -177,9 +174,10 @@ export function handleGM(
                     const tuningProgram = syx[currentMessageIndex++];
                     const numberOfChanges = syx[currentMessageIndex++];
                     for (let i = 0; i < numberOfChanges; i++) {
+                        const midiNote = syx[currentMessageIndex++];
                         // Set the given tuning to the program
-                        this.privateProps.tunings[tuningProgram][
-                            syx[currentMessageIndex++]
+                        this.privateProps.tunings[
+                            tuningProgram * 128 + midiNote
                         ] = getTuning(
                             syx[currentMessageIndex++],
                             syx[currentMessageIndex++],

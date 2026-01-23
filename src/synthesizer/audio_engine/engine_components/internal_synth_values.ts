@@ -1,8 +1,4 @@
-import type {
-    MTSProgramTuning,
-    SynthProcessorEventData,
-    VoiceList
-} from "../../types";
+import type { SynthProcessorEventData, VoiceList } from "../../types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { DEFAULT_MASTER_PARAMETERS } from "./master_parameters";
 
@@ -12,9 +8,11 @@ import { DEFAULT_MASTER_PARAMETERS } from "./master_parameters";
 // Essentially think like all these belong to SpessaSynthProcessor and are "protected".
 export class ProtectedSynthValues {
     /**
-     * This.tunings[program][key] = tuning
+     * This.tunings[program * 128 + key] = midiNote,cents (fraction)
+     * All MIDI Tuning Standard tunings, 128 keys for each of 128 programs.
+     * -1 means no change.
      */
-    public readonly tunings: MTSProgramTuning[] = [];
+    public readonly tunings = new Float32Array(128 * 128).fill(-1);
 
     // The master parameters of the synthesizer.
     public masterParameters = DEFAULT_MASTER_PARAMETERS;
@@ -107,10 +105,6 @@ export class ProtectedSynthValues {
         this.gainSmoothingFactor = gainSmoothingFactor;
         this.panSmoothingFactor = panSmoothingFactor;
         this.filterSmoothingFactor = filterSmoothingFactor;
-
-        for (let i = 0; i < 128; i++) {
-            this.tunings.push([]);
-        }
     }
 
     /**

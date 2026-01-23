@@ -47,10 +47,10 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     if (realKey > 127 || realKey < 0) {
         return;
     }
-    const program = this.preset?.program;
-    const tune = this.synthProps.tunings[program]?.[realKey]?.midiNote;
+    const program = this.preset.program;
+    const tune = this.synthProps.tunings[program * 128 + realKey];
     if (tune >= 0) {
-        internalMidiNote = tune;
+        internalMidiNote = Math.trunc(tune);
     }
 
     // Monophonic retrigger

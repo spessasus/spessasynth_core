@@ -231,23 +231,6 @@ export interface SynthMethodOptions {
 }
 
 /**
- * KeyNum: tuning.
- */
-export type MTSProgramTuning = MTSNoteTuning[];
-
-export interface MTSNoteTuning {
-    /**
-     * The base MIDI note to use, -1 means no change.
-     */
-    midiNote: number;
-
-    /**
-     * Additional tuning.
-     */
-    centTuning: number | null;
-}
-
-/**
  * Looping mode of the sample.
  * 0 - no loop.
  * 1 - loop.

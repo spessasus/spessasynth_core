@@ -60,14 +60,16 @@ export function renderVoice(
         this.channelTuningCents; // Channel tuning
     let semitones = voice.modulatedGenerators[generatorTypes.coarseTune]; // Soundfont coarse tuning
 
-    // Midi tuning standard
+    // MIDI tuning standard
     const tuning =
-        this.synthProps.tunings[this.preset?.program ?? 0]?.[voice.realKey];
-    if (tuning?.centTuning) {
+        this.synthProps.tunings[this.preset!.program * 128 + voice.realKey];
+    if (tuning !== -1) {
+        // Tuning is encoded as float
+        // For example: 60.56 means key 60 and 56 cents
         // Override key
-        targetKey = tuning.midiNote;
-        // Add micro-tonal tuning
-        cents += tuning.centTuning;
+        targetKey = Math.trunc(tuning);
+        // Add microtonal tuning
+        cents += (tuning - targetKey) * 100;
     }
 
     // Portamento

@@ -28,10 +28,7 @@ export function resetAllControllersInternal(
     this.privateProps.callEvent("allControllerReset", undefined);
     this.setMasterParameter("midiSystem", system);
     // Reset private props
-    this.privateProps.tunings.length = 0;
-    for (let i = 0; i < 128; i++) {
-        this.privateProps.tunings.push([]);
-    }
+    this.privateProps.tunings.fill(-1); // Set all to no change
     this.setMIDIVolume(1);
     this.privateProps.reverbSend = 1;
     this.privateProps.chorusSend = 1;
