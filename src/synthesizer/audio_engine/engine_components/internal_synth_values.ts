@@ -49,13 +49,19 @@ export class ProtectedSynthValues {
      */
     public drumPreset: BasicPreset | undefined;
 
-    // Volume envelope smoothing factor, adjusted to the sample rate.
-    public readonly volumeEnvelopeSmoothingFactor: number;
+    /**
+     * Gain smoothing factor, adjusted to the sample rate.
+     */
+    public readonly gainSmoothingFactor: number;
 
-    // Pan smoothing factor, adjusted to the sample rate.
+    /**
+     * Pan smoothing factor, adjusted to the sample rate.
+     */
     public readonly panSmoothingFactor: number;
 
-    // Filter smoothing factor, adjusted to the sample rate.
+    /**
+     * Filter smoothing factor, adjusted to the sample rate.
+     */
     public readonly filterSmoothingFactor: number;
     /**
      * Calls when an event occurs.
@@ -91,14 +97,14 @@ export class ProtectedSynthValues {
             realKey: number
         ) => VoiceList,
         voiceKillingFunction: (amount: number) => unknown,
-        volumeEnvelopeSmoothingFactor: number,
+        gainSmoothingFactor: number,
         panSmoothingFactor: number,
         filterSmoothingFactor: number
     ) {
         this.eventCallbackHandler = eventCallbackHandler;
         this.getVoices = getVoices;
         this.voiceKilling = voiceKillingFunction;
-        this.volumeEnvelopeSmoothingFactor = volumeEnvelopeSmoothingFactor;
+        this.gainSmoothingFactor = gainSmoothingFactor;
         this.panSmoothingFactor = panSmoothingFactor;
         this.filterSmoothingFactor = filterSmoothingFactor;
 

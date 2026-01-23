@@ -1,4 +1,4 @@
-import { absCentsToHz, decibelAttenuationToGain } from "../unit_converter";
+import { absCentsToHz, cbAttenuationToGain } from "../unit_converter";
 import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
@@ -117,7 +117,7 @@ export class LowpassFilter {
      * @param fcExcursion The frequency excursion in cents to apply to the filter.
      * @param smoothingFactor The smoothing factor for the filter as determined by the parent synthesizer.
      */
-    public static apply(
+    public static process(
         voice: Voice,
         outputBuffer: Float32Array,
         fcExcursion: number,
@@ -218,14 +218,13 @@ export class LowpassFilter {
 
         // The coefficient calculation code was originally ported from meltysynth by sinshu.
         // Turn resonance to gain, -3.01 so it gives a non-resonant peak
-        const qDb = qCb / 10;
         // -1 because it's attenuation, and we don't want attenuation
-        const resonanceGain = decibelAttenuationToGain(-(qDb - 3.01));
+        const resonanceGain = cbAttenuationToGain(-(qCb - 3.01));
 
         // The sf spec asks for a reduction in gain based on the Q value.
         // Note that we calculate it again,
         // Without the 3.01-peak offset as it only applies to the coefficients, not the gain.
-        const qGain = 1 / Math.sqrt(decibelAttenuationToGain(-qDb));
+        const qGain = 1 / Math.sqrt(cbAttenuationToGain(-qCb));
 
         // Note: no sin or cos tables are used here as the coefficients are cached
         const w = (2 * Math.PI * cutoffHz) / filter.sampleRate;

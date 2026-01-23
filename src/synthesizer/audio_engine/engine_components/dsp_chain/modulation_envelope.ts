@@ -78,14 +78,14 @@ export class ModulationEnvelope {
      * @param voice the voice this envelope belongs to.
      */
     public static startRelease(voice: Voice) {
-        ModulationEnvelope.recalculate(voice);
+        ModulationEnvelope.init(voice);
     }
 
     /**
      * @param voice the voice to recalculate.
      */
-    public static recalculate(voice: Voice) {
-        const env = voice.modulationEnvelope;
+    public static init(voice: Voice) {
+        const env = voice.modEnv;
 
         // In release? Might need to recalculate the value as it can be modulated
         if (voice.isInRelease) {
@@ -156,7 +156,7 @@ export class ModulationEnvelope {
         currentTime: number,
         ignoreRelease = false
     ): number {
-        const env = voice.modulationEnvelope;
+        const env = voice.modEnv;
         if (voice.isInRelease && !ignoreRelease) {
             // If the voice is still in the delay phase,
             // Start level will be 0 that will result in divide by zero

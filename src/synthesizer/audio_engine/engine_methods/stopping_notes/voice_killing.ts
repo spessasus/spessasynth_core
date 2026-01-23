@@ -22,11 +22,11 @@ function getPriority(channel: MIDIChannel, voice: Voice): number {
     // Less velocity = less important
     priority += voice.velocity / 25; // Map to 0-5
     // The newer, more important
-    priority -= voice.volumeEnvelope.state;
+    priority -= voice.volEnv.state;
     if (voice.isInRelease) {
         priority -= 5;
     }
-    priority -= voice.volumeEnvelope.currentAttenuationDb / 50;
+    priority -= voice.volEnv.attenuationCb / 500;
     return priority;
 }
 

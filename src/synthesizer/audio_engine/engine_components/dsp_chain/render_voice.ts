@@ -1,5 +1,5 @@
 import { ModulationEnvelope } from "./modulation_envelope";
-import { absCentsToHz, timecentsToSeconds } from "../unit_converter";
+import { absCentsToHz, cbAttenuationToGain, timecentsToSeconds } from "../unit_converter";
 import { getLFOValue } from "./lfo";
 import { WavetableOscillator } from "./wavetable_oscillator";
 import { LowpassFilter } from "./lowpass_filter";
@@ -43,19 +43,11 @@ export function renderVoice(
     ) {
         // Release the voice here
         voice.isInRelease = true;
-        voice.volumeEnvelope.startRelease(voice);
+        voice.volEnv.startRelease(voice);
         ModulationEnvelope.startRelease(voice);
         if (voice.sample.loopingMode === 3) {
             voice.sample.isLooping = false;
         }
-    }
-
-    // If the initial attenuation is more than 100dB, skip the voice (it's silent anyway)
-    if (voice.modulatedGenerators[generatorTypes.initialAttenuation] > 2500) {
-        if (voice.isInRelease) {
-            voice.finished = true;
-        }
-        return voice.finished;
     }
 
     // TUNING
@@ -97,8 +89,7 @@ export function renderVoice(
 
     // Low pass excursion with LFO and mod envelope
     let lowpassExcursion = 0;
-    let volumeExcursionCentibels =
-        voice.modulatedGenerators[generatorTypes.initialAttenuation];
+    let volumeExcursionCentibels = 0;
 
     // Vibrato LFO
     const vibPitchDepth =
@@ -204,27 +195,38 @@ export function renderVoice(
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.sample.loopingMode === 2 && !voice.isInRelease) {
-        voice.volumeEnvelope.apply(voice, bufferOut, volumeExcursionCentibels);
+        voice.volEnv.process(voice, bufferOut);
         return voice.finished;
     }
 
     // Wave table oscillator
-    WavetableOscillator.getSample(
+    WavetableOscillator.process(
         voice,
         bufferOut,
         this.synthProps.masterParameters.interpolationType
     );
 
     // Low pass filter
-    LowpassFilter.apply(
+    LowpassFilter.process(
         voice,
         bufferOut,
         lowpassExcursion,
         this.synthProps.filterSmoothingFactor
     );
 
+    // Gain interpolation
+    const smoothing = this.synthProps.gainSmoothingFactor;
+    const gainTarget = cbAttenuationToGain(
+        voice.modulatedGenerators[generatorTypes.initialAttenuation]
+    );
+    const gainOffset = cbAttenuationToGain(volumeExcursionCentibels);
+    for (let i = 0; i < bufferOut.length; i++) {
+        voice.currentGain += (gainTarget - voice.currentGain) * smoothing;
+        bufferOut[i] *= voice.currentGain * gainOffset;
+    }
+
     // Vol env
-    voice.volumeEnvelope.apply(voice, bufferOut, volumeExcursionCentibels);
+    voice.volEnv.process(voice, bufferOut);
 
     this.panAndMixVoice(
         voice,

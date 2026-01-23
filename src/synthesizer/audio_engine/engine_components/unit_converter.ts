@@ -48,22 +48,23 @@ export function absCentsToHz(cents: number): number {
     return absoluteCentLookupTable[Math.trunc(cents) - MIN_ABS_CENT];
 }
 
-// Decibel lookup table (2 points of precision)
-const MIN_DECIBELS = -1660;
-const MAX_DECIBELS = 1600;
-const decibelLookUpTable = new Float32Array(
-    (MAX_DECIBELS - MIN_DECIBELS) * 100 + 1
-);
-for (let i = 0; i < decibelLookUpTable.length; i++) {
-    const decibels = (MIN_DECIBELS * 100 + i) / 100;
-    decibelLookUpTable[i] = Math.pow(10, -decibels / 20);
+// Centibel lookup table (1 cB precision)
+// 1 dB = 10 cB
+const MIN_CENTIBELS = -16_600; // -1660 dB
+const MAX_CENTIBELS = 16_000; //  1600 dB
+
+const centibelLookUpTable = new Float32Array(MAX_CENTIBELS - MIN_CENTIBELS + 1);
+
+for (let i = 0; i < centibelLookUpTable.length; i++) {
+    const centibels = MIN_CENTIBELS + i;
+    centibelLookUpTable[i] = Math.pow(10, -centibels / 200);
 }
 
 /**
- * Converts decibel attenuation to gain.
- * @param decibels The decibel value.
+ * Converts centibel attenuation to gain.
+ * @param centibels The centibel value.
  * @return The gain value.
  */
-export function decibelAttenuationToGain(decibels: number): number {
-    return decibelLookUpTable[Math.floor((decibels - MIN_DECIBELS) * 100)];
+export function cbAttenuationToGain(centibels: number): number {
+    return centibelLookUpTable[Math.floor(centibels - MIN_CENTIBELS)];
 }

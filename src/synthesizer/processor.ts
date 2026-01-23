@@ -6,7 +6,6 @@ import {
     MIDI_CHANNEL_COUNT
 } from "./audio_engine/engine_components/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { VOLUME_ENVELOPE_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/volume_envelope";
 import {
     getAllMasterParametersInternal,
     getMasterParameterInternal,
@@ -43,6 +42,9 @@ import type { MIDIPatch } from "../soundbank/basic_soundbank/midi_patch";
  * Processor.ts
  * purpose: the core synthesis engine
  */
+
+// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+const GAIN_SMOOTHING_FACTOR = 0.01;
 
 // The core synthesis engine of spessasynth.
 export class SpessaSynthProcessor {
@@ -204,7 +206,7 @@ export class SpessaSynthProcessor {
             this.killVoices.bind(this),
             // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
             // Volume envelope smoothing factor
-            VOLUME_ENVELOPE_SMOOTHING_FACTOR * (44_100 / sampleRate),
+            GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate),
             // Pan smoothing factor
             PAN_SMOOTHING_FACTOR * (44_100 / sampleRate),
             // Filter smoothing factor

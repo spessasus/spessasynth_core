@@ -13,7 +13,7 @@ export class WavetableOscillator {
      * @param outputBuffer The output buffer to write to.
      * @param interpolation The interpolation type.
      */
-    public static getSample(
+    public static process(
         voice: Voice,
         outputBuffer: Float32Array,
         interpolation: InterpolationType

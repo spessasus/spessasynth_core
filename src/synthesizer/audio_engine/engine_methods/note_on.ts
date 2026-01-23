@@ -6,6 +6,7 @@ import type { MIDIChannel } from "../engine_components/midi_channel";
 import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { midiControllers } from "../../../midi/enums";
 import { customControllers } from "../../enums";
+import { cbAttenuationToGain } from "../engine_components/unit_converter";
 
 const clamp = (num: number, min: number, max: number) =>
     Math.max(min, Math.min(max, num));
@@ -124,7 +125,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.overridePan = panOverride;
 
         // Apply gain override
-        voice.gain = voiceGain;
+        voice.gainModifier = voiceGain;
 
         // Dynamic modulators (if none, this won't iterate over anything)
         for (const m of this.sysExModulators.modulatorList) {
@@ -213,8 +214,14 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             sample.loopingMode = 0;
             sample.isLooping = false;
         }
+
+        // Set the initial gain
+        voice.currentGain = cbAttenuationToGain(
+            voice.modulatedGenerators[generatorTypes.initialAttenuation]
+        );
+
         // Initialize the volume envelope (non-realtime)
-        voice.volumeEnvelope.init(voice);
+        voice.volEnv.init(voice);
 
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(

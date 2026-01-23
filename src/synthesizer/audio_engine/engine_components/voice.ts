@@ -15,15 +15,14 @@ import { AudioSample } from "./audio_sample";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
-const EXCLUSIVE_MOD_CUTOFF_TIME = -1130; // Less because filter shenanigans
 
 /**
  * Voice represents a single instance of the
  * SoundFont2 synthesis model.
  * That is:
  * A wavetable oscillator (sample)
- * A volume envelope (volumeEnvelope)
- * A modulation envelope (modulationEnvelope)
+ * A volume envelope (volEnv)
+ * A modulation envelope (modEnv)
  * Generators (generators and modulatedGenerators)
  * Modulators (modulators)
  * And MIDI params such as channel, MIDI note, velocity
@@ -42,7 +41,7 @@ export class Voice {
     /**
      * Linear gain of the voice. Used with Key Modifiers.
      */
-    public gain = 1;
+    public gainModifier = 1;
 
     /**
      * The unmodulated (copied to) generators of the voice.
@@ -98,12 +97,12 @@ export class Voice {
     /**
      * Modulation envelope.
      */
-    public modulationEnvelope: ModulationEnvelope = new ModulationEnvelope();
+    public modEnv: ModulationEnvelope = new ModulationEnvelope();
 
     /**
      * Volume envelope.
      */
-    public volumeEnvelope: VolumeEnvelope;
+    public volEnv: VolumeEnvelope;
 
     /**
      * Start time of the voice, absolute.
@@ -129,6 +128,11 @@ export class Voice {
      * From -500 to 500. Used for smoothing.
      */
     public currentPan = 0;
+
+    /**
+     * From 0 to 1. Used for smoothing.
+     */
+    public currentGain = 1;
 
     /**
      * If MIDI Tuning Standard is already applied (at note-on time),
@@ -165,12 +169,6 @@ export class Voice {
     public overrideReleaseVolEnv = 0;
 
     /**
-     * In timecents, where zero means disabled (use the modulatedGenerators table).
-     * Used for exclusive notes and killing notes.
-     */
-    public overrideReleaseModEnv = 0;
-
-    /**
      * Creates a Voice.
      */
     public constructor(
@@ -195,7 +193,7 @@ export class Voice {
         this.startTime = currentTime;
         this.targetKey = targetKey;
         this.realKey = realKey;
-        this.volumeEnvelope = new VolumeEnvelope(sampleRate);
+        this.volEnv = new VolumeEnvelope(sampleRate);
     }
 
     /**
@@ -214,7 +212,7 @@ export class Voice {
             sampleToCopy.loopingMode
         );
         return new Voice(
-            voice.volumeEnvelope.sampleRate,
+            voice.volEnv.sampleRate,
             sample,
             voice.midiNote,
             voice.velocity,
@@ -231,7 +229,6 @@ export class Voice {
      */
     public exclusiveRelease(currentTime: number) {
         this.overrideReleaseVolEnv = EXCLUSIVE_CUTOFF_TIME; // Make the release nearly instant
-        this.overrideReleaseModEnv = EXCLUSIVE_MOD_CUTOFF_TIME;
         this.isInRelease = false;
         this.releaseVoice(currentTime, MIN_EXCLUSIVE_LENGTH);
     }
