@@ -223,6 +223,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         // Initialize the volume envelope (non-realtime)
         voice.volEnv.init(voice);
 
+        // Initialize the modulation envelope (non-realtime)
+        voice.modEnv.init(voice);
+
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(
             -500,

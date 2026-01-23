@@ -1,4 +1,3 @@
-import { ModulationEnvelope } from "./modulation_envelope";
 import { absCentsToHz, cbAttenuationToGain, timecentsToSeconds } from "../unit_converter";
 import { getLFOValue } from "./lfo";
 import { WavetableOscillator } from "./wavetable_oscillator";
@@ -44,7 +43,7 @@ export function renderVoice(
         // Release the voice here
         voice.isInRelease = true;
         voice.volEnv.startRelease(voice);
-        ModulationEnvelope.startRelease(voice);
+        voice.modEnv.startRelease(voice);
         if (voice.sample.loopingMode === 3) {
             voice.sample.isLooping = false;
         }
@@ -176,7 +175,7 @@ export function renderVoice(
         voice.modulatedGenerators[generatorTypes.modEnvToFilterFc];
     // Don't compute mod env unless necessary
     if (modEnvFilterDepth !== 0 || modEnvPitchDepth !== 0) {
-        const modEnv = ModulationEnvelope.getValue(voice, timeNow);
+        const modEnv = voice.modEnv.process(voice, timeNow);
         // Apply values
         lowpassExcursion += modEnv * modEnvFilterDepth;
         cents += modEnv * modEnvPitchDepth;
