@@ -135,6 +135,14 @@ export class MIDIChannel {
         depth: 0,
         rate: 0
     };
+
+    /**
+     * If the channel is in the poly mode.
+     * True - POLY ON - regular playback.
+     * False - MONO ON - one note per channel, others are killed on note-on
+     */
+    public polyMode = true;
+
     /**
      * An array of voices currently active on the channel.
      */

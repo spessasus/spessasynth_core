@@ -99,6 +99,16 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             internalMidiNote
         );
     }
+
+    const channelVoices = this.voices;
+    // Mono mode
+    if (!this.polyMode) {
+        for (const voice of channelVoices) {
+            // No minimum note time, release ASAP
+            voice.exclusiveRelease(this.synth.currentSynthTime, 0);
+        }
+    }
+
     // Get voices
     const voices = this.synthProps.getVoices(
         this.channelNumber,
@@ -115,7 +125,6 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
 
     // Add voices
-    const channelVoices = this.voices;
     for (const voice of voices) {
         // Apply portamento
         voice.portamentoFromKey = portamentoFromKey;
@@ -157,7 +166,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
         // Apply exclusive class
         const exclusive = voice.exclusiveClass;
-        if (exclusive !== 0) {
+        // In mono mode all voices have been killed already
+        if (exclusive !== 0 && this.polyMode) {
             // Kill all voices with the same exclusive class
             for (const v of channelVoices) {
                 if (v.exclusiveClass === exclusive) {
