@@ -362,16 +362,17 @@ export function getVoicesInternal(
     );
 
     let preset = channelObject.preset;
-    if (!preset) {
-        SpessaSynthWarn(`No preset for channel ${channel}!`);
-        return [];
-    }
+
     if (overridePatch) {
         const patch = this.keyModifierManager.getPatch(channel, midiNote);
         preset = this.soundBankManager.getPreset(
             patch,
             this.privateProps.masterParameters.midiSystem
         );
+    }
+    if (!preset) {
+        SpessaSynthWarn(`No preset for channel ${channel}!`);
+        return [];
     }
     return this.getVoicesForPreset(preset, midiNote, velocity, realKey);
 }

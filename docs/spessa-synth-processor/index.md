@@ -79,8 +79,8 @@ synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIn
 
 - reverbChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
 - chorusChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the chorus processor.
-- separateChannels - an array of exactly 16 pairs of `Float32Array` - one pair represents one channel,
-  for example, the first pair is first channels L and R outputs and so on.
+- separateChannels - an array of `Float32Array` pairs - one pair represents one channel (`[L, R]`),
+  for example, the first pair is first channels L and R outputs and so on. If there are fewer arrays than the channels, the extra channels will render into the same arrays.
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.

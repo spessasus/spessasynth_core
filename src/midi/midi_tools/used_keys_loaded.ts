@@ -24,7 +24,7 @@ import {
 import type { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
 
 interface InternalChannelType {
-    preset: BasicPreset;
+    preset?: BasicPreset;
     bankMSB: number;
     bankLSB: number;
     isDrum: boolean;
@@ -133,6 +133,11 @@ export function getUsedProgramsAndKeys(
             case midiMessageTypes.noteOn: {
                 if (event.data[1] === 0) {
                     // That's a note off
+                    return;
+                }
+
+                // If there's no preset, ignore
+                if (!ch.preset) {
                     return;
                 }
 

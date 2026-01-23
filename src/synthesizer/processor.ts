@@ -1,6 +1,7 @@
 import { SpessaSynthInfo } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
 import {
+    DEFAULT_PERCUSSION,
     DEFAULT_SYNTH_METHOD_OPTIONS,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
@@ -332,7 +333,8 @@ export class SpessaSynthProcessor {
      * All float arrays must have the same length.
      * @param reverbChannels reverb stereo channels (L, R).
      * @param chorusChannels chorus stereo channels (L, R).
-     * @param separateChannels a total of 16 stereo pairs (L, R) for each MIDI channel.
+     * @param separateChannels stereo pairs (L, R) for each MIDI channel.
+     * If there are fewer arrays than the channels, the extra channels will render into the same arrays.
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
      */
@@ -366,7 +368,7 @@ export class SpessaSynthProcessor {
                 continue;
             }
             const voiceCount = channel.voices.length;
-            const ch = index % 16;
+            const ch = index % separateChannels.length;
 
             // Render to the appropriate output
             channel.renderAudio(
@@ -679,8 +681,8 @@ export class SpessaSynthProcessor {
         this.midiChannels.push(channel);
         if (sendEvent) {
             this.callEvent("newChannel", undefined);
+            channel.setDrums(channel.channelNumber % 16 === DEFAULT_PERCUSSION);
             channel.sendChannelProperty();
-            channel.setDrums(true);
         }
     }
 
