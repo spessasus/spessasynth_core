@@ -14,25 +14,23 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 2. Install esbuild `npm install -g esbuild`
 3. Create a directory where you want to develop.
 4. Clone your fork of `spessasynth_core` into the directory.
-5. Clone `spessasynth_lib` into the directory.
+5. Clone `spessasynth_lib` (or your fork of it) into the directory.
 6. Clone `SpessaSynth` into the directory.
 7. You now should have the following structure:
-    - your_folder
+    - your directory
         - spessasynth_core (your fork of it)
         - spessasynth_lib
         - SpessaSynth
 
 ### Start coding
 
-To test your changes, run `local-build`. This will create a `.tgz` file with the core package.
+To test your changes, run the `packed_libs.sh` file from `SpessaSynth`. This does three things:
 
-In spessasynth_lib: `npm uninstall spessasynth_core; npm install /path/to/your/file.tgz` then `local-build` as well.
+1. It builds your copy of `spessasynth_core`
+2. It builds your copy of `spessasynth_lib`, using your copy of `core`.
+3. It builds `SpessaSynth` using your copies of both the libraries.
 
-Then in SpessaSynth: `npm uninstall spessasynth_lib; npm install /path/to/your/file.tgz`
-
-!!! Tip
-
-    Consider making a shell script to automate this!
+You can keep the `npm start` script running during this. Once it's done, simply perform a hard reload in your browser (`Ctrl + Shift + R`)
 
 !!! Danger
 
