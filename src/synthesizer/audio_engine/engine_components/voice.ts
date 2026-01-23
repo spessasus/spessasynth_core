@@ -227,10 +227,13 @@ export class Voice {
     /**
      * Releases the voice as exclusiveClass.
      */
-    public exclusiveRelease(currentTime: number) {
+    public exclusiveRelease(
+        currentTime: number,
+        minExclusiveLength = MIN_EXCLUSIVE_LENGTH
+    ) {
         this.overrideReleaseVolEnv = EXCLUSIVE_CUTOFF_TIME; // Make the release nearly instant
         this.isInRelease = false;
-        this.releaseVoice(currentTime, MIN_EXCLUSIVE_LENGTH);
+        this.releaseVoice(currentTime, minExclusiveLength);
     }
 
     /**
