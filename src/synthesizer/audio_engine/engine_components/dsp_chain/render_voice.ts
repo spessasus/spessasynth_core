@@ -213,6 +213,16 @@ export function renderVoice(
         this.synthCore.masterParameters.interpolationType
     );
 
+    for (const v of bufferOut) {
+        if (!Number.isFinite(v)) {
+            console.log(voice.wavetable);
+            console.log(voice.sampleName);
+            console.log(voice.loopingMode);
+            console.log(voice.tuningRatio);
+            throw new TypeError(`Invalid sample for oscillator: ${v}`);
+        }
+    }
+
     if (!voice.active) return;
 
     // Low pass filter

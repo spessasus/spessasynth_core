@@ -142,6 +142,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.wavetable.sampleData = cached.sampleData;
         voice.wavetable.playbackStep = cached.playbackStep;
         voice.targetKey = cached.targetKey;
+        voice.sampleName = cached.sampleName;
 
         // Set modulators
         if (this.sysExModulators.modulatorList.length > 0) {

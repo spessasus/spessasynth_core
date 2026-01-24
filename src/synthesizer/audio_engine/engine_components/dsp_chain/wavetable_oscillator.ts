@@ -75,15 +75,14 @@ export class WavetableOscillator {
      */
     public getSampleLinear(outputBuffer: Float32Array, step: number) {
         const data = this.sampleData!;
-        const loopEnd = this.loopEnd;
-        const end = this.end;
-        const loopLength = this.loopLength;
+        const { loopEnd, loopLength, loopStart, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             for (let i = 0; i < outputBuffer.length; i++) {
                 // Check for loop
-                cursor -= cursor >= loopEnd ? loopLength : 0;
+                if (cursor > loopStart)
+                    cursor = loopStart + ((cursor - loopStart) % loopLength);
 
                 // Grab the 2 nearest points
                 const floor = Math.trunc(cursor);
@@ -134,15 +133,16 @@ export class WavetableOscillator {
      */
     public getSampleNearest(outputBuffer: Float32Array, step: number) {
         const sampleData = this.sampleData!;
-        const loopEnd = this.loopEnd;
-        const end = this.end;
-        const loopLength = this.loopLength;
+        const { loopLength, loopStart, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             for (let i = 0; i < outputBuffer.length; i++) {
                 // Check for loop
-                cursor -= cursor >= loopEnd ? loopLength : 0;
+                // Testcase for this type of loop checking: LiveHQ Classical Guitar finger off
+                // (5 long loop in mode 3)
+                if (cursor > loopStart)
+                    cursor = loopStart + ((cursor - loopStart) % loopLength);
 
                 // Grab the nearest neighbor
                 outputBuffer[i] = sampleData[Math.trunc(cursor)];
@@ -170,15 +170,14 @@ export class WavetableOscillator {
      */
     public getSampleHermite(outputBuffer: Float32Array, step: number) {
         const sampleData = this.sampleData!;
-        const loopEnd = this.loopEnd;
-        const end = this.end;
-        const loopLength = this.loopLength;
+        const { loopEnd, loopLength, loopStart, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             for (let i = 0; i < outputBuffer.length; i++) {
                 // Check for loop
-                cursor -= cursor >= loopEnd ? loopLength : 0;
+                if (cursor > loopStart)
+                    cursor = loopStart + ((cursor - loopStart) % loopLength);
 
                 // Grab the 4 points
                 const y0 = Math.trunc(cursor); // Point before the cursor.
