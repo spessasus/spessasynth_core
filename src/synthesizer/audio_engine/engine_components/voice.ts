@@ -15,6 +15,7 @@ import { AudioSample } from "./audio_sample";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
+const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
 
 /**
  * Voice represents a single instance of the
@@ -52,6 +53,11 @@ export class Voice {
      * The voice's modulators.
      */
     public modulators: Modulator[] = [];
+
+    /**
+     * The current values for the respective modulators.
+     */
+    public modulatorValues = new Int16Array(100);
 
     /**
      * Resonance offset, it is affected by the default resonant modulator
@@ -222,6 +228,56 @@ export class Voice {
             new Int16Array(voice.generators),
             voice.modulators.map(Modulator.copyFrom.bind(Modulator))
         );
+    }
+
+    /**
+     * Computes a given modulator
+     * @param controllerTable all midi controllers as 14bit values + the non-controller indexes, starting at 128
+     * @param modulatorIndex the modulator to compute
+     * @returns the computed value
+     */
+    public computeModulator(
+        this: Voice,
+        controllerTable: Int16Array,
+        modulatorIndex: number
+    ): number {
+        const modulator = this.modulators[modulatorIndex];
+        if (modulator.transformAmount === 0) {
+            this.modulatorValues[modulatorIndex] = 0;
+            return 0;
+        }
+        const sourceValue = modulator.primarySource.getValue(
+            controllerTable,
+            this
+        );
+        const secondSrcValue = modulator.secondarySource.getValue(
+            controllerTable,
+            this
+        );
+
+        // See the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
+        let transformAmount = modulator.transformAmount;
+        if (modulator.isEffectModulator && transformAmount <= 1000) {
+            transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;
+            transformAmount = Math.min(transformAmount, 1000);
+        }
+
+        // Compute the modulator
+        let computedValue = sourceValue * secondSrcValue * transformAmount;
+
+        if (modulator.transformType === 2) {
+            // Abs value
+            computedValue = Math.abs(computedValue);
+        }
+
+        // Resonant modulator: take its value and ensure that it won't change the final gain
+        if (modulator.isDefaultResonantModulator) {
+            // Half the gain, negates the filter
+            this.resonanceOffset = Math.max(0, computedValue / 2);
+        }
+
+        this.modulatorValues[modulatorIndex] = computedValue;
+        return computedValue;
     }
 
     /**
