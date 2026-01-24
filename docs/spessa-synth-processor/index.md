@@ -63,7 +63,7 @@ All `Float32Array`s must be the same length.
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
-    The sampleCount/audio buffer should not be longer than 256 samples.
+    `sampleCount` should be exactly 128 samples. If there are more, memory must be allocaed which could produce lag.
 
 !!! Tip
 
@@ -91,7 +91,7 @@ All `Float32Array`s must be the same length.
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
-    The sampleCount/audio buffer should not be longer than 256 samples.
+    `sampleCount` should be exactly 128 samples. If there are more, memory must be allocaed which could produce lag.
 
 !!! Tip
 
@@ -291,13 +291,9 @@ This returns all the master parameters as a type: value object.
 
 ### killVoices
 
-Kill (immediately stops without any fading) the specified number of voices based on their priority.
+!!! WARNING
 
-```ts
-synth.killVoices(amount);
-```
-
-- amount - the amount of voices to remove.
+    This method is deprecated and does nothing! Voice killing is done automatically.
 
 ### applySynthesizerSnapshot
 
