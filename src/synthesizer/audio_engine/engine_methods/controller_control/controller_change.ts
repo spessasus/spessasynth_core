@@ -56,6 +56,9 @@ export function controllerChange(
     // Interpret special CCs
     {
         switch (controllerNumber) {
+            // Channel mode messages
+            case midiControllers.omniModeOff:
+            case midiControllers.omniModeOn:
             case midiControllers.allNotesOff: {
                 this.stopAllNotes();
                 break;
@@ -63,6 +66,19 @@ export function controllerChange(
 
             case midiControllers.allSoundOff: {
                 this.stopAllNotes(true);
+                break;
+            }
+
+            case midiControllers.polyModeOn: {
+                this.stopAllNotes(true);
+                this.polyMode = true;
+
+                break;
+            }
+
+            case midiControllers.monoModeOn: {
+                this.stopAllNotes(true);
+                this.polyMode = false;
                 break;
             }
 

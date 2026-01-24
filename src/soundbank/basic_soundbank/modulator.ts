@@ -1,15 +1,6 @@
-import {
-    type GeneratorType,
-    generatorTypes,
-    MAX_GENERATOR
-} from "./generator_types";
+import { type GeneratorType, generatorTypes, MAX_GENERATOR } from "./generator_types";
 import type { ModulatorSourceIndex } from "../types";
-import {
-    type ModulatorCurveType,
-    modulatorCurveTypes,
-    modulatorSources,
-    type ModulatorTransformType
-} from "../enums";
+import { type ModulatorCurveType, modulatorCurveTypes, modulatorSources, type ModulatorTransformType } from "../enums";
 import { midiControllers } from "../../midi/enums";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { IndexedByteArray } from "../../utils/indexed_array";
@@ -48,11 +39,6 @@ const defaultResonantModSource = getModSourceEnum(
 ); // Linear forwards bipolar cc 74
 
 export class Modulator {
-    /**
-     * The current computed value of this modulator. Only used in the synthesis engine for local voices.
-     */
-    public currentValue = 0;
-
     /**
      * The generator destination of this modulator.
      */

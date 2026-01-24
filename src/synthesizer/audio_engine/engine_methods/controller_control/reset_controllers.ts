@@ -3,10 +3,7 @@ import {
     defaultMIDIControllerValues,
     NON_CC_INDEX_OFFSET
 } from "../../engine_components/controller_tables";
-import {
-    DEFAULT_PERCUSSION,
-    DEFAULT_SYNTH_MODE
-} from "../../engine_components/synth_constants";
+import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
@@ -145,6 +142,14 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
     this.randomPan = false;
 
+    // Reset to poly
+    if (
+        !this.lockedControllers[midiControllers.monoModeOn] &&
+        !this.lockedControllers[midiControllers.polyModeOn]
+    ) {
+        this.polyMode = true;
+    }
+
     // Reset pitch wheel
     this.pitchWheel(8192);
 
@@ -189,7 +194,9 @@ export const nonResettableCCs = new Set<MIDIController>([
     midiControllers.vibratoRate,
     midiControllers.vibratoDepth,
     midiControllers.vibratoDelay,
-    midiControllers.soundController10
+    midiControllers.soundController10,
+    midiControllers.polyModeOn,
+    midiControllers.monoModeOn
 ] as const);
 
 /**
