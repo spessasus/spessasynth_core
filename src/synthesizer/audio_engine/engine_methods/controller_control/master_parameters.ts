@@ -30,11 +30,14 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
         }
 
         case "voiceCap": {
-            if ((value as number) > this.voices.length) {
+            // Infinity is not allowed
+            const cap = Math.min(value as number, 1_000_000);
+            this.masterParameters.voiceCap = cap;
+            if (cap > this.voices.length) {
                 SpessaSynthWarn(
-                    `Allocating ${(value as number) - this.voices.length} new voices!`
+                    `Allocating ${cap - this.voices.length} new voices!`
                 );
-                for (let i = this.voices.length; i < (value as number); i++) {
+                for (let i = this.voices.length; i < cap; i++) {
                     this.voices.push(new Voice(this.sampleRate));
                 }
             }
