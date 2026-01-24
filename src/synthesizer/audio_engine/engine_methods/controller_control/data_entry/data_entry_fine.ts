@@ -1,15 +1,12 @@
-import { consoleColors } from "../../../../../utils/other";
-import { SpessaSynthInfo } from "../../../../../utils/loggin";
-import { NON_CC_INDEX_OFFSET } from "../../../engine_components/controller_tables";
-import {
-    nonRegisteredMSB,
-    registeredParameterTypes
-} from "./data_entry_coarse";
-import { handleAWE32NRPN } from "./awe32";
-import type { MIDIChannel } from "../../../engine_components/midi_channel";
-import { midiControllers } from "../../../../../midi/enums";
-import { customControllers, dataEntryStates } from "../../../../enums";
-import { modulatorSources } from "../../../../../soundbank/enums";
+import { consoleColors } from '../../../../../utils/other'
+import { SpessaSynthInfo } from '../../../../../utils/loggin'
+import { NON_CC_INDEX_OFFSET } from '../../../engine_components/controller_tables'
+import { nonRegisteredMSB, registeredParameterTypes } from './data_entry_coarse'
+import { handleAWE32NRPN } from './awe32'
+import type { MIDIChannel } from '../../../engine_components/midi_channel'
+import { midiControllers } from '../../../../../midi/enums'
+import { customControllers, dataEntryStates } from '../../../../enums'
+import { modulatorSources } from '../../../../../soundbank/enums'
 
 /**
  * Executes a data entry fine (LSB) change for the current channel.
@@ -51,7 +48,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                             7) +
                         dataValue / 128;
                     SpessaSynthInfo(
-                        `%cChannel ${this.channelNumber} pitch wheel range. Semitones: %c${actualTune}`,
+                        `%cChannel ${this.channel} pitch wheel range. Semitones: %c${actualTune}`,
                         consoleColors.info,
                         consoleColors.value
                     );
@@ -103,7 +100,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
             switch (NRPNCoarse) {
                 default: {
                     SpessaSynthInfo(
-                        `%cUnrecognized NRPN LSB for %c${this.channelNumber}%c: %c(0x${NRPNFine.toString(
+                        `%cUnrecognized NRPN LSB for %c${this.channel}%c: %c(0x${NRPNFine.toString(
                             16
                         ).toUpperCase()} 0x${NRPNFine.toString(
                             16

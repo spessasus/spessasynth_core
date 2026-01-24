@@ -1,12 +1,11 @@
 import { absCentsToHz, cbAttenuationToGain, timecentsToSeconds } from "../unit_converter";
 import { getLFOValue } from "./lfo";
-import { WavetableOscillator } from "./wavetable_oscillator";
-import { LowpassFilter } from "./lowpass_filter";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
+import { SpessaSynthWarn } from "../../../../utils/loggin";
 
 /**
  * Renders a voice to the stereo output buffer
@@ -20,7 +19,6 @@ import { midiControllers } from "../../../../midi/enums";
  * @param chorusOutputRight right output for chorus
  * @param startIndex
  * @param sampleCount
- * @returns true if the voice is finished
  */
 export function renderVoice(
     this: MIDIChannel,
@@ -34,7 +32,8 @@ export function renderVoice(
     chorusOutputRight: Float32Array,
     startIndex: number,
     sampleCount: number
-): boolean {
+) {
+    voice.hasRendered = true;
     // Check if release
     if (
         !voice.isInRelease && // If not in release, check if the release time is
@@ -44,8 +43,9 @@ export function renderVoice(
         voice.isInRelease = true;
         voice.volEnv.startRelease(voice);
         voice.modEnv.startRelease(voice);
-        if (voice.sample.loopingMode === 3) {
-            voice.sample.isLooping = false;
+        // Looping mode 3
+        if (voice.loopingMode === 3) {
+            voice.wavetable.isLooping = false;
         }
     }
 
@@ -61,7 +61,7 @@ export function renderVoice(
 
     // MIDI tuning standard
     const tuning =
-        this.synthProps.tunings[this.preset!.program * 128 + voice.realKey];
+        this.synthCore.tunings[this.preset!.program * 128 + voice.realKey];
     if (tuning !== -1) {
         // Tuning is encoded as float
         // For example: 60.56 means key 60 and 56 cents
@@ -85,7 +85,7 @@ export function renderVoice(
 
     // Calculate tuning by key using soundfont's scale tuning
     cents +=
-        (targetKey - voice.sample.rootKey) *
+        (targetKey - voice.rootKey) *
         voice.modulatedGenerators[generatorTypes.scaleTuning];
 
     // Low pass excursion with LFO and mod envelope
@@ -186,37 +186,45 @@ export function renderVoice(
 
     // Finally, calculate the playback rate
     const centsTotal = ~~(cents + semitones * 100);
-    if (centsTotal !== voice.currentTuningCents) {
-        voice.currentTuningCents = centsTotal;
-        voice.currentTuningCalculated = Math.pow(2, centsTotal / 1200);
+    if (centsTotal !== voice.tuningCents) {
+        voice.tuningCents = centsTotal;
+        voice.tuningRatio = Math.pow(2, centsTotal / 1200);
     }
 
     // SYNTHESIS
-    const bufferOut = new Float32Array(sampleCount);
+    if (voice.buffer.length !== sampleCount) {
+        SpessaSynthWarn(`Buffer size has changed from ${voice.buffer.length} to ${sampleCount}! 
+        This will cause a memory allocation!`);
+        voice.buffer = new Float32Array(sampleCount);
+    }
+    const bufferOut = voice.buffer;
+    bufferOut.fill(0);
 
     // Looping mode 2: start on release. process only volEnv
-    if (voice.sample.loopingMode === 2 && !voice.isInRelease) {
-        voice.volEnv.process(voice, bufferOut);
-        return voice.finished;
+    if (voice.loopingMode === 2 && !voice.isInRelease) {
+        voice.active = voice.volEnv.process(bufferOut);
+        return;
     }
 
     // Wave table oscillator
-    WavetableOscillator.process(
-        voice,
+    voice.active = voice.wavetable.process(
+        voice.tuningRatio,
         bufferOut,
-        this.synthProps.masterParameters.interpolationType
+        this.synthCore.masterParameters.interpolationType
     );
 
+    if (!voice.active) return;
+
     // Low pass filter
-    LowpassFilter.process(
+    voice.filter.process(
         voice,
         bufferOut,
         lowpassExcursion,
-        this.synthProps.filterSmoothingFactor
+        this.synthCore.filterSmoothingFactor
     );
 
     // Gain interpolation
-    const smoothing = this.synthProps.gainSmoothingFactor;
+    const smoothing = this.synthCore.gainSmoothingFactor;
     const gainTarget = cbAttenuationToGain(
         voice.modulatedGenerators[generatorTypes.initialAttenuation]
     );
@@ -227,7 +235,7 @@ export function renderVoice(
     }
 
     // Vol env
-    voice.volEnv.process(voice, bufferOut);
+    voice.active = voice.volEnv.process(bufferOut);
 
     this.panAndMixVoice(
         voice,
@@ -240,5 +248,4 @@ export function renderVoice(
         chorusOutputRight,
         startIndex
     );
-    return voice.finished;
 }

@@ -1,7 +1,4 @@
-import {
-    getStringBytes,
-    readBinaryString
-} from "../utils/byte_functions/string";
+import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import {
@@ -13,10 +10,7 @@ import {
 } from "../utils/loggin";
 import { consoleColors, formatTime } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
-import {
-    DEFAULT_RMIDI_WRITE_OPTIONS,
-    writeRMIDIInternal
-} from "./midi_tools/rmidi_writer";
+import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./midi_tools/rmidi_writer";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
@@ -33,10 +27,7 @@ import type {
     RMIDIWriteOptions,
     TempoChange
 } from "./types";
-import {
-    applySnapshotInternal,
-    modifyMIDIInternal
-} from "./midi_tools/midi_editor";
+import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes } from "./enums";
@@ -354,7 +345,7 @@ export class BasicMIDI {
             );
             for (const combo of combos) {
                 const [midiNote, velocity] = combo.split("-").map(Number);
-                synth.getVoicesForPreset(preset, midiNote, velocity, midiNote);
+                synth.getVoicesForPreset(preset, midiNote, velocity);
             }
         }
         SpessaSynthGroupEnd();

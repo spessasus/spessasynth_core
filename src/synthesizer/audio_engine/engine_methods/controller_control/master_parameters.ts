@@ -1,8 +1,7 @@
-import { SpessaSynthProcessor } from "../../../processor";
-import type {
-    MasterParameterChangeCallback,
-    MasterParameterType
-} from "../../../types";
+import type { MasterParameterChangeCallback, MasterParameterType } from "../../../types";
+import type { SynthesizerCore } from "../../synthesizer_core";
+import { SpessaSynthWarn } from "../../../../utils/loggin";
+import { Voice } from "../../engine_components/voice";
 
 /**
  * Sets a master parameter of the synthesizer.
@@ -10,19 +9,19 @@ import type {
  * @param value The value to set for the master parameter.
  */
 export function setMasterParameterInternal<P extends keyof MasterParameterType>(
-    this: SpessaSynthProcessor,
+    this: SynthesizerCore,
     parameter: P,
     value: MasterParameterType[P]
 ) {
-    this.privateProps.masterParameters[parameter] = value;
+    this.masterParameters[parameter] = value;
     // Additional handling for specific parameters
     switch (parameter) {
         case "masterPan": {
             let pan = value as number;
             // Clamp to 0-1 (0 is left)
             pan = pan / 2 + 0.5;
-            this.privateProps.panLeft = 1 - pan;
-            this.privateProps.panRight = pan;
+            this.panLeft = 1 - pan;
+            this.panRight = pan;
             break;
         }
 
@@ -31,6 +30,14 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
         }
 
         case "voiceCap": {
+            if ((value as number) > this.voices.length) {
+                SpessaSynthWarn(
+                    `Allocating ${(value as number) - this.voices.length} new voices!`
+                );
+                for (let i = this.voices.length; i < (value as number); i++) {
+                    this.voices.push(new Voice(this.sampleRate));
+                }
+            }
             break;
         }
 
@@ -49,11 +56,11 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
         case "transposition": {
             const semitones = value as number;
             // Reset transposition temporarily
-            this.privateProps.masterParameters.transposition = 0;
+            this.masterParameters.transposition = 0;
             for (const item of this.midiChannels) {
                 item.transposeChannel(semitones);
             }
-            this.privateProps.masterParameters.transposition = semitones;
+            this.masterParameters.transposition = semitones;
         }
     }
     this.callEvent("masterParameterChange", {
@@ -68,10 +75,10 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
  * @returns The value of the master parameter.
  */
 export function getMasterParameterInternal<P extends keyof MasterParameterType>(
-    this: SpessaSynthProcessor,
+    this: SynthesizerCore,
     type: P
 ): MasterParameterType[P] {
-    return this.privateProps.masterParameters[type];
+    return this.masterParameters[type];
 }
 
 /**
@@ -79,7 +86,7 @@ export function getMasterParameterInternal<P extends keyof MasterParameterType>(
  * @returns All the master parameters.
  */
 export function getAllMasterParametersInternal(
-    this: SpessaSynthProcessor
+    this: SynthesizerCore
 ): MasterParameterType {
-    return { ...this.privateProps.masterParameters };
+    return { ...this.masterParameters };
 }

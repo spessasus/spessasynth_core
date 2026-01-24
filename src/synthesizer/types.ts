@@ -1,9 +1,9 @@
-import type { Voice } from "./audio_engine/engine_components/voice";
 import type { InterpolationType } from "./enums";
 import type {
     MIDIPatch,
     MIDIPatchNamed
 } from "../soundbank/basic_soundbank/midi_patch";
+import type { CachedVoice } from "./audio_engine/engine_components/voice_cache";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
@@ -242,7 +242,7 @@ export type SampleLoopingMode = 0 | 1 | 2 | 3;
 /**
  * A list of voices for a given key:velocity.
  */
-export type VoiceList = Voice[];
+export type CachedVoiceList = CachedVoice[];
 
 export interface ChannelProperty {
     /**

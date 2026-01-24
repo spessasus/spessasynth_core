@@ -67,28 +67,28 @@ export function panAndMixVoice(
         // Smooth out pan to prevent clicking
         voice.currentPan +=
             (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
-            this.synthProps.panSmoothingFactor;
+            this.synthCore.panSmoothingFactor;
         pan = voice.currentPan;
     }
 
     const gain =
-        this.synthProps.masterParameters.masterGain *
-        this.synthProps.midiVolume *
+        this.synthCore.masterParameters.masterGain *
+        this.synthCore.midiVolume *
         voice.gainModifier;
     const index = ~~(pan + 500);
     // Get voice's gain levels for each channel
-    const gainLeft = panTableLeft[index] * gain * this.synthProps.panLeft;
-    const gainRight = panTableRight[index] * gain * this.synthProps.panRight;
+    const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
+    const gainRight = panTableRight[index] * gain * this.synthCore.panRight;
 
     // Disable reverb and chorus if necessary
-    if (this.synth.enableEffects) {
+    if (this.synthCore.enableEffects) {
         const reverbSend =
             voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
         if (reverbSend > 0) {
             // Reverb is mono so we need to multiply by gain
             const reverbGain =
-                this.synthProps.masterParameters.reverbGain *
-                this.synthProps.reverbSend *
+                this.synthCore.masterParameters.reverbGain *
+                this.synthCore.reverbSend *
                 gain *
                 (reverbSend / REVERB_DIVIDER);
             for (let i = 0; i < inputBuffer.length; i++) {
@@ -103,8 +103,8 @@ export function panAndMixVoice(
         if (chorusSend > 0) {
             // Chorus is stereo so we do not need to
             const chorusGain =
-                this.synthProps.masterParameters.chorusGain *
-                this.synthProps.chorusSend *
+                this.synthCore.masterParameters.chorusGain *
+                this.synthCore.chorusSend *
                 (chorusSend / CHORUS_DIVIDER);
             const chorusLeftGain = gainLeft * chorusGain;
             const chorusRightGain = gainRight * chorusGain;

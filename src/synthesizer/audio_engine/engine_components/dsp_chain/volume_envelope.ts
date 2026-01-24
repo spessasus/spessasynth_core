@@ -109,10 +109,10 @@ export class VolumeEnvelope {
     /**
      * Applies volume envelope gain to the given output buffer.
      * Essentially we use approach of 100dB is silence, 0dB is peak, and always add attenuation to that (which is interpolated).
-     * @param voice the voice we're working on
      * @param buffer the audio buffer to modify
+     * @returns if the voice is still active
      */
-    public process(voice: Voice, buffer: Float32Array) {
+    public process(buffer: Float32Array): boolean {
         // RELEASE PHASE
         if (this.enteredRelease) {
             // How much time has passed since release was started?
@@ -122,8 +122,7 @@ export class VolumeEnvelope {
                 for (let i = 0; i < buffer.length; i++) {
                     buffer[i] = 0;
                 }
-                voice.finished = true;
-                return;
+                return false;
             }
             const cbDifference = CB_SILENCE - this.releaseStartCb;
             for (let i = 0; i < buffer.length; i++) {
@@ -137,10 +136,7 @@ export class VolumeEnvelope {
                 elapsedRelease++;
             }
 
-            if (this.attenuationCb >= PERCEIVED_CB_SILENCE) {
-                voice.finished = true;
-            }
-            return;
+            return this.attenuationCb < PERCEIVED_CB_SILENCE;
         }
 
         let filledBuffer = 0;
@@ -155,7 +151,7 @@ export class VolumeEnvelope {
 
                     this.sampleTime++;
                     if (++filledBuffer >= buffer.length) {
-                        return;
+                        return true;
                     }
                 }
                 this.state++;
@@ -178,7 +174,7 @@ export class VolumeEnvelope {
 
                     this.sampleTime++;
                     if (++filledBuffer >= buffer.length) {
-                        return;
+                        return true;
                     }
                 }
                 this.state++;
@@ -195,7 +191,7 @@ export class VolumeEnvelope {
 
                     this.sampleTime++;
                     if (++filledBuffer >= buffer.length) {
-                        return;
+                        return true;
                     }
                 }
                 this.state++;
@@ -219,7 +215,7 @@ export class VolumeEnvelope {
 
                     this.sampleTime++;
                     if (++filledBuffer >= buffer.length) {
-                        return;
+                        return true;
                     }
                 }
                 this.state++;
@@ -231,7 +227,7 @@ export class VolumeEnvelope {
                     this.canEndOnSilentSustain &&
                     this.sustainCb >= PERCEIVED_CB_SILENCE
                 ) {
-                    voice.finished = true;
+                    return false;
                 }
                 // Sustain phase: stay at sustain
                 while (true) {
@@ -242,7 +238,7 @@ export class VolumeEnvelope {
                     buffer[filledBuffer] *= this.sustainGain;
                     this.sampleTime++;
                     if (++filledBuffer >= buffer.length) {
-                        return;
+                        return true;
                     }
                 }
             }
@@ -346,7 +342,7 @@ export class VolumeEnvelope {
         this.releaseDuration *= releaseFraction;
         // Sanity check
         if (this.releaseStartCb >= PERCEIVED_CB_SILENCE) {
-            voice.finished = true;
+            voice.active = false;
         }
     }
 
@@ -355,6 +351,9 @@ export class VolumeEnvelope {
      * @param voice The voice this envelope belongs to
      */
     public init(voice: Voice) {
+        this.enteredRelease = false;
+        this.state = 0;
+        this.sampleTime = 0;
         this.canEndOnSilentSustain =
             voice.modulatedGenerators[generatorTypes.sustainVolEnv] >=
             PERCEIVED_CB_SILENCE;
