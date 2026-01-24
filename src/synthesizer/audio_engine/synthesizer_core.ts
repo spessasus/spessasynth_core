@@ -729,7 +729,7 @@ export class SynthesizerCore {
             if (voice.isInRelease) {
                 voice.priority -= 5;
             }
-            voice.priority -= voice.volEnv.attenuationCb / 500;
+            voice.priority -= voice.volEnv.attenuationCb / 200;
         }
     }
 
