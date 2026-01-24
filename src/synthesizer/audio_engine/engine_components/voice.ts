@@ -57,7 +57,7 @@ export class Voice {
     /**
      * The current values for the respective modulators.
      */
-    public modulatorValues = new Int16Array(100);
+    public modulatorValues: Int16Array;
 
     /**
      * Resonance offset, it is affected by the default resonant modulator
@@ -200,6 +200,7 @@ export class Voice {
         this.targetKey = targetKey;
         this.realKey = realKey;
         this.volEnv = new VolumeEnvelope(sampleRate);
+        this.modulatorValues = new Int16Array(modulators.length);
     }
 
     /**
