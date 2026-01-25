@@ -16,6 +16,9 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 // Lowered from 0.1 to 0.03
 export const FILTER_SMOOTHING_FACTOR = 0.03;
 
+// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+const GAIN_SMOOTHING_FACTOR = 0.01;
+
 // Represents a single cached coefficient.
 interface CachedCoefficient {
     // Filter coefficient 1.
@@ -106,6 +109,8 @@ export class LowpassFilter {
      */
     private readonly smoothingConstant: number;
 
+    private readonly gainSmoothing: number;
+
     /**
      * Initializes a new instance of the filter.
      * @param sampleRate the sample rate of the audio engine in Hz.
@@ -115,6 +120,7 @@ export class LowpassFilter {
         this.maxCutoff = sampleRate * 0.45;
         this.smoothingConstant =
             FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
+        this.gainSmoothing = GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
     }
 
     public static initCache(sampleRate: number) {
@@ -148,12 +154,14 @@ export class LowpassFilter {
      * Applies the lowpass filter to the output buffer of a voice.
      * @param voice The voice to apply the filter to.
      * @param outputBuffer The output buffer to filter.
-     * @param fcExcursion The frequency excursion in cents to apply to the filter.
+     * @param fcOffset The frequency excursion in cents to apply to the filter.
+     * @param gainOffset The gain offset to apply.
      */
     public process(
         voice: Voice,
         outputBuffer: Float32Array,
-        fcExcursion: number
+        fcOffset: number,
+        gainOffset: number
     ) {
         const initialFc =
             voice.modulatedGenerators[generatorTypes.initialFilterFc];
@@ -171,8 +179,15 @@ export class LowpassFilter {
             this.currentInitialFc = initialFc;
         }
 
+        // Gain smoothing
+        // It is integrated into the filter because it's faster that way
+        const gainTarget = cbAttenuationToGain(
+            voice.modulatedGenerators[generatorTypes.initialAttenuation]
+        );
+        const smoothing = this.gainSmoothing;
+
         // The final cutoff for this calculation
-        const targetCutoff = this.currentInitialFc + fcExcursion;
+        const targetCutoff = this.currentInitialFc + fcOffset;
         const modulatedResonance =
             voice.modulatedGenerators[generatorTypes.initialFilterQ];
         /* Note:
@@ -187,6 +202,13 @@ export class LowpassFilter {
             modulatedResonance === 0
         ) {
             this.currentInitialFc = 13_500;
+            // Gain smoothing goes here as well
+            for (let i = 0; i < outputBuffer.length; i++) {
+                // Gain smoothing
+                voice.currentGain +=
+                    (gainTarget - voice.currentGain) * smoothing;
+                outputBuffer[i] *= voice.currentGain * gainOffset;
+            }
             return; // Filter is open
         }
 
@@ -217,7 +239,9 @@ export class LowpassFilter {
             this.y2 = this.y1;
             this.y1 = filtered;
 
-            outputBuffer[i] = filtered;
+            // Gain smoothing
+            voice.currentGain += (gainTarget - voice.currentGain) * smoothing;
+            outputBuffer[i] = filtered * voice.currentGain * gainOffset;
         }
     }
 

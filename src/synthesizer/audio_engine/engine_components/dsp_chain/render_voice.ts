@@ -211,18 +211,12 @@ export function renderVoice(
     if (!voice.active) return;
 
     // Low pass filter
-    voice.filter.process(voice, bufferOut, lowpassExcursion);
-
-    // Gain interpolation
-    const smoothing = this.synthCore.gainSmoothingFactor;
-    const gainTarget = cbAttenuationToGain(
-        voice.modulatedGenerators[generatorTypes.initialAttenuation]
+    voice.filter.process(
+        voice,
+        bufferOut,
+        lowpassExcursion,
+        cbAttenuationToGain(volumeExcursionCentibels)
     );
-    const gainOffset = cbAttenuationToGain(volumeExcursionCentibels);
-    for (let i = 0; i < bufferOut.length; i++) {
-        voice.currentGain += (gainTarget - voice.currentGain) * smoothing;
-        bufferOut[i] *= voice.currentGain * gainOffset;
-    }
 
     // Vol env
     voice.active = voice.volEnv.process(bufferOut);
