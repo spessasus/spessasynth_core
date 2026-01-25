@@ -7,8 +7,6 @@ import {
     MIDI_CHANNEL_COUNT
 } from "./audio_engine/engine_components/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { PAN_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/stereo_panner";
-import { FILTER_SMOOTHING_FACTOR } from "./audio_engine/engine_components/dsp_chain/lowpass_filter";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
@@ -30,9 +28,6 @@ import type { SysExAcceptedArray } from "./audio_engine/engine_methods/system_ex
  * Processor.ts
  * purpose: the core synthesis engine
  */
-
-// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
-const GAIN_SMOOTHING_FACTOR = 0.01;
 
 // The core synthesis engine of spessasynth.
 export class SpessaSynthProcessor {
@@ -86,14 +81,7 @@ export class SpessaSynthProcessor {
         this.synthCore = new SynthesizerCore(
             this.callEvent.bind(this),
             this.sampleRate,
-            options,
-            // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
-            // Volume envelope smoothing factor
-            GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate),
-            // Pan smoothing factor
-            PAN_SMOOTHING_FACTOR * (44_100 / sampleRate),
-            // Filter smoothing factor
-            FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate)
+            options
         );
 
         for (let i = 0; i < MIDI_CHANNEL_COUNT; i++) {

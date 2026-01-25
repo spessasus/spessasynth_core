@@ -134,6 +134,12 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             realKey
         );
 
+        // Select the correct oscillator
+        voice.wavetable =
+            voice.oscillators[
+                this.synthCore.masterParameters.interpolationType
+            ];
+
         // Set cached data
         voice.generators.set(cached.generators);
         voice.exclusiveClass = cached.exclusiveClass;

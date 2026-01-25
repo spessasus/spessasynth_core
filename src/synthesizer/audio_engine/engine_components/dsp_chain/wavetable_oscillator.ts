@@ -1,11 +1,9 @@
-import { type InterpolationType, interpolationTypes } from "../../../enums";
-
 /**
  * Wavetable_oscillator.ts
  * purpose: plays back raw audio data at an arbitrary playback rate
  */
 
-export class WavetableOscillator {
+export abstract class WavetableOscillator {
     /**
      * Is the loop on?
      */
@@ -44,36 +42,16 @@ export class WavetableOscillator {
      * Fills the output buffer with raw sample data using a given interpolation.
      * @param tuningRatio the tuning ratio to apply.
      * @param outputBuffer The output buffer to write to.
-     * @param interpolation The interpolation type.
-     * @return true if the voice is still active.
      */
-    public process(
+    public abstract process(
         tuningRatio: number,
-        outputBuffer: Float32Array,
-        interpolation: InterpolationType
-    ): boolean {
+        outputBuffer: Float32Array
+    ): boolean;
+}
+
+export class NearestOscillator extends WavetableOscillator {
+    public process(tuningRatio: number, outputBuffer: Float32Array): boolean {
         const step = tuningRatio * this.playbackStep;
-        switch (interpolation) {
-            case interpolationTypes.hermite: {
-                return this.getSampleHermite(outputBuffer, step);
-            }
-
-            case interpolationTypes.nearestNeighbor: {
-                return this.getSampleNearest(outputBuffer, step);
-            }
-
-            default: {
-                return this.getSampleLinear(outputBuffer, step);
-            }
-        }
-    }
-
-    /**
-     * Fills the output buffer with raw sample data using linear interpolation.
-     * @param outputBuffer The output buffer to write to.
-     * @param step The step to advance every sample (playback rate).
-     */
-    public getSampleLinear(outputBuffer: Float32Array, step: number) {
         const data = this.sampleData!;
         const { loopEnd, loopLength, loopStart, end } = this;
         let cursor = this.cursor;
@@ -125,13 +103,11 @@ export class WavetableOscillator {
         this.cursor = cursor;
         return true;
     }
+}
 
-    /**
-     * Fills the output buffer with raw sample data using no interpolation (nearest neighbor).
-     * @param outputBuffer The output buffer to write to.
-     * @param step The step to advance every sample (playback rate).
-     */
-    public getSampleNearest(outputBuffer: Float32Array, step: number) {
+export class LinearOscillator extends WavetableOscillator {
+    public process(tuningRatio: number, outputBuffer: Float32Array): boolean {
+        const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
         const { loopLength, loopStart, end } = this;
         let cursor = this.cursor;
@@ -162,13 +138,11 @@ export class WavetableOscillator {
         this.cursor = cursor;
         return true;
     }
+}
 
-    /**
-     * Fills the output buffer with raw sample data using Hermite interpolation.
-     * @param outputBuffer The output buffer to write to.
-     * @param step The step to advance every sample (playback rate).
-     */
-    public getSampleHermite(outputBuffer: Float32Array, step: number) {
+export class HermiteOscillator extends WavetableOscillator {
+    public process(tuningRatio: number, outputBuffer: Float32Array): boolean {
+        const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
         const { loopEnd, loopLength, loopStart, end } = this;
         let cursor = this.cursor;

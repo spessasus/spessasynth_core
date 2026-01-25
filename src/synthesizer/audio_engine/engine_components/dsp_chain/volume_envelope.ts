@@ -117,13 +117,6 @@ export class VolumeEnvelope {
         if (this.enteredRelease) {
             // How much time has passed since release was started?
             let elapsedRelease = this.sampleTime - this.releaseStartTimeSamples;
-            if (elapsedRelease >= this.releaseDuration) {
-                // Release has finished and so has the voice!
-                for (let i = 0; i < buffer.length; i++) {
-                    buffer[i] = 0;
-                }
-                return false;
-            }
             const cbDifference = CB_SILENCE - this.releaseStartCb;
             for (let i = 0; i < buffer.length; i++) {
                 // Linearly ramp down decibels

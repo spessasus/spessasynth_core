@@ -9,7 +9,14 @@ import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode } from "../../types";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
-import { WavetableOscillator } from "./dsp_chain/wavetable_oscillator";
+import {
+    HermiteOscillator,
+    LinearOscillator,
+    NearestOscillator,
+    WavetableOscillator
+} from "./dsp_chain/wavetable_oscillator";
+import { type InterpolationType } from "../../enums";
+import { DEFAULT_MASTER_PARAMETERS } from "./master_parameters";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
@@ -26,7 +33,23 @@ const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
  * And MIDI params such as channel, MIDI note, velocity
  */
 export class Voice {
-    public readonly wavetable = new WavetableOscillator();
+    /**
+     * All oscillators currently available to the voice.
+     */
+    public readonly oscillators: Record<
+        InterpolationType,
+        WavetableOscillator
+    > = [
+        new LinearOscillator(),
+        new NearestOscillator(),
+        new HermiteOscillator()
+    ];
+
+    /**
+     * The oscillator currently used by this voice.
+     */
+    public wavetable: WavetableOscillator =
+        this.oscillators[DEFAULT_MASTER_PARAMETERS.interpolationType];
 
     /**
      * Looping mode of the sample:

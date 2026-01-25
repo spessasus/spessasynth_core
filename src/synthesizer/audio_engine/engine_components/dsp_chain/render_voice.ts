@@ -185,7 +185,7 @@ export function renderVoice(
     volumeExcursionCentibels -= voice.resonanceOffset;
 
     // Finally, calculate the playback rate
-    const centsTotal = ~~(cents + semitones * 100);
+    const centsTotal = (cents + semitones * 100) | 0;
     if (centsTotal !== voice.tuningCents) {
         voice.tuningCents = centsTotal;
         voice.tuningRatio = Math.pow(2, centsTotal / 1200);
@@ -206,21 +206,12 @@ export function renderVoice(
     }
 
     // Wave table oscillator
-    voice.active = voice.wavetable.process(
-        voice.tuningRatio,
-        bufferOut,
-        this.synthCore.masterParameters.interpolationType
-    );
+    voice.active = voice.wavetable.process(voice.tuningRatio, bufferOut);
 
     if (!voice.active) return;
 
     // Low pass filter
-    voice.filter.process(
-        voice,
-        bufferOut,
-        lowpassExcursion,
-        this.synthCore.filterSmoothingFactor
-    );
+    voice.filter.process(voice, bufferOut, lowpassExcursion);
 
     // Gain interpolation
     const smoothing = this.synthCore.gainSmoothingFactor;

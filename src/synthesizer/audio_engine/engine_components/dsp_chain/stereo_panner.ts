@@ -75,7 +75,7 @@ export function panAndMixVoice(
         this.synthCore.masterParameters.masterGain *
         this.synthCore.midiVolume *
         voice.gainModifier;
-    const index = ~~(pan + 500);
+    const index = (pan + 500) | 0;
     // Get voice's gain levels for each channel
     const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
     const gainRight = panTableRight[index] * gain * this.synthCore.panRight;

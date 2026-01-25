@@ -24,12 +24,19 @@ import {
 } from "./engine_methods/controller_control/master_parameters";
 import { systemExclusiveInternal } from "./engine_methods/system_exclusive";
 import { getEvent } from "../../midi/midi_message";
-import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../../midi/enums";
+import {
+    type MIDIController,
+    type MIDIMessageType,
+    midiMessageTypes
+} from "../../midi/enums";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import { NON_CC_INDEX_OFFSET } from "../exports";
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
+import { PAN_SMOOTHING_FACTOR } from "./engine_components/dsp_chain/stereo_panner";
 
+// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+const GAIN_SMOOTHING_FACTOR = 0.01;
 /**
  * The core synthesis engine which interacts with channels and holds all the synth parameters.
  */
@@ -119,10 +126,6 @@ export class SynthesizerCore {
      */
     public readonly panSmoothingFactor: number;
     /**
-     * Filter smoothing factor, adjusted to the sample rate.
-     */
-    public readonly filterSmoothingFactor: number;
-    /**
      * Calls when an event occurs.
      * @param eventType The event type.
      * @param eventData The event data.
@@ -185,10 +188,7 @@ export class SynthesizerCore {
             eventData: SynthProcessorEventData[K]
         ) => unknown,
         sampleRate: number,
-        options: SynthProcessorOptions,
-        gainSmoothingFactor: number,
-        panSmoothingFactor: number,
-        filterSmoothingFactor: number
+        options: SynthProcessorOptions
     ) {
         this.eventCallbackHandler = eventCallbackHandler;
         this.sampleRate = sampleRate;
@@ -196,9 +196,12 @@ export class SynthesizerCore {
         this.currentTime = options.initialTime;
         this.enableEffects = options.enableEffects;
         this.enableEventSystem = options.enableEventSystem;
-        this.gainSmoothingFactor = gainSmoothingFactor;
-        this.panSmoothingFactor = panSmoothingFactor;
-        this.filterSmoothingFactor = filterSmoothingFactor;
+        // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
+        // Volume  smoothing factor
+        this.gainSmoothingFactor =
+            GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
+        // Pan smoothing factor
+        this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44_100 / sampleRate);
         LowpassFilter.initCache(this.sampleRate);
 
         // Initialize voices

@@ -102,12 +102,19 @@ export class LowpassFilter {
     private readonly maxCutoff: number;
 
     /**
+     * For smoothing the filter cutoff frequency.
+     */
+    private readonly smoothingConstant: number;
+
+    /**
      * Initializes a new instance of the filter.
      * @param sampleRate the sample rate of the audio engine in Hz.
      */
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
+        this.smoothingConstant =
+            FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
     }
 
     public static initCache(sampleRate: number) {
@@ -142,13 +149,11 @@ export class LowpassFilter {
      * @param voice The voice to apply the filter to.
      * @param outputBuffer The output buffer to filter.
      * @param fcExcursion The frequency excursion in cents to apply to the filter.
-     * @param smoothingFactor The smoothing factor for the filter as determined by the parent synthesizer.
      */
     public process(
         voice: Voice,
         outputBuffer: Float32Array,
-        fcExcursion: number,
-        smoothingFactor: number
+        fcExcursion: number
     ) {
         const initialFc =
             voice.modulatedGenerators[generatorTypes.initialFilterFc];
@@ -159,7 +164,7 @@ export class LowpassFilter {
              * the modulation envelope and LFO excursions are not smoothed.
              */
             this.currentInitialFc +=
-                (initialFc - this.currentInitialFc) * smoothingFactor;
+                (initialFc - this.currentInitialFc) * this.smoothingConstant;
         } else {
             // Filter initialization, set the current fc to target
             this.initialized = true;
@@ -221,7 +226,7 @@ export class LowpassFilter {
      * @param cutoffCents The cutoff frequency in cents.
      */
     public calculateCoefficients(cutoffCents: number) {
-        cutoffCents = ~~cutoffCents; // Math.floor
+        cutoffCents = cutoffCents | 0; // Math.floor
         const qCb = this.resonanceCb;
         // Check if these coefficients were already cached
         const cached = LowpassFilter.cachedCoefficients.get(
