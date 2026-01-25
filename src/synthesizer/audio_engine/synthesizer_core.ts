@@ -28,6 +28,7 @@ import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import { NON_CC_INDEX_OFFSET } from "../exports";
+import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
 
 /**
  * The core synthesis engine which interacts with channels and holds all the synth parameters.
@@ -198,6 +199,7 @@ export class SynthesizerCore {
         this.gainSmoothingFactor = gainSmoothingFactor;
         this.panSmoothingFactor = panSmoothingFactor;
         this.filterSmoothingFactor = filterSmoothingFactor;
+        LowpassFilter.initCache(this.sampleRate);
 
         // Initialize voices
         this.voices = [];

@@ -33,9 +33,9 @@ interface CachedCoefficient {
 export class LowpassFilter {
     /**
      * Cached coefficient calculations.
-     * stored as cachedCoefficients[resonanceCb][currentInitialFc].
+     * stored as cachedCoefficients[resonanceCb + currentInitialFc * 961].
      */
-    private static cachedCoefficients: CachedCoefficient[][] = [];
+    private static cachedCoefficients = new Map<number, CachedCoefficient>();
     /**
      * Resonance in centibels.
      */
@@ -108,6 +108,17 @@ export class LowpassFilter {
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
+    }
+
+    public static initCache(sampleRate: number) {
+        // Precompute all the cutoffs for 0q (most common)
+        const dummy = new LowpassFilter(sampleRate);
+        dummy.resonanceCb = 0;
+        // Sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
+        for (let i = 1500; i < 13_500; i++) {
+            dummy.currentInitialFc = i;
+            dummy.calculateCoefficients(i);
+        }
     }
 
     public init() {
@@ -213,7 +224,9 @@ export class LowpassFilter {
         cutoffCents = ~~cutoffCents; // Math.floor
         const qCb = this.resonanceCb;
         // Check if these coefficients were already cached
-        const cached = LowpassFilter.cachedCoefficients?.[qCb]?.[cutoffCents];
+        const cached = LowpassFilter.cachedCoefficients.get(
+            qCb + cutoffCents * 961
+        );
         if (cached !== undefined) {
             this.a0 = cached.a0;
             this.a1 = cached.a1;
@@ -262,17 +275,7 @@ export class LowpassFilter {
         this.a3 = toCache.a3;
         this.a4 = toCache.a4;
 
-        LowpassFilter.cachedCoefficients[qCb] ??= [];
         // Cache the coefficients
-        LowpassFilter.cachedCoefficients[qCb][cutoffCents] = toCache;
+        LowpassFilter.cachedCoefficients.set(qCb + cutoffCents * 961, toCache);
     }
-}
-
-// Precompute all the cutoffs for 0q (most common)
-const dummy = new LowpassFilter(44_100);
-dummy.resonanceCb = 0;
-// Sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
-for (let i = 1500; i < 13_500; i++) {
-    dummy.currentInitialFc = i;
-    dummy.calculateCoefficients(i);
 }
