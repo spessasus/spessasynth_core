@@ -198,7 +198,6 @@ export function renderVoice(
         voice.buffer = new Float32Array(sampleCount);
     }
     const bufferOut = voice.buffer;
-    bufferOut.fill(0);
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
@@ -212,16 +211,6 @@ export function renderVoice(
         bufferOut,
         this.synthCore.masterParameters.interpolationType
     );
-
-    for (const v of bufferOut) {
-        if (!Number.isFinite(v)) {
-            console.log(voice.wavetable);
-            console.log(voice.sampleName);
-            console.log(voice.loopingMode);
-            console.log(voice.tuningRatio);
-            throw new TypeError(`Invalid sample for oscillator: ${v}`);
-        }
-    }
 
     if (!voice.active) return;
 
