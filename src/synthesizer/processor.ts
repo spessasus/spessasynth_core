@@ -45,6 +45,28 @@ export class SpessaSynthProcessor {
      * @param event The event that occurred.
      */
     public onEventCall?: (event: SynthProcessorEvent) => unknown;
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
+     * All float arrays must have the same length.
+     * @param outputs output stereo channels (L, R).
+     * @param reverb reverb stereo channels (L, R).
+     * @param chorus chorus stereo channels (L, R).
+     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
+     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     */
+    public readonly renderAudio: typeof this.synthCore.renderAudio;
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Renders the float32 audio data of each channel; buffer size of 128 is recommended.
+     * All float arrays must have the same length.
+     * @param reverbChannels reverb stereo channels (L, R).
+     * @param chorusChannels chorus stereo channels (L, R).
+     * @param separateChannels a total of 16 stereo pairs (L, R) for each MIDI channel.
+     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
+     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     */
+    public readonly renderAudioSplit: typeof this.synthCore.renderAudioSplit;
     /**
      * Core synthesis engine.
      */
@@ -82,6 +104,12 @@ export class SpessaSynthProcessor {
             this.callEvent.bind(this),
             this.sampleRate,
             options
+        );
+
+        // Bind rendering methods for less overhead
+        this.renderAudio = this.synthCore.renderAudio.bind(this.synthCore);
+        this.renderAudioSplit = this.synthCore.renderAudioSplit.bind(
+            this.synthCore
         );
 
         for (let i = 0; i < MIDI_CHANNEL_COUNT; i++) {
@@ -135,6 +163,7 @@ export class SpessaSynthProcessor {
         return this.synthCore.midiChannels;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Current total amount of voices that are currently playing.
      */
@@ -286,58 +315,6 @@ export class SpessaSynthProcessor {
      */
     public stopAllChannels(force = false) {
         this.synthCore.stopAllChannels(force);
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
-     * All float arrays must have the same length.
-     * @param outputs output stereo channels (L, R).
-     * @param reverb reverb stereo channels (L, R).
-     * @param chorus chorus stereo channels (L, R).
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     */
-    public renderAudio(
-        outputs: Float32Array[],
-        reverb: Float32Array[],
-        chorus: Float32Array[],
-        startIndex = 0,
-        sampleCount = 0
-    ) {
-        this.synthCore.renderAudio(
-            outputs,
-            reverb,
-            chorus,
-            startIndex,
-            sampleCount
-        );
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Renders the float32 audio data of each channel; buffer size of 128 is recommended.
-     * All float arrays must have the same length.
-     * @param reverbChannels reverb stereo channels (L, R).
-     * @param chorusChannels chorus stereo channels (L, R).
-     * @param separateChannels a total of 16 stereo pairs (L, R) for each MIDI channel.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     */
-    public renderAudioSplit(
-        reverbChannels: Float32Array[],
-        chorusChannels: Float32Array[],
-        separateChannels: Float32Array[][],
-        startIndex = 0,
-        sampleCount = 0
-    ) {
-        this.synthCore.renderAudioSplit(
-            reverbChannels,
-            chorusChannels,
-            separateChannels,
-            startIndex,
-            sampleCount
-        );
     }
 
     // noinspection JSUnusedGlobalSymbols

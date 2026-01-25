@@ -11,12 +11,12 @@ import { SpessaSynthWarn } from "../../../../utils/loggin";
  * Renders a voice to the stereo output buffer
  * @param voice the voice to render
  * @param timeNow current time in seconds
- * @param outputLeft the left output buffer
- * @param outputRight the right output buffer
- * @param reverbOutputLeft left output for reverb
- * @param reverbOutputRight right output for reverb
- * @param chorusOutputLeft left output for chorus
- * @param chorusOutputRight right output for chorus
+ * @param outputL the left output buffer
+ * @param outputR the right output buffer
+ * @param reverbL left output for reverb
+ * @param reverbR right output for reverb
+ * @param chorusL left output for chorus
+ * @param chorusR right output for chorus
  * @param startIndex
  * @param sampleCount
  */
@@ -24,16 +24,15 @@ export function renderVoice(
     this: MIDIChannel,
     voice: Voice,
     timeNow: number,
-    outputLeft: Float32Array,
-    outputRight: Float32Array,
-    reverbOutputLeft: Float32Array,
-    reverbOutputRight: Float32Array,
-    chorusOutputLeft: Float32Array,
-    chorusOutputRight: Float32Array,
+    outputL: Float32Array,
+    outputR: Float32Array,
+    reverbL: Float32Array,
+    reverbR: Float32Array,
+    chorusL: Float32Array,
+    chorusR: Float32Array,
     startIndex: number,
     sampleCount: number
 ) {
-    voice.hasRendered = true;
     // Check if release
     if (
         !voice.isInRelease && // If not in release, check if the release time is
@@ -48,6 +47,7 @@ export function renderVoice(
             voice.wavetable.isLooping = false;
         }
     }
+    voice.hasRendered = true;
 
     // TUNING
     let targetKey = voice.targetKey;
@@ -197,39 +197,39 @@ export function renderVoice(
         This will cause a memory allocation!`);
         voice.buffer = new Float32Array(sampleCount);
     }
-    const bufferOut = voice.buffer;
+    const buffer = voice.buffer;
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.active = voice.volEnv.process(bufferOut);
+        voice.active = voice.volEnv.process(buffer);
         return;
     }
 
     // Wave table oscillator
-    voice.active = voice.wavetable.process(voice.tuningRatio, bufferOut);
+    voice.active = voice.wavetable.process(voice.tuningRatio, buffer);
 
     if (!voice.active) return;
 
     // Low pass filter
     voice.filter.process(
         voice,
-        bufferOut,
+        buffer,
         lowpassExcursion,
         cbAttenuationToGain(volumeExcursionCentibels)
     );
 
     // Vol env
-    voice.active = voice.volEnv.process(bufferOut);
+    voice.active = voice.volEnv.process(buffer);
 
     this.panAndMixVoice(
         voice,
-        bufferOut,
-        outputLeft,
-        outputRight,
-        reverbOutputLeft,
-        reverbOutputRight,
-        chorusOutputLeft,
-        chorusOutputRight,
+        buffer,
+        outputL,
+        outputR,
+        reverbL,
+        reverbR,
+        chorusL,
+        chorusR,
         startIndex
     );
 }

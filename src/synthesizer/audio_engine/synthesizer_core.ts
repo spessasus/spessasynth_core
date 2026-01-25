@@ -557,8 +557,8 @@ export class SynthesizerCore {
         reverb: Float32Array[],
         chorus: Float32Array[],
         separate: Float32Array[][],
-        startIndex: number,
-        sampleCount: number
+        startIndex = 0,
+        sampleCount = 0
     ) {
         // Process event queue
         const time = this.currentTime;
