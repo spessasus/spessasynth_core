@@ -20,22 +20,22 @@ const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const sbk = SoundBankLoader.fromArrayBuffer(sf.buffer);
 const BUFFER_SIZE = 128;
 
+const outLeft = new Float32Array(sampleCount);
+const outRight = new Float32Array(sampleCount);
+const outputArray = [outLeft, outRight];
+
 const PASSES = 10;
 let times = new Array<number>();
 for (let i = 0; i < PASSES; i++) {
     const synth = new SpessaSynthProcessor(sampleRate, {
-        enableEventSystem: false,
-        enableEffects: false
+        enableEventSystem: false
     });
     synth.soundBankManager.addSoundBank(sbk, "main");
     await synth.processorInitialized;
     const seq = new SpessaSynthSequencer(synth);
     seq.loadNewSongList([midi]);
     seq.play();
-    const outLeft = new Float32Array(sampleCount);
-    const outRight = new Float32Array(sampleCount);
     let filledSamples = 0;
-    const outputArray = [outLeft, outRight];
 
     console.info(`Rendering MIDI. Pass ${i} / ${PASSES}`);
     const start = performance.now();
@@ -44,7 +44,13 @@ for (let i = 0; i < PASSES; i++) {
         seq.processTick();
         // Render
         const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
-        synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+        synth.renderAudio(
+            outputArray,
+            outputArray,
+            outputArray,
+            filledSamples,
+            bufferSize
+        );
         filledSamples += bufferSize;
     }
     const time = performance.now() - start;
