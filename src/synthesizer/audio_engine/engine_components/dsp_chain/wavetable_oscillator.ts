@@ -85,7 +85,7 @@ export class WavetableOscillator {
                     cursor = loopStart + ((cursor - loopStart) % loopLength);
 
                 // Grab the 2 nearest points
-                const floor = Math.trunc(cursor);
+                const floor = cursor | 0;
                 let ceil = floor + 1;
 
                 if (ceil >= loopEnd) {
@@ -104,7 +104,7 @@ export class WavetableOscillator {
         } else {
             for (let i = 0; i < outputBuffer.length; i++) {
                 // Linear interpolation
-                const floor = Math.trunc(cursor);
+                const floor = cursor | 0;
                 const ceil = floor + 1;
 
                 // Flag the voice as finished if needed
@@ -145,7 +145,7 @@ export class WavetableOscillator {
                     cursor = loopStart + ((cursor - loopStart) % loopLength);
 
                 // Grab the nearest neighbor
-                outputBuffer[i] = sampleData[Math.trunc(cursor)];
+                outputBuffer[i] = sampleData[cursor | 0];
                 cursor += step;
             }
         } else {
@@ -155,7 +155,7 @@ export class WavetableOscillator {
                     return false;
                 }
 
-                outputBuffer[i] = sampleData[Math.trunc(cursor)];
+                outputBuffer[i] = sampleData[cursor | 0];
                 cursor += step;
             }
         }
@@ -180,13 +180,13 @@ export class WavetableOscillator {
                     cursor = loopStart + ((cursor - loopStart) % loopLength);
 
                 // Grab the 4 points
-                const y0 = Math.trunc(cursor); // Point before the cursor.
+                const y0 = cursor | 0; // Point before the cursor.
                 let y1 = y0 + 1; // Point after the cursor
                 let y2 = y0 + 2; // Point 1 after the cursor
                 let y3 = y0 + 3; // Point 2 after the cursor
                 const t = cursor - y0; // The distance from y0 to cursor [0;1]
                 // Y0 is not handled here
-                // As it's math.trunc of cur which is handled above
+                // As it's floor of cur which is handled above
                 if (y1 >= loopEnd) {
                     y1 -= loopLength;
                 }
@@ -210,16 +210,14 @@ export class WavetableOscillator {
                 const w = c + v;
                 const a = w + v + (x2 - x0) * 0.5;
                 const b = w + a;
-                const t2 = t * t;
-                const t3 = t2 * t;
-                outputBuffer[i] = a * t3 - b * t2 + c * t + x0;
+                outputBuffer[i] = ((a * t - b) * t + c) * t + x0;
 
                 cursor += step;
             }
         } else {
             for (let i = 0; i < outputBuffer.length; i++) {
                 // Grab the 4 points
-                const y0 = Math.trunc(cursor); // Point before the cursor.
+                const y0 = cursor | 0; // Point before the cursor.
                 const y1 = y0 + 1; // Point after the cursor
                 const y2 = y0 + 2; // Point 1 after the cursor
                 const y3 = y0 + 3; // Point 2 after the cursor
@@ -243,9 +241,7 @@ export class WavetableOscillator {
                 const w = c + v;
                 const a = w + v + (x2 - x0) * 0.5;
                 const b = w + a;
-                const t2 = t * t;
-                const t3 = t2 * t;
-                outputBuffer[i] = a * t3 - b * t2 + c * t + x0;
+                outputBuffer[i] = ((a * t - b) * t + c) * t + x0;
 
                 cursor += step;
             }
