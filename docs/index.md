@@ -6,15 +6,17 @@ hide:
 
 # Welcome to the spessasynth_core wiki!
 
-This should serve as the complete documentation of the library.
-(And my attempt to explain the program :-)
+You've reached the central documentation for the spessasynth_core library, a powerful SF2/DLS/MIDI TypeScript/JavaScript library. 
+
+*If you're looking for the SpessaSynth web app, it can be found [here](https://spessasus.github.io/SpessaSynth).*
+
+## Table of contents
+
 
 !!! DANGER
 
     SpessaSynth 3.27 and below is no longer supported!
     [The migration guide for 4.0 is available here.](extra/4-0-migration-guide.md)
-
-## Documentation
 
 - [Getting started with spessasynth_core](getting-started/index.md)
 - [SpessaSynthProcessor](spessa-synth-processor/index.md) - Responsible for generating sound.
@@ -29,12 +31,12 @@ This should serve as the complete documentation of the library.
 - [MIDI Implementation](extra/midi-implementation.md) - A MIDI Implementation chart for spessasynth's
   synthesizer. This describes all the features of the synthesis engine.
 
-## Extra Info
+### Extra Info
 
 - [SF2 RMIDI Extension Specification](https://github.com/spessasus/sf2-rmidi-specification) - The specification for the
   SF2 RMIDI format that spessasynth supports.
 - [Multi-Port files explained](extra/about-multi-port.md) - Explanation of the Multi-Port MIDI feature.
-- [The DLS Conversion problem](extra/dls-conversion-problem.md) - The limits of the SF2 -> DLS conversion.
+- [The DLS Conversion problem](extra/dls-conversion-problem.md) - The limits of the SF2 → DLS conversion.
 - [NPM Exports](extra/all-npm-exports.md) - a listing of all the NPN exports in the `spessasynth_core` NPM package.
 
 
