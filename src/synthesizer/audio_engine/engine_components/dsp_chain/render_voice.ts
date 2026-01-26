@@ -42,6 +42,11 @@ export function renderVoice(
         voice.isInRelease = true;
         voice.volEnv.startRelease(voice);
         voice.modEnv.startRelease(voice);
+
+        // Voice may be off instantly
+        // Testcase: mono mode with chords
+        if (!voice.active) return;
+
         // Looping mode 3
         if (voice.loopingMode === 3) {
             voice.wavetable.isLooping = false;

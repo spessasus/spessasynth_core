@@ -333,7 +333,8 @@ export class VolumeEnvelope {
         // (changing from release start to -100dB instead of from peak to -100dB)
         const releaseFraction = (CB_SILENCE - this.releaseStartCb) / CB_SILENCE;
         this.releaseDuration *= releaseFraction;
-        // Sanity check
+        // Voice may be off instantly
+        // Testcase: mono mode
         if (this.releaseStartCb >= PERCEIVED_CB_SILENCE) {
             voice.active = false;
         }
