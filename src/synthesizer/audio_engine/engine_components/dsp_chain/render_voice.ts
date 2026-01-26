@@ -197,7 +197,10 @@ export function renderVoice(
     }
 
     // SYNTHESIS
-    if (voice.buffer.length !== sampleCount) {
+    // Does the buffer need to grow?
+    // Never shrink though, as we only render sample count into it.
+    // A valid use case for shrinking buffer size is rendering a specific count in 128-long chunks + a smaller one to align
+    if (voice.buffer.length < sampleCount) {
         SpessaSynthWarn(`Buffer size has changed from ${voice.buffer.length} to ${sampleCount}! 
         This will cause a memory allocation!`);
         voice.buffer = new Float32Array(sampleCount);
@@ -206,17 +209,22 @@ export function renderVoice(
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.active = voice.volEnv.process(buffer);
+        voice.active = voice.volEnv.process(sampleCount, buffer);
         return;
     }
 
     // Wave table oscillator
-    voice.active = voice.wavetable.process(voice.tuningRatio, buffer);
+    voice.active = voice.wavetable.process(
+        sampleCount,
+        voice.tuningRatio,
+        buffer
+    );
 
     if (!voice.active) return;
 
     // Low pass filter
     voice.filter.process(
+        sampleCount,
         voice,
         buffer,
         lowpassExcursion,
@@ -224,7 +232,7 @@ export function renderVoice(
     );
 
     // Vol env
-    voice.active = voice.volEnv.process(buffer);
+    voice.active = voice.volEnv.process(sampleCount, buffer);
 
     this.panAndMixVoice(
         voice,
@@ -235,6 +243,7 @@ export function renderVoice(
         reverbR,
         chorusL,
         chorusR,
-        startIndex
+        startIndex,
+        sampleCount
     );
 }

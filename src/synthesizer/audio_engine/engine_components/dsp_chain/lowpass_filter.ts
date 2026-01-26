@@ -152,12 +152,14 @@ export class LowpassFilter {
 
     /**
      * Applies the lowpass filter to the output buffer of a voice.
+     * @param sampleCount The amount of samples to write.
      * @param voice The voice to apply the filter to.
      * @param outputBuffer The output buffer to filter.
      * @param fcOffset The frequency excursion in cents to apply to the filter.
      * @param gainOffset The gain offset to apply.
      */
     public process(
+        sampleCount: number,
         voice: Voice,
         outputBuffer: Float32Array,
         fcOffset: number,
@@ -203,7 +205,7 @@ export class LowpassFilter {
         ) {
             this.currentInitialFc = 13_500;
             // Gain smoothing goes here as well
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Gain smoothing
                 voice.currentGain +=
                     (gainTarget - voice.currentGain) * smoothing;
@@ -224,7 +226,7 @@ export class LowpassFilter {
 
         // Filter the input
         // Initial filtering code was ported from meltysynth created by sinshu.
-        for (let i = 0; i < outputBuffer.length; i++) {
+        for (let i = 0; i < sampleCount; i++) {
             const input = outputBuffer[i];
             const filtered =
                 this.a0 * input +

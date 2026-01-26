@@ -108,17 +108,18 @@ export class VolumeEnvelope {
 
     /**
      * Applies volume envelope gain to the given output buffer.
-     * Essentially we use approach of 100dB is silence, 0dB is peak, and always add attenuation to that (which is interpolated).
+     * Essentially we use approach of 100dB is silence, 0dB is peak.
+     * @param sampleCount the amount of samples to write
      * @param buffer the audio buffer to modify
      * @returns if the voice is still active
      */
-    public process(buffer: Float32Array): boolean {
+    public process(sampleCount: number, buffer: Float32Array): boolean {
         // RELEASE PHASE
         if (this.enteredRelease) {
             // How much time has passed since release was started?
             let elapsedRelease = this.sampleTime - this.releaseStartTimeSamples;
             const cbDifference = CB_SILENCE - this.releaseStartCb;
-            for (let i = 0; i < buffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Linearly ramp down decibels
                 this.attenuationCb =
                     (elapsedRelease / this.releaseDuration) * cbDifference +
@@ -143,7 +144,7 @@ export class VolumeEnvelope {
                     buffer[filledBuffer] = 0;
 
                     this.sampleTime++;
-                    if (++filledBuffer >= buffer.length) {
+                    if (++filledBuffer >= sampleCount) {
                         return true;
                     }
                 }
@@ -166,7 +167,7 @@ export class VolumeEnvelope {
                     this.attenuationCb = 0;
 
                     this.sampleTime++;
-                    if (++filledBuffer >= buffer.length) {
+                    if (++filledBuffer >= sampleCount) {
                         return true;
                     }
                 }
@@ -183,7 +184,7 @@ export class VolumeEnvelope {
                     // No need to multiply by 1
 
                     this.sampleTime++;
-                    if (++filledBuffer >= buffer.length) {
+                    if (++filledBuffer >= sampleCount) {
                         return true;
                     }
                 }
@@ -207,7 +208,7 @@ export class VolumeEnvelope {
                     );
 
                     this.sampleTime++;
-                    if (++filledBuffer >= buffer.length) {
+                    if (++filledBuffer >= sampleCount) {
                         return true;
                     }
                 }
@@ -230,7 +231,7 @@ export class VolumeEnvelope {
                     // Apply gain to buffer
                     buffer[filledBuffer] *= this.sustainGain;
                     this.sampleTime++;
-                    if (++filledBuffer >= buffer.length) {
+                    if (++filledBuffer >= sampleCount) {
                         return true;
                     }
                 }

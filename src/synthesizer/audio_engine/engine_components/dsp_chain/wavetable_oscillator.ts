@@ -40,24 +40,30 @@ export abstract class WavetableOscillator {
 
     /**
      * Fills the output buffer with raw sample data using a given interpolation.
+     * @param sampleCount The amount of samples to write into the buffer.
      * @param tuningRatio the tuning ratio to apply.
      * @param outputBuffer The output buffer to write to.
      */
     public abstract process(
+        sampleCount: number,
         tuningRatio: number,
         outputBuffer: Float32Array
     ): boolean;
 }
 
 export class NearestOscillator extends WavetableOscillator {
-    public process(tuningRatio: number, outputBuffer: Float32Array): boolean {
+    public process(
+        sampleCount: number,
+        tuningRatio: number,
+        outputBuffer: Float32Array
+    ): boolean {
         const step = tuningRatio * this.playbackStep;
         const data = this.sampleData!;
         const { loopEnd, loopLength, loopStart, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Check for loop
                 if (cursor > loopStart)
                     cursor = loopStart + ((cursor - loopStart) % loopLength);
@@ -80,7 +86,7 @@ export class NearestOscillator extends WavetableOscillator {
                 cursor += step;
             }
         } else {
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Linear interpolation
                 const floor = cursor | 0;
                 const ceil = floor + 1;
@@ -106,14 +112,18 @@ export class NearestOscillator extends WavetableOscillator {
 }
 
 export class LinearOscillator extends WavetableOscillator {
-    public process(tuningRatio: number, outputBuffer: Float32Array): boolean {
+    public process(
+        sampleCount: number,
+        tuningRatio: number,
+        outputBuffer: Float32Array
+    ): boolean {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
         const { loopLength, loopStart, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Check for loop
                 // Testcase for this type of loop checking: LiveHQ Classical Guitar finger off
                 // (5 long loop in mode 3)
@@ -125,7 +135,7 @@ export class LinearOscillator extends WavetableOscillator {
                 cursor += step;
             }
         } else {
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Flag the voice as finished if needed
                 if (cursor >= end) {
                     return false;
@@ -141,14 +151,18 @@ export class LinearOscillator extends WavetableOscillator {
 }
 
 export class HermiteOscillator extends WavetableOscillator {
-    public process(tuningRatio: number, outputBuffer: Float32Array): boolean {
+    public process(
+        sampleCount: number,
+        tuningRatio: number,
+        outputBuffer: Float32Array
+    ): boolean {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
         const { loopEnd, loopLength, loopStart, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Check for loop
                 if (cursor > loopStart)
                     cursor = loopStart + ((cursor - loopStart) % loopLength);
@@ -189,7 +203,7 @@ export class HermiteOscillator extends WavetableOscillator {
                 cursor += step;
             }
         } else {
-            for (let i = 0; i < outputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 // Grab the 4 points
                 const y0 = cursor | 0; // Point before the cursor.
                 const y1 = y0 + 1; // Point after the cursor

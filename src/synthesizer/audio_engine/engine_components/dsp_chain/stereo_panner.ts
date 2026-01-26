@@ -40,6 +40,7 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * @param chorusLeft The left chorus output buffer.
  * @param chorusRight The right chorus output buffer.
  * @param startIndex The start index offset in the output buffers where the voice's audio data should be mixed in.
+ * @param sampleCount The amount of samples to write.
  */
 export function panAndMixVoice(
     this: MIDIChannel,
@@ -51,12 +52,9 @@ export function panAndMixVoice(
     reverbRight: Float32Array,
     chorusLeft: Float32Array,
     chorusRight: Float32Array,
-    startIndex: number
+    startIndex: number,
+    sampleCount: number
 ) {
-    // Safety net
-    if (Number.isNaN(inputBuffer[0])) {
-        return;
-    }
     /**
      * Clamp -500 to 500
      */
@@ -91,7 +89,7 @@ export function panAndMixVoice(
                 this.synthCore.reverbSend *
                 gain *
                 (reverbSend / REVERB_DIVIDER);
-            for (let i = 0; i < inputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 const idx = i + startIndex;
                 reverbLeft[idx] += reverbGain * inputBuffer[i];
                 reverbRight[idx] += reverbGain * inputBuffer[i];
@@ -108,7 +106,7 @@ export function panAndMixVoice(
                 (chorusSend / CHORUS_DIVIDER);
             const chorusLeftGain = gainLeft * chorusGain;
             const chorusRightGain = gainRight * chorusGain;
-            for (let i = 0; i < inputBuffer.length; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 const idx = i + startIndex;
                 chorusLeft[idx] += chorusLeftGain * inputBuffer[i];
                 chorusRight[idx] += chorusRightGain * inputBuffer[i];
@@ -118,12 +116,12 @@ export function panAndMixVoice(
 
     // Mix down the audio data
     if (gainLeft > 0) {
-        for (let i = 0; i < inputBuffer.length; i++) {
+        for (let i = 0; i < sampleCount; i++) {
             outputLeft[i + startIndex] += gainLeft * inputBuffer[i];
         }
     }
     if (gainRight > 0) {
-        for (let i = 0; i < inputBuffer.length; i++) {
+        for (let i = 0; i < sampleCount; i++) {
             outputRight[i + startIndex] += gainRight * inputBuffer[i];
         }
     }
