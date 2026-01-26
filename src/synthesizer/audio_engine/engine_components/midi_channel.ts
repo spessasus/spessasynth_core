@@ -416,9 +416,7 @@ export class MIDIChannel {
         this.midiControllers[
             NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
         ] = pitch;
-        for (const v of this.synthCore.voices)
-            if (v.channel === this.channel && v.active)
-                this.computeModulators(v, 0, modulatorSources.pitchWheel);
+        this.computeModulatorsAll(0, modulatorSources.pitchWheel);
         this.sendChannelProperty();
     }
 
@@ -431,9 +429,7 @@ export class MIDIChannel {
             NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
         ] = pressure << 7;
         this.updateChannelTuning();
-        for (const v of this.synthCore.voices)
-            if (v.channel === this.channel && v.active)
-                this.computeModulators(v, 0, modulatorSources.channelPressure);
+        this.computeModulatorsAll(0, modulatorSources.channelPressure);
 
         this.synthCore.callEvent("channelPressure", {
             channel: this.channel,
@@ -449,16 +445,7 @@ export class MIDIChannel {
      * @param pressure 0 - 127, the pressure value to set for the note.
      */
     public polyPressure(midiNote: number, pressure: number) {
-        for (const v of this.synthCore.voices) {
-            if (
-                v.channel === this.channel &&
-                v.active &&
-                v.midiNote === midiNote
-            ) {
-                v.pressure = pressure;
-                this.computeModulators(v, 0, modulatorSources.polyPressure);
-            }
-        }
+        this.computeModulatorsAll(0, modulatorSources.polyPressure);
         this.synthCore.callEvent("polyPressure", {
             channel: this.channel,
             midiNote: midiNote,
@@ -587,12 +574,15 @@ export class MIDIChannel {
         this.generatorOverrides[gen] = value;
         this.generatorOverridesEnabled = true;
         if (realtime) {
-            for (const v of this.synthCore.voices) {
-                if (v.channel === this.channel && v.active) {
-                    v.generators[gen] = value;
-                    this.computeModulators(v);
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (v.channel === this.channel && v.active) {
+                        v.generators[gen] = value;
+                        this.computeModulators(v);
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
                 }
-            }
         }
     }
 
@@ -604,10 +594,14 @@ export class MIDIChannel {
     public setGeneratorOffset(gen: GeneratorType, value: number) {
         this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
         this.generatorOffsetsEnabled = true;
-        for (const v of this.synthCore.voices) {
-            if (v.channel === this.channel && v.active)
-                this.computeModulators(v);
-        }
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (v.channel === this.channel && v.active) {
+                    this.computeModulators(v);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
     }
 
     /**
@@ -619,17 +613,20 @@ export class MIDIChannel {
         // Adjust midiNote by channel key shift
         midiNote += this.customControllers[customControllers.channelKeyShift];
 
-        for (const v of this.synthCore.voices) {
-            if (
-                v.channel === this.channel &&
-                v.active &&
-                v.realKey === midiNote
-            ) {
-                v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
-                v.isInRelease = false; // Force release again
-                v.releaseVoice(this.synthCore.currentTime);
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.channel === this.channel &&
+                    v.active &&
+                    v.realKey === midiNote
+                ) {
+                    v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
+                    v.isInRelease = false; // Force release again
+                    v.releaseVoice(this.synthCore.currentTime);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
             }
-        }
     }
 
     /**
@@ -639,16 +636,26 @@ export class MIDIChannel {
     public stopAllNotes(force = false) {
         if (force) {
             // Force stop all
-            for (const v of this.synthCore.voices) {
-                if (v.channel === this.channel) v.active = false;
-            }
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (v.channel === this.channel && v.active) {
+                        v.active = false;
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
+                }
             this.clearVoiceCount();
             this.updateVoiceCount();
         } else {
             // Gracefully stop
-            for (const v of this.synthCore.voices) {
-                v.releaseVoice(this.synthCore.currentTime);
-            }
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (v.channel === this.channel && v.active) {
+                        v.releaseVoice(this.synthCore.currentTime);
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
+                }
         }
         this.synthCore.callEvent("stopAll", {
             channel: this.channel,
@@ -700,6 +707,20 @@ export class MIDIChannel {
             channel: this.channel,
             property: data
         });
+    }
+
+    protected computeModulatorsAll(
+        sourceUsesCC: -1 | 0 | 1,
+        sourceIndex: number
+    ) {
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (v.channel === this.channel && v.active) {
+                    this.computeModulators(v, sourceUsesCC, sourceIndex);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
     }
 
     protected setBankMSB(bankMSB: number) {

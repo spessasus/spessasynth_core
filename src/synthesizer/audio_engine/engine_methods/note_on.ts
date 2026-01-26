@@ -102,11 +102,15 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Mono mode
     if (!this.polyMode) {
-        for (const voice of this.synthCore.voices) {
-            if (voice.active && voice.channel === this.channel)
-                // No minimum note time, release ASAP
-                voice.exclusiveRelease(this.synthCore.currentTime, 0);
-        }
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (v.active && v.channel === this.channel) {
+                    // No minimum note time, release ASAP
+                    v.exclusiveRelease(this.synthCore.currentTime, 0);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
     }
 
     // Get voices
@@ -196,16 +200,20 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         // In mono mode all voices have been killed already
         if (voice.exclusiveClass !== 0 && this.polyMode) {
             // Kill all voices with the same exclusive class
-            for (const v of this.synthCore.voices) {
-                if (
-                    v.active &&
-                    v.channel === this.channel &&
-                    v.exclusiveClass === voice.exclusiveClass &&
-                    // Only voices created in a different quantum
-                    v.hasRendered
-                )
-                    v.exclusiveRelease(this.synthCore.currentTime);
-            }
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (
+                        v.active &&
+                        v.channel === this.channel &&
+                        v.exclusiveClass === voice.exclusiveClass &&
+                        // Only voices created in a different quantum
+                        v.hasRendered
+                    ) {
+                        v.exclusiveRelease(this.synthCore.currentTime);
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
+                }
         }
         // Compute all modulators
         this.computeModulators(voice);
@@ -292,6 +300,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             Math.min(500, voice.modulatedGenerators[generatorTypes.pan])
         ); //  -500 to 500
     }
+    this.voiceCount += voices.length;
     this.sendChannelProperty();
     this.synthCore.callEvent("noteOn", {
         midiNote: midiNote,

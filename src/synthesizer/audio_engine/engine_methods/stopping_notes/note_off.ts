@@ -33,16 +33,21 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    if (!this.holdPedal)
-        for (const v of this.synthCore.voices) {
-            if (
-                v.channel === this.channel &&
-                v.active &&
-                v.realKey === realKey &&
-                !v.isInRelease
-            )
-                v.releaseVoice(this.synthCore.currentTime);
-        }
+    if (!this.holdPedal) {
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.channel === this.channel &&
+                    v.active &&
+                    v.realKey === realKey &&
+                    !v.isInRelease
+                ) {
+                    v.releaseVoice(this.synthCore.currentTime);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
+    }
     this.synthCore.callEvent("noteOff", {
         midiNote: midiNote,
         channel: this.channel

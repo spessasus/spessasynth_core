@@ -44,9 +44,8 @@ export function controllerChange(
         this.midiControllers[actualCCNum] =
             (this.midiControllers[actualCCNum] & 0x3f_80) |
             (controllerValue & 0x7f);
-        for (const v of this.synthCore.voices)
-            if (v.channel === this.channel && v.active)
-                this.computeModulators(v, 1, actualCCNum);
+
+        this.computeModulatorsAll(1, actualCCNum);
     }
     if (this.lockedControllers[controllerNumber]) {
         return;
@@ -197,25 +196,25 @@ export function controllerChange(
 
             case midiControllers.sustainPedal: {
                 if (controllerValue < 64) {
-                    for (const v of this.synthCore.voices) {
-                        if (
-                            v.channel === this.channel &&
-                            v.active &&
-                            !v.isInRelease
-                        )
-                            v.releaseVoice(this.synthCore.currentTime);
-                    }
+                    let vc = 0;
+                    if (this.voiceCount > 0)
+                        for (const v of this.synthCore.voices) {
+                            if (
+                                v.channel === this.channel &&
+                                v.active &&
+                                !v.isInRelease
+                            ) {
+                                v.releaseVoice(this.synthCore.currentTime);
+                                if (++vc >= this.voiceCount) break; // We already checked all the voices
+                            }
+                        }
                 }
                 break;
             }
 
             // Default: just compute modulators
             default: {
-                for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.active) {
-                        this.computeModulators(v, 1, controllerNumber);
-                    }
-                }
+                this.computeModulatorsAll(1, controllerNumber);
                 break;
             }
         }
