@@ -445,7 +445,19 @@ export class MIDIChannel {
      * @param pressure 0 - 127, the pressure value to set for the note.
      */
     public polyPressure(midiNote: number, pressure: number) {
-        this.computeModulatorsAll(0, modulatorSources.polyPressure);
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.active &&
+                    v.channel === this.channel &&
+                    v.midiNote === midiNote
+                ) {
+                    v.pressure = pressure;
+                    this.computeModulators(v, 0, modulatorSources.polyPressure);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
         this.synthCore.callEvent("polyPressure", {
             channel: this.channel,
             midiNote: midiNote,
