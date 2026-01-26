@@ -11,6 +11,9 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 const CB_SILENCE = 960;
 const PERCEIVED_CB_SILENCE = 900;
 
+// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+const GAIN_SMOOTHING_FACTOR = 0.01;
+
 /**
  * VOL ENV STATES:
  * 0 - delay
@@ -63,12 +66,6 @@ export class VolumeEnvelope {
      * The voice's sustain amount in cB.
      */
     private sustainCb = 0;
-
-    /**
-     * The voice's sustain expressed as linear gain.
-     * @private
-     */
-    private sustainGain = 1;
     /**
      * The time in samples to the end of delay stage, relative to the start of the envelope.
      */
@@ -99,11 +96,16 @@ export class VolumeEnvelope {
      */
     private canEndOnSilentSustain = false;
 
+    private readonly gainSmoothing;
+
+    private currentGain = 0;
+
     /**
      * @param sampleRate Hz
      */
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
+        this.gainSmoothing = GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
     }
 
     /**
@@ -111,21 +113,42 @@ export class VolumeEnvelope {
      * Essentially we use approach of 100dB is silence, 0dB is peak.
      * @param sampleCount the amount of samples to write
      * @param buffer the audio buffer to modify
+     * @param gainTarget the gain target to smooth.
+     * @param centibelOffset the centibel offset to apply.
      * @returns if the voice is still active
      */
-    public process(sampleCount: number, buffer: Float32Array): boolean {
+    public process(
+        sampleCount: number,
+        buffer: Float32Array,
+        gainTarget: number,
+        centibelOffset: number
+    ): boolean {
+        // Gain smoothing
+        const smoothing = this.gainSmoothing;
+
+        let smooth = false;
+        if (this.currentGain !== gainTarget) {
+            smooth = true;
+        }
+
         // RELEASE PHASE
         if (this.enteredRelease) {
             // How much time has passed since release was started?
             let elapsedRelease = this.sampleTime - this.releaseStartTimeSamples;
             const cbDifference = CB_SILENCE - this.releaseStartCb;
             for (let i = 0; i < sampleCount; i++) {
+                if (smooth)
+                    this.currentGain +=
+                        (gainTarget - this.currentGain) * smoothing;
+
                 // Linearly ramp down decibels
                 this.attenuationCb =
                     (elapsedRelease / this.releaseDuration) * cbDifference +
                     this.releaseStartCb;
 
-                buffer[i] *= cbAttenuationToGain(this.attenuationCb);
+                buffer[i] *=
+                    cbAttenuationToGain(this.attenuationCb + centibelOffset) *
+                    this.currentGain;
                 this.sampleTime++;
                 elapsedRelease++;
             }
@@ -155,6 +178,9 @@ export class VolumeEnvelope {
             case 1: {
                 // Attack phase: ramp from 0 to attenuation
                 while (this.sampleTime < this.attackEnd) {
+                    if (smooth)
+                        this.currentGain +=
+                            (gainTarget - this.currentGain) * smoothing;
                     // Special case: linear gain ramp instead of linear db ramp
                     const linearGain =
                         1 -
@@ -162,7 +188,7 @@ export class VolumeEnvelope {
                             this.attackDuration; // 0 to 1
 
                     // Apply gain to buffer
-                    buffer[filledBuffer] *= linearGain;
+                    buffer[filledBuffer] *= linearGain * this.currentGain;
                     // Set current attenuation to peak as its invalid during this phase
                     this.attenuationCb = 0;
 
@@ -178,10 +204,15 @@ export class VolumeEnvelope {
             case 2: {
                 // Hold/peak phase: stay at max volume
                 while (this.sampleTime < this.holdEnd) {
+                    if (smooth)
+                        this.currentGain +=
+                            (gainTarget - this.currentGain) * smoothing;
                     // Peak, no attenuation
                     this.attenuationCb = 0;
 
-                    // No need to multiply by 1
+                    // Apply gain to buffer
+                    buffer[filledBuffer] *=
+                        this.currentGain * cbAttenuationToGain(centibelOffset);
 
                     this.sampleTime++;
                     if (++filledBuffer >= sampleCount) {
@@ -195,6 +226,9 @@ export class VolumeEnvelope {
             case 3: {
                 // Decay phase: linear ramp from attenuation to sustain
                 while (this.sampleTime < this.decayEnd) {
+                    if (smooth)
+                        this.currentGain +=
+                            (gainTarget - this.currentGain) * smoothing;
                     // Linear ramp down to sustain
                     this.attenuationCb =
                         (1 -
@@ -203,9 +237,11 @@ export class VolumeEnvelope {
                         this.sustainCb;
 
                     // Apply gain to buffer
-                    buffer[filledBuffer] *= cbAttenuationToGain(
-                        this.attenuationCb
-                    );
+                    buffer[filledBuffer] *=
+                        this.currentGain *
+                        cbAttenuationToGain(
+                            this.attenuationCb + centibelOffset
+                        );
 
                     this.sampleTime++;
                     if (++filledBuffer >= sampleCount) {
@@ -225,11 +261,17 @@ export class VolumeEnvelope {
                 }
                 // Sustain phase: stay at sustain
                 while (true) {
+                    if (smooth)
+                        this.currentGain +=
+                            (gainTarget - this.currentGain) * smoothing;
+
                     // Stay at sustain
                     this.attenuationCb = this.sustainCb;
 
                     // Apply gain to buffer
-                    buffer[filledBuffer] *= this.sustainGain;
+                    buffer[filledBuffer] *=
+                        this.currentGain *
+                        cbAttenuationToGain(this.sustainCb + centibelOffset);
                     this.sampleTime++;
                     if (++filledBuffer >= sampleCount) {
                         return true;
@@ -353,12 +395,16 @@ export class VolumeEnvelope {
             voice.modulatedGenerators[generatorTypes.sustainVolEnv] >=
             PERCEIVED_CB_SILENCE;
 
+        // Set the initial gain
+        this.currentGain = cbAttenuationToGain(
+            voice.modulatedGenerators[generatorTypes.initialAttenuation]
+        );
+
         // Calculate absolute times (they can change so we have to recalculate every time
         this.sustainCb = Math.min(
             CB_SILENCE,
             voice.modulatedGenerators[generatorTypes.sustainVolEnv]
         );
-        this.sustainGain = cbAttenuationToGain(this.sustainCb);
 
         // Calculate durations
         this.attackDuration = this.timecentsToSamples(
@@ -396,8 +442,8 @@ export class VolumeEnvelope {
 
         this.decayEnd = this.decayDuration + this.holdEnd;
 
-        // If this is the first recalculation and the voice has no attack or delay time, set current db to peak
-        if (this.state === 0 && this.attackEnd === 0) {
+        // If the voice has no attack or delay time, set current db to peak
+        if (this.attackEnd === 0) {
             // This.attenuationCb = this.attenuationTarget;
             this.state = 2;
         }

@@ -196,6 +196,11 @@ export function renderVoice(
         voice.tuningRatio = Math.pow(2, centsTotal / 1200);
     }
 
+    // Gain target
+    const gainTarget = cbAttenuationToGain(
+        voice.modulatedGenerators[generatorTypes.initialAttenuation]
+    );
+
     // SYNTHESIS
     // Does the buffer need to grow?
     // Never shrink though, as we only render sample count into it.
@@ -209,7 +214,12 @@ export function renderVoice(
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.active = voice.volEnv.process(sampleCount, buffer);
+        voice.active = voice.volEnv.process(
+            sampleCount,
+            buffer,
+            gainTarget,
+            volumeExcursionCentibels
+        );
         return;
     }
 
@@ -223,16 +233,15 @@ export function renderVoice(
     if (!voice.active) return;
 
     // Low pass filter
-    voice.filter.process(
-        sampleCount,
-        voice,
-        buffer,
-        lowpassExcursion,
-        cbAttenuationToGain(volumeExcursionCentibels)
-    );
+    voice.filter.process(sampleCount, voice, buffer, lowpassExcursion);
 
     // Vol env
-    voice.active = voice.volEnv.process(sampleCount, buffer);
+    voice.active = voice.volEnv.process(
+        sampleCount,
+        buffer,
+        gainTarget,
+        volumeExcursionCentibels
+    );
 
     this.panAndMixVoice(
         voice,

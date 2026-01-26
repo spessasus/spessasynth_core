@@ -185,11 +185,6 @@ export class Voice {
     public currentPan = 0;
 
     /**
-     * From 0 to 1. Used for smoothing.
-     */
-    public currentGain = 1;
-
-    /**
      * If MIDI Tuning Standard is already applied (at note-on time),
      * this will be used to take the values at real-time tuning as "midiNote"
      * property contains the tuned number.

@@ -5,7 +5,6 @@ import type { MIDIChannel } from "../engine_components/midi_channel";
 import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { midiControllers } from "../../../midi/enums";
 import { customControllers } from "../../enums";
-import { cbAttenuationToGain } from "../engine_components/unit_converter";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 
 const clamp = (num: number, min: number, max: number) =>
@@ -278,11 +277,6 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             voice.wavetable.loopEnd - voice.wavetable.loopStart;
         voice.wavetable.isLooping =
             voice.loopingMode === 1 || voice.loopingMode === 3;
-
-        // Set the initial gain
-        voice.currentGain = cbAttenuationToGain(
-            voice.modulatedGenerators[generatorTypes.initialAttenuation]
-        );
 
         // Apply portamento
         voice.portamentoFromKey = portamentoFromKey;
