@@ -212,8 +212,6 @@ export class Voice {
      */
     public exclusiveClass = 0;
 
-    public sampleName = "";
-
     /**
      * In timecents, where zero means disabled (use the modulatedGenerators table).
      * Used for exclusive notes and killing notes.

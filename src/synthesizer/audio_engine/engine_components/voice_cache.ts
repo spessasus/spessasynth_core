@@ -12,8 +12,6 @@ export class CachedVoice {
      */
     public readonly sampleData: Float32Array;
 
-    public readonly sampleName: string;
-
     /**
      * The unmodulated (copied to) generators of the voice.
      */
@@ -96,7 +94,6 @@ export class CachedVoice {
         this.loopStart = sample.loopStart;
         this.loopEnd = sample.loopEnd;
         this.sampleData = sample.getAudioData();
-        this.sampleName = sample.name;
         this.playbackStep =
             (sample.sampleRate / sampleRate) *
             Math.pow(2, sample.pitchCorrection / 1200); // Cent tuning
