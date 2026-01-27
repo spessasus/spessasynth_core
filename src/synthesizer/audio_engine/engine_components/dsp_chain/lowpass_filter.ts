@@ -37,6 +37,10 @@ export class LowpassFilter {
      */
     private static cachedCoefficients = new Map<number, CachedCoefficient>();
     /**
+     * For smoothing the filter cutoff frequency.
+     */
+    private static smoothingConstant = 1;
+    /**
      * Resonance in centibels.
      */
     public resonanceCb = 0;
@@ -85,7 +89,6 @@ export class LowpassFilter {
      * Set to infinity to force recalculation.
      */
     private lastTargetCutoff = Infinity;
-
     /**
      * Used for tracking if the filter has been initialized.
      */
@@ -94,17 +97,11 @@ export class LowpassFilter {
      * Filter's sample rate in Hz.
      */
     private readonly sampleRate;
-
     /**
      * Maximum cutoff frequency in Hz.
      * This is used to prevent aliasing and ensure the filter operates within the valid frequency range.
      */
     private readonly maxCutoff: number;
-
-    /**
-     * For smoothing the filter cutoff frequency.
-     */
-    private readonly smoothingConstant: number;
 
     /**
      * Initializes a new instance of the filter.
@@ -113,11 +110,11 @@ export class LowpassFilter {
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
-        this.smoothingConstant =
-            FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
     }
 
     public static initCache(sampleRate: number) {
+        LowpassFilter.smoothingConstant =
+            FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
         // Precompute all the cutoffs for 0q (most common)
         const dummy = new LowpassFilter(sampleRate);
         dummy.resonanceCb = 0;
@@ -166,7 +163,8 @@ export class LowpassFilter {
              * the modulation envelope and LFO excursions are not smoothed.
              */
             this.currentInitialFc +=
-                (initialFc - this.currentInitialFc) * this.smoothingConstant;
+                (initialFc - this.currentInitialFc) *
+                LowpassFilter.smoothingConstant;
         } else {
             // Filter initialization, set the current fc to target
             this.initialized = true;
