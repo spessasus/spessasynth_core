@@ -12,14 +12,14 @@ export function programChange(this: MIDIChannel, program: number) {
     }
 
     this.patch.program = program;
-    let preset = this.synth.soundBankManager.getPreset(
+    let preset = this.synthCore.soundBankManager.getPreset(
         this.patch,
         this.channelSystem
     );
     if (!preset) {
         SpessaSynthWarn("No presets! Using empty fallback.");
         preset = new BasicPreset(
-            this.synth.soundBankManager.soundBankList[0].soundBank
+            this.synthCore.soundBankManager.soundBankList[0].soundBank
         );
         // Fallback preset, make it scream so it's easy to notice :-)
         preset.name = "SPESSA EMPTY FALLBACK PRESET";
@@ -31,8 +31,8 @@ export function programChange(this: MIDIChannel, program: number) {
         this.setDrumFlag(preset.isAnyDrums);
     }
     // Do not spread the preset as we don't want to copy it entirely.
-    this.synthProps.callEvent("programChange", {
-        channel: this.channelNumber,
+    this.synthCore.callEvent("programChange", {
+        channel: this.channel,
         bankLSB: this.preset.bankLSB,
         bankMSB: this.preset.bankMSB,
         program: this.preset.program,

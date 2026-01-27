@@ -1,8 +1,8 @@
-import type { SpessaSynthProcessor } from "../../../processor";
 import { type SysExAcceptedArray, sysExNotRecognized } from "./helpers";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../../utils/loggin";
 import { arrayToHexString, consoleColors } from "../../../../utils/other";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
+import type { SynthesizerCore } from "../../synthesizer_core";
 
 /**
  * Calculates frequency for MIDI Tuning Standard.
@@ -30,7 +30,7 @@ function getTuning(byte1: number, byte2: number, byte3: number): number {
  * @param channelOffset
  */
 export function handleGM(
-    this: SpessaSynthProcessor,
+    this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -145,12 +145,11 @@ export function handleGM(
                     // 128 frequencies follow
                     for (let midiNote = 0; midiNote < 128; midiNote++) {
                         // Set the given tuning to the program
-                        this.privateProps.tunings[program * 128 + midiNote] =
-                            getTuning(
-                                syx[currentMessageIndex++],
-                                syx[currentMessageIndex++],
-                                syx[currentMessageIndex++]
-                            );
+                        this.tunings[program * 128 + midiNote] = getTuning(
+                            syx[currentMessageIndex++],
+                            syx[currentMessageIndex++],
+                            syx[currentMessageIndex++]
+                        );
                     }
                     SpessaSynthInfo(
                         `%cBulk Tuning Dump %c${tuningName}%c Program: %c${program}`,
@@ -176,13 +175,12 @@ export function handleGM(
                     for (let i = 0; i < numberOfChanges; i++) {
                         const midiNote = syx[currentMessageIndex++];
                         // Set the given tuning to the program
-                        this.privateProps.tunings[
-                            tuningProgram * 128 + midiNote
-                        ] = getTuning(
-                            syx[currentMessageIndex++],
-                            syx[currentMessageIndex++],
-                            syx[currentMessageIndex++]
-                        );
+                        this.tunings[tuningProgram * 128 + midiNote] =
+                            getTuning(
+                                syx[currentMessageIndex++],
+                                syx[currentMessageIndex++],
+                                syx[currentMessageIndex++]
+                            );
                     }
                     SpessaSynthInfo(
                         `%cSingle Note Tuning. Program: %c${tuningProgram}%c Keys affected: %c${numberOfChanges}`,

@@ -1,97 +1,12 @@
 import {
     customResetArray,
-    defaultMIDIControllerValues,
-    NON_CC_INDEX_OFFSET
+    defaultMIDIControllerValues
 } from "../../engine_components/controller_tables";
-import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
+import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
 import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
-import type { SpessaSynthProcessor } from "../../../processor";
 import { customControllers, dataEntryStates } from "../../../enums";
-import { modulatorSources } from "../../../../soundbank/enums";
-import type { SynthSystem } from "../../../types";
-
-/**
- * Executes a full system reset of all controllers.
- * This will reset all controllers to their default values,
- * except for the locked controllers.
- */
-export function resetAllControllersInternal(
-    this: SpessaSynthProcessor,
-    system: SynthSystem = DEFAULT_SYNTH_MODE
-) {
-    // Call here because there are returns in this function.
-    this.privateProps.callEvent("allControllerReset", undefined);
-    this.setMasterParameter("midiSystem", system);
-    // Reset private props
-    this.privateProps.tunings.fill(-1); // Set all to no change
-    this.setMIDIVolume(1);
-    this.privateProps.reverbSend = 1;
-    this.privateProps.chorusSend = 1;
-
-    if (!this.privateProps.drumPreset || !this.privateProps.defaultPreset) {
-        return;
-    }
-    // Reset channels
-    for (
-        let channelNumber = 0;
-        channelNumber < this.midiChannels.length;
-        channelNumber++
-    ) {
-        const ch: MIDIChannel = this.midiChannels[channelNumber];
-
-        // Do not send CC changes as we call allControllerReset
-        ch.resetControllers(false);
-        ch.resetPreset();
-
-        for (let ccNum = 0; ccNum < 128; ccNum++) {
-            if (this.midiChannels[channelNumber].lockedControllers[ccNum]) {
-                // Was not reset so restore the value
-                this.privateProps.callEvent("controllerChange", {
-                    channel: channelNumber,
-                    controllerNumber: ccNum,
-                    controllerValue:
-                        this.midiChannels[channelNumber].midiControllers[
-                            ccNum
-                        ] >> 7
-                });
-            }
-        }
-
-        // Restore pitch wheel
-        if (
-            !this.midiChannels[channelNumber].lockedControllers[
-                NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-            ]
-        ) {
-            const val =
-                this.midiChannels[channelNumber].midiControllers[
-                    NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-                ];
-            this.privateProps.callEvent("pitchWheel", {
-                channel: channelNumber,
-                pitch: val
-            });
-        }
-
-        // Restore channel pressure
-        if (
-            !this.midiChannels[channelNumber].lockedControllers[
-                NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
-            ]
-        ) {
-            const val =
-                this.midiChannels[channelNumber].midiControllers[
-                    NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
-                ] >> 7;
-            this.privateProps.callEvent("channelPressure", {
-                channel: channelNumber,
-                pressure: val
-            });
-        }
-    }
-}
 
 export function resetPortamento(this: MIDIChannel, sendCC: boolean) {
     if (this.lockedControllers[midiControllers.portamentoControl]) return;
@@ -169,7 +84,7 @@ export function resetPreset(this: MIDIChannel) {
     this.setBankLSB(0);
     this.setGSDrums(false);
 
-    this.setDrums(this.channelNumber % 16 === DEFAULT_PERCUSSION);
+    this.setDrums(this.channel % 16 === DEFAULT_PERCUSSION);
     this.programChange(0);
 }
 

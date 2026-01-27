@@ -1,20 +1,13 @@
-import type { SpessaSynthProcessor } from "../../../processor";
-import {
-    type SysExAcceptedArray,
-    sysExLogging,
-    sysExNotRecognized
-} from "./helpers";
+import { type SysExAcceptedArray, sysExLogging, sysExNotRecognized } from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import { arrayToHexString, consoleColors } from "../../../../utils/other";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
-import {
-    type ModulatorSourceEnum,
-    modulatorSources
-} from "../../../../soundbank/enums";
+import { type ModulatorSourceEnum, modulatorSources } from "../../../../soundbank/enums";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
+import type { SynthesizerCore } from "../../synthesizer_core";
 
 /**
  * Handles a GS system exclusive
@@ -24,7 +17,7 @@ import { readBinaryString } from "../../../../utils/byte_functions/string";
  * @param channelOffset
  */
 export function handleGS(
-    this: SpessaSynthProcessor,
+    this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -538,8 +531,7 @@ export function handleGS(
                                     consoleColors.value
                                 );
                                 // 64 is the default
-                                this.privateProps.reverbSend =
-                                    messageValue / 64;
+                                this.reverbSend = messageValue / 64;
                                 break;
                             }
 
@@ -566,8 +558,7 @@ export function handleGS(
                                     consoleColors.value
                                 );
                                 // 64 is the default
-                                this.privateProps.chorusSend =
-                                    messageValue / 64;
+                                this.chorusSend = messageValue / 64;
                                 break;
                             }
 
@@ -606,10 +597,10 @@ export function handleGS(
                 ) {
                     if (syx[5] === 0x00) {
                         // Display letters
-                        this.privateProps.callEvent("synthDisplay", [...syx]);
+                        this.callEvent("synthDisplay", [...syx]);
                     } else if (syx[5] === 0x01) {
                         // Matrix display
-                        this.privateProps.callEvent("synthDisplay", [...syx]);
+                        this.callEvent("synthDisplay", [...syx]);
                     } else {
                         // This is some other GS sysex...
                         sysExNotRecognized(syx, "Roland GS");

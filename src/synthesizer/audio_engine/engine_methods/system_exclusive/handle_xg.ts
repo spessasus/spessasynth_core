@@ -1,10 +1,10 @@
-import type { SpessaSynthProcessor } from "../../../processor";
 import { type SysExAcceptedArray, sysExNotRecognized } from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import { consoleColors } from "../../../../utils/other";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
 import { midiControllers } from "../../../../midi/enums";
 import { customControllers } from "../../../enums";
+import type { SynthesizerCore } from "../../synthesizer_core";
 
 /**
  * Handles a XG system exclusive
@@ -13,7 +13,7 @@ import { customControllers } from "../../../enums";
  * @param channelOffset
  */
 export function handleXG(
-    this: SpessaSynthProcessor,
+    this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -101,11 +101,7 @@ export function handleXG(
             );
         } else if (a1 === 0x08 /* A2 is the channel number*/) {
             // XG part parameter
-            if (
-                !BankSelectHacks.isSystemXG(
-                    this.privateProps.masterParameters.midiSystem
-                )
-            ) {
+            if (!BankSelectHacks.isSystemXG(this.masterParameters.midiSystem)) {
                 return;
             }
             const channel = a2 + channelOffset;
@@ -303,11 +299,9 @@ export function handleXG(
             a2 === 0x00 // System Byte
         ) {
             // Displayed letters
-            this.privateProps.callEvent("synthDisplay", [...syx]);
+            this.callEvent("synthDisplay", [...syx]);
         } else if (
-            BankSelectHacks.isSystemXG(
-                this.privateProps.masterParameters.midiSystem
-            )
+            BankSelectHacks.isSystemXG(this.masterParameters.midiSystem)
         ) {
             sysExNotRecognized(syx, "Yamaha XG");
         }
