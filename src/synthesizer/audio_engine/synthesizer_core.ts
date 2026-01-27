@@ -447,7 +447,7 @@ export class SynthesizerCore {
                     // Was not reset so restore the value
                     this.callEvent("controllerChange", {
                         channel: channelNumber,
-                        controllerNumber: ccNum,
+                        controllerNumber: ccNum as MIDIController,
                         controllerValue:
                             this.midiChannels[channelNumber].midiControllers[
                                 ccNum

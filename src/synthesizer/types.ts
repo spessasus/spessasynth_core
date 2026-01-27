@@ -4,6 +4,7 @@ import type {
     MIDIPatchNamed
 } from "../soundbank/basic_soundbank/midi_patch";
 import type { CachedVoice } from "./audio_engine/engine_components/voice_cache";
+import type { MIDIController } from "../midi/enums";
 
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
@@ -44,7 +45,7 @@ export interface ControllerChangeCallback {
     channel: number;
 
     /** The controller number. */
-    controllerNumber: number;
+    controllerNumber: MIDIController;
 
     /** The value of the controller. */
     controllerValue: number;
