@@ -1,4 +1,8 @@
-import { absCentsToHz, cbAttenuationToGain, timecentsToSeconds } from "../unit_converter";
+import {
+    absCentsToHz,
+    cbAttenuationToGain,
+    timecentsToSeconds
+} from "../unit_converter";
 import { getLFOValue } from "./lfo";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
@@ -6,6 +10,26 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { SpessaSynthWarn } from "../../../../utils/loggin";
+
+// Optimized for spessasynth_lib's effects
+export const REVERB_DIVIDER = 3070;
+export const CHORUS_DIVIDER = 2000;
+const HALF_PI = Math.PI / 2;
+
+const MIN_PAN = -500;
+const MAX_PAN = 500;
+const PAN_RESOLUTION = MAX_PAN - MIN_PAN;
+
+// Initialize pan lookup tables
+const panTableLeft = new Float32Array(PAN_RESOLUTION + 1);
+const panTableRight = new Float32Array(PAN_RESOLUTION + 1);
+for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
+    // Clamp to 0-1
+    const realPan = (pan - MIN_PAN) / PAN_RESOLUTION;
+    const tableIndex = pan - MIN_PAN;
+    panTableLeft[tableIndex] = Math.cos(HALF_PI * realPan);
+    panTableRight[tableIndex] = Math.sin(HALF_PI * realPan);
+}
 
 /**
  * Renders a voice to the stereo output buffer
@@ -243,16 +267,74 @@ export function renderVoice(
         volumeExcursionCentibels
     );
 
-    this.panAndMixVoice(
-        voice,
-        buffer,
-        outputL,
-        outputR,
-        reverbL,
-        reverbR,
-        chorusL,
-        chorusR,
-        startIndex,
-        sampleCount
-    );
+    // Pan and mix down the data
+    /**
+     * Clamp -500 to 500
+     */
+    let pan: number;
+    if (voice.overridePan) {
+        pan = voice.overridePan;
+    } else {
+        // Smooth out pan to prevent clicking
+        voice.currentPan +=
+            (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
+            this.synthCore.panSmoothingFactor;
+        pan = voice.currentPan;
+    }
+
+    const gain =
+        this.synthCore.masterParameters.masterGain *
+        this.synthCore.midiVolume *
+        voice.gainModifier;
+    const index = (pan + 500) | 0;
+    // Get voice's gain levels for each channel
+    const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
+    const gainRight = panTableRight[index] * gain * this.synthCore.panRight;
+
+    // Mix down the audio data
+    for (let i = 0; i < sampleCount; i++) {
+        const s = buffer[i];
+        const idx = i + startIndex;
+        outputL[idx] += gainLeft * s;
+        outputR[idx] += gainRight * s;
+    }
+    if (!this.synthCore.enableEffects) {
+        return;
+    }
+
+    // Disable reverb and chorus if necessary
+    const reverbSend =
+        voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
+    if (reverbSend > 0) {
+        // Reverb is mono so we need to multiply by gain
+        const reverbGain =
+            this.synthCore.masterParameters.reverbGain *
+            this.synthCore.reverbSend *
+            gain *
+            (reverbSend / REVERB_DIVIDER);
+        for (let i = 0; i < sampleCount; i++) {
+            const idx = i + startIndex;
+            const s = reverbGain * buffer[i];
+            reverbL[idx] += s;
+            reverbR[idx] += s;
+        }
+    }
+
+    const chorusSend =
+        voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
+    if (chorusSend > 0) {
+        // Chorus is stereo so we do not need to
+        const chorusGain =
+            this.synthCore.masterParameters.chorusGain *
+            this.synthCore.chorusSend *
+            (chorusSend / CHORUS_DIVIDER);
+        const chorusLeftGain = gainLeft * chorusGain;
+        const chorusRightGain = gainRight * chorusGain;
+        for (let i = 0; i < sampleCount; i++) {
+            const idx = i + startIndex;
+            const s = buffer[i];
+            chorusL[idx] += chorusLeftGain * s;
+            chorusR[idx] += chorusRightGain * s;
+        }
+    }
 }

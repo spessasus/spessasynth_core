@@ -6,7 +6,6 @@ import {
     resetPreset
 } from "../engine_methods/controller_control/reset_controllers";
 import { renderVoice } from "./dsp_chain/render_voice";
-import { panAndMixVoice } from "./dsp_chain/stereo_panner";
 import { dataEntryFine } from "../engine_methods/controller_control/data_entry/data_entry_fine";
 import { controllerChange } from "../engine_methods/controller_control/controller_change";
 import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry/data_entry_coarse";
@@ -244,7 +243,6 @@ export class MIDIChannel {
      * A small optimization that disables applying overrides until at least one is set.
      */
     protected generatorOverridesEnabled = false;
-    protected readonly panAndMixVoice = panAndMixVoice.bind(this);
     protected readonly computeModulators = computeModulators.bind(this);
     /**
      * For tracking voice count changes

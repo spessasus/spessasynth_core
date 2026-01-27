@@ -33,10 +33,12 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import { NON_CC_INDEX_OFFSET } from "../exports";
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
-import { PAN_SMOOTHING_FACTOR } from "./engine_components/dsp_chain/stereo_panner";
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
+
+// Pan smoothing for rapid pan changes
+const PAN_SMOOTHING_FACTOR = 0.05;
 /**
  * The core synthesis engine which interacts with channels and holds all the synth parameters.
  */
