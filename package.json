@@ -1,6 +1,6 @@
 {
     "name": "spessasynth_core",
-    "version": "4.0.25",
+    "version": "4.1.0",
     "description": "MIDI and SoundFont2/DLS library with no compromises",
     "type": "module",
     "main": "dist/index.js",
@@ -13,7 +13,8 @@
         "build": "npm run test:types && npm run build:fast",
         "test:types": "npm run lint && tsc -b ",
         "prepack": "npm run build:fast && rimraf -rf *.tgz",
-        "prepublishOnly": "npm run build"
+        "prepublishOnly": "npm run build",
+        "prepare": "husky install"
     },
     "repository": {
         "type": "git",
@@ -61,10 +62,16 @@
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-unicorn": "^62.0.0",
         "globals": "^16.3.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
         "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
         "tsup": "^8.5.0",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.38.0"
+    },
+    "lint-staged": {
+        "*.js": "eslint --cache --fix",
+        "*.{js,css,md}": "prettier --write"
     }
 }
