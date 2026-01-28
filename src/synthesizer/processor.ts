@@ -1,15 +1,15 @@
-import { SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
-import { consoleColors } from "../utils/other";
+import { SpessaSynthInfo, SpessaSynthWarn } from '../utils/loggin'
+import { consoleColors } from '../utils/other'
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
-} from "./audio_engine/engine_components/synth_constants";
-import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
-import { fillWithDefaults } from "../utils/fill_with_defaults";
-import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
+} from './audio_engine/engine_components/synth_constants'
+import { stbvorbis } from '../externals/stbvorbis_sync/stbvorbis_wrapper'
+import { DEFAULT_SYNTH_OPTIONS } from './audio_engine/engine_components/synth_processor_options'
+import { fillWithDefaults } from '../utils/fill_with_defaults'
+import { SynthesizerSnapshot } from './audio_engine/snapshot/synthesizer_snapshot'
 import type {
     MasterParameterType,
     SynthMethodOptions,
@@ -17,12 +17,13 @@ import type {
     SynthProcessorEventData,
     SynthProcessorOptions,
     SynthSystem
-} from "./types";
-import { type MIDIController } from "../midi/enums";
-import { SynthesizerCore } from "./audio_engine/synthesizer_core";
-import { SoundBankLoader } from "../soundbank/sound_bank_loader";
-import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
-import type { SysExAcceptedArray } from "./audio_engine/engine_methods/system_exclusive/helpers";
+} from './types'
+import { type MIDIController } from '../midi/enums'
+import { SynthesizerCore } from './audio_engine/synthesizer_core'
+import { SoundBankLoader } from '../soundbank/sound_bank_loader'
+import type { BasicPreset } from '../soundbank/basic_soundbank/basic_preset'
+import type { SysExAcceptedArray } from './audio_engine/engine_methods/system_exclusive/helpers'
+import { type MIDIPatch, MIDIPatchTools } from '../soundbank/basic_soundbank/midi_patch'
 
 /**
  * Processor.ts
@@ -102,6 +103,7 @@ export class SpessaSynthProcessor {
         // Initialize the protected synth values
         this.synthCore = new SynthesizerCore(
             this.callEvent.bind(this),
+            this.missingPreset.bind(this),
             this.sampleRate,
             options
         );
@@ -191,6 +193,24 @@ export class SpessaSynthProcessor {
     public get keyModifierManager() {
         return this.synthCore.keyModifierManager;
     }
+
+    /**
+     * A handler for missing presets during program change. By default, it warns to console.
+     * @param patch The MIDI patch that was requested.
+     * @param system The MIDI System for the request.
+     * @returns If a BasicPreset instance is returned, it will be used by the channel.
+     */
+    public onMissingPreset = (
+        patch: MIDIPatch,
+        system: SynthSystem
+    ): BasicPreset | undefined => {
+        SpessaSynthWarn(
+            `No preset found for ${MIDIPatchTools.toMIDIString(patch)}! Did you forget to add a sound bank?`
+        );
+        // Make tsc happy!
+        void system;
+        return undefined;
+    };
 
     /**
      * Executes a system exclusive message for the synthesizer.
@@ -470,5 +490,9 @@ export class SpessaSynthProcessor {
             type: eventName,
             data: eventData
         } as SynthProcessorEvent);
+    }
+
+    protected missingPreset(patch: MIDIPatch, system: SynthSystem) {
+        return this.onMissingPreset(patch, system);
     }
 }

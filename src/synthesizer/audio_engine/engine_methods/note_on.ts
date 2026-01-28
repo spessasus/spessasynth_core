@@ -32,8 +32,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         return;
     }
 
+    // Warning is handled for synth.
     if (!this.preset) {
-        SpessaSynthWarn(`No preset for channel ${this.channel}!`);
         return;
     }
 

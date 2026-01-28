@@ -350,6 +350,19 @@ The [sound bank manager](sound-bank-manager.md) of this synthesizer.
 
 The [key modifier manager](key-modifier-manager.md) of this synthesizer.
 
+### onMissingPreset 
+
+A handler for missing presets during program change. By default, it warns to console.
+It may be useful for allowing the synthesizer to work without any sound banks.
+
+Parameters the function gets called with:
+
+- patch - `MIDIPatch` - the MIDI patch that was requested.
+- system - `SynthSystem` (`gs`, `xg`, `gm` or `gm2`) - the MIDI System for the request.
+
+If a `BasicPreset` instance is returned by the function, it will be used by the channel.
+
+
 ### totalVoicesAmount
 
 The current total amount of voices that are currently playing, a number.

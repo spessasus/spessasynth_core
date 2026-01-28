@@ -17,6 +17,7 @@ const proc = new SpessaSynthProcessor(rate);
 proc.createMIDIChannel();
 const seq = new SpessaSynthSequencer(proc);
 seq.loadNewSongList([mid]);
+seq.play();
 
 const sampleDuration = rate * mid.duration;
 const quantum = 128;
