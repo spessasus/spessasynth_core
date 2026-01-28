@@ -123,9 +123,12 @@ export class SoundBankManager {
      * @param system The MIDI system to select the preset for.
      * @returns An object containing the preset and its bank offset.
      */
-    public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
+    public getPreset(
+        patch: MIDIPatch,
+        system: SynthSystem
+    ): BasicPreset | undefined {
         if (this.soundBankList.length === 0) {
-            throw new Error("No sound banks! Did you forget to add one?");
+            return undefined;
         }
 
         return selectPreset(this.selectablePresetList, patch, system);

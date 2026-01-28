@@ -1,5 +1,3 @@
-import { SpessaSynthWarn } from "../../../utils/loggin";
-import { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { MIDIChannel } from "../engine_components/midi_channel";
 
 /**
@@ -17,13 +15,15 @@ export function programChange(this: MIDIChannel, program: number) {
         this.channelSystem
     );
     if (!preset) {
-        SpessaSynthWarn("No presets! Using empty fallback.");
-        preset = new BasicPreset(
-            this.synthCore.soundBankManager.soundBankList[0].soundBank
+        preset = this.synthCore.missingPresetHandler(
+            this.patch,
+            this.channelSystem
         );
-        // Fallback preset, make it scream so it's easy to notice :-)
-        preset.name = "SPESSA EMPTY FALLBACK PRESET";
+        if (!preset) {
+            return;
+        }
     }
+
     this.preset = preset;
 
     // Drums first

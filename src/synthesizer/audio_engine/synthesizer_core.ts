@@ -136,6 +136,12 @@ export class SynthesizerCore {
         eventType: K,
         eventData: SynthProcessorEventData[K]
     ) => unknown;
+
+    public readonly missingPresetHandler: (
+        patch: MIDIPatch,
+        system: SynthSystem
+    ) => undefined | BasicPreset;
+
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting is calculated in getCachedVoiceIndex, returns a list of voices for this note.
@@ -189,10 +195,15 @@ export class SynthesizerCore {
             eventType: K,
             eventData: SynthProcessorEventData[K]
         ) => unknown,
+        missingPresetHandler: (
+            patch: MIDIPatch,
+            system: SynthSystem
+        ) => BasicPreset | undefined,
         sampleRate: number,
         options: SynthProcessorOptions
     ) {
         this.eventCallbackHandler = eventCallbackHandler;
+        this.missingPresetHandler = missingPresetHandler;
         this.sampleRate = sampleRate;
         this.sampleTime = 1 / sampleRate;
         this.currentTime = options.initialTime;
@@ -384,10 +395,6 @@ export class SynthesizerCore {
         );
 
         let preset = channelObject.preset;
-        if (!preset) {
-            SpessaSynthWarn(`No preset for channel ${channel}!`);
-            return [];
-        }
         if (overridePatch) {
             const patch = this.keyModifierManager.getPatch(channel, midiNote);
             preset = this.soundBankManager.getPreset(
@@ -395,6 +402,12 @@ export class SynthesizerCore {
                 this.masterParameters.midiSystem
             );
         }
+
+        // Warning is handled in program change
+        if (!preset) {
+            return [];
+        }
+
         return this.getVoicesForPreset(preset, midiNote, velocity);
     }
 

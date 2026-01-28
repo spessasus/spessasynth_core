@@ -108,6 +108,8 @@ export class MIDIChannel {
     };
     /**
      * The preset currently assigned to the channel.
+     * Note that this may be undefined in some cases
+     * https://github.com/spessasus/spessasynth_core/issues/48
      */
     public preset?: BasicPreset;
     /**
