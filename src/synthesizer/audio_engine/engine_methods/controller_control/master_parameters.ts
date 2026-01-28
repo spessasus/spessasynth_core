@@ -1,4 +1,7 @@
-import type { MasterParameterChangeCallback, MasterParameterType } from "../../../types";
+import type {
+    MasterParameterChangeCallback,
+    MasterParameterType
+} from "../../../types";
 import type { SynthesizerCore } from "../../synthesizer_core";
 import { SpessaSynthWarn } from "../../../../utils/loggin";
 import { Voice } from "../../engine_components/voice";

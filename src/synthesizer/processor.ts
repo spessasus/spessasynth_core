@@ -1,15 +1,15 @@
-import { SpessaSynthInfo, SpessaSynthWarn } from '../utils/loggin'
-import { consoleColors } from '../utils/other'
+import { SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
+import { consoleColors } from "../utils/other";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
-} from './audio_engine/engine_components/synth_constants'
-import { stbvorbis } from '../externals/stbvorbis_sync/stbvorbis_wrapper'
-import { DEFAULT_SYNTH_OPTIONS } from './audio_engine/engine_components/synth_processor_options'
-import { fillWithDefaults } from '../utils/fill_with_defaults'
-import { SynthesizerSnapshot } from './audio_engine/snapshot/synthesizer_snapshot'
+} from "./audio_engine/engine_components/synth_constants";
+import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
+import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
+import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
 import type {
     MasterParameterType,
     SynthMethodOptions,
@@ -17,13 +17,16 @@ import type {
     SynthProcessorEventData,
     SynthProcessorOptions,
     SynthSystem
-} from './types'
-import { type MIDIController } from '../midi/enums'
-import { SynthesizerCore } from './audio_engine/synthesizer_core'
-import { SoundBankLoader } from '../soundbank/sound_bank_loader'
-import type { BasicPreset } from '../soundbank/basic_soundbank/basic_preset'
-import type { SysExAcceptedArray } from './audio_engine/engine_methods/system_exclusive/helpers'
-import { type MIDIPatch, MIDIPatchTools } from '../soundbank/basic_soundbank/midi_patch'
+} from "./types";
+import { type MIDIController } from "../midi/enums";
+import { SynthesizerCore } from "./audio_engine/synthesizer_core";
+import { SoundBankLoader } from "../soundbank/sound_bank_loader";
+import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
+import type { SysExAcceptedArray } from "./audio_engine/engine_methods/system_exclusive/helpers";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * Processor.ts

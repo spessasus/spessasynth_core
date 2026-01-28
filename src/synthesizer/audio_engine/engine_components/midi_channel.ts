@@ -1,4 +1,8 @@
-import { CONTROLLER_TABLE_SIZE, CUSTOM_CONTROLLER_TABLE_SIZE, NON_CC_INDEX_OFFSET } from "./controller_tables";
+import {
+    CONTROLLER_TABLE_SIZE,
+    CUSTOM_CONTROLLER_TABLE_SIZE,
+    NON_CC_INDEX_OFFSET
+} from "./controller_tables";
 import {
     resetControllers,
     resetControllersRP15Compliant,
@@ -12,7 +16,10 @@ import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry
 import { noteOn } from "../engine_methods/note_on";
 import { noteOff } from "../engine_methods/stopping_notes/note_off";
 import { programChange } from "../engine_methods/program_change";
-import { DEFAULT_PERCUSSION, GENERATOR_OVERRIDE_NO_CHANGE_VALUE } from "./synth_constants";
+import {
+    DEFAULT_PERCUSSION,
+    GENERATOR_OVERRIDE_NO_CHANGE_VALUE
+} from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
 import { computeModulators } from "./compute_modulator";
 import {
@@ -22,7 +29,12 @@ import {
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import type { ChannelProperty, SynthSystem } from "../../types";
-import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
+import {
+    type CustomController,
+    customControllers,
+    type DataEntryState,
+    dataEntryStates
+} from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { SynthesizerCore } from "../synthesizer_core";

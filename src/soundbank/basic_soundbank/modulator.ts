@@ -1,6 +1,15 @@
-import { type GeneratorType, generatorTypes, MAX_GENERATOR } from "./generator_types";
+import {
+    type GeneratorType,
+    generatorTypes,
+    MAX_GENERATOR
+} from "./generator_types";
 import type { ModulatorSourceIndex } from "../types";
-import { type ModulatorCurveType, modulatorCurveTypes, modulatorSources, type ModulatorTransformType } from "../enums";
+import {
+    type ModulatorCurveType,
+    modulatorCurveTypes,
+    modulatorSources,
+    type ModulatorTransformType
+} from "../enums";
 import { midiControllers } from "../../midi/enums";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { IndexedByteArray } from "../../utils/indexed_array";

@@ -1,10 +1,17 @@
-import { type SysExAcceptedArray, sysExLogging, sysExNotRecognized } from "./helpers";
+import {
+    type SysExAcceptedArray,
+    sysExLogging,
+    sysExNotRecognized
+} from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import { arrayToHexString, consoleColors } from "../../../../utils/other";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
-import { type ModulatorSourceEnum, modulatorSources } from "../../../../soundbank/enums";
+import {
+    type ModulatorSourceEnum,
+    modulatorSources
+} from "../../../../soundbank/enums";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../../synthesizer_core";

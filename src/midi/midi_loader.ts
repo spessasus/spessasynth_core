@@ -1,11 +1,19 @@
 import { dataBytesAmount, getChannel, MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { consoleColors } from "../utils/other";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo,
+    SpessaSynthWarn
+} from "../utils/loggin";
 import { readRIFFChunk } from "../utils/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
-import { readBinaryString, readBinaryStringIndexed } from "../utils/byte_functions/string";
+import {
+    readBinaryString,
+    readBinaryStringIndexed
+} from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
 import { type MIDIMessageType } from "./enums";
 import { BasicMIDI } from "./basic_midi";
