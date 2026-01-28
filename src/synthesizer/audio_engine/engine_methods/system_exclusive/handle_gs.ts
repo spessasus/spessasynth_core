@@ -1,4 +1,3 @@
-import type { SpessaSynthProcessor } from "../../../processor";
 import { type SysExAcceptedArray, sysExLogging, sysExNotRecognized } from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import { arrayToHexString, consoleColors } from "../../../../utils/other";
@@ -8,6 +7,7 @@ import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
 import { type ModulatorSourceEnum, modulatorSources } from "../../../../soundbank/enums";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
+import type { SynthesizerCore } from "../../synthesizer_core";
 
 /**
  * Handles a GS system exclusive
@@ -17,7 +17,7 @@ import { readBinaryString } from "../../../../utils/byte_functions/string";
  * @param channelOffset
  */
 export function handleGS(
-    this: SpessaSynthProcessor,
+    this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -45,10 +45,11 @@ export function handleGS(
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const channelObject = this.midiChannels[channel];
                         switch (syx[6]) {
-                            default:
+                            default: {
                                 // This is some other GS sysex...
                                 sysExNotRecognized(syx, "Roland GS");
                                 break;
+                            }
 
                             case 0x15: {
                                 // This is the Use for Drum Part sysex (multiple drums)
@@ -111,20 +112,22 @@ export function handleGS(
                             }
 
                             // Chorus send
-                            case 0x21:
+                            case 0x21: {
                                 channelObject.controllerChange(
                                     midiControllers.chorusDepth,
                                     messageValue
                                 );
                                 break;
+                            }
 
                             // Reverb send
-                            case 0x22:
+                            case 0x22: {
                                 channelObject.controllerChange(
                                     midiControllers.reverbDepth,
                                     messageValue
                                 );
                                 break;
+                            }
 
                             case 0x40:
                             case 0x41:
@@ -181,7 +184,7 @@ export function handleGS(
                             bipolar = false
                         ) => {
                             switch (syx[6] & 0x0f) {
-                                case 0x00:
+                                case 0x00: {
                                     // See https://github.com/spessasus/SpessaSynth/issues/154
                                     // Pitch control
                                     // Special case:
@@ -220,8 +223,9 @@ export function handleGS(
                                         );
                                     }
                                     break;
+                                }
 
-                                case 0x01:
+                                case 0x01: {
                                     // Cutoff
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -237,8 +241,9 @@ export function handleGS(
                                         "cents"
                                     );
                                     break;
+                                }
 
-                                case 0x02:
+                                case 0x02: {
                                     // Amplitude
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -254,10 +259,11 @@ export function handleGS(
                                         "cB"
                                     );
                                     break;
+                                }
 
                                 // Rate control is ignored as it is in hertz
 
-                                case 0x04:
+                                case 0x04: {
                                     // LFO1 pitch depth
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -273,8 +279,9 @@ export function handleGS(
                                         "cents"
                                     );
                                     break;
+                                }
 
-                                case 0x05:
+                                case 0x05: {
                                     // LFO1 filter depth
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -290,8 +297,9 @@ export function handleGS(
                                         "cents"
                                     );
                                     break;
+                                }
 
-                                case 0x06:
+                                case 0x06: {
                                     // LFO1 amplitude depth
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -307,10 +315,11 @@ export function handleGS(
                                         "cB"
                                     );
                                     break;
+                                }
 
                                 // Rate control is ignored as it is in hertz
 
-                                case 0x08:
+                                case 0x08: {
                                     // LFO2 pitch depth
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -326,8 +335,9 @@ export function handleGS(
                                         "cents"
                                     );
                                     break;
+                                }
 
-                                case 0x09:
+                                case 0x09: {
                                     // LFO2 filter depth
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -343,8 +353,9 @@ export function handleGS(
                                         "cents"
                                     );
                                     break;
+                                }
 
-                                case 0x0a:
+                                case 0x0a: {
                                     // LFO2 amplitude depth
                                     channelObject.sysExModulators.setModulator(
                                         source as ModulatorSourceEnum,
@@ -360,25 +371,28 @@ export function handleGS(
                                         "cB"
                                     );
                                     break;
+                                }
                             }
                         };
 
                         // SC88 manual page 198
                         switch (syx[6] & 0xf0) {
-                            default:
+                            default: {
                                 // This is some other GS sysex...
                                 sysExNotRecognized(syx, "Roland GS");
                                 break;
+                            }
 
-                            case 0x00:
+                            case 0x00: {
                                 // Modulation wheel
                                 setupReceivers(
                                     midiControllers.modulationWheel,
                                     "mod wheel"
                                 );
                                 break;
+                            }
 
-                            case 0x10:
+                            case 0x10: {
                                 // Pitch wheel
                                 setupReceivers(
                                     NON_CC_INDEX_OFFSET +
@@ -387,8 +401,9 @@ export function handleGS(
                                     true
                                 );
                                 break;
+                            }
 
-                            case 0x20:
+                            case 0x20: {
                                 // Channel pressure
                                 setupReceivers(
                                     NON_CC_INDEX_OFFSET +
@@ -396,8 +411,9 @@ export function handleGS(
                                     "channel pressure"
                                 );
                                 break;
+                            }
 
-                            case 0x30:
+                            case 0x30: {
                                 // Poly pressure
                                 setupReceivers(
                                     NON_CC_INDEX_OFFSET +
@@ -405,16 +421,18 @@ export function handleGS(
                                     "poly pressure"
                                 );
                                 break;
+                            }
                         }
                         return;
                     } else if (syx[5] === 0x00) {
                         // This is a global system parameter
                         switch (syx[6]) {
-                            default:
+                            default: {
                                 sysExNotRecognized(syx, "Roland GS");
                                 break;
+                            }
 
-                            case 0x7f:
+                            case 0x7f: {
                                 // Roland mode set
                                 // GS mode set
                                 if (messageValue === 0x00) {
@@ -433,8 +451,9 @@ export function handleGS(
                                     this.resetAllControllers("gm");
                                 }
                                 break;
+                            }
 
-                            case 0x06:
+                            case 0x06: {
                                 // Roland master pan
                                 SpessaSynthInfo(
                                     `%cRoland GS Master Pan set to: %c${messageValue}%c with: %c${arrayToHexString(
@@ -450,8 +469,9 @@ export function handleGS(
                                     (messageValue - 64) / 64
                                 );
                                 break;
+                            }
 
-                            case 0x04:
+                            case 0x04: {
                                 // Roland GS master volume
                                 SpessaSynthInfo(
                                     `%cRoland GS Master Volume set to: %c${messageValue}%c with: %c${arrayToHexString(
@@ -464,6 +484,7 @@ export function handleGS(
                                 );
                                 this.setMIDIVolume(messageValue / 127);
                                 break;
+                            }
 
                             case 0x05: {
                                 // Roland master key shift (transpose)
@@ -485,9 +506,10 @@ export function handleGS(
                     } else if (syx[5] === 0x01) {
                         // This is a global system parameter also
                         switch (syx[6]) {
-                            default:
+                            default: {
                                 sysExNotRecognized(syx, "Roland GS");
                                 break;
+                            }
 
                             case 0x00: {
                                 // Patch name. cool!
@@ -501,7 +523,7 @@ export function handleGS(
                                 break;
                             }
 
-                            case 0x33:
+                            case 0x33: {
                                 // Reverb level
                                 SpessaSynthInfo(
                                     `%cGS Reverb level: %c${messageValue}`,
@@ -509,9 +531,9 @@ export function handleGS(
                                     consoleColors.value
                                 );
                                 // 64 is the default
-                                this.privateProps.reverbSend =
-                                    messageValue / 64;
+                                this.reverbSend = messageValue / 64;
                                 break;
+                            }
 
                             // Unsupported reverb params
                             case 0x30:
@@ -519,15 +541,16 @@ export function handleGS(
                             case 0x32:
                             case 0x34:
                             case 0x35:
-                            case 0x37:
+                            case 0x37: {
                                 SpessaSynthInfo(
                                     `%cUnsupported GS Reverb Parameter: %c${syx[6].toString(16)}`,
                                     consoleColors.warn,
                                     consoleColors.unrecognized
                                 );
                                 break;
+                            }
 
-                            case 0x3a:
+                            case 0x3a: {
                                 // Chorus level
                                 SpessaSynthInfo(
                                     `%cGS Chorus level: %c${messageValue}`,
@@ -535,9 +558,9 @@ export function handleGS(
                                     consoleColors.value
                                 );
                                 // 64 is the default
-                                this.privateProps.chorusSend =
-                                    messageValue / 64;
+                                this.chorusSend = messageValue / 64;
                                 break;
+                            }
 
                             // Unsupported chorus params
                             case 0x38:
@@ -547,13 +570,14 @@ export function handleGS(
                             case 0x3d:
                             case 0x3e:
                             case 0x3f:
-                            case 0x40:
+                            case 0x40: {
                                 SpessaSynthInfo(
                                     `%cUnsupported GS Chorus Parameter: %c${syx[6].toString(16)}`,
                                     consoleColors.warn,
                                     consoleColors.unrecognized
                                 );
                                 break;
+                            }
                         }
                     }
                 } else {
@@ -573,16 +597,10 @@ export function handleGS(
                 ) {
                     if (syx[5] === 0x00) {
                         // Display letters
-                        this.privateProps.callEvent(
-                            "synthDisplay",
-                            Array.from(syx)
-                        );
+                        this.callEvent("synthDisplay", [...syx]);
                     } else if (syx[5] === 0x01) {
                         // Matrix display
-                        this.privateProps.callEvent(
-                            "synthDisplay",
-                            Array.from(syx)
-                        );
+                        this.callEvent("synthDisplay", [...syx]);
                     } else {
                         // This is some other GS sysex...
                         sysExNotRecognized(syx, "Roland GS");
@@ -591,7 +609,7 @@ export function handleGS(
                 return;
             }
 
-            case 0x16:
+            case 0x16: {
                 // Some Roland
                 if (syx[4] === 0x10) {
                     // This is a roland master volume message
@@ -607,6 +625,7 @@ export function handleGS(
                     );
                     return;
                 }
+            }
         }
     } else {
         // This is something else...

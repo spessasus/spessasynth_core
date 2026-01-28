@@ -8,8 +8,15 @@ import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
 import { readRIFFChunk, RIFFChunk } from "../../../utils/riff_chunk";
 import { consoleColors } from "../../../utils/other";
-import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin";
-import { readBinaryString, readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../../utils/loggin";
+import {
+    readBinaryString,
+    readBinaryStringIndexed
+} from "../../../utils/byte_functions/string";
 import { stbvorbis } from "../../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
@@ -73,7 +80,7 @@ export class SoundFont2 extends BasicSoundBank {
             );
         }
 
-        let xdtaChunk: RIFFChunk | undefined = undefined;
+        let xdtaChunk: RIFFChunk | undefined;
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
             const chunk = readRIFFChunk(infoChunk.data);
@@ -82,7 +89,7 @@ export class SoundFont2 extends BasicSoundBank {
             const headerTyped = chunk.header as SF2InfoFourCC;
             switch (headerTyped) {
                 case "ifil":
-                case "iver":
+                case "iver": {
                     const major = readLittleEndianIndexed(chunk.data, 2);
                     const minor = readLittleEndianIndexed(chunk.data, 2);
                     if (headerTyped === "ifil") {
@@ -97,6 +104,7 @@ export class SoundFont2 extends BasicSoundBank {
                         };
                     }
                     break;
+                }
 
                 // Dmod: default modulators
                 case "DMOD": {
@@ -119,42 +127,51 @@ export class SoundFont2 extends BasicSoundBank {
                     break;
                 }
 
-                case "ICRD":
+                case "ICRD": {
                     this.soundBankInfo.creationDate = parseDateString(
                         readBinaryStringIndexed(chunk.data, chunk.data.length)
                     );
                     break;
+                }
 
-                case "ISFT":
+                case "ISFT": {
                     this.soundBankInfo.software = text;
                     break;
+                }
 
-                case "IPRD":
+                case "IPRD": {
                     this.soundBankInfo.product = text;
                     break;
+                }
 
-                case "IENG":
+                case "IENG": {
                     this.soundBankInfo.engineer = text;
                     break;
+                }
 
-                case "ICOP":
+                case "ICOP": {
                     this.soundBankInfo.copyright = text;
                     break;
+                }
 
-                case "INAM":
+                case "INAM": {
                     this.soundBankInfo.name = text;
                     break;
+                }
 
-                case "ICMT":
+                case "ICMT": {
                     this.soundBankInfo.comment = text;
                     break;
+                }
 
-                case "irom":
+                case "irom": {
                     this.soundBankInfo.romInfo = text;
                     break;
+                }
 
-                case "isng":
+                case "isng": {
                     this.soundBankInfo.soundEngine = text;
+                }
             }
         }
         this.printInfo();
@@ -206,10 +223,10 @@ export class SoundFont2 extends BasicSoundBank {
                         mainFileArray.currentIndex + sdtaChunk.size - 12
                     )
                 ).data[0];
-            } catch (e) {
+            } catch (error) {
                 SpessaSynthGroupEnd();
                 throw new Error(
-                    `SF2Pack Ogg Vorbis decode error: ${e as Error}`
+                    `SF2Pack Ogg Vorbis decode error: ${error as Error}`
                 );
             }
             SpessaSynthInfo(
@@ -284,14 +301,14 @@ export class SoundFont2 extends BasicSoundBank {
                 false
             );
             if (xSamples.length === samples.length) {
-                samples.forEach((s, i) => {
+                for (const [i, s] of samples.entries()) {
                     s.name += xSamples[i].name;
                     s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
-                });
+                }
             }
         }
         // Trim names
-        samples.forEach((s) => (s.name = s.name.trim()));
+        for (const s of samples) s.name = s.name.trim();
         this.samples.push(...samples);
 
         /**
@@ -310,22 +327,22 @@ export class SoundFont2 extends BasicSoundBank {
             // Apply extensions to instruments
             const xInst = readInstruments(xChunks.inst);
             if (xInst.length === instruments.length) {
-                instruments.forEach((inst, i) => {
+                for (const [i, inst] of instruments.entries()) {
                     inst.name += xInst[i].name;
                     inst.zoneStartIndex |= xInst[i].zoneStartIndex;
-                });
+                }
                 // Adjust zone counts
-                instruments.forEach((inst, i) => {
+                for (const [i, inst] of instruments.entries()) {
                     if (i < instruments.length - 1) {
                         inst.zonesCount =
                             instruments[i + 1].zoneStartIndex -
                             inst.zoneStartIndex;
                     }
-                });
+                }
             }
         }
         // Trim names
-        instruments.forEach((i) => (i.name = i.name.trim()));
+        for (const i of instruments) i.name = i.name.trim();
         this.instruments.push(...instruments);
 
         const ibagIndexes = readZoneIndexes(ibagChunk);
@@ -367,23 +384,23 @@ export class SoundFont2 extends BasicSoundBank {
             // Apply extensions to presets
             const xPreset = readPresets(xChunks.phdr, this);
             if (xPreset.length === presets.length) {
-                presets.forEach((pres, i) => {
+                for (const [i, pres] of presets.entries()) {
                     pres.name += xPreset[i].name;
                     pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
-                });
+                }
                 // Adjust zone counts
-                presets.forEach((preset, i) => {
+                for (const [i, preset] of presets.entries()) {
                     if (i < presets.length - 1) {
                         preset.zonesCount =
                             presets[i + 1].zoneStartIndex -
                             preset.zoneStartIndex;
                     }
-                });
+                }
             }
         }
 
         // Trim names
-        presets.forEach((p) => p.name === p.name.trim());
+        for (const p of presets) p.name = p.name.trim();
         this.addPresets(...presets);
 
         const pbagIndexes = readZoneIndexes(pbagChunk);

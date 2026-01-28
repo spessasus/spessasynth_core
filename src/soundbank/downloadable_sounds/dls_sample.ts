@@ -28,8 +28,8 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     if (bytesPerSample === 2) {
         // Special optimized case for s16 (most common)
         const s16 = new Int16Array(data.buffer);
-        for (let i = 0; i < s16.length; i++) {
-            sampleData[i] = s16[i] / 32768;
+        for (const [i, element] of s16.entries()) {
+            sampleData[i] = element / 32_768;
         }
     } else {
         for (let i = 0; i < sampleData.length; i++) {
@@ -84,7 +84,7 @@ function readALAW(
         const s16sample = input > 127 ? mantissa : -mantissa;
 
         // Convert to float
-        sampleData[i] = s16sample / 32678;
+        sampleData[i] = s16sample / 32_678;
     }
     return sampleData;
 }
@@ -142,7 +142,7 @@ export class DLSSample extends BasicSample {
         if (!this.audioData) {
             let sampleData;
             switch (this.wFormatTag) {
-                default:
+                default: {
                     SpessaSynthWarn(
                         `Failed to decode sample. Unknown wFormatTag: ${this.wFormatTag}`
                     );
@@ -150,14 +150,17 @@ export class DLSSample extends BasicSample {
                         this.rawData.length / this.bytesPerSample
                     );
                     break;
+                }
 
-                case W_FORMAT_TAG.PCM:
+                case W_FORMAT_TAG.PCM: {
                     sampleData = readPCM(this.rawData, this.bytesPerSample);
                     break;
+                }
 
-                case W_FORMAT_TAG.ALAW:
+                case W_FORMAT_TAG.ALAW: {
                     sampleData = readALAW(this.rawData, this.bytesPerSample);
                     break;
+                }
             }
             this.setAudioData(sampleData, this.sampleRate);
         }

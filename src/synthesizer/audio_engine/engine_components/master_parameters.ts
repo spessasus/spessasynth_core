@@ -9,7 +9,7 @@ import type { MasterParameterType } from "../../types";
 
 export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     masterGain: SYNTHESIZER_GAIN,
-    masterPan: 0.0,
+    masterPan: 0,
     voiceCap: VOICE_CAP,
     interpolationType: interpolationTypes.hermite,
     midiSystem: DEFAULT_SYNTH_MODE,

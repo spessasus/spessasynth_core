@@ -4,10 +4,10 @@ export const sampleTypes = {
     rightSample: 2,
     leftSample: 4,
     linkedSample: 8,
-    romMonoSample: 32769,
-    romRightSample: 32770,
-    romLeftSample: 32772,
-    romLinkedSample: 32776
+    romMonoSample: 32_769,
+    romRightSample: 32_770,
+    romLeftSample: 32_772,
+    romLinkedSample: 32_776
 } as const;
 
 export type SampleType = (typeof sampleTypes)[keyof typeof sampleTypes];
@@ -67,9 +67,9 @@ export const dlsSources = {
     chorus: 0xdd,
     reverb: 0xdb,
 
-    pitchWheelRange: 0x100,
-    fineTune: 0x101,
-    coarseTune: 0x102
+    pitchWheelRange: 0x1_00,
+    fineTune: 0x1_01,
+    coarseTune: 0x1_02
 } as const;
 
 export type DLSSource = (typeof dlsSources)[keyof typeof dlsSources];
@@ -85,38 +85,38 @@ export const dlsDestinations = {
     chorusSend: 0x80, // Chorus send level 10ths of a percent
     reverbSend: 0x81, // Reverb send level 10ths of a percent
 
-    modLfoFreq: 0x104, // Modulation LFO frequency
-    modLfoDelay: 0x105, // Modulation LFO delay
+    modLfoFreq: 0x1_04, // Modulation LFO frequency
+    modLfoDelay: 0x1_05, // Modulation LFO delay
 
-    vibLfoFreq: 0x114, // Vibrato LFO frequency
-    vibLfoDelay: 0x115, // Vibrato LFO delay
+    vibLfoFreq: 0x1_14, // Vibrato LFO frequency
+    vibLfoDelay: 0x1_15, // Vibrato LFO delay
 
-    volEnvAttack: 0x206, // Volume envelope attack
-    volEnvDecay: 0x207, // Volume envelope decay
-    reservedEG1: 0x208, // Reserved
-    volEnvRelease: 0x209, // Volume envelope release
-    volEnvSustain: 0x20a, // Volume envelope sustain
-    volEnvDelay: 0x20b, // Volume envelope delay
-    volEnvHold: 0x20c, // Volume envelope hold
+    volEnvAttack: 0x2_06, // Volume envelope attack
+    volEnvDecay: 0x2_07, // Volume envelope decay
+    reservedEG1: 0x2_08, // Reserved
+    volEnvRelease: 0x2_09, // Volume envelope release
+    volEnvSustain: 0x2_0a, // Volume envelope sustain
+    volEnvDelay: 0x2_0b, // Volume envelope delay
+    volEnvHold: 0x2_0c, // Volume envelope hold
 
-    modEnvAttack: 0x30a, // Modulation envelope attack
-    modEnvDecay: 0x30b, // Modulation envelope decay
-    reservedEG2: 0x30c, // Reserved
-    modEnvRelease: 0x30d, // Modulation envelope release
-    modEnvSustain: 0x30e, // Modulation envelope sustain
-    modEnvDelay: 0x30f, // Modulation envelope delay
-    modEnvHold: 0x310, // Modulation envelope hold
+    modEnvAttack: 0x3_0a, // Modulation envelope attack
+    modEnvDecay: 0x3_0b, // Modulation envelope decay
+    reservedEG2: 0x3_0c, // Reserved
+    modEnvRelease: 0x3_0d, // Modulation envelope release
+    modEnvSustain: 0x3_0e, // Modulation envelope sustain
+    modEnvDelay: 0x3_0f, // Modulation envelope delay
+    modEnvHold: 0x3_10, // Modulation envelope hold
 
-    filterCutoff: 0x500, // Low pass filter cutoff frequency
-    filterQ: 0x501 // Low pass filter resonance
+    filterCutoff: 0x5_00, // Low pass filter cutoff frequency
+    filterQ: 0x5_01 // Low pass filter resonance
 } as const;
 
 export type DLSDestination =
     (typeof dlsDestinations)[keyof typeof dlsDestinations];
 
 export const DLSLoopTypes = {
-    forward: 0x0000,
-    loopAndRelease: 0x0001
+    forward: 0x00_00,
+    loopAndRelease: 0x00_01
 } as const;
 
 export type DLSLoopType = (typeof DLSLoopTypes)[keyof typeof DLSLoopTypes];

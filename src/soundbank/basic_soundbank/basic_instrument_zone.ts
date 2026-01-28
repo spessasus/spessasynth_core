@@ -56,7 +56,7 @@ export class BasicInstrumentZone extends BasicZone {
     public getWriteGenerators(bank: BasicSoundBank): Generator[] {
         const gens = super.getWriteGenerators(bank);
         const sampleID = bank.samples.indexOf(this.sample);
-        if (sampleID < 0) {
+        if (sampleID === -1) {
             throw new Error(
                 `${this.sample.name} does not exist in ${bank.soundBankInfo.name}! Cannot write sampleID generator.`
             );

@@ -9,14 +9,9 @@ function getAnyDrums<T extends BasicPreset>(
     presets: T[],
     preferXG: boolean
 ): T {
-    let p: T | undefined;
-    if (preferXG) {
-        // Get any XG drums
-        p = presets.find((p) => p.isXGDrums);
-    } else {
-        // Get any GM/GS drums
-        p = presets.find((p) => p.isGMGSDrum);
-    }
+    const p: T | undefined = preferXG // Get any XG drums
+        ? presets.find((p) => p.isXGDrums) // Get any GM/GS drums
+        : presets.find((p) => p.isGMGSDrum);
     if (p) {
         // Return the found preset
         return p;
@@ -40,7 +35,7 @@ export function selectPreset<T extends BasicPreset>(
     patch: MIDIPatch,
     system: SynthSystem
 ): T {
-    if (presets.length < 1) {
+    if (presets.length === 0) {
         throw new Error("No presets!");
     }
     if (patch.isGMGSDrum && BankSelectHacks.isSystemXG(system)) {
@@ -58,15 +53,15 @@ export function selectPreset<T extends BasicPreset>(
 
     // Check for exact match
     let p = presets.find((p) => p.matches(patch));
-    if (p) {
-        // Special case:
+    if (
+        p && // Special case:
         // Non XG banks sometimes specify melodic "MT" presets at bank 127,
         // Which matches XG banks.
         // Testcase: 4gmgsmt-sf2_04-compat.sf2
         // Only match if the preset declares itself as drums
-        if (!xgDrums || (xgDrums && p.isXGDrums)) {
-            return p;
-        }
+        (!xgDrums || (xgDrums && p.isXGDrums))
+    ) {
+        return p;
     }
 
     // Helper to log failed exact matches
@@ -125,18 +120,16 @@ export function selectPreset<T extends BasicPreset>(
     const matchingPrograms = presets.filter(
         (p) => p.program === program && !p.isAnyDrums
     );
-    if (matchingPrograms.length < 1) {
+    if (matchingPrograms.length === 0) {
         // The first preset
         returnReplacement(presets[0]);
         return presets[0];
     }
-    if (isXG) {
-        // XG uses LSB so search for that.
-        p = matchingPrograms.find((p) => p.bankLSB === bankLSB);
-    } else {
-        // GS uses MSB so search for that.
-        p = matchingPrograms.find((p) => p.bankMSB === bankMSB);
-    }
+    p = isXG
+        ? // XG uses LSB so search for that.
+          matchingPrograms.find((p) => p.bankLSB === bankLSB)
+        : // GS uses MSB so search for that.
+          matchingPrograms.find((p) => p.bankMSB === bankMSB);
     if (p) {
         returnReplacement(p);
         return p;

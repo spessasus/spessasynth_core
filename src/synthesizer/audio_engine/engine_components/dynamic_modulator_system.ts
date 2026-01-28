@@ -1,5 +1,8 @@
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
-import { modulatorCurveTypes, type ModulatorSourceEnum } from "../../../soundbank/enums";
+import {
+    modulatorCurveTypes,
+    type ModulatorSourceEnum
+} from "../../../soundbank/enums";
 import { NON_CC_INDEX_OFFSET } from "./controller_tables";
 import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";

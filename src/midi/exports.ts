@@ -1,9 +1,7 @@
-import { MIDIMessage } from "./midi_message";
-import { BasicMIDI } from "./basic_midi";
-import { MIDIBuilder } from "./midi_tools/midi_builder";
-import { MIDITrack } from "./midi_track";
-
 export * from "./types";
 export * from "./enums";
 
-export { MIDITrack, MIDIBuilder, BasicMIDI, MIDIMessage };
+export { MIDIMessage } from "./midi_message";
+export { BasicMIDI } from "./basic_midi";
+export { MIDIBuilder } from "./midi_tools/midi_builder";
+export { MIDITrack } from "./midi_track";

@@ -40,11 +40,6 @@ const defaultResonantModSource = getModSourceEnum(
 
 export class Modulator {
     /**
-     * The current computed value of this modulator. Only used in the synthesis engine for local voices.
-     */
-    public currentValue = 0;
-
-    /**
      * The generator destination of this modulator.
      */
     public destination: GeneratorType = generatorTypes.initialAttenuation;
@@ -206,7 +201,7 @@ export class DecodedModulator extends Modulator {
         transformType: number
     ) {
         const isEffectModulator =
-            (sourceEnum === 0x00db || sourceEnum === 0x00dd) &&
+            (sourceEnum === 0x00_db || sourceEnum === 0x00_dd) &&
             secondarySourceEnum === 0x0 &&
             (destination === generatorTypes.reverbEffectsSend ||
                 destination === generatorTypes.chorusEffectsSend);
@@ -252,7 +247,7 @@ const defaultSoundFont2Modulators = [
     ),
 
     // Mod wheel to vibrato
-    new DecodedModulator(0x0081, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
+    new DecodedModulator(0x00_81, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
 
     // Vol to attenuation
     new DecodedModulator(
@@ -270,14 +265,14 @@ const defaultSoundFont2Modulators = [
     ),
 
     // Channel pressure to vibrato
-    new DecodedModulator(0x000d, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
+    new DecodedModulator(0x00_0d, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
 
     // Pitch wheel to tuning
-    new DecodedModulator(0x020e, 0x0010, generatorTypes.fineTune, 12700, 0),
+    new DecodedModulator(0x02_0e, 0x00_10, generatorTypes.fineTune, 12_700, 0),
 
     // Pan to uhh, pan
     // Amount is 500 instead of 1000, see #59
-    new DecodedModulator(0x028a, 0x0, generatorTypes.pan, 500, 0),
+    new DecodedModulator(0x02_8a, 0x0, generatorTypes.pan, 500, 0),
 
     // Expression to attenuation
     new DecodedModulator(
@@ -295,10 +290,16 @@ const defaultSoundFont2Modulators = [
     ),
 
     // Reverb effects to send
-    new DecodedModulator(0x00db, 0x0, generatorTypes.reverbEffectsSend, 200, 0),
+    new DecodedModulator(
+        0x00_db,
+        0x0,
+        generatorTypes.reverbEffectsSend,
+        200,
+        0
+    ),
 
     // Chorus effects to send
-    new DecodedModulator(0x00dd, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
+    new DecodedModulator(0x00_dd, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
 ];
 
 const defaultSpessaSynthModulators = [
@@ -432,5 +433,7 @@ const defaultSpessaSynthModulators = [
     )
 ];
 
-export const SPESSASYNTH_DEFAULT_MODULATORS: Modulator[] =
-    defaultSoundFont2Modulators.concat(defaultSpessaSynthModulators);
+export const SPESSASYNTH_DEFAULT_MODULATORS: Modulator[] = [
+    ...defaultSoundFont2Modulators,
+    ...defaultSpessaSynthModulators
+];

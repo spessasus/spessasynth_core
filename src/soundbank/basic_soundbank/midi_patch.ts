@@ -48,21 +48,19 @@ export class MIDIPatchTools {
         if (parts.length > 3 || parts.length < 2) {
             throw new Error("Invalid MIDI string:");
         }
-        if (string.startsWith("DRUM")) {
-            return {
-                bankMSB: 0,
-                bankLSB: 0,
-                program: parseInt(parts[1]),
-                isGMGSDrum: true
-            };
-        } else {
-            return {
-                bankLSB: parseInt(parts[0]),
-                bankMSB: parseInt(parts[1]),
-                program: parseInt(parts[2]),
-                isGMGSDrum: false
-            };
-        }
+        return string.startsWith("DRUM")
+            ? {
+                  bankMSB: 0,
+                  bankLSB: 0,
+                  program: Number.parseInt(parts[1]),
+                  isGMGSDrum: true
+              }
+            : {
+                  bankLSB: Number.parseInt(parts[0]),
+                  bankMSB: Number.parseInt(parts[1]),
+                  program: Number.parseInt(parts[2]),
+                  isGMGSDrum: false
+              };
     }
 
     /**
@@ -100,11 +98,13 @@ export class MIDIPatchTools {
      */
     public static fromNamedMIDIString(string: string): MIDIPatchNamed {
         const firstSpace = string.indexOf(" ");
-        if (firstSpace < 0) {
+        if (firstSpace === -1) {
             throw new Error(`Invalid named MIDI string: ${string}`);
         }
-        const patch = this.fromMIDIString(string.substring(0, firstSpace));
-        const name = string.substring(firstSpace + 1);
+        const patch = this.fromMIDIString(
+            string.slice(0, Math.max(0, firstSpace))
+        );
+        const name = string.slice(Math.max(0, firstSpace + 1));
         return {
             ...patch,
             name

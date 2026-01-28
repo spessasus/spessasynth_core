@@ -6,6 +6,17 @@ import type { MIDIMessage } from "../midi_message";
 import type { NoteTime } from "../types";
 
 /**
+ * Gets tempo from the midi message
+ * @param event the midi event
+ * @return the tempo in bpm
+ */
+const getTempo = (event: MIDIMessage): number => {
+    // Simulate IndexedByteArray
+    event.data = new IndexedByteArray(event.data.buffer);
+    return 60_000_000 / readBigEndian(event.data, 3);
+};
+
+/**
  * Calculates all note times in seconds.
  * @param midi the midi to use
  * @param minDrumLength the shortest a drum note (channel 10) can be, in seconds.
@@ -16,17 +27,6 @@ export function getNoteTimesInternal(
     midi: BasicMIDI,
     minDrumLength = 0
 ): NoteTime[][] {
-    /**
-     * Gets tempo from the midi message
-     * @param event the midi event
-     * @return the tempo in bpm
-     */
-    const getTempo = (event: MIDIMessage): number => {
-        // Simulate IndexedByteArray
-        event.data = new IndexedByteArray(event.data.buffer);
-        return 60000000 / readBigEndian(event.data, 3);
-    };
-
     /**
      * An array of 16 arrays (channels)
      */
@@ -56,7 +56,7 @@ export function getNoteTimesInternal(
             const time = elapsedTime - note.start;
             note.length = time;
             if (channel === DEFAULT_PERCUSSION) {
-                note.length = time < minDrumLength ? minDrumLength : time;
+                note.length = Math.max(time, minDrumLength);
             }
             // Delete from unfinished
             unfinishedNotes[channel].splice(noteIndex, 1);
@@ -108,15 +108,15 @@ export function getNoteTimesInternal(
     // Finish the unfinished notes
     if (unfinished > 0) {
         // For every channel, for every note that is unfinished (has -1 length)
-        unfinishedNotes.forEach((channelNotes, channel) => {
-            channelNotes.forEach((note) => {
+        for (const [channel, channelNotes] of unfinishedNotes.entries()) {
+            for (const note of channelNotes) {
                 const time = elapsedTime - note.start;
                 note.length = time;
                 if (channel === DEFAULT_PERCUSSION) {
-                    note.length = time < minDrumLength ? minDrumLength : time;
+                    note.length = Math.max(time, minDrumLength);
                 }
-            });
-        });
+            }
+        }
     }
     return noteTimes;
 }

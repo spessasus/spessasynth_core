@@ -17,13 +17,16 @@ export class BankSelectHacks {
 
     public static getDrumBank(sys: SynthSystem) {
         switch (sys) {
-            default:
+            default: {
                 throw new Error(`${sys} doesn't have a bank MSB for drums.`);
+            }
 
-            case "gm2":
+            case "gm2": {
                 return 120;
-            case "xg":
+            }
+            case "xg": {
                 return 127;
+            }
         }
     }
 

@@ -56,14 +56,16 @@ export function getChannel(statusByte: MIDIMessageType): number {
         case 0xb0:
         case 0xc0:
         case 0xd0:
-        case 0xe0:
+        case 0xe0: {
             break;
+        }
 
-        case 0xf0:
+        case 0xf0: {
             switch (channel) {
-                case 0x0:
+                case 0x0: {
                     resultChannel = -3;
                     break;
+                }
 
                 case 0x1:
                 case 0x2:
@@ -78,18 +80,22 @@ export function getChannel(statusByte: MIDIMessageType): number {
                 case 0xb:
                 case 0xc:
                 case 0xd:
-                case 0xe:
+                case 0xe: {
                     resultChannel = -1;
                     break;
+                }
 
-                case 0xf:
+                case 0xf: {
                     resultChannel = -2;
                     break;
+                }
             }
             break;
+        }
 
-        default:
+        default: {
             resultChannel = -1;
+        }
     }
 
     return resultChannel;

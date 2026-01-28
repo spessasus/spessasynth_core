@@ -21,32 +21,35 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         this.customControllers[customControllers.channelKeyShift];
 
     // If high performance mode, kill notes instead of stopping them
-    if (this.synthProps.masterParameters.blackMIDIMode) {
-        // If the channel is percussion channel, do not kill the notes
-        if (!this.drumChannel) {
-            this.killNote(realKey, -6950);
-            this.synthProps.callEvent("noteOff", {
-                midiNote: midiNote,
-                channel: this.channelNumber
-            });
-            return;
-        }
+    if (
+        this.synthCore.masterParameters.blackMIDIMode && // If the channel is percussion channel, do not kill the notes
+        !this.drumChannel
+    ) {
+        this.killNote(realKey);
+        this.synthCore.callEvent("noteOff", {
+            midiNote: midiNote,
+            channel: this.channel
+        });
+        return;
     }
 
-    const channelVoices = this.voices;
-    channelVoices.forEach((v) => {
-        if (v.realKey !== realKey || v.isInRelease) {
-            return;
-        }
-        // If hold pedal, move to sustain
-        if (this.holdPedal) {
-            this.sustainedVoices.push(v);
-        } else {
-            v.release(this.synth.currentSynthTime);
-        }
-    });
-    this.synthProps.callEvent("noteOff", {
+    if (!this.holdPedal) {
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.channel === this.channel &&
+                    v.active &&
+                    v.realKey === realKey &&
+                    !v.isInRelease
+                ) {
+                    v.releaseVoice(this.synthCore.currentTime);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
+    }
+    this.synthCore.callEvent("noteOff", {
         midiNote: midiNote,
-        channel: this.channelNumber
+        channel: this.channel
     });
 }

@@ -21,10 +21,10 @@ export function getSHDR(
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
     let maxSampleLink = 0;
-    bank.samples.forEach((sample, index) => {
+    for (const [index, sample] of bank.samples.entries()) {
         // Sample name
-        writeBinaryStringIndexed(shdrData, sample.name.substring(0, 20), 20);
-        writeBinaryStringIndexed(xshdrData, sample.name.substring(20), 20);
+        writeBinaryStringIndexed(shdrData, sample.name.slice(0, 20), 20);
+        writeBinaryStringIndexed(xshdrData, sample.name.slice(20), 20);
         // Start offset
         const dwStart = smplStartOffsets[index];
         writeDword(shdrData, dwStart);
@@ -54,7 +54,7 @@ export function getSHDR(
         const sampleLinkIndex = sample.linkedSample
             ? bank.samples.indexOf(sample.linkedSample)
             : 0;
-        writeWord(shdrData, Math.max(0, sampleLinkIndex) & 0xffff);
+        writeWord(shdrData, Math.max(0, sampleLinkIndex) & 0xff_ff);
         writeWord(xshdrData, Math.max(0, sampleLinkIndex) >> 16);
         maxSampleLink = Math.max(maxSampleLink, sampleLinkIndex);
         // Sample type: add byte if compressed
@@ -64,7 +64,7 @@ export function getSHDR(
         }
         writeWord(shdrData, type);
         xshdrData.currentIndex += 2;
-    });
+    }
 
     // Write EOS and zero everything else
     writeBinaryStringIndexed(shdrData, "EOS", sampleLength);

@@ -42,9 +42,10 @@ export function controllerChange(
         }
         // Append the lower nibble to the main controller
         this.midiControllers[actualCCNum] =
-            (this.midiControllers[actualCCNum] & 0x3f80) |
+            (this.midiControllers[actualCCNum] & 0x3f_80) |
             (controllerValue & 0x7f);
-        this.voices.forEach((v) => this.computeModulators(v, 1, actualCCNum));
+
+        this.computeModulatorsAll(1, actualCCNum);
     }
     if (this.lockedControllers[controllerNumber]) {
         return;
@@ -56,50 +57,73 @@ export function controllerChange(
     // Interpret special CCs
     {
         switch (controllerNumber) {
-            case midiControllers.allNotesOff:
+            // Channel mode messages
+            case midiControllers.omniModeOff:
+            case midiControllers.omniModeOn:
+            case midiControllers.allNotesOff: {
                 this.stopAllNotes();
                 break;
+            }
 
-            case midiControllers.allSoundOff:
+            case midiControllers.allSoundOff: {
                 this.stopAllNotes(true);
                 break;
+            }
+
+            case midiControllers.polyModeOn: {
+                this.stopAllNotes(true);
+                this.polyMode = true;
+
+                break;
+            }
+
+            case midiControllers.monoModeOn: {
+                this.stopAllNotes(true);
+                this.polyMode = false;
+                break;
+            }
 
             // Special case: bank select
-            case midiControllers.bankSelect:
+            case midiControllers.bankSelect: {
                 this.setBankMSB(controllerValue);
                 // Ensure that for XG, drum channels always are 127
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
-                    this.channelNumber % 16 === DEFAULT_PERCUSSION &&
+                    this.channel % 16 === DEFAULT_PERCUSSION &&
                     BankSelectHacks.isSystemXG(this.channelSystem)
                 ) {
                     this.setBankMSB(127);
                 }
 
                 break;
+            }
 
-            case midiControllers.bankSelectLSB:
+            case midiControllers.bankSelectLSB: {
                 this.setBankLSB(controllerValue);
                 break;
+            }
 
             // Check for RPN and NPRN and data entry
-            case midiControllers.registeredParameterLSB:
+            case midiControllers.registeredParameterLSB: {
                 this.dataEntryState = dataEntryStates.RPFine;
                 break;
+            }
 
-            case midiControllers.registeredParameterMSB:
+            case midiControllers.registeredParameterMSB: {
                 this.dataEntryState = dataEntryStates.RPCoarse;
                 break;
+            }
 
-            case midiControllers.nonRegisteredParameterMSB:
+            case midiControllers.nonRegisteredParameterMSB: {
                 // Sf spec section 9.6.2
                 this.customControllers[customControllers.sf2NPRNGeneratorLSB] =
                     0;
                 this.dataEntryState = dataEntryStates.NRPCoarse;
                 break;
+            }
 
-            case midiControllers.nonRegisteredParameterLSB:
+            case midiControllers.nonRegisteredParameterLSB: {
                 if (
                     this.midiControllers[
                         midiControllers.nonRegisteredParameterMSB
@@ -120,61 +144,86 @@ export function controllerChange(
                         ] = 0;
                     }
 
-                    if (controllerValue === 100) {
-                        this.customControllers[
-                            customControllers.sf2NPRNGeneratorLSB
-                        ] += 100;
-                    } else if (controllerValue === 101) {
-                        this.customControllers[
-                            customControllers.sf2NPRNGeneratorLSB
-                        ] += 1000;
-                    } else if (controllerValue === 102) {
-                        this.customControllers[
-                            customControllers.sf2NPRNGeneratorLSB
-                        ] += 10000;
-                    } else if (controllerValue < 100) {
-                        this.customControllers[
-                            customControllers.sf2NPRNGeneratorLSB
-                        ] += controllerValue;
+                    switch (controllerValue) {
+                        case 100: {
+                            this.customControllers[
+                                customControllers.sf2NPRNGeneratorLSB
+                            ] += 100;
+
+                            break;
+                        }
+                        case 101: {
+                            this.customControllers[
+                                customControllers.sf2NPRNGeneratorLSB
+                            ] += 1000;
+
+                            break;
+                        }
+                        case 102: {
+                            this.customControllers[
+                                customControllers.sf2NPRNGeneratorLSB
+                            ] += 10_000;
+
+                            break;
+                        }
+                        default: {
+                            if (controllerValue < 100) {
+                                this.customControllers[
+                                    customControllers.sf2NPRNGeneratorLSB
+                                ] += controllerValue;
+                            }
+                        }
                     }
                 }
                 this.dataEntryState = dataEntryStates.NRPFine;
                 break;
+            }
 
-            case midiControllers.dataEntryMSB:
+            case midiControllers.dataEntryMSB: {
                 this.dataEntryCoarse(controllerValue);
                 break;
+            }
 
-            case midiControllers.dataEntryLSB:
+            case midiControllers.dataEntryLSB: {
                 this.dataEntryFine(controllerValue);
                 break;
+            }
 
-            case midiControllers.resetAllControllers:
+            case midiControllers.resetAllControllers: {
                 this.resetControllersRP15Compliant();
                 break;
+            }
 
-            case midiControllers.sustainPedal:
+            case midiControllers.sustainPedal: {
                 if (controllerValue < 64) {
-                    this.sustainedVoices.forEach((v) => {
-                        v.release(this.synth.currentSynthTime);
-                    });
-                    this.sustainedVoices = [];
+                    let vc = 0;
+                    if (this.voiceCount > 0)
+                        for (const v of this.synthCore.voices) {
+                            if (
+                                v.channel === this.channel &&
+                                v.active &&
+                                !v.isInRelease
+                            ) {
+                                v.releaseVoice(this.synthCore.currentTime);
+                                if (++vc >= this.voiceCount) break; // We already checked all the voices
+                            }
+                        }
                 }
                 break;
+            }
 
             // Default: just compute modulators
-            default:
-                this.voices.forEach((v) =>
-                    this.computeModulators(v, 1, controllerNumber)
-                );
+            default: {
+                this.computeModulatorsAll(1, controllerNumber);
                 break;
+            }
         }
     }
     if (!sendEvent) {
         return;
     }
-    this.synthProps.callEvent("controllerChange", {
-        channel: this.channelNumber,
+    this.synthCore.callEvent("controllerChange", {
+        channel: this.channel,
         controllerNumber: controllerNumber,
         controllerValue: controllerValue
     });

@@ -42,9 +42,9 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
 
     public copyFrom(inputArticulation: DownloadableSoundsArticulation) {
         this.mode = inputArticulation.mode;
-        inputArticulation.connectionBlocks.forEach((block) => {
+        for (const block of inputArticulation.connectionBlocks) {
             this.connectionBlocks.push(ConnectionBlock.copyFrom(block));
-        });
+        }
     }
 
     public fromSFZone(z: BasicInstrumentZone) {
@@ -61,22 +61,28 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         // Real + (60 / 128) * scale
         // We do this here.
         for (const relativeGenerator of zone.generators) {
-            let absoluteCounterpart: GeneratorType | undefined = undefined;
+            let absoluteCounterpart: GeneratorType | undefined;
             switch (relativeGenerator.generatorType) {
-                default:
+                default: {
                     continue;
+                }
 
-                case generatorTypes.keyNumToVolEnvDecay:
+                case generatorTypes.keyNumToVolEnvDecay: {
                     absoluteCounterpart = generatorTypes.decayVolEnv;
                     break;
-                case generatorTypes.keyNumToVolEnvHold:
+                }
+
+                case generatorTypes.keyNumToVolEnvHold: {
                     absoluteCounterpart = generatorTypes.holdVolEnv;
                     break;
-                case generatorTypes.keyNumToModEnvDecay:
+                }
+                case generatorTypes.keyNumToModEnvDecay: {
                     absoluteCounterpart = generatorTypes.decayModEnv;
                     break;
-                case generatorTypes.keyNumToModEnvHold:
+                }
+                case generatorTypes.keyNumToModEnvHold: {
                     absoluteCounterpart = generatorTypes.holdModEnv;
+                }
             }
             const absoluteValue = zone.getGenerator(
                 absoluteCounterpart,
@@ -291,9 +297,8 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             const generatorAmount = connection.shortScale;
             switch (connection.destination) {
                 default:
-                    continue;
 
-                case dlsDestinations.volEnvHold:
+                case dlsDestinations.volEnvHold: {
                     // Key to vol env hold
                     applyKeyToCorrection(
                         generatorAmount,
@@ -302,8 +307,9 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                         dlsDestinations.volEnvHold
                     );
                     break;
+                }
 
-                case dlsDestinations.volEnvDecay:
+                case dlsDestinations.volEnvDecay: {
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToVolEnvDecay,
@@ -311,8 +317,9 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                         dlsDestinations.volEnvDecay
                     );
                     break;
+                }
 
-                case dlsDestinations.modEnvHold:
+                case dlsDestinations.modEnvHold: {
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToModEnvHold,
@@ -320,8 +327,9 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                         dlsDestinations.modEnvHold
                     );
                     break;
+                }
 
-                case dlsDestinations.modEnvDecay:
+                case dlsDestinations.modEnvDecay: {
                     applyKeyToCorrection(
                         generatorAmount,
                         generatorTypes.keyNumToModEnvDecay,
@@ -329,6 +337,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                         dlsDestinations.modEnvDecay
                     );
                     break;
+                }
             }
         }
     }

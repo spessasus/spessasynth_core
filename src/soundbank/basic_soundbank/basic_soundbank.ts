@@ -1,6 +1,14 @@
-import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "../soundfont/write/write";
+import {
+    DEFAULT_SF2_WRITE_OPTIONS,
+    writeSF2Internal
+} from "../soundfont/write/write";
 import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
@@ -10,12 +18,20 @@ import { BankSelectHacks } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
-import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2WriteOptions } from "../types";
+import type {
+    DLSWriteOptions,
+    SF2VersionTag,
+    SoundBankInfoData,
+    SoundFont2WriteOptions
+} from "../types";
 import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
-import { DEFAULT_DLS_OPTIONS, DownloadableSounds } from "../downloadable_sounds/downloadable_sounds";
+import {
+    DEFAULT_DLS_OPTIONS,
+    DownloadableSounds
+} from "../downloadable_sounds/downloadable_sounds";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -88,18 +104,18 @@ export class BasicSoundBank {
             throw new Error("No sound banks provided!");
         }
         const presets = mainSf.presets;
-        while (soundBanks.length) {
+        while (soundBanks.length > 0) {
             const newPresets = soundBanks?.shift()?.presets;
             if (newPresets) {
-                newPresets.forEach((newPreset) => {
+                for (const newPreset of newPresets) {
                     if (
-                        presets.find((existingPreset) =>
+                        !presets.some((existingPreset) =>
                             newPreset.matches(existingPreset)
-                        ) === undefined
+                        )
                     ) {
                         presets.push(newPreset);
                     }
-                });
+                }
             }
         }
 
@@ -123,7 +139,7 @@ export class BasicSoundBank {
         sample.originalKey = 65;
         sample.pitchCorrection = 20;
         sample.loopEnd = 127;
-        sample.setAudioData(sampleData, 44100);
+        sample.setAudioData(sampleData, 44_100);
         font.addSamples(sample);
 
         const inst = new BasicInstrument();
@@ -157,7 +173,7 @@ export class BasicSoundBank {
      */
     public static copyFrom(bank: BasicSoundBank) {
         const copied = new BasicSoundBank();
-        bank.presets.forEach((p) => copied.clonePreset(p));
+        for (const p of bank.presets) copied.clonePreset(p);
         copied.soundBankInfo = { ...bank.soundBankInfo };
         return copied;
     }
@@ -410,8 +426,8 @@ export class BasicSoundBank {
                 const combos = [...used].map((s) => {
                     const split = s.split("-");
                     return {
-                        key: parseInt(split[0]),
-                        velocity: parseInt(split[1])
+                        key: Number.parseInt(split[0]),
+                        velocity: Number.parseInt(split[1])
                     };
                 });
                 SpessaSynthGroupCollapsed(

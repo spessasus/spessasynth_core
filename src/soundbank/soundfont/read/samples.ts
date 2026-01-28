@@ -1,5 +1,8 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import { readLittleEndianIndexed, signedInt8 } from "../../../utils/byte_functions/little_endian";
+import {
+    readLittleEndianIndexed,
+    signedInt8
+} from "../../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
@@ -128,14 +131,7 @@ export class SoundFontSample extends BasicSample {
             return;
         }
         const linked = samplesArray[this.linkedSampleIndex];
-        if (!linked) {
-            // Log as info because it's common and not really dangerous
-            SpessaSynthInfo(
-                `%cInvalid linked sample for ${this.name}. Setting to mono.`,
-                consoleColors.warn
-            );
-            this.unlinkSample();
-        } else {
+        if (linked) {
             // Check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
             if (linked.linkedSample) {
                 SpessaSynthInfo(
@@ -146,6 +142,13 @@ export class SoundFontSample extends BasicSample {
             } else {
                 this.setLinkedSample(linked, this.sampleType);
             }
+        } else {
+            // Log as info because it's common and not really dangerous
+            SpessaSynthInfo(
+                `%cInvalid linked sample for ${this.name}. Setting to mono.`,
+                consoleColors.warn
+            );
+            this.unlinkSample();
         }
     }
 
@@ -182,8 +185,8 @@ export class SoundFontSample extends BasicSample {
         const convertedSigned16 = new Int16Array(this.s16leData.buffer);
 
         // Convert to float
-        for (let i = 0; i < convertedSigned16.length; i++) {
-            audioData[i] = convertedSigned16[i] / 32768;
+        for (const [i, element] of convertedSigned16.entries()) {
+            audioData[i] = element / 32_768;
         }
 
         this.audioData = audioData;
@@ -226,7 +229,7 @@ export function readSamples(
 
     // Link samples
     if (linkSamples) {
-        samples.forEach((s) => s.getLinkedSample(samples));
+        for (const s of samples) s.getLinkedSample(samples);
     }
 
     return samples;

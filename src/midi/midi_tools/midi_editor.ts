@@ -35,7 +35,7 @@ function getControllerChange(
 ): MIDIMessage {
     return new MIDIMessage(
         ticks,
-        (midiMessageTypes.controllerChange | channel % 16) as MIDIMessageType,
+        (midiMessageTypes.controllerChange | (channel % 16)) as MIDIMessageType,
         new IndexedByteArray([cc, value])
     );
 }
@@ -98,9 +98,9 @@ export function modifyMIDIInternal(
     );
 
     const channelsToChangeProgram = new Set<number>();
-    desiredProgramChanges.forEach((c) => {
+    for (const c of desiredProgramChanges) {
         channelsToChangeProgram.add(c.channel);
-    });
+    }
 
     // Go through all events one by one
     let system: SynthSystem = "gs";
@@ -139,30 +139,30 @@ export function modifyMIDIInternal(
     };
 
     // Assign port offsets
-    midi.tracks.forEach((track, i) => {
+    for (const [i, track] of midi.tracks.entries()) {
         assignMIDIPort(i, track.port);
-    });
+    }
 
     const channelsAmount = midiPortChannelOffset;
     /**
      * Tracks if the channel already had its first note on
      */
-    const isFirstNoteOn = Array<boolean>(channelsAmount).fill(true);
+    const isFirstNoteOn = new Array<boolean>(channelsAmount).fill(true);
 
     /**
      * MIDI key transpose
      */
-    const coarseTranspose = Array<number>(channelsAmount).fill(0);
+    const coarseTranspose = new Array<number>(channelsAmount).fill(0);
     /**
      * RPN fine transpose
      */
-    const fineTranspose = Array<number>(channelsAmount).fill(0);
-    desiredChannelsToTranspose.forEach((transpose) => {
+    const fineTranspose = new Array<number>(channelsAmount).fill(0);
+    for (const transpose of desiredChannelsToTranspose) {
         const coarse = Math.trunc(transpose.keyShift);
         const fine = transpose.keyShift - coarse;
         coarseTranspose[transpose.channel] = coarse;
         fineTranspose[transpose.channel] = fine;
-    });
+    }
 
     midi.iterate((e, trackNum, eventIndexes) => {
         const track = midi.tracks[trackNum];
@@ -199,7 +199,7 @@ export function modifyMIDIInternal(
             return;
         }
         switch (status) {
-            case midiMessageTypes.noteOn:
+            case midiMessageTypes.noteOn: {
                 // Is it first?
                 if (isFirstNoteOn[channel]) {
                     isFirstNoteOn[channel] = false;
@@ -209,17 +209,17 @@ export function modifyMIDIInternal(
                     // And since we use splice,
                     // Controllers get added first, then programs before them
                     // Now add controllers
-                    desiredControllerChanges
-                        .filter((c) => c.channel === channel)
-                        .forEach((change) => {
-                            const ccChange = getControllerChange(
-                                midiChannel,
-                                change.controllerNumber,
-                                change.controllerValue,
-                                e.ticks
-                            );
-                            addEventBefore(ccChange);
-                        });
+                    for (const change of desiredControllerChanges.filter(
+                        (c) => c.channel === channel
+                    )) {
+                        const ccChange = getControllerChange(
+                            midiChannel,
+                            change.controllerNumber,
+                            change.controllerValue,
+                            e.ticks
+                        );
+                        addEventBefore(ccChange);
+                    }
                     const fineTune = fineTranspose[channel];
 
                     if (fineTune !== 0) {
@@ -337,12 +337,14 @@ export function modifyMIDIInternal(
                 // Transpose key (for zero it won't change anyway)
                 e.data[0] += coarseTranspose[channel];
                 break;
+            }
 
-            case midiMessageTypes.noteOff:
+            case midiMessageTypes.noteOff: {
                 e.data[0] += coarseTranspose[channel];
                 break;
+            }
 
-            case midiMessageTypes.programChange:
+            case midiMessageTypes.programChange: {
                 // Do we delete it?
                 if (channelsToChangeProgram.has(channel)) {
                     // This channel has program change. BEGONE!
@@ -350,8 +352,9 @@ export function modifyMIDIInternal(
                     return;
                 }
                 break;
+            }
 
-            case midiMessageTypes.controllerChange:
+            case midiMessageTypes.controllerChange: {
                 {
                     const ccNum = e.data[0];
                     const changes = desiredControllerChanges.find(
@@ -366,18 +369,18 @@ export function modifyMIDIInternal(
                     }
                     // Bank maybe?
                     if (
-                        ccNum === midiControllers.bankSelect ||
-                        ccNum === midiControllers.bankSelectLSB
+                        (ccNum === midiControllers.bankSelect ||
+                            ccNum === midiControllers.bankSelectLSB) &&
+                        channelsToChangeProgram.has(channel)
                     ) {
-                        if (channelsToChangeProgram.has(channel)) {
-                            // BEGONE!
-                            deleteThisEvent();
-                        }
+                        // BEGONE!
+                        deleteThisEvent();
                     }
                 }
                 break;
+            }
 
-            case midiMessageTypes.systemExclusive:
+            case midiMessageTypes.systemExclusive: {
                 // Check for xg on
                 if (isXGOn(e)) {
                     SpessaSynthInfo(
@@ -424,6 +427,7 @@ export function modifyMIDIInternal(
                     deleteThisEvent();
                     addedGs = false;
                 }
+            }
         }
     });
     // Check for gs
@@ -454,10 +458,13 @@ export function applySnapshotInternal(
     const channelsToClear: number[] = [];
     const programChanges: DesiredProgramChange[] = [];
     const controllerChanges: DesiredControllerChange[] = [];
-    snapshot.channelSnapshots.forEach((channel, channelNumber) => {
+    for (const [
+        channelNumber,
+        channel
+    ] of snapshot.channelSnapshots.entries()) {
         if (channel.isMuted) {
             channelsToClear.push(channelNumber);
-            return;
+            continue;
         }
         const transposeFloat =
             channel.channelTransposeKeyShift +
@@ -476,13 +483,13 @@ export function applySnapshotInternal(
             });
         }
         // Check for locked controllers and change them appropriately
-        channel.lockedControllers.forEach((l, ccNumber) => {
+        for (const [ccNumber, l] of channel.lockedControllers.entries()) {
             if (
                 !l ||
                 ccNumber > 127 ||
                 ccNumber === midiControllers.bankSelect
             ) {
-                return;
+                continue;
             }
             const targetValue = channel.midiControllers[ccNumber] >> 7; // Channel controllers are stored as 14 bit values
             controllerChanges.push({
@@ -490,8 +497,8 @@ export function applySnapshotInternal(
                 controllerNumber: ccNumber,
                 controllerValue: targetValue
             });
-        });
-    });
+        }
+    }
     midi.modify(
         programChanges,
         controllerChanges,

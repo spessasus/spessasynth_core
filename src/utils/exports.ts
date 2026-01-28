@@ -1,6 +1,3 @@
-import { IndexedByteArray } from "./indexed_array";
-import { audioToWav } from "./write_wav";
-
 import { readBigEndian } from "./byte_functions/big_endian";
 import { readLittleEndianIndexed } from "./byte_functions/little_endian";
 import { readBinaryStringIndexed } from "./byte_functions/string";
@@ -12,11 +9,8 @@ import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo,
-    SpessaSynthLogging,
     SpessaSynthWarn
 } from "./loggin";
-
-import type { FourCC } from "./riff_chunk";
 
 // You shouldn't use these...
 const SpessaSynthCoreUtils = {
@@ -36,13 +30,7 @@ const SpessaSynthCoreUtils = {
     inflateSync
 };
 
-export {
-    IndexedByteArray,
-    audioToWav,
-    SpessaSynthLogging,
-    SpessaSynthCoreUtils,
-    type FourCC
-};
+export { SpessaSynthCoreUtils };
 
 export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
     normalizeAudio: true,
@@ -92,3 +80,8 @@ export interface WaveMetadata {
      */
     genre: string;
 }
+
+export { IndexedByteArray } from "./indexed_array";
+export { audioToWav } from "./write_wav";
+export { SpessaSynthLogging } from "./loggin";
+export { type FourCC } from "./riff_chunk";

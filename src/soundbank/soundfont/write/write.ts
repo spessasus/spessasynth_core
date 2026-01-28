@@ -58,7 +58,7 @@ export async function writeSF2Internal(
     );
     if (options?.compress) {
         if (typeof options?.compressionFunction !== "function") {
-            throw new Error(
+            throw new TypeError(
                 "No compression function supplied but compression enabled."
             );
         }
@@ -129,54 +129,64 @@ ${bank.soundBankInfo.subject}`
         }
 
         switch (type) {
-            case "name":
+            case "name": {
                 writeSF2Info("INAM", data as string);
                 break;
+            }
 
-            case "comment":
+            case "comment": {
                 writeSF2Info("ICMT", commentText);
                 break;
+            }
 
-            case "copyright":
+            case "copyright": {
                 writeSF2Info("ICOP", data as string);
                 break;
+            }
 
-            case "creationDate":
+            case "creationDate": {
                 writeSF2Info("ICRD", (data as Date).toISOString());
                 break;
+            }
 
-            case "engineer":
+            case "engineer": {
                 writeSF2Info("IENG", data as string);
                 break;
+            }
 
-            case "product":
+            case "product": {
                 writeSF2Info("IPRD", data as string);
                 break;
+            }
 
-            case "romInfo":
+            case "romInfo": {
                 writeSF2Info("irom", data as string);
                 break;
+            }
 
-            case "software":
+            case "software": {
                 writeSF2Info("ISFT", data as string);
                 break;
+            }
 
-            case "soundEngine":
+            case "soundEngine": {
                 writeSF2Info("isng", data as string);
                 break;
+            }
 
-            case "subject":
+            case "subject": {
                 // Merged with the comment
                 break;
+            }
         }
     }
 
     // Do not write unchanged default modulators
     const unchangedDefaultModulators = bank.defaultModulators.some(
         (mod) =>
-            SPESSASYNTH_DEFAULT_MODULATORS.findIndex((m) =>
+            !SPESSASYNTH_DEFAULT_MODULATORS.some((m) =>
                 Modulator.isIdentical(m, mod, true)
-            ) === -1
+            )
     );
 
     if (unchangedDefaultModulators && options?.writeDefaultModulators) {

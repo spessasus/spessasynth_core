@@ -6,7 +6,7 @@ import type { BasicInstrument } from "./basic_instrument";
 import type { SampleEncodingFunction } from "../types";
 
 // Should be reasonable for most cases
-const RESAMPLE_RATE = 48000;
+const RESAMPLE_RATE = 48_000;
 
 export class BasicSample {
     /**
@@ -164,16 +164,16 @@ export class BasicSample {
         try {
             // If the sample rate is too low or too high, resample
             let audioData = this.getAudioData();
-            if (this.sampleRate < 8000 || this.sampleRate > 96000) {
+            if (this.sampleRate < 8000 || this.sampleRate > 96_000) {
                 this.resampleData(RESAMPLE_RATE);
                 audioData = this.getAudioData();
             }
             const compressed = await encodeVorbis(audioData, this.sampleRate);
             this.setCompressedData(compressed);
-        } catch (e) {
+        } catch (error) {
             SpessaSynthWarn(
                 `Failed to compress ${this.name}. Leaving as uncompressed!`,
-                e
+                error
             );
             this.compressedData = undefined;
         }
@@ -194,7 +194,7 @@ export class BasicSample {
 
             this.linkedSample = undefined;
         }
-        if ((type & 0x8000) > 0) {
+        if ((type & 0x80_00) > 0) {
             throw new Error("ROM samples are not supported.");
         }
     }
@@ -222,17 +222,28 @@ export class BasicSample {
         }
         this.linkedSample = sample;
         sample.linkedSample = this;
-        if (type === sampleTypes.leftSample) {
-            this.setSampleType(sampleTypes.leftSample);
-            sample.setSampleType(sampleTypes.rightSample);
-        } else if (type === sampleTypes.rightSample) {
-            this.setSampleType(sampleTypes.rightSample);
-            sample.setSampleType(sampleTypes.leftSample);
-        } else if (type === sampleTypes.linkedSample) {
-            this.setSampleType(sampleTypes.linkedSample);
-            sample.setSampleType(sampleTypes.linkedSample);
-        } else {
-            throw new Error("Invalid sample type: " + type);
+        switch (type) {
+            case sampleTypes.leftSample: {
+                this.setSampleType(sampleTypes.leftSample);
+                sample.setSampleType(sampleTypes.rightSample);
+
+                break;
+            }
+            case sampleTypes.rightSample: {
+                this.setSampleType(sampleTypes.rightSample);
+                sample.setSampleType(sampleTypes.leftSample);
+
+                break;
+            }
+            case sampleTypes.linkedSample: {
+                this.setSampleType(sampleTypes.linkedSample);
+                sample.setSampleType(sampleTypes.linkedSample);
+
+                break;
+            }
+            default: {
+                throw new Error("Invalid sample type: " + type);
+            }
         }
     }
 
@@ -250,7 +261,7 @@ export class BasicSample {
      */
     public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);
-        if (index < 0) {
+        if (index === -1) {
             SpessaSynthWarn(
                 `Cannot unlink ${instrument.name} from ${this.name}: not linked.`
             );
@@ -310,12 +321,12 @@ export class BasicSample {
         const data16 = new Int16Array(data.length);
         const len = data.length;
         for (let i = 0; i < len; i++) {
-            let sample = data[i] * 32768;
+            let sample = data[i] * 32_768;
             // Clamp for safety (do not use Math.max/Math.min here)
-            if (sample > 32767) {
-                sample = 32767;
-            } else if (sample < -32768) {
-                sample = -32768;
+            if (sample > 32_767) {
+                sample = 32_767;
+            } else if (sample < -32_768) {
+                sample = -32_768;
             }
             data16[i] = sample;
         }
@@ -347,14 +358,14 @@ export class BasicSample {
                 // Magic number is 32,767 / 32,768
                 decoded[i] = Math.max(
                     -1,
-                    Math.min(decoded[i], 0.999969482421875)
+                    Math.min(decoded[i], 0.999_969_482_421_875)
                 );
             }
             return decoded;
-        } catch (e) {
+        } catch (error) {
             // Do not error out, fill with silence
             SpessaSynthWarn(
-                `Error decoding sample ${this.name}: ${e as Error}`
+                `Error decoding sample ${this.name}: ${error as Error}`
             );
             return new Float32Array(this.loopEnd + 1);
         }
@@ -366,6 +377,6 @@ export class EmptySample extends BasicSample {
      * A simplified class for creating samples.
      */
     public constructor() {
-        super("", 44100, 60, 0, sampleTypes.monoSample, 0, 0);
+        super("", 44_100, 60, 0, sampleTypes.monoSample, 0, 0);
     }
 }

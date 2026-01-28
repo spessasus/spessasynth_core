@@ -8,9 +8,19 @@ import {
     writeRIFFChunkParts,
     writeRIFFChunkRaw
 } from "../../utils/riff_chunk";
-import { getStringBytes, readBinaryStringIndexed } from "../../utils/byte_functions/string";
-import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../utils/loggin";
-import { readLittleEndianIndexed, writeDword } from "../../utils/byte_functions/little_endian";
+import {
+    getStringBytes,
+    readBinaryStringIndexed
+} from "../../utils/byte_functions/string";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd
+} from "../../utils/loggin";
+import {
+    readLittleEndianIndexed,
+    writeDword
+} from "../../utils/byte_functions/little_endian";
 import { consoleColors } from "../../utils/other";
 import { DLSVerifier } from "./dls_verifier";
 import type { DLSChunkFourCC } from "../types";
@@ -18,8 +28,17 @@ import type { DownloadableSoundsSample } from "./sample";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { BasicPreset } from "../basic_soundbank/basic_preset";
 import { BasicInstrument } from "../basic_soundbank/basic_instrument";
-import { BasicSample, BasicSoundBank, generatorLimits, generatorTypes, Modulator } from "../exports";
-import { DEFAULT_DLS_CHORUS, DEFAULT_DLS_REVERB } from "./default_dls_modulators";
+import {
+    BasicSample,
+    BasicSoundBank,
+    generatorLimits,
+    generatorTypes,
+    Modulator
+} from "../exports";
+import {
+    DEFAULT_DLS_CHORUS,
+    DEFAULT_DLS_REVERB
+} from "./default_dls_modulators";
 
 /**
  * Represents a proper DLS instrument, with regions and articulation.
@@ -45,11 +64,11 @@ export class DownloadableSoundsInstrument
         outputInstrument.bankLSB = inputInstrument.bankLSB;
         outputInstrument.program = inputInstrument.program;
         outputInstrument.articulation.copyFrom(inputInstrument.articulation);
-        inputInstrument.regions.forEach((region) => {
+        for (const region of inputInstrument.regions) {
             outputInstrument.regions.push(
                 DownloadableSoundsRegion.copyFrom(region)
             );
-        });
+        }
         return outputInstrument;
     }
 
@@ -75,7 +94,7 @@ export class DownloadableSoundsInstrument
                 info.data.length
             ).trim();
         }
-        if (instrumentName.length < 1) {
+        if (instrumentName.length === 0) {
             instrumentName = `Unnamed Instrument`;
         }
         const instrument = new DownloadableSoundsInstrument();
@@ -158,11 +177,11 @@ export class DownloadableSoundsInstrument
         // Combine preset and instrument zones into a single instrument zone (region) list
         const inst = preset.toFlattenedInstrument();
 
-        inst.zones.forEach((z) => {
+        for (const z of inst.zones) {
             instrument.regions.push(
                 DownloadableSoundsRegion.fromSFZone(z, samples)
             );
-        });
+        }
         SpessaSynthGroupEnd();
         return instrument;
     }
@@ -210,9 +229,8 @@ export class DownloadableSoundsInstrument
         // Global articulation
         this.articulation.toSFZone(instrument.globalZone);
 
-        this.regions.forEach((region) =>
-            region.toSFZone(instrument, soundBank.samples)
-        );
+        for (const region of this.regions)
+            region.toSFZone(instrument, soundBank.samples);
 
         // Globalize!
         instrument.globalize();
@@ -220,9 +238,9 @@ export class DownloadableSoundsInstrument
         // Override reverb and chorus with 1000 instead of 200
         // Reverb
         if (
-            instrument.globalZone.modulators.find(
+            !instrument.globalZone.modulators.some(
                 (m) => m.destination === generatorTypes.reverbEffectsSend
-            ) === undefined
+            )
         ) {
             instrument.globalZone.addModulators(
                 Modulator.copyFrom(DEFAULT_DLS_REVERB)
@@ -230,9 +248,9 @@ export class DownloadableSoundsInstrument
         }
         // Chorus
         if (
-            instrument.globalZone.modulators.find(
+            !instrument.globalZone.modulators.some(
                 (m) => m.destination === generatorTypes.chorusEffectsSend
-            ) === undefined
+            )
         ) {
             instrument.globalZone.addModulators(
                 Modulator.copyFrom(DEFAULT_DLS_CHORUS)

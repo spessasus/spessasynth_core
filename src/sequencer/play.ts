@@ -13,6 +13,24 @@ import { readBigEndian } from "../utils/byte_functions/big_endian";
 // An array with preset default values
 const defaultControllerArray = defaultMIDIControllerValues.slice(0, 128);
 
+const nonSkippableCCs = new Set<MIDIController>([
+    midiControllers.dataDecrement,
+    midiControllers.dataIncrement,
+    midiControllers.dataEntryMSB,
+    midiControllers.dataEntryLSB,
+    midiControllers.registeredParameterLSB,
+    midiControllers.registeredParameterMSB,
+    midiControllers.nonRegisteredParameterLSB,
+    midiControllers.nonRegisteredParameterMSB,
+    midiControllers.bankSelect,
+    midiControllers.bankSelectLSB,
+    midiControllers.resetAllControllers,
+    midiControllers.monoModeOn,
+    midiControllers.polyModeOn
+] as const);
+
+const isCCNonSkippable = (cc: MIDIController) => nonSkippableCCs.has(cc);
+
 /**
  * Plays the MIDI file to a specific time or ticks.
  * @param time in seconds.
@@ -32,7 +50,7 @@ export function setTimeToInternal(
 
     this.sendMIDIReset();
     this.playedTime = 0;
-    this.eventIndexes = Array<number>(this._midiData.tracks.length).fill(0);
+    this.eventIndexes = new Array<number>(this._midiData.tracks.length).fill(0);
 
     // We save the pitch wheels, programs and controllers here
     // To only send them once after going through the events
@@ -41,7 +59,7 @@ export function setTimeToInternal(
     /**
      * Save pitch wheels here and send them only after
      */
-    const pitchWheels = Array<number>(channelsToSave).fill(8192);
+    const pitchWheels = new Array<number>(channelsToSave).fill(8192);
 
     /**
      * Save programs here and send them only after
@@ -56,27 +74,12 @@ export function setTimeToInternal(
         });
     }
 
-    const isCCNonSkippable = (cc: MIDIController) =>
-        cc === midiControllers.dataDecrement ||
-        cc === midiControllers.dataIncrement ||
-        cc === midiControllers.dataEntryMSB ||
-        cc === midiControllers.dataEntryLSB ||
-        cc === midiControllers.registeredParameterLSB ||
-        cc === midiControllers.registeredParameterMSB ||
-        cc === midiControllers.nonRegisteredParameterLSB ||
-        cc === midiControllers.nonRegisteredParameterMSB ||
-        cc === midiControllers.bankSelect ||
-        cc === midiControllers.bankSelectLSB ||
-        cc === midiControllers.resetAllControllers;
-
     /**
      * Save controllers here and send them only after
      */
     const savedControllers: number[][] = [];
     for (let i = 0; i < channelsToSave; i++) {
-        savedControllers.push(
-            Array.from(defaultControllerArray) as MIDIController[]
-        );
+        savedControllers.push([...defaultControllerArray] as MIDIController[]);
     }
 
     // Save tempo changes
@@ -96,11 +99,9 @@ export function setTimeToInternal(
         if (savedControllers?.[chan] === undefined) {
             return;
         }
-        for (let i = 0; i < defaultControllerArray.length; i++) {
+        for (const [i, element] of defaultControllerArray.entries()) {
             if (!nonResettableCCs.has(i as MIDIController)) {
-                savedControllers[chan][i] = defaultControllerArray[
-                    i
-                ] as MIDIController;
+                savedControllers[chan][i] = element as MIDIController;
             }
         }
     }
@@ -111,12 +112,12 @@ export function setTimeToInternal(
         // Type assertion is required here because tsc is drunk...
         const track: MIDITrack = this._midiData.tracks[trackIndex];
         const event = track.events[this.eventIndexes[trackIndex]];
-        if (ticks !== undefined) {
-            if (event.ticks >= ticks) {
+        if (ticks === undefined) {
+            if (this.playedTime >= time) {
                 break;
             }
         } else {
-            if (this.playedTime >= time) {
+            if (event.ticks >= ticks) {
                 break;
             }
         }
@@ -128,22 +129,25 @@ export function setTimeToInternal(
             info.channel + (this.midiPortChannelOffsets[track.port] || 0);
         switch (info.status) {
             // Skip note messages
-            case midiMessageTypes.noteOn:
+            case midiMessageTypes.noteOn: {
                 // Track portamento control as last note
-                savedControllers[channel] ??= Array.from(
-                    defaultControllerArray
-                ) as MIDIController[];
+                savedControllers[channel] ??= [
+                    ...defaultControllerArray
+                ] as MIDIController[];
                 savedControllers[channel][midiControllers.portamentoControl] =
                     event.data[0] as MIDIController;
                 break;
+            }
 
-            case midiMessageTypes.noteOff:
+            case midiMessageTypes.noteOff: {
                 break;
+            }
 
             // Skip pitch wheel
-            case midiMessageTypes.pitchWheel:
+            case midiMessageTypes.pitchWheel: {
                 pitchWheels[channel] = (event.data[1] << 7) | event.data[0];
                 break;
+            }
 
             case midiMessageTypes.programChange: {
                 // Empty tracks cannot program change
@@ -176,26 +180,28 @@ export function setTimeToInternal(
                     }
                     this.sendMIDICC(channel, controllerNumber, ccV);
                 } else {
-                    savedControllers[channel] ??= Array.from(
-                        defaultControllerArray
-                    ) as MIDIController[];
+                    savedControllers[channel] ??= [
+                        ...defaultControllerArray
+                    ] as MIDIController[];
                     savedControllers[channel][controllerNumber] = event
                         .data[1] as MIDIController;
                 }
                 break;
             }
 
-            case midiMessageTypes.setTempo:
-                const tempoBPM = 60000000 / readBigEndian(event.data, 3);
+            case midiMessageTypes.setTempo: {
+                const tempoBPM = 60_000_000 / readBigEndian(event.data, 3);
                 this.oneTickToSeconds =
                     60 / (tempoBPM * this._midiData.timeDivision);
                 savedTempo = event;
                 savedTempoTrack = trackIndex;
                 break;
+            }
 
-            default:
+            default: {
                 this.processEvent(event, trackIndex);
                 break;
+            }
         }
 
         this.eventIndexes[trackIndex]++;
@@ -223,19 +229,22 @@ export function setTimeToInternal(
         }
         if (savedControllers[channel] !== undefined) {
             // Every controller that has changed
-            savedControllers[channel].forEach((value, index) => {
+            for (const [index, value] of savedControllers[channel].entries()) {
                 if (
                     value !== defaultControllerArray[index] &&
                     !isCCNonSkippable(index as MIDIController)
                 ) {
                     this.sendMIDICC(channel, index as MIDIController, value);
                 }
-            });
+            }
         }
         // Restore programs
         if (programs[channel].actualBank >= 0) {
             const p = programs[channel];
-            if (p.program !== -1) {
+            if (p.program === -1) {
+                // No program change, apply the current bank select
+                this.sendMIDICC(channel, midiControllers.bankSelect, p.bank);
+            } else {
                 // A program change has occurred, apply the actual bank when program change was executed
                 this.sendMIDICC(
                     channel,
@@ -243,9 +252,6 @@ export function setTimeToInternal(
                     p.actualBank
                 );
                 this.sendMIDIProgramChange(channel, p.program);
-            } else {
-                // No program change, apply the current bank select
-                this.sendMIDICC(channel, midiControllers.bankSelect, p.bank);
             }
         }
     }

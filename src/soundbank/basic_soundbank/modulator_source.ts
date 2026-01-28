@@ -156,26 +156,31 @@ export class ModulatorSource {
             rawValue = midiControllers[this.index];
         } else {
             switch (this.index) {
-                case modulatorSources.noController:
-                    rawValue = 16383; // Equals to 1
+                case modulatorSources.noController: {
+                    rawValue = 16_383; // Equals to 1
                     break;
+                }
 
-                case modulatorSources.noteOnKeyNum:
+                case modulatorSources.noteOnKeyNum: {
                     rawValue = voice.midiNote << 7;
                     break;
+                }
 
-                case modulatorSources.noteOnVelocity:
+                case modulatorSources.noteOnVelocity: {
                     rawValue = voice.velocity << 7;
                     break;
+                }
 
-                case modulatorSources.polyPressure:
+                case modulatorSources.polyPressure: {
                     rawValue = voice.pressure << 7;
                     break;
+                }
 
-                default:
+                default: {
                     rawValue =
                         midiControllers[this.index + NON_CC_INDEX_OFFSET]; // Pitch wheel and range are stored in the cc table
                     break;
+                }
             }
         }
 

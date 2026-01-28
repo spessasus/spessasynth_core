@@ -95,7 +95,7 @@ export function loadMIDIFromArrayBufferInternal(
         let isSF2RMIDI = false;
         let foundDbnk = false;
         // Keep loading chunks until we get the "SFBK" header
-        while (binaryData.currentIndex <= binaryData.length) {
+        while (binaryData.currentIndex < binaryData.length) {
             const startIndex = binaryData.currentIndex;
             const currentChunk = readRIFFChunk(binaryData, true);
             if (currentChunk.header === "RIFF") {
@@ -128,9 +128,7 @@ export function loadMIDIFromArrayBufferInternal(
                         "%cFound RMIDI INFO chunk!",
                         consoleColors.recognized
                     );
-                    while (
-                        currentChunk.data.currentIndex <= currentChunk.size
-                    ) {
+                    while (currentChunk.data.currentIndex < currentChunk.size) {
                         const infoChunk = readRIFFChunk(
                             currentChunk.data,
                             true
@@ -138,75 +136,90 @@ export function loadMIDIFromArrayBufferInternal(
                         const headerTyped = infoChunk.header as RMIDInfoFourCC;
                         const infoData = infoChunk.data;
                         switch (headerTyped) {
-                            default:
+                            default: {
                                 SpessaSynthWarn(
                                     `Unknown RMIDI Info: ${headerTyped as string}`
                                 );
                                 break;
+                            }
 
-                            case "INAM":
+                            case "INAM": {
                                 outputMIDI.rmidiInfo.name = infoData;
                                 break;
+                            }
 
                             case "IALB":
-                            case "IPRD":
+                            case "IPRD": {
                                 // Note that there are two album chunks: IPRD and IALB
                                 outputMIDI.rmidiInfo.album = infoData;
                                 break;
+                            }
 
                             case "ICRT":
-                            case "ICRD":
+                            case "ICRD": {
                                 // Older RMIDIs written by spessasynth erroneously used ICRT instead of ICRD.
                                 outputMIDI.rmidiInfo.creationDate = infoData;
                                 break;
+                            }
 
-                            case "IART":
+                            case "IART": {
                                 outputMIDI.rmidiInfo.artist = infoData;
                                 break;
+                            }
 
-                            case "IGNR":
+                            case "IGNR": {
                                 outputMIDI.rmidiInfo.genre = infoData;
                                 break;
+                            }
 
-                            case "IPIC":
+                            case "IPIC": {
                                 outputMIDI.rmidiInfo.picture = infoData;
                                 break;
+                            }
 
-                            case "ICOP":
+                            case "ICOP": {
                                 outputMIDI.rmidiInfo.copyright = infoData;
                                 break;
+                            }
 
-                            case "ICMT":
+                            case "ICMT": {
                                 outputMIDI.rmidiInfo.comment = infoData;
                                 break;
+                            }
 
-                            case "IENG":
+                            case "IENG": {
                                 outputMIDI.rmidiInfo.engineer = infoData;
                                 break;
+                            }
 
-                            case "ISFT":
+                            case "ISFT": {
                                 outputMIDI.rmidiInfo.software = infoData;
                                 break;
+                            }
 
-                            case "ISBJ":
+                            case "ISBJ": {
                                 outputMIDI.rmidiInfo.subject = infoData;
                                 break;
+                            }
 
-                            case "IENC":
+                            case "IENC": {
                                 outputMIDI.rmidiInfo.infoEncoding = infoData;
                                 break;
+                            }
 
-                            case "MENC":
+                            case "MENC": {
                                 outputMIDI.rmidiInfo.midiEncoding = infoData;
                                 break;
+                            }
 
-                            case "DBNK":
+                            case "DBNK": {
                                 outputMIDI.bankOffset = readLittleEndian(
                                     infoData,
                                     2
                                 );
                                 foundDbnk = true;
                                 break;
+                            }
                         }
                     }
                 }
@@ -268,7 +281,7 @@ export function loadMIDIFromArrayBufferInternal(
         /**
          * MIDI running byte
          */
-        let runningByte: MIDIMessageType | undefined = undefined;
+        let runningByte: MIDIMessageType | undefined;
 
         let totalTicks = 0;
         // Format 2 plays sequentially
@@ -310,12 +323,13 @@ export function loadMIDIFromArrayBufferInternal(
 
             // Determine the message's length;
             switch (statusByteChannel) {
-                case -1:
+                case -1: {
                     // System common/realtime (no length)
                     eventDataLength = 0;
                     break;
+                }
 
-                case -2:
+                case -2: {
                     // Meta (the next is the actual status byte)
                     statusByte = trackChunk.data[
                         trackChunk.data.currentIndex++
@@ -324,15 +338,17 @@ export function loadMIDIFromArrayBufferInternal(
                         trackChunk.data
                     );
                     break;
+                }
 
-                case -3:
+                case -3: {
                     // Sysex
                     eventDataLength = readVariableLengthQuantity(
                         trackChunk.data
                     );
                     break;
+                }
 
-                default:
+                default: {
                     // Voice message
                     // Gets the midi message length
                     eventDataLength =
@@ -342,6 +358,7 @@ export function loadMIDIFromArrayBufferInternal(
                     // Save the status byte
                     runningByte = statusByte;
                     break;
+                }
             }
 
             // Put the event data into the array

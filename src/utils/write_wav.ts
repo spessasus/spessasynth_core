@@ -163,7 +163,7 @@ export function audioToWav(
     wavData.set(header, 0);
 
     // Interleave audio data (combine channels)
-    let multiplier = 32767;
+    let multiplier = 32_767;
     if (fullOptions.normalizeAudio) {
         // Find min and max values to prevent clipping when converting to 16 bits
         const numSamples = audioData[0].length;
@@ -180,16 +180,19 @@ export function audioToWav(
             }
         }
 
-        multiplier = maxAbsValue > 0 ? 32767 / maxAbsValue : 1;
+        multiplier = maxAbsValue > 0 ? 32_767 / maxAbsValue : 1;
     }
     for (let i = 0; i < length; i++) {
         // Interleave both channels
-        audioData.forEach((d) => {
-            const sample = Math.min(32767, Math.max(-32768, d[i] * multiplier));
+        for (const d of audioData) {
+            const sample = Math.min(
+                32_767,
+                Math.max(-32_768, d[i] * multiplier)
+            );
             // Convert to 16-bit
             wavData[offset++] = sample & 0xff;
             wavData[offset++] = (sample >> 8) & 0xff;
-        });
+        }
     }
 
     if (infoOn) {

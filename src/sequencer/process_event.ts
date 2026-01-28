@@ -15,12 +15,12 @@ export function processEventInternal(
     event: MIDIMessage,
     trackIndex: number
 ) {
-    if (this.externalMIDIPlayback) {
-        // Do not send meta events
-        if (event.statusByte >= 0x80) {
-            this.sendMIDIMessage([event.statusByte, ...event.data]);
-            return;
-        }
+    if (
+        this.externalMIDIPlayback && // Do not send meta events
+        event.statusByte >= 0x80
+    ) {
+        this.sendMIDIMessage([event.statusByte, ...event.data]);
+        return;
     }
     const track = this._midiData!.tracks[trackIndex];
     const statusByteData = getEvent(event.statusByte);
@@ -74,14 +74,15 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.pitchWheel:
+        case midiMessageTypes.pitchWheel: {
             this.synth.pitchWheel(
                 statusByteData.channel,
                 (event.data[1] << 7) | event.data[0]
             );
             break;
+        }
 
-        case midiMessageTypes.controllerChange:
+        case midiMessageTypes.controllerChange: {
             // Empty tracks cannot cc change
             if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
@@ -92,33 +93,38 @@ export function processEventInternal(
                 event.data[1]
             );
             break;
+        }
 
-        case midiMessageTypes.programChange:
+        case midiMessageTypes.programChange: {
             // Empty tracks cannot program change
             if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
             }
             this.synth.programChange(statusByteData.channel, event.data[0]);
             break;
+        }
 
-        case midiMessageTypes.polyPressure:
+        case midiMessageTypes.polyPressure: {
             this.synth.polyPressure(
                 statusByteData.channel,
                 event.data[0],
                 event.data[1]
             );
             break;
+        }
 
-        case midiMessageTypes.channelPressure:
+        case midiMessageTypes.channelPressure: {
             this.synth.channelPressure(statusByteData.channel, event.data[0]);
             break;
+        }
 
-        case midiMessageTypes.systemExclusive:
+        case midiMessageTypes.systemExclusive: {
             this.synth.systemExclusive(event.data, offset);
             break;
+        }
 
         case midiMessageTypes.setTempo: {
-            let tempoBPM = 60000000 / readBigEndian(event.data, 3);
+            let tempoBPM = 60_000_000 / readBigEndian(event.data, 3);
             this.oneTickToSeconds =
                 60 / (tempoBPM * this._midiData!.timeDivision);
             if (this.oneTickToSeconds === 0) {
@@ -146,19 +152,22 @@ export function processEventInternal(
         case midiMessageTypes.marker:
         case midiMessageTypes.cuePoint:
         case midiMessageTypes.instrumentName:
-        case midiMessageTypes.programName:
+        case midiMessageTypes.programName: {
             break;
+        }
 
-        case midiMessageTypes.midiPort:
+        case midiMessageTypes.midiPort: {
             this.assignMIDIPort(trackIndex, event.data[0]);
             break;
+        }
 
-        case midiMessageTypes.reset:
+        case midiMessageTypes.reset: {
             this.synth.stopAllChannels();
             this.synth.resetAllControllers();
             break;
+        }
 
-        default:
+        default: {
             SpessaSynthInfo(
                 `%cUnrecognized Event: %c${event.statusByte}%c status byte: %c${Object.keys(
                     midiMessageTypes
@@ -173,6 +182,7 @@ export function processEventInternal(
                 consoleColors.value
             );
             break;
+        }
     }
     if (statusByteData.status >= 0 && statusByteData.status < 0x80) {
         this.callEvent("metaEvent", {

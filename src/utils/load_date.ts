@@ -34,31 +34,31 @@ function tryTranslate(dateString: string) {
     // Translating
     for (const translation of translations) {
         let translated = dateString;
-        translation.forEach((english, pt) => {
+        for (const [pt, english] of translation.entries()) {
             const regex = new RegExp(pt, "gi");
             translated = translated.replace(regex, english);
-        });
+        }
         const date = new Date(translated);
-        if (!isNaN(date.getTime())) {
+        if (!Number.isNaN(date.getTime())) {
             return date;
         }
     }
-    return undefined;
+    return;
 }
 
 function tryDotted(dateString: string) {
     // Regex to match DD.MM.YYYY format
     const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(dateString);
     if (match) {
-        const day = parseInt(match[1]);
-        const month = parseInt(match[2]) - 1;
-        const year = parseInt(match[3]);
+        const day = Number.parseInt(match[1]);
+        const month = Number.parseInt(match[2]) - 1;
+        const year = Number.parseInt(match[3]);
         const date = new Date(year, month, day);
-        if (!isNaN(date.getTime())) {
+        if (!Number.isNaN(date.getTime())) {
             return date;
         }
     }
-    return undefined;
+    return;
 }
 
 function tryAWE(dateString: string) {
@@ -67,15 +67,15 @@ function tryAWE(dateString: string) {
     const match = /^(\d{1,2})\s{1,2}(\d{1,2})\s{1,2}(\d{2})$/.exec(dateString);
     if (match) {
         const day = match[1];
-        const month = (parseInt(match[2]) + 1).toString(); // Seems 0 indexed for some reason
+        const month = (Number.parseInt(match[2]) + 1).toString(); // Seems 0 indexed for some reason
         const year = match[3];
         // Format like string to let date decide if 2000 or 1900
         const date = new Date(`${month}/${day}/${year}`);
-        if (!isNaN(date.getTime())) {
+        if (!Number.isNaN(date.getTime())) {
             return date;
         }
     }
-    return undefined;
+    return;
 }
 
 function tryYear(dateString: string) {
@@ -88,16 +88,16 @@ function tryYear(dateString: string) {
 export function parseDateString(dateString: string) {
     // Trim the date. Testcase: " 4  0  97"
     dateString = dateString.trim();
-    if (dateString.length < 1) {
+    if (dateString.length === 0) {
         return new Date();
     }
 
     // Remove "st" , "nd" , "rd",  "th", etc.
     const filtered = dateString
-        .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
+        .replaceAll(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
         .replace(/\s+at\s+/i, " ");
     const date = new Date(filtered);
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
         const translated = tryTranslate(dateString);
         if (translated) {
             return translated;

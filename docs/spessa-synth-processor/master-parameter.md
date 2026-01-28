@@ -13,6 +13,12 @@ The master pan, from -1 (left) to 1 (right). 0 is center.
 ### voiceCap
 The maximum number of voices that can be played at once.
 
+!!! Warning
+
+    Increasing this value causes memory allocation for more voices. 
+    It is recommended to set it at the beginning, before rendering audio to avoid GC.
+    Decreasing it does not cause memory usage change, so it's fine to use.
+
 ### interpolationType
 The interpolation type used for sample playback.
 The interpolation types defined are:

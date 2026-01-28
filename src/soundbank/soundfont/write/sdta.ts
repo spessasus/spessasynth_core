@@ -93,7 +93,7 @@ export async function getSDTA(
 
     let offset = 0;
     // Write out
-    bank.samples.forEach((sample, i) => {
+    for (const [i, sample] of bank.samples.entries()) {
         const data = sampleDatas[i];
         sdta.set(data, offset + SDTA_TO_DATA_OFFSET);
         let startOffset;
@@ -112,7 +112,7 @@ export async function getSDTA(
         smplStartOffsets.push(startOffset);
 
         smplEndOffsets.push(endOffset);
-    });
+    }
 
     return sdta;
 }

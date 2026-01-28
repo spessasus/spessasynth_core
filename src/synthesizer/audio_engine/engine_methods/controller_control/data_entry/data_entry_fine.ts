@@ -1,12 +1,12 @@
-import { consoleColors } from "../../../../../utils/other";
-import { SpessaSynthInfo } from "../../../../../utils/loggin";
-import { NON_CC_INDEX_OFFSET } from "../../../engine_components/controller_tables";
-import { nonRegisteredMSB, registeredParameterTypes } from "./data_entry_coarse";
-import { handleAWE32NRPN } from "./awe32";
-import type { MIDIChannel } from "../../../engine_components/midi_channel";
-import { midiControllers } from "../../../../../midi/enums";
-import { customControllers, dataEntryStates } from "../../../../enums";
-import { modulatorSources } from "../../../../../soundbank/enums";
+import { consoleColors } from '../../../../../utils/other'
+import { SpessaSynthInfo } from '../../../../../utils/loggin'
+import { NON_CC_INDEX_OFFSET } from '../../../engine_components/controller_tables'
+import { nonRegisteredMSB, registeredParameterTypes } from './data_entry_coarse'
+import { handleAWE32NRPN } from './awe32'
+import type { MIDIChannel } from '../../../engine_components/midi_channel'
+import { midiControllers } from '../../../../../midi/enums'
+import { customControllers, dataEntryStates } from '../../../../enums'
+import { modulatorSources } from '../../../../../soundbank/enums'
 
 /**
  * Executes a data entry fine (LSB) change for the current channel.
@@ -16,8 +16,9 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
     // Store in cc table
     this.midiControllers[midiControllers.dataEntryLSB] = dataValue << 7;
     switch (this.dataEntryState) {
-        default:
+        default: {
             break;
+        }
 
         case dataEntryStates.RPCoarse:
         case dataEntryStates.RPFine: {
@@ -26,8 +27,9 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                 (this.midiControllers[midiControllers.registeredParameterLSB] >>
                     7);
             switch (rpnValue) {
-                default:
+                default: {
                     break;
+                }
 
                 // Pitch wheel range fine tune
                 case registeredParameterTypes.pitchWheelRange: {
@@ -46,7 +48,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                             7) +
                         dataValue / 128;
                     SpessaSynthInfo(
-                        `%cChannel ${this.channelNumber} pitch wheel range. Semitones: %c${actualTune}`,
+                        `%cChannel ${this.channel} pitch wheel range. Semitones: %c${actualTune}`,
                         consoleColors.info,
                         consoleColors.value
                     );
@@ -59,7 +61,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                     const coarse =
                         this.customControllers[customControllers.channelTuning];
                     const finalTuning = (coarse << 7) | dataValue;
-                    this.setTuning(finalTuning * 0.01220703125); // Multiply by 8192 / 100 (cent increments)
+                    this.setTuning(finalTuning * 0.012_207_031_25); // Multiply by 8192 / 100 (cent increments)
                     break;
                 }
 
@@ -75,9 +77,10 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                     break;
                 }
 
-                case 0x3fff:
+                case 0x3f_ff: {
                     this.resetParameters();
                     break;
+                }
             }
             break;
         }
@@ -95,9 +98,9 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                 return;
             }
             switch (NRPNCoarse) {
-                default:
+                default: {
                     SpessaSynthInfo(
-                        `%cUnrecognized NRPN LSB for %c${this.channelNumber}%c: %c(0x${NRPNFine.toString(
+                        `%cUnrecognized NRPN LSB for %c${this.channel}%c: %c(0x${NRPNFine.toString(
                             16
                         ).toUpperCase()} 0x${NRPNFine.toString(
                             16
@@ -110,8 +113,9 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                         consoleColors.value
                     );
                     break;
+                }
 
-                case nonRegisteredMSB.awe32:
+                case nonRegisteredMSB.awe32: {
                     handleAWE32NRPN.call(
                         this,
                         NRPNFine,
@@ -119,6 +123,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                         this.midiControllers[midiControllers.dataEntryMSB] >> 7
                     );
                     break;
+                }
             }
         }
     }

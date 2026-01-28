@@ -23,7 +23,7 @@ export const ALL_CHANNELS_OR_DIFFERENT_ACTION = -1;
 // This is used to prevent the embedded bank from being deleted.
 export const EMBEDDED_SOUND_BANK_ID = `SPESSASYNTH_EMBEDDED_BANK_${Math.random()}_DO_NOT_DELETE`;
 
-export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32767;
+export const GENERATOR_OVERRIDE_NO_CHANGE_VALUE = 32_767;
 
 export const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
     time: 0
@@ -33,4 +33,4 @@ export const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
 export const MIN_NOTE_LENGTH = 0.03;
 // This sounds way nicer for an instant hi-hat cutoff
 export const MIN_EXCLUSIVE_LENGTH = 0.07;
-export const SYNTHESIZER_GAIN = 1.0;
+export const SYNTHESIZER_GAIN = 1;

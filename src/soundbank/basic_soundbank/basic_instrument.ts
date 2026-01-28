@@ -89,7 +89,7 @@ export class BasicInstrument {
      */
     public linkTo(preset: BasicPreset) {
         this.linkedTo.push(preset);
-        this.zones.forEach((z) => z.useCount++);
+        for (const z of this.zones) z.useCount++;
     }
 
     /**
@@ -98,14 +98,14 @@ export class BasicInstrument {
      */
     public unlinkFrom(preset: BasicPreset) {
         const index = this.linkedTo.indexOf(preset);
-        if (index < 0) {
+        if (index === -1) {
             SpessaSynthWarn(
                 `Cannot unlink ${preset.name} from ${this.name}: not linked.`
             );
             return;
         }
         this.linkedTo.splice(index, 1);
-        this.zones.forEach((z) => z.useCount--);
+        for (const z of this.zones) z.useCount--;
     }
 
     // Deletes unused zones of the instrument
@@ -126,7 +126,7 @@ export class BasicInstrument {
                 `Cannot delete an instrument that is used by: ${this.linkedTo.map((p) => p.name).toString()}.`
             );
         }
-        this.zones.forEach((z) => z.sample.unlinkFrom(this));
+        for (const z of this.zones) z.sample.unlinkFrom(this);
     }
 
     /**
@@ -172,35 +172,40 @@ export class BasicInstrument {
             occurrencesForValues[defaultForChecked] = 0;
             for (const zone of this.zones) {
                 const value = zone.getGenerator(checkedType, undefined);
-                if (value !== undefined) {
+                if (value === undefined) {
+                    occurrencesForValues[defaultForChecked]++;
+                } else {
                     if (occurrencesForValues[value] === undefined) {
                         occurrencesForValues[value] = 1;
                     } else {
                         occurrencesForValues[value]++;
                     }
-                } else {
-                    occurrencesForValues[defaultForChecked]++;
                 }
 
                 // If the checked type has the keyNumTo something generator set, it cannot be globalized.
                 let relativeCounterpart;
                 switch (checkedType) {
-                    default:
+                    default: {
                         continue;
+                    }
 
-                    case generatorTypes.decayVolEnv:
+                    case generatorTypes.decayVolEnv: {
                         relativeCounterpart =
                             generatorTypes.keyNumToVolEnvDecay;
                         break;
-                    case generatorTypes.holdVolEnv:
+                    }
+                    case generatorTypes.holdVolEnv: {
                         relativeCounterpart = generatorTypes.keyNumToVolEnvHold;
                         break;
-                    case generatorTypes.decayModEnv:
+                    }
+                    case generatorTypes.decayModEnv: {
                         relativeCounterpart =
                             generatorTypes.keyNumToModEnvDecay;
                         break;
-                    case generatorTypes.holdModEnv:
+                    }
+                    case generatorTypes.holdModEnv: {
                         relativeCounterpart = generatorTypes.keyNumToModEnvHold;
+                    }
                 }
                 const relative = zone.getGenerator(
                     relativeCounterpart,
@@ -213,39 +218,38 @@ export class BasicInstrument {
             }
             // If at least one occurrence, find the most used one and add it to global
             if (Object.keys(occurrencesForValues).length > 0) {
-                const entries = Object.entries(occurrencesForValues);
                 // [value, occurrences]
-                const valueToGlobalize = entries.reduce(
-                    (max, curr) => {
-                        if (max[1] < curr[1]) {
-                            return curr;
-                        }
-                        return max;
-                    },
-                    ["0", 0]
-                );
-                const targetValue = parseInt(valueToGlobalize[0]);
+                let valueToGlobalize: [string, number] = ["0", 0];
+
+                for (const [value, count] of Object.entries(
+                    occurrencesForValues
+                )) {
+                    if (count > valueToGlobalize[1]) {
+                        valueToGlobalize = [value, count];
+                    }
+                }
+                const targetValue = Number.parseInt(valueToGlobalize[0]);
 
                 // If the global value is the default value just remove it, no need to add it
                 if (targetValue !== defaultForChecked) {
                     globalZone.setGenerator(checkedType, targetValue, false);
                 }
                 // Remove from the zones
-                this.zones.forEach((z) => {
+                for (const z of this.zones) {
                     const genValue = z.getGenerator(checkedType, undefined);
-                    if (genValue !== undefined) {
-                        if (genValue === targetValue) {
-                            // That exact value exists. Since it's global now, remove it
-                            z.setGenerator(checkedType, null);
-                        }
-                    } else {
+                    if (genValue === undefined) {
                         // That type does not exist at all here.
                         // Since we're globalizing, we need to add the default here.
                         if (targetValue !== defaultForChecked) {
                             z.setGenerator(checkedType, defaultForChecked);
                         }
+                    } else {
+                        if (genValue === targetValue) {
+                            // That exact value exists. Since it's global now, remove it
+                            z.setGenerator(checkedType, null);
+                        }
                     }
-                });
+                }
             }
         }
 
@@ -300,10 +304,10 @@ export class BasicInstrument {
     public write(instData: ExtendedSF2Chunks, index: number) {
         SpessaSynthInfo(`%cWriting ${this.name}...`, consoleColors.info);
         // Split up the name
-        writeBinaryStringIndexed(instData.pdta, this.name.substring(0, 20), 20);
-        writeBinaryStringIndexed(instData.xdta, this.name.substring(20), 20);
+        writeBinaryStringIndexed(instData.pdta, this.name.slice(0, 20), 20);
+        writeBinaryStringIndexed(instData.xdta, this.name.slice(20), 20);
         // Inst start index
-        writeWord(instData.pdta, index & 0xffff);
+        writeWord(instData.pdta, index & 0xff_ff);
         writeWord(instData.xdta, index >>> 16);
     }
 }

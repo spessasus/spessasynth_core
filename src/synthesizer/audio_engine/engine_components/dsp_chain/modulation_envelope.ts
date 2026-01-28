@@ -1,6 +1,6 @@
 import { timecentsToSeconds } from "../unit_converter";
 import { getModulatorCurveValue } from "../modulator_curves";
-import type { Voice } from "../voice";
+import { type Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { modulatorCurveTypes } from "../../../../soundbank/enums";
 
@@ -25,81 +25,134 @@ export class ModulationEnvelope {
     /**
      * The attack duration, in seconds.
      */
-    protected attackDuration = 0;
+    private attackDuration = 0;
     /**
      * The decay duration, in seconds.
      */
-    protected decayDuration = 0;
-
+    private decayDuration = 0;
     /**
      * The hold duration, in seconds.
      */
-    protected holdDuration = 0;
-
+    private holdDuration = 0;
     /**
      * Release duration, in seconds.
      */
-    protected releaseDuration = 0;
-
+    private releaseDuration = 0;
     /**
      * The sustain level 0-1.
      */
-    protected sustainLevel = 0;
-
+    private sustainLevel = 0;
     /**
      * Delay phase end time in seconds, absolute (audio context time).
      */
-    protected delayEnd = 0;
+    private delayEnd = 0;
     /**
      * Attack phase end time in seconds, absolute (audio context time).
      */
-    protected attackEnd = 0;
+    private attackEnd = 0;
     /**
      * Hold phase end time in seconds, absolute (audio context time).
      */
-    protected holdEnd = 0;
-    /**
-     * Decay phase end time in seconds, absolute (audio context time).
-     */
-    protected decayEnd = 0;
-
+    private holdEnd = 0;
     /**
      * The level of the envelope when the release phase starts.
      */
-    protected releaseStartLevel = 0;
-
+    private releaseStartLevel = 0;
     /**
      * The current modulation envelope value.
      */
-    protected currentValue = 0;
+    private currentValue = 0;
+    /**
+     * If the modulation envelope has ever entered the release phase.
+     */
+    private enteredRelease = false;
+
+    /**
+     * Decay phase end time in seconds, absolute (audio context time).
+     */
+    private decayEnd = 0;
+
+    /**
+     * Calculates the current modulation envelope value for the given time and voice.
+     * @param voice the voice we are working on.
+     * @param currentTime in seconds.
+     * @returns  mod env value, from 0 to 1.
+     */
+    public process(voice: Voice, currentTime: number): number {
+        if (this.enteredRelease) {
+            // If the voice is still in the delay phase,
+            // Start level will be 0 that will result in divide by zero
+            if (this.releaseStartLevel === 0) {
+                return 0;
+            }
+            return Math.max(
+                0,
+                (1 -
+                    (currentTime - voice.releaseStartTime) /
+                        this.releaseDuration) *
+                    this.releaseStartLevel
+            );
+        }
+
+        if (currentTime < this.delayEnd) {
+            this.currentValue = 0; // Delay
+        } else if (currentTime < this.attackEnd) {
+            // Modulation envelope uses convex curve for attack
+            this.currentValue =
+                CONVEX_ATTACK[
+                    ~~(
+                        (1 -
+                            (this.attackEnd - currentTime) /
+                                this.attackDuration) *
+                        1000
+                    )
+                ];
+        } else if (currentTime < this.holdEnd) {
+            // Hold: stay at 1
+            this.currentValue = MODENV_PEAK;
+        } else if (currentTime < this.decayEnd) {
+            // Decay: linear ramp from 1 to sustain level
+            this.currentValue =
+                (1 - (this.decayEnd - currentTime) / this.decayDuration) *
+                    (this.sustainLevel - MODENV_PEAK) +
+                MODENV_PEAK;
+        } else {
+            // Sustain: stay at sustain level
+            this.currentValue = this.sustainLevel;
+        }
+        return this.currentValue;
+    }
 
     /**
      * Starts the release phase in the envelope.
      * @param voice the voice this envelope belongs to.
      */
-    public static startRelease(voice: Voice) {
-        ModulationEnvelope.recalculate(voice);
+    public startRelease(voice: Voice) {
+        this.releaseStartLevel = this.currentValue;
+        this.enteredRelease = true;
+
+        // Min is set to -7200 to prevent lowpass clicks
+        const releaseTime = timecentsToSeconds(
+            Math.max(
+                voice.modulatedGenerators[generatorTypes.releaseModEnv],
+                -7200
+            )
+        );
+        // Release time is from the full level to 0%
+        // To get the actual time, multiply by the release start level
+        this.releaseDuration = releaseTime * this.releaseStartLevel;
     }
 
     /**
-     * @param voice the voice to recalculate.
+     * Initializes the modulation envelope.
+     * @param voice the voice this envelope belongs to.
      */
-    public static recalculate(voice: Voice) {
-        const env = voice.modulationEnvelope;
-
-        // In release? Might need to recalculate the value as it can be modulated
-        if (voice.isInRelease) {
-            env.releaseStartLevel = ModulationEnvelope.getValue(
-                voice,
-                voice.releaseStartTime,
-                true
-            );
-        }
-
-        env.sustainLevel =
+    public init(voice: Voice) {
+        this.enteredRelease = false;
+        this.sustainLevel =
             1 - voice.modulatedGenerators[generatorTypes.sustainModEnv] / 1000;
 
-        env.attackDuration = timecentsToSeconds(
+        this.attackDuration = timecentsToSeconds(
             voice.modulatedGenerators[generatorTypes.attackModEnv]
         );
 
@@ -113,91 +166,23 @@ export class ModulationEnvelope {
         // According to the specification, the decay time is the time it takes to reach 0% from 100%.
         // Calculate the time to reach actual sustain level,
         // For example, sustain 0.6 will be 0.4 of the decay time
-        env.decayDuration = decayTime * (1 - env.sustainLevel);
+        this.decayDuration = decayTime * (1 - this.sustainLevel);
 
         const holdKeyExcursionCents =
             (60 - voice.midiNote) *
             voice.modulatedGenerators[generatorTypes.keyNumToModEnvHold];
-        env.holdDuration = timecentsToSeconds(
+        this.holdDuration = timecentsToSeconds(
             holdKeyExcursionCents +
                 voice.modulatedGenerators[generatorTypes.holdModEnv]
         );
 
-        // Min is set to -7200 to prevent lowpass clicks
-        const releaseTime = timecentsToSeconds(
-            Math.max(
-                voice.modulatedGenerators[generatorTypes.releaseModEnv],
-                -7200
-            )
-        );
-        // Release time is from the full level to 0%
-        // To get the actual time, multiply by the release start level
-        env.releaseDuration = releaseTime * env.releaseStartLevel;
-
-        env.delayEnd =
+        this.delayEnd =
             voice.startTime +
             timecentsToSeconds(
                 voice.modulatedGenerators[generatorTypes.delayModEnv]
             );
-        env.attackEnd = env.delayEnd + env.attackDuration;
-        env.holdEnd = env.attackEnd + env.holdDuration;
-        env.decayEnd = env.holdEnd + env.decayDuration;
-    }
-
-    /**
-     * Calculates the current modulation envelope value for the given time and voice.
-     * @param voice the voice we are working on.
-     * @param currentTime in seconds.
-     * @param ignoreRelease if true, it will compute the value as if the voice was not released.
-     * @returns  mod env value, from 0 to 1.
-     */
-    public static getValue(
-        voice: Voice,
-        currentTime: number,
-        ignoreRelease = false
-    ): number {
-        const env = voice.modulationEnvelope;
-        if (voice.isInRelease && !ignoreRelease) {
-            // If the voice is still in the delay phase,
-            // Start level will be 0 that will result in divide by zero
-            if (env.releaseStartLevel === 0) {
-                return 0;
-            }
-            return Math.max(
-                0,
-                (1 -
-                    (currentTime - voice.releaseStartTime) /
-                        env.releaseDuration) *
-                    env.releaseStartLevel
-            );
-        }
-
-        if (currentTime < env.delayEnd) {
-            env.currentValue = 0; // Delay
-        } else if (currentTime < env.attackEnd) {
-            // Modulation envelope uses convex curve for attack
-            env.currentValue =
-                CONVEX_ATTACK[
-                    ~~(
-                        (1 -
-                            (env.attackEnd - currentTime) /
-                                env.attackDuration) *
-                        1000
-                    )
-                ];
-        } else if (currentTime < env.holdEnd) {
-            // Hold: stay at 1
-            env.currentValue = MODENV_PEAK;
-        } else if (currentTime < env.decayEnd) {
-            // Decay: linear ramp from 1 to sustain level
-            env.currentValue =
-                (1 - (env.decayEnd - currentTime) / env.decayDuration) *
-                    (env.sustainLevel - MODENV_PEAK) +
-                MODENV_PEAK;
-        } else {
-            // Sustain: stay at sustain level
-            env.currentValue = env.sustainLevel;
-        }
-        return env.currentValue;
+        this.attackEnd = this.delayEnd + this.attackDuration;
+        this.holdEnd = this.attackEnd + this.holdDuration;
+        this.decayEnd = this.holdEnd + this.decayDuration;
     }
 }

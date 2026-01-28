@@ -51,7 +51,7 @@ function correctBankOffsetInternal(
     const unwantedSystems: { tNum: number; e: MIDIMessage }[] = [];
 
     // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
-    const ports = Array<number>(mid.tracks.length).fill(0);
+    const ports = new Array<number>(mid.tracks.length).fill(0);
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
     const channelsInfo: {
         program: number;
@@ -181,9 +181,9 @@ function correctBankOffsetInternal(
 
     // Add missing bank selects
     // Add all bank selects that are missing for this track
-    channelsInfo.forEach((has, ch) => {
+    for (const [ch, has] of channelsInfo.entries()) {
         if (has.hasBankSelect) {
-            return;
+            continue;
         }
         // Find the first program change (for the given channel)
         const midiChannel = ch % 16;
@@ -196,7 +196,7 @@ function correctBankOffsetInternal(
         );
         if (track === undefined) {
             // This channel is not used at all
-            return;
+            continue;
         }
         let indexToAdd = track.events.findIndex((e) => e.statusByte === status);
         if (indexToAdd === -1) {
@@ -211,7 +211,7 @@ function correctBankOffsetInternal(
             );
             if (programIndex === -1) {
                 // No voices??? skip
-                return;
+                continue;
             }
             const programTicks = track.events[programIndex].ticks;
             const targetProgram = soundBank.getPreset(
@@ -263,7 +263,7 @@ function correctBankOffsetInternal(
             ),
             indexToAdd
         );
-    });
+    }
 
     // Make sure to put gs if gm
     if (system === "gm" && !BankSelectHacks.isSystemXG(system)) {
@@ -318,6 +318,8 @@ export function writeRMIDIInternal(
     metadata.copyright ??= DEFAULT_COPYRIGHT;
     metadata.software ??= "SpessaSynth";
 
+    // No idea how to turn this into a for...of
+    // eslint-disable-next-line unicorn/no-array-for-each
     Object.entries(metadata).forEach(
         <K extends keyof RMIDInfoData>(v: unknown[]) => {
             const val = v as [K, RMIDInfoData[K]];
@@ -329,70 +331,84 @@ export function writeRMIDIInternal(
 
     // Info data for RMID
     const infoContent: Uint8Array[] = [];
+    const writeInfo = (type: RMIDInfoFourCC, data: Uint8Array) => {
+        infoContent.push(writeRIFFChunkRaw(type, data));
+    };
 
-    Object.entries(mid.rmidiInfo).forEach((v) => {
+    for (const v of Object.entries(mid.rmidiInfo)) {
         const type = v[0] as keyof RMIDInfoData;
         const data = v[1];
-        const writeInfo = (type: RMIDInfoFourCC) => {
-            infoContent.push(writeRIFFChunkRaw(type, data));
-        };
+
         switch (type) {
-            case "album":
+            case "album": {
                 // Note that there are two album chunks: IPRD and IALB
                 // Spessasynth uses IPRD, but writes both
-                writeInfo("IALB");
-                writeInfo("IPRD");
+                writeInfo("IALB", data);
+                writeInfo("IPRD", data);
                 break;
+            }
 
-            case "software":
-                writeInfo("ISFT");
+            case "software": {
+                writeInfo("ISFT", data);
                 break;
+            }
 
-            case "infoEncoding":
-                writeInfo("IENC");
+            case "infoEncoding": {
+                writeInfo("IENC", data);
                 break;
+            }
 
-            case "creationDate":
-                writeInfo("ICRD");
+            case "creationDate": {
+                writeInfo("ICRD", data);
                 break;
+            }
 
-            case "picture":
-                writeInfo("IPIC");
+            case "picture": {
+                writeInfo("IPIC", data);
                 break;
+            }
 
-            case "name":
-                writeInfo("INAM");
+            case "name": {
+                writeInfo("INAM", data);
                 break;
+            }
 
-            case "artist":
-                writeInfo("IART");
+            case "artist": {
+                writeInfo("IART", data);
                 break;
+            }
 
-            case "genre":
-                writeInfo("IGNR");
+            case "genre": {
+                writeInfo("IGNR", data);
                 break;
+            }
 
-            case "copyright":
-                writeInfo("ICOP");
+            case "copyright": {
+                writeInfo("ICOP", data);
                 break;
+            }
 
-            case "comment":
-                writeInfo("ICMT");
+            case "comment": {
+                writeInfo("ICMT", data);
                 break;
+            }
 
-            case "engineer":
-                writeInfo("IENG");
+            case "engineer": {
+                writeInfo("IENG", data);
                 break;
+            }
 
-            case "subject":
-                writeInfo("ISBJ");
+            case "subject": {
+                writeInfo("ISBJ", data);
                 break;
+            }
 
-            case "midiEncoding":
-                writeInfo("MENC");
+            case "midiEncoding": {
+                writeInfo("MENC", data);
                 break;
+            }
         }
-    });
+    }
 
     // Bank offset
     const DBNK = new IndexedByteArray(2);

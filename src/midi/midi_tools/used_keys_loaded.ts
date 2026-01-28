@@ -1,16 +1,30 @@
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import { isGM2On, isGMOn, isGSDrumsOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
+import {
+    isGM2On,
+    isGMOn,
+    isGSDrumsOn,
+    isGSOn,
+    isXGOn
+} from "../../utils/sysex_detector";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import type { SynthSystem } from "../../synthesizer/types";
-import { type MIDIController, midiControllers, midiMessageTypes } from "../enums";
+import {
+    type MIDIController,
+    midiControllers,
+    midiMessageTypes
+} from "../enums";
 import type { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
 
 interface InternalChannelType {
-    preset: BasicPreset;
+    preset?: BasicPreset;
     bankMSB: number;
     bankLSB: number;
     isDrum: boolean;
@@ -83,7 +97,7 @@ export function getUsedProgramsAndKeys(
                 mid.portChannelOffsetMap[ports[trackNum]] || 0;
         let ch = channelPresets[channel];
         switch (status) {
-            case midiMessageTypes.programChange:
+            case midiMessageTypes.programChange: {
                 ch.preset = soundBank.getPreset(
                     {
                         bankMSB: ch.bankMSB,
@@ -94,26 +108,36 @@ export function getUsedProgramsAndKeys(
                     system
                 );
                 break;
+            }
 
-            case midiMessageTypes.controllerChange:
+            case midiMessageTypes.controllerChange: {
                 {
                     switch (event.data[0] as MIDIController) {
-                        default:
+                        default: {
                             return;
+                        }
 
-                        case midiControllers.bankSelectLSB:
+                        case midiControllers.bankSelectLSB: {
                             ch.bankLSB = event.data[1];
                             break;
+                        }
 
-                        case midiControllers.bankSelect:
+                        case midiControllers.bankSelect: {
                             ch.bankMSB = event.data[1];
+                        }
                     }
                 }
                 break;
+            }
 
-            case midiMessageTypes.noteOn:
+            case midiMessageTypes.noteOn: {
                 if (event.data[1] === 0) {
                     // That's a note off
+                    return;
+                }
+
+                // If there's no preset, ignore
+                if (!ch.preset) {
                     return;
                 }
 
@@ -125,8 +149,9 @@ export function getUsedProgramsAndKeys(
 
                 combos.add(`${event.data[0]}-${event.data[1]}`);
                 break;
+            }
 
-            case midiMessageTypes.systemExclusive:
+            case midiMessageTypes.systemExclusive: {
                 // Check for drum sysex
                 {
                     if (!isGSDrumsOn(event)) {
@@ -167,10 +192,11 @@ export function getUsedProgramsAndKeys(
                     ch.isDrum = isDrum;
                 }
                 break;
+            }
         }
     });
 
-    usedProgramsAndKeys.forEach((combos, preset) => {
+    for (const [preset, combos] of usedProgramsAndKeys.entries()) {
         if (combos.size === 0) {
             SpessaSynthInfo(
                 `%cDetected change but no keys for %c${preset.name}`,
@@ -179,7 +205,7 @@ export function getUsedProgramsAndKeys(
             );
             usedProgramsAndKeys.delete(preset);
         }
-    });
+    }
 
     SpessaSynthGroupEnd();
     return usedProgramsAndKeys;

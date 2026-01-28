@@ -55,7 +55,7 @@ export class BasicPresetZone extends BasicZone {
             );
         }
         const instrumentID = bank.instruments.indexOf(this.instrument);
-        if (instrumentID < 0) {
+        if (instrumentID === -1) {
             throw new Error(
                 `${this.instrument.name} does not exist in ${bank.soundBankInfo.name}! Cannot write instrument generator.`
             );

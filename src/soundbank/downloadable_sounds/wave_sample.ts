@@ -166,21 +166,23 @@ export class WaveSample extends DLSVerifier {
                     generatorTypes.startloopAddrsCoarseOffset,
                     0
                 ) *
-                    32768;
+                    32_768;
             const loopEnd =
                 zone.sample.loopEnd +
                 zone.getGenerator(generatorTypes.endloopAddrsOffset, 0) +
                 zone.getGenerator(generatorTypes.endloopAddrsCoarseOffset, 0) *
-                    32768;
+                    32_768;
             let dlsLoopType: DLSLoopType;
             switch (loopingMode) {
                 case 1:
-                default:
+                default: {
                     dlsLoopType = 0;
                     break;
+                }
 
-                case 3:
+                case 3: {
                     dlsLoopType = 1;
+                }
             }
             waveSample.loops.push({
                 loopType: dlsLoopType,
@@ -230,10 +232,10 @@ export class WaveSample extends DLSVerifier {
             const loopEnd = loop.loopStart + loop.loopLength;
             const diffEnd = loopEnd - sample.loopEnd;
             if (diffStart !== 0) {
-                const fine = diffStart % 32768;
+                const fine = diffStart % 32_768;
                 zone.setGenerator(generatorTypes.startloopAddrsOffset, fine);
                 // Coarse generator uses 32768 samples per step
-                const coarse = Math.trunc(diffStart / 32768);
+                const coarse = Math.trunc(diffStart / 32_768);
                 if (coarse !== 0) {
                     zone.setGenerator(
                         generatorTypes.startloopAddrsCoarseOffset,
@@ -242,10 +244,10 @@ export class WaveSample extends DLSVerifier {
                 }
             }
             if (diffEnd !== 0) {
-                const fine = diffEnd % 32768;
+                const fine = diffEnd % 32_768;
                 zone.setGenerator(generatorTypes.endloopAddrsOffset, fine);
                 // Coarse generator uses 32768 samples per step
-                const coarse = Math.trunc(diffEnd / 32768);
+                const coarse = Math.trunc(diffEnd / 32_768);
                 if (coarse !== 0) {
                     zone.setGenerator(
                         generatorTypes.endloopAddrsCoarseOffset,
@@ -268,12 +270,12 @@ export class WaveSample extends DLSVerifier {
         writeDword(wsmpData, this.fulOptions);
         // CSampleLoops
         writeDword(wsmpData, this.loops.length);
-        this.loops.forEach((loop) => {
+        for (const loop of this.loops) {
             writeDword(wsmpData, WSMP_LOOP_SIZE);
             writeDword(wsmpData, loop.loopType);
             writeDword(wsmpData, loop.loopStart);
             writeDword(wsmpData, loop.loopLength);
-        });
+        }
         return writeRIFFChunkRaw("wsmp", wsmpData);
     }
 }
