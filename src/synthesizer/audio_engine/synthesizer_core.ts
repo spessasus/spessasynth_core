@@ -511,9 +511,11 @@ export class SynthesizerCore {
         sampleCount = 0
     ) {
         // Process event queue
-        const time = this.currentTime;
-        while (this.eventQueue[0]?.time <= time) {
-            this.eventQueue.shift()?.callback();
+        if (this.eventQueue.length > 0) {
+            const time = this.currentTime;
+            while (this.eventQueue[0]?.time <= time) {
+                this.eventQueue.shift()?.callback();
+            }
         }
         const revL = reverb[0];
         const revR = reverb[1];
@@ -576,9 +578,11 @@ export class SynthesizerCore {
         sampleCount = 0
     ) {
         // Process event queue
-        const time = this.currentTime;
-        while (this.eventQueue[0]?.time <= time) {
-            this.eventQueue.shift()?.callback();
+        if (this.eventQueue.length > 0) {
+            const time = this.currentTime;
+            while (this.eventQueue[0]?.time <= time) {
+                this.eventQueue.shift()?.callback();
+            }
         }
         const revL = reverb[0];
         const revR = reverb[1];
