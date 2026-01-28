@@ -1,4 +1,5 @@
 # SpessaSynthProcessor
+
 The core synthesis engine of SpessaSynth.
 This module converts sound bank and MIDI data into PCM audio data.
 The internal synthesis system is modeled after SoundFont2 synthesis model.
@@ -31,14 +32,13 @@ interface SynthProcessorOptions {
      * Indicates if the effects are enabled. This can be changed later.
      */
     enableEffects: boolean;
-};
+}
 ```
 
 ## Managers
 
 - [Key Modifier Manager](key-modifier-manager.md)
 - [Sound Bank Manager](sound-bank-manager.md)
-
 
 ## Methods
 
@@ -47,7 +47,13 @@ interface SynthProcessorOptions {
 Render PCM float32 audio data to the stereo outputs.
 
 ```ts
-synth.renderAudio(outputs, reverb, chorus, startIndex = 0, sampleCount = all);
+synth.renderAudio(
+    outputs,
+    reverb,
+    chorus,
+    (startIndex = 0),
+    (sampleCount = all)
+);
 ```
 
 - outputs - an array of exactly two `Float32Array` - the left and right audio output buffer, respectively.
@@ -74,7 +80,13 @@ All `Float32Array`s must be the same length.
 Render PCM float32 audio data of separate channels + effects.
 
 ```ts
-synth.renderAudioSplit(reverbChannels, chorusChannels, separateChannels, startIndex = 0, sampleCount = all);
+synth.renderAudioSplit(
+    reverbChannels,
+    chorusChannels,
+    separateChannels,
+    (startIndex = 0),
+    (sampleCount = all)
+);
 ```
 
 - reverbChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
@@ -110,7 +122,7 @@ Create a new MIDI channel.
 Send a raw MIDI message to the synthesizer. Calls noteOn, noteOff, etc. internally.
 
 ```ts
-synth.processMessage(message, channelOffset = 0, force, eventOptions);
+synth.processMessage(message, (channelOffset = 0), force, eventOptions);
 ```
 
 - message - `Uint8Array` - The MIDI message to process.
@@ -169,22 +181,19 @@ synth.programChange(channel, programNumber);
 Change the channel's pitch, including the currently playing notes.
 
 ```ts
-synth.pitchWheel(channel, pitch);
+synth.pitchWheel(channel, pitch, (midiNote = -1));
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - pitch - the 14-bit MIDI pitch value to use (0 - 16,383)
-
-!!! Tip
-
-    [I highly recommend this article for more info.](https://www.recordingblogs.com/wiki/midi-pitch-wheel-message)
+- midiNote, optional - allows to set per-note pitch wheel, which will activate the per-note pitch mode. Leave unset or set to -1 for a regular pitch wheel.
 
 ### systemExclusive
 
 Handle a MIDI System Exclusive message.
 
 ```ts
-synth.systemExclusive(messageData, channelOffset = 0);
+synth.systemExclusive(messageData, (channelOffset = 0));
 ```
 
 - messageData - Uint8Array, the message byte data **Excluding the 0xF0 byte!**
@@ -194,7 +203,7 @@ synth.systemExclusive(messageData, channelOffset = 0);
 
 !!! Tip
 
-    Refer to 
+    Refer to
     [MIDI Implementation](../extra/midi-implementation.md) for the list of supported System Exclusives.
 
 ### controllerChange
@@ -255,7 +264,7 @@ synth.polyPressure(channel, midiNote, pressure);
 Stop all voices on all channels.
 
 ```ts
-synth.stopAllChannels(force = false);
+synth.stopAllChannels((force = false));
 ```
 
 - force - if true, the voices will be cut instead of releasing smoothly.
@@ -309,7 +318,6 @@ synth.applySynthesizerSnapshot(snapshot);
 
 Get a [SynthesizerSnapshot](synthesizer-snapshot.md) instance of this synthesizer.
 
-
 ### setEmbeddedSoundBank
 
 Set the embedded sound bank to this synthesizer.
@@ -350,7 +358,7 @@ The [sound bank manager](sound-bank-manager.md) of this synthesizer.
 
 The [key modifier manager](key-modifier-manager.md) of this synthesizer.
 
-### onMissingPreset 
+### onMissingPreset
 
 A handler for missing presets during program change. By default, it warns to console.
 It may be useful for allowing the synthesizer to work without any sound banks.
@@ -361,7 +369,6 @@ Parameters the function gets called with:
 - system - `SynthSystem` (`gs`, `xg`, `gm` or `gm2`) - the MIDI System for the request.
 
 If a `BasicPreset` instance is returned by the function, it will be used by the channel.
-
 
 ### totalVoicesAmount
 
