@@ -407,7 +407,9 @@ export class SpessaSynthSequencer {
     protected findFirstEventIndex() {
         let index = 0;
         let ticks = Infinity;
-        for (const [i, track] of this._midiData!.tracks.entries()) {
+        const tLen = this._midiData!.tracks.length;
+        for (let i = 0; i < tLen; i++) {
+            const track = this._midiData!.tracks[i];
             if (this.eventIndexes[i] >= track.events.length) {
                 continue;
             }

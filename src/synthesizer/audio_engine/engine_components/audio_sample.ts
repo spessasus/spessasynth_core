@@ -4,11 +4,11 @@ export class AudioSample {
     /**
      * The sample's audio data
      */
-    public readonly sampleData: Float32Array;
+    public sampleData: Float32Array;
     /**
      * Current playback step (rate)
      */
-    public readonly playbackStep: number = 0;
+    public playbackStep = 0;
     /**
      * Current position in the sample
      */
@@ -16,7 +16,7 @@ export class AudioSample {
     /**
      * MIDI root key of the sample
      */
-    public readonly rootKey: number = 0;
+    public rootKey = 0;
     /**
      * Start position of the loop
      */

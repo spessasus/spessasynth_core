@@ -148,6 +148,7 @@ export class ModulationEnvelope {
      * @param voice the voice this envelope belongs to.
      */
     public init(voice: Voice) {
+        this.enteredRelease = false;
         this.sustainLevel =
             1 - voice.modulatedGenerators[generatorTypes.sustainModEnv] / 1000;
 

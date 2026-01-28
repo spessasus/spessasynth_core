@@ -13,18 +13,23 @@ import { readBigEndian } from "../utils/byte_functions/big_endian";
 // An array with preset default values
 const defaultControllerArray = defaultMIDIControllerValues.slice(0, 128);
 
-const isCCNonSkippable = (cc: MIDIController) =>
-    cc === midiControllers.dataDecrement ||
-    cc === midiControllers.dataIncrement ||
-    cc === midiControllers.dataEntryMSB ||
-    cc === midiControllers.dataEntryLSB ||
-    cc === midiControllers.registeredParameterLSB ||
-    cc === midiControllers.registeredParameterMSB ||
-    cc === midiControllers.nonRegisteredParameterLSB ||
-    cc === midiControllers.nonRegisteredParameterMSB ||
-    cc === midiControllers.bankSelect ||
-    cc === midiControllers.bankSelectLSB ||
-    cc === midiControllers.resetAllControllers;
+const nonSkippableCCs = new Set<MIDIController>([
+    midiControllers.dataDecrement,
+    midiControllers.dataIncrement,
+    midiControllers.dataEntryMSB,
+    midiControllers.dataEntryLSB,
+    midiControllers.registeredParameterLSB,
+    midiControllers.registeredParameterMSB,
+    midiControllers.nonRegisteredParameterLSB,
+    midiControllers.nonRegisteredParameterMSB,
+    midiControllers.bankSelect,
+    midiControllers.bankSelectLSB,
+    midiControllers.resetAllControllers,
+    midiControllers.monoModeOn,
+    midiControllers.polyModeOn
+] as const);
+
+const isCCNonSkippable = (cc: MIDIController) => nonSkippableCCs.has(cc);
 
 /**
  * Plays the MIDI file to a specific time or ticks.

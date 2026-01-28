@@ -117,7 +117,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         return;
                     }
                     SpessaSynthInfo(
-                        `%cUnrecognized NRPN for %c${this.channelNumber}%c: %c(0x${NRPNFine.toString(
+                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${NRPNFine.toString(
                             16
                         ).toUpperCase()} 0x${NRPNFine.toString(
                             16
@@ -141,7 +141,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 return;
                             }
                             SpessaSynthInfo(
-                                `%cUnrecognized NRPN for %c${this.channelNumber}%c: %c(0x${NRPNCoarse.toString(16)} 0x${NRPNFine.toString(
+                                `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${NRPNCoarse.toString(16)} 0x${NRPNFine.toString(
                                     16
                                 )})%c data value: %c${dataValue}`,
                                 consoleColors.warn,
@@ -162,7 +162,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             addDefaultVibrato(this);
                             this.channelVibrato.rate = (dataValue / 64) * 8;
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "Vibrato rate",
                                 `${dataValue} = ${this.channelVibrato.rate}`,
                                 "Hz"
@@ -178,7 +178,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             addDefaultVibrato(this);
                             this.channelVibrato.depth = dataValue / 2;
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "Vibrato depth",
                                 `${dataValue} = ${this.channelVibrato.depth}`,
                                 "cents of detune"
@@ -194,7 +194,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                             addDefaultVibrato(this);
                             this.channelVibrato.delay = dataValue / 64 / 3;
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "Vibrato delay",
                                 `${dataValue} = ${this.channelVibrato.delay}`,
                                 "seconds"
@@ -210,7 +210,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 dataValue
                             );
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "Filter cutoff",
                                 dataValue.toString(),
                                 ""
@@ -225,7 +225,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 dataValue
                             );
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "Filter resonance",
                                 dataValue.toString(),
                                 ""
@@ -241,7 +241,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 dataValue
                             );
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "EG attack time",
                                 dataValue.toString(),
                                 ""
@@ -256,7 +256,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 dataValue
                             );
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "EG decay time",
                                 dataValue.toString(),
                                 ""
@@ -272,7 +272,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                                 dataValue
                             );
                             coolInfo(
-                                this.channelNumber,
+                                this.channel,
                                 "EG release time",
                                 dataValue.toString(),
                                 ""
@@ -315,7 +315,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
             switch (rpnValue) {
                 default: {
                     SpessaSynthInfo(
-                        `%cUnrecognized RPN for %c${this.channelNumber}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
+                        `%cUnrecognized RPN for %c${this.channel}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
                         consoleColors.warn,
                         consoleColors.recognized,
                         consoleColors.warn,
@@ -332,7 +332,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
                     ] = dataValue << 7;
                     coolInfo(
-                        this.channelNumber,
+                        this.channel,
                         "Pitch wheel range",
                         dataValue.toString(),
                         "semitones"
@@ -349,7 +349,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataValue: number) {
                         semitones
                     );
                     coolInfo(
-                        this.channelNumber,
+                        this.channel,
                         "Coarse tuning",
                         semitones.toString(),
                         "semitones"

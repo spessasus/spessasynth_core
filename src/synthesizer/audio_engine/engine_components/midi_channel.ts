@@ -6,7 +6,6 @@ import {
     resetPreset
 } from "../engine_methods/controller_control/reset_controllers";
 import { renderVoice } from "./dsp_chain/render_voice";
-import { panAndMixVoice } from "./dsp_chain/stereo_panner";
 import { dataEntryFine } from "../engine_methods/controller_control/data_entry/data_entry_fine";
 import { controllerChange } from "../engine_methods/controller_control/controller_change";
 import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry/data_entry_coarse";
@@ -22,16 +21,15 @@ import {
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import type { ChannelProperty, SynthSystem, VoiceList } from "../../types";
-import type { SpessaSynthProcessor } from "../../processor";
+import type { ChannelProperty, SynthSystem } from "../../types";
 import { type CustomController, customControllers, type DataEntryState, dataEntryStates } from "../../enums";
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
-import type { ProtectedSynthValues } from "./internal_synth_values";
-import { midiControllers } from "../../../midi/enums";
+import type { SynthesizerCore } from "../synthesizer_core";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
+import { midiControllers } from "../../../midi/enums";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -144,25 +142,17 @@ export class MIDIChannel {
     public polyMode = true;
 
     /**
-     * An array of voices currently active on the channel.
+     * Channel's current voice count
      */
-    public voices: VoiceList = [];
-    /**
-     * An array of voices that are sustained on the channel.
-     */
-    public sustainedVoices: VoiceList = [];
+    public voiceCount = 0;
     /**
      * The channel's number (0-based index)
      */
-    public readonly channelNumber: number;
+    public readonly channel: number;
     /**
-     * Parent processor instance.
+     * Core synthesis engine.
      */
-    public synth: SpessaSynthProcessor;
-    /**
-     * Grants access to protected synth values.
-     */
-    public synthProps: ProtectedSynthValues;
+    public synthCore: SynthesizerCore;
     // MIDI messages
     /**
      * Sends a "MIDI Note on" message and starts a note.
@@ -225,6 +215,8 @@ export class MIDIChannel {
     public dataEntryCoarse = dataEntryCoarse.bind(
         this
     ) as typeof dataEntryCoarse;
+    // Voice rendering methods
+    public readonly renderVoice = renderVoice.bind(this);
     /**
      * Will be updated every time something tuning-related gets changed.
      * This is used to avoid a big addition for every voice rendering call.
@@ -251,24 +243,24 @@ export class MIDIChannel {
      * A small optimization that disables applying overrides until at least one is set.
      */
     protected generatorOverridesEnabled = false;
-    // Voice rendering methods
-    protected renderVoice = renderVoice.bind(this);
-    protected panAndMixVoice = panAndMixVoice.bind(this);
-    protected computeModulators = computeModulators.bind(this);
+    protected readonly computeModulators = computeModulators.bind(this);
+    /**
+     * For tracking voice count changes
+     * @private
+     */
+    private previousVoiceCount = 0;
 
     /**
      * Constructs a new MIDI channel.
      */
     public constructor(
-        synth: SpessaSynthProcessor,
-        synthProps: ProtectedSynthValues,
+        synthProps: SynthesizerCore,
         preset: BasicPreset | undefined,
         channelNumber: number
     ) {
-        this.synth = synth;
-        this.synthProps = synthProps;
+        this.synthCore = synthProps;
         this.preset = preset;
-        this.channelNumber = channelNumber;
+        this.channel = channelNumber;
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
     }
@@ -296,7 +288,18 @@ export class MIDIChannel {
     protected get channelSystem(): SynthSystem {
         return this.lockPreset
             ? this.lockedSystem
-            : this.synthProps.masterParameters.midiSystem;
+            : this.synthCore.masterParameters.midiSystem;
+    }
+
+    public clearVoiceCount() {
+        this.previousVoiceCount = this.voiceCount;
+        this.voiceCount = 0;
+    }
+
+    public updateVoiceCount() {
+        if (this.voiceCount !== this.previousVoiceCount) {
+            this.sendChannelProperty();
+        }
     }
 
     /**
@@ -306,7 +309,7 @@ export class MIDIChannel {
      */
     public transposeChannel(semitones: number, force = false) {
         if (!this.drumChannel) {
-            semitones += this.synthProps.masterParameters.transposition;
+            semitones += this.synthCore.masterParameters.transposition;
         }
         const keyShift = Math.trunc(semitones);
         const currentTranspose =
@@ -361,7 +364,7 @@ export class MIDIChannel {
     public setModulationDepth(cents: number) {
         cents = Math.round(cents);
         SpessaSynthInfo(
-            `%cChannel ${this.channelNumber} modulation depth. Cents: %c${cents}`,
+            `%cChannel ${this.channel} modulation depth. Cents: %c${cents}`,
             consoleColors.info,
             consoleColors.value
         );
@@ -383,7 +386,7 @@ export class MIDIChannel {
             return;
         }
         SpessaSynthInfo(
-            `%cFine tuning for %c${this.channelNumber}%c is now set to %c${cents}%c cents.`,
+            `%cFine tuning for %c${this.channel}%c is now set to %c${cents}%c cents.`,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
@@ -404,15 +407,14 @@ export class MIDIChannel {
         ) {
             return;
         }
-        this.synthProps.callEvent("pitchWheel", {
-            channel: this.channelNumber,
+        this.synthCore.callEvent("pitchWheel", {
+            channel: this.channel,
             pitch
         });
         this.midiControllers[
             NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
         ] = pitch;
-        for (const v of this.voices)
-            this.computeModulators(v, 0, modulatorSources.pitchWheel);
+        this.computeModulatorsAll(0, modulatorSources.pitchWheel);
         this.sendChannelProperty();
     }
 
@@ -425,10 +427,10 @@ export class MIDIChannel {
             NON_CC_INDEX_OFFSET + modulatorSources.channelPressure
         ] = pressure << 7;
         this.updateChannelTuning();
-        for (const v of this.voices)
-            this.computeModulators(v, 0, modulatorSources.channelPressure);
-        this.synthProps.callEvent("channelPressure", {
-            channel: this.channelNumber,
+        this.computeModulatorsAll(0, modulatorSources.channelPressure);
+
+        this.synthCore.callEvent("channelPressure", {
+            channel: this.channel,
             pressure: pressure
         });
     }
@@ -441,15 +443,21 @@ export class MIDIChannel {
      * @param pressure 0 - 127, the pressure value to set for the note.
      */
     public polyPressure(midiNote: number, pressure: number) {
-        for (const v of this.voices) {
-            if (v.midiNote !== midiNote) {
-                continue;
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.active &&
+                    v.channel === this.channel &&
+                    v.midiNote === midiNote
+                ) {
+                    v.pressure = pressure;
+                    this.computeModulators(v, 0, modulatorSources.polyPressure);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
             }
-            v.pressure = pressure;
-            this.computeModulators(v, 0, modulatorSources.polyPressure);
-        }
-        this.synthProps.callEvent("polyPressure", {
-            channel: this.channelNumber,
+        this.synthCore.callEvent("polyPressure", {
+            channel: this.channel,
             midiNote: midiNote,
             pressure: pressure
         });
@@ -470,44 +478,6 @@ export class MIDIChannel {
     }
 
     /**
-     * Renders Float32 audio for this channel.
-     * @param outputLeft the left output buffer.
-     * @param outputRight the right output buffer.
-     * @param reverbOutputLeft left output for reverb.
-     * @param reverbOutputRight right output for reverb.
-     * @param chorusOutputLeft left output for chorus.
-     * @param chorusOutputRight right output for chorus.
-     * @param startIndex start index offset.
-     * @param sampleCount sample count to render.
-     */
-    public renderAudio(
-        outputLeft: Float32Array,
-        outputRight: Float32Array,
-        reverbOutputLeft: Float32Array,
-        reverbOutputRight: Float32Array,
-        chorusOutputLeft: Float32Array,
-        chorusOutputRight: Float32Array,
-        startIndex: number,
-        sampleCount: number
-    ) {
-        this.voices = this.voices.filter(
-            (v) =>
-                !this.renderVoice(
-                    v,
-                    this.synth.currentSynthTime,
-                    outputLeft,
-                    outputRight,
-                    reverbOutputLeft,
-                    reverbOutputRight,
-                    chorusOutputLeft,
-                    chorusOutputRight,
-                    startIndex,
-                    sampleCount
-                )
-        );
-    }
-
-    /**
      * Locks or unlocks the preset from MIDI program changes.
      * @param locked If the preset should be locked.
      */
@@ -517,7 +487,7 @@ export class MIDIChannel {
         }
         this.lockPreset = locked;
         if (locked) {
-            this.lockedSystem = this.synthProps.masterParameters.midiSystem;
+            this.lockedSystem = this.synthCore.masterParameters.midiSystem;
         }
     }
 
@@ -534,9 +504,9 @@ export class MIDIChannel {
                 );
                 this.setBankLSB(0);
             } else {
-                if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
+                if (this.channel % 16 === DEFAULT_PERCUSSION) {
                     throw new Error(
-                        `Cannot disable drums on channel ${this.channelNumber} for XG.`
+                        `Cannot disable drums on channel ${this.channel} for XG.`
                     );
                 }
                 this.setBankMSB(0);
@@ -614,10 +584,15 @@ export class MIDIChannel {
         this.generatorOverrides[gen] = value;
         this.generatorOverridesEnabled = true;
         if (realtime) {
-            for (const v of this.voices) {
-                v.generators[gen] = value;
-                this.computeModulators(v);
-            }
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (v.channel === this.channel && v.active) {
+                        v.generators[gen] = value;
+                        this.computeModulators(v);
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
+                }
         }
     }
 
@@ -629,9 +604,14 @@ export class MIDIChannel {
     public setGeneratorOffset(gen: GeneratorType, value: number) {
         this.generatorOffsets[gen] = value * generatorLimits[gen].nrpn;
         this.generatorOffsetsEnabled = true;
-        for (const v of this.voices) {
-            this.computeModulators(v);
-        }
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (v.channel === this.channel && v.active) {
+                    this.computeModulators(v);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
     }
 
     /**
@@ -643,14 +623,20 @@ export class MIDIChannel {
         // Adjust midiNote by channel key shift
         midiNote += this.customControllers[customControllers.channelKeyShift];
 
-        for (const v of this.voices) {
-            if (v.realKey !== midiNote) {
-                continue;
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (
+                    v.channel === this.channel &&
+                    v.active &&
+                    v.realKey === midiNote
+                ) {
+                    v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
+                    v.isInRelease = false; // Force release again
+                    v.releaseVoice(this.synthCore.currentTime);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
             }
-            v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
-            v.isInRelease = false; // Force release again
-            v.releaseVoice(this.synth.currentSynthTime);
-        }
     }
 
     /**
@@ -660,22 +646,29 @@ export class MIDIChannel {
     public stopAllNotes(force = false) {
         if (force) {
             // Force stop all
-            this.voices.length = 0;
-            this.sustainedVoices.length = 0;
-            this.sendChannelProperty();
-        } else {
-            for (const v of this.voices) {
-                if (v.isInRelease) {
-                    continue;
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (v.channel === this.channel && v.active) {
+                        v.active = false;
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
                 }
-                v.releaseVoice(this.synth.currentSynthTime);
-            }
-            for (const v of this.sustainedVoices) {
-                v.releaseVoice(this.synth.currentSynthTime);
-            }
+            this.clearVoiceCount();
+            this.updateVoiceCount();
+        } else {
+            // Gracefully stop
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (v.channel === this.channel && v.active) {
+                        v.releaseVoice(this.synthCore.currentTime);
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
+                }
         }
-        this.synthProps.callEvent("stopAll", {
-            channel: this.channelNumber,
+        this.synthCore.callEvent("stopAll", {
+            channel: this.channel,
             force
         });
     }
@@ -690,8 +683,8 @@ export class MIDIChannel {
         }
         this._isMuted = isMuted;
         this.sendChannelProperty();
-        this.synthProps.callEvent("muteChannel", {
-            channel: this.channelNumber,
+        this.synthCore.callEvent("muteChannel", {
+            channel: this.channel,
             isMuted: isMuted
         });
     }
@@ -700,11 +693,11 @@ export class MIDIChannel {
      * Sends this channel's property
      */
     public sendChannelProperty() {
-        if (!this.synth.enableEventSystem) {
+        if (!this.synthCore.enableEventSystem) {
             return;
         }
         const data: ChannelProperty = {
-            voicesAmount: this.voices.length,
+            voicesAmount: this.voiceCount,
             pitchWheel:
                 this.midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
@@ -720,10 +713,24 @@ export class MIDIChannel {
                     100,
             isDrum: this.drumChannel
         };
-        this.synthProps.callEvent("channelPropertyChange", {
-            channel: this.channelNumber,
+        this.synthCore.callEvent("channelPropertyChange", {
+            channel: this.channel,
             property: data
         });
+    }
+
+    protected computeModulatorsAll(
+        sourceUsesCC: -1 | 0 | 1,
+        sourceIndex: number
+    ) {
+        let vc = 0;
+        if (this.voiceCount > 0)
+            for (const v of this.synthCore.voices) {
+                if (v.channel === this.channel && v.active) {
+                    this.computeModulators(v, sourceUsesCC, sourceIndex);
+                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                }
+            }
     }
 
     protected setBankMSB(bankMSB: number) {
@@ -757,8 +764,8 @@ export class MIDIChannel {
         } else {
             this.drumChannel = false;
         }
-        this.synthProps.callEvent("drumChange", {
-            channel: this.channelNumber,
+        this.synthCore.callEvent("drumChange", {
+            channel: this.channel,
             isDrumChannel: this.drumChannel
         });
     }

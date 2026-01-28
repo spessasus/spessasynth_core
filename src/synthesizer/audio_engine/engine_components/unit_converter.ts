@@ -45,7 +45,7 @@ export function absCentsToHz(cents: number): number {
     if (cents < MIN_ABS_CENT || cents > MAX_ABS_CENT) {
         return 440 * Math.pow(2, (cents - 6900) / 1200);
     }
-    return absoluteCentLookupTable[Math.trunc(cents) - MIN_ABS_CENT];
+    return absoluteCentLookupTable[(cents - MIN_ABS_CENT) | 0];
 }
 
 // Centibel lookup table (1 cB precision)
@@ -66,5 +66,5 @@ for (let i = 0; i < centibelLookUpTable.length; i++) {
  * @return The gain value.
  */
 export function cbAttenuationToGain(centibels: number): number {
-    return centibelLookUpTable[Math.floor(centibels - MIN_CENTIBELS)];
+    return centibelLookUpTable[(centibels - MIN_CENTIBELS) | 0];
 }

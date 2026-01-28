@@ -44,7 +44,8 @@ export function controllerChange(
         this.midiControllers[actualCCNum] =
             (this.midiControllers[actualCCNum] & 0x3f_80) |
             (controllerValue & 0x7f);
-        for (const v of this.voices) this.computeModulators(v, 1, actualCCNum);
+
+        this.computeModulatorsAll(1, actualCCNum);
     }
     if (this.lockedControllers[controllerNumber]) {
         return;
@@ -89,7 +90,7 @@ export function controllerChange(
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
-                    this.channelNumber % 16 === DEFAULT_PERCUSSION &&
+                    this.channel % 16 === DEFAULT_PERCUSSION &&
                     BankSelectHacks.isSystemXG(this.channelSystem)
                 ) {
                     this.setBankMSB(127);
@@ -195,18 +196,25 @@ export function controllerChange(
 
             case midiControllers.sustainPedal: {
                 if (controllerValue < 64) {
-                    for (const v of this.sustainedVoices) {
-                        v.releaseVoice(this.synth.currentSynthTime);
-                    }
-                    this.sustainedVoices = [];
+                    let vc = 0;
+                    if (this.voiceCount > 0)
+                        for (const v of this.synthCore.voices) {
+                            if (
+                                v.channel === this.channel &&
+                                v.active &&
+                                !v.isInRelease
+                            ) {
+                                v.releaseVoice(this.synthCore.currentTime);
+                                if (++vc >= this.voiceCount) break; // We already checked all the voices
+                            }
+                        }
                 }
                 break;
             }
 
             // Default: just compute modulators
             default: {
-                for (const v of this.voices)
-                    this.computeModulators(v, 1, controllerNumber);
+                this.computeModulatorsAll(1, controllerNumber);
                 break;
             }
         }
@@ -214,8 +222,8 @@ export function controllerChange(
     if (!sendEvent) {
         return;
     }
-    this.synthProps.callEvent("controllerChange", {
-        channel: this.channelNumber,
+    this.synthCore.callEvent("controllerChange", {
+        channel: this.channel,
         controllerNumber: controllerNumber,
         controllerValue: controllerValue
     });

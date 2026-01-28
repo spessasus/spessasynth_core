@@ -1,40 +1,62 @@
-import { absCentsToHz, cbAttenuationToGain, timecentsToSeconds } from "../unit_converter";
+import {
+    absCentsToHz,
+    cbAttenuationToGain,
+    timecentsToSeconds
+} from "../unit_converter";
 import { getLFOValue } from "./lfo";
-import { WavetableOscillator } from "./wavetable_oscillator";
-import { LowpassFilter } from "./lowpass_filter";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
+import { SpessaSynthWarn } from "../../../../utils/loggin";
+
+// Optimized for spessasynth_lib's effects
+export const REVERB_DIVIDER = 3070;
+export const CHORUS_DIVIDER = 2000;
+const HALF_PI = Math.PI / 2;
+
+const MIN_PAN = -500;
+const MAX_PAN = 500;
+const PAN_RESOLUTION = MAX_PAN - MIN_PAN;
+
+// Initialize pan lookup tables
+const panTableLeft = new Float32Array(PAN_RESOLUTION + 1);
+const panTableRight = new Float32Array(PAN_RESOLUTION + 1);
+for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
+    // Clamp to 0-1
+    const realPan = (pan - MIN_PAN) / PAN_RESOLUTION;
+    const tableIndex = pan - MIN_PAN;
+    panTableLeft[tableIndex] = Math.cos(HALF_PI * realPan);
+    panTableRight[tableIndex] = Math.sin(HALF_PI * realPan);
+}
 
 /**
  * Renders a voice to the stereo output buffer
  * @param voice the voice to render
  * @param timeNow current time in seconds
- * @param outputLeft the left output buffer
- * @param outputRight the right output buffer
- * @param reverbOutputLeft left output for reverb
- * @param reverbOutputRight right output for reverb
- * @param chorusOutputLeft left output for chorus
- * @param chorusOutputRight right output for chorus
+ * @param outputL the left output buffer
+ * @param outputR the right output buffer
+ * @param reverbL left output for reverb
+ * @param reverbR right output for reverb
+ * @param chorusL left output for chorus
+ * @param chorusR right output for chorus
  * @param startIndex
  * @param sampleCount
- * @returns true if the voice is finished
  */
 export function renderVoice(
     this: MIDIChannel,
     voice: Voice,
     timeNow: number,
-    outputLeft: Float32Array,
-    outputRight: Float32Array,
-    reverbOutputLeft: Float32Array,
-    reverbOutputRight: Float32Array,
-    chorusOutputLeft: Float32Array,
-    chorusOutputRight: Float32Array,
+    outputL: Float32Array,
+    outputR: Float32Array,
+    reverbL: Float32Array,
+    reverbR: Float32Array,
+    chorusL: Float32Array,
+    chorusR: Float32Array,
     startIndex: number,
     sampleCount: number
-): boolean {
+) {
     // Check if release
     if (
         !voice.isInRelease && // If not in release, check if the release time is
@@ -44,10 +66,17 @@ export function renderVoice(
         voice.isInRelease = true;
         voice.volEnv.startRelease(voice);
         voice.modEnv.startRelease(voice);
-        if (voice.sample.loopingMode === 3) {
-            voice.sample.isLooping = false;
+
+        // Voice may be off instantly
+        // Testcase: mono mode with chords
+        if (!voice.active) return;
+
+        // Looping mode 3
+        if (voice.loopingMode === 3) {
+            voice.wavetable.isLooping = false;
         }
     }
+    voice.hasRendered = true;
 
     // TUNING
     let targetKey = voice.targetKey;
@@ -61,7 +90,7 @@ export function renderVoice(
 
     // MIDI tuning standard
     const tuning =
-        this.synthProps.tunings[this.preset!.program * 128 + voice.realKey];
+        this.synthCore.tunings[this.preset!.program * 128 + voice.realKey];
     if (tuning !== -1) {
         // Tuning is encoded as float
         // For example: 60.56 means key 60 and 56 cents
@@ -85,7 +114,7 @@ export function renderVoice(
 
     // Calculate tuning by key using soundfont's scale tuning
     cents +=
-        (targetKey - voice.sample.rootKey) *
+        (targetKey - voice.rootKey) *
         voice.modulatedGenerators[generatorTypes.scaleTuning];
 
     // Low pass excursion with LFO and mod envelope
@@ -185,60 +214,127 @@ export function renderVoice(
     volumeExcursionCentibels -= voice.resonanceOffset;
 
     // Finally, calculate the playback rate
-    const centsTotal = ~~(cents + semitones * 100);
-    if (centsTotal !== voice.currentTuningCents) {
-        voice.currentTuningCents = centsTotal;
-        voice.currentTuningCalculated = Math.pow(2, centsTotal / 1200);
+    const centsTotal = (cents + semitones * 100) | 0;
+    if (centsTotal !== voice.tuningCents) {
+        voice.tuningCents = centsTotal;
+        voice.tuningRatio = Math.pow(2, centsTotal / 1200);
     }
 
-    // SYNTHESIS
-    const bufferOut = new Float32Array(sampleCount);
-
-    // Looping mode 2: start on release. process only volEnv
-    if (voice.sample.loopingMode === 2 && !voice.isInRelease) {
-        voice.volEnv.process(voice, bufferOut);
-        return voice.finished;
-    }
-
-    // Wave table oscillator
-    WavetableOscillator.process(
-        voice,
-        bufferOut,
-        this.synthProps.masterParameters.interpolationType
-    );
-
-    // Low pass filter
-    LowpassFilter.process(
-        voice,
-        bufferOut,
-        lowpassExcursion,
-        this.synthProps.filterSmoothingFactor
-    );
-
-    // Gain interpolation
-    const smoothing = this.synthProps.gainSmoothingFactor;
+    // Gain target
     const gainTarget = cbAttenuationToGain(
         voice.modulatedGenerators[generatorTypes.initialAttenuation]
     );
-    const gainOffset = cbAttenuationToGain(volumeExcursionCentibels);
-    for (let i = 0; i < bufferOut.length; i++) {
-        voice.currentGain += (gainTarget - voice.currentGain) * smoothing;
-        bufferOut[i] *= voice.currentGain * gainOffset;
+
+    // SYNTHESIS
+    // Does the buffer need to grow?
+    // Never shrink though, as we only render sample count into it.
+    // A valid use case for shrinking buffer size is rendering a specific count in 128-long chunks + a smaller one to align
+    if (voice.buffer.length < sampleCount) {
+        SpessaSynthWarn(`Buffer size has changed from ${voice.buffer.length} to ${sampleCount}! 
+        This will cause a memory allocation!`);
+        voice.buffer = new Float32Array(sampleCount);
+    }
+    const buffer = voice.buffer;
+
+    // Looping mode 2: start on release. process only volEnv
+    if (voice.loopingMode === 2 && !voice.isInRelease) {
+        voice.active = voice.volEnv.process(
+            sampleCount,
+            buffer,
+            gainTarget,
+            volumeExcursionCentibels
+        );
+        return;
     }
 
-    // Vol env
-    voice.volEnv.process(voice, bufferOut);
-
-    this.panAndMixVoice(
-        voice,
-        bufferOut,
-        outputLeft,
-        outputRight,
-        reverbOutputLeft,
-        reverbOutputRight,
-        chorusOutputLeft,
-        chorusOutputRight,
-        startIndex
+    // Wave table oscillator
+    voice.active = voice.wavetable.process(
+        sampleCount,
+        voice.tuningRatio,
+        buffer
     );
-    return voice.finished;
+
+    if (!voice.active) return;
+
+    // Low pass filter
+    voice.filter.process(sampleCount, voice, buffer, lowpassExcursion);
+
+    // Vol env
+    voice.active = voice.volEnv.process(
+        sampleCount,
+        buffer,
+        gainTarget,
+        volumeExcursionCentibels
+    );
+
+    // Pan and mix down the data
+    /**
+     * Clamp -500 to 500
+     */
+    let pan: number;
+    if (voice.overridePan) {
+        pan = voice.overridePan;
+    } else {
+        // Smooth out pan to prevent clicking
+        voice.currentPan +=
+            (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
+            this.synthCore.panSmoothingFactor;
+        pan = voice.currentPan;
+    }
+
+    const gain =
+        this.synthCore.masterParameters.masterGain *
+        this.synthCore.midiVolume *
+        voice.gainModifier;
+    const index = (pan + 500) | 0;
+    // Get voice's gain levels for each channel
+    const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
+    const gainRight = panTableRight[index] * gain * this.synthCore.panRight;
+
+    // Mix down the audio data
+    for (let i = 0; i < sampleCount; i++) {
+        const s = buffer[i];
+        const idx = i + startIndex;
+        outputL[idx] += gainLeft * s;
+        outputR[idx] += gainRight * s;
+    }
+    if (!this.synthCore.enableEffects) {
+        return;
+    }
+
+    // Disable reverb and chorus if necessary
+    const reverbSend =
+        voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
+    if (reverbSend > 0) {
+        // Reverb is mono so we need to multiply by gain
+        const reverbGain =
+            this.synthCore.masterParameters.reverbGain *
+            this.synthCore.reverbSend *
+            gain *
+            (reverbSend / REVERB_DIVIDER);
+        for (let i = 0; i < sampleCount; i++) {
+            const idx = i + startIndex;
+            const s = reverbGain * buffer[i];
+            reverbL[idx] += s;
+            reverbR[idx] += s;
+        }
+    }
+
+    const chorusSend =
+        voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
+    if (chorusSend > 0) {
+        // Chorus is stereo so we do not need to
+        const chorusGain =
+            this.synthCore.masterParameters.chorusGain *
+            this.synthCore.chorusSend *
+            (chorusSend / CHORUS_DIVIDER);
+        const chorusLeftGain = gainLeft * chorusGain;
+        const chorusRightGain = gainRight * chorusGain;
+        for (let i = 0; i < sampleCount; i++) {
+            const idx = i + startIndex;
+            const s = buffer[i];
+            chorusL[idx] += chorusLeftGain * s;
+            chorusR[idx] += chorusRightGain * s;
+        }
+    }
 }
