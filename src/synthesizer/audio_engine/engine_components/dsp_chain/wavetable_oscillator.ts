@@ -51,7 +51,7 @@ export abstract class WavetableOscillator {
     ): boolean;
 }
 
-export class NearestOscillator extends WavetableOscillator {
+export class LinearOscillator extends WavetableOscillator {
     public process(
         sampleCount: number,
         tuningRatio: number,
@@ -111,7 +111,7 @@ export class NearestOscillator extends WavetableOscillator {
     }
 }
 
-export class LinearOscillator extends WavetableOscillator {
+export class NearestOscillator extends WavetableOscillator {
     public process(
         sampleCount: number,
         tuningRatio: number,
