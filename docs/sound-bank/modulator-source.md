@@ -4,7 +4,6 @@
 
     Properties and methods not listed here are internal only and should not be used.
 
-
 This class represents a single modulator source.
 
 ## Properties
@@ -14,10 +13,10 @@ This class represents a single modulator source.
 From the SF2 specification:
 
 > If this field is set to false, the controller should be mapped with a minimum value of 0 and a maximum value of 1. This is also
-called Unipolar. Thus, it behaves similar to the Modulation Wheel controller of the MIDI specification.
+> called Unipolar. Thus, it behaves similar to the Modulation Wheel controller of the MIDI specification.
 >
 > If this field is set to true, the controller sound be mapped with a minimum value of -1 and a maximum value of 1. This is also
-called Bipolar. Thus, it behaves similar to the Pitch Wheel controller of the MIDI specification.
+> called Bipolar. Thus, it behaves similar to the Pitch Wheel controller of the MIDI specification.
 
 A boolean.
 
@@ -26,8 +25,8 @@ A boolean.
 From the SF2 specification:
 
 > If this field is set true, the direction of the controller should be from the maximum value to the minimum value. So, for
-  example, if the controller source is Key Number, then a Key Number value of 0 corresponds to the maximum possible
-  controller output, and the Key Number value of 127 corresponds to the minimum possible controller input.
+> example, if the controller source is Key Number, then a Key Number value of 0 corresponds to the maximum possible
+> controller output, and the Key Number value of 127 corresponds to the minimum possible controller input.
 
 A boolean.
 

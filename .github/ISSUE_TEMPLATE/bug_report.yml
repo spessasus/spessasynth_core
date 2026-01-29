@@ -1,62 +1,62 @@
 name: Bug report
 description: Report a bug/incorrect behavior.
 
-labels: [ "bug" ]
+labels: ["bug"]
 body:
-  - type: checkboxes
-    attributes:
-      label: Duplicated issue check
-      description: Please make sure that this issue has not been reported before.
-      options:
-        - label: I confirm that I have searched the existing issues
+    - type: checkboxes
+      attributes:
+          label: Duplicated issue check
+          description: Please make sure that this issue has not been reported before.
+          options:
+              - label: I confirm that I have searched the existing issues
+                required: true
+    - type: input
+      id: version
+      attributes:
+          label: package version
+          description: The version of spessasynth_core you are using.
+      validations:
           required: true
-  - type: input
-    id: version
-    attributes:
-      label: package version
-      description: The version of spessasynth_core you are using.
-    validations:
-      required: true
-  - type: textarea
-    id: description
-    attributes:
-      label: Description
-      description: Describe the bug.
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected Behavior
-      description: A concise description of what you expected to happen.
-    validations:
-      required: true
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Reproduction steps
-      description: Steps to reproduce the behavior.
-      placeholder: |
-        1. Load this MIDI...
-        2. Load this soundfont
-        3. Play '...'
-        4. See error...
-    validations:
-      required: true
-  - type: dropdown
-    id: os
-    attributes:
-      label: Environment
-      description: Which environment you are on?
-      options:
-        - Web browser (Which one?)
-        - Node.js
-        - Other (please specify in additional info)
-    validations:
-      required: false
-  - type: textarea
-    attributes:
-      label: Additional info
-      description: Any additional info and attachments (screenshots, MIDIs, sf2/dls files, other environments) go here.
-    validations:
-      required: false
+    - type: textarea
+      id: description
+      attributes:
+          label: Description
+          description: Describe the bug.
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected Behavior
+          description: A concise description of what you expected to happen.
+      validations:
+          required: true
+    - type: textarea
+      id: reproduction
+      attributes:
+          label: Reproduction steps
+          description: Steps to reproduce the behavior.
+          placeholder: |
+              1. Load this MIDI...
+              2. Load this soundfont
+              3. Play '...'
+              4. See error...
+      validations:
+          required: true
+    - type: dropdown
+      id: os
+      attributes:
+          label: Environment
+          description: Which environment you are on?
+          options:
+              - Web browser (Which one?)
+              - Node.js
+              - Other (please specify in additional info)
+      validations:
+          required: false
+    - type: textarea
+      attributes:
+          label: Additional info
+          description: Any additional info and attachments (screenshots, MIDIs, sf2/dls files, other environments) go here.
+      validations:
+          required: false

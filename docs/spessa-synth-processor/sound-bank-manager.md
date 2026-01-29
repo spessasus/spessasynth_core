@@ -1,9 +1,11 @@
 # Sound Bank Manager
+
 Manages the sound banks of the parent `SpessaSynthProcessor` instance.
 
 ## Accessing
 
 Access it through the `soundBankManager` property.
+
 ```ts
 processor.soundBankManager.doSomething();
 ```
@@ -15,17 +17,20 @@ processor.soundBankManager.doSomething();
 This method removes a sound bank with a given ID from the sound bank list.
 
 ```ts
-function deleteSoundBank(id: number){}
+function deleteSoundBank(id: number) {}
 ```
+
 - `id` - `string` - the ID of the sound bank to remove.
 
 ### addSoundBank
+
 This method adds a new sound bank with a given ID to the list,
 or replaces an existing one.
 
 ```ts
-function addSoundBank(soundBank: BasicSoundBank, id: string, bankOffset = 0){}
+function addSoundBank(soundBank: BasicSoundBank, id: string, bankOffset = 0) {}
 ```
+
 - `soundBank` - the new sound bank to add.
 - `id` - the ID of the sound bank. If it already exists, it will be replaced.
 - `bankOffset` - the bank number offset of the sound bank, set to 0 for no change.
@@ -35,7 +40,7 @@ function addSoundBank(soundBank: BasicSoundBank, id: string, bankOffset = 0){}
 This method gets a given preset from the sound bank stack.
 
 ```ts
-function getPreset(patch: MIDIPatch, system: SynthSystem){}
+function getPreset(patch: MIDIPatch, system: SynthSystem) {}
 ```
 
 - patch - the MIDI patch to search for.
@@ -55,7 +60,7 @@ Each item is a preset list entry:
 
 - The properties of a [MIDI Patch](midi-patch.md).
 - `name`: `string` - The name of the preset.
-- `isAnyDrums`: `boolean` - if this preset is a drum preset. *This is the correct way of distinguishing between drum and melodic presets.
+- `isAnyDrums`: `boolean` - if this preset is a drum preset. \*This is the correct way of distinguishing between drum and melodic presets.
 
 ### priorityOrder
 

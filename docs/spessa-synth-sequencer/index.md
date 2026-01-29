@@ -55,7 +55,6 @@ If zero, the loop is disabled.
 Indicates if the sequencer should skip to the first note on event.
 Defaults to true.
 
-
 ### onEventCall
 
 Called when the sequencer calls an event
@@ -65,7 +64,6 @@ with an object containing two properties:
 - data - the data of the event, an object.
 
 See [event types](event-types.md) for more info.
-
 
 ### processTick
 
@@ -82,7 +80,6 @@ The current song index in the song list.
 If shuffleMode is enabled, this is the index of the shuffled song list.
 
 This field can be set to trigger a change.
-
 
 ### shuffleMode
 
@@ -126,7 +123,6 @@ Defaults to true.
 
 Starts or resumes the playback of the sequencer.
 If the sequencer is paused, it will resume from the paused time.
-
 
 ### pause
 

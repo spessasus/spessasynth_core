@@ -5,7 +5,7 @@ This class represents a single instrument, a layer below the BasicPreset
 !!! Note
 
     Despite the name, this isn't what the MIDI selects. BasicPreset is the actual "instrument".
-    
+
 !!! Danger
 
     Properties and methods not listed here are internal only and should not be used.
@@ -37,7 +37,7 @@ Creates a new instrument zone and returns it.
 instrument.createZone(sample);
 ```
 
- - sample - the sample to use in the zone.
+- sample - the sample to use in the zone.
 
 ### deleteZone
 
@@ -53,11 +53,10 @@ instrument.deleteZone(index);
 
 Unlinks everything from this instrument.
 
-
 ### globalize
 
-Globalizes the instrument *in-place.*
-This means trying to move as many generators and modulators 
+Globalizes the instrument _in-place._
+This means trying to move as many generators and modulators
 to the global zone as possible to reduce clutter and the count of parameters.
 
 Should have no effect on the audio produced.

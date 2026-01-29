@@ -17,7 +17,7 @@ synth.soundBankManager.addSoundBank(arrayBuffer, "main");
 
 ## Understanding the audio loop
 
-Spessasynth_core provides very *raw* access to the audio data, outputting float PCM samples.
+Spessasynth*core provides very \_raw* access to the audio data, outputting float PCM samples.
 These samples can then be sent to speakers, saved somewhere or processed, for example in an `AudioWorklet`'s [`process` method](https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletProcessor/process).
 
 ### Example MIDI player audio loop

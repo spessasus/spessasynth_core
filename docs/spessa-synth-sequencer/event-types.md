@@ -2,7 +2,6 @@
 
 This page serves as a detailed reference to all the event types `SpessaSynthSequencer` emits.
 
-
 ## Detailed descriptions
 
 Each event has an object with data for this event.
@@ -14,13 +13,13 @@ Called when a MIDI message is sent and externalMIDIPlayback is true.
 
 - message: number[] - the binary MIDI message
 - time: number - the synthesizer's current time when this event was sent.
-Use this for scheduling MIDI messages to your external MIDI device.
+  Use this for scheduling MIDI messages to your external MIDI device.
 
 ### timeChange
 
 Called when the time is changed.
 It also gets called when a song gets changed.
-    
+
 - newTime: number - the new time in seconds.
 
 ### songEnded
@@ -30,7 +29,6 @@ Called when the song has finished playing.
 An empty object is returned for now.
 
 ### pause
-
 
 !!! Danger
 

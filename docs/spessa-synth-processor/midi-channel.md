@@ -8,9 +8,8 @@ This class represents a single MIDI channel within a `SpessaSynthProcessor`.
 
     Unless you are doing advanced synth operations, you shouldn't be interacting with this class.
     This is for advanced users only.
-    
 
-This page serves as a documentation for this internal class. 
+This page serves as a documentation for this internal class.
 However, they can allow to manipulate the synth extensively.
 
 !!! Note
@@ -22,7 +21,7 @@ However, they can allow to manipulate the synth extensively.
 !!! Note
 
     The MIDI methods (noteOn, noteOff, program change, etc.) are omitted here as they can be called from the `SpessaSynthProcessor` directly.
-    
+
 ### resetPreset
 
 Resets the preset to the default value.
@@ -44,7 +43,6 @@ Executes a data entry fine (LSB) change for the current channel.
 Parameters:
 
 - dataValue - The value to set for the data entry fine controller (0-127).
-
 
 ### dataEntryCoarse
 
@@ -74,7 +72,7 @@ Parameters:
 !!! Note
 
     Cent tunings are relative.
-    
+
 ### setModulationDepth
 
 Sets the modulation depth for the channel.
@@ -92,13 +90,12 @@ Parameters:
     the multiplier will be 2,
     which, for a preset with a depth of 50,
     will create a total modulation depth of 100 cents.
-    
 
 ### setTuning
 
 Sets the channel's tuning.
 
-Parameters: 
+Parameters:
 
 - cents - The tuning in cents to set.
 - log - If true, logs the change to the console.
@@ -118,7 +115,7 @@ The custom controllers enum is called `customControllers` in the exports.
 
 Renders Float32 audio for this channel.
 
-Parameters: 
+Parameters:
 
 - outputLeft - the left output buffer.
 - outputRight - the right output buffer.
@@ -133,7 +130,7 @@ Parameters:
 
 Locks or unlocks the preset from MIDI program changes.
 
-Parameters: 
+Parameters:
 
 locked - If the preset should be locked.
 
@@ -142,7 +139,7 @@ locked - If the preset should be locked.
 Changes the preset to, or from drums.
 Note that this executes a program change.
 
-Parameters: 
+Parameters:
 
 - isDrum - if the channel should be a drum preset or not.
 

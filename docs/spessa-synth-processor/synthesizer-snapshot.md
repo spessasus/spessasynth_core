@@ -26,7 +26,7 @@ const snapshot = SynthesizerSnapshot.create(synth);
 Creates a copy of existing snapshot.
 
 ```ts
-SynthesizerSnapshot.copyFrom(snapshot)
+SynthesizerSnapshot.copyFrom(snapshot);
 ```
 
 - snapshot - the snapshot to create a copy from.

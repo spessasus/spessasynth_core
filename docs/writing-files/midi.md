@@ -23,7 +23,12 @@ The returned value is an `ArrayBuffer` - a binary representation of the Standard
 Allows easily modifying the sequence's programs and controllers.
 
 ```ts
-midi.modify(desiredProgramChanges, desiredControllerChanges, desiredChannelsToClear, desiredChannelsToTranspose);
+midi.modify(
+    desiredProgramChanges,
+    desiredControllerChanges,
+    desiredChannelsToClear,
+    desiredChannelsToTranspose
+);
 ```
 
 - desiredProgramChanges - an array of objects, defined as follows:
@@ -68,7 +73,7 @@ midi.modify(desiredProgramChanges, desiredControllerChanges, desiredChannelsToCl
 
 ### applySnapshot
 
-Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence *in place*.
+Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence _in place_.
 This means changing the programs and controllers if they are locked.
 
 ```ts
@@ -95,11 +100,11 @@ const synth = new SpessaSynthProcessor(44100);
 const snapshot = SynthesizerSnapshot.create(synth);
 midi.applySnapshot(snapshot);
 
-// write midi 
+// write midi
 const midiBinary = midi.writeMIDI();
 
 // save the file
-const blob = new Blob([midiBinary.buffer], {type: "audio/midi"});
+const blob = new Blob([midiBinary.buffer], { type: "audio/midi" });
 const url = URL.createObjectURL(blob);
 const a = document.createElement("a");
 a.href = url;
@@ -115,10 +120,7 @@ This function writes out an RMIDI file (MIDI + SF2).
 [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
 ```ts
-const rmidiBinary = midi.writeRMIDI(
-    soundBankBinary,
-    configuration
-);
+const rmidiBinary = midi.writeRMIDI(soundBankBinary, configuration);
 ```
 
 ### Parameters
@@ -190,11 +192,11 @@ Defaults to `true`.
 Below is a simple example for exporting an RMIDI file
 
 ```html
-<label for='soundfont_upload'>Upload soundfont</label>
-<input type='file' id='soundfont_upload'>
-<label for='midi_upload'>Upload MIDI</label>
-<input type='file' id='midi_upload'>
-<button id='export'>Export</button>
+<label for="soundfont_upload">Upload soundfont</label>
+<input type="file" id="soundfont_upload" />
+<label for="midi_upload">Upload MIDI</label>
+<input type="file" id="midi_upload" />
+<button id="export">Export</button>
 ```
 
 !!! Note
@@ -207,8 +209,12 @@ const sfInput = document.getElementById("soundfont_upload");
 const midiInput = document.getElementById("midi_upload");
 document.getElementById("export").onchange = async () => {
     // get the files
-    const soundBank = SoundBankLoader.fromArrayBuffer(await sfInput.files[0].arrayBuffer());
-    const midi = BasicMIDI.fromArrayBuffer(await midiInput.files[0].arrayBuffer());
+    const soundBank = SoundBankLoader.fromArrayBuffer(
+        await sfInput.files[0].arrayBuffer()
+    );
+    const midi = BasicMIDI.fromArrayBuffer(
+        await midiInput.files[0].arrayBuffer()
+    );
 
     // trim the soundfont
     soundBank.trimSoundBank(soundBank);
@@ -231,11 +237,11 @@ document.getElementById("export").onchange = async () => {
     });
 
     // save the file
-    const blob = new Blob([rmidiBinary.buffer], {type: "audio/rmid"});
+    const blob = new Blob([rmidiBinary.buffer], { type: "audio/rmid" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = midi.name + ".rmi";
     a.click();
-}
+};
 ```

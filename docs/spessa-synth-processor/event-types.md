@@ -9,7 +9,7 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
     If there's more than one property, the returned value is an object with the properties as keys.
 
 | Name                    | Description                                      |
-|-------------------------|--------------------------------------------------|
+| ----------------------- | ------------------------------------------------ |
 | `noteOff`               | Key has been released.                           |
 | `noteOn`                | Key has been pressed.                            |
 | `pitchWheel`            | Pitch wheel has been altered.                    |
@@ -59,7 +59,7 @@ This event is triggered when the pitch wheel is altered on any channel.
 
 - `channel`: `number` - the channel that was pitch bent. Usually it ranges from 0 to 16, but it depends on the channel
   count.
-- `pitch`:  `number` - The unsigned 14-bit value of the pitch: 0 - 16,383.
+- `pitch`: `number` - The unsigned 14-bit value of the pitch: 0 - 16,383.
 
 Note that the pitch wheel depends on the pitch wheel range, usually two semitones up and down.
 
@@ -150,7 +150,7 @@ The event data is the preset list. Each item is a preset list entry:
 
 - The properties of a [MIDI Patch](midi-patch.md).
 - `name`: `string` - The name of the preset.
-- `isAnyDrums`: `boolean` - if this preset is a drum preset. *This is the correct way of distinguishing between drum and melodic presets.
+- `isAnyDrums`: `boolean` - if this preset is a drum preset. \*This is the correct way of distinguishing between drum and melodic presets.
 
 ### `allControllerReset`
 

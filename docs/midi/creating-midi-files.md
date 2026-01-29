@@ -39,7 +39,7 @@ mid.flush();
 Adds a new MIDI track. Changes the format to 1.
 
 ```ts
-mid.addNewTrack(name, port = 0);
+mid.addNewTrack(name, (port = 0));
 ```
 
 - `name` - `string` - The track's name. The first event will be track name with this.
@@ -108,7 +108,7 @@ mid.addNoteOff(ticks, track, channel, midiNote);
 Adds a new "program change" message.
 
 ```ts
-mid.addProgramChange(ticks, track, channel, programNumber)
+mid.addProgramChange(ticks, track, channel, programNumber);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
@@ -121,7 +121,13 @@ mid.addProgramChange(ticks, track, channel, programNumber)
 Adds a new "controller change" message.
 
 ```ts
-mid.addControllerChange(ticks, track, channel, controllerNumber, controllerValue);
+mid.addControllerChange(
+    ticks,
+    track,
+    channel,
+    controllerNumber,
+    controllerValue
+);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
@@ -183,7 +189,7 @@ mid.flush();
 
 // Write the MIDI file to a blob and save it
 const b = mid.writeMIDI();
-const blob = new Blob([b.buffer], {type: "audio/mid"});
+const blob = new Blob([b.buffer], { type: "audio/mid" });
 const url = URL.createObjectURL(blob);
 const a = document.createElement("a");
 a.href = url;

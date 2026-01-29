@@ -68,11 +68,10 @@ The sound engine name.
 
     The other properties of soundBankInfo listed below are all *optional*!
     They may be undefined.
-    
+
 #### engineer
 
 The engineer (creator) of the sound bank.
-
 
 #### product
 
@@ -140,7 +139,11 @@ Checks for XG drum sets and considers if this sound bank is XG-compatible.
 Merges multiple sound banks, adding (not replacing) presets on top of the previous ones, and returns a new soundBank.
 
 ```ts
-BasicSoundBank.mergeSoundBanks(soundbank1, soundbank2, soundbank3, /* more here... */);
+BasicSoundBank.mergeSoundBanks(
+    soundbank1,
+    soundbank2,
+    soundbank3 /* more here... */
+);
 ```
 
 - parameters - `BasicSoundBank` instances. The first is used as a base, and the rest are
@@ -157,6 +160,7 @@ The INFO data is taken from the first sound bank.
 ### getDummySoundBankFile
 
 Creates a simple sound bank with a single saw wave preset.
+
 ```ts
 const sfBinary = await BasicSoundBank.getDummySoundBankFile();
 ```
@@ -285,7 +289,6 @@ Recursively clones a preset into this sound bank, as well as its instruments and
 
 Returns the copied preset, if a preset exists with that name, it is returned instead.
 
-
 ### flush
 
 Updates internal values. Call after updating the preset list.
@@ -367,7 +370,7 @@ It must return an `Uint8Array` instance containing the compressed bitstream.
 Import your function:
 
 ```ts
-import {encodeVorbis} from './libvorbis/encode_vorbis.js'; // adjust the path if necessary
+import { encodeVorbis } from "./libvorbis/encode_vorbis.js"; // adjust the path if necessary
 ```
 
 Then pass it to the write method:

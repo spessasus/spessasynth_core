@@ -9,11 +9,11 @@ BasicMIDI parser and represents a single MIDI sequence.
 ## Initialization
 
 ```ts
-const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer, altName = "");
+const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer, (altName = ""));
 ```
 
 - arrayBuffer - an `arrayBuffer` instance of the MIDI file.
-- altName - the *optional* name of the file, will be used if the MIDI file does not have a name.
+- altName - the _optional_ name of the file, will be used if the MIDI file does not have a name.
 
 ## Properties
 
@@ -33,7 +33,7 @@ The sequence's duration in seconds.
 !!! Note
 
     The MIDI file's duration is the start of the file to `midi.lastVoiceEventTick`.
-    To alter the end time, 
+    To alter the end time,
     add a controller change (preferably an unused CC, like CC#50) at the time you want the file to end,
     then run `midi.flush()`
 
@@ -63,7 +63,7 @@ It will always contain at least one tempo change (the default 120BPM at zero tic
 
 Any extra metadata found in the file.
 These messages were deemed "interesting" by the parsing algorithm and can be displayed by the MIDI player as some form of metadata.
- 
+
 An array of [MIDI messages](midi-message.md).
 
 ### lyrics
@@ -76,7 +76,6 @@ An array of [MIDI messages](midi-message.md).
 
 The tick position of the first note-on event in the MIDI sequence.
 
-
 ### keyRange
 
 The maximum key range of the sequence.
@@ -86,18 +85,16 @@ An object:
 - min - the lowest MIDI note number in the sequence.
 - max - the highest MIDI note number in the sequence.
 
-
 ### lastVoiceEventTick
 
 The MIDI tick number of the last voice event in the sequence.
-Treated as the last event in the sequence, *even if the end of track is later.*
+Treated as the last event in the sequence, _even if the end of track is later._
 
 !!! Note
 
-    To alter the end time, 
+    To alter the end time,
     add a controller change (preferably an unused CC, like CC#50) at the time you want the file to end,
     then run `midi.flush()`
-
 
 ### portChannelOffsetMap
 
@@ -126,8 +123,8 @@ The type of the loop detected:
 
 - `soft` - the playback will immediately jump to the loop start pointer without any further processing.
 - `hard` - the playback will quickly process all messages from
-the start of the file to ensure that synthesizer is in the correct state.
-This is the default behavior.
+  the start of the file to ensure that synthesizer is in the correct state.
+  This is the default behavior.
 
 Soft loop types are enabled by default for Touhou and GameMaker loop points.
 
@@ -141,7 +138,6 @@ String or undefined.
 
 The [MIDI file format.](https://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html#BM2_2) Usually 0 or
 1, rarely 2.
-
 
 ### rmidiInfo
 
@@ -162,7 +158,6 @@ A `number` representing the bank offset of the file. Only applies to RMID, for n
 
 If the MIDI file is a Soft Karaoke file (.kar), this is set to true.
 https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
-
 
 ### isDLSRMIDI
 
@@ -188,9 +183,8 @@ The encoding of the RMIDI info in file (for example `Shift_JIS` or `utf-8`), if 
 
 Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
 
-
 ```ts
-BasicMIDI.fromArrayBuffer(arrayBuffer, filename = "");
+BasicMIDI.fromArrayBuffer(arrayBuffer, (filename = ""));
 ```
 
 - arrayBuffer - the ArrayBuffer containing the binary file data.
@@ -199,7 +193,7 @@ BasicMIDI.fromArrayBuffer(arrayBuffer, filename = "");
 !!! Note
 
     This method is *static.*
-    
+
 ### fromFile
 
 Loads a MIDI file (SMF, RMIDI, XMF) from a given file.
@@ -213,7 +207,7 @@ BasicMIDI.fromFile(file);
 !!! Note
 
     This method is *static.*
-    
+
 ### copyFrom
 
 Copies the sequence (deep copy).
@@ -239,7 +233,6 @@ midi.midiTicksToSeconds(ticks);
 - ticks - `number` - the time in MIDI ticks.
 
 The returned value is the time in seconds from the start of the MIDI to the given tick.
-
 
 ### secondsToMIDITicks
 
@@ -302,7 +295,7 @@ midi.flush();
 Returns nicely formatted note data for easy sequence visualization.
 
 ```ts
-const data = midi.getNoteTimes(minDrumLength = 0);
+const data = midi.getNoteTimes((minDrumLength = 0));
 ```
 
 - minDrumLength - number, defaults to 0 - a number, in seconds, representing the minimum allowed time for a drum note,
@@ -321,12 +314,11 @@ Example:
 
 ```ts
 const data = [
-    [{midiNote: 60, velocity: 100, start: 0.5, length: 0.25}], // channel 1
+    [{ midiNote: 60, velocity: 100, start: 0.5, length: 0.25 }], // channel 1
     // other 14 channels...
-    [{midiNote: 36, velocity: 96, start: 41.54, length: 0.1}]  // channel 16
+    [{ midiNote: 36, velocity: 96, start: 41.54, length: 0.1 }] // channel 16
 ];
 ```
-
 
 ### writeMIDI
 
@@ -345,14 +337,10 @@ This function writes out an RMIDI file (MIDI + SF2).
 [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
 ```ts
-const rmidiBinary = midi.writeRMIDI(
-    soundBankBinary,
-    configuration
-);
+const rmidiBinary = midi.writeRMIDI(soundBankBinary, configuration);
 ```
 
 - See [Writing MIDI files](../writing-files/midi.md#writermidi) for more info.
-
 
 The returned value is an `ArrayBuffer` - a binary representation of the file.
 
@@ -371,7 +359,7 @@ See [Writing MIDI files](../writing-files/midi.md) for more info.
 Gets the MIDI's decoded name.
 
 ```ts
-midi.getName(encoding = "Shift_JIS");
+midi.getName((encoding = "Shift_JIS"));
 ```
 
 - encoding - The encoding to use if the MIDI uses an extended code page.
@@ -385,7 +373,7 @@ The returned value is a string - the name of the song or the file name if it's n
 Gets the decoded extra metadata as text and removes any unneeded characters (such as "@T" for karaoke files).
 
 ```ts
-midi.getExtraMetadata(encoding = "Shift_JIS");
+midi.getExtraMetadata((encoding = "Shift_JIS"));
 ```
 
 - encoding - The encoding to use if the MIDI uses an extended code page.
@@ -408,7 +396,6 @@ midi.setRMIDInfo(infoType, infoData);
 !!! Note
 
     This sets the info encoding to utf-8.
-    
 
 ### getRMIDInfo
 
@@ -421,7 +408,6 @@ midi.getRMIDInfo(infoType);
 - infoType - the type to get.
 
 Returns string, Date, ArrayBuffer or undefined.
-
 
 ### iterate
 

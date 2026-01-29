@@ -31,7 +31,7 @@ synth.keyModifierManager.addMapping(channel, midiNote, mapping);
 Clear the modifier from a note, making it behave normally.
 
 ```ts
-synth.keyModifierManager.deleteMapping(channel, midiNote)
+synth.keyModifierManager.deleteMapping(channel, midiNote);
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
@@ -42,7 +42,7 @@ synth.keyModifierManager.deleteMapping(channel, midiNote)
 Get the key modifier for a given key on a given channel. Returns `undefined` if there's none.
 
 ```ts
-synth.keyModifierManager.getPatch(channel, midiNote)
+synth.keyModifierManager.getPatch(channel, midiNote);
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
@@ -73,8 +73,8 @@ Get the velocity override for a MIDI key.
 manager.getVelocity(channel, midiNote);
 ```
 
- - channel - number - The MIDI channel number.
- - midiNote - number - The MIDI note number (0-127).
+- channel - number - The MIDI channel number.
+- midiNote - number - The MIDI note number (0-127).
 
 Returns the velocity override, or -1 if no override is set.
 
@@ -118,4 +118,4 @@ The linear gain to use, 1 means regular volume.
 
 #### patch
 
-The  [MIDI Patch](midi-patch.md) this key uses. -1 on bankMSB property means unchanged.
+The [MIDI Patch](midi-patch.md) this key uses. -1 on bankMSB property means unchanged.

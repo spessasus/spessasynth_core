@@ -54,7 +54,7 @@ Creates a new preset zone and returns it.
 preset.createZone(instrument);
 ```
 
- - instrument - the instrument to use in the zone.
+- instrument - the instrument to use in the zone.
 
 ### deleteZone
 
@@ -93,7 +93,6 @@ preset.matches(patch);
 ### toMIDIString
 
 Returns a MIDI Patch formatted string.
-
 
 ### toString
 
