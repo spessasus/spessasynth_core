@@ -23,7 +23,10 @@ import { SynthesizerCore } from "./audio_engine/synthesizer_core";
 import { SoundBankLoader } from "../soundbank/sound_bank_loader";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import type { SysExAcceptedArray } from "./audio_engine/engine_methods/system_exclusive/helpers";
-import { type MIDIPatch, MIDIPatchTools } from "../soundbank/basic_soundbank/midi_patch";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * Processor.ts

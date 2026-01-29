@@ -1,46 +1,33 @@
 {
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
-    "target": "esnext",
-    "useDefineForClassFields": true,
-    "lib": [
-      "ESNext",
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "node"
-    ],
-    "module": "esnext",
-    "skipLibCheck": true,
-    "allowJs": true,
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    /* Linting */
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitReturns": true,
-    "alwaysStrict": true,
-    "noImplicitThis": true,
-    "strictBindCallApply": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noUncheckedSideEffectImports": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true
-  },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules",
-    "examples",
-    "dist"
-  ]
+    "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+        "target": "esnext",
+        "useDefineForClassFields": true,
+        "lib": ["ESNext", "ES2020", "DOM", "DOM.Iterable"],
+        "types": ["node"],
+        "module": "esnext",
+        "skipLibCheck": true,
+        "allowJs": true,
+        /* Bundler mode */
+        "moduleResolution": "bundler",
+        "moduleDetection": "force",
+        /* Linting */
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "noImplicitReturns": true,
+        "alwaysStrict": true,
+        "noImplicitThis": true,
+        "strictBindCallApply": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "erasableSyntaxOnly": true,
+        "noUncheckedSideEffectImports": true,
+        "isolatedModules": true,
+        "verbatimModuleSyntax": true,
+        "noEmit": true
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "examples", "dist"]
 }

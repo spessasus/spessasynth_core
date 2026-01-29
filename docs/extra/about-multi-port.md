@@ -56,7 +56,7 @@ It seems to work with various multi-port files and might be helpful for others i
 
     If the MIDI track has MIDI port events, the first port applies to starting from the first event,
     even if the port event is not the first one.
-    
+
     This is a behavior that seems to fix most of musescore's MIDI files.
 
 ### Example

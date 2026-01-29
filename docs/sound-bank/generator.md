@@ -11,7 +11,7 @@ A number.
 
 ### generatorValue
 
-The generator's value, which can be negative. 
+The generator's value, which can be negative.
 A number.
 
 ## Methods
@@ -33,7 +33,7 @@ The limits and default values are accessible through the `generatorLimits` const
     Every SoundFont synth does this for compatibility reasons.
 
 | Generator ID | Generator Name                          | Minimum Value | Maximum Value | Default Value | Description                                                                               |
-|--------------|-----------------------------------------|---------------|---------------|---------------|-------------------------------------------------------------------------------------------|
+| ------------ | --------------------------------------- | ------------- | ------------- | ------------- | ----------------------------------------------------------------------------------------- |
 | 0            | Start Address Offset                    | 0             | 32768         | 0             | Sample control - moves sample start point                                                 |
 | 1            | End Address Offset                      | -32768        | 32768         | 0             | Sample control - moves sample end point                                                   |
 | 2            | Start Loop Address Offset               | -32768        | 32768         | 0             | Loop control - moves loop start point                                                     |

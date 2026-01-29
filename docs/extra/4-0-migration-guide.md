@@ -20,8 +20,8 @@ This is done because spessasynth can load sound bank formats other than SoundFon
 SpessaSynth 4.0 brings the full bank LSB support in the API.
 
 The system now operates on _MIDI Patches_ - a way of selecting MIDI presets using 4 properties,
- compatible with GM, GS, XG and GM2. 
- The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.
+compatible with GM, GS, XG and GM2.
+The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.
 
 The properties are explained below.
 
@@ -39,17 +39,16 @@ Note that the SF2 format does not support writing the bank LSB number so the `wB
 
 This is what the previous `bank` used to be, but it's now properly split up.
 
-It is used for sound variation in GS, and for channel type in XG and GM2. 
+It is used for sound variation in GS, and for channel type in XG and GM2.
 This means that with bank MSB of 127 for example, a channel in XG mode will turn into a drum channel.
 
 ### isGMGSDrum
 
-This flag is exclusive to GM and GS systems. These don't use bank MSB as a drum flag. 
+This flag is exclusive to GM and GS systems. These don't use bank MSB as a drum flag.
 GM has channel 9 hardcoded as drums, and GS has a system exclusive for setting them.
 This allows XG and GS drums to coexist in a single sound bank and can be thought of as bank 128 in SF2.
 
 ## MIDI
-
 
 ### MIDI (Class)
 
@@ -62,7 +61,6 @@ Removed, BasicMIDI now contains all data.
 
 ### MIDIMessage
 
-
 A few properties have been renamed for consistency.
 They behave in exactly the same way.
 
@@ -74,14 +72,13 @@ They behave in exactly the same way.
 A few methods and properties have been renamed for consistency.
 They behave in exactly the same way.
 
+- `embeddedSoundFont` -> `embeddedSoundBank`
+- `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
+- `modifyMIDI()` -> `modify()`
+- `midiPortChannelOffsets` -> `portChannelOffsetMap`
+- `applySnapshotToMIDI()` -> `applySnapshot()`
 
- - `embeddedSoundFont` -> `embeddedSoundBank`
- - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
- - `modifyMIDI()` -> `modify()`
- - `midiPortChannelOffsets` -> `portChannelOffsetMap`
- - `applySnapshotToMIDI()` -> `applySnapshot()`
-
-####  RMIDInfo
+#### RMIDInfo
 
 Renamed to `rmidiInfo`.
 
@@ -162,16 +159,13 @@ Enum renamed to `midiMessageTypes`.
 
 Enum removed due to the `rmidInfo` object being reworked.
 
-
 ### interpolationTypes
 
 - `fourthOrder` -> `hermite`
 
-
 ### synthDisplayTypes
 
 Removed. The `synthdisplay` now provides the entire message data.
-
 
 ## BasicSoundBank
 
@@ -292,13 +286,14 @@ The default reset values can be accessed via the `defaultMIDIControllerValues` e
 
 ### Master parameters
 
-
 The master parameter system has been overhauled to use strings instead of enums.
 
 ```ts
 processor.setMasterParameter(masterParameterType.masterPan, 1);
 ```
+
 changes into:
+
 ```ts
 processor.setMasterParameter("masterPan", 1);
 ```
@@ -375,7 +370,6 @@ Loading a new song list no longer automatically starts the playback.
 ### loop
 
 Removed, `loopCount` of zero disables the loop.
-
 
 ### previousSong, nextSong
 

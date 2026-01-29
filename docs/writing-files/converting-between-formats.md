@@ -7,7 +7,7 @@ and efficiently.
 
 !!! Important
 
-    The input file binary is named `input` 
+    The input file binary is named `input`
     and the output binary file is named `output`
     in the examples.
 
@@ -75,11 +75,11 @@ const output = mid.writeRMIDI(
         // all the values below are examples, showing how to copy MIDI data to the RMI file
         name: mid.getName(),
         copyright: mid.getExtraMetadata(),
-        engineer: sfont.soundBankInfo.engineer,
+        engineer: sfont.soundBankInfo.engineer
     },
     true // adjust program changes: recommended for self-contained files
 );
-````
+```
 
 ## DLS RMI To SF2 RMI
 
@@ -101,7 +101,7 @@ const output = dlsRMID.writeRMIDI(
         album: dlsRMID.getRMIDInfo("album"),
         genre: dlsRMID.getRMIDInfo("genre"),
         comment: dlsRMID.getRMIDInfo("comment"),
-        // either use the embedded one or today                     
+        // either use the embedded one or today
         creationDate: dlsRMID.getRMIDInfo("creationDate") ?? new Date()
     },
     false // adjust program changes: I recommend false for that one

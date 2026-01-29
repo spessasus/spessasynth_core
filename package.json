@@ -8,7 +8,7 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "test": "node examples/midi_to_wav_node.ts",
-        "lint": "eslint src",
+        "lint": "eslint --cache src",
         "build:fast": "rimraf -rf dist && tsup src/index.ts --dts --sourcemap --format esm",
         "build": "npm run test:types && npm run build:fast",
         "test:types": "npm run lint && tsc -b ",
@@ -71,7 +71,10 @@
         "typescript-eslint": "^8.38.0"
     },
     "lint-staged": {
-        "*.js": "eslint --cache --fix",
-        "*.{js,css,md}": "prettier --write"
+        "*.ts": [
+            "prettier --write",
+            "eslint --cache --fix"
+        ],
+        "*.{json,md,yml,yaml}": "prettier --write"
     }
 }

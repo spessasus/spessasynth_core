@@ -3,10 +3,8 @@
 <img src='https://raw.githubusercontent.com/spessasus/SpessaSynth/refs/heads/master/src/website/spessasynth_logo_rounded.png' width='300' alt='SpessaSynth logo'>
 </p>
 
-*A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports
-WebAssembly.*
-
-
+_A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports
+WebAssembly._
 
 It allows you to:
 
@@ -16,14 +14,12 @@ It allows you to:
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
-
-
-### v4.0.0 TypeScript Update is here! 
+### v4.0.0 TypeScript Update is here!
 
 [**Read about breaking changes here.**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
 
 > **Tip:**
-> 
+>
 > Looking for an easy-to-use WebAudioAPI browser wrapper?
 > Try [spessasynth_lib](https://github.com/spessasus/spessasynth_lib)!
 
@@ -48,45 +44,45 @@ It allows you to:
 
 ### Easy Integration
 
-- **Modular design:** *Easy integration into other projects (load what you need)*
-- **Flexible:** *It's not just a MIDI player!*
-- **Easy to Use:** *Basic setup is
-  just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)*
-- **No dependencies:** *Batteries included!*
-- **TypeScript definitions:** *Autocompletion in IDEs!*
+- **Modular design:** _Easy integration into other projects (load what you need)_
+- **Flexible:** _It's not just a MIDI player!_
+- **Easy to Use:** _Basic setup is
+  just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
+- **No dependencies:** _Batteries included!_
+- **TypeScript definitions:** _Autocompletion in IDEs!_
 
 ### Powerful MIDI Synthesizer
 
 - Suitable for both **real-time** and **offline** synthesis
 - **Excellent SoundFont support:**
     - **Full Generator Support**
-    - **Full Modulator Support:** *First (to my knowledge) JavaScript SoundFont synth with that feature!*
+    - **Full Modulator Support:** _First (to my knowledge) JavaScript SoundFont synth with that feature!_
     - **GeneralUserGS Compatible:**
-      *[See more here!](https://github.com/mrbumpy409/GeneralUser-GS/blob/main/documentation/README.md)*
+      _[See more here!](https://github.com/mrbumpy409/GeneralUser-GS/blob/main/documentation/README.md)_
     - **SoundFont3 Support:** Play compressed SoundFonts!
-    - **Experimental SF2Pack Support:** Play soundfonts compressed with BASSMIDI! (*Note: only works with vorbis
-      compression*)
-    - **Can load very large SoundFonts:** up to 4GB! *Note: Only Firefox handles this well; Chromium has a hard-coded
-      memory limit*
+    - **Experimental SF2Pack Support:** Play soundfonts compressed with BASSMIDI! (_Note: only works with vorbis
+      compression_)
+    - **Can load very large SoundFonts:** up to 4GB! _Note: Only Firefox handles this well; Chromium has a hard-coded
+      memory limit_
 - **Great DLS Support:**
     - **DLS Level 1 Support**
     - **DLS Level 2 Support**
     - **Mobile DLS Support**
-    - **Correct articulator support:** *Converts articulators to both modulators and generators!*
+    - **Correct articulator support:** _Converts articulators to both modulators and generators!_
     - **Tested and working with gm.dls!**
-    - **Correct volume:** *Properly translated to SoundFont volume!*
+    - **Correct volume:** _Properly translated to SoundFont volume!_
     - **A-Law encoding support**
     - **Both unsigned 8-bit and signed 16-bit sample support (24-bit theoretically supported as well!)**
-    - **Detects special articulator combinations:** *Such as vibratoLfoToPitch*
+    - **Detects special articulator combinations:** _Such as vibratoLfoToPitch_
 - **Soundfont manager:** Stack multiple soundfonts!
 - **Unlimited channel count:** Your CPU is the limit!
 - **Excellent MIDI Standards Support:**
     - **MIDI Controller Support:** Default supported
       controllers [here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#default-supported-controllers)
-    - **Portamento Support:** *Smooth note gliding!*
-    - **Sound Controllers:** *Real-time filter and envelope control!*
+    - **Portamento Support:** _Smooth note gliding!_
+    - **Sound Controllers:** _Real-time filter and envelope control!_
     - **MIDI Tuning Standard Support:**
-      *[more info here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#midi-tuning-standard)*
+      _[more info here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#midi-tuning-standard)_
     - [Full **RPN** and limited **NRPN**
       support](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-registered-parameters)
     - **SoundFont2 NRPN Support**
@@ -97,84 +93,84 @@ It allows you to:
 
 ### Powerful and Fast MIDI Sequencer
 
-- **Supports MIDI formats 0, 1, and 2:** *note: format 2 support is experimental as it's very, very rare.*
-- **[Multi-Port MIDI](https://spessasus.github.io/spessasynth_core/extra/about-multi-port) support:** *More than 16
-  channels!*
-- **Smart preloading:** Only preloads the samples used in the MIDI file for smooth playback *(down to key and
-  velocity!)*
-- **Lyrics support:** *Add karaoke to your program!*
-- **Raw lyrics available:** Decode in any encoding! *(Kanji? No problem!)*
-- **Loop points support:** *Ensures seamless loops!*
+- **Supports MIDI formats 0, 1, and 2:** _note: format 2 support is experimental as it's very, very rare._
+- **[Multi-Port MIDI](https://spessasus.github.io/spessasynth_core/extra/about-multi-port) support:** _More than 16
+  channels!_
+- **Smart preloading:** Only preloads the samples used in the MIDI file for smooth playback _(down to key and
+  velocity!)_
+- **Lyrics support:** _Add karaoke to your program!_
+- **Raw lyrics available:** Decode in any encoding! _(Kanji? No problem!)_
+- **Loop points support:** _Ensures seamless loops!_
 
 ### Read and Write SoundFont and MIDI Files with Ease
 
 #### Read and write MIDI files
 
-- **Smart name detection:** *Handles incorrectly formatted and non-standard track names!*
-- **Raw name available:** Decode in any encoding! *(Kanji? No problem!)*
-- **Port detection during load time:** *Manage ports and channels easily!*
-- **Used channels on track:** *Quickly determine which channels are used!*
-- **Key range detection:** *Detect the key range of the MIDI!*
+- **Smart name detection:** _Handles incorrectly formatted and non-standard track names!_
+- **Raw name available:** Decode in any encoding! _(Kanji? No problem!)_
+- **Port detection during load time:** _Manage ports and channels easily!_
+- **Used channels on track:** _Quickly determine which channels are used!_
+- **Key range detection:** _Detect the key range of the MIDI!_
 - **Easy MIDI editing:**
   Use [helper functions](https://spessasus.github.io/spessasynth_core/writing-files/midi#modifymidi) to modify the
   song to your needs!
-- **Loop detection:** *Automatically detects loops in MIDIs (e.g., from **Touhou Project**)*
-- **First note detection:** *Skip unnecessary silence at the start by jumping to the first note!*
-- **Lyrics support:** *Both regular MIDI and .kar files!*
+- **Loop detection:** _Automatically detects loops in MIDIs (e.g., from **Touhou Project**)_
+- **First note detection:** _Skip unnecessary silence at the start by jumping to the first note!_
+- **Lyrics support:** _Both regular MIDI and .kar files!_
 - **[Write MIDI files from scratch](https://spessasus.github.io/spessasynth_core/midi/creating-midi-files)**
-- **Easy saving:** *Save with
-  just [one function!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writemidi)*
+- **Easy saving:** _Save with
+  just [one function!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writemidi)_
 
 #### Read and write [RMID files with embedded sound banks](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
-- **[Level 4](https://github.com/spessasus/sf2-rmidi-specification#level-4) compliance:** Reads and writes *everything!*
-- **Compression and trimming support:** *Reduce a MIDI file with a 1GB sound bank to **as small as 5MB**!*
-- **DLS Version support:** *The original legacy format with bank offset detection!*
-- **Automatic bank shifting and validation:** Every sound bank *just works!*
-- **Metadata support:** Add title, artist, album name and cover and more! And of course, read them too! *(In any
-  encoding!)*
+- **[Level 4](https://github.com/spessasus/sf2-rmidi-specification#level-4) compliance:** Reads and writes _everything!_
+- **Compression and trimming support:** _Reduce a MIDI file with a 1GB sound bank to **as small as 5MB**!_
+- **DLS Version support:** _The original legacy format with bank offset detection!_
+- **Automatic bank shifting and validation:** Every sound bank _just works!_
+- **Metadata support:** Add title, artist, album name and cover and more! And of course, read them too! _(In any
+  encoding!)_
 - **Compatible with [Falcosoft Midi Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
 - **Easy saving:**
-  *[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writermidi)*
+  _[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writermidi)_
 
 #### Read and write SoundFont2 files
 
-- **Easy info access:** *Just
-  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundbankinfo)*
-- **Smart trimming:** Trim the sound bank to only include samples used in the MIDI *(down to key and velocity!)*
-- **SF3 conversion:** *Compress SoundFont2 files to SoundFont3 with variable quality!*
-- **Easy saving:** *Also just [one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)*
+- **Easy info access:** _Just
+  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundbankinfo)_
+- **Smart trimming:** Trim the sound bank to only include samples used in the MIDI _(down to key and velocity!)_
+- **SF3 conversion:** _Compress SoundFont2 files to SoundFont3 with variable quality!_
+- **Easy saving:** _Also just [one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)_
 
 #### Read and write SoundFont3 files
 
 - Same features as SoundFont2 but with now with **Ogg Vorbis compression!**
-- **Variable compression quality:** *You choose between file size and quality!*
-- **Compression preserving:** *Avoid decompressing and recompressing uncompressed samples for minimal quality loss!*
-- **Custom compression function:** *Want a different format than Vorbis? No problem!*
+- **Variable compression quality:** _You choose between file size and quality!_
+- **Compression preserving:** _Avoid decompressing and recompressing uncompressed samples for minimal quality loss!_
+- **Custom compression function:** _Want a different format than Vorbis? No problem!_
 
 #### Read and write DLS Level One or Two files
 
 - Read DLS (DownLoadable Sounds) files like SF2 files!
-- **Native support:** *Saving it as sf2 is
-  still [just one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)*
-- *That's right, saving as DLS is
-  also [just one function!](https://spessasus.github.io/spessasynth_core/sound-bank#writedls)*
+- **Native support:** _Saving it as sf2 is
+  still [just one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)_
+- _That's right, saving as DLS is
+  also [just one function!](https://spessasus.github.io/spessasynth_core/sound-bank#writedls)_
 - Converts articulators to both **modulators** and **generators**!
 - Works with both unsigned 8-bit samples and signed 16-bit samples!
-- **A-Law encoding support:** *Sure, why not?*
-- **Covers special generator cases:** *such as modLfoToPitch*!
-- **Correct volume:** *looking at you, Viena and gm.sf2!*
+- **A-Law encoding support:** _Sure, why not?_
+- **Covers special generator cases:** _such as modLfoToPitch_!
+- **Correct volume:** _looking at you, Viena and gm.sf2!_
 - Support built right into the synthesizer!
 - **Convert SF2 to DLS:** [limited support](https://spessasus.github.io/spessasynth_core/extra/dls-conversion-problem)
 
 ### Export MIDI as WAV
 
 - Save the MIDI file as WAV audio!
-- **Metadata support:** *Embed metadata such as title, artist, album and more!*
-- **Cue points:** *Write MIDI loop points as cue points!*
-- **Loop multiple times:** *Render two (or more) loops into the file for seamless transitions!*
-- *That's right, saving as WAV is
-  also [just one function!](https://spessasus.github.io/spessasynth_core/writing-files/wav#audiobuffertowav)*
+- **Metadata support:** _Embed metadata such as title, artist, album and more!_
+- **Cue points:** _Write MIDI loop points as cue points!_
+- **Loop multiple times:** _Render two (or more) loops into the file for seamless transitions!_
+- _That's right, saving as WAV is
+  also [just one function!](https://spessasus.github.io/spessasynth_core/writing-files/wav#audiobuffertowav)_
 
 ### Limitations
 
