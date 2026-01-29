@@ -23,10 +23,7 @@ import { SynthesizerCore } from "./audio_engine/synthesizer_core";
 import { SoundBankLoader } from "../soundbank/sound_bank_loader";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import type { SysExAcceptedArray } from "./audio_engine/engine_methods/system_exclusive/helpers";
-import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../soundbank/basic_soundbank/midi_patch";
+import { type MIDIPatch, MIDIPatchTools } from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * Processor.ts
@@ -59,7 +56,7 @@ export class SpessaSynthProcessor {
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
      */
-    public readonly renderAudio: typeof this.synthCore.renderAudio;
+    public readonly renderAudio;
     // noinspection JSUnusedGlobalSymbols
     /**
      * Renders the float32 audio data of each channel; buffer size of 128 is recommended.
@@ -70,7 +67,7 @@ export class SpessaSynthProcessor {
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
      */
-    public readonly renderAudioSplit: typeof this.synthCore.renderAudioSplit;
+    public readonly renderAudioSplit;
     /**
      * Core synthesis engine.
      */
