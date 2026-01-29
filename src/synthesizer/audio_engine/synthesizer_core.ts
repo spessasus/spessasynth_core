@@ -24,11 +24,7 @@ import {
 } from "./engine_methods/controller_control/master_parameters";
 import { systemExclusiveInternal } from "./engine_methods/system_exclusive";
 import { getEvent } from "../../midi/midi_message";
-import {
-    type MIDIController,
-    type MIDIMessageType,
-    midiMessageTypes
-} from "../../midi/enums";
+import { type MIDIController, type MIDIMessageType, midiMessageTypes } from "../../midi/enums";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
 import { NON_CC_INDEX_OFFSET } from "../exports";
@@ -481,7 +477,8 @@ export class SynthesizerCore {
                     ];
                 this.callEvent("pitchWheel", {
                     channel: channelNumber,
-                    pitch: val
+                    pitch: val,
+                    midiNote: -1
                 });
             }
 

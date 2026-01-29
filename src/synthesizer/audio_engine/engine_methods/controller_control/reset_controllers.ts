@@ -66,6 +66,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     }
 
     // Reset pitch wheel
+    this.perNotePitch = false;
     this.pitchWheel(8192);
 
     this.sysExModulators.resetModulators();
@@ -123,6 +124,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     this.channelOctaveTuning.fill(0);
 
     // Reset pitch wheel
+    this.perNotePitch = false;
     this.pitchWheel(8192);
 
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
