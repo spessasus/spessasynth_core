@@ -62,6 +62,10 @@ export class MIDIChannel {
     );
 
     /**
+     * An array for the MIDI 2.0 Per-note pitch wheels.
+     */
+    public readonly pitchWheels = new Int16Array(128).fill(8192);
+    /**
      * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
      * (i.e., not allowed changing).
      * A locked controller cannot be modified.
@@ -69,7 +73,6 @@ export class MIDIChannel {
     public lockedControllers: boolean[] = new Array(CONTROLLER_TABLE_SIZE).fill(
         false
     ) as boolean[];
-
     /**
      * An array of custom (non-SF2) control values such as RPN pitch tuning, transpose, modulation depth, etc.
      * Refer to controller_tables.ts for the index definitions.
@@ -77,12 +80,10 @@ export class MIDIChannel {
     public readonly customControllers: Float32Array = new Float32Array(
         CUSTOM_CONTROLLER_TABLE_SIZE
     );
-
     /**
      * The key shift of the channel (in semitones).
      */
     public channelTransposeKeyShift = 0;
-
     /**
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
@@ -106,7 +107,6 @@ export class MIDIChannel {
      * The current state of the data entry for the channel.
      */
     public dataEntryState: DataEntryState = dataEntryStates.Idle;
-
     /**
      * The currently selected MIDI patch of the channel.
      * Note that the exact matching preset may not be available, but this represents exactly what MIDI asks for.
@@ -146,14 +146,12 @@ export class MIDIChannel {
         depth: 0,
         rate: 0
     };
-
     /**
      * If the channel is in the poly mode.
      * True - POLY ON - regular playback.
      * False - MONO ON - one note per channel, others are killed on note-on
      */
     public polyMode = true;
-
     /**
      * Channel's current voice count
      */
@@ -230,6 +228,11 @@ export class MIDIChannel {
     ) as typeof dataEntryCoarse;
     // Voice rendering methods
     public readonly renderVoice = renderVoice.bind(this);
+    /**
+     * Per-note pitch wheel mode uses the pitchWheels table as source
+     * instead of the regular entry in the midiControllers table.
+     */
+    protected perNotePitch = false;
     /**
      * Will be updated every time something tuning-related gets changed.
      * This is used to avoid a big addition for every voice rendering call.
@@ -403,8 +406,9 @@ export class MIDIChannel {
     /**
      * Sets the pitch of the given channel.
      * @param pitch The pitch (0 - 16384)
+     * @param midiNote The MIDI note number, pass -1 for the regular pitch wheel
      */
-    public pitchWheel(pitch: number) {
+    public pitchWheel(pitch: number, midiNote = -1) {
         if (
             this.lockedControllers[
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
@@ -412,15 +416,51 @@ export class MIDIChannel {
         ) {
             return;
         }
+        if (midiNote === -1) {
+            // Disable the per note pitch mode
+            this.perNotePitch = false;
+            this.midiControllers[
+                NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
+            ] = pitch;
+            this.computeModulatorsAll(0, modulatorSources.pitchWheel);
+            this.sendChannelProperty();
+        } else {
+            if (!this.perNotePitch) {
+                // Enable the per-note pitch (fill the pitches with the current CC value)
+                this.pitchWheels.fill(
+                    this.midiControllers[
+                        NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
+                    ]
+                );
+            }
+            this.perNotePitch = true;
+
+            this.pitchWheels[midiNote] = pitch;
+
+            // Recompute only specific modulators
+            let vc = 0;
+            if (this.voiceCount > 0)
+                for (const v of this.synthCore.voices) {
+                    if (
+                        v.isActive &&
+                        v.channel === this.channel &&
+                        v.midiNote === midiNote
+                    ) {
+                        this.computeModulators(
+                            v,
+                            0,
+                            modulatorSources.polyPressure
+                        );
+                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    }
+                }
+        }
+
         this.synthCore.callEvent("pitchWheel", {
             channel: this.channel,
-            pitch
+            pitch,
+            midiNote
         });
-        this.midiControllers[
-            NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-        ] = pitch;
-        this.computeModulatorsAll(0, modulatorSources.pitchWheel);
-        this.sendChannelProperty();
     }
 
     /**

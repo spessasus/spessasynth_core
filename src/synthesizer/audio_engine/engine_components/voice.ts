@@ -237,12 +237,14 @@ export class Voice {
     /**
      * Computes a given modulator
      * @param controllerTable all midi controllers as 14bit values + the non-controller indexes, starting at 128
+     * @param pitchWheel the pitch wheel value, as channel determines if it's a per-note or a global value.
      * @param modulatorIndex the modulator to compute
      * @returns the computed value
      */
     public computeModulator(
         this: Voice,
         controllerTable: Int16Array,
+        pitchWheel: number,
         modulatorIndex: number
     ): number {
         const modulator = this.modulators[modulatorIndex];
@@ -252,10 +254,12 @@ export class Voice {
         }
         const sourceValue = modulator.primarySource.getValue(
             controllerTable,
+            pitchWheel,
             this
         );
         const secondSrcValue = modulator.secondarySource.getValue(
             controllerTable,
+            pitchWheel,
             this
         );
 

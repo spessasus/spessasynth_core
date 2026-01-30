@@ -410,9 +410,10 @@ export class SpessaSynthProcessor {
      * Executes a MIDI Pitch Wheel message on the specified channel.
      * @param channel The MIDI channel to send the pitch wheel on.
      * @param pitch The new pitch value: 0-16384
+     * @param midiNote The MIDI note number, pass -1 for the regular pitch wheel
      */
-    public pitchWheel(channel: number, pitch: number) {
-        this.synthCore.midiChannels[channel].pitchWheel(pitch);
+    public pitchWheel(channel: number, pitch: number, midiNote = -1) {
+        this.synthCore.midiChannels[channel].pitchWheel(pitch, midiNote);
     }
 
     /**

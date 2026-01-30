@@ -18,7 +18,7 @@ This describes what messages SpessaSynth can receive.
 | Controller Change | ✔️         | [See below](#default-supported-controllers)                                                                          |
 | Program Change    | ✔️         | GM, GM2, GS, XG                                                                                                      |
 | Channel Pressure  | ✔️         | 50 cents of vibrato                                                                                                  |
-| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents)                                                           |
+| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents) See [per-note pitch wheel](#per-note-pitch-wheel)         |
 | System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                                                            |
 | Time Code         | ❌         | Not Applicable                                                                                                       |
 | Song Position     | ❌         | Not Applicable                                                                                                       |
@@ -30,6 +30,12 @@ This describes what messages SpessaSynth can receive.
 | MIDI Stop         | ❌         | Not Applicable                                                                                                       |
 | Active Sense      | ❌         | Not Applicable                                                                                                       |
 | System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message                                       |
+
+### Per-note Pitch Wheel
+
+As of 4.1.0 SpessaSynth supports per-note Pitch Wheel as a part of the MIDI 2.0 specification.
+Note that this is API-only, there are no MIDI messages that allow for changing it for now.
+The per-note mode will activate on using the API and deactivate on channel or system reset.
 
 ## Controllers
 

@@ -181,15 +181,12 @@ synth.programChange(channel, programNumber);
 Change the channel's pitch, including the currently playing notes.
 
 ```ts
-synth.pitchWheel(channel, pitch);
+synth.pitchWheel(channel, pitch, (midiNote = -1));
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - pitch - the 14-bit MIDI pitch value to use (0 - 16,383)
-
-!!! Tip
-
-    [I highly recommend this article for more info.](https://www.recordingblogs.com/wiki/midi-pitch-wheel-message)
+- midiNote, optional - allows to set per-note pitch wheel, which will activate the per-note pitch mode. Leave unset or set to -1 for a regular pitch wheel.
 
 ### systemExclusive
 

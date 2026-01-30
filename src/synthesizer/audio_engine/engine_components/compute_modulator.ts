@@ -1,6 +1,8 @@
 import { generatorLimits } from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "./midi_channel";
-import type { Voice } from "./voice"; /**
+import type { Voice } from "./voice";
+import { modulatorSources } from "../../../soundbank/enums";
+import { NON_CC_INDEX_OFFSET } from "./controller_tables"; /**
  * Compute_modulator.ts
  * purpose: contains a function for computing all modulators
  */
@@ -33,6 +35,12 @@ export function computeModulators(
     }
     const modulatedGenerators = voice.modulatedGenerators;
 
+    const pitch = this.perNotePitch
+        ? this.pitchWheels[voice.realKey]
+        : this.midiControllers[
+              modulatorSources.pitchWheel + NON_CC_INDEX_OFFSET
+          ];
+
     if (sourceUsesCC === -1) {
         // All modulators mode: compute all modulators
         modulatedGenerators.set(generators);
@@ -45,7 +53,7 @@ export function computeModulators(
                 Math.max(
                     -32_768,
                     modulatedGenerators[mod.destination] +
-                        voice.computeModulator(this.midiControllers, i)
+                        voice.computeModulator(this.midiControllers, pitch, i)
                 )
             );
         }
@@ -79,7 +87,7 @@ export function computeModulators(
             const destination = mod.destination;
             let outputValue = generators[destination];
             // Compute our modulator
-            voice.computeModulator(this.midiControllers, i);
+            voice.computeModulator(this.midiControllers, pitch, i);
 
             // Sum the values of all modulators for this destination
             for (let j = 0; j < modulators.length; j++) {
