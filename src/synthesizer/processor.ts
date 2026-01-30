@@ -480,13 +480,13 @@ export class SpessaSynthProcessor {
         return this.synthCore.getVoicesForPreset(preset, midiNote, velocity);
     }
 
-    // Protected methods
+    // Private methods
     /**
      * Calls synth event
      * @param eventName the event name
      * @param eventData the event data
      */
-    protected callEvent<K extends keyof SynthProcessorEventData>(
+    private callEvent<K extends keyof SynthProcessorEventData>(
         eventName: K,
         eventData: SynthProcessorEventData[K]
     ) {
@@ -496,7 +496,7 @@ export class SpessaSynthProcessor {
         } as SynthProcessorEvent);
     }
 
-    protected missingPreset(patch: MIDIPatch, system: SynthSystem) {
+    private missingPreset(patch: MIDIPatch, system: SynthSystem) {
         return this.onMissingPreset(patch, system);
     }
 }
