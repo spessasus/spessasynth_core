@@ -254,8 +254,6 @@ export function renderVoice(
         buffer
     );
 
-    if (!voice.active) return;
-
     // Low pass filter
     voice.filter.process(sampleCount, voice, buffer, lowpassExcursion);
 
