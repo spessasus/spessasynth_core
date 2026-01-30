@@ -284,7 +284,7 @@ export class VolumeEnvelope {
         // Voice may be off instantly
         // Testcase: mono mode
         if (this.releaseStartCb >= PERCEIVED_CB_SILENCE) {
-            voice.active = false;
+            voice.isActive = false;
         }
     }
 

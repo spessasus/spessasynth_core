@@ -40,7 +40,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         for (const v of this.synthCore.voices) {
             if (
                 v.channel === this.channel &&
-                v.active &&
+                v.isActive &&
                 v.realKey === realKey &&
                 !v.isInRelease
             ) {

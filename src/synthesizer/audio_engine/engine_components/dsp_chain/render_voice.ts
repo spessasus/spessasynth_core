@@ -76,7 +76,7 @@ export function renderVoice(
 
     // Important sanity check, as we may disable the voice now
     // Testcase: mono mode with chords
-    if (!voice.active) return;
+    if (!voice.isActive) return;
 
     // TUNING
     let targetKey = voice.targetKey;
@@ -238,7 +238,7 @@ export function renderVoice(
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.active = voice.volEnv.process(
+        voice.isActive = voice.volEnv.process(
             sampleCount,
             buffer,
             gainTarget,
@@ -248,7 +248,7 @@ export function renderVoice(
     }
 
     // Wave table oscillator
-    voice.active = voice.wavetable.process(
+    voice.isActive = voice.wavetable.process(
         sampleCount,
         voice.tuningRatio,
         buffer
@@ -267,7 +267,7 @@ export function renderVoice(
 
     // Note, we do not use &&= as it short-circuits!
     // And we don't do = either as wavetable might've marked it as inactive (end of sample)
-    voice.active = voice.active && envActive;
+    voice.isActive = voice.isActive && envActive;
 
     // Pan and mix down the data
     let pan: number;

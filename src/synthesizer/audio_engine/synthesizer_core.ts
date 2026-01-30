@@ -231,7 +231,7 @@ export class SynthesizerCore {
     public assignVoice() {
         for (let i = 0; i < this.masterParameters.voiceCap; i++) {
             const v = this.voices[i];
-            if (!v.active) {
+            if (!v.isActive) {
                 // Prevent this voice from being stolen
                 v.priority = Infinity;
                 return v;
@@ -532,7 +532,7 @@ export class SynthesizerCore {
         }
         this.voiceCount = 0;
         for (const v of this.voices) {
-            if (!v.active) {
+            if (!v.isActive) {
                 continue;
             }
             const ch = this.midiChannels[v.channel];
@@ -599,7 +599,7 @@ export class SynthesizerCore {
         }
         this.voiceCount = 0;
         for (const v of this.voices) {
-            if (!v.active) {
+            if (!v.isActive) {
                 continue;
             }
             const ch = this.midiChannels[v.channel];

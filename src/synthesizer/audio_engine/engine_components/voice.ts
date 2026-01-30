@@ -52,33 +52,20 @@ export class Voice {
         this.oscillators[DEFAULT_MASTER_PARAMETERS.interpolationType];
 
     /**
-     * Looping mode of the sample:
-     * 0 - no loop
-     * 1 - loop
-     * 2 - UNOFFICIAL: polyphone 2.4 added start on release
-     * 3 - loop then play when released
-     */
-    public loopingMode: SampleLoopingMode = 0;
-
-    /**
-     * The root key of the voice.
-     */
-    public rootKey = 0;
-
-    /**
      * Lowpass filter applied to the voice.
      */
     public readonly filter: LowpassFilter;
 
     /**
-     * Linear gain of the voice. Used with Key Modifiers.
-     */
-    public gainModifier = 1;
-
-    /**
      * The unmodulated (copied to) generators of the voice.
      */
     public readonly generators = new Int16Array(GENERATORS_AMOUNT);
+
+    /**
+     * The generators in real-time, affected by modulators.
+     * This is used during rendering.
+     */
+    public readonly modulatedGenerators = new Int16Array(GENERATORS_AMOUNT);
 
     /**
      * The voice's modulators.
@@ -92,15 +79,25 @@ export class Voice {
     public modulatorValues = new Int16Array(64);
 
     /**
+     * Modulation envelope.
+     */
+    public readonly modEnv: ModulationEnvelope = new ModulationEnvelope();
+
+    /**
+     * Volume envelope.
+     */
+    public readonly volEnv;
+
+    /**
+     * The buffer to use when rendering the voice (to avoid memory allocations)
+     * If the user supplied a larger one, it must be resized.
+     */
+    public buffer = new Float32Array(128);
+
+    /**
      * Resonance offset, it is affected by the default resonant modulator
      */
     public resonanceOffset = 0;
-
-    /**
-     * The generators in real-time, affected by modulators.
-     * This is used during rendering.
-     */
-    public readonly modulatedGenerators = new Int16Array(GENERATORS_AMOUNT);
 
     /**
      * Priority of the voice. Used for stealing.
@@ -111,7 +108,7 @@ export class Voice {
      * If the voice is currently active.
      * If not, it can be used.
      */
-    public active = false;
+    public isActive = false;
 
     /**
      * Indicates if the voice has rendered at least one buffer.
@@ -145,9 +142,9 @@ export class Voice {
     public midiNote = 0;
 
     /**
-     * The pressure of the voice
+     * The root key of the voice.
      */
-    public pressure = 0;
+    public rootKey = 0;
 
     /**
      * Target key for the note.
@@ -155,14 +152,23 @@ export class Voice {
     public targetKey = 0;
 
     /**
-     * Modulation envelope.
+     * The pressure of the voice
      */
-    public readonly modEnv: ModulationEnvelope = new ModulationEnvelope();
+    public pressure = 0;
 
     /**
-     * Volume envelope.
+     * Linear gain of the voice. Used with Key Modifiers.
      */
-    public readonly volEnv;
+    public gainModifier = 1;
+
+    /**
+     * Looping mode of the sample:
+     * 0 - no loop
+     * 1 - loop
+     * 2 - UNOFFICIAL: polyphone 2.4 added start on release
+     * 3 - loop then play when released
+     */
+    public loopingMode: SampleLoopingMode = 0;
 
     /**
      * Start time of the voice, absolute.
@@ -222,12 +228,6 @@ export class Voice {
      * Used for exclusive notes and killing notes.
      */
     public overrideReleaseVolEnv = 0;
-
-    /**
-     * The buffer to use when rendering the voice (to avoid memory allocations)
-     * If the user supplied a larger one, it must be resized.
-     */
-    public buffer = new Float32Array(128);
 
     public constructor(sampleRate: number) {
         this.volEnv = new VolumeEnvelope(sampleRate);
@@ -317,7 +317,7 @@ export class Voice {
         realKey: number
     ) {
         this.startTime = currentTime;
-        this.active = true;
+        this.isActive = true;
         this.isInRelease = false;
         this.hasRendered = false;
         this.releaseStartTime = Infinity;

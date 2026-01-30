@@ -201,7 +201,7 @@ export function controllerChange(
                         for (const v of this.synthCore.voices) {
                             if (
                                 v.channel === this.channel &&
-                                v.active &&
+                                v.isActive &&
                                 v.isHeld
                             ) {
                                 v.isHeld = false;
