@@ -127,7 +127,10 @@ export class SoundBankManager {
         patch: MIDIPatch,
         system: SynthSystem
     ): BasicPreset | undefined {
-        if (this.soundBankList.length === 0) {
+        if (
+            this.soundBankList.length === 0 ||
+            this.selectablePresetList.length === 0
+        ) {
             return undefined;
         }
 
