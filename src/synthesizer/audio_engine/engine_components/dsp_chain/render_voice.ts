@@ -9,7 +9,7 @@ import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
-import { SpessaSynthWarn } from "../../../../utils/loggin";
+import { SpessaSynthWarn } from "../../../../utils/loggin"; // Optimized for spessasynth_lib's effects
 
 // Optimized for spessasynth_lib's effects
 export const REVERB_DIVIDER = 3070;
@@ -67,16 +67,16 @@ export function renderVoice(
         voice.volEnv.startRelease(voice);
         voice.modEnv.startRelease(voice);
 
-        // Voice may be off instantly
-        // Testcase: mono mode with chords
-        if (!voice.active) return;
-
         // Looping mode 3
         if (voice.loopingMode === 3) {
             voice.wavetable.isLooping = false;
         }
     }
     voice.hasRendered = true;
+
+    // Important sanity check, as we may disable the voice now
+    // Testcase: mono mode with chords
+    if (!voice.isActive) return;
 
     // TUNING
     let targetKey = voice.targetKey;
@@ -238,7 +238,7 @@ export function renderVoice(
 
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.active = voice.volEnv.process(
+        voice.isActive = voice.volEnv.process(
             sampleCount,
             buffer,
             gainTarget,
@@ -248,29 +248,28 @@ export function renderVoice(
     }
 
     // Wave table oscillator
-    voice.active = voice.wavetable.process(
+    voice.isActive = voice.wavetable.process(
         sampleCount,
         voice.tuningRatio,
         buffer
     );
 
-    if (!voice.active) return;
-
     // Low pass filter
     voice.filter.process(sampleCount, voice, buffer, lowpassExcursion);
 
     // Vol env
-    voice.active = voice.volEnv.process(
+    const envActive = voice.volEnv.process(
         sampleCount,
         buffer,
         gainTarget,
         volumeExcursionCentibels
     );
 
+    // Note, we do not use &&= as it short-circuits!
+    // And we don't do = either as wavetable might've marked it as inactive (end of sample)
+    voice.isActive = voice.isActive && envActive;
+
     // Pan and mix down the data
-    /**
-     * Clamp -500 to 500
-     */
     let pan: number;
     if (voice.overridePan) {
         pan = voice.overridePan;

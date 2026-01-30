@@ -1,6 +1,7 @@
 import { SpessaSynthWarn } from "../../../../utils/loggin";
 import type { MIDIChannel } from "../../engine_components/midi_channel";
 import { customControllers } from "../../../enums";
+import { midiControllers } from "../../../../midi/enums";
 
 /**
  * Releases a note by its MIDI note number.
@@ -33,21 +34,22 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    if (!this.holdPedal) {
-        let vc = 0;
-        if (this.voiceCount > 0)
-            for (const v of this.synthCore.voices) {
-                if (
-                    v.channel === this.channel &&
-                    v.active &&
-                    v.realKey === realKey &&
-                    !v.isInRelease
-                ) {
-                    v.releaseVoice(this.synthCore.currentTime);
-                    if (++vc >= this.voiceCount) break; // We already checked all the voices
-                }
+    const sustain = this.midiControllers[midiControllers.sustainPedal] >= 8192;
+    let vc = 0;
+    if (this.voiceCount > 0)
+        for (const v of this.synthCore.voices) {
+            if (
+                v.channel === this.channel &&
+                v.isActive &&
+                v.realKey === realKey &&
+                !v.isInRelease
+            ) {
+                if (sustain) v.isHeld = true;
+                else v.releaseVoice(this.synthCore.currentTime);
+
+                if (++vc >= this.voiceCount) break; // We already checked all the voices
             }
-    }
+        }
     this.synthCore.callEvent("noteOff", {
         midiNote: midiNote,
         channel: this.channel

@@ -201,9 +201,10 @@ export function controllerChange(
                         for (const v of this.synthCore.voices) {
                             if (
                                 v.channel === this.channel &&
-                                v.active &&
-                                !v.isInRelease
+                                v.isActive &&
+                                v.isHeld
                             ) {
+                                v.isHeld = false;
                                 v.releaseVoice(this.synthCore.currentTime);
                                 if (++vc >= this.voiceCount) break; // We already checked all the voices
                             }

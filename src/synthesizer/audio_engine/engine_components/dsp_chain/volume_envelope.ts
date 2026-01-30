@@ -284,7 +284,7 @@ export class VolumeEnvelope {
         // Voice may be off instantly
         // Testcase: mono mode
         if (this.releaseStartCb >= PERCEIVED_CB_SILENCE) {
-            voice.active = false;
+            voice.isActive = false;
         }
     }
 
@@ -603,6 +603,9 @@ export class VolumeEnvelope {
         const { sustainCb, gainSmoothing } = this;
 
         if (this.canEndOnSilentSustain && sustainCb >= PERCEIVED_CB_SILENCE) {
+            // Make sure to fill with silence
+            // https://github.com/spessasus/spessasynth_core/issues/57
+            buffer.fill(0, filledBuffer, sampleCount);
             return false;
         }
 

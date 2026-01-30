@@ -104,7 +104,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         let vc = 0;
         if (this.voiceCount > 0)
             for (const v of this.synthCore.voices) {
-                if (v.active && v.channel === this.channel) {
+                if (v.isActive && v.channel === this.channel) {
                     // No minimum note time, release ASAP
                     v.exclusiveRelease(this.synthCore.currentTime, 0);
                     if (++vc >= this.voiceCount) break; // We already checked all the voices
@@ -202,7 +202,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             if (this.voiceCount > 0)
                 for (const v of this.synthCore.voices) {
                     if (
-                        v.active &&
+                        v.isActive &&
                         v.channel === this.channel &&
                         v.exclusiveClass === voice.exclusiveClass &&
                         // Only voices created in a different quantum

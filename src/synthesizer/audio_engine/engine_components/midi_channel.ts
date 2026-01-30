@@ -29,7 +29,6 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
-import { midiControllers } from "../../../midi/enums";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -282,14 +281,6 @@ export class MIDIChannel {
         return this._isMuted;
     }
 
-    /**
-     * Indicates whether the sustain (hold) pedal is active.
-     */
-    public get holdPedal() {
-        // 64 << 7 = 8192
-        return this.midiControllers[midiControllers.sustainPedal] >= 8192;
-    }
-
     protected get channelSystem(): SynthSystem {
         return this.lockPreset
             ? this.lockedSystem
@@ -489,7 +480,7 @@ export class MIDIChannel {
         if (this.voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (
-                    v.active &&
+                    v.isActive &&
                     v.channel === this.channel &&
                     v.midiNote === midiNote
                 ) {
@@ -629,7 +620,7 @@ export class MIDIChannel {
             let vc = 0;
             if (this.voiceCount > 0)
                 for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.active) {
+                    if (v.channel === this.channel && v.isActive) {
                         v.generators[gen] = value;
                         this.computeModulators(v);
                         if (++vc >= this.voiceCount) break; // We already checked all the voices
@@ -649,7 +640,7 @@ export class MIDIChannel {
         let vc = 0;
         if (this.voiceCount > 0)
             for (const v of this.synthCore.voices) {
-                if (v.channel === this.channel && v.active) {
+                if (v.channel === this.channel && v.isActive) {
                     this.computeModulators(v);
                     if (++vc >= this.voiceCount) break; // We already checked all the voices
                 }
@@ -670,7 +661,7 @@ export class MIDIChannel {
             for (const v of this.synthCore.voices) {
                 if (
                     v.channel === this.channel &&
-                    v.active &&
+                    v.isActive &&
                     v.realKey === midiNote
                 ) {
                     v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
@@ -691,8 +682,8 @@ export class MIDIChannel {
             let vc = 0;
             if (this.voiceCount > 0)
                 for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.active) {
-                        v.active = false;
+                    if (v.channel === this.channel && v.isActive) {
+                        v.isActive = false;
                         if (++vc >= this.voiceCount) break; // We already checked all the voices
                     }
                 }
@@ -703,7 +694,7 @@ export class MIDIChannel {
             let vc = 0;
             if (this.voiceCount > 0)
                 for (const v of this.synthCore.voices) {
-                    if (v.channel === this.channel && v.active) {
+                    if (v.channel === this.channel && v.isActive) {
                         v.releaseVoice(this.synthCore.currentTime);
                         if (++vc >= this.voiceCount) break; // We already checked all the voices
                     }
@@ -768,7 +759,7 @@ export class MIDIChannel {
         let vc = 0;
         if (this.voiceCount > 0)
             for (const v of this.synthCore.voices) {
-                if (v.channel === this.channel && v.active) {
+                if (v.channel === this.channel && v.isActive) {
                     this.computeModulators(v, sourceUsesCC, sourceIndex);
                     if (++vc >= this.voiceCount) break; // We already checked all the voices
                 }
