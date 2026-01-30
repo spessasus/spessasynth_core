@@ -63,13 +63,14 @@ synth.renderAudio(
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.
 
-All `Float32Array`s must be the same length.
+**All `Float32Array`s must be the same length**
 
-!!! Warning
+!!! Danger
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
-    `sampleCount` should be exactly 128 samples. If there are more, memory must be allocaed which could produce lag.
+    `sampleCount` should be 128 samples or less.
+    Larger values may cause memory allocation and incorrect playback!
 
 !!! Tip
 
@@ -97,13 +98,14 @@ synth.renderAudioSplit(
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.
 
-All `Float32Array`s must be the same length.
+**All `Float32Array`s must be the same length**
 
-!!! Warning
+!!! Danger
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
-    `sampleCount` should be exactly 128 samples. If there are more, memory must be allocaed which could produce lag.
+    `sampleCount` should be 128 samples or less.
+    Larger values may cause memory allocation and incorrect playback!
 
 !!! Tip
 
