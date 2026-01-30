@@ -1,6 +1,6 @@
 {
     "name": "spessasynth_core",
-    "version": "4.1.0",
+    "version": "4.1.1",
     "description": "MIDI and SoundFont2/DLS library with no compromises",
     "type": "module",
     "main": "dist/index.js",
