@@ -41,7 +41,6 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
-import { midiControllers } from "../../../midi/enums";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -289,14 +288,6 @@ export class MIDIChannel {
      */
     public get isMuted() {
         return this._isMuted;
-    }
-
-    /**
-     * Indicates whether the sustain (hold) pedal is active.
-     */
-    public get holdPedal() {
-        // 64 << 7 = 8192
-        return this.midiControllers[midiControllers.sustainPedal] >= 8192;
     }
 
     protected get channelSystem(): SynthSystem {

@@ -125,6 +125,11 @@ export class Voice {
     public isInRelease = false;
 
     /**
+     * Indicates if the voice is currently held by the sustain pedal.
+     */
+    public isHeld = false;
+
+    /**
      * MIDI channel number of the voice.
      */
     public channel = 0;
