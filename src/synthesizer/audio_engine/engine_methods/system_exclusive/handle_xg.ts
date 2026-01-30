@@ -295,8 +295,8 @@ export function handleXG(
                 }
             }
         } else if (
-            a1 === 0x06 && // XG System parameter
-            a2 === 0x00 // System Byte
+            a1 === 0x06 || // Display letters
+            a1 === 0x07 // Display bitmap
         ) {
             // Displayed letters
             this.callEvent("synthDisplay", [...syx]);

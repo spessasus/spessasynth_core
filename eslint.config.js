@@ -4,7 +4,7 @@ import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 
 export default tseslint.config(
-    { ignores: ["dist", "examples"] },
+    { ignores: ["dist", "examples", "tests"] },
     {
         extends: [
             tseslint.configs.recommendedTypeChecked,
