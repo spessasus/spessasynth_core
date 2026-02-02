@@ -36,6 +36,10 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
             // Infinity is not allowed
             const cap = Math.min(value as number, 1_000_000);
             this.masterParameters.voiceCap = cap;
+            // Disable all voices after cap
+            for (let i = cap; i < this.voices.length; i++) {
+                this.voices[i].isActive = false;
+            }
             if (cap > this.voices.length) {
                 SpessaSynthWarn(
                     `Allocating ${cap - this.voices.length} new voices!`
