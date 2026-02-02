@@ -537,8 +537,7 @@ export function handleGS(
                                     consoleColors.info,
                                     consoleColors.value
                                 );
-                                // 64 is the default
-                                this.reverbSend = messageValue / 64;
+                                this.reverbProcessor.level = messageValue;
                                 break;
                             }
 
@@ -564,8 +563,7 @@ export function handleGS(
                                     consoleColors.info,
                                     consoleColors.value
                                 );
-                                // 64 is the default
-                                this.chorusSend = messageValue / 64;
+                                this.chorusProcessor.level = messageValue;
                                 break;
                             }
 

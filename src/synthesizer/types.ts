@@ -6,6 +6,11 @@ import type {
 import type { CachedVoice } from "./audio_engine/engine_components/voice_cache";
 import type { MIDIController } from "../midi/enums";
 
+import type {
+    ChorusProcessor,
+    ReverbProcessor
+} from "./audio_engine/effects/types";
+
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
 export interface NoteOnCallback {
@@ -290,6 +295,16 @@ export interface SynthProcessorOptions {
      * Indicates if the effects are enabled. This can be changed later.
      */
     enableEffects: boolean;
+
+    /**
+     * Reverb processor for the synthesizer. Leave undefined to use the default.
+     */
+    reverbProcessor: ReverbProcessor;
+
+    /**
+     * Chorus processor for the synthesizer. Leave undefined to use the default.
+     */
+    chorusProcessor: ChorusProcessor;
 }
 
 /**

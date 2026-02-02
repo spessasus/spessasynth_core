@@ -47,9 +47,8 @@ const audioStream = new Readable({
     read() {
         const left = new Float32Array(bufSize);
         const right = new Float32Array(bufSize);
-        const arr = [left, right];
         seq.processTick();
-        synth.renderAudio(arr, [], []);
+        synth.process(left, right);
 
         const interleaved = new Float32Array(left.length * 2);
         for (let i = 0; i < left.length; i++) {
