@@ -532,7 +532,9 @@ export class SynthesizerCore {
             c.clearVoiceCount();
         }
         this.voiceCount = 0;
-        for (const v of this.voices) {
+        const cap = this.masterParameters.voiceCap;
+        for (let i = 0; i < cap; i++) {
+            const v = this.voices[i];
             if (!v.isActive) {
                 continue;
             }
@@ -599,7 +601,9 @@ export class SynthesizerCore {
             c.clearVoiceCount();
         }
         this.voiceCount = 0;
-        for (const v of this.voices) {
+        const cap = this.masterParameters.voiceCap;
+        for (let i = 0; i < cap; i++) {
+            const v = this.voices[i];
             if (!v.isActive) {
                 continue;
             }
@@ -737,7 +741,9 @@ export class SynthesizerCore {
     private assignVoicePriorities() {
         if (this.lastPriorityAssignmentTime === this.currentTime) return;
         this.lastPriorityAssignmentTime = this.currentTime;
-        for (const voice of this.voices) {
+        const cap = this.masterParameters.voiceCap;
+        for (let i = 0; i < cap; i++) {
+            const voice = this.voices[i];
             voice.priority = 0;
             if (this.midiChannels[voice.channel].drumChannel) {
                 // Important
