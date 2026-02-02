@@ -462,6 +462,7 @@ export class VolumeEnvelope {
             this.attenuationCb = 0;
 
             // Attack phase: ramp from 0 to attenuation
+            const gainOffset = cbAttenuationToGain(centibelOffset);
             while (sampleTime < attackEnd) {
                 if (smooth) {
                     currentGain += (gainTarget - currentGain) * gainSmoothing;
@@ -472,7 +473,7 @@ export class VolumeEnvelope {
                     1 - (attackEnd - sampleTime) / attackDuration; // 0 to 1
 
                 // Apply gain to buffer
-                buffer[filledBuffer] *= linearGain * currentGain;
+                buffer[filledBuffer] *= linearGain * currentGain * gainOffset;
 
                 sampleTime++;
                 if (++filledBuffer >= sampleCount) {
