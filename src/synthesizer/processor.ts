@@ -58,7 +58,12 @@ export class SpessaSynthProcessor {
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
      */
-    public readonly process: typeof this.synthCore.process;
+    public readonly process: (
+        left: Float32Array,
+        right: Float32Array,
+        startIndex?: number,
+        sampleCount?: number
+    ) => unknown;
 
     // noinspection JSUnusedGlobalSymbols
     /**
@@ -70,7 +75,13 @@ export class SpessaSynthProcessor {
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
      */
-    public readonly processSplit: typeof this.synthCore.processSplit;
+    public readonly processSplit: (
+        outputs: Float32Array[][],
+        effectsLeft: Float32Array,
+        effectsRight: Float32Array,
+        startIndex?: number,
+        sampleCount?: number
+    ) => unknown;
 
     /**
      * Core synthesis engine.
