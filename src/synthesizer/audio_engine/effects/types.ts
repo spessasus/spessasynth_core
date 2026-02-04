@@ -10,8 +10,8 @@ interface EffectProcessor {
      * @param input The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
      * @param outputRight The right output buffer.
-     * @param startIndex The index to start mixing at.
-     * @param endIndex The index to stop mixing at.
+     * @param startIndex The index to start mixing at, inclusive.
+     * @param endIndex The index to stop mixing at, exclusive.
      */
     process(
         input: Float32Array,

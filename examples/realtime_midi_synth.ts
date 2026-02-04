@@ -34,7 +34,7 @@ input.on("message", (_deltaTime, message) => {
 });
 
 const speaker = new Speaker({
-    sampleRate: 44100,
+    sampleRate: sampleRate,
     channels: 2,
     bitDepth: 32,
     // @ts-expect-error badly typed package (again)
