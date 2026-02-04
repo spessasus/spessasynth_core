@@ -301,7 +301,8 @@ export function renderVoice(
             this.synthCore.masterParameters.reverbGain *
             gain *
             (reverbSend / REVERB_DIVIDER);
-        const reverb = this.synthCore.reverbProcessor.inputBuffer;
+
+        const reverb = this.synthCore.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
             reverb[i] += reverbGain * buffer[i];
         }
@@ -314,7 +315,7 @@ export function renderVoice(
             this.synthCore.masterParameters.chorusGain *
             (chorusSend / CHORUS_DIVIDER) *
             gain;
-        const chorus = this.synthCore.chorusProcessor.inputBuffer;
+        const chorus = this.synthCore.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
             chorus[i] += chorusGain * buffer[i];
         }

@@ -34,7 +34,7 @@ import { consoleColors } from "../../utils/other";
 import { NON_CC_INDEX_OFFSET } from "../exports";
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
 
-import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
+import type { ChorusProcessor, ReverbProcessor } from "./effects/types"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -61,24 +61,31 @@ export class SynthesizerCore {
     public readonly reverbProcessor: ReverbProcessor;
 
     /**
+     * The reverb processor's input buffer.
+     */
+    public reverbInput = new Float32Array(128);
+
+    /**
      * The synthesizer's chorus processor.
      */
     public readonly chorusProcessor: ChorusProcessor;
 
+    /**
+     * The chorus processor's input buffer.
+     */
+    public chorusInput = new Float32Array(128);
     /**
      * 0-1
      * This parameter sets the amount of chorus sound that will be sent to the reverb.
      * Higher values result in more sound being sent.
      */
     public chorusToReverb = 0;
-
     /**
      * 0-1
      * This parameter sets the amount of chorus sound that will be sent to the delay. Higher
      * values result in more sound being sent.
      */
     public chorusToDelay = 0;
-
     /**
      * The sound bank manager, which manages all sound banks and presets.
      */
@@ -108,17 +115,14 @@ export class SynthesizerCore {
      * The volume gain, set by MIDI sysEx
      */
     public midiVolume = 1;
-
     /**
      * Are the chorus and reverb effects enabled?
      */
     public enableEffects: boolean;
-
     /**
      * Is the event system enabled?
      */
     public enableEventSystem: boolean;
-
     /**
      * The pan of the left channel.
      */
@@ -152,12 +156,10 @@ export class SynthesizerCore {
         eventType: K,
         eventData: SynthProcessorEventData[K]
     ) => unknown;
-
     public readonly missingPresetHandler: (
         patch: MIDIPatch,
         system: SynthSystem
     ) => undefined | BasicPreset;
-
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting is calculated in getCachedVoiceIndex, returns a list of voices for this note.
@@ -192,6 +194,14 @@ export class SynthesizerCore {
      * Current total amount of voices that are currently playing.
      */
     public voiceCount = 0;
+    /**
+     * Left chorus output buffer, for mixing to reverb.
+     */
+    private chorusLeft = new Float32Array(128);
+    /**
+     * Right chorus output buffer, for mixing to reverb.
+     */
+    private chorusRight = new Float32Array(128);
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -540,23 +550,20 @@ export class SynthesizerCore {
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        const quantumSize = sampleCount || left.length - startIndex;
+        const bufferSize = sampleCount || left.length - startIndex;
 
         if (this.enableEffects) {
             // Grow buffers if needed
-            if (this.reverbProcessor.inputBuffer.length < quantumSize)
-                this.reverbProcessor.inputBuffer = new Float32Array(
-                    quantumSize
-                );
-
-            if (this.chorusProcessor.inputBuffer.length < quantumSize)
-                this.chorusProcessor.inputBuffer = new Float32Array(
-                    quantumSize
-                );
-
-            // Clear the buffers
-            this.reverbProcessor.inputBuffer.fill(0);
-            this.chorusProcessor.inputBuffer.fill(0);
+            if (this.reverbInput.length < bufferSize) {
+                this.reverbInput = new Float32Array(bufferSize);
+                this.chorusInput = new Float32Array(bufferSize);
+                this.chorusLeft = new Float32Array(bufferSize);
+                this.chorusRight = new Float32Array(bufferSize);
+            } else {
+                // Clear the buffers
+                this.reverbInput.fill(0);
+                this.chorusInput.fill(0);
+            }
         }
 
         // Clear voice count
@@ -582,14 +589,51 @@ export class SynthesizerCore {
                 left,
                 right,
                 startIndex,
-                quantumSize
+                bufferSize
             );
         }
 
         // Process effects
+        const endIndex = bufferSize + startIndex;
         if (this.enableEffects) {
-            this.chorusProcessor.process(quantumSize, left, right);
-            this.reverbProcessor.process(quantumSize, left, right);
+            if (this.chorusToReverb > 0) {
+                // Process into chorus output
+                this.chorusLeft.fill(0);
+                this.chorusRight.fill(0);
+                this.chorusProcessor.process(
+                    this.chorusInput,
+                    this.chorusLeft,
+                    this.chorusRight,
+                    startIndex,
+                    endIndex
+                );
+                // Add to reverb input
+                for (let i = 0; i < bufferSize; i++) {
+                    this.reverbInput[i] +=
+                        (this.chorusLeft[i] + this.chorusRight[i]) / 2;
+                }
+                // Add to the final mix too
+                for (let i = startIndex; i < endIndex; i++) {
+                    left[i] += this.chorusLeft[i - startIndex];
+                    right[i] += this.chorusRight[i - startIndex];
+                }
+            } else {
+                // Process directly into the output buffer
+                this.chorusProcessor.process(
+                    this.chorusInput,
+                    left,
+                    right,
+                    startIndex,
+                    endIndex
+                );
+            }
+            this.reverbProcessor.process(
+                this.reverbInput,
+                left,
+                right,
+                startIndex,
+                endIndex
+            );
         }
 
         // Update voice count
@@ -598,7 +642,7 @@ export class SynthesizerCore {
         }
 
         // Advance the time appropriately
-        this.currentTime += quantumSize * this.sampleTime;
+        this.currentTime += bufferSize * this.sampleTime;
     }
 
     public processSplit(
@@ -618,23 +662,21 @@ export class SynthesizerCore {
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        const quantumSize = sampleCount || outputs[0][0].length - startIndex;
+        const bufferSize = sampleCount || outputs[0][0].length - startIndex;
 
+        // Grow buffers if needed
         if (this.enableEffects) {
             // Grow buffers if needed
-            if (this.reverbProcessor.inputBuffer.length < quantumSize)
-                this.reverbProcessor.inputBuffer = new Float32Array(
-                    quantumSize
-                );
-
-            if (this.chorusProcessor.inputBuffer.length < quantumSize)
-                this.chorusProcessor.inputBuffer = new Float32Array(
-                    quantumSize
-                );
-
-            // Clear the buffers
-            this.reverbProcessor.inputBuffer.fill(0);
-            this.chorusProcessor.inputBuffer.fill(0);
+            if (this.reverbInput.length < bufferSize) {
+                this.reverbInput = new Float32Array(bufferSize);
+                this.chorusInput = new Float32Array(bufferSize);
+                this.chorusLeft = new Float32Array(bufferSize);
+                this.chorusRight = new Float32Array(bufferSize);
+            } else {
+                // Clear the buffers
+                this.reverbInput.fill(0);
+                this.chorusInput.fill(0);
+            }
         }
 
         // Clear voice count
@@ -661,7 +703,7 @@ export class SynthesizerCore {
                 outputs[outputIndex][0],
                 outputs[outputIndex][1],
                 startIndex,
-                quantumSize
+                bufferSize
             );
 
             // Update voice count
@@ -670,16 +712,45 @@ export class SynthesizerCore {
         }
 
         // Process effects
+        const endIndex = bufferSize + startIndex;
         if (this.enableEffects) {
-            this.chorusProcessor.process(
-                quantumSize,
-                effectsLeft,
-                effectsRight
-            );
+            if (this.chorusToReverb > 0) {
+                // Process into chorus output
+                this.chorusLeft.fill(0);
+                this.chorusRight.fill(0);
+                this.chorusProcessor.process(
+                    this.chorusInput,
+                    this.chorusLeft,
+                    this.chorusRight,
+                    startIndex,
+                    endIndex
+                );
+                // Add to reverb input
+                for (let i = 0; i < bufferSize; i++) {
+                    this.reverbInput[i] +=
+                        (this.chorusLeft[i] + this.chorusRight[i]) / 2;
+                }
+                // Add to the final mix too
+                for (let i = startIndex; i < endIndex; i++) {
+                    effectsLeft[i] += this.chorusLeft[i - startIndex];
+                    effectsRight[i] += this.chorusRight[i - startIndex];
+                }
+            } else {
+                // Process directly into the output buffer
+                this.chorusProcessor.process(
+                    this.chorusInput,
+                    effectsLeft,
+                    effectsRight,
+                    startIndex,
+                    endIndex
+                );
+            }
             this.reverbProcessor.process(
-                quantumSize,
+                this.reverbInput,
                 effectsLeft,
-                effectsRight
+                effectsRight,
+                startIndex,
+                endIndex
             );
         }
 
@@ -689,7 +760,7 @@ export class SynthesizerCore {
         }
 
         // Advance the time appropriately
-        this.currentTime += quantumSize * this.sampleTime;
+        this.currentTime += bufferSize * this.sampleTime;
     }
     /**
      * Gets voices for a preset.

@@ -1,92 +1,32 @@
-export interface ChorusProcessor {
+interface EffectProcessor {
     /**
      * 0-64-127
-     * This parameter sets the amount of the chorus sound.
+     * This parameter sets the amount of the effect.
      */
     level: number;
-    /**
-     * 0-7
-     * A low-pass filter can be applied to the sound coming into the chorus to cut the high
-     * frequency range. Higher values will cut more of the high frequencies, resulting in a
-     * more mellow chorus sound.
-     */
-    preLowpass: number;
-    /**
-     * 0-8-127
-     * This parameter sets the level at which the chorus sound is re-input (fed back) into the
-     * chorus. By using feedback, a denser chorus sound can be created.
-     * Higher values result in a greater feedback level.
-     */
-    feedback: number;
-    /**
-     * 0-80-127
-     * This parameter sets the delay time of the chorus effect.
-     */
-    delay: number;
-    /**
-     * 0-3-127
-     * This parameter sets the speed (frequency) at which the chorus sound is modulated.
-     * Higher values result in faster modulation.
-     */
-    rate: number;
-    /**
-     * 0-19-127
-     * This parameter sets the depth at which the chorus sound is modulated.
-     * Higher values result in deeper modulation.
-     */
-    depth: number;
-    /**
-     * The input buffer the processor uses.
-     * Must be initialized at 128 samples initially and CANNOT be readonly
-     */
-    inputBuffer: Float32Array;
 
     /**
-     * 0 - 7. Default is 2
-     * If macro is not available, it should default to the first one.
-     *
-     * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
-     * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
-     * suitable value.
-     *
-     * Chorus1, Chorus2, Chorus3, Chorus4
-     * These are conventional chorus effects that add spaciousness and depth to the
-     * sound.
-     * Feedback Chorus
-     * This is a chorus with a flanger-like effect and a soft sound.
-     * Flanger
-     * This is an effect sounding somewhat like a jet airplane taking off and landing.
-     * Short Delay
-     * This is a delay with a short delay time.
-     * Short Delay (FB)
-     * This is a short delay with many repeats.
-     */
-    setMacro(macro: number): void;
-
-    /**
-     * Process the chorus effect and ADDS it to the output.
-     * @param sampleCount The amount of samples to process, starting from the beginning of the input buffer.
+     * Process the effect and ADDS it to the output.
+     * @param input The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
      * @param outputRight The right output buffer.
+     * @param startIndex The index to start mixing at.
+     * @param endIndex The index to stop mixing at.
      */
     process(
-        sampleCount: number,
+        input: Float32Array,
         outputLeft: Float32Array,
-        outputRight: Float32Array
+        outputRight: Float32Array,
+        startIndex: number,
+        endIndex: number
     ): void;
 
     /**
-     * Resets the chorus effect.
+     * Resets the effect processor.
      */
     reset(): void;
 }
-export interface ReverbProcessor {
-    /**
-     * 0-64-127
-     * This parameter sets the amount of the reverberant sound. Higher values result in
-     * louder reverberation.
-     */
-    level: number;
+export interface ReverbProcessor extends EffectProcessor {
     /**
      * 0 - 7.
      * If character is not available, it should default to the first one.
@@ -121,11 +61,6 @@ export interface ReverbProcessor {
      * Higher values result in a longer pre-delay time, simulating a larger reverberant space.
      */
     preDelayTime: number;
-    /**
-     * The input buffer the processor uses.
-     * Must be initialized at 128 samples initially and CANNOT be readonly
-     */
-    inputBuffer: Float32Array;
 
     /**
      * 0 - 7. Default is 4
@@ -150,21 +85,60 @@ export interface ReverbProcessor {
      * It is effective when you are listening in stereo.
      */
     setMacro(macro: number): void;
+}
+
+export interface ChorusProcessor extends EffectProcessor {
+    /**
+     * 0-7
+     * A low-pass filter can be applied to the sound coming into the chorus to cut the high
+     * frequency range. Higher values will cut more of the high frequencies, resulting in a
+     * more mellow chorus sound.
+     */
+    preLowpass: number;
+    /**
+     * 0-8-127
+     * This parameter sets the level at which the chorus sound is re-input (fed back) into the
+     * chorus. By using feedback, a denser chorus sound can be created.
+     * Higher values result in a greater feedback level.
+     */
+    feedback: number;
+    /**
+     * 0-80-127
+     * This parameter sets the delay time of the chorus effect.
+     */
+    delay: number;
+    /**
+     * 0-3-127
+     * This parameter sets the speed (frequency) at which the chorus sound is modulated.
+     * Higher values result in faster modulation.
+     */
+    rate: number;
+    /**
+     * 0-19-127
+     * This parameter sets the depth at which the chorus sound is modulated.
+     * Higher values result in deeper modulation.
+     */
+    depth: number;
 
     /**
-     * Process the reverb effect and ADDS it to the output.
-     * @param sampleCount The amount of samples to process, starting from the beginning of the input buffer.
-     * @param outputLeft The left output buffer.
-     * @param outputRight The right output buffer.
+     * 0 - 7. Default is 2
+     * If macro is not available, it should default to the first one.
+     *
+     * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
+     * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
+     * suitable value.
+     *
+     * Chorus1, Chorus2, Chorus3, Chorus4
+     * These are conventional chorus effects that add spaciousness and depth to the
+     * sound.
+     * Feedback Chorus
+     * This is a chorus with a flanger-like effect and a soft sound.
+     * Flanger
+     * This is an effect sounding somewhat like a jet airplane taking off and landing.
+     * Short Delay
+     * This is a delay with a short delay time.
+     * Short Delay (FB)
+     * This is a short delay with many repeats.
      */
-    process(
-        sampleCount: number,
-        outputLeft: Float32Array,
-        outputRight: Float32Array
-    ): void;
-
-    /**
-     * Resets the reverb effect.
-     */
-    reset(): void;
+    setMacro(macro: number): void;
 }

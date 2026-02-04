@@ -1,17 +1,22 @@
 import type { ReverbProcessor } from "../types";
 
+const DELAY = 0.5;
+
 export class SpessaSynthReverb implements ReverbProcessor {
-    public character = 4;
-    public time = 64;
+    public character = 0;
+    public time = 0;
     public delayFeedback = 0;
-    public level = 64;
+    public level = 0;
     public preDelayTime = 0;
     public preLowpass = 0;
-    public inputBuffer = new Float32Array(128);
     private readonly sampleRate;
+    private readonly delayLine;
+    private writeIndex = 0;
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
+        this.delayLine = new Float32Array(DELAY * sampleRate);
+        this.reset();
         console.log("init test reverb", this.sampleRate);
     }
 
@@ -20,18 +25,44 @@ export class SpessaSynthReverb implements ReverbProcessor {
     }
 
     public reset(): void {
+        this.character = 4;
+        this.time = 64;
+        this.delayFeedback = 0;
+        this.level = 64;
+        this.preDelayTime = 0;
+        this.preLowpass = 0;
         console.log("Reverb reset call!");
     }
 
     public process(
-        sampleCount: number,
+        input: Float32Array,
         outputLeft: Float32Array,
-        outputRight: Float32Array
+        outputRight: Float32Array,
+        startIndex: number,
+        endIndex: number
     ) {
-        const input = this.inputBuffer;
-        for (let i = 0; i < sampleCount; i++) {
-            outputLeft[i] += input[i];
-            outputRight[i] += input[i];
+        const buffer = this.delayLine;
+        const bufferLength = buffer.length;
+        let writeIndex = this.writeIndex;
+
+        for (let i = startIndex; i < endIndex; i++) {
+            // Read delayed sample
+            const delayedSample = buffer[writeIndex];
+
+            // Write current input into buffer
+            buffer[writeIndex] = input[i - startIndex] + delayedSample;
+
+            // Output mono → stereo
+            outputLeft[i] += delayedSample;
+            outputRight[i] += delayedSample;
+
+            // Advance circular index
+            writeIndex++;
+            if (writeIndex >= bufferLength) {
+                writeIndex = 0;
+            }
         }
+
+        this.writeIndex = writeIndex;
     }
 }
