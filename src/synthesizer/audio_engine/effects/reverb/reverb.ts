@@ -29,11 +29,7 @@ class DattorroReverb {
     public excursionRate = 0.5;
     // Min: 0, max: 2
     public excursionDepth = 0.7;
-    // Min: 0, max: 1
-    public wet = 0.3;
-    // Min: 0, max: 1
-    public dry = 0.6;
-
+    public gain = 1;
     private readonly sampleRate;
     private lp1 = 0;
     private lp2 = 0;
@@ -145,7 +141,7 @@ class DattorroReverb {
             this.writeDelay(11, this.readDelay(10) + st * temp); // Long delay 4
 
             // Mix down
-            outputLeft[i + startIndex] +=
+            const leftSample =
                 this.readDelayAt(9, this.taps[0]) +
                 this.readDelayAt(9, this.taps[1]) -
                 this.readDelayAt(10, this.taps[2]) +
@@ -153,8 +149,9 @@ class DattorroReverb {
                 this.readDelayAt(5, this.taps[4]) -
                 this.readDelayAt(6, this.taps[5]) -
                 this.readDelayAt(7, this.taps[6]);
+            outputLeft[i + startIndex] += leftSample * this.gain;
 
-            outputRight[i + startIndex] +=
+            const rightSample =
                 this.readDelayAt(5, this.taps[7]) +
                 this.readDelayAt(5, this.taps[8]) -
                 this.readDelayAt(6, this.taps[9]) +
@@ -162,6 +159,8 @@ class DattorroReverb {
                 this.readDelayAt(9, this.taps[11]) -
                 this.readDelayAt(10, this.taps[12]) -
                 this.readDelayAt(11, this.taps[13]);
+
+            outputRight[i + startIndex] += rightSample * this.gain;
 
             this.excPhase += ex;
             // Advance delays
@@ -229,7 +228,6 @@ export class SpessaSynthReverb implements ReverbProcessor {
     public character = 0;
     public time = 0;
     public delayFeedback = 0;
-    public level = 0;
     public preDelayTime = 0;
     private readonly dattorro;
 
@@ -237,6 +235,17 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this.dattorro = new DattorroReverb(sampleRate);
 
         this.reset();
+    }
+
+    private _level = 0;
+
+    public get level(): number {
+        return this._level;
+    }
+
+    public set level(value: number) {
+        this._level = value;
+        this.dattorro.gain = value / 64;
     }
 
     private _preLowpass = 0;
@@ -259,7 +268,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this.delayFeedback = 0;
         this.level = 64;
         this.preDelayTime = 0;
-        this._preLowpass = 0;
+        this.preLowpass = 0;
         console.log("Reverb reset call!");
     }
 
