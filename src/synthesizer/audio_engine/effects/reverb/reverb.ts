@@ -231,13 +231,22 @@ export class SpessaSynthReverb implements ReverbProcessor {
     public delayFeedback = 0;
     public level = 0;
     public preDelayTime = 0;
-    public preLowpass = 0;
     private readonly dattorro;
 
     public constructor(sampleRate: number) {
         this.dattorro = new DattorroReverb(sampleRate);
 
         this.reset();
+    }
+
+    private _preLowpass = 0;
+
+    public get preLowpass(): number {
+        return this._preLowpass;
+    }
+
+    public set preLowpass(value: number) {
+        this._preLowpass = value;
     }
 
     public setMacro(macro: number): void {
@@ -250,7 +259,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this.delayFeedback = 0;
         this.level = 64;
         this.preDelayTime = 0;
-        this.preLowpass = 0;
+        this._preLowpass = 0;
         console.log("Reverb reset call!");
     }
 

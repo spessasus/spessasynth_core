@@ -3,7 +3,7 @@ interface EffectProcessor {
      * 0-64-127
      * This parameter sets the amount of the effect.
      */
-    level: number;
+    set level(v: number);
 
     /**
      * Process the effect and ADDS it to the output.

@@ -103,6 +103,19 @@ export class MIDIChannel {
      * Enables random panning for every note played on this channel.
      */
     public randomPan = false;
+
+    /**
+     * CC1 for GS system exclusive.
+     * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
+     */
+    public cc1 = 0x10;
+
+    /**
+     * CC2 for GS system exclusive.
+     * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
+     */
+    public cc2 = 0x11;
+
     /**
      * The current state of the data entry for the channel.
      */

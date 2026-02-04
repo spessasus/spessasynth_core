@@ -35,7 +35,7 @@ export function systemExclusiveInternal(
     switch (manufacturer) {
         default: {
             SpessaSynthInfo(
-                `%cUnrecognized SysEx: %c${arrayToHexString(syx)} (unknown manufacturer)`,
+                `%cUnknown manufacturer: %c${arrayToHexString(syx)}`,
                 consoleColors.warn,
                 consoleColors.unrecognized
             );
