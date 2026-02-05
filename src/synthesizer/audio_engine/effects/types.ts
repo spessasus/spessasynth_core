@@ -3,7 +3,7 @@ interface EffectProcessor {
      * 0-64-127
      * This parameter sets the amount of the effect.
      */
-    set level(v: number);
+    level: number;
 
     /**
      * Process the effect and ADDS it to the output.
@@ -20,11 +20,6 @@ interface EffectProcessor {
         startIndex: number,
         endIndex: number
     ): void;
-
-    /**
-     * Resets the effect processor.
-     */
-    reset(): void;
 }
 export interface ReverbProcessor extends EffectProcessor {
     /**
@@ -61,30 +56,6 @@ export interface ReverbProcessor extends EffectProcessor {
      * Higher values result in a longer pre-delay time, simulating a larger reverberant space.
      */
     preDelayTime: number;
-
-    /**
-     * 0 - 7. Default is 4
-     * If macro is not available, it should default to the first one.
-     *
-     * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
-     * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
-     * suitable value.
-     *
-     * Room1, Room2, Room3
-     * These reverbs simulate the reverberation of a room. They provide a well-defined
-     * spacious reverberation.
-     * Hall1, Hall2
-     * These reverbs simulate the reverberation of a concert hall. They provide a deeper
-     * reverberation than the Room reverbs.
-     * Plate
-     * This simulates a plate reverb (a studio device using a metal plate).
-     * Delay
-     * This is a conventional delay that produces echo effects.
-     * Panning Delay
-     * This is a special delay in which the delayed sounds move left and right.
-     * It is effective when you are listening in stereo.
-     */
-    setMacro(macro: number): void;
 }
 
 export interface ChorusProcessor extends EffectProcessor {
@@ -119,26 +90,4 @@ export interface ChorusProcessor extends EffectProcessor {
      * Higher values result in deeper modulation.
      */
     depth: number;
-
-    /**
-     * 0 - 7. Default is 2
-     * If macro is not available, it should default to the first one.
-     *
-     * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
-     * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
-     * suitable value.
-     *
-     * Chorus1, Chorus2, Chorus3, Chorus4
-     * These are conventional chorus effects that add spaciousness and depth to the
-     * sound.
-     * Feedback Chorus
-     * This is a chorus with a flanger-like effect and a soft sound.
-     * Flanger
-     * This is an effect sounding somewhat like a jet airplane taking off and landing.
-     * Short Delay
-     * This is a delay with a short delay time.
-     * Short Delay (FB)
-     * This is a short delay with many repeats.
-     */
-    setMacro(macro: number): void;
 }

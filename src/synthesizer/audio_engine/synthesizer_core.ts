@@ -467,8 +467,10 @@ export class SynthesizerCore {
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
         this.setMIDIVolume(1);
-        this.chorusProcessor.reset();
-        this.reverbProcessor.reset();
+        // Hall2 default
+        this.setReverbMacro(4);
+        // Chorus3 default
+        this.setChorusMacro(4);
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
@@ -836,6 +838,198 @@ export class SynthesizerCore {
         cents = Math.round(cents);
         for (const channel of this.midiChannels) {
             channel.setCustomController(customControllers.masterTuning, cents);
+        }
+    }
+
+    protected setReverbMacro(macro: number) {
+        // SC-8850 manual page 81
+        this.reverbProcessor.level = 64;
+        this.reverbProcessor.preDelayTime = 0;
+        this.reverbProcessor.character = macro;
+        switch (macro) {
+            /**
+             * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
+             * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
+             * suitable value.
+             *
+             * Room1, Room2, Room3
+             * These reverbs simulate the reverberation of a room. They provide a well-defined
+             * spacious reverberation.
+             * Hall1, Hall2
+             * These reverbs simulate the reverberation of a concert hall. They provide a deeper
+             * reverberation than the Room reverbs.
+             * Plate
+             * This simulates a plate reverb (a studio device using a metal plate).
+             * Delay
+             * This is a conventional delay that produces echo effects.
+             * Panning Delay
+             * This is a special delay in which the delayed sounds move left and right.
+             * It is effective when you are listening in stereo.
+             */
+            default: {
+                // Room1
+                this.reverbProcessor.character = 0;
+                this.reverbProcessor.preLowpass = 3;
+                this.reverbProcessor.time = 80;
+                this.reverbProcessor.delayFeedback = 0;
+                this.reverbProcessor.preDelayTime = 0;
+                break;
+            }
+
+            case 1: {
+                // Room2
+                this.reverbProcessor.preLowpass = 4;
+                this.reverbProcessor.time = 56;
+                this.reverbProcessor.delayFeedback = 0;
+                break;
+            }
+
+            case 2: {
+                // Room3
+                this.reverbProcessor.preLowpass = 0;
+                this.reverbProcessor.time = 72;
+                this.reverbProcessor.delayFeedback = 0;
+                break;
+            }
+
+            case 3: {
+                // Hall1
+                this.reverbProcessor.preLowpass = 4;
+                this.reverbProcessor.time = 72;
+                this.reverbProcessor.delayFeedback = 0;
+                break;
+            }
+
+            case 4: {
+                // Hall2
+                this.reverbProcessor.preLowpass = 0;
+                this.reverbProcessor.time = 64;
+                this.reverbProcessor.delayFeedback = 0;
+                break;
+            }
+
+            case 5: {
+                // Plate
+                this.reverbProcessor.preLowpass = 0;
+                this.reverbProcessor.time = 88;
+                this.reverbProcessor.delayFeedback = 0;
+                break;
+            }
+
+            case 6: {
+                // Delay
+                this.reverbProcessor.preLowpass = 0;
+                this.reverbProcessor.time = 32;
+                this.reverbProcessor.delayFeedback = 40;
+                break;
+            }
+
+            case 7: {
+                // Panning delay
+                this.reverbProcessor.preLowpass = 0;
+                this.reverbProcessor.time = 64;
+                this.reverbProcessor.delayFeedback = 32;
+                break;
+            }
+        }
+    }
+
+    protected setChorusMacro(macro: number) {
+        // SC-8850 manual page 83
+        const chr = this.chorusProcessor;
+        chr.level = 64;
+        chr.preLowpass = 0;
+        this.chorusToReverb = 0;
+        this.chorusToDelay = 0;
+        switch (macro) {
+            /**
+             * CHORUS MACRO is a macro parameter that allows global setting of chorus parameters.
+             * When you select the chorus type with CHORUS MACRO, each chorus parameter will be set to their
+             * most suitable value.
+             *
+             * Chorus1, Chorus2, Chorus3, Chorus4
+             * These are conventional chorus effects that add spaciousness and depth to the
+             * sound.
+             * Feedback Chorus
+             * This is a chorus with a flanger-like effect and a soft sound.
+             * Flanger
+             * This is an effect sounding somewhat like a jet airplane taking off and landing.
+             * Short Delay
+             * This is a delay with a short delay time.
+             * Short Delay (FB)
+             * This is a short delay with many repeats.
+             */
+            default: {
+                // Chorus1
+                chr.feedback = 0;
+                chr.delay = 112;
+                chr.rate = 3;
+                chr.depth = 5;
+                break;
+            }
+
+            case 1: {
+                // Chorus2
+                chr.feedback = 5;
+                chr.delay = 80;
+                chr.rate = 9;
+                chr.depth = 19;
+                break;
+            }
+
+            case 2: {
+                // Chorus3
+                chr.feedback = 8;
+                chr.delay = 80;
+                chr.rate = 3;
+                chr.depth = 19;
+                break;
+            }
+
+            case 3: {
+                // Chorus4
+                chr.feedback = 16;
+                chr.delay = 64;
+                chr.rate = 9;
+                chr.depth = 16;
+                break;
+            }
+
+            case 4: {
+                // FbChorus
+                chr.feedback = 64;
+                chr.delay = 127;
+                chr.rate = 2;
+                chr.depth = 24;
+                break;
+            }
+
+            case 5: {
+                // Flanger
+                chr.feedback = 112;
+                chr.delay = 127;
+                chr.rate = 1;
+                chr.depth = 5;
+                break;
+            }
+
+            case 6: {
+                // SDelay
+                chr.feedback = 0;
+                chr.depth = 127;
+                chr.rate = 0;
+                chr.depth = 127;
+                break;
+            }
+
+            case 7: {
+                // SDelayFb
+                chr.feedback = 80;
+                chr.depth = 127;
+                chr.rate = 0;
+                chr.depth = 127;
+                break;
+            }
         }
     }
 

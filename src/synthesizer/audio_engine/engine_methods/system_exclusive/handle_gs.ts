@@ -167,7 +167,7 @@ export function handleGS(
 
                             case 0x30: {
                                 // Reverb macro
-                                this.reverbProcessor.setMacro(data);
+                                this.setReverbMacro(data);
                                 coolInfo("Reverb Macro", data);
                                 break;
                             }
@@ -217,7 +217,7 @@ export function handleGS(
 
                             case 0x38: {
                                 // Chorus macro
-                                this.chorusProcessor.setMacro(data);
+                                this.setChorusMacro(data);
                                 coolInfo("Chorus Macro", data);
                                 break;
                             }
