@@ -25,7 +25,7 @@ const sampleRate = 44100;
 SpessaSynthLogging(true, true, true);
 console.info("Initializing synthesizer...");
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEffects: false
+    enableEventSystem: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),

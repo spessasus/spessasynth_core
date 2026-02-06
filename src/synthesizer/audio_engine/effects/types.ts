@@ -51,7 +51,7 @@ export interface ReverbProcessor extends EffectProcessor {
      */
     delayFeedback: number;
     /**
-     * 0 - 127 ms
+     * 0 - 127 (0 - 100 ms)
      * This parameter sets the delay time until the reverberant sound is heard.
      * Higher values result in a longer pre-delay time, simulating a larger reverberant space.
      */

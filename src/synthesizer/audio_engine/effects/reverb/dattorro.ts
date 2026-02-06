@@ -23,9 +23,9 @@ export class DattorroReverb {
     // Min: 0, max: 1
     public damping = 0.005;
     // Min: 0, max: 2
-    public excursionRate = 0.5;
+    public excursionRate = 0.1;
     // Min: 0, max: 2
-    public excursionDepth = 0.7;
+    public excursionDepth = 0.2;
     public gain = 1;
     private readonly sampleRate;
     private lp1 = 0;
