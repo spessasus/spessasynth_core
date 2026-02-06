@@ -1,14 +1,20 @@
 import type { ReverbProcessor } from "../types";
 import { DattorroReverb } from "./dattorro";
+import { DelayLine } from "./delay";
 
 export class SpessaSynthReverb implements ReverbProcessor {
     public delayFeedback = 0;
     private readonly dattorro;
+    private readonly delay;
     private readonly sampleRate;
+    private timeCoeff = 1;
+    private gainCoeff = 1;
+    private lpfCoeff = 0;
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.dattorro = new DattorroReverb(sampleRate);
+        this.delay = new DelayLine(sampleRate);
     }
 
     private _character = 0;
@@ -20,19 +26,86 @@ export class SpessaSynthReverb implements ReverbProcessor {
     public set character(value: number) {
         this._character = value;
         this.dattorro.damping = 0.005;
+        this.timeCoeff = 1;
+        this.gainCoeff = 1;
+        this.lpfCoeff = 0;
+        this.dattorro.inputDiffusion1 = 0.75;
+        this.dattorro.inputDiffusion2 = 0.625;
+        this.dattorro.decayDiffusion1 = 0.7;
+        this.dattorro.decayDiffusion2 = 0.5;
+        this.dattorro.excursionRate = 0.5;
+        this.dattorro.excursionDepth = 0.7;
+        // Tested all characters on level = 64, preset: Hall2
+        // File: test_gs_reverb_character.ts, compare spessasynth to SC-VA
+        // Tuned by me, though I'm not very good at it :-)
         switch (value) {
-            default: {
-                // Room1, dampened
-                this.dattorro.damping = 0.5;
+            case 0: {
+                // Room1
+                this.dattorro.damping = 0.95;
+                this.timeCoeff = 0.9;
+                this.gainCoeff = 0.7;
+                this.lpfCoeff = 0.2;
                 break;
             }
 
             case 1: {
                 // Room2
-                this.dattorro.damping = 0.001;
+                this.dattorro.damping = 0.2;
+                this.gainCoeff = 0.5;
+                this.timeCoeff = 1;
+                this.dattorro.decayDiffusion2 = 0.64;
+                this.dattorro.decayDiffusion1 = 0.6;
+                this.lpfCoeff = 0.2;
+                break;
+            }
+
+            case 2: {
+                // Room3
+                this.dattorro.damping = 0.56;
+                this.gainCoeff = 0.55;
+                this.timeCoeff = 1;
+                this.dattorro.decayDiffusion2 = 0.64;
+                this.dattorro.decayDiffusion1 = 0.6;
+                this.lpfCoeff = 0.1;
+                break;
+            }
+
+            case 3: {
+                // Hall1
+                this.dattorro.damping = 0.6;
+                this.gainCoeff = 1;
+                this.lpfCoeff = 0;
+                this.dattorro.decayDiffusion2 = 0.7;
+                this.dattorro.decayDiffusion1 = 0.66;
+                break;
+            }
+
+            case 4: {
+                // Hall2
+                this.gainCoeff = 0.55;
+                this.dattorro.damping = 0.65;
+                this.dattorro.inputDiffusion1 = 0.79;
+                this.dattorro.inputDiffusion2 = 0.63;
+                this.dattorro.decayDiffusion2 = 0.73;
+                this.dattorro.decayDiffusion1 = 0.69;
+                this.lpfCoeff = 0.2;
+                break;
+            }
+
+            case 5: {
+                // Plate
+                this.gainCoeff = 0.55;
+                this.dattorro.damping = 0.65;
+                this.timeCoeff = 0.5;
                 break;
             }
         }
+
+        // Update values
+        this.updateTime();
+        this.updateGain();
+        this.updateLowpass();
+        this.delay.clear();
     }
 
     private _time = 0;
@@ -42,9 +115,8 @@ export class SpessaSynthReverb implements ReverbProcessor {
     }
 
     public set time(value: number) {
-        const t = value / 127;
-        this.dattorro.decay = 0.25 + 0.55 * t ** 1.8;
         this._time = value;
+        this.updateTime();
     }
 
     private _preDelayTime = 0;
@@ -67,7 +139,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
     public set level(value: number) {
         this._level = value;
-        this.dattorro.gain = (value / 127) ** 2;
+        this.updateGain();
     }
 
     private _preLowpass = 0;
@@ -77,7 +149,6 @@ export class SpessaSynthReverb implements ReverbProcessor {
     }
 
     public set preLowpass(value: number) {
-        this.dattorro.preLPF = 0.05 + (7 - value) / 22;
         this._preLowpass = value;
     }
 
@@ -88,14 +159,48 @@ export class SpessaSynthReverb implements ReverbProcessor {
         startIndex: number,
         endIndex: number
     ) {
-        if (this._character < 6) {
-            this.dattorro.process(
-                input,
-                outputLeft,
-                outputRight,
-                startIndex,
-                endIndex
-            );
+        switch (this._character) {
+            default: {
+                this.dattorro.process(
+                    input,
+                    outputLeft,
+                    outputRight,
+                    startIndex,
+                    endIndex
+                );
+                return;
+            }
+
+            case 6: {
+                this.delay.process(
+                    input,
+                    outputLeft,
+                    outputRight,
+                    startIndex,
+                    endIndex
+                );
+                return;
+            }
         }
+    }
+
+    private updateLowpass() {
+        this.dattorro.preLPF = Math.min(
+            1,
+            0.1 + (7 - this.preLowpass) / 14 + this.lpfCoeff
+        );
+    }
+
+    private updateGain() {
+        this.dattorro.gain = (this.level / 127) ** 2 * this.gainCoeff;
+        // SC-VA: Delay seems to be quite loud
+        this.delay.gain = (this.level / 127) ** 2 * 2.85;
+    }
+
+    private updateTime() {
+        const t = this._time / 127;
+        this.dattorro.decay = this.timeCoeff * (0.25 + 0.55 * t ** 1.8);
+        // Delay at 127 is exactly 0.4468 seconds
+        this.delay.time = (t * this.sampleRate * 0.4468) | 0;
     }
 }

@@ -40,13 +40,12 @@ let filledSamples = 0;
 const BUFFER_SIZE = 128;
 let i = 0;
 const durationRounded = Math.floor(seq.midiData!.duration * 100) / 100;
-const outputArray = [outLeft, outRight];
 while (filledSamples < sampleCount) {
     // Process sequencer
     seq.processTick();
     // Render
     const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
-    synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+    synth.process(outLeft, outRight, filledSamples, bufferSize);
     filledSamples += bufferSize;
     i++;
     // Log progress
