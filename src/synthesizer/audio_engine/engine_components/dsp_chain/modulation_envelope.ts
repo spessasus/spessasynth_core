@@ -132,7 +132,7 @@ export class ModulationEnvelope {
         this.enteredRelease = true;
 
         // Min is set to -7200 to prevent lowpass clicks
-        const releaseTime = timecentsToSeconds(
+        const releaseTime = this.tc2Sec(
             Math.max(
                 voice.modulatedGenerators[generatorTypes.releaseModEnv],
                 -7200
@@ -152,14 +152,14 @@ export class ModulationEnvelope {
         this.sustainLevel =
             1 - voice.modulatedGenerators[generatorTypes.sustainModEnv] / 1000;
 
-        this.attackDuration = timecentsToSeconds(
+        this.attackDuration = this.tc2Sec(
             voice.modulatedGenerators[generatorTypes.attackModEnv]
         );
 
         const decayKeyExcursionCents =
             (60 - voice.midiNote) *
             voice.modulatedGenerators[generatorTypes.keyNumToModEnvDecay];
-        const decayTime = timecentsToSeconds(
+        const decayTime = this.tc2Sec(
             voice.modulatedGenerators[generatorTypes.decayModEnv] +
                 decayKeyExcursionCents
         );
@@ -171,18 +171,24 @@ export class ModulationEnvelope {
         const holdKeyExcursionCents =
             (60 - voice.midiNote) *
             voice.modulatedGenerators[generatorTypes.keyNumToModEnvHold];
-        this.holdDuration = timecentsToSeconds(
+        this.holdDuration = this.tc2Sec(
             holdKeyExcursionCents +
                 voice.modulatedGenerators[generatorTypes.holdModEnv]
         );
 
         this.delayEnd =
             voice.startTime +
-            timecentsToSeconds(
-                voice.modulatedGenerators[generatorTypes.delayModEnv]
-            );
+            this.tc2Sec(voice.modulatedGenerators[generatorTypes.delayModEnv]);
         this.attackEnd = this.delayEnd + this.attackDuration;
         this.holdEnd = this.attackEnd + this.holdDuration;
         this.decayEnd = this.holdEnd + this.decayDuration;
+    }
+
+    private tc2Sec(timecents: number) {
+        // At such low values, buffer size of 128 may cause clicks in the lowpass filter
+        // -10114 is the lowest for it to fit at least twice in 128 samples@44.1kHz
+        // Testcase: MS_Basic-v0.2.1.sf2 Bass & Lead
+        if (timecents <= -10_114) return 0;
+        return timecentsToSeconds(timecents);
     }
 }
