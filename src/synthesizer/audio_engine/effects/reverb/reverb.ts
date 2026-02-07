@@ -3,7 +3,6 @@ import { DattorroReverb } from "./dattorro";
 import { DelayLine } from "./delay";
 
 export class SpessaSynthReverb implements ReverbProcessor {
-    public delayFeedback = 0;
     private readonly dattorro;
     private readonly delay;
     private readonly sampleRate;
@@ -15,6 +14,21 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this.sampleRate = sampleRate;
         this.dattorro = new DattorroReverb(sampleRate);
         this.delay = new DelayLine(sampleRate);
+    }
+
+    private _delayFeedback = 0;
+
+    public get delayFeedback(): number {
+        return this._delayFeedback;
+    }
+
+    public set delayFeedback(value: number) {
+        this._delayFeedback = value;
+        // Logarithmic time it seems
+        // It gets way higher the closer you get to 127
+        const x = value / 127;
+        const exp = 1 - (1 - x) ** 1.9;
+        this.delay.feedback = exp * 0.73;
     }
 
     private _character = 0;
@@ -36,7 +50,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this.dattorro.excursionRate = 0.5;
         this.dattorro.excursionDepth = 0.7;
         // Tested all characters on level = 64, preset: Hall2
-        // File: test_gs_reverb_character.ts, compare spessasynth to SC-VA
+        // File: gs_reverb_character_test.ts, compare spessasynth to SC-VA
         // Tuned by me, though I'm not very good at it :-)
         switch (value) {
             case 0: {
@@ -194,13 +208,14 @@ export class SpessaSynthReverb implements ReverbProcessor {
     private updateGain() {
         this.dattorro.gain = (this.level / 127) ** 2 * this.gainCoeff;
         // SC-VA: Delay seems to be quite loud
-        this.delay.gain = (this.level / 127) ** 2 * 2.85;
+        this.delay.gain = (this.level / 127) ** 2 * 3;
     }
 
     private updateTime() {
         const t = this._time / 127;
         this.dattorro.decay = this.timeCoeff * (0.25 + 0.55 * t ** 1.8);
         // Delay at 127 is exactly 0.4468 seconds
-        this.delay.time = (t * this.sampleRate * 0.4468) | 0;
+        // The minimum value (delay 0) seems to be 21 samples
+        this.delay.time = Math.max(21, (t * this.sampleRate * 0.4468) | 0);
     }
 }

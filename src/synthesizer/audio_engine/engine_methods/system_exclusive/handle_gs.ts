@@ -49,7 +49,8 @@ export function handleGS(
                     const addr2 = syx[5];
                     const addr3 = syx[6];
 
-                    const data = syx[7];
+                    // Sanity check
+                    const data = Math.min(syx[7], 127);
                     // SYSTEM MODE SET
                     if (
                         addr1 === 0 &&
