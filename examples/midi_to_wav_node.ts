@@ -3,6 +3,7 @@ import {
     audioToWav,
     BasicMIDI,
     SoundBankLoader,
+    SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
@@ -28,6 +29,7 @@ synth.soundBankManager.addSoundBank(
     "main"
 );
 await synth.processorInitialized;
+SpessaSynthLogging(true, true, true);
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
 seq.play();

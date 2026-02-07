@@ -7,7 +7,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
     private readonly delay;
     private readonly sampleRate;
     private timeCoeff = 1;
-    private gainCoeff = 1;
+    private characterGainCoeff = 1;
     private lpfCoeff = 0;
 
     public constructor(sampleRate: number) {
@@ -41,7 +41,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this._character = value;
         this.dattorro.damping = 0.005;
         this.timeCoeff = 1;
-        this.gainCoeff = 1;
+        this.characterGainCoeff = 1;
         this.lpfCoeff = 0;
         this.dattorro.inputDiffusion1 = 0.75;
         this.dattorro.inputDiffusion2 = 0.625;
@@ -57,7 +57,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
                 // Room1
                 this.dattorro.damping = 0.95;
                 this.timeCoeff = 0.9;
-                this.gainCoeff = 0.7;
+                this.characterGainCoeff = 0.7;
                 this.lpfCoeff = 0.2;
                 break;
             }
@@ -65,7 +65,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             case 1: {
                 // Room2
                 this.dattorro.damping = 0.2;
-                this.gainCoeff = 0.5;
+                this.characterGainCoeff = 0.5;
                 this.timeCoeff = 1;
                 this.dattorro.decayDiffusion2 = 0.64;
                 this.dattorro.decayDiffusion1 = 0.6;
@@ -76,7 +76,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             case 2: {
                 // Room3
                 this.dattorro.damping = 0.56;
-                this.gainCoeff = 0.55;
+                this.characterGainCoeff = 0.55;
                 this.timeCoeff = 1;
                 this.dattorro.decayDiffusion2 = 0.64;
                 this.dattorro.decayDiffusion1 = 0.6;
@@ -87,7 +87,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             case 3: {
                 // Hall1
                 this.dattorro.damping = 0.6;
-                this.gainCoeff = 1;
+                this.characterGainCoeff = 1;
                 this.lpfCoeff = 0;
                 this.dattorro.decayDiffusion2 = 0.7;
                 this.dattorro.decayDiffusion1 = 0.66;
@@ -96,19 +96,15 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
             case 4: {
                 // Hall2
-                this.gainCoeff = 0.55;
+                this.characterGainCoeff = 0.55;
                 this.dattorro.damping = 0.65;
-                this.dattorro.inputDiffusion1 = 0.79;
-                this.dattorro.inputDiffusion2 = 0.63;
-                this.dattorro.decayDiffusion2 = 0.73;
-                this.dattorro.decayDiffusion1 = 0.69;
                 this.lpfCoeff = 0.2;
                 break;
             }
 
             case 5: {
                 // Plate
-                this.gainCoeff = 0.55;
+                this.characterGainCoeff = 0.55;
                 this.dattorro.damping = 0.65;
                 this.timeCoeff = 0.5;
                 break;
@@ -206,14 +202,14 @@ export class SpessaSynthReverb implements ReverbProcessor {
     }
 
     private updateGain() {
-        this.dattorro.gain = (this.level / 127) * this.gainCoeff;
+        this.dattorro.gain = (this.level / 348) * this.characterGainCoeff;
         // SC-VA: Delay seems to be quite loud
-        this.delay.gain = (this.level / 127) * 3.6;
+        this.delay.gain = this.level / 127;
     }
 
     private updateTime() {
         const t = this._time / 127;
-        this.dattorro.decay = this.timeCoeff * (0.25 + 0.55 * t);
+        this.dattorro.decay = this.timeCoeff * (0.05 + 0.65 * t);
         // Delay at 127 is exactly 0.4468 seconds
         // The minimum value (delay 0) seems to be 21 samples
         this.delay.time = Math.max(21, (t * this.sampleRate * 0.4468) | 0);

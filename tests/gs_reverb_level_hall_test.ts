@@ -54,12 +54,13 @@ function sendAddress(a1: number, a2: number, a3: number, data: number) {
     );
 }
 
-// Delay (easier to check in audacity)
-sendAddress(0x40, 0x01, 0x30, 6);
-// Delay feedback
-sendAddress(0x40, 0x01, 0x35, 0);
+// Hall2
+sendAddress(0x40, 0x01, 0x30, 4);
 // Time
-sendAddress(0x40, 0x01, 0x34, 32);
+sendAddress(0x40, 0x01, 0x34, 16);
+
+// Predelay
+sendAddress(0x40, 0x01, 0x37, 92);
 
 builder.addControllerChange(ticks, 0, 0, midiControllers.bankSelect, 8);
 builder.addProgramChange(ticks, 0, 0, 80);
@@ -79,6 +80,6 @@ while (level <= 128) {
 
 builder.flush();
 void fs.writeFile(
-    "files/test_gs_reverb_delay_level.mid",
+    "files/test_gs_reverb_level.mid",
     new Uint8Array(builder.writeMIDI())
 );

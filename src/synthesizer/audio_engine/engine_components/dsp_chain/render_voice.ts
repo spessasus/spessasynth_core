@@ -11,9 +11,6 @@ import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { SpessaSynthWarn } from "../../../../utils/loggin"; // Optimized for spessasynth_lib's effects
 
-// Optimized for spessasynth_lib's effects
-export const REVERB_DIVIDER = 3070;
-export const CHORUS_DIVIDER = 2000;
 const HALF_PI = Math.PI / 2;
 
 const MIN_PAN = -500;
@@ -300,7 +297,7 @@ export function renderVoice(
         const reverbGain =
             this.synthCore.masterParameters.reverbGain *
             gain *
-            (reverbSend / REVERB_DIVIDER);
+            (reverbSend / 1000);
 
         const reverb = this.synthCore.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
@@ -313,7 +310,7 @@ export function renderVoice(
     if (chorusSend > 0) {
         const chorusGain =
             this.synthCore.masterParameters.chorusGain *
-            (chorusSend / CHORUS_DIVIDER) *
+            (chorusSend / 1000) *
             gain;
         const chorus = this.synthCore.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
