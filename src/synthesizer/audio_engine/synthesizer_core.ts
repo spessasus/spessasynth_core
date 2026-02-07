@@ -176,6 +176,11 @@ export class SynthesizerCore {
      * Current total amount of voices that are currently playing.
      */
     public voiceCount = 0;
+
+    /**
+     * For F5 system exclusive.
+     */
+    public channelOffset = 0;
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -439,6 +444,7 @@ export class SynthesizerCore {
         this.setMIDIVolume(1);
         this.reverbSend = 1;
         this.chorusSend = 1;
+        this.channelOffset = 0;
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;

@@ -61,5 +61,25 @@ export function systemExclusiveInternal(
             handleXG.call(this, syx, channelOffset);
             break;
         }
+
+        // Port select (Falcosoft MIDI Player)
+        // https://www.vogons.org/viewtopic.php?p=1404746#p1404746
+        case 0xf5: {
+            if (syx.length < 2) return;
+            this.channelOffset = (syx[1] - 1) * 16;
+            // Create new port if needed
+            while (this.midiChannels.length <= this.channelOffset) {
+                SpessaSynthInfo(
+                    `%cPort select, channel offset %c${this.channelOffset}%c. Creating a new port!`,
+                    consoleColors.info,
+                    consoleColors.value,
+                    consoleColors.info
+                );
+                for (let i = 0; i < 16; i++) {
+                    this.createMIDIChannel(true);
+                }
+            }
+            break;
+        }
     }
 }

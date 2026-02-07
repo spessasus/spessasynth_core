@@ -221,7 +221,10 @@ export class SpessaSynthProcessor {
      * @param channelOffset The channel offset to apply (default is 0).
      */
     public systemExclusive(syx: SysExAcceptedArray, channelOffset = 0) {
-        this.synthCore.systemExclusive(syx, channelOffset);
+        this.synthCore.systemExclusive(
+            syx,
+            channelOffset + this.synthCore.channelOffset
+        );
     }
 
     /**
@@ -360,10 +363,9 @@ export class SpessaSynthProcessor {
         controllerNumber: MIDIController,
         controllerValue: number
     ) {
-        this.synthCore.midiChannels[channel].controllerChange(
-            controllerNumber,
-            controllerValue
-        );
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].controllerChange(controllerNumber, controllerValue);
     }
 
     /**
@@ -375,7 +377,9 @@ export class SpessaSynthProcessor {
      * If the velocity is 0, it will be treated as a Note-off message.
      */
     public noteOn(channel: number, midiNote: number, velocity: number) {
-        this.synthCore.midiChannels[channel].noteOn(midiNote, velocity);
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].noteOn(midiNote, velocity);
     }
 
     /**
@@ -384,7 +388,9 @@ export class SpessaSynthProcessor {
      * @param midiNote The MIDI note number to stop playing.
      */
     public noteOff(channel: number, midiNote: number) {
-        this.synthCore.midiChannels[channel].noteOff(midiNote);
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].noteOff(midiNote);
     }
 
     /**
@@ -394,7 +400,9 @@ export class SpessaSynthProcessor {
      * @param pressure The pressure value, from 0 to 127.
      */
     public polyPressure(channel: number, midiNote: number, pressure: number) {
-        this.synthCore.midiChannels[channel].polyPressure(midiNote, pressure);
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].polyPressure(midiNote, pressure);
     }
 
     /**
@@ -403,7 +411,9 @@ export class SpessaSynthProcessor {
      * @param pressure The pressure value, from 0 to 127.
      */
     public channelPressure(channel: number, pressure: number) {
-        this.synthCore.midiChannels[channel].channelPressure(pressure);
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].channelPressure(pressure);
     }
 
     /**
@@ -413,7 +423,9 @@ export class SpessaSynthProcessor {
      * @param midiNote The MIDI note number, pass -1 for the regular pitch wheel
      */
     public pitchWheel(channel: number, pitch: number, midiNote = -1) {
-        this.synthCore.midiChannels[channel].pitchWheel(pitch, midiNote);
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].pitchWheel(pitch, midiNote);
     }
 
     /**
@@ -422,7 +434,9 @@ export class SpessaSynthProcessor {
      * @param programNumber The program number to change to, from 0 to 127.
      */
     public programChange(channel: number, programNumber: number) {
-        this.synthCore.midiChannels[channel].programChange(programNumber);
+        this.synthCore.midiChannels[
+            channel + this.synthCore.channelOffset
+        ].programChange(programNumber);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -451,7 +465,12 @@ export class SpessaSynthProcessor {
         force = false,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
-        this.synthCore.processMessage(message, channelOffset, force, options);
+        this.synthCore.processMessage(
+            message,
+            channelOffset + this.synthCore.channelOffset,
+            force,
+            options
+        );
     }
 
     // noinspection JSUnusedGlobalSymbols
