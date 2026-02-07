@@ -206,9 +206,9 @@ export class SpessaSynthReverb implements ReverbProcessor {
     }
 
     private updateGain() {
-        this.dattorro.gain = (this.level / 127) ** 2 * this.gainCoeff;
+        this.dattorro.gain = (this.level / 127) * this.gainCoeff;
         // SC-VA: Delay seems to be quite loud
-        this.delay.gain = (this.level / 127) ** 2 * 3;
+        this.delay.gain = (this.level / 127) * 3.6;
     }
 
     private updateTime() {
