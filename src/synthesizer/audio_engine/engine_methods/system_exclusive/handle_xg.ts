@@ -6,6 +6,16 @@ import { midiControllers } from "../../../../midi/enums";
 import { customControllers } from "../../../enums";
 import type { SynthesizerCore } from "../../synthesizer_core";
 
+const coolInfo = (what: string, value: string | number) => {
+    SpessaSynthInfo(
+        `%cYamaha XG ${what}%c for is now set to %c${value}%c.`,
+        consoleColors.recognized,
+        consoleColors.info,
+        consoleColors.value,
+        consoleColors.info
+    );
+};
+
 /**
  * Handles a XG system exclusive
  * http://www.studio4all.de/htmle/main91.html
@@ -19,11 +29,13 @@ export function handleXG(
 ) {
     // XG sysex
     if (syx[2] === 0x4c) {
-        const a1 = syx[3]; // Address 1
-        const a2 = syx[4]; // Address 2
+        const addr1 = syx[3]; // Address 1
+        const addr2 = syx[4]; // Address 2
+        const addr3 = syx[5]; // Address 3
+        const data = syx[6];
         // XG system parameter
-        if (a1 === 0x00 && a2 === 0x00) {
-            switch (syx[5]) {
+        if (addr1 === 0x00 && addr2 === 0x00) {
+            switch (addr3) {
                 // Master tune
                 case 0x00: {
                     {
@@ -34,48 +46,31 @@ export function handleXG(
                             (syx[9] & 15);
                         const cents = (tune - 1024) / 10;
                         this.setMasterTuning(cents);
-                        SpessaSynthInfo(
-                            `%cXG master tune. Cents: %c${cents}`,
-                            consoleColors.info,
-                            consoleColors.recognized
-                        );
+                        coolInfo("Master Tune", cents);
                     }
                     break;
                 }
 
                 // Master volume
                 case 0x04: {
-                    const vol = syx[6];
-                    this.setMIDIVolume(vol / 127);
-                    SpessaSynthInfo(
-                        `%cXG master volume. Volume: %c${vol}`,
-                        consoleColors.info,
-                        consoleColors.recognized
-                    );
+                    this.setMIDIVolume(data / 127);
+                    coolInfo("Master Volume", data);
                     break;
                 }
 
                 // Master attenuation
                 case 0x05: {
-                    const vol = 127 - syx[6];
+                    const vol = 127 - data;
                     this.setMIDIVolume(vol / 127);
-                    SpessaSynthInfo(
-                        `%cXG master attenuation. Volume: %c${vol}`,
-                        consoleColors.info,
-                        consoleColors.recognized
-                    );
+                    coolInfo("Master Attenuation", data);
                     break;
                 }
 
                 // Master transpose
                 case 0x06: {
-                    const transpose = syx[6] - 64;
+                    const transpose = data - 64;
                     this.setMasterParameter("transposition", transpose);
-                    SpessaSynthInfo(
-                        `%cXG master transpose. Volume: %c${transpose}`,
-                        consoleColors.info,
-                        consoleColors.recognized
-                    );
+                    coolInfo("Master Transpose", transpose);
                     break;
                 }
 
@@ -87,9 +82,11 @@ export function handleXG(
                     break;
                 }
             }
-        } else if (a1 === 0x02 && a2 === 0x01) {
+            return;
+        }
+        if (addr1 === 0x02 && addr2 === 0x01) {
             let effectType: string;
-            const effect = syx[5];
+            const effect = addr3;
             if (effect <= 0x15) effectType = "Reverb";
             else if (effect <= 35) effectType = "Chorus";
             else effectType = "Variation";
@@ -99,24 +96,25 @@ export function handleXG(
                 consoleColors.warn,
                 consoleColors.unrecognized
             );
-        } else if (a1 === 0x08 /* A2 is the channel number*/) {
+            return;
+        }
+        if (addr1 === 0x08 /* A2 is the channel number*/) {
             // XG part parameter
             if (!BankSelectHacks.isSystemXG(this.masterParameters.midiSystem)) {
                 return;
             }
-            const channel = a2 + channelOffset;
+            const channel = addr2 + channelOffset;
             if (channel >= this.midiChannels.length) {
                 // Invalid channel
                 return;
             }
             const channelObject = this.midiChannels[channel];
-            const value = syx[6];
-            switch (syx[5]) {
+            switch (addr3) {
                 // Bank-select MSB
                 case 0x01: {
                     channelObject.controllerChange(
                         midiControllers.bankSelect,
-                        value
+                        data
                     );
                     break;
                 }
@@ -125,20 +123,30 @@ export function handleXG(
                 case 0x02: {
                     channelObject.controllerChange(
                         midiControllers.bankSelectLSB,
-                        value
+                        data
                     );
                     break;
                 }
 
                 // Program change
                 case 0x03: {
-                    channelObject.programChange(value);
+                    channelObject.programChange(data);
+                    break;
+                }
+
+                // Poly/mono
+                case 0x05: {
+                    channelObject.polyMode = data === 1;
+                    coolInfo(
+                        `Mono/poly on ${channel}`,
+                        channelObject.polyMode ? "POLY" : "MONO"
+                    );
                     break;
                 }
 
                 // Part mode
                 case 0x07: {
-                    channelObject.setDrums(value != 0);
+                    channelObject.setDrums(data != 0);
                     break;
                 }
 
@@ -147,10 +155,12 @@ export function handleXG(
                     if (channelObject.drumChannel) {
                         break;
                     }
+                    const keyShift = data - 64;
                     channelObject.setCustomController(
                         customControllers.channelKeyShift,
-                        value - 64
+                        keyShift
                     );
+                    coolInfo(`Key shift on ${channel}`, keyShift);
                     break;
                 }
 
@@ -158,24 +168,18 @@ export function handleXG(
                 case 0x0b: {
                     channelObject.controllerChange(
                         midiControllers.mainVolume,
-                        value
+                        data
                     );
                     break;
                 }
 
                 // Pan position
                 case 0x0e: {
-                    const pan = value;
+                    const pan = data;
                     if (pan === 0) {
                         // 0 means random
                         channelObject.randomPan = true;
-                        SpessaSynthInfo(
-                            `%cRandom pan is set to %cON%c for %c${channel}`,
-                            consoleColors.info,
-                            consoleColors.recognized,
-                            consoleColors.info,
-                            consoleColors.value
-                        );
+                        coolInfo(`Random Pan for ${channel}`, "ON");
                     } else {
                         channelObject.controllerChange(
                             midiControllers.pan,
@@ -188,7 +192,7 @@ export function handleXG(
                 case 0x11: {
                     channelObject.controllerChange(
                         midiControllers.mainVolume,
-                        value
+                        data
                     );
                     break;
                 }
@@ -197,7 +201,7 @@ export function handleXG(
                 case 0x12: {
                     channelObject.controllerChange(
                         midiControllers.chorusDepth,
-                        value
+                        data
                     );
                     break;
                 }
@@ -206,7 +210,7 @@ export function handleXG(
                 case 0x13: {
                     channelObject.controllerChange(
                         midiControllers.reverbDepth,
-                        value
+                        data
                     );
                     break;
                 }
@@ -215,7 +219,7 @@ export function handleXG(
                 case 0x15: {
                     channelObject.controllerChange(
                         midiControllers.vibratoRate,
-                        value
+                        data
                     );
                     break;
                 }
@@ -224,7 +228,7 @@ export function handleXG(
                 case 0x16: {
                     channelObject.controllerChange(
                         midiControllers.vibratoDepth,
-                        value
+                        data
                     );
                     break;
                 }
@@ -233,7 +237,7 @@ export function handleXG(
                 case 0x17: {
                     channelObject.controllerChange(
                         midiControllers.vibratoDelay,
-                        value
+                        data
                     );
                     break;
                 }
@@ -242,7 +246,7 @@ export function handleXG(
                 case 0x18: {
                     channelObject.controllerChange(
                         midiControllers.brightness,
-                        value
+                        data
                     );
                     break;
                 }
@@ -251,7 +255,7 @@ export function handleXG(
                 case 0x19: {
                     channelObject.controllerChange(
                         midiControllers.filterResonance,
-                        value
+                        data
                     );
                     break;
                 }
@@ -260,7 +264,7 @@ export function handleXG(
                 case 0x1a: {
                     channelObject.controllerChange(
                         midiControllers.attackTime,
-                        value
+                        data
                     );
                     break;
                 }
@@ -269,7 +273,7 @@ export function handleXG(
                 case 0x1b: {
                     channelObject.controllerChange(
                         midiControllers.decayTime,
-                        value
+                        data
                     );
                     break;
                 }
@@ -278,7 +282,7 @@ export function handleXG(
                 case 0x1c: {
                     channelObject.controllerChange(
                         midiControllers.releaseTime,
-                        value
+                        data
                     );
                     break;
                 }
@@ -295,8 +299,8 @@ export function handleXG(
                 }
             }
         } else if (
-            a1 === 0x06 || // Display letters
-            a1 === 0x07 // Display bitmap
+            addr1 === 0x06 || // Display letters
+            addr1 === 0x07 // Display bitmap
         ) {
             // Displayed letters
             this.callEvent("synthDisplay", [...syx]);

@@ -11,9 +11,6 @@ import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { SpessaSynthWarn } from "../../../../utils/loggin"; // Optimized for spessasynth_lib's effects
 
-// Optimized for spessasynth_lib's effects
-export const REVERB_DIVIDER = 3070;
-export const CHORUS_DIVIDER = 2000;
 const HALF_PI = Math.PI / 2;
 
 const MIN_PAN = -500;
@@ -37,10 +34,6 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * @param timeNow current time in seconds
  * @param outputL the left output buffer
  * @param outputR the right output buffer
- * @param reverbL left output for reverb
- * @param reverbR right output for reverb
- * @param chorusL left output for chorus
- * @param chorusR right output for chorus
  * @param startIndex
  * @param sampleCount
  */
@@ -50,10 +43,6 @@ export function renderVoice(
     timeNow: number,
     outputL: Float32Array,
     outputR: Float32Array,
-    reverbL: Float32Array,
-    reverbR: Float32Array,
-    chorusL: Float32Array,
-    chorusR: Float32Array,
     startIndex: number,
     sampleCount: number
 ) {
@@ -305,35 +294,27 @@ export function renderVoice(
     const reverbSend =
         voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
     if (reverbSend > 0) {
-        // Reverb is mono so we need to multiply by gain
         const reverbGain =
             this.synthCore.masterParameters.reverbGain *
-            this.synthCore.reverbSend *
             gain *
-            (reverbSend / REVERB_DIVIDER);
+            (reverbSend / 1000);
+
+        const reverb = this.synthCore.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
-            const idx = i + startIndex;
-            const s = reverbGain * buffer[i];
-            reverbL[idx] += s;
-            reverbR[idx] += s;
+            reverb[i] += reverbGain * buffer[i];
         }
     }
 
     const chorusSend =
         voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
     if (chorusSend > 0) {
-        // Chorus is stereo so we do not need to
         const chorusGain =
             this.synthCore.masterParameters.chorusGain *
-            this.synthCore.chorusSend *
-            (chorusSend / CHORUS_DIVIDER);
-        const chorusLeftGain = gainLeft * chorusGain;
-        const chorusRightGain = gainRight * chorusGain;
+            (chorusSend / 1000) *
+            gain;
+        const chorus = this.synthCore.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
-            const idx = i + startIndex;
-            const s = buffer[i];
-            chorusL[idx] += chorusLeftGain * s;
-            chorusR[idx] += chorusRightGain * s;
+            chorus[i] += chorusGain * buffer[i];
         }
     }
 }

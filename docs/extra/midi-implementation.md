@@ -218,6 +218,7 @@ Below is the list of currently implemented System Exclusive messages.
 | Roland SC Display Text | The text that SC-88 MIDIs display on the device. `synthdisplay` will be called.   |
 | Roland SC Dot Matrix   | A dot matrix display for the Sound Canvas devices. `synthdisplay` will be called. |
 | XG Display Letters     | The text that XG MIDIs display on the device. `synthdisplay` will be called.      |
+| XG Display Bitmap      | The dot matrix display for XG devices. `synthdisplay` will be called.             |
 | XG Master Tune         | Controls the overall synth's tuning.                                              |
 | XG Master Volume       | Controls the overall synth's volume.                                              |
 | XG Master Attenuator   | Controls the overall synth's attenuation (inverse of volume).                     |
@@ -262,19 +263,62 @@ Drums will be selected according to the [XG Validity Test](../spessa-synth-proce
 
 Below are the supported GS SysEx Parameters.
 
-| Name                    | Description                                                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Use for drums part      | Turns a specified channel into a drum channel.                                                                                         |
-| Master Pan              | Controls the overall synth's stereo panning.                                                                                           |
-| Master Volume           | Controls the overall synth's volume.                                                                                                   |
-| Master Reverb           | Controls the overall synth's reverb level.                                                                                             |
-| Master Chorus           | Controls the overall synth's chorus level.                                                                                             |
-| Key Shift               | Transposes the keys by a given amount.                                                                                                 |
-| Reverb Level            | Same as CC 91 (reverb depth)                                                                                                           |
-| Chorus Level            | Same as CC 92 (chorus depth)                                                                                                           |
-| Pan Position            | Same as CC 10 (pan position). A value of 0 means random panning for every voice.                                                       |
-| Scale Tuning            | Similar to MTS Scale Octave Tuning.                                                                                                    |
-| Controller to Parameter | Defines how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system. |
+#### System Parameters
+
+- System Mode Set (SC-88 Reset)
+
+#### Patch Common Parameters
+
+- Master Tune
+- Master Volume
+- Master Key-Shift
+- Master Pan
+- Mode Set (GS Reset)
+- Patch Name (logs to console)
+- Reverb Macro
+- Reverb Character
+- Reverb Pre-LPF
+- Reverb Level
+- Reverb Time
+- Reverb Delay Feedback
+- Reverb Predelay Time
+- Chorus Macro
+- Chorus Pre-LPF
+- Chorus Level
+- Chorus Feedback
+- Chorus Delay
+- Chorus Rate
+- Chorus Depth
+- Chorus Send Level To Reverb
+
+#### Patch Part Parameters
+
+- Tone Number (Bank + Program change)
+- Mono/Poly Mode
+- Use for Rhythm Part
+- Pitch Key Shift
+- Part Level
+- Part Pan Position
+- CC1 Controller Number
+- CC2 Controller Number
+- Chorus Send Level
+- Reverb Send Level
+- Pitch Fine Tune
+- Vibrato Rate
+- Vibrato Depth
+- TVF Cutoff
+- TVF Resonance
+- TVA Attack Time
+- TVA Decay Time
+- TVA Release Time
+- Vibrato Delay
+- Scale Tuning
+
+#### Patch Part Parameters (Controllers)
+
+All Of them except for LFO rate as it's in Hz rather than cents.
+
+These define how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system.
 
 ### XG Part Setup
 
