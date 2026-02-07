@@ -213,7 +213,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
     private updateTime() {
         const t = this._time / 127;
-        this.dattorro.decay = this.timeCoeff * (0.25 + 0.55 * t ** 1.8);
+        this.dattorro.decay = this.timeCoeff * (0.25 + 0.55 * t);
         // Delay at 127 is exactly 0.4468 seconds
         // The minimum value (delay 0) seems to be 21 samples
         this.delay.time = Math.max(21, (t * this.sampleRate * 0.4468) | 0);
