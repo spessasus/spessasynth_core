@@ -21,13 +21,12 @@ export class DelayLine {
 
     public process(
         input: Float32Array,
-        outputLeft: Float32Array,
-        outputRight: Float32Array,
+        output: Float32Array,
         startIndex: number,
         endIndex: number
     ) {
         let writeIndex = this.writeIndex;
-        const delay = this.time;
+        const delay = this.time | 0;
         const buffer = this.buffer;
         const bufferLength = this.bufferLength;
         const gain = this.gain;
@@ -37,9 +36,7 @@ export class DelayLine {
             let readIndex = writeIndex - delay;
             if (readIndex < 0) readIndex += bufferLength;
             const delayed = buffer[readIndex];
-            const sample = delayed * gain;
-            outputLeft[i] += sample;
-            outputRight[i] += sample;
+            output[i] += delayed * gain;
 
             // Write
             buffer[writeIndex] = input[i - startIndex] + delayed * feedback;
