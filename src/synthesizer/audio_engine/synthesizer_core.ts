@@ -194,6 +194,11 @@ export class SynthesizerCore {
      * Current total amount of voices that are currently playing.
      */
     public voiceCount = 0;
+
+    /**
+     * For F5 system exclusive.
+     */
+    public channelOffset = 0;
     /**
      * Left chorus output buffer, for mixing to reverb.
      */
@@ -471,6 +476,7 @@ export class SynthesizerCore {
         this.setReverbMacro(4);
         // Chorus3 default
         this.setChorusMacro(4);
+        this.channelOffset = 0;
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
