@@ -475,7 +475,7 @@ export class SynthesizerCore {
         // Hall2 default
         this.setReverbMacro(4);
         // Chorus3 default
-        this.setChorusMacro(4);
+        this.setChorusMacro(2);
         this.channelOffset = 0;
 
         if (!this.drumPreset || !this.defaultPreset) {
