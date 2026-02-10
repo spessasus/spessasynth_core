@@ -1,5 +1,4 @@
 export class DelayLine {
-    public gain = 1;
     public feedback = 0;
     /**
      * Samples
@@ -19,27 +18,31 @@ export class DelayLine {
         this.buffer.fill(0);
     }
 
+    /**
+     * OVERWRITES the output
+     * @param input
+     * @param output
+     * @param sampleCount
+     */
     public process(
         input: Float32Array,
         output: Float32Array,
-        startIndex: number,
-        endIndex: number
+        sampleCount: number
     ) {
         let writeIndex = this.writeIndex;
         const delay = this.time | 0;
         const buffer = this.buffer;
         const bufferLength = this.bufferLength;
-        const gain = this.gain;
         const feedback = this.feedback;
-        for (let i = startIndex; i < endIndex; i++) {
+        for (let i = 0; i < sampleCount; i++) {
             // Read
             let readIndex = writeIndex - delay;
             if (readIndex < 0) readIndex += bufferLength;
             const delayed = buffer[readIndex];
-            output[i] += delayed * gain;
+            output[i] = delayed;
 
             // Write
-            buffer[writeIndex] = input[i - startIndex] + delayed * feedback;
+            buffer[writeIndex] = input[i] + delayed * feedback;
 
             // Then wrap!
             if (++writeIndex >= bufferLength) writeIndex = 0;
