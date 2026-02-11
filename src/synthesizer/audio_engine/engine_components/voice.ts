@@ -320,10 +320,12 @@ export class Voice {
         velocity: number,
         realKey: number
     ) {
+        // Remember to add new values here!!!
         this.startTime = currentTime;
         this.isActive = true;
         this.isInRelease = false;
         this.hasRendered = false;
+        this.isHeld = false;
         this.releaseStartTime = Infinity;
         this.pressure = 0;
         this.channel = channel;
