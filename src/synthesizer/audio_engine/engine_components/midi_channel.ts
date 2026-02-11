@@ -46,7 +46,7 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
  * This class represents a single MIDI Channel within the synthesizer.
  */
 export class MIDIChannel {
-    /*
+    /**
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
      * such as volume, pan, modulation, etc.
@@ -81,20 +81,22 @@ export class MIDIChannel {
         CUSTOM_CONTROLLER_TABLE_SIZE
     );
     /**
-     * The key shift of the channel (in semitones).
-     */
-    public channelTransposeKeyShift = 0;
-    /**
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
      * Note: Repeated every 12 notes.
      */
-    public channelOctaveTuning: Int8Array = new Int8Array(128);
+    public readonly octaveTuning: Int8Array = new Int8Array(128);
+
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */
     public sysExModulators: DynamicModulatorSystem =
         new DynamicModulatorSystem();
+
+    /**
+     * The key shift of the channel (in semitones).
+     */
+    public keyShift = 0;
     /**
      * Indicates whether this channel is a drum channel.
      */
@@ -341,18 +343,18 @@ export class MIDIChannel {
         }
         const keyShift = Math.trunc(semitones);
         const currentTranspose =
-            this.channelTransposeKeyShift +
+            this.keyShift +
             this.customControllers[customControllers.channelTransposeFine] /
                 100;
         if ((this.drumChannel && !force) || semitones === currentTranspose) {
             return;
         }
-        if (keyShift !== this.channelTransposeKeyShift) {
+        if (keyShift !== this.keyShift) {
             // Stop all
             this.stopAllNotes();
         }
         // Apply transpose
-        this.channelTransposeKeyShift = keyShift;
+        this.keyShift = keyShift;
         this.setCustomController(
             customControllers.channelTransposeFine,
             (semitones - keyShift) * 100
@@ -370,9 +372,8 @@ export class MIDIChannel {
         if (tuning.length !== 12) {
             throw new Error("Tuning is not the length of 12.");
         }
-        this.channelOctaveTuning = new Int8Array(128);
         for (let i = 0; i < 128; i++) {
-            this.channelOctaveTuning[i] = tuning[i % 12];
+            this.octaveTuning[i] = tuning[i % 12];
         }
     }
 
@@ -773,7 +774,7 @@ export class MIDIChannel {
                 ] / 128,
             isMuted: this.isMuted,
             transposition:
-                this.channelTransposeKeyShift +
+                this.keyShift +
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
             isDrum: this.drumChannel
@@ -824,7 +825,7 @@ export class MIDIChannel {
         }
         if (isDrum) {
             // Clear transpose
-            this.channelTransposeKeyShift = 0;
+            this.keyShift = 0;
             this.drumChannel = true;
         } else {
             this.drumChannel = false;

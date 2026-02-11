@@ -154,8 +154,8 @@ export class ChannelSnapshot {
             channelObject.customControllers.slice(),
             channelObject.lockGSNRPNParams,
             { ...channelObject.channelVibrato },
-            channelObject.channelTransposeKeyShift,
-            channelObject.channelOctaveTuning.slice(),
+            channelObject.keyShift,
+            channelObject.octaveTuning.slice(),
             channelObject.isMuted,
             channelObject.drumChannel,
             channelNumber
@@ -181,8 +181,8 @@ export class ChannelSnapshot {
         // Restore vibrato and transpose
         channelObject.channelVibrato = this.channelVibrato;
         channelObject.lockGSNRPNParams = this.lockVibrato;
-        channelObject.channelTransposeKeyShift = this.channelTransposeKeyShift;
-        channelObject.channelOctaveTuning = this.channelOctaveTuning;
+        channelObject.keyShift = this.channelTransposeKeyShift;
+        channelObject.octaveTuning.set(this.channelOctaveTuning);
 
         // Restore preset and lock
         channelObject.setPresetLock(false);

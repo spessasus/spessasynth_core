@@ -39,7 +39,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     const realKey =
         midiNote +
-        this.channelTransposeKeyShift +
+        this.keyShift +
         this.customControllers[customControllers.channelKeyShift];
     let internalMidiNote = realKey;
 

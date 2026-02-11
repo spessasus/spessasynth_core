@@ -18,7 +18,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
     // Adjust the midi note with the channel transpose key shift
     const realKey =
         midiNote +
-        this.channelTransposeKeyShift +
+        this.keyShift +
         this.customControllers[customControllers.channelKeyShift];
 
     // If high performance mode, kill notes instead of stopping them

@@ -73,7 +73,7 @@ export function renderVoice(
     // Calculate tuning
     let cents =
         voice.modulatedGenerators[generatorTypes.fineTune] + // Soundfont fine tune
-        this.channelOctaveTuning[voice.midiNote] + // MTS octave tuning
+        this.octaveTuning[voice.midiNote] + // MTS octave tuning
         this.channelTuningCents; // Channel tuning
     let semitones = voice.modulatedGenerators[generatorTypes.coarseTune]; // Soundfont coarse tuning
 

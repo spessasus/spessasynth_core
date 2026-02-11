@@ -26,7 +26,7 @@ export function resetPortamento(this: MIDIChannel, sendCC: boolean) {
  * except for the locked controllers.
  */
 export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
-    this.channelOctaveTuning.fill(0);
+    this.octaveTuning.fill(0);
 
     // Reset the array
     for (const [cc, resetValue] of defaultMIDIControllerValues.entries()) {
@@ -125,7 +125,7 @@ export const nonResettableCCs = new Set<MIDIController>([
  */
 export function resetControllersRP15Compliant(this: MIDIChannel) {
     // Reset tunings
-    this.channelOctaveTuning.fill(0);
+    this.octaveTuning.fill(0);
 
     // Reset pitch wheel
     this.perNotePitch = false;
