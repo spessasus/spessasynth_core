@@ -295,6 +295,8 @@ Below are the supported GS SysEx Parameters.
 #### Patch Part Parameters
 
 - Tone Number (Bank + Program change)
+- Tone Map Number (Bank LSB)
+- Tone Map-0 Number (treated as Bank LSB)
 - Mono/Poly Mode
 - Use for Rhythm Part
 - Pitch Key Shift

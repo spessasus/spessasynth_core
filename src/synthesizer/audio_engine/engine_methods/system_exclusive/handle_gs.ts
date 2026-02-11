@@ -798,7 +798,8 @@ export function handleGS(
                                 break;
                             }
 
-                            case 0x00: {
+                            case 0x00:
+                            case 0x01: {
                                 // Tone map number (cc32)
                                 channelObject.controllerChange(
                                     midiControllers.bankSelectLSB,
