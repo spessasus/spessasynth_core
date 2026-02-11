@@ -746,6 +746,10 @@ export class SynthesizerCore {
      */
     private assignVoicePriorities() {
         if (this.lastPriorityAssignmentTime === this.currentTime) return;
+        SpessaSynthInfo(
+            "%cPolyphony exceeded, stealing voices",
+            consoleColors.warn
+        );
         this.lastPriorityAssignmentTime = this.currentTime;
         const cap = this.masterParameters.voiceCap;
         for (let i = 0; i < cap; i++) {
