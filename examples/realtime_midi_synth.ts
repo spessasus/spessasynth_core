@@ -47,7 +47,7 @@ const speaker = new Speaker({
 });
 
 // Initialize the audio stream
-const quantum = 128;
+const quantum = 64;
 const blockSize = 4;
 const left = new Float32Array(quantum * blockSize);
 const right = new Float32Array(quantum * blockSize);

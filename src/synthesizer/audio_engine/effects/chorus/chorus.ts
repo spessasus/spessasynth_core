@@ -46,7 +46,6 @@ class SpessaSynthChorus implements ChorusProcessor {
         // GS sure loves weird mappings, huh?
         // Maps to around 8000-300 Hz
         this.preLPFfc = 8000 * 0.625 ** this._preLowpass;
-        console.log(this.preLPFfc);
         const decay = Math.exp(
             (-2 * Math.PI * this.preLPFfc) / this.sampleRate
         );
