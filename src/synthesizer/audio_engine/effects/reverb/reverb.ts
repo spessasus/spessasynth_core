@@ -239,6 +239,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
     ) {
         switch (this._character) {
             default: {
+                // Reverb
                 this.dattorro.process(
                     input,
                     outputLeft,
@@ -250,6 +251,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             }
 
             case 6: {
+                // Delay
                 // Grow buffer if needed
                 const samples = endIndex - startIndex;
                 if (this.delayLeftOutput.length < samples) {
@@ -266,6 +268,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
                 return;
             }
             case 7: {
+                // Panning Delay
                 // Grow buffer if needed
                 const samples = endIndex - startIndex;
                 if (this.delayLeftOutput.length < samples) {

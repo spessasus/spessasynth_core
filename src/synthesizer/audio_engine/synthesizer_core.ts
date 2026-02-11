@@ -612,8 +612,8 @@ export class SynthesizerCore {
                     this.chorusInput,
                     this.chorusLeft,
                     this.chorusRight,
-                    startIndex,
-                    endIndex
+                    0,
+                    bufferSize
                 );
                 // Add to reverb input
                 for (let i = 0; i < bufferSize; i++) {
@@ -730,8 +730,8 @@ export class SynthesizerCore {
                     this.chorusInput,
                     this.chorusLeft,
                     this.chorusRight,
-                    startIndex,
-                    endIndex
+                    0,
+                    bufferSize
                 );
                 // Add to reverb input
                 for (let i = 0; i < bufferSize; i++) {
@@ -770,6 +770,7 @@ export class SynthesizerCore {
         // Advance the time appropriately
         this.currentTime += bufferSize * this.sampleTime;
     }
+
     /**
      * Gets voices for a preset.
      * @param preset The preset to get voices for.
