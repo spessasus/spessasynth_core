@@ -117,6 +117,13 @@ export class MIDIChannel {
     public cc2 = 0x11;
 
     /**
+     * Drum map for GS system exclusive tracking.
+     * Only used for selecting the correct channel when setting drum parameters through sysEx,
+     * as those don't specify the channel, but the drum number.
+     */
+    public drumMap = 0;
+
+    /**
      * The current state of the data entry for the channel.
      */
     public dataEntryState: DataEntryState = dataEntryStates.Idle;

@@ -16,18 +16,15 @@ export type SysExAcceptedArray =
     | Float64Array;
 // A helper function to log nicely
 export function sysExLogging(
-    syx: SysExAcceptedArray,
     channel: number,
     value: number | string,
     what: string,
     units: string
 ) {
     SpessaSynthInfo(
-        `%cChannel %c${channel}%c ${what}. %c${value} ${units}%c, with %c${arrayToHexString(syx)}`,
+        `%cChannel %c${channel}%c ${what} is now set to %c${value} ${units}.`,
         consoleColors.info,
         consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.value,
         consoleColors.info,
         consoleColors.value
     );

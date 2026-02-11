@@ -53,11 +53,13 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
             this.midiControllers[cc] = resetValue;
         }
     }
+    // System exclusive things
     resetPortamento.call(this, sendCCEvents);
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
     this.randomPan = false;
     this.cc1 = 0x10;
     this.cc2 = 0x11;
+    this.drumMap = this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0;
 
     // Reset to poly
     if (

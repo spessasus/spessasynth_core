@@ -4,7 +4,7 @@ import {
     sysExNotRecognized
 } from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
-import { arrayToHexString, consoleColors } from "../../../../utils/other";
+import { consoleColors } from "../../../../utils/other";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
@@ -319,7 +319,8 @@ export function handleGS(
 
                             case 0x15: {
                                 // This is the Use for Drum Part sysex (multiple drums)
-                                const isDrums = data > 0 && addr2 >> 4 > 0; // If set to other than 0, is a drum channel
+                                channelObject.drumMap = data;
+                                const isDrums = data > 0; // If set to other than 0, is a drum channel
                                 channelObject.setGSDrums(isDrums);
                                 coolInfo(
                                     `Drums on ${channel}`,
@@ -558,7 +559,6 @@ export function handleGS(
                                             bipolar
                                         );
                                         sysExLogging(
-                                            syx,
                                             channel,
                                             centeredValue,
                                             `${sourceName} pitch control`,
@@ -577,7 +577,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedValue * 9600,
                                         `${sourceName} pitch control`,
@@ -595,7 +594,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedValue * 960,
                                         `${sourceName} amplitude`,
@@ -615,7 +613,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedNotCentered * 600,
                                         `${sourceName} LFO1 pitch depth`,
@@ -633,7 +630,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedNotCentered * 2400,
                                         `${sourceName} LFO1 filter depth`,
@@ -651,7 +647,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedValue * 960,
                                         `${sourceName} LFO1 amplitude depth`,
@@ -671,7 +666,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedNotCentered * 600,
                                         `${sourceName} LFO2 pitch depth`,
@@ -689,7 +683,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedNotCentered * 2400,
                                         `${sourceName} LFO2 filter depth`,
@@ -707,7 +700,6 @@ export function handleGS(
                                         bipolar
                                     );
                                     sysExLogging(
-                                        syx,
                                         channel,
                                         normalizedValue * 960,
                                         `${sourceName} LFO2 amplitude depth`,
@@ -848,11 +840,7 @@ export function handleGS(
                     // This is a roland master volume message
                     this.setMIDIVolume(syx[7] / 100);
                     SpessaSynthInfo(
-                        `%cRoland Master Volume control set to: %c${syx[7]}%c via: %c${arrayToHexString(
-                            syx
-                        )}`,
-                        consoleColors.info,
-                        consoleColors.value,
+                        `%cRoland Master Volume control set to: %c${syx[7]}`,
                         consoleColors.info,
                         consoleColors.value
                     );
