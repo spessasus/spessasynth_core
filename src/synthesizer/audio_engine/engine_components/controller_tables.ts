@@ -43,6 +43,9 @@ setResetValue(midiControllers.vibratoDelay, 64);
 setResetValue(midiControllers.generalPurposeController6, 64);
 setResetValue(midiControllers.generalPurposeController8, 64);
 
+// This one has changed many times during spessasynth's lifespan
+setResetValue(midiControllers.reverbDepth, 40);
+
 setResetValue(midiControllers.registeredParameterLSB, 127);
 setResetValue(midiControllers.registeredParameterMSB, 127);
 setResetValue(midiControllers.nonRegisteredParameterLSB, 127);

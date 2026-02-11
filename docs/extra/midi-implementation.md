@@ -111,6 +111,7 @@ Below are all the controller values which are not zero when the controllers are 
 | 78        | Sound Controller 9           | 64          |
 | 81        | General Purpose Controller 6 | 64          |
 | 83        | General Purpose Controller 8 | 64          |
+| 91        | Reverb Send Level            | 40          |
 
 !!! TIP
 

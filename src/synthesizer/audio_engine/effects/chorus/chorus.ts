@@ -1,48 +1,117 @@
 import type { ChorusProcessor } from "../types";
 
 class SpessaSynthChorus implements ChorusProcessor {
-    public preLowpass = 0;
+    /**
+     * Cutoff frequency
+     * @private
+     */
+    private preLPFfc = 8000;
+    /**
+     * Alpha
+     * @private
+     */
+    private preLPFa = 0;
+    /**
+     * Previous value
+     * @private
+     */
+    private preLPFz = 0;
     private readonly leftDelayBuffer;
     private readonly rightDelayBuffer;
     private readonly sampleRate;
     private phase = 0;
     private write = 0;
     private gain = 1;
+    private depthSamples = 0;
+    private delaySamples = 1;
+    private rateInc = 0;
+    private feedbackGain = 0;
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.leftDelayBuffer = new Float32Array(sampleRate);
         this.rightDelayBuffer = new Float32Array(sampleRate);
+        // Update alpha
+        this.preLowpass = 0;
     }
 
+    private _preLowpass = 0;
+
+    public get preLowpass(): number {
+        return this._preLowpass;
+    }
+
+    public set preLowpass(value: number) {
+        this._preLowpass = value;
+        // GS sure loves weird mappings, huh?
+        // Maps to around 8000-300 Hz
+        this.preLPFfc = 8000 * 0.625 ** this._preLowpass;
+        console.log(this.preLPFfc);
+        const decay = Math.exp(
+            (-2 * Math.PI * this.preLPFfc) / this.sampleRate
+        );
+        this.preLPFa = 1 - decay;
+    }
+
+    // Samples
     private _depth = 0;
 
+    public get depth(): number {
+        return this._depth;
+    }
+
     public set depth(value: number) {
-        this._depth = (value / 127) * 0.025;
+        this._depth = value;
+        this.depthSamples = (value / 127) * 0.025 * this.sampleRate;
     }
 
     private _delay = 0;
 
+    public get delay(): number {
+        return this._delay;
+    }
+
     public set delay(value: number) {
-        this._delay = Math.max(0.002, (value / 127) * 0.025);
+        this._delay = value;
+        this.delaySamples = Math.max(
+            1,
+            (value / 127) * 0.025 * this.sampleRate
+        );
     }
 
     private _feedback = 0;
 
+    public get feedback(): number {
+        return this._feedback;
+    }
+
     public set feedback(value: number) {
-        this._feedback = value / 128;
+        this._feedback = value;
+        this.feedbackGain = value / 128;
     }
 
     private _rate = 0;
 
-    public set rate(value: number) {
-        // GS Advanced Editor actually specifies the rate!
-        // 127 - 15.50Hz, 1 - 0.12 Hz
-        this._rate = 15.5 * (value / 127);
+    public get rate() {
+        return this._rate;
     }
 
+    public set rate(value: number) {
+        this._rate = value;
+        // GS Advanced Editor actually specifies the rate!
+        // 127 - 15.50Hz, 1 - 0.12 Hz
+        const rate = 15.5 * (value / 127);
+        this.rateInc = rate / this.sampleRate;
+    }
+
+    private _level = 64;
+
+    public get level() {
+        return this._level;
+    }
     public set level(value: number) {
         this.gain = value / 127;
+        this._level = value;
     }
 
     public process(
@@ -54,17 +123,22 @@ class SpessaSynthChorus implements ChorusProcessor {
     ) {
         const bufferL = this.leftDelayBuffer;
         const bufferR = this.rightDelayBuffer;
-        const rateInc = this._rate / this.sampleRate;
+        const rateInc = this.rateInc;
         const bufferLen = bufferL.length;
-        const depth = this._depth * this.sampleRate;
-        const delay = this._delay * this.sampleRate;
+        const depth = this.depthSamples;
+        const delay = this.delaySamples;
         const gain = this.gain;
-        const feedback = this._feedback;
+        const feedback = this.feedbackGain;
 
         let phase = this.phase;
         let write = this.write;
+        let z = this.preLPFz;
+        const a = this.preLPFa;
         for (let i = startIndex; i < endIndex; i++) {
-            const inputSample = input[i - startIndex];
+            const x = input[i - startIndex];
+            // Pre lowpass filter
+            z += a * (x - z);
+            const inputSample = z;
 
             // Triangle LFO (GS uses triangle)
             const lfo = 2 * Math.abs(phase - 0.5);
@@ -110,6 +184,7 @@ class SpessaSynthChorus implements ChorusProcessor {
         }
         this.write = write;
         this.phase = phase;
+        this.preLPFz = z;
     }
 }
 
