@@ -272,7 +272,7 @@ export function handleGS(
                         }
                     }
 
-                    if (addr2 > 0x10) {
+                    if (addr2 >> 4 === 1) {
                         // This is an individual part (channel) parameter
                         // Determine the channel
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
@@ -504,7 +504,7 @@ export function handleGS(
                     }
 
                     // Patch Parameter controllers
-                    if (addr2 > 0x20) {
+                    if (addr2 >> 4 === 2) {
                         // This is an individual part (channel) parameter
                         // Determine the channel
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
@@ -722,7 +722,10 @@ export function handleGS(
                         switch (addr3 & 0xf0) {
                             default: {
                                 // This is some other GS sysex...
-                                sysExNotRecognized(syx, "Roland GS");
+                                sysExNotRecognized(
+                                    syx,
+                                    "Roland GS Patch Parameter Controller"
+                                );
                                 break;
                             }
 
@@ -778,6 +781,40 @@ export function handleGS(
                             }
                         }
                         return;
+                    }
+                    // Patch Parameter Tone Map
+                    else if (addr2 >> 4 === 4) {
+                        // This is an individual part (channel) parameter
+                        // Determine the channel
+                        // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
+                        // SC-88Pro manual page 196
+                        const channel =
+                            [
+                                9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13,
+                                14, 15
+                            ][addr2 & 0x0f] + channelOffset;
+                        // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                        const channelObject = this.midiChannels[channel];
+
+                        switch (addr3) {
+                            default: {
+                                // This is some other GS sysex...
+                                sysExNotRecognized(
+                                    syx,
+                                    "Roland GS Patch Part Parameter"
+                                );
+                                break;
+                            }
+
+                            case 0x00: {
+                                // Tone map number (cc32)
+                                channelObject.controllerChange(
+                                    midiControllers.bankSelectLSB,
+                                    data
+                                );
+                                break;
+                            }
+                        }
                     }
                 }
                 return;
