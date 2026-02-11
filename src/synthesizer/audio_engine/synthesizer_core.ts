@@ -355,8 +355,8 @@ export class SynthesizerCore {
 
                 case midiMessageTypes.polyPressure: {
                     this.midiChannels[channel].polyPressure(
-                        message[0],
-                        message[1]
+                        message[1],
+                        message[2]
                     );
                     break;
                 }
