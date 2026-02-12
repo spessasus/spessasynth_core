@@ -74,8 +74,9 @@ export function handleXG(
                     break;
                 }
 
-                //
+                // XG Reset
                 // XG on
+                case 0x7f:
                 case 0x7e: {
                     SpessaSynthInfo("%cXG system on", consoleColors.info);
                     this.resetAllControllers("xg");
@@ -98,6 +99,7 @@ export function handleXG(
             );
             return;
         }
+
         if (addr1 === 0x08 /* A2 is the channel number*/) {
             // XG part parameter
             if (!BankSelectHacks.isSystemXG(this.masterParameters.midiSystem)) {
@@ -298,7 +300,74 @@ export function handleXG(
                     );
                 }
             }
-        } else if (
+            return;
+        }
+
+        if (addr1 >> 4 === 3) {
+            // Drum part setup
+            const drumKey = addr2;
+            switch (addr3) {
+                default: {
+                    sysExNotRecognized([addr3], "Yamaha XG Drum Setup");
+                    return;
+                }
+
+                case 0x00: {
+                    // Drum pitch coarse
+                    const pitch = (data - 64) * 100;
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumPitch[drumKey] = pitch;
+                    }
+                    coolInfo(`Drum Pitch, key ${drumKey}`, pitch);
+                    break;
+                }
+
+                case 0x01: {
+                    // Drum pitch fine
+                    const pitch = data - 64;
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumPitch[drumKey] += pitch;
+                    }
+                    coolInfo(`Drum Pitch Fine, key ${drumKey}`, pitch);
+                    break;
+                }
+
+                case 0x04: {
+                    // Drum Pan
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumPan[drumKey] = data;
+                    }
+                    coolInfo(`Drum Pan, key ${drumKey}`, data);
+                    break;
+                }
+
+                case 0x05: {
+                    // Drum Reverb
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumReverb[drumKey] = data;
+                    }
+                    coolInfo(`Drum Reverb, key ${drumKey}`, data);
+                    break;
+                }
+
+                case 0x06: {
+                    // Drum Chorus
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumChorus[drumKey] = data;
+                    }
+                    coolInfo(`Drum Chorus, key ${drumKey}`, data);
+                    break;
+                }
+            }
+            return;
+        }
+
+        if (
             addr1 === 0x06 || // Display letters
             addr1 === 0x07 // Display bitmap
         ) {

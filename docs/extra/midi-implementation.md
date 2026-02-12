@@ -359,6 +359,16 @@ Below are the supported part setup messages for XG.
 | 1B           | Decay Time                                             |
 | 1C           | Release Time                                           |
 
+#### XG Drum Setup
+
+The following drum setup messages are recognized:
+
+- Pitch Coarse
+- Pitch Fine (added to coarse so coarse must be sent first)
+- Pan
+- Reverb Send
+- Chorus Send
+
 ### MIDI Tuning Standard
 
 Below are the supported messages for the MTS.
