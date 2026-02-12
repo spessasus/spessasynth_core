@@ -96,25 +96,25 @@ export class MIDIChannel {
     /**
      * Volume for every drum key.
      */
-    public readonly drumLevel = new Int8Array(128);
+    public readonly drumLevel = new Uint8Array(128);
 
     /**
      * Exclusive class for every drum key. 0 is none (use sound bank data)
      */
-    public readonly drumAssignGroup = new Int8Array(128);
+    public readonly drumAssignGroup = new Uint8Array(128);
 
     /**
      * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
      */
-    public readonly drumPan = new Int8Array(128);
+    public readonly drumPan = new Uint8Array(128);
     /**
      * Relative reverb for every drum key, 0-127.
      */
-    public readonly drumReverb = new Int8Array(128);
+    public readonly drumReverb = new Uint8Array(128);
     /**
      * Relative chorus for every drum key, 0-127.
      */
-    public readonly drumChorus = new Int8Array(128);
+    public readonly drumChorus = new Uint8Array(128);
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */

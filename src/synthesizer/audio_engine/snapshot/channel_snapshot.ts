@@ -67,27 +67,27 @@ export class ChannelSnapshot {
     /**
      * Volume for every drum key.
      */
-    public drumLevel: Int8Array;
+    public drumLevel: Uint8Array;
 
     /**
      * Exclusive class for every drum key. 0 is none (use sound bank data)
      */
-    public drumAssignGroup: Int8Array;
+    public drumAssignGroup: Uint8Array;
 
     /**
      * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
      */
-    public drumPan: Int8Array;
+    public drumPan: Uint8Array;
 
     /**
      * Relative reverb for every drum key, 0-127.
      */
-    public drumReverb: Int8Array;
+    public drumReverb: Uint8Array;
 
     /**
      * Relative chorus for every drum key, 0-127.
      */
-    public drumChorus: Int8Array;
+    public drumChorus: Uint8Array;
 
     /**
      * Indicates whether the channel is muted.
@@ -121,11 +121,11 @@ export class ChannelSnapshot {
         channelTransposeKeyShift: number,
         channelOctaveTuning: Int8Array,
         drumPitch: Int16Array,
-        drumLevel: Int8Array,
-        drumAssignGroup: Int8Array,
-        drumPan: Int8Array,
-        drumReverb: Int8Array,
-        drumChorus: Int8Array,
+        drumLevel: Uint8Array,
+        drumAssignGroup: Uint8Array,
+        drumPan: Uint8Array,
+        drumReverb: Uint8Array,
+        drumChorus: Uint8Array,
         isMuted: boolean,
         drumChannel: boolean,
         channelNumber: number
