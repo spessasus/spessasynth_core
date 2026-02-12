@@ -18,6 +18,7 @@ export const registeredParameterTypes = {
 export const nonRegisteredMSB = {
     partParameter: 0x01,
     drumPitch: 0x18,
+    drumPitchFine: 0x19,
     drumLevel: 0x1a,
     drumPan: 0x1c,
     drumReverb: 0x1d,
@@ -292,11 +293,26 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                 case nonRegisteredMSB.drumPitch: {
                     // SC-VA shows that it's 0.5 semitones???
-                    const pitch = (dataCoarse - 60) * 50;
+                    const pitch =
+                        this.channelSystem === "xg"
+                            ? (dataCoarse - 64) * 100
+                            : (dataCoarse - 60) * 50;
                     this.drumPitch[paramFine] = pitch;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} pitch ${dataCoarse}`,
+                        pitch,
+                        "cents"
+                    );
+                    break;
+                }
+
+                case nonRegisteredMSB.drumPitchFine: {
+                    const pitch = dataCoarse - 64;
+                    this.drumPitch[paramFine] += pitch;
+                    coolInfo(
+                        this.channel,
+                        `Drum ${paramFine} pitch fine ${dataCoarse}`,
                         pitch,
                         "cents"
                     );

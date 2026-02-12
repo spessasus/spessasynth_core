@@ -150,6 +150,7 @@ rr: Drum note number.
 | 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72            | 64 (no change) |
 | 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73             | 64 (no change) |
 | 0x18     | rr       | Drum Pitch             | Controls the pitch of the drum instrument.                       |
+| 0x18     | rr       | Drum Pitch Fine        | Controls the pitch of the drum instrument in cents (XG only)     |
 | 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.   |
 | 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument.                |
 | 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument.                |
