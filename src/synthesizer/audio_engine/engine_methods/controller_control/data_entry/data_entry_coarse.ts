@@ -292,7 +292,11 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 case nonRegisteredMSB.drumPitch: {
-                    // SC-VA shows that it's 0.5 semitones???
+                    /**
+                     * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
+                     * 88, Pro and 8850 use 50 cents
+                     * 55 uses full semitone, but there's no way to differentiate.
+                     */
                     const pitch =
                         this.channelSystem === "xg"
                             ? (dataCoarse - 64) * 100
@@ -300,7 +304,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     this.drumPitch[paramFine] = pitch;
                     coolInfo(
                         this.channel,
-                        `Drum ${paramFine} pitch ${dataCoarse}`,
+                        `Drum ${paramFine} pitch`,
                         pitch,
                         "cents"
                     );
@@ -312,9 +316,20 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     this.drumPitch[paramFine] += pitch;
                     coolInfo(
                         this.channel,
-                        `Drum ${paramFine} pitch fine ${dataCoarse}`,
+                        `Drum ${paramFine} pitch fine`,
                         pitch,
                         "cents"
+                    );
+                    break;
+                }
+
+                case nonRegisteredMSB.drumLevel: {
+                    this.drumReverb[paramFine] = dataCoarse;
+                    coolInfo(
+                        this.channel,
+                        `Drum ${paramFine} level`,
+                        dataCoarse,
+                        ""
                     );
                     break;
                 }

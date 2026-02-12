@@ -65,6 +65,16 @@ export class ChannelSnapshot {
     public drumPitch: Int16Array;
 
     /**
+     * Volume for every drum key.
+     */
+    public drumLevel: Int8Array;
+
+    /**
+     * Exclusive class for every drum key. 0 is none (use sound bank data)
+     */
+    public drumAssignGroup: Int8Array;
+
+    /**
      * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
      */
     public drumPan: Int8Array;
@@ -111,6 +121,8 @@ export class ChannelSnapshot {
         channelTransposeKeyShift: number,
         channelOctaveTuning: Int8Array,
         drumPitch: Int16Array,
+        drumLevel: Int8Array,
+        drumAssignGroup: Int8Array,
         drumPan: Int8Array,
         drumReverb: Int8Array,
         drumChorus: Int8Array,
@@ -129,6 +141,8 @@ export class ChannelSnapshot {
         this.keyShift = channelTransposeKeyShift;
         this.octaveTuning = channelOctaveTuning;
         this.drumPitch = drumPitch;
+        this.drumLevel = drumLevel;
+        this.drumAssignGroup = drumAssignGroup;
         this.drumPan = drumPan;
         this.drumReverb = drumReverb;
         this.drumChorus = drumChorus;
@@ -154,6 +168,8 @@ export class ChannelSnapshot {
             snapshot.keyShift,
             snapshot.octaveTuning.slice(),
             snapshot.drumPitch.slice(),
+            snapshot.drumLevel.slice(),
+            snapshot.drumAssignGroup.slice(),
             snapshot.drumPan.slice(),
             snapshot.drumReverb.slice(),
             snapshot.drumChorus.slice(),
@@ -189,6 +205,8 @@ export class ChannelSnapshot {
             channelObject.keyShift,
             channelObject.octaveTuning.slice(),
             channelObject.drumPitch.slice(),
+            channelObject.drumLevel.slice(),
+            channelObject.drumAssignGroup.slice(),
             channelObject.drumPan.slice(),
             channelObject.drumReverb.slice(),
             channelObject.drumChorus.slice(),
@@ -220,6 +238,8 @@ export class ChannelSnapshot {
         channelObject.keyShift = this.keyShift;
         channelObject.octaveTuning.set(this.octaveTuning);
         channelObject.drumPitch.set(this.drumPitch);
+        channelObject.drumLevel.set(this.drumLevel);
+        channelObject.drumAssignGroup.set(this.drumAssignGroup);
         channelObject.drumPan.set(this.drumPan);
         channelObject.drumReverb.set(this.drumReverb);
         channelObject.drumChorus.set(this.drumChorus);

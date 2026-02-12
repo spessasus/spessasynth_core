@@ -1,7 +1,6 @@
 import {
     customResetArray,
-    defaultMIDIControllerValues,
-    drumReverbResetArray
+    defaultMIDIControllerValues
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
@@ -60,10 +59,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.cc1 = 0x10;
     this.cc2 = 0x11;
     this.drumMap = this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0;
-    this.drumPitch.fill(0);
-    this.drumPan.fill(64);
-    this.drumReverb.set(drumReverbResetArray);
-    this.drumChorus.fill(0); // No drums have chorus
+    this.resetDrumParams();
 
     // Reset to poly
     if (

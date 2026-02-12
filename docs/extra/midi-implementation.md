@@ -140,20 +140,21 @@ Note that all these are non-standard GM.
 
 rr: Drum note number.
 
-| NRPN MSB | NRPN LSB | Name                   | Explanation                                                      | Default        |
-| -------- | -------- | ---------------------- | ---------------------------------------------------------------- | -------------- |
-| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                      | 0 (disabled)   |
-| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                     | 0 (disabled)   |
-| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                     | 0 (disabled)   |
-| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)          | 64 (no change) |
-| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance) | 64 (no change) |
-| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72            | 64 (no change) |
-| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73             | 64 (no change) |
-| 0x18     | rr       | Drum Pitch             | Controls the pitch of the drum instrument.                       |
-| 0x18     | rr       | Drum Pitch Fine        | Controls the pitch of the drum instrument in cents (XG only)     |
-| 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.   |
-| 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument.                |
-| 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument.                |
+| NRPN MSB | NRPN LSB | Name                   | Explanation                                                                   | Default                         |
+| -------- | -------- | ---------------------- | ----------------------------------------------------------------------------- | ------------------------------- |
+| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                                   | 0 (disabled)                    |
+| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                                  | 0 (disabled)                    |
+| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                                  | 0 (disabled)                    |
+| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)                       | 64 (no change)                  |
+| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance)              | 64 (no change)                  |
+| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72                         | 64 (no change)                  |
+| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73                          | 64 (no change)                  |
+| 0x18     | rr       | Drum Pitch             | Controls the pitch of the drum instrument.                                    | 0 (no change)                   |
+| 0x18     | rr       | Drum Pitch Fine        | Controls the pitch of the drum instrument in cents (XG only)                  | 0 (no change)                   |
+| 0x1a     | rr       | Drum Level             | Controls how loud the drum instrument is.                                     | 120 (normal)                    |
+| 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                |
+| 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127 |
+| 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument. (multiplicative of channel) | 0 (none)                        |
 
 #### Custom Vibrato
 
@@ -334,6 +335,8 @@ These define how a controller affects the sound. See page 198 of the SC-88Pro Ma
 
 - Drum Map Name (logs to console)
 - Pitch Coarse
+- Level
+- Assign Group Number (exclusive class override)
 - Pan Position
 - Reverb Send Level
 - Chorus Send Level
@@ -366,6 +369,7 @@ The following drum setup messages are recognized:
 
 - Pitch Coarse
 - Pitch Fine (added to coarse so coarse must be sent first)
+- Alternate Group (exclusive class override)
 - Pan
 - Reverb Send
 - Chorus Send

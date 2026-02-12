@@ -838,7 +838,11 @@ export function handleGS(
                             }
 
                             case 0x1: {
-                                // Pitch coarse
+                                /**
+                                 * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
+                                 * 88, Pro and 8850 use 50 cents
+                                 * 55 uses full semitone, but there's no way to differentiate.
+                                 */
                                 const pitch = (data - 60) * 50;
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
@@ -848,6 +852,33 @@ export function handleGS(
                                 coolInfo(
                                     `Drum Pitch for MAP${map}, key ${drumKey}`,
                                     pitch
+                                );
+                                break;
+                            }
+
+                            case 0x2: {
+                                // Drum Level
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+
+                                    ch.drumLevel[drumKey] = data;
+                                }
+                                coolInfo(
+                                    `Drum Level for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+
+                            case 0x3: {
+                                // Drum Assign Group (exclusive class)
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumAssignGroup[drumKey] = data;
+                                }
+                                coolInfo(
+                                    `Drum Assign Group for MAP${map}, key ${drumKey}`,
+                                    data
                                 );
                                 break;
                             }

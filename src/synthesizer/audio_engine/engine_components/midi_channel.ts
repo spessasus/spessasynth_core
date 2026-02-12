@@ -91,29 +91,35 @@ export class MIDIChannel {
     /**
      * Relative tuning for every drum key, in cents.
      */
-    public readonly drumPitch = new Int16Array(128).fill(0);
+    public readonly drumPitch = new Int16Array(128);
+
+    /**
+     * Volume for every drum key.
+     */
+    public readonly drumLevel = new Int8Array(128);
+
+    /**
+     * Exclusive class for every drum key. 0 is none (use sound bank data)
+     */
+    public readonly drumAssignGroup = new Int8Array(128);
 
     /**
      * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
      */
-    public readonly drumPan = new Int8Array(128).fill(64);
-
+    public readonly drumPan = new Int8Array(128);
     /**
      * Relative reverb for every drum key, 0-127.
      */
     public readonly drumReverb = new Int8Array(128);
-
     /**
      * Relative chorus for every drum key, 0-127.
      */
-    public readonly drumChorus = new Int8Array(128).fill(0);
-
+    public readonly drumChorus = new Int8Array(128);
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */
     public sysExModulators: DynamicModulatorSystem =
         new DynamicModulatorSystem();
-
     /**
      * The key shift of the channel (in semitones).
      */
@@ -126,26 +132,22 @@ export class MIDIChannel {
      * Enables random panning for every note played on this channel.
      */
     public randomPan = false;
-
     /**
      * CC1 for GS system exclusive.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
      */
     public cc1 = 0x10;
-
     /**
      * CC2 for GS system exclusive.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
      */
     public cc2 = 0x11;
-
     /**
      * Drum map for GS system exclusive tracking.
      * Only used for selecting the correct channel when setting drum parameters through sysEx,
      * as those don't specify the channel, but the drum number.
      */
     public drumMap = 0;
-
     /**
      * The current state of the data entry for the channel.
      */
@@ -320,9 +322,9 @@ export class MIDIChannel {
         this.synthCore = synthProps;
         this.preset = preset;
         this.channel = channelNumber;
-        this.drumReverb.set(drumReverbResetArray);
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
+        this.resetDrumParams();
     }
 
     /**
@@ -805,6 +807,15 @@ export class MIDIChannel {
             channel: this.channel,
             property: data
         });
+    }
+
+    protected resetDrumParams() {
+        this.drumPitch.fill(0);
+        this.drumLevel.fill(120);
+        this.drumAssignGroup.fill(0);
+        this.drumPan.fill(64);
+        this.drumReverb.set(drumReverbResetArray);
+        this.drumChorus.fill(0); // No drums have chorus
     }
 
     protected computeModulatorsAll(

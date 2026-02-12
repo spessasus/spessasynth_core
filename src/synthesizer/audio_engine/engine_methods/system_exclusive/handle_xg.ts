@@ -334,6 +334,26 @@ export function handleXG(
                     break;
                 }
 
+                case 0x02: {
+                    // Drum Level
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumLevel[drumKey] = data;
+                    }
+                    coolInfo(`Drum Level, key ${drumKey}`, data);
+                    break;
+                }
+
+                case 0x03: {
+                    // Drum Alternate Group (exclusive class)
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumAssignGroup[drumKey] = data;
+                    }
+                    coolInfo(`Drum Alternate Group, key ${drumKey}`, data);
+                    break;
+                }
+
                 case 0x04: {
                     // Drum Pan
                     for (const ch of this.midiChannels) {

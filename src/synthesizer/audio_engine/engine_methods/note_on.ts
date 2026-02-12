@@ -67,7 +67,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
 
     // Gain
-    const voiceGain = this.synthCore.keyModifierManager.getGain(
+    let voiceGain = this.synthCore.keyModifierManager.getGain(
         this.channel,
         realKey
     );
@@ -122,6 +122,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     // Overrides
     // Zero means disabled
     let panOverride = 0;
+    let exclusiveOverride = 0;
     let pitchOffset = 0;
     let reverbSend = 1;
     let chorusSend = 1;
@@ -130,6 +131,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         panOverride = Math.round(Math.random() * 1000 - 500);
     }
 
+    // Drum parameters
     if (this.drumChannel) {
         const drumPan = this.drumPan[internalMidiNote];
         // If pan is different from default then it's overridden
@@ -155,8 +157,13 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         }
 
         pitchOffset = this.drumPitch[internalMidiNote];
+        exclusiveOverride = this.drumAssignGroup[internalMidiNote];
         reverbSend = this.drumReverb[internalMidiNote] / 127;
         chorusSend = this.drumChorus[internalMidiNote] / 127;
+        // 1 is no override
+        if (voiceGain === 1) {
+            voiceGain = this.drumLevel[internalMidiNote] / 120;
+        }
     }
 
     // Add voices
@@ -178,7 +185,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
         // Set cached data
         voice.generators.set(cached.generators);
-        voice.exclusiveClass = cached.exclusiveClass;
+        voice.exclusiveClass = exclusiveOverride || cached.exclusiveClass;
         voice.rootKey = cached.rootKey;
         voice.loopingMode = cached.loopingMode;
         voice.wavetable.sampleData = cached.sampleData;
