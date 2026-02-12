@@ -52,12 +52,32 @@ export class ChannelSnapshot {
     /**
      * Key shift for the channel.
      */
-    public channelTransposeKeyShift: number;
+    public keyShift: number;
 
     /**
      * The channel's octave tuning in cents.
      */
-    public channelOctaveTuning: Int8Array;
+    public octaveTuning: Int8Array;
+
+    /**
+     * Relative drum tuning, in cents.
+     */
+    public drumPitch: Int16Array;
+
+    /**
+     * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
+     */
+    public drumPan: Int8Array;
+
+    /**
+     * Relative reverb for every drum key, 0-127.
+     */
+    public drumReverb: Int8Array;
+
+    /**
+     * Relative chorus for every drum key, 0-127.
+     */
+    public drumChorus: Int8Array;
 
     /**
      * Indicates whether the channel is muted.
@@ -90,6 +110,10 @@ export class ChannelSnapshot {
         },
         channelTransposeKeyShift: number,
         channelOctaveTuning: Int8Array,
+        drumPitch: Int16Array,
+        drumPan: Int8Array,
+        drumReverb: Int8Array,
+        drumChorus: Int8Array,
         isMuted: boolean,
         drumChannel: boolean,
         channelNumber: number
@@ -102,8 +126,12 @@ export class ChannelSnapshot {
         this.customControllers = customControllers;
         this.lockVibrato = lockVibrato;
         this.channelVibrato = channelVibrato;
-        this.channelTransposeKeyShift = channelTransposeKeyShift;
-        this.channelOctaveTuning = channelOctaveTuning;
+        this.keyShift = channelTransposeKeyShift;
+        this.octaveTuning = channelOctaveTuning;
+        this.drumPitch = drumPitch;
+        this.drumPan = drumPan;
+        this.drumReverb = drumReverb;
+        this.drumChorus = drumChorus;
         this.isMuted = isMuted;
         this.drumChannel = drumChannel;
         this.channelNumber = channelNumber;
@@ -123,8 +151,12 @@ export class ChannelSnapshot {
             snapshot.customControllers.slice(),
             snapshot.lockVibrato,
             { ...snapshot.channelVibrato },
-            snapshot.channelTransposeKeyShift,
-            snapshot.channelOctaveTuning.slice(),
+            snapshot.keyShift,
+            snapshot.octaveTuning.slice(),
+            snapshot.drumPitch.slice(),
+            snapshot.drumPan.slice(),
+            snapshot.drumReverb.slice(),
+            snapshot.drumChorus.slice(),
             snapshot.isMuted,
             snapshot.drumChannel,
             snapshot.channelNumber
@@ -156,6 +188,10 @@ export class ChannelSnapshot {
             { ...channelObject.channelVibrato },
             channelObject.keyShift,
             channelObject.octaveTuning.slice(),
+            channelObject.drumPitch.slice(),
+            channelObject.drumPan.slice(),
+            channelObject.drumReverb.slice(),
+            channelObject.drumChorus.slice(),
             channelObject.isMuted,
             channelObject.drumChannel,
             channelNumber
@@ -181,8 +217,12 @@ export class ChannelSnapshot {
         // Restore vibrato and transpose
         channelObject.channelVibrato = this.channelVibrato;
         channelObject.lockGSNRPNParams = this.lockVibrato;
-        channelObject.keyShift = this.channelTransposeKeyShift;
-        channelObject.octaveTuning.set(this.channelOctaveTuning);
+        channelObject.keyShift = this.keyShift;
+        channelObject.octaveTuning.set(this.octaveTuning);
+        channelObject.drumPitch.set(this.drumPitch);
+        channelObject.drumPan.set(this.drumPan);
+        channelObject.drumReverb.set(this.drumReverb);
+        channelObject.drumChorus.set(this.drumChorus);
 
         // Restore preset and lock
         channelObject.setPresetLock(false);

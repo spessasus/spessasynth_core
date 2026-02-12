@@ -219,6 +219,21 @@ export class Voice {
     public overridePan = 0;
 
     /**
+     * In cents, used for drum tuning.
+     */
+    public pitchOffset = 0;
+
+    /**
+     * Reverb send of the voice, used for drum parts, otherwise 1.
+     */
+    public reverbSend = 1;
+
+    /**
+     * Chorus send of the voice, used for drum parts, otherwise 1.
+     */
+    public chorusSend = 1;
+
+    /**
      * Exclusive class number for hi-hats etc.
      */
     public exclusiveClass = 0;

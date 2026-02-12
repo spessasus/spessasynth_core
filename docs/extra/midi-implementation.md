@@ -138,6 +138,8 @@ Below is the list of currently implemented Non-Registered Parameters.
 Note that all these are non-standard GM.
 **These only apply for GS**
 
+rr: Drum note number.
+
 | NRPN MSB | NRPN LSB | Name                   | Explanation                                                      | Default        |
 | -------- | -------- | ---------------------- | ---------------------------------------------------------------- | -------------- |
 | 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                      | 0 (disabled)   |
@@ -147,6 +149,10 @@ Note that all these are non-standard GM.
 | 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance) | 64 (no change) |
 | 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72            | 64 (no change) |
 | 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73             | 64 (no change) |
+| 0x18     | rr       | Drum Pitch             | Controls the pitch of the drum instrument.                       |
+| 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.   |
+| 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument.                |
+| 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument.                |
 
 #### Custom Vibrato
 
@@ -322,6 +328,14 @@ Below are the supported GS SysEx Parameters.
 All Of them except for LFO rate as it's in Hz rather than cents.
 
 These define how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system.
+
+#### Drum Setup Parameters
+
+- Drum Map Name (logs to console)
+- Pitch Coarse
+- Pan Position
+- Reverb Send Level
+- Chorus Send Level
 
 ### XG Part Setup
 

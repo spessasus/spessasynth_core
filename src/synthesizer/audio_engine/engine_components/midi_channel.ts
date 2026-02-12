@@ -1,6 +1,7 @@
 import {
     CONTROLLER_TABLE_SIZE,
     CUSTOM_CONTROLLER_TABLE_SIZE,
+    drumReverbResetArray,
     NON_CC_INDEX_OFFSET
 } from "./controller_tables";
 import {
@@ -86,6 +87,26 @@ export class MIDIChannel {
      * Note: Repeated every 12 notes.
      */
     public readonly octaveTuning: Int8Array = new Int8Array(128);
+
+    /**
+     * Relative tuning for every drum key, in cents.
+     */
+    public readonly drumPitch = new Int16Array(128).fill(0);
+
+    /**
+     * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
+     */
+    public readonly drumPan = new Int8Array(128).fill(64);
+
+    /**
+     * Relative reverb for every drum key, 0-127.
+     */
+    public readonly drumReverb = new Int8Array(128);
+
+    /**
+     * Relative chorus for every drum key, 0-127.
+     */
+    public readonly drumChorus = new Int8Array(128).fill(0);
 
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
@@ -299,6 +320,7 @@ export class MIDIChannel {
         this.synthCore = synthProps;
         this.preset = preset;
         this.channel = channelNumber;
+        this.drumReverb.set(drumReverbResetArray);
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
     }

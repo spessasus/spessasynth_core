@@ -65,3 +65,8 @@ export const CUSTOM_CONTROLLER_TABLE_SIZE =
     Object.keys(customControllers).length;
 export const customResetArray = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);
 customResetArray[customControllers.modulationMultiplier] = 1;
+
+export const drumReverbResetArray = new Int8Array(128).fill(127);
+// Kicks have no reverb
+drumReverbResetArray[35] = 0;
+drumReverbResetArray[36] = 0;

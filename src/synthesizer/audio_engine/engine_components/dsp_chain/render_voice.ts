@@ -72,6 +72,7 @@ export function renderVoice(
 
     // Calculate tuning
     let cents =
+        voice.pitchOffset +
         voice.modulatedGenerators[generatorTypes.fineTune] + // Soundfont fine tune
         this.octaveTuning[voice.midiNote] + // MTS octave tuning
         this.channelTuningCents; // Channel tuning
@@ -292,7 +293,8 @@ export function renderVoice(
 
     // Disable reverb and chorus if necessary
     const reverbSend =
-        voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
+        voice.modulatedGenerators[generatorTypes.reverbEffectsSend] *
+        voice.reverbSend;
     if (reverbSend > 0) {
         const reverbGain =
             this.synthCore.masterParameters.reverbGain *
@@ -306,7 +308,8 @@ export function renderVoice(
     }
 
     const chorusSend =
-        voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
+        voice.modulatedGenerators[generatorTypes.chorusEffectsSend] *
+        voice.chorusSend;
     if (chorusSend > 0) {
         const chorusGain =
             this.synthCore.masterParameters.chorusGain *

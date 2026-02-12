@@ -1,6 +1,7 @@
 import {
     customResetArray,
-    defaultMIDIControllerValues
+    defaultMIDIControllerValues,
+    drumReverbResetArray
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
@@ -26,9 +27,7 @@ export function resetPortamento(this: MIDIChannel, sendCC: boolean) {
  * except for the locked controllers.
  */
 export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
-    this.octaveTuning.fill(0);
-
-    // Reset the array
+    // Reset controller the array
     for (const [cc, resetValue] of defaultMIDIControllerValues.entries()) {
         if (this.lockedControllers[cc]) {
             continue;
@@ -53,13 +52,18 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
             this.midiControllers[cc] = resetValue;
         }
     }
-    // System exclusive things
+    // Reset system exclusive things
+    this.octaveTuning.fill(0);
     resetPortamento.call(this, sendCCEvents);
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
     this.randomPan = false;
     this.cc1 = 0x10;
     this.cc2 = 0x11;
     this.drumMap = this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0;
+    this.drumPitch.fill(0);
+    this.drumPan.fill(64);
+    this.drumReverb.set(drumReverbResetArray);
+    this.drumChorus.fill(0); // No drums have chorus
 
     // Reset to poly
     if (
@@ -124,9 +128,6 @@ export const nonResettableCCs = new Set<MIDIController>([
  * Reset controllers according to RP-15 Recommended Practice.
  */
 export function resetControllersRP15Compliant(this: MIDIChannel) {
-    // Reset tunings
-    this.octaveTuning.fill(0);
-
     // Reset pitch wheel
     this.perNotePitch = false;
     this.pitchWheel(8192);
@@ -143,7 +144,6 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
             this.controllerChange(i as MIDIController, resetValue >> 7);
         }
     }
-    resetPortamento.call(this, true);
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
 }

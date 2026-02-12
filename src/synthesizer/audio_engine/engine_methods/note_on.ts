@@ -119,11 +119,32 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         velocity
     );
 
+    // Overrides
     // Zero means disabled
     let panOverride = 0;
+    let pitchOffset = 0;
+    let reverbSend = 1;
+    let chorusSend = 1;
     if (this.randomPan) {
         // The range is -500 to 500
         panOverride = Math.round(Math.random() * 1000 - 500);
+    }
+
+    if (this.drumChannel) {
+        const drumPan = this.drumPan[internalMidiNote];
+        // If pan is different from default then it's overridden
+        if (drumPan !== 64) {
+            panOverride =
+                drumPan === 0
+                    ? // 0 is random pan
+                      Math.round(Math.random() * 1000 - 500)
+                    : // 1 is set pan
+                      ((drumPan - 64) / 63) * 500;
+        }
+
+        pitchOffset = this.drumPitch[internalMidiNote];
+        reverbSend = this.drumReverb[internalMidiNote] / 127;
+        chorusSend = this.drumChorus[internalMidiNote] / 127;
     }
 
     // Add voices
@@ -281,16 +302,20 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.portamentoFromKey = portamentoFromKey;
         voice.portamentoDuration = portamentoDuration;
 
-        // Apply pan override
+        // Apply special params
         voice.overridePan = panOverride;
-
-        // Apply gain override
         voice.gainModifier = voiceGain;
+        voice.pitchOffset = pitchOffset;
+        voice.reverbSend = reverbSend;
+        voice.chorusSend = chorusSend;
 
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(
             -500,
-            Math.min(500, voice.modulatedGenerators[generatorTypes.pan])
+            Math.min(
+                500,
+                panOverride || voice.modulatedGenerators[generatorTypes.pan]
+            )
         ); //  -500 to 500
     }
     this.voiceCount += voices.length;
