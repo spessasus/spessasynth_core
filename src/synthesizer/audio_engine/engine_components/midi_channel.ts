@@ -42,6 +42,7 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
+import { DrumParameters } from "./drum_parameters";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -89,32 +90,9 @@ export class MIDIChannel {
     public readonly octaveTuning: Int8Array = new Int8Array(128);
 
     /**
-     * Relative tuning for every drum key, in cents.
+     * Parameters for each drum instrument.
      */
-    public readonly drumPitch = new Int16Array(128);
-
-    /**
-     * Volume for every drum key.
-     */
-    public readonly drumLevel = new Uint8Array(128);
-
-    /**
-     * Exclusive class for every drum key. 0 is none (use sound bank data)
-     */
-    public readonly drumAssignGroup = new Uint8Array(128);
-
-    /**
-     * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
-     */
-    public readonly drumPan = new Uint8Array(128);
-    /**
-     * Relative reverb for every drum key, 0-127.
-     */
-    public readonly drumReverb = new Uint8Array(128);
-    /**
-     * Relative chorus for every drum key, 0-127.
-     */
-    public readonly drumChorus = new Uint8Array(128);
+    public readonly drumParams: DrumParameters[] = [];
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */
@@ -324,6 +302,9 @@ export class MIDIChannel {
         this.channel = channelNumber;
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
+        for (let i = 0; i < 128; i++) {
+            this.drumParams.push(new DrumParameters());
+        }
         this.resetDrumParams();
     }
 
@@ -810,12 +791,15 @@ export class MIDIChannel {
     }
 
     protected resetDrumParams() {
-        this.drumPitch.fill(0);
-        this.drumLevel.fill(120);
-        this.drumAssignGroup.fill(0);
-        this.drumPan.fill(64);
-        this.drumReverb.set(drumReverbResetArray);
-        this.drumChorus.fill(0); // No drums have chorus
+        for (let i = 0; i < 128; i++) {
+            const p = this.drumParams[i];
+            p.pitch = 0;
+            p.gain = 1;
+            p.exclusiveClass = 0;
+            p.pan = 64;
+            p.reverbGain = drumReverbResetArray[i] / 127;
+            p.chorusGain = 0; // No drums have chorus
+        }
     }
 
     protected computeModulatorsAll(

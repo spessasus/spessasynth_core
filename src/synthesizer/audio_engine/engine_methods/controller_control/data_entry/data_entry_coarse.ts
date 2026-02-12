@@ -301,7 +301,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         this.channelSystem === "xg"
                             ? (dataCoarse - 64) * 100
                             : (dataCoarse - 60) * 50;
-                    this.drumPitch[paramFine] = pitch;
+                    this.drumParams[paramFine].pitch = pitch;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} pitch`,
@@ -313,18 +313,18 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                 case nonRegisteredMSB.drumPitchFine: {
                     const pitch = dataCoarse - 64;
-                    this.drumPitch[paramFine] += pitch;
+                    this.drumParams[paramFine].pitch += pitch;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} pitch fine`,
-                        pitch,
+                        this.drumParams[paramFine].pitch,
                         "cents"
                     );
                     break;
                 }
 
                 case nonRegisteredMSB.drumLevel: {
-                    this.drumReverb[paramFine] = dataCoarse;
+                    this.drumParams[paramFine].gain = dataCoarse / 120;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} level`,
@@ -335,7 +335,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 case nonRegisteredMSB.drumPan: {
-                    this.drumPan[paramFine] = dataCoarse;
+                    this.drumParams[paramFine].pan = dataCoarse;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} pan`,
@@ -346,7 +346,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 case nonRegisteredMSB.drumReverb: {
-                    this.drumReverb[paramFine] = dataCoarse;
+                    this.drumParams[paramFine].reverbGain = dataCoarse / 127;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} reverb level`,
@@ -357,7 +357,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 case nonRegisteredMSB.drumChorus: {
-                    this.drumChorus[paramFine] = dataCoarse;
+                    this.drumParams[paramFine].chorusGain = dataCoarse / 127;
                     coolInfo(
                         this.channel,
                         `Drum ${paramFine} chorus level`,

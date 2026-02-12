@@ -317,7 +317,7 @@ export function handleXG(
                     const pitch = (data - 64) * 100;
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumPitch[drumKey] = pitch;
+                        ch.drumParams[drumKey].pitch = pitch;
                     }
                     coolInfo(`Drum Pitch, key ${drumKey}`, pitch);
                     break;
@@ -328,7 +328,7 @@ export function handleXG(
                     const pitch = data - 64;
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumPitch[drumKey] += pitch;
+                        ch.drumParams[drumKey].pitch += pitch;
                     }
                     coolInfo(`Drum Pitch Fine, key ${drumKey}`, pitch);
                     break;
@@ -338,7 +338,7 @@ export function handleXG(
                     // Drum Level
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumLevel[drumKey] = data;
+                        ch.drumParams[drumKey].gain = data / 120;
                     }
                     coolInfo(`Drum Level, key ${drumKey}`, data);
                     break;
@@ -348,7 +348,7 @@ export function handleXG(
                     // Drum Alternate Group (exclusive class)
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumAssignGroup[drumKey] = data;
+                        ch.drumParams[drumKey].exclusiveClass = data;
                     }
                     coolInfo(`Drum Alternate Group, key ${drumKey}`, data);
                     break;
@@ -358,7 +358,7 @@ export function handleXG(
                     // Drum Pan
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumPan[drumKey] = data;
+                        ch.drumParams[drumKey].pan = data;
                     }
                     coolInfo(`Drum Pan, key ${drumKey}`, data);
                     break;
@@ -368,7 +368,7 @@ export function handleXG(
                     // Drum Reverb
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumReverb[drumKey] = data;
+                        ch.drumParams[drumKey].reverbGain = data;
                     }
                     coolInfo(`Drum Reverb, key ${drumKey}`, data);
                     break;
@@ -378,7 +378,7 @@ export function handleXG(
                     // Drum Chorus
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumChorus[drumKey] = data;
+                        ch.drumParams[drumKey].chorusGain = data;
                     }
                     coolInfo(`Drum Chorus, key ${drumKey}`, data);
                     break;

@@ -133,7 +133,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Drum parameters
     if (this.drumChannel) {
-        const drumPan = this.drumPan[internalMidiNote];
+        const p = this.drumParams[internalMidiNote];
+        const drumPan = p.pan;
         // If pan is different from default then it's overridden
         if (drumPan !== 64) {
             const targetPan =
@@ -156,13 +157,13 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
                       (targetPan / 63) * 500;
         }
 
-        pitchOffset = this.drumPitch[internalMidiNote];
-        exclusiveOverride = this.drumAssignGroup[internalMidiNote];
-        reverbSend = this.drumReverb[internalMidiNote] / 127;
-        chorusSend = this.drumChorus[internalMidiNote] / 127;
+        pitchOffset = p.pitch;
+        exclusiveOverride = p.exclusiveClass;
+        reverbSend = p.reverbGain;
+        chorusSend = p.chorusGain;
         // 1 is no override
         if (voiceGain === 1) {
-            voiceGain = this.drumLevel[internalMidiNote] / 120;
+            voiceGain = p.gain;
         }
     }
 

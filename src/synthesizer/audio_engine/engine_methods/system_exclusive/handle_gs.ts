@@ -147,7 +147,6 @@ export function handleGS(
                                         consoleColors.warn,
                                         consoleColors.unrecognized
                                     );
-                                    sysExNotRecognized(syx, "Roland GS");
                                     break;
                                 }
 
@@ -846,8 +845,7 @@ export function handleGS(
                                 const pitch = (data - 60) * 50;
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-
-                                    ch.drumPitch[drumKey] = pitch;
+                                    ch.drumParams[drumKey].pitch = pitch;
                                 }
                                 coolInfo(
                                     `Drum Pitch for MAP${map}, key ${drumKey}`,
@@ -860,8 +858,7 @@ export function handleGS(
                                 // Drum Level
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-
-                                    ch.drumLevel[drumKey] = data;
+                                    ch.drumParams[drumKey].gain = data / 120;
                                 }
                                 coolInfo(
                                     `Drum Level for MAP${map}, key ${drumKey}`,
@@ -874,7 +871,8 @@ export function handleGS(
                                 // Drum Assign Group (exclusive class)
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-                                    ch.drumAssignGroup[drumKey] = data;
+                                    ch.drumParams[drumKey].exclusiveClass =
+                                        data;
                                 }
                                 coolInfo(
                                     `Drum Assign Group for MAP${map}, key ${drumKey}`,
@@ -887,7 +885,7 @@ export function handleGS(
                                 // Pan
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-                                    ch.drumPan[drumKey] = data;
+                                    ch.drumParams[drumKey].pan = data;
                                 }
                                 coolInfo(
                                     `Drum Pan for MAP${map}, key ${drumKey}`,
@@ -900,7 +898,8 @@ export function handleGS(
                                 // Reverb
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-                                    ch.drumReverb[drumKey] = data;
+                                    ch.drumParams[drumKey].reverbGain =
+                                        data / 127;
                                 }
                                 coolInfo(
                                     `Drum Reverb for MAP${map}, key ${drumKey}`,
@@ -912,7 +911,8 @@ export function handleGS(
                                 // Pan
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-                                    ch.drumChorus[drumKey] = data;
+                                    ch.drumParams[drumKey].chorusGain =
+                                        data / 127;
                                 }
                                 coolInfo(
                                     `Drum Chorus for MAP${map}, key ${drumKey}`,
@@ -946,7 +946,7 @@ export function handleGS(
                         this.callEvent("synthDisplay", [...syx]);
                     } else {
                         // This is some other GS sysex...
-                        sysExNotRecognized(syx, "Roland GS");
+                        sysExNotRecognized(syx, "Roland GS Display");
                     }
                 }
                 return;

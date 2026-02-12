@@ -1,6 +1,7 @@
 import type { SynthSystem } from "../../types";
 import { type SpessaSynthProcessor } from "../../processor";
 import type { MIDIPatchNamed } from "../../../soundbank/basic_soundbank/midi_patch";
+import { DrumParameters } from "../engine_components/drum_parameters";
 
 /**
  * Represents a snapshot of a single channel's state in the synthesizer.
@@ -60,34 +61,9 @@ export class ChannelSnapshot {
     public octaveTuning: Int8Array;
 
     /**
-     * Relative drum tuning, in cents.
+     * Parameters for each drum instrument.
      */
-    public drumPitch: Int16Array;
-
-    /**
-     * Volume for every drum key.
-     */
-    public drumLevel: Uint8Array;
-
-    /**
-     * Exclusive class for every drum key. 0 is none (use sound bank data)
-     */
-    public drumAssignGroup: Uint8Array;
-
-    /**
-     * Pan for every drum key, 1-64-127, 0 is random. This adds to the channel pan!
-     */
-    public drumPan: Uint8Array;
-
-    /**
-     * Relative reverb for every drum key, 0-127.
-     */
-    public drumReverb: Uint8Array;
-
-    /**
-     * Relative chorus for every drum key, 0-127.
-     */
-    public drumChorus: Uint8Array;
+    public drumParams: DrumParameters[];
 
     /**
      * Indicates whether the channel is muted.
@@ -120,12 +96,7 @@ export class ChannelSnapshot {
         },
         channelTransposeKeyShift: number,
         channelOctaveTuning: Int8Array,
-        drumPitch: Int16Array,
-        drumLevel: Uint8Array,
-        drumAssignGroup: Uint8Array,
-        drumPan: Uint8Array,
-        drumReverb: Uint8Array,
-        drumChorus: Uint8Array,
+        drumParams: DrumParameters[],
         isMuted: boolean,
         drumChannel: boolean,
         channelNumber: number
@@ -140,12 +111,7 @@ export class ChannelSnapshot {
         this.channelVibrato = channelVibrato;
         this.keyShift = channelTransposeKeyShift;
         this.octaveTuning = channelOctaveTuning;
-        this.drumPitch = drumPitch;
-        this.drumLevel = drumLevel;
-        this.drumAssignGroup = drumAssignGroup;
-        this.drumPan = drumPan;
-        this.drumReverb = drumReverb;
-        this.drumChorus = drumChorus;
+        this.drumParams = drumParams;
         this.isMuted = isMuted;
         this.drumChannel = drumChannel;
         this.channelNumber = channelNumber;
@@ -167,12 +133,7 @@ export class ChannelSnapshot {
             { ...snapshot.channelVibrato },
             snapshot.keyShift,
             snapshot.octaveTuning.slice(),
-            snapshot.drumPitch.slice(),
-            snapshot.drumLevel.slice(),
-            snapshot.drumAssignGroup.slice(),
-            snapshot.drumPan.slice(),
-            snapshot.drumReverb.slice(),
-            snapshot.drumChorus.slice(),
+            snapshot.drumParams.map((d) => new DrumParameters().copyInto(d)),
             snapshot.isMuted,
             snapshot.drumChannel,
             snapshot.channelNumber
@@ -204,12 +165,9 @@ export class ChannelSnapshot {
             { ...channelObject.channelVibrato },
             channelObject.keyShift,
             channelObject.octaveTuning.slice(),
-            channelObject.drumPitch.slice(),
-            channelObject.drumLevel.slice(),
-            channelObject.drumAssignGroup.slice(),
-            channelObject.drumPan.slice(),
-            channelObject.drumReverb.slice(),
-            channelObject.drumChorus.slice(),
+            channelObject.drumParams.map((d) =>
+                new DrumParameters().copyInto(d)
+            ),
             channelObject.isMuted,
             channelObject.drumChannel,
             channelNumber
@@ -237,12 +195,9 @@ export class ChannelSnapshot {
         channelObject.lockGSNRPNParams = this.lockVibrato;
         channelObject.keyShift = this.keyShift;
         channelObject.octaveTuning.set(this.octaveTuning);
-        channelObject.drumPitch.set(this.drumPitch);
-        channelObject.drumLevel.set(this.drumLevel);
-        channelObject.drumAssignGroup.set(this.drumAssignGroup);
-        channelObject.drumPan.set(this.drumPan);
-        channelObject.drumReverb.set(this.drumReverb);
-        channelObject.drumChorus.set(this.drumChorus);
+        for (let i = 0; i < 128; i++) {
+            this.drumParams[i].copyInto(channelObject.drumParams[i]);
+        }
 
         // Restore preset and lock
         channelObject.setPresetLock(false);
