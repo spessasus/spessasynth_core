@@ -403,4 +403,4 @@ That is:
   The final calculation is `portamentoSeconds = portaTimeToRate(cc5) * keyDistance`
 - The details of the `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/engine_methods/portamento_time.ts)
 - If you know a more accurate algorithm, please let me know!
-- Portamento is **experimental,** although I've found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
+- Portamento is **experimental,** although I found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
