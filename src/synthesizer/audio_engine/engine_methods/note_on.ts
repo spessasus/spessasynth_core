@@ -134,6 +134,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     // Drum parameters
     if (this.drumChannel) {
         const p = this.drumParams[internalMidiNote];
+        if (!p.rxNoteOn) {
+            return;
+        }
         const drumPan = p.pan;
         // If pan is different from default then it's overridden
         if (drumPan !== 64) {

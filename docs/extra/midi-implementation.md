@@ -340,6 +340,8 @@ These define how a controller affects the sound. See page 198 of the SC-88Pro Ma
 - Pan Position
 - Reverb Send Level
 - Chorus Send Level
+- Rx. Note Off (implemented as forcing instant release)
+- Rx. Note On
 
 ### XG Part Setup
 
@@ -373,6 +375,8 @@ The following drum setup messages are recognized:
 - Pan
 - Reverb Send
 - Chorus Send
+- Rev. Note Off (implemented as forcing instant release)
+- Rev. Note On
 
 ### MIDI Tuning Standard
 

@@ -6,7 +6,7 @@ import { midiControllers } from "../../../../midi/enums";
 import { customControllers } from "../../../enums";
 import type { SynthesizerCore } from "../../synthesizer_core";
 
-const coolInfo = (what: string, value: string | number) => {
+const coolInfo = (what: string, value: string | number | boolean) => {
     SpessaSynthInfo(
         `%cYamaha XG ${what}%c for is now set to %c${value}%c.`,
         consoleColors.recognized,
@@ -381,6 +381,26 @@ export function handleXG(
                         ch.drumParams[drumKey].chorusGain = data;
                     }
                     coolInfo(`Drum Chorus, key ${drumKey}`, data);
+                    break;
+                }
+
+                case 0x09: {
+                    // Receive note off
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumParams[drumKey].rxNoteOff = data === 1;
+                    }
+                    coolInfo(`Drum Note Off, key ${drumKey}`, data === 1);
+                    break;
+                }
+
+                case 0x0a: {
+                    // Receive note on
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumParams[drumKey].rxNoteOn = data === 1;
+                    }
+                    coolInfo(`Drum Note On, key ${drumKey}`, data === 1);
                     break;
                 }
             }

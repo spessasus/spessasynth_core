@@ -16,7 +16,7 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 import { readBinaryString } from "../../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../../synthesizer_core";
 
-const coolInfo = (what: string, value: string | number) => {
+const coolInfo = (what: string, value: string | number | boolean) => {
     SpessaSynthInfo(
         `%cRoland GS ${what}%c for is now set to %c${value}%c.`,
         consoleColors.recognized,
@@ -917,6 +917,34 @@ export function handleGS(
                                 coolInfo(
                                     `Drum Chorus for MAP${map}, key ${drumKey}`,
                                     data
+                                );
+                                break;
+                            }
+
+                            case 0x7: {
+                                // Receive Note Off
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].rxNoteOff =
+                                        data === 1;
+                                }
+                                coolInfo(
+                                    `Drum Note Off for MAP${map}, key ${drumKey}`,
+                                    data === 1
+                                );
+                                break;
+                            }
+
+                            case 0x8: {
+                                // Receive Note On
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].rxNoteOn =
+                                        data === 1;
+                                }
+                                coolInfo(
+                                    `Drum Note On for MAP${map}, key ${drumKey}`,
+                                    data === 1
                                 );
                                 break;
                             }

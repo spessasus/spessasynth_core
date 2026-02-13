@@ -15,7 +15,7 @@ import { dataEntryFine } from "../engine_methods/controller_control/data_entry/d
 import { controllerChange } from "../engine_methods/controller_control/controller_change";
 import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry/data_entry_coarse";
 import { noteOn } from "../engine_methods/note_on";
-import { noteOff } from "../engine_methods/stopping_notes/note_off";
+import { noteOff } from "../engine_methods/note_off";
 import { programChange } from "../engine_methods/program_change";
 import {
     DEFAULT_PERCUSSION,
@@ -799,6 +799,8 @@ export class MIDIChannel {
             p.pan = 64;
             p.reverbGain = drumReverbResetArray[i] / 127;
             p.chorusGain = 0; // No drums have chorus
+            p.rxNoteOn = true;
+            p.rxNoteOff = false;
         }
     }
 

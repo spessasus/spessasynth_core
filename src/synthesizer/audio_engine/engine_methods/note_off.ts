@@ -1,7 +1,7 @@
-import { SpessaSynthWarn } from "../../../../utils/loggin";
-import type { MIDIChannel } from "../../engine_components/midi_channel";
-import { customControllers } from "../../../enums";
-import { midiControllers } from "../../../../midi/enums";
+import { SpessaSynthWarn } from "../../../utils/loggin";
+import type { MIDIChannel } from "../engine_components/midi_channel";
+import { customControllers } from "../../enums";
+import { midiControllers } from "../../../midi/enums";
 
 /**
  * Releases a note by its MIDI note number.
@@ -21,10 +21,13 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         this.keyShift +
         this.customControllers[customControllers.channelKeyShift];
 
-    // If high performance mode, kill notes instead of stopping them
     if (
-        this.synthCore.masterParameters.blackMIDIMode && // If the channel is percussion channel, do not kill the notes
-        !this.drumChannel
+        // If high performance mode, kill notes instead of stopping them
+        (this.synthCore.masterParameters.blackMIDIMode &&
+            // If the channel is percussion channel, do not kill the notes
+            !this.drumChannel) ||
+        // If "receive note off" is enabled, kill the note (force quick release)
+        (this.drumChannel && this.drumParams[realKey].rxNoteOff)
     ) {
         this.killNote(realKey);
         this.synthCore.callEvent("noteOff", {

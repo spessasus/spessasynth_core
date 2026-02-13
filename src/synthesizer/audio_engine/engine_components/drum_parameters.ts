@@ -27,6 +27,19 @@ export class DrumParameters {
      */
     public chorusGain = 1;
 
+    /**
+     * If note on should be received.
+     */
+    public rxNoteOn = true;
+
+    /**
+     * If note off should be received.
+     * Note:
+     * Due to the way sound banks implement drums (as 100s release time),
+     * this means killing the voice on note off, not releasing it.
+     */
+    public rxNoteOff = false;
+
     public copyInto(p: DrumParameters) {
         this.pitch = p.pitch;
         this.chorusGain = p.chorusGain;
@@ -34,6 +47,8 @@ export class DrumParameters {
         this.exclusiveClass = p.exclusiveClass;
         this.gain = p.gain;
         this.pan = p.pan;
+        this.rxNoteOff = p.rxNoteOff;
+        this.rxNoteOn = p.rxNoteOn;
         return this;
     }
 }
