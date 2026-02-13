@@ -9,7 +9,8 @@ import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
-import { SpessaSynthWarn } from "../../../../utils/loggin"; // Optimized for spessasynth_lib's effects
+import { SpessaSynthWarn } from "../../../../utils/loggin";
+import { LowpassFilter } from "./lowpass_filter";
 
 const HALF_PI = Math.PI / 2;
 
@@ -244,8 +245,77 @@ export function renderVoice(
         buffer
     );
 
-    // Low pass filter
-    voice.filter.process(sampleCount, voice, buffer, lowpassExcursion);
+    // Low pass filter (inlined for performance, confirmed with node.js)
+    {
+        const f = voice.filter;
+        const initialFc =
+            voice.modulatedGenerators[generatorTypes.initialFilterFc];
+
+        if (f.initialized) {
+            /* Note:
+             * We only smooth out the initialFc part,
+             * the modulation envelope and LFO excursions are not smoothed.
+             */
+            f.currentInitialFc +=
+                (initialFc - f.currentInitialFc) *
+                LowpassFilter.smoothingConstant;
+        } else {
+            // Filter initialization, set the current fc to target
+            f.initialized = true;
+            f.currentInitialFc = initialFc;
+        }
+
+        // The final cutoff for this calculation
+        const targetCutoff = f.currentInitialFc + lowpassExcursion;
+        const modulatedResonance =
+            voice.modulatedGenerators[generatorTypes.initialFilterQ];
+        /* Note:
+         * the check for initialFC is because of the filter optimization
+         * (if cents are the maximum then the filter is open)
+         * filter cannot use this optimization if it's dynamic (see #53), and
+         * the filter can only be dynamic if the initial filter is not open
+         */
+        if (
+            f.currentInitialFc > 13_499 &&
+            targetCutoff > 13_499 &&
+            modulatedResonance === 0
+        ) {
+            f.currentInitialFc = 13_500;
+            // Filter is open
+        } else {
+            // Check if the frequency has changed. if so, calculate new coefficients
+            if (
+                Math.abs(f.lastTargetCutoff - targetCutoff) > 1 ||
+                f.resonanceCb !== modulatedResonance
+            ) {
+                f.lastTargetCutoff = targetCutoff;
+                f.resonanceCb = modulatedResonance;
+                f.calculateCoefficients(targetCutoff);
+            }
+
+            // Filter the input
+            // Initial filtering code was ported from meltysynth created by sinshu.
+            const { a0, a1, a2, a3, a4 } = f;
+            let { x1, x2, y1, y2 } = f;
+            for (let i = 0; i < sampleCount; i++) {
+                const input = buffer[i];
+                const filtered =
+                    a0 * input + a1 * x1 + a2 * x2 - a3 * y1 - y2 * a4;
+
+                // Set buffer
+                x2 = x1;
+                x1 = input;
+                y2 = y1;
+                y1 = filtered;
+
+                buffer[i] = filtered;
+            }
+            f.x1 = x1;
+            f.x2 = x2;
+            f.y1 = y1;
+            f.y2 = y2;
+        }
+    }
 
     // Vol env
     const envActive = voice.volEnv.process(
