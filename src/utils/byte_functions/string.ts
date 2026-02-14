@@ -19,7 +19,10 @@ export function readBinaryString(
             return string;
         }
 
-        string += String.fromCodePoint(byte);
+        // Note: do not replace with fromCodePoint
+        // Corrupted files that are readable right now will break!
+        // Testcase: 01 - House.rmi
+        string += String.fromCharCode(byte);
     }
     return string;
 }
