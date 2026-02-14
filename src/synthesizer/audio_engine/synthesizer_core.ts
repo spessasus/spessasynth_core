@@ -14,7 +14,10 @@ import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { MIDIChannel } from "./engine_components/midi_channel";
 import { SoundBankManager } from "./engine_components/sound_bank_manager";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager";
-import { DEFAULT_SYNTH_MODE } from "./engine_components/synth_constants";
+import {
+    DEFAULT_SYNTH_MODE,
+    INITIAL_BUFFER_SIZE
+} from "./engine_components/synth_constants";
 import { customControllers } from "../enums";
 import { modulatorSources } from "../../soundbank/enums";
 import {
@@ -63,7 +66,7 @@ export class SynthesizerCore {
     /**
      * The reverb processor's input buffer.
      */
-    public reverbInput = new Float32Array(128);
+    public reverbInput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * The synthesizer's chorus processor.
@@ -73,7 +76,7 @@ export class SynthesizerCore {
     /**
      * The chorus processor's input buffer.
      */
-    public chorusInput = new Float32Array(128);
+    public chorusInput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * 0-1
@@ -97,7 +100,7 @@ export class SynthesizerCore {
     /**
      * The delay processor's input buffer.
      */
-    public delayInput = new Float32Array(128);
+    public delayInput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * 0-1
@@ -227,11 +230,11 @@ export class SynthesizerCore {
     /**
      * Left chorus/delay output buffer, for mixing into other effects.
      */
-    private effectOutL = new Float32Array(128);
+    private effectOutL = new Float32Array(INITIAL_BUFFER_SIZE);
     /**
      * Right chorus/delay output buffer, for mixing into other effects.
      */
-    private effectOutR = new Float32Array(128);
+    private effectOutR = new Float32Array(INITIAL_BUFFER_SIZE);
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.

@@ -1,6 +1,7 @@
 import type { ReverbProcessor } from "../types";
 import { DattorroReverb } from "./dattorro";
 import { DelayLine } from "../delay_line";
+import { INITIAL_BUFFER_SIZE } from "../../engine_components/synth_constants";
 
 export class SpessaSynthReverb implements ReverbProcessor {
     /**
@@ -22,25 +23,25 @@ export class SpessaSynthReverb implements ReverbProcessor {
      * Output of the left (and mono) delay.
      * @private
      */
-    private delayLeftOutput = new Float32Array(128);
+    private delayLeftOutput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * Output of the right delay.
      * @private
      */
-    private delayRightOutput = new Float32Array(128);
+    private delayRightOutput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * Input into the left delay. Mixed dry input and right output.
      * @private
      */
-    private delayLeftInput = new Float32Array(128);
+    private delayLeftInput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * Pre LPF buffer for the delay characters.
      * @private
      */
-    private delayPreLPF = new Float32Array(128);
+    private delayPreLPF = new Float32Array(INITIAL_BUFFER_SIZE);
     /**
      * Sample rate of the processor.
      * @private
