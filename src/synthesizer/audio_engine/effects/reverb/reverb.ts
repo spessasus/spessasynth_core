@@ -1,6 +1,6 @@
 import type { ReverbProcessor } from "../types";
 import { DattorroReverb } from "./dattorro";
-import { DelayLine } from "./delay";
+import { DelayLine } from "../delay_line";
 
 export class SpessaSynthReverb implements ReverbProcessor {
     /**

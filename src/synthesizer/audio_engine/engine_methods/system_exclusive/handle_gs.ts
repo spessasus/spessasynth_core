@@ -138,8 +138,18 @@ export function handleGS(
                             return;
                         }
 
-                        // Part Parameter, Patch Common
+                        // Part Parameter, Patch Common (Effects)
                         if (addr2 === 0x01) {
+                            /*
+                            0x40 - chorus to delay
+                            0x50 - delay macro (1st delay param)
+                            0x5A - delay to reverb (last delay param)
+                            enable delay that way
+                             */
+                            this.delayActive ||=
+                                addr3 === 0x40 ||
+                                (addr3 >= 0x50 && addr3 <= 0x5a);
+
                             switch (addr3) {
                                 default: {
                                     SpessaSynthInfo(
@@ -267,6 +277,16 @@ export function handleGS(
                                     this.chorusToReverb = data / 127;
                                     coolInfo(
                                         "Chorus Send Level To Reverb",
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x40: {
+                                    // Chorus send level to delay
+                                    this.chorusToDelay = data / 127;
+                                    coolInfo(
+                                        "Chorus Send Level To Delay",
                                         data
                                     );
                                     break;
@@ -837,11 +857,7 @@ export function handleGS(
                             }
 
                             case 0x1: {
-                                /**
-                                 * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
-                                 * 88, Pro and 8850 use 50 cents
-                                 * 55 uses full semitone, but there's no way to differentiate.
-                                 */
+                                // Here it's relative to 60, not 64 like NRPN. For some reason...
                                 const pitch = (data - 60) * 50;
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;

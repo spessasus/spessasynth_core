@@ -49,6 +49,10 @@ The reverb gain, from 0 to any number. 1 is 100% reverb.
 
 The chorus gain, from 0 to any number. 1 is 100% chorus.
 
+### delayGain
+
+The delay gain, from 0 to any number. 1 is 100% delay.
+
 ### blackMIDIMode
 
 Forces note killing instead of releasing. Improves performance in black MIDIs.

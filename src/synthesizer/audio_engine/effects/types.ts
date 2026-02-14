@@ -6,6 +6,14 @@ interface EffectProcessor {
     level: number;
 
     /**
+     * 0-7
+     * A low-pass filter can be applied to the sound coming into the effect to cut the high
+     * frequency range. Higher values will cut more of the high frequencies, resulting in a
+     * more mellow effect sound.
+     */
+    preLowpass: number;
+
+    /**
      * Process the effect and ADDS it to the output.
      * @param input The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
@@ -31,13 +39,6 @@ export interface ReverbProcessor extends EffectProcessor {
      */
     character: number;
     /**
-     * 0-7
-     * A low pass filter can be applied to the sound coming into the reverb to cut the high
-     * frequency range. Higher values will cut more of the high frequencies, resulting in a
-     * more mellow reverberation.
-     */
-    preLowpass: number;
-    /**
      * 0-64-127
      * This parameter sets the time over which the reverberation will continue.
      * Higher values result in longer reverberation.
@@ -59,13 +60,6 @@ export interface ReverbProcessor extends EffectProcessor {
 }
 
 export interface ChorusProcessor extends EffectProcessor {
-    /**
-     * 0-7
-     * A low-pass filter can be applied to the sound coming into the chorus to cut the high
-     * frequency range. Higher values will cut more of the high frequencies, resulting in a
-     * more mellow chorus sound.
-     */
-    preLowpass: number;
     /**
      * 0-8-127
      * This parameter sets the level at which the chorus sound is re-input (fed back) into the
@@ -90,4 +84,58 @@ export interface ChorusProcessor extends EffectProcessor {
      * Higher values result in deeper modulation.
      */
     depth: number;
+}
+
+export interface DelayProcessor extends EffectProcessor {
+    /**
+     * 0.1ms-340ms-1000ms
+     * The delay effect has three delay times; center, left and
+     * right (when listening in stereo). Delay Time Center sets the delay time of the delay
+     * located at the center.
+     */
+    timeCenter: number;
+
+    /**
+     * 4% - 500%
+     * This parameter sets the delay time of the delay located at the left as a percentage of
+     * the Delay Time Center (up to a max. of 1.0 s).
+     */
+    timeRatioLeft: number;
+
+    /**
+     * 4%-500%
+     * This parameter sets the delay time of the delay located at the right as a percentage of
+     * the Delay Time Center (up to a max. of 1.0 s).
+     */
+    timeRatioRight: number;
+
+    /**
+     * 0-127
+     * This parameter sets the volume of the central delay. Higher values result in a louder
+     * center delay.
+     */
+    levelCenter: number;
+
+    /**
+     * 0-127
+     * This parameter sets the volume of the left delay. Higher values result in a louder left
+     * delay.
+     */
+    levelLeft: number;
+
+    /**
+     * 0-127
+     * This parameter sets the volume of the right delay. Higher values result in a louder
+     * right delay.
+     */
+    levelRight: number;
+
+    /**
+     * -64-(+16)-+63
+     * This parameter affects the number of times the delay will repeat. With a value of 0,
+     * the delay will not repeat. With higher values there will be more repeats.
+     * With negative (-) values, the center delay will be fed back with inverted phase.
+     * Negative values are effective with short delay times.
+     */
+    feedback: number;
 }

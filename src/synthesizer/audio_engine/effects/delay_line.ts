@@ -1,9 +1,5 @@
 export class DelayLine {
     public feedback = 0;
-    /**
-     * Samples
-     */
-    public time: number;
     private readonly buffer;
     private readonly bufferLength;
     private writeIndex = 0;
@@ -11,7 +7,20 @@ export class DelayLine {
     public constructor(maxDelay: number) {
         this.buffer = new Float32Array(maxDelay);
         this.bufferLength = this.buffer.length;
-        this.time = maxDelay - 5;
+        this._time = maxDelay - 5;
+    }
+
+    /**
+     * Samples
+     */
+    private _time: number;
+
+    public get time(): number {
+        return this._time;
+    }
+
+    public set time(value: number) {
+        this._time = Math.min(this.bufferLength, value) | 0;
     }
 
     public clear() {
@@ -30,7 +39,7 @@ export class DelayLine {
         sampleCount: number
     ) {
         let writeIndex = this.writeIndex;
-        const delay = this.time | 0;
+        const delay = this._time;
         const buffer = this.buffer;
         const bufferLength = this.bufferLength;
         const feedback = this.feedback;

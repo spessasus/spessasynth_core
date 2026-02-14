@@ -390,4 +390,18 @@ export function renderVoice(
             chorus[i] += chorusGain * buffer[i];
         }
     }
+
+    if (this.synthCore.delayActive) {
+        const delaySend = this.midiControllers[midiControllers.detuneDepth];
+        if (delaySend > 0) {
+            const delayGain =
+                gain *
+                this.synthCore.masterParameters.delayGain *
+                ((delaySend >> 7) / 127);
+            const delay = this.synthCore.delayInput;
+            for (let i = 0; i < sampleCount; i++) {
+                delay[i] += delayGain * buffer[i];
+            }
+        }
+    }
 }

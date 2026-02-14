@@ -37,6 +37,11 @@ interface SynthProcessorOptions {
      * Chorus processor for the synthesizer. Leave undefined to use the default.
      */
     chorusProcessor: ChorusProcessor;
+
+    /**
+     * Delay processor for the synthesizer. Leave undefined to use the default.
+     */
+    delayProcessor: DelayProcessor;
 }
 ```
 

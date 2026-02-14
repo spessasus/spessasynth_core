@@ -294,13 +294,12 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 case nonRegisteredMSB.drumPitch: {
                     /**
                      * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
-                     * 88, Pro and 8850 use 50 cents
-                     * 55 uses full semitone, but there's no way to differentiate.
+                     * it's actually 50 cents! (not for XG though)
                      */
                     const pitch =
                         this.channelSystem === "xg"
                             ? (dataCoarse - 64) * 100
-                            : (dataCoarse - 60) * 50;
+                            : (dataCoarse - 64) * 50;
                     this.drumParams[paramFine].pitch = pitch;
                     coolInfo(
                         this.channel,

@@ -8,6 +8,7 @@ import type { MIDIController } from "../midi/enums";
 
 import type {
     ChorusProcessor,
+    DelayProcessor,
     ReverbProcessor
 } from "./audio_engine/effects/types";
 
@@ -305,6 +306,11 @@ export interface SynthProcessorOptions {
      * Chorus processor for the synthesizer. Leave undefined to use the default.
      */
     chorusProcessor: ChorusProcessor;
+
+    /**
+     * Delay processor for the synthesizer. Leave undefined to use the default.
+     */
+    delayProcessor: DelayProcessor;
 }
 
 /**
@@ -345,6 +351,11 @@ export interface MasterParameterType {
      * The chorus gain, from 0 to any number. 1 is 100% chorus.
      */
     chorusGain: number;
+
+    /**
+     * The delay gain, from 0 to any number. 1 is 100% delay.
+     */
+    delayGain: number;
     /**
      * Forces note killing instead of releasing. Improves performance in black MIDIs.
      */
