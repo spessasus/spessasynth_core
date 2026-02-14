@@ -75,6 +75,7 @@ Below is the list of controllers supported by default.
 | 91                   | Effects 1 Depth (reverb)            | The reverb depth (0 - 127) [See important info](../sound-bank/modulator.md#reverb-and-chorus-modulators) | Controls the reverb effect send for the given channel.                                                                                                                 | 0             |
 | 92                   | Effects 2 Depth (tremolo)           | The tremolo depth (0 - 127) mapped to 25dB of loudness variation ⚠️NON-STANDARD!⚠️                       | Controls the tremolo (trembling) effect for the given patch.                                                                                                           | 0             |
 | 93                   | Effects 3 Depth (chorus)            | The chorus depth (0 - 127) [See important info](../sound-bank/modulator.md#reverb-and-chorus-modulators) | Controls the chorus effect for the given channel.                                                                                                                      | 0             |
+| 93                   | Effects 4 Depth (delay)             | The delay depth (0 - 127) Disabled in XG mode.                                                           | Controls the delay effect for the given channel.                                                                                                                       | 0             |
 | 99                   | Non-Registered Parameter Number MSB | Parameter number (0 - 127)                                                                               | Selects a Non-Registered Parameter's Coarse to the given value. [Here are the currently supported values.](#supported-non-registered-parameters).                      | none          |
 | 98                   | Non-Registered Parameter Number LSB | Parameter number (0 - 127)                                                                               | Selects a Non-Registered Parameter's Fine to the given value. [Here are the currently supported values.](#supported-non-registered-parameters).                        | none          |
 | 100                  | Registered Parameter Number LSB     | Parameter number (0 - 127)                                                                               | Selects a Registered Parameter's Fine to the given value. [Here are the currently supported values.](#supported-registered-parameters).                                | none          |
@@ -112,11 +113,6 @@ Below are all the controller values which are not zero when the controllers are 
 | 81        | General Purpose Controller 6 | 64          |
 | 83        | General Purpose Controller 8 | 64          |
 | 91        | Reverb Send Level            | 40          |
-
-!!! TIP
-
-    Note that the reverb is set to 0 unlike the recommended 40 in the GM2 standard.
-    This is done to provide a clean output for any file that doesn't explicitly request reverb.
 
 ## Parameter Numbers
 
@@ -404,3 +400,11 @@ That is:
 - The details of the `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/engine_methods/portamento_time.ts)
 - If you know a more accurate algorithm, please let me know!
 - Portamento is **experimental,** although I found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
+
+## Effects
+
+SpessaSynth's effects are modeled after the Sound Canvas line. There are currently 3 effect processors:
+
+- Reverb
+- Chorus
+- Delay (disabled in XG mode)

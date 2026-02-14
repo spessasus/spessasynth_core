@@ -502,6 +502,8 @@ export class SynthesizerCore {
         this.setReverbMacro(4);
         // Chorus3 default
         this.setChorusMacro(2);
+
+        this.delayActive = false;
         this.channelOffset = 0;
 
         if (!this.drumPreset || !this.defaultPreset) {

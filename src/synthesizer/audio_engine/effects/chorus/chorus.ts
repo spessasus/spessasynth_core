@@ -45,7 +45,7 @@ class SpessaSynthChorus implements ChorusProcessor {
         this._preLowpass = value;
         // GS sure loves weird mappings, huh?
         // Maps to around 8000-300 Hz
-        this.preLPFfc = 8000 * 0.625 ** this._preLowpass;
+        this.preLPFfc = 8000 * 0.63 ** this._preLowpass;
         const decay = Math.exp(
             (-2 * Math.PI * this.preLPFfc) / this.sampleRate
         );
@@ -129,15 +129,18 @@ class SpessaSynthChorus implements ChorusProcessor {
         const gain = this.gain;
         const feedback = this.feedbackGain;
 
+        const preLPF = this._preLowpass > 0;
         let phase = this.phase;
         let write = this.write;
         let z = this.preLPFz;
         const a = this.preLPFa;
         for (let i = startIndex; i < endIndex; i++) {
-            const x = input[i - startIndex];
+            let inputSample = input[i - startIndex];
             // Pre lowpass filter
-            z += a * (x - z);
-            const inputSample = z;
+            if (preLPF) {
+                z += a * (inputSample - z);
+                inputSample = z;
+            }
 
             // Triangle LFO (GS uses triangle)
             const lfo = 2 * Math.abs(phase - 0.5);

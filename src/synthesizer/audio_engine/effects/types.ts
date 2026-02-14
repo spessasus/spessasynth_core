@@ -88,6 +88,7 @@ export interface ChorusProcessor extends EffectProcessor {
 
 export interface DelayProcessor extends EffectProcessor {
     /**
+     * 0-97-115
      * 0.1ms-340ms-1000ms
      * The delay effect has three delay times; center, left and
      * right (when listening in stereo). Delay Time Center sets the delay time of the delay
@@ -96,6 +97,7 @@ export interface DelayProcessor extends EffectProcessor {
     timeCenter: number;
 
     /**
+     * 0-120
      * 4% - 500%
      * This parameter sets the delay time of the delay located at the left as a percentage of
      * the Delay Time Center (up to a max. of 1.0 s).
@@ -103,6 +105,7 @@ export interface DelayProcessor extends EffectProcessor {
     timeRatioLeft: number;
 
     /**
+     * 1-120
      * 4%-500%
      * This parameter sets the delay time of the delay located at the right as a percentage of
      * the Delay Time Center (up to a max. of 1.0 s).
@@ -131,7 +134,8 @@ export interface DelayProcessor extends EffectProcessor {
     levelRight: number;
 
     /**
-     * -64-(+16)-+63
+     * 0-80-127
+     * (-64)-16-63
      * This parameter affects the number of times the delay will repeat. With a value of 0,
      * the delay will not repeat. With higher values there will be more repeats.
      * With negative (-) values, the center delay will be fed back with inverted phase.
