@@ -368,7 +368,7 @@ export function handleXG(
                     // Drum Reverb
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].reverbGain = data;
+                        ch.drumParams[drumKey].reverbGain = data / 127;
                     }
                     coolInfo(`Drum Reverb, key ${drumKey}`, data);
                     break;
@@ -378,7 +378,7 @@ export function handleXG(
                     // Drum Chorus
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].chorusGain = data;
+                        ch.drumParams[drumKey].chorusGain = data / 127;
                     }
                     coolInfo(`Drum Chorus, key ${drumKey}`, data);
                     break;
