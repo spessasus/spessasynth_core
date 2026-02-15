@@ -217,8 +217,8 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
     public set preDelayTime(value: number) {
         this._preDelayTime = value;
-        // Predelay is 0-100 ms despite docs saying otherwise
-        this.dattorro.preDelay = (value / 1.27) * (this.sampleRate / 1000);
+        // Predelay is 0-127 ms
+        this.dattorro.preDelay = (value / 1000) * this.sampleRate;
     }
 
     private _level = 0;
@@ -254,14 +254,14 @@ export class SpessaSynthReverb implements ReverbProcessor {
      * @param outputLeft startIndex-based
      * @param outputRight startIndex-based
      * @param startIndex
-     * @param endIndex
+     * @param sampleCount
      */
     public process(
         input: Float32Array,
         outputLeft: Float32Array,
         outputRight: Float32Array,
         startIndex: number,
-        endIndex: number
+        sampleCount: number
     ) {
         switch (this._character) {
             default: {
@@ -271,7 +271,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
                     outputLeft,
                     outputRight,
                     startIndex,
-                    endIndex
+                    sampleCount
                 );
                 return;
             }
@@ -279,10 +279,9 @@ export class SpessaSynthReverb implements ReverbProcessor {
             case 6: {
                 // Delay
                 // Grow buffer if needed
-                const samples = endIndex - startIndex;
-                if (this.delayLeftOutput.length < samples) {
-                    this.delayLeftOutput = new Float32Array(samples);
-                    this.delayPreLPF = new Float32Array(samples);
+                if (this.delayLeftOutput.length < sampleCount) {
+                    this.delayLeftOutput = new Float32Array(sampleCount);
+                    this.delayPreLPF = new Float32Array(sampleCount);
                 }
                 // Process pre-lowpass
                 let delayIn: Float32Array;
@@ -290,7 +289,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
                     const preLPF = this.delayPreLPF;
                     let z = this.preLPFz;
                     const a = this.preLPFa;
-                    for (let i = 0; i < samples; i++) {
+                    for (let i = 0; i < sampleCount; i++) {
                         const x = input[i];
                         z += a * (x - z);
                         preLPF[i] = z;
@@ -301,25 +300,29 @@ export class SpessaSynthReverb implements ReverbProcessor {
                     delayIn = input;
                 }
                 // Process delay
-                this.delayLeft.process(delayIn, this.delayLeftOutput, samples);
+                this.delayLeft.process(
+                    delayIn,
+                    this.delayLeftOutput,
+                    sampleCount
+                );
                 // Mix down
                 const g = this.delayGain;
-                for (let i = startIndex; i < endIndex; i++) {
-                    const sample = this.delayLeftOutput[i - startIndex] * g;
-                    outputRight[i] += sample;
-                    outputLeft[i] += sample;
+                const delay = this.delayLeftOutput;
+                for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
+                    const sample = delay[i] * g;
+                    outputRight[o] += sample;
+                    outputLeft[o] += sample;
                 }
                 return;
             }
             case 7: {
                 // Panning Delay
                 // Grow buffer if needed
-                const samples = endIndex - startIndex;
-                if (this.delayLeftOutput.length < samples) {
-                    this.delayLeftOutput = new Float32Array(samples);
-                    this.delayRightOutput = new Float32Array(samples);
-                    this.delayLeftInput = new Float32Array(samples);
-                    this.delayPreLPF = new Float32Array(samples);
+                if (this.delayLeftOutput.length < sampleCount) {
+                    this.delayLeftOutput = new Float32Array(sampleCount);
+                    this.delayRightOutput = new Float32Array(sampleCount);
+                    this.delayLeftInput = new Float32Array(sampleCount);
+                    this.delayPreLPF = new Float32Array(sampleCount);
                 }
                 // Process pre-lowpass
                 let delayIn: Float32Array;
@@ -327,7 +330,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
                     const preLPF = this.delayPreLPF;
                     let z = this.preLPFz;
                     const a = this.preLPFa;
-                    for (let i = 0; i < samples; i++) {
+                    for (let i = 0; i < sampleCount; i++) {
                         const x = input[i];
                         z += a * (x - z);
                         preLPF[i] = z;
@@ -339,28 +342,28 @@ export class SpessaSynthReverb implements ReverbProcessor {
                 }
                 // Mix right into left
                 const fb = this.panDelayFeedback;
-                for (let i = 0; i < samples; i++) {
-                    this.delayLeftInput[i] =
-                        delayIn[i] + this.delayRightOutput[i] * fb;
+                const { delayLeftInput, delayLeftOutput, delayRightOutput } =
+                    this;
+                for (let i = 0; i < sampleCount; i++) {
+                    delayLeftInput[i] = delayIn[i] + delayRightOutput[i] * fb;
                 }
                 // Process left
                 this.delayLeft.process(
-                    this.delayLeftInput,
-                    this.delayLeftOutput,
-                    samples
+                    delayLeftInput,
+                    delayLeftOutput,
+                    sampleCount
                 );
                 // Process right
                 this.delayRight.process(
-                    this.delayLeftOutput,
-                    this.delayRightOutput,
-                    samples
+                    delayLeftOutput,
+                    delayRightOutput,
+                    sampleCount
                 );
                 // Mix
                 const g = this.delayGain;
-                for (let i = startIndex; i < endIndex; i++) {
-                    const idx = i - startIndex;
-                    outputLeft[i] += this.delayLeftOutput[idx] * g;
-                    outputRight[i] += this.delayRightOutput[idx] * g;
+                for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
+                    outputLeft[o] += delayLeftOutput[i] * g;
+                    outputRight[o] += delayRightOutput[i] * g;
                 }
                 return;
             }
@@ -388,9 +391,10 @@ export class SpessaSynthReverb implements ReverbProcessor {
     }
 
     private updateGain() {
-        this.dattorro.gain = (this.level / 348) * this.characterGainCoefficient;
+        this.dattorro.gain =
+            (this._level / 348) * this.characterGainCoefficient;
         // SC-VA: Delay seems to be quite loud
-        this.delayGain = this.level / 127;
+        this.delayGain = this._level / 127;
     }
 
     private updateTime() {

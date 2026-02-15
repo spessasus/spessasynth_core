@@ -70,7 +70,7 @@ export class DattorroReverb {
         outputLeft: Float32Array,
         outputRight: Float32Array,
         startIndex: number,
-        endIndex: number
+        sampleCount: number
     ) {
         const pd = this.preDelay | 0;
         const fi = this.inputDiffusion1;
@@ -81,14 +81,13 @@ export class DattorroReverb {
         const dp = 1 - this.damping;
         const ex = this.excursionRate / this.sampleRate;
         const ed = (this.excursionDepth * this.sampleRate) / 1000;
-        const samples = endIndex - startIndex;
         const blockStart = this.pDWrite;
         // Write to predelay
-        for (let j = 0; j < samples; j++) {
+        for (let j = 0; j < sampleCount; j++) {
             this.pDelay[(blockStart + j) % this.pDLength] = input[j];
         }
 
-        for (let i = 0; i < samples; i++) {
+        for (let i = 0; i < sampleCount; i++) {
             this.lp1 +=
                 this.preLPF *
                 (this.pDelay[
@@ -146,7 +145,8 @@ export class DattorroReverb {
                 this.readDelayAt(5, this.taps[4]) -
                 this.readDelayAt(6, this.taps[5]) -
                 this.readDelayAt(7, this.taps[6]);
-            outputLeft[i + startIndex] += leftSample * this.gain;
+            const idx = i + startIndex;
+            outputLeft[idx] += leftSample * this.gain;
 
             const rightSample =
                 this.readDelayAt(5, this.taps[7]) +
@@ -157,7 +157,7 @@ export class DattorroReverb {
                 this.readDelayAt(10, this.taps[12]) -
                 this.readDelayAt(11, this.taps[13]);
 
-            outputRight[i + startIndex] += rightSample * this.gain;
+            outputRight[idx] += rightSample * this.gain;
 
             this.excPhase += ex;
             // Advance delays
@@ -171,7 +171,7 @@ export class DattorroReverb {
             }
         }
         // Update preDelay index
-        this.pDWrite = (blockStart + samples) % this.pDLength;
+        this.pDWrite = (blockStart + sampleCount) % this.pDLength;
     }
 
     private makeDelayLine(length: number) {

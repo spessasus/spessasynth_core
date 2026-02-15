@@ -348,14 +348,34 @@ export interface MasterParameterType {
      */
     reverbGain: number;
     /**
+     * If the synthesizer should prevent editing of the reverb parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the reverb parameters then locking it to prevent changes by MIDI files.
+     */
+    reverbLock: boolean;
+    /**
      * The chorus gain, from 0 to any number. 1 is 100% chorus.
      */
     chorusGain: number;
-
+    /**
+     * If the synthesizer should prevent editing of the chorus parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the chorus parameters then locking it to prevent changes by MIDI files.
+     */
+    chorusLock: boolean;
     /**
      * The delay gain, from 0 to any number. 1 is 100% delay.
      */
     delayGain: number;
+    /**
+     * If the synthesizer should prevent editing of the delay parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the delay parameters then locking it to prevent changes by MIDI files.
+     */
+    delayLock: boolean;
     /**
      * Forces note killing instead of releasing. Improves performance in black MIDIs.
      */

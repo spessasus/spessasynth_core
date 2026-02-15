@@ -12,22 +12,6 @@ interface EffectProcessor {
      * more mellow effect sound.
      */
     preLowpass: number;
-
-    /**
-     * Process the effect and ADDS it to the output.
-     * @param input The input buffer to process. It always starts at index 0.
-     * @param outputLeft The left output buffer.
-     * @param outputRight The right output buffer.
-     * @param startIndex The index to start mixing at, inclusive.
-     * @param endIndex The index to stop mixing at, exclusive.
-     */
-    process(
-        input: Float32Array,
-        outputLeft: Float32Array,
-        outputRight: Float32Array,
-        startIndex: number,
-        endIndex: number
-    ): void;
 }
 export interface ReverbProcessor extends EffectProcessor {
     /**
@@ -57,6 +41,22 @@ export interface ReverbProcessor extends EffectProcessor {
      * Higher values result in a longer pre-delay time, simulating a larger reverberant space.
      */
     preDelayTime: number;
+
+    /**
+     * Process the effect and ADDS it to the output.
+     * @param input The input buffer to process. It always starts at index 0.
+     * @param outputLeft The left output buffer.
+     * @param outputRight The right output buffer.
+     * @param startIndex The index to start mixing at into the output buffers.
+     * @param sampleCount The amount of samples to mix.
+     */
+    process(
+        input: Float32Array,
+        outputLeft: Float32Array,
+        outputRight: Float32Array,
+        startIndex: number,
+        sampleCount: number
+    ): void;
 }
 
 export interface ChorusProcessor extends EffectProcessor {
@@ -84,6 +84,40 @@ export interface ChorusProcessor extends EffectProcessor {
      * Higher values result in deeper modulation.
      */
     depth: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of chorus sound that will be sent to the reverb.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToReverb: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of chorus sound that will be sent to the delay.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToDelay: number;
+
+    /**
+     * Process the effect and ADDS it to the output.
+     * @param input The input buffer to process. It always starts at index 0.
+     * @param outputLeft The left output buffer.
+     * @param outputRight The right output buffer.
+     * @param outputReverb The mono input delay for reverb. It always starts at index 0.
+     * @param outputDelay The mono input delay for delay. It always starts at index 0.
+     * @param startIndex The index to start mixing at into the output buffers.
+     * @param sampleCount The amount of samples to mix.
+     */
+    process(
+        input: Float32Array,
+        outputLeft: Float32Array,
+        outputRight: Float32Array,
+        outputReverb: Float32Array,
+        outputDelay: Float32Array,
+        startIndex: number,
+        sampleCount: number
+    ): void;
 }
 
 export interface DelayProcessor extends EffectProcessor {
@@ -142,4 +176,29 @@ export interface DelayProcessor extends EffectProcessor {
      * Negative values are effective with short delay times.
      */
     feedback: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of delay sound that is sent to the reverb.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToReverb: number;
+
+    /**
+     * Process the effect and ADDS it to the output.
+     * @param input The input buffer to process. It always starts at index 0.
+     * @param outputLeft The left output buffer.
+     * @param outputRight The right output buffer.
+     * @param outputReverb The mono input delay for reverb. It always starts at index 0.
+     * @param startIndex The index to start mixing at into the output buffers.
+     * @param sampleCount The amount of samples to mix.
+     */
+    process(
+        input: Float32Array,
+        outputLeft: Float32Array,
+        outputRight: Float32Array,
+        outputReverb: Float32Array,
+        startIndex: number,
+        sampleCount: number
+    ): void;
 }

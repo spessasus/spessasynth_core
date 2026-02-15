@@ -22,6 +22,8 @@ class SpessaSynthChorus implements ChorusProcessor {
     private phase = 0;
     private write = 0;
     private gain = 1;
+    private reverbGain = 0;
+    private delayGain = 0;
     private depthSamples = 0;
     private delaySamples = 1;
     private rateInc = 0;
@@ -33,6 +35,28 @@ class SpessaSynthChorus implements ChorusProcessor {
         this.rightDelayBuffer = new Float32Array(sampleRate);
         // Update alpha
         this.preLowpass = 0;
+    }
+
+    private _sendLevelToReverb = 0;
+
+    public get sendLevelToReverb(): number {
+        return this._sendLevelToReverb;
+    }
+
+    public set sendLevelToReverb(value: number) {
+        this._sendLevelToReverb = value;
+        this.reverbGain = value / 127;
+    }
+
+    private _sendLevelToDelay = 0;
+
+    public get sendLevelToDelay(): number {
+        return this._sendLevelToDelay;
+    }
+
+    public set sendLevelToDelay(value: number) {
+        this._sendLevelToDelay = value;
+        this.delayGain = value / 127;
     }
 
     private _preLowpass = 0;
@@ -117,8 +141,10 @@ class SpessaSynthChorus implements ChorusProcessor {
         input: Float32Array,
         outputLeft: Float32Array,
         outputRight: Float32Array,
+        outputReverb: Float32Array,
+        outputDelay: Float32Array,
         startIndex: number,
-        endIndex: number
+        sampleCount: number
     ) {
         const bufferL = this.leftDelayBuffer;
         const bufferR = this.rightDelayBuffer;
@@ -127,6 +153,8 @@ class SpessaSynthChorus implements ChorusProcessor {
         const depth = this.depthSamples;
         const delay = this.delaySamples;
         const gain = this.gain;
+        const reverbGain = this.reverbGain;
+        const delayGain = this.delayGain;
         const feedback = this.feedbackGain;
 
         const preLPF = this._preLowpass > 0;
@@ -134,8 +162,8 @@ class SpessaSynthChorus implements ChorusProcessor {
         let write = this.write;
         let z = this.preLPFz;
         const a = this.preLPFa;
-        for (let i = startIndex; i < endIndex; i++) {
-            let inputSample = input[i - startIndex];
+        for (let i = 0; i < sampleCount; i++) {
+            let inputSample = input[i];
             // Pre lowpass filter
             if (preLPF) {
                 z += a * (inputSample - z);
@@ -156,7 +184,6 @@ class SpessaSynthChorus implements ChorusProcessor {
             if (x1 >= bufferLen) x1 -= bufferLen;
             let frac = readPosL - x0;
             const outL = bufferL[x0] * (1 - frac) + bufferL[x1] * frac;
-            outputLeft[i] += outL * gain;
 
             // Write input sample
             bufferL[write] = inputSample + outL * feedback;
@@ -175,7 +202,14 @@ class SpessaSynthChorus implements ChorusProcessor {
             if (x1 >= bufferLen) x1 -= bufferLen;
             frac = readPosR - x0;
             const outR = bufferR[x0] * (1 - frac) + bufferR[x1] * frac;
-            outputRight[i] += outR * gain;
+
+            // Mix
+            const o = i + startIndex;
+            outputLeft[o] += outL * gain;
+            outputRight[o] += outR * gain;
+            const mono = (outL + outR) / 2;
+            outputReverb[i] += mono * reverbGain;
+            outputDelay[i] += mono * delayGain;
 
             // Write input sample and advance
             bufferR[write] = inputSample + outR * feedback;

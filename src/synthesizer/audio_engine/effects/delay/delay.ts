@@ -41,6 +41,8 @@ export class SpessaSynthDelay implements DelayProcessor {
     private delayCenterTime;
     private delayLeftMultiplier = 0.04;
     private delayRightMultiplier = 0.04;
+    private gain = 0;
+    private reverbGain = 0;
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
@@ -49,6 +51,17 @@ export class SpessaSynthDelay implements DelayProcessor {
         this.delayCenter = new DelayLine(sampleRate);
         this.delayLeft = new DelayLine(sampleRate);
         this.delayRight = new DelayLine(sampleRate);
+    }
+
+    private _sendLevelToReverb = 0;
+
+    public get sendLevelToReverb(): number {
+        return this._sendLevelToReverb;
+    }
+
+    public set sendLevelToReverb(value: number) {
+        this._sendLevelToReverb = value;
+        this.reverbGain = value / 127;
     }
 
     private _preLowpass = 0;
@@ -87,7 +100,7 @@ export class SpessaSynthDelay implements DelayProcessor {
 
     public set level(value: number) {
         this._level = value;
-        this.updateGain();
+        this.gain = value / 127;
     }
 
     private _levelCenter = 127;
@@ -185,14 +198,14 @@ export class SpessaSynthDelay implements DelayProcessor {
         input: Float32Array,
         outputLeft: Float32Array,
         outputRight: Float32Array,
+        outputReverb: Float32Array,
         startIndex: number,
-        endIndex: number
+        sampleCount: number
     ): void {
         // Grow buffer if needed
-        const samples = endIndex - startIndex;
-        if (this.delayCenterOutput.length < samples) {
-            this.delayCenterOutput = new Float32Array(samples);
-            this.delayPreLPF = new Float32Array(samples);
+        if (this.delayCenterOutput.length < sampleCount) {
+            this.delayCenterOutput = new Float32Array(sampleCount);
+            this.delayPreLPF = new Float32Array(sampleCount);
         }
 
         // Process pre-lowpass
@@ -201,7 +214,7 @@ export class SpessaSynthDelay implements DelayProcessor {
             const preLPF = this.delayPreLPF;
             let z = this.preLPFz;
             const a = this.preLPFa;
-            for (let i = 0; i < samples; i++) {
+            for (let i = 0; i < sampleCount; i++) {
                 const x = input[i];
                 z += a * (x - z);
                 preLPF[i] = z;
@@ -216,41 +229,51 @@ export class SpessaSynthDelay implements DelayProcessor {
         Connections are:
         Input connects to all delays,
         center connects to both output and stereo delays,
-        stereo delays only connect to the output,
+        stereo delays only connect to the output.
+        Also level is separate from reverb send level,
+        i.e. level = 0 and reverb send level = 127 will still send sound to reverb.
          */
+        const { gain, reverbGain } = this;
 
         // Process center first
-        this.delayCenter.process(delayIn, this.delayCenterOutput, samples);
+        this.delayCenter.process(delayIn, this.delayCenterOutput, sampleCount);
 
         // Mix into output
         const center = this.delayCenterOutput;
-        for (let i = startIndex; i < endIndex; i++) {
-            const sample = center[i - startIndex];
-            outputLeft[i] += sample;
-            outputRight[i] += sample;
+        for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
+            const sample = center[i];
+            outputReverb[i] = sample * reverbGain;
+            const outSample = sample * gain;
+            outputLeft[o] += outSample;
+            outputRight[o] += outSample;
         }
 
         // Add input into delay (stereo delays take input from both)
-        for (let i = 0; i < samples; i++) {
+        for (let i = 0; i < sampleCount; i++) {
             center[i] += input[i];
         }
 
-        // Process stereo delays (reuse preLPF array as delays overwrite samples
+        // Process stereo delays (reuse preLPF array as delays overwrite samples)
         const stereoOut = this.delayPreLPF;
-        this.delayLeft.process(center, stereoOut, samples);
-        for (let i = startIndex; i < endIndex; i++) {
-            outputLeft[i] += stereoOut[i - startIndex];
+        // Left
+        this.delayLeft.process(center, stereoOut, sampleCount);
+        for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
+            const sample = stereoOut[i];
+            outputLeft[o] += sample * gain;
+            outputReverb[i] += sample * reverbGain;
         }
-        this.delayRight.process(center, stereoOut, samples);
-        for (let i = startIndex; i < endIndex; i++) {
-            outputRight[i] += stereoOut[i - startIndex];
+        // Right
+        this.delayRight.process(center, stereoOut, sampleCount);
+        for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
+            const sample = stereoOut[i];
+            outputRight[o] += sample * gain;
+            outputReverb[i] += sample * reverbGain;
         }
     }
 
     private updateGain() {
-        const mainGain = this._level / 127;
-        this.delayCenter.gain = (this._levelCenter / 127) * mainGain;
-        this.delayLeft.gain = (this._levelLeft / 127) * mainGain;
-        this.delayRight.gain = (this._levelRight / 127) * mainGain;
+        this.delayCenter.gain = this._levelCenter / 127;
+        this.delayLeft.gain = this._levelLeft / 127;
+        this.delayRight.gain = this._levelRight / 127;
     }
 }

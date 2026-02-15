@@ -79,20 +79,6 @@ export class SynthesizerCore {
     public chorusInput = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
-     * 0-1
-     * This parameter sets the amount of chorus sound that will be sent to the reverb.
-     * Higher values result in more sound being sent.
-     */
-    public chorusToReverb = 0;
-
-    /**
-     * 0-1
-     * This parameter sets the amount of chorus sound that will be sent to the delay. Higher
-     * values result in more sound being sent.
-     */
-    public chorusToDelay = 0;
-
-    /**
      * The synthesizer's delay processor.
      */
     public readonly delayProcessor: DelayProcessor;
@@ -101,13 +87,6 @@ export class SynthesizerCore {
      * The delay processor's input buffer.
      */
     public delayInput = new Float32Array(INITIAL_BUFFER_SIZE);
-
-    /**
-     * 0-1
-     * This parameter sets the amount of delay sound that is sent to the reverb.
-     * Higher values result in more sound being sent.
-     */
-    public delayToReverb = 0;
 
     /**
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
@@ -227,14 +206,6 @@ export class SynthesizerCore {
      * For F5 system exclusive.
      */
     public channelOffset = 0;
-    /**
-     * Left chorus/delay output buffer, for mixing into other effects.
-     */
-    private effectOutL = new Float32Array(INITIAL_BUFFER_SIZE);
-    /**
-     * Right chorus/delay output buffer, for mixing into other effects.
-     */
-    private effectOutR = new Float32Array(INITIAL_BUFFER_SIZE);
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -596,20 +567,20 @@ export class SynthesizerCore {
      *                   │        Voice Processor         │
      *                   └───────────────┬────────────────┘
      *                                   │
-     *              ┌────────────────────┼────────────────────────┐
-     *              │                    │                        │
-     *              │                    𜸊                        │
-     *              │           ┌────────┴───────┐                │
-     *              │           │     Chorus     │                │
-     *              │           │    Processor   ├──────────┐     │
-     *              │           └──┬──────────┬──┘          │     │
-     *              │              │          │             │     │
-     *              │              │          │             │     │
-     *              │              │          │             │     │
-     *              │              │          │             │     │
-     *              │              │          𜸊             𜸊     𜸊
-     *              │              │ ┌────────┴───────┐   ┌─┴─────┴────────┐
-     *              │              │ │     Delay      ├─>>┤     Reverb     │
+     *              ┌──────────┬─────────┼────────────────────────┐
+     *              │          │         │                        │
+     *              │          │         𜸊                        │
+     *              │          │ ┌───────┴───────┐                │
+     *              │          │ │    Chorus     │                │
+     *              │          │ │   Processor   ├──────────┐     │
+     *              │          │ └─┬──────────┬──┘          │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          𜸊             𜸊     𜸊
+     *              │          │   │ ┌────────┴───────┐   ┌─┴─────┴────────┐
+     *              │          └───┼>┤     Delay      ├─>>┤     Reverb     │
      *              │              │ │   Processor    │   │   Processor    │
      *              │              │ └────────┬───────┘   └───────┬────────┘
      *              │              │          │                   │
@@ -626,14 +597,14 @@ export class SynthesizerCore {
      * @param effectsLeft The left stereo effect output buffer.
      * @param effectsRight The right stereo effect output buffer.
      * @param startIndex The index to start writing at into the output buffer.
-     * @param sampleCount The amount of samples to write.
+     * @param samples The amount of samples to write.
      */
     public processSplit(
         outputs: Float32Array[][],
         effectsLeft: Float32Array,
         effectsRight: Float32Array,
         startIndex = 0,
-        sampleCount = 0
+        samples = 0
     ) {
         // Process event queue
         if (this.eventQueue.length > 0) {
@@ -645,20 +616,18 @@ export class SynthesizerCore {
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        const bufferSize = sampleCount || outputs[0][0].length - startIndex;
+        const sampleCount = samples || outputs[0][0].length - startIndex;
 
         // Grow buffers if needed
         if (this.enableEffects) {
             // Grow buffers if needed
-            if (this.reverbInput.length < bufferSize) {
+            if (this.reverbInput.length < sampleCount) {
                 SpessaSynthWarn(
                     "Buffer size has increased, this will cause a memory allocation!"
                 );
-                this.reverbInput = new Float32Array(bufferSize);
-                this.chorusInput = new Float32Array(bufferSize);
-                this.delayInput = new Float32Array(bufferSize);
-                this.effectOutL = new Float32Array(bufferSize);
-                this.effectOutR = new Float32Array(bufferSize);
+                this.reverbInput = new Float32Array(sampleCount);
+                this.chorusInput = new Float32Array(sampleCount);
+                this.delayInput = new Float32Array(sampleCount);
             } else {
                 // Clear the buffers
                 this.reverbInput.fill(0);
@@ -691,7 +660,7 @@ export class SynthesizerCore {
                 outputs[outputIndex][0],
                 outputs[outputIndex][1],
                 startIndex,
-                bufferSize
+                sampleCount
             );
 
             // Update voice count
@@ -700,98 +669,37 @@ export class SynthesizerCore {
         }
 
         // Process effects
-        const endIndex = bufferSize + startIndex;
         if (this.enableEffects) {
-            if (this.chorusToReverb > 0 || this.chorusToDelay > 0) {
-                // Process into effect output
-                this.effectOutL.fill(0);
-                this.effectOutR.fill(0);
-                this.chorusProcessor.process(
-                    this.chorusInput,
-                    this.effectOutL,
-                    this.effectOutR,
-                    0,
-                    bufferSize
-                );
-                // Add to reverb and delay input
-                const {
-                    effectOutL,
-                    effectOutR,
-                    chorusToDelay,
-                    chorusToReverb,
-                    reverbInput,
-                    delayInput
-                } = this;
-                for (let i = 0; i < bufferSize; i++) {
-                    const sample = (effectOutL[i] + effectOutR[i]) / 2;
-                    reverbInput[i] += sample * chorusToReverb;
-                    delayInput[i] += sample * chorusToDelay;
-                }
-
-                // Add to the final mix too
-                for (let i = startIndex; i < endIndex; i++) {
-                    effectsLeft[i] += effectOutL[i - startIndex];
-                    effectsRight[i] += effectOutR[i - startIndex];
-                }
-            } else {
-                // Process directly into the output buffer
-                this.chorusProcessor.process(
-                    this.chorusInput,
-                    effectsLeft,
-                    effectsRight,
-                    startIndex,
-                    endIndex
-                );
-            }
+            const { chorusInput, delayInput, reverbInput } = this;
+            // Chorus first, it feeds to reverb and delay
+            this.chorusProcessor.process(
+                chorusInput,
+                effectsLeft,
+                effectsRight,
+                reverbInput,
+                delayInput,
+                startIndex,
+                sampleCount
+            );
             // CC#94 in XG is variation, not delay
             if (this.delayActive && this.masterParameters.midiSystem !== "xg") {
-                if (this.delayToReverb > 0) {
-                    // Process into effect output
-                    this.effectOutL.fill(0);
-                    this.effectOutR.fill(0);
-                    this.delayProcessor.process(
-                        this.delayInput,
-                        this.effectOutL,
-                        this.effectOutR,
-                        0,
-                        bufferSize
-                    );
-                    // Add to reverb input
-                    const {
-                        effectOutL,
-                        effectOutR,
-                        delayToReverb,
-                        reverbInput
-                    } = this;
-                    for (let i = 0; i < bufferSize; i++) {
-                        reverbInput[i] +=
-                            ((effectOutL[i] + effectOutR[i]) / 2) *
-                            delayToReverb;
-                    }
-
-                    // Add to the final mix too
-                    for (let i = startIndex; i < endIndex; i++) {
-                        effectsLeft[i] += effectOutL[i - startIndex];
-                        effectsRight[i] += effectOutR[i - startIndex];
-                    }
-                } else {
-                    // Process directly into the output buffer
-                    this.delayProcessor.process(
-                        this.delayInput,
-                        effectsLeft,
-                        effectsRight,
-                        startIndex,
-                        endIndex
-                    );
-                }
+                // Process delay
+                this.delayProcessor.process(
+                    delayInput,
+                    effectsLeft,
+                    effectsRight,
+                    reverbInput,
+                    startIndex,
+                    sampleCount
+                );
             }
             // Finally process the reverb processor (it goes directly into the output buffer)
             this.reverbProcessor.process(
-                this.reverbInput,
+                reverbInput,
                 effectsLeft,
                 effectsRight,
                 startIndex,
-                endIndex
+                sampleCount
             );
         }
 
@@ -801,7 +709,7 @@ export class SynthesizerCore {
         }
 
         // Advance the time appropriately
-        this.currentTime += bufferSize * this.sampleTime;
+        this.currentTime += sampleCount * this.sampleTime;
     }
 
     /**
@@ -882,10 +790,12 @@ export class SynthesizerCore {
     }
 
     protected setReverbMacro(macro: number) {
+        if (this.masterParameters.reverbLock) return;
         // SC-8850 manual page 81
-        this.reverbProcessor.level = 64;
-        this.reverbProcessor.preDelayTime = 0;
-        this.reverbProcessor.character = macro;
+        const rev = this.reverbProcessor;
+        rev.level = 64;
+        rev.preDelayTime = 0;
+        rev.character = macro;
         switch (macro) {
             /**
              * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
@@ -908,79 +818,80 @@ export class SynthesizerCore {
              */
             default: {
                 // Room1
-                this.reverbProcessor.character = 0;
-                this.reverbProcessor.preLowpass = 3;
-                this.reverbProcessor.time = 80;
-                this.reverbProcessor.delayFeedback = 0;
-                this.reverbProcessor.preDelayTime = 0;
+                rev.character = 0;
+                rev.preLowpass = 3;
+                rev.time = 80;
+                rev.delayFeedback = 0;
+                rev.preDelayTime = 0;
                 break;
             }
 
             case 1: {
                 // Room2
-                this.reverbProcessor.preLowpass = 4;
-                this.reverbProcessor.time = 56;
-                this.reverbProcessor.delayFeedback = 0;
+                rev.preLowpass = 4;
+                rev.time = 56;
+                rev.delayFeedback = 0;
                 break;
             }
 
             case 2: {
                 // Room3
-                this.reverbProcessor.preLowpass = 0;
-                this.reverbProcessor.time = 72;
-                this.reverbProcessor.delayFeedback = 0;
+                rev.preLowpass = 0;
+                rev.time = 72;
+                rev.delayFeedback = 0;
                 break;
             }
 
             case 3: {
                 // Hall1
-                this.reverbProcessor.preLowpass = 4;
-                this.reverbProcessor.time = 72;
-                this.reverbProcessor.delayFeedback = 0;
+                rev.preLowpass = 4;
+                rev.time = 72;
+                rev.delayFeedback = 0;
                 break;
             }
 
             case 4: {
                 // Hall2
-                this.reverbProcessor.preLowpass = 0;
-                this.reverbProcessor.time = 64;
-                this.reverbProcessor.delayFeedback = 0;
+                rev.preLowpass = 0;
+                rev.time = 64;
+                rev.delayFeedback = 0;
                 break;
             }
 
             case 5: {
                 // Plate
-                this.reverbProcessor.preLowpass = 0;
-                this.reverbProcessor.time = 88;
-                this.reverbProcessor.delayFeedback = 0;
+                rev.preLowpass = 0;
+                rev.time = 88;
+                rev.delayFeedback = 0;
                 break;
             }
 
             case 6: {
                 // Delay
-                this.reverbProcessor.preLowpass = 0;
-                this.reverbProcessor.time = 32;
-                this.reverbProcessor.delayFeedback = 40;
+                rev.preLowpass = 0;
+                rev.time = 32;
+                rev.delayFeedback = 40;
                 break;
             }
 
             case 7: {
                 // Panning delay
-                this.reverbProcessor.preLowpass = 0;
-                this.reverbProcessor.time = 64;
-                this.reverbProcessor.delayFeedback = 32;
+                rev.preLowpass = 0;
+                rev.time = 64;
+                rev.delayFeedback = 32;
                 break;
             }
         }
     }
 
     protected setChorusMacro(macro: number) {
+        if (this.masterParameters.chorusLock) return;
         // SC-8850 manual page 83
         const chr = this.chorusProcessor;
         chr.level = 64;
         chr.preLowpass = 0;
-        this.chorusToReverb = 0;
-        this.chorusToDelay = 0;
+        chr.sendLevelToDelay = 0;
+        chr.sendLevelToReverb = 0;
         switch (macro) {
             /**
              * CHORUS MACRO is a macro parameter that allows global setting of chorus parameters.
@@ -1074,11 +985,12 @@ export class SynthesizerCore {
     }
 
     protected setDelayMacro(macro: number) {
+        if (this.masterParameters.delayLock) return;
         // SC-8850 manual page 85
         const dly = this.delayProcessor;
         dly.level = 64;
         dly.preLowpass = 0;
-        this.delayToReverb = 0;
+        dly.sendLevelToReverb = 0;
         dly.levelRight = dly.levelLeft = 0;
         dly.levelCenter = 127;
         switch (macro) {
@@ -1195,7 +1107,7 @@ export class SynthesizerCore {
                 dly.levelLeft = 114;
                 dly.levelRight = 60;
                 dly.feedback = 61;
-                this.delayToReverb = 36 / 127;
+                dly.sendLevelToReverb = 36;
                 break;
             }
 

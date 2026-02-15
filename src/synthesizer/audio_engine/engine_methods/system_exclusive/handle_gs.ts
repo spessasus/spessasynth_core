@@ -141,15 +141,21 @@ export function handleGS(
 
                         // Part Parameter, Patch Common (Effects)
                         if (addr2 === 0x01) {
+                            const isReverb = addr3 >= 0x30 && addr3 <= 0x37;
+                            const isChorus = addr3 >= 0x38 && addr3 <= 0x40;
+                            const isDelay = addr3 >= 0x50 && addr3 <= 0x5a;
+                            // Disable effect editing if locked
+                            if (isReverb && this.masterParameters.reverbLock)
+                                return;
+                            if (isChorus && this.masterParameters.chorusLock)
+                                return;
+                            if (isDelay && this.masterParameters.delayLock)
+                                return;
                             /*
                             0x40 - chorus to delay
-                            0x50 - delay macro (1st delay param)
-                            0x5A - delay to reverb (last delay param)
                             enable delay that way
                              */
-                            this.delayActive ||=
-                                addr3 === 0x40 ||
-                                (addr3 >= 0x50 && addr3 <= 0x5a);
+                            this.delayActive ||= addr3 === 0x40 || isDelay;
 
                             switch (addr3) {
                                 default: {
@@ -270,7 +276,8 @@ export function handleGS(
                                 }
                                 case 0x3f: {
                                     // Chorus send level to reverb
-                                    this.chorusToReverb = data / 127;
+                                    this.chorusProcessor.sendLevelToReverb =
+                                        data;
                                     coolInfo(
                                         "Chorus Send Level To Reverb",
                                         data
@@ -279,7 +286,8 @@ export function handleGS(
                                 }
                                 case 0x40: {
                                     // Chorus send level to delay
-                                    this.chorusToDelay = data / 127;
+                                    this.chorusProcessor.sendLevelToDelay =
+                                        data;
                                     coolInfo(
                                         "Chorus Send Level To Delay",
                                         data
@@ -350,7 +358,8 @@ export function handleGS(
                                 }
                                 case 0x5a: {
                                     // Delay send level to reverb
-                                    this.delayToReverb = data / 127;
+                                    this.delayProcessor.sendLevelToReverb =
+                                        data;
                                     coolInfo(
                                         "Delay Send Level To Reverb",
                                         data
