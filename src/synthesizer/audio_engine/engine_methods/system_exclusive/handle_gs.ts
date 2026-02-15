@@ -993,8 +993,9 @@ export function handleGS(
                                 );
                                 break;
                             }
+
                             case 0x6: {
-                                // Pan
+                                // Chorus
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
                                     ch.drumParams[drumKey].chorusGain =
@@ -1031,6 +1032,20 @@ export function handleGS(
                                 coolInfo(
                                     `Drum Note On for MAP${map}, key ${drumKey}`,
                                     data === 1
+                                );
+                                break;
+                            }
+
+                            case 0x9: {
+                                // Delay
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].delayGain =
+                                        data / 127;
+                                }
+                                coolInfo(
+                                    `Drum Delay for MAP${map}, key ${drumKey}`,
+                                    data
                                 );
                                 break;
                             }

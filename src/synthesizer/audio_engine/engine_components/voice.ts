@@ -238,6 +238,11 @@ export class Voice {
     public chorusSend = 1;
 
     /**
+     * Delay send of the voice, used for drum parts, otherwise 1.
+     */
+    public delaySend = 1;
+
+    /**
      * Exclusive class number for hi-hats etc.
      */
     public exclusiveClass = 0;

@@ -126,6 +126,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     let pitchOffset = 0;
     let reverbSend = 1;
     let chorusSend = 1;
+    let delaySend = 1;
     if (this.randomPan) {
         // The range is -500 to 500
         panOverride = Math.round(Math.random() * 1000 - 500);
@@ -164,6 +165,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         exclusiveOverride = p.exclusiveClass;
         reverbSend = p.reverbGain;
         chorusSend = p.chorusGain;
+        delaySend = p.delayGain;
         // 1 is no override
         if (voiceGain === 1) {
             voiceGain = p.gain;
@@ -331,6 +333,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.pitchOffset = pitchOffset;
         voice.reverbSend = reverbSend;
         voice.chorusSend = chorusSend;
+        voice.delaySend = delaySend;
 
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(

@@ -392,7 +392,9 @@ export function renderVoice(
     }
 
     if (this.synthCore.delayActive) {
-        const delaySend = this.midiControllers[midiControllers.variationDepth];
+        const delaySend =
+            this.midiControllers[midiControllers.variationDepth] *
+            voice.delaySend;
         if (delaySend > 0) {
             const delayGain =
                 gain *

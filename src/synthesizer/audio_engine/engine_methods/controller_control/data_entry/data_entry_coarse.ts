@@ -366,6 +366,17 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     break;
                 }
 
+                case nonRegisteredMSB.drumDelay: {
+                    this.drumParams[paramFine].delayGain = dataCoarse / 127;
+                    coolInfo(
+                        this.channel,
+                        `Drum ${paramFine} delay level`,
+                        dataCoarse,
+                        ""
+                    );
+                    break;
+                }
+
                 case nonRegisteredMSB.awe32: {
                     break;
                 }

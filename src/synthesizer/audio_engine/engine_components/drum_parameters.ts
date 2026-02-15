@@ -26,6 +26,10 @@ export class DrumParameters {
      * Chorus multiplier.
      */
     public chorusGain = 1;
+    /**
+     * Delay multiplier.
+     */
+    public delayGain = 1;
 
     /**
      * If note on should be received.

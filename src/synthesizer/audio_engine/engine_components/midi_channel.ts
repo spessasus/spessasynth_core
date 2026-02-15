@@ -799,6 +799,7 @@ export class MIDIChannel {
             p.pan = 64;
             p.reverbGain = drumReverbResetArray[i] / 127;
             p.chorusGain = 0; // No drums have chorus
+            p.delayGain = 0; // No drums have delay
             p.rxNoteOn = true;
             p.rxNoteOff = false;
         }

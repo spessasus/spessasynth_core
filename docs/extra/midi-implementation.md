@@ -151,6 +151,7 @@ rr: Drum note number.
 | 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                |
 | 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127 |
 | 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument. (multiplicative of channel) | 0 (none)                        |
+| 0x1f     | rr       | Drum Delay             | Controls the delay level of the drum instrument. (multiplicative of channel)  | 0 (none)                        |
 
 #### Custom Vibrato
 
@@ -351,6 +352,7 @@ These define how a controller affects the sound. See page 198 of the SC-88Pro Ma
 - Chorus Send Level
 - Rx. Note Off (implemented as forcing instant release)
 - Rx. Note On
+- Delay Send Level
 
 ### XG Part Setup
 
