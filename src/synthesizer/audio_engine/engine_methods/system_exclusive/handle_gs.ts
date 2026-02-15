@@ -18,7 +18,7 @@ import type { SynthesizerCore } from "../../synthesizer_core";
 
 const coolInfo = (what: string, value: string | number | boolean) => {
     SpessaSynthInfo(
-        `%cRoland GS ${what}%c for is now set to %c${value}%c.`,
+        `%cRoland GS ${what}%c is now set to %c${value}%c.`,
         consoleColors.recognized,
         consoleColors.info,
         consoleColors.value,
@@ -212,7 +212,12 @@ export function handleGS(
                                     coolInfo("Reverb Delay Feedback", data);
                                     break;
                                 }
-                                // No 0x36??
+
+                                case 0x36: {
+                                    // Reverb send to chorus, legacy SC-55 that's recognized by later models and unsupported.
+                                    break;
+                                }
+
                                 case 0x37: {
                                     // Reverb predelay time
                                     this.reverbProcessor.preDelayTime = data;

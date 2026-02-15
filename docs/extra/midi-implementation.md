@@ -417,8 +417,26 @@ That is:
 
 ## Effects
 
-SpessaSynth's effects are modeled after the Sound Canvas line. There are currently 3 effect processors:
+SpessaSynth's effects are modeled after the Sound Canvas line.
+There are currently 3 effect processors, below are their built-in implementations.
 
-- Reverb
-- Chorus
-- Delay (disabled in XG mode)
+### Reverb
+
+Characters 0-5 use the Dattorro reverb model, based on [this processor](https://github.com/khoin/DattorroReverbNode).
+Each of the characters has parameters tuned to match the SC-55 effects more closely.
+The built-in pre-lowpass filter is used for the pre-LPF param.
+
+Character 6 uses a single delay line while character 7 uses a ping-pong delay.
+A simple 1st order lowpass filter is used for the pre-LPF param.
+
+### Chorus
+
+Implemented using 2 delay lines modulated by triangle LFOs.
+A simple 1st order lowpass filter is used for the pre-LPF param.
+
+### Delay
+
+Implemented using 3 delay lines, with the central one having feedback and feeding into the stereo delays.
+Input is fed to all three.
+
+Disabled in XG mode as CC#94 (used as delay send level) is used for Variation which is not implemented.

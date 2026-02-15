@@ -109,7 +109,7 @@ Note: cB - centibels, 1/10 of a decibel
 ### SF2 Default
 
 These are the default modulators, as defined by the SF2.04 specification.
-Note that the [velocity to filter modulator is intentionally disabled](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+Note that the [velocity to filter modulator is intentionally disabledt](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
 
 | Source                       | Source Transform          | Secondary source                           | Destination          | Transform amount |
 | ---------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |
