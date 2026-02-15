@@ -76,6 +76,11 @@ It allows you to:
     - **Detects special articulator combinations:** _Such as vibratoLfoToPitch_
 - **Soundfont manager:** Stack multiple soundfonts!
 - **Unlimited channel count:** Your CPU is the limit!
+- **Built-in, configurable effects:**
+    - **Reverb:** _Multiple characters including delay and panning delay!_
+    - **Chorus:** _Modulated delay lines with multiple presets!_
+    - **Delay:** _Three delay lines for all of your delay needs!_
+    - **Replaceable:** _Effects not to your taste? You can bring your own!_
 - **Excellent MIDI Standards Support:**
     - **MIDI Controller Support:** Default supported
       controllers [here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#default-supported-controllers)
@@ -88,8 +93,9 @@ It allows you to:
     - **SoundFont2 NRPN Support**
     - [**AWE32**
       NRPN Compatibility Layer](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#awe32-nrpn-compatibility-layer)
-    - Supports some [**Roland GS** and **Yamaha XG**
-      system exclusives](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-system-exclusives)
+    - [**Roland GS** and **Yamaha XG**
+      support!](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-system-exclusives)
+    - Built-in effects are GS-Compatible!
 
 ### Powerful and Fast MIDI Sequencer
 
