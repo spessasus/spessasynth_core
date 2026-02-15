@@ -109,7 +109,7 @@ Note: cB - centibels, 1/10 of a decibel
 ### SF2 Default
 
 These are the default modulators, as defined by the SF2.04 specification.
-Note that the [velocity to filter modulator is intentionally omitted](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+Note that the [velocity to filter modulator is intentionally disabled](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
 
 | Source                       | Source Transform          | Secondary source                           | Destination          | Transform amount |
 | ---------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |
@@ -117,7 +117,7 @@ Note that the [velocity to filter modulator is intentionally omitted](https://gi
 | **CC 1** (Modulation Wheel)  | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
 | **CC 7** (Volume)            | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
 | **CC 13** (Channel Pressure) | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
-| Pitch Wheel                  | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune            | 12700 cents      |
+| **Pitch Wheel**              | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune            | 12700 cents      |
 | **CC 10** (Pan)              | Positive Bipolar Linear   | -                                          | Pan                  | 500 percent      |
 | **CC 11** (Expression)       | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
 | **CC 91** (Reverb Depth)     | Negative Unipolar Linear  | -                                          | Reverb effects send  | 200 percent      |
@@ -129,7 +129,7 @@ SpessaSynth applies a few extra modulators for extended compatibility with vario
 
 | Source                       | Source Transform         | Secondary source | Destination              | Transform amount |
 | ---------------------------- | ------------------------ | ---------------- | ------------------------ | ---------------- |
-| Poly Pressure                | Positive Unipolar Linear | -                | Vibrato LFO to pitch     | 50 cents         |
+| **Poly Pressure**            | Positive Unipolar Linear | -                | Vibrato LFO to pitch     | 50 cents         |
 | **CC 8** (Balance)           | Positive Bipolar Linear  | -                | Pan                      | 500 percent      |
 | **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial attenuation      | 50 cB            |
 | **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -2400 abs cents  |
@@ -138,7 +138,6 @@ SpessaSynth applies a few extra modulators for extended compatibility with vario
 | **CC 73** (Vol Env Release)  | Positive Bipolar Linear  | -                | Volume envelope release  | 3600 timecents   |
 | **CC 74** (Filter Cutoff)    | Positive Bipolar Linear  | -                | Initial Filter Cutoff    | 9600 abs cents   |
 | **CC 75** (Vol Env Decay)    | Positive Bipolar Linear  | -                | Volume envelope decay    | 3600 timecents   |
-| **CC 92** (Tremolo Depth)    | Positive Unipolar Linear | -                | Mod LFO to volume        | 24 cB            |
 
 ### Resonant modulator
 
