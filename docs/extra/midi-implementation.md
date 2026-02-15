@@ -295,6 +295,18 @@ Below are the supported GS SysEx Parameters.
 - Chorus Rate
 - Chorus Depth
 - Chorus Send Level To Reverb
+- Chorus Send Level To Delay
+- Delay Macro
+- Delay Pre-LPF
+- Delay Time Center
+- Delay Ratio Left
+- Delay Ratio Right
+- Delay Level Center
+- Delay Level Left
+- Delay Level Right
+- Delay Level
+- Delay Feedback
+- Delay Send Level To Reverb
 
 #### Patch Part Parameters
 
@@ -311,6 +323,7 @@ Below are the supported GS SysEx Parameters.
 - Chorus Send Level
 - Reverb Send Level
 - Pitch Fine Tune
+- Delay Send Level
 - Vibrato Rate
 - Vibrato Depth
 - TVF Cutoff

@@ -42,6 +42,7 @@ export function handleGS(
     if (syx[3] === 0x12) {
         // Model ID
         switch (syx[2]) {
+            // GS
             case 0x42: {
                 {
                     // This is a GS sysex
@@ -174,49 +175,43 @@ export function handleGS(
                                     );
                                     break;
                                 }
-
+                                // Reverb
                                 case 0x30: {
                                     // Reverb macro
                                     this.setReverbMacro(data);
                                     coolInfo("Reverb Macro", data);
                                     break;
                                 }
-
                                 case 0x31: {
                                     // Reverb character
                                     this.reverbProcessor.character = data;
                                     coolInfo("Reverb Character", data);
                                     break;
                                 }
-
                                 case 0x32: {
                                     // Reverb pre-PLF
                                     this.reverbProcessor.preLowpass = data;
                                     coolInfo("Reverb Pre-LPF", data);
                                     break;
                                 }
-
                                 case 0x33: {
                                     // Reverb level
                                     this.reverbProcessor.level = data;
                                     coolInfo("Reverb Level", data);
                                     break;
                                 }
-
                                 case 0x34: {
                                     // Reverb time
                                     this.reverbProcessor.time = data;
                                     coolInfo("Reverb Time", data);
                                     break;
                                 }
-
                                 case 0x35: {
                                     // Reverb delay feedback
                                     this.reverbProcessor.delayFeedback = data;
                                     coolInfo("Reverb Delay Feedback", data);
                                     break;
                                 }
-
                                 // No 0x36??
                                 case 0x37: {
                                     // Reverb predelay time
@@ -225,16 +220,17 @@ export function handleGS(
                                     break;
                                 }
 
+                                // Chorus
                                 case 0x38: {
                                     // Chorus macro
                                     this.setChorusMacro(data);
                                     coolInfo("Chorus Macro", data);
                                     break;
                                 }
-
                                 case 0x39: {
                                     // Chorus pre-LPF
                                     this.chorusProcessor.preLowpass = data;
+                                    coolInfo("Pre-LPF", data);
                                     break;
                                 }
                                 case 0x3a: {
@@ -243,35 +239,30 @@ export function handleGS(
                                     coolInfo("Chorus Level", data);
                                     break;
                                 }
-
                                 case 0x3b: {
                                     // Chorus feedback
                                     this.chorusProcessor.feedback = data;
                                     coolInfo("Chorus Feedback", data);
                                     break;
                                 }
-
                                 case 0x3c: {
                                     // Chorus delay
                                     this.chorusProcessor.delay = data;
                                     coolInfo("Chorus Delay", data);
                                     break;
                                 }
-
                                 case 0x3d: {
                                     // Chorus rate
                                     this.chorusProcessor.rate = data;
                                     coolInfo("Chorus Rate", data);
                                     break;
                                 }
-
                                 case 0x3e: {
                                     // Chorus depth
                                     this.chorusProcessor.depth = data;
                                     coolInfo("Chorus Depth", data);
                                     break;
                                 }
-
                                 case 0x3f: {
                                     // Chorus send level to reverb
                                     this.chorusToReverb = data / 127;
@@ -281,12 +272,82 @@ export function handleGS(
                                     );
                                     break;
                                 }
-
                                 case 0x40: {
                                     // Chorus send level to delay
                                     this.chorusToDelay = data / 127;
                                     coolInfo(
                                         "Chorus Send Level To Delay",
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                // Delay
+                                case 0x50: {
+                                    // Delay macro
+                                    this.setDelayMacro(data);
+                                    coolInfo("Delay Macro", data);
+                                    break;
+                                }
+                                case 0x51: {
+                                    // Delay pre-PLF
+                                    this.delayProcessor.preLowpass = data;
+                                    coolInfo("Delay Pre-LPF", data);
+                                    break;
+                                }
+                                case 0x52: {
+                                    // Delay time center
+                                    this.delayProcessor.timeCenter = data;
+                                    coolInfo("Delay Time Center", data);
+                                    break;
+                                }
+                                case 0x53: {
+                                    // Delay time ratio left
+                                    this.delayProcessor.timeRatioLeft = data;
+                                    coolInfo("Delay Time Ratio Left", data);
+                                    break;
+                                }
+                                case 0x54: {
+                                    // Delay time ratio right
+                                    this.delayProcessor.timeRatioRight = data;
+                                    coolInfo("Delay Time Ratio Right", data);
+                                    break;
+                                }
+                                case 0x55: {
+                                    // Delay level center
+                                    this.delayProcessor.levelCenter = data;
+                                    coolInfo("Delay Level Center", data);
+                                    break;
+                                }
+                                case 0x56: {
+                                    // Delay level left
+                                    this.delayProcessor.levelLeft = data;
+                                    coolInfo("Delay Level Left", data);
+                                    break;
+                                }
+                                case 0x57: {
+                                    // Delay level right
+                                    this.delayProcessor.levelRight = data;
+                                    coolInfo("Delay Level Right", data);
+                                    break;
+                                }
+                                case 0x58: {
+                                    // Delay level
+                                    this.delayProcessor.level = data;
+                                    coolInfo("Delay Level", data);
+                                    break;
+                                }
+                                case 0x59: {
+                                    // Delay feedback
+                                    this.delayProcessor.feedback = data;
+                                    coolInfo("Delay Feedback", data);
+                                    break;
+                                }
+                                case 0x5a: {
+                                    // Delay send level to reverb
+                                    this.delayToReverb = data / 127;
+                                    coolInfo(
+                                        "Delay Send Level To Reverb",
                                         data
                                     );
                                     break;
@@ -434,6 +495,15 @@ export function handleGS(
                                     const tune = (data << 7) | syx[8];
                                     const tuneCents = (tune - 8192) / 81.92;
                                     channelObject.setTuning(tuneCents);
+                                    break;
+                                }
+
+                                // Delay send
+                                case 0x2c: {
+                                    channelObject.controllerChange(
+                                        midiControllers.variationDepth,
+                                        data
+                                    );
                                     break;
                                 }
 
@@ -974,6 +1044,7 @@ export function handleGS(
                 return;
             }
 
+            // GS Display
             case 0x45: {
                 // 0x45: GS Display Data
                 // Check for embedded copyright
@@ -996,8 +1067,8 @@ export function handleGS(
                 return;
             }
 
+            // Some Roland
             case 0x16: {
-                // Some Roland
                 if (syx[4] === 0x10) {
                     // This is a roland master volume message
                     this.setMIDIVolume(syx[7] / 100);
@@ -1014,7 +1085,7 @@ export function handleGS(
         }
     } else {
         // This is something else...
-        sysExNotRecognized(syx, "Roland GS");
+        sysExNotRecognized(syx, "Roland");
         return;
     }
 }

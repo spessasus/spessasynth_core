@@ -500,14 +500,15 @@ export class SynthesizerCore {
         this.setMasterParameter("midiSystem", system);
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
+        this.channelOffset = 0;
         this.setMIDIVolume(1);
         // Hall2 default
         this.setReverbMacro(4);
         // Chorus3 default
         this.setChorusMacro(2);
-
+        // Delay1 default
+        this.setDelayMacro(0);
         this.delayActive = false;
-        this.channelOffset = 0;
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
@@ -1067,6 +1068,146 @@ export class SynthesizerCore {
                 chr.depth = 127;
                 chr.rate = 0;
                 chr.depth = 127;
+                break;
+            }
+        }
+    }
+
+    protected setDelayMacro(macro: number) {
+        // SC-8850 manual page 85
+        const dly = this.delayProcessor;
+        dly.level = 64;
+        dly.preLowpass = 0;
+        this.delayToReverb = 0;
+        dly.levelRight = dly.levelLeft = 0;
+        dly.levelCenter = 127;
+        switch (macro) {
+            /**
+             * DELAY MACRO is a macro parameter that allows global setting of delay parameters. When you select the delay type with DELAY MACRO, each delay parameter will be set to their most
+             * suitable value.
+             *
+             * Delay1, Delay2, Delay3
+             * These are conventional delays. 1, 2 and 3 have progressively longer delay times.
+             * Delay4
+             * This is a delay with a rather short delay time.
+             * Pan Delay1. Pan Delay2. Pan Delay3
+             * The delay sound moves between left and right. This is effective when listening in
+             * stereo. 1, 2 and 3 have progressively longer delay times.
+             * Pan Delay4
+             * This is a rather short delay with the delayed sound moving between left and
+             * right.
+             * It is effective when listening in stereo.
+             * Dly To Rev
+             * Reverb is added to the delay sound, which moves between left and right.
+             * It is effective when listening in stereo.
+             * PanRepeat
+             * The delay sound moves between left and right,
+             * but the pan positioning is different from the effects listed above.
+             * It is effective when listening in stereo.
+             */
+            case 0:
+            default: {
+                // Delay1
+                dly.timeCenter = 97;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 80;
+                break;
+            }
+
+            case 1: {
+                // Delay2
+                dly.timeCenter = 106;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 80;
+                break;
+            }
+
+            case 2: {
+                // Delay3
+                dly.timeCenter = 115;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 3: {
+                // Delay4
+                dly.timeCenter = 83;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 4: {
+                // PanDelay1
+                dly.timeCenter = 105;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 125;
+                dly.levelRight = 60;
+                dly.feedback = 74;
+                break;
+            }
+
+            case 5: {
+                // PanDelay2
+                dly.timeCenter = 109;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 125;
+                dly.levelRight = 60;
+                dly.feedback = 71;
+                break;
+            }
+
+            case 6: {
+                // PanDelay3
+                dly.timeCenter = 115;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 120;
+                dly.levelRight = 64;
+                dly.feedback = 73;
+                break;
+            }
+
+            case 7: {
+                // PanDelay4
+                dly.timeCenter = 93;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 120;
+                dly.levelRight = 64;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 8: {
+                // DelayToReverb
+                dly.timeCenter = 109;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 114;
+                dly.levelRight = 60;
+                dly.feedback = 61;
+                this.delayToReverb = 36 / 127;
+                break;
+            }
+
+            case 9: {
+                // PanRepeat
+                dly.timeCenter = 110;
+                dly.timeRatioLeft = 21;
+                dly.timeRatioRight = 32;
+                dly.levelCenter = 97;
+                dly.levelLeft = 127;
+                dly.levelRight = 67;
+                dly.feedback = 40;
                 break;
             }
         }

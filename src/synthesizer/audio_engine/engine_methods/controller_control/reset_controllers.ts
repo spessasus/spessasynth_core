@@ -103,7 +103,7 @@ export const nonResettableCCs = new Set<MIDIController>([
     midiControllers.reverbDepth,
     midiControllers.tremoloDepth,
     midiControllers.chorusDepth,
-    midiControllers.detuneDepth,
+    midiControllers.variationDepth,
     midiControllers.phaserDepth,
     midiControllers.soundVariation,
     midiControllers.filterResonance,

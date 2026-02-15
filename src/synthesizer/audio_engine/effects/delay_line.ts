@@ -1,5 +1,6 @@
 export class DelayLine {
     public feedback = 0;
+    public gain = 1;
     private readonly buffer;
     private readonly bufferLength;
     private writeIndex = 0;
@@ -43,12 +44,13 @@ export class DelayLine {
         const buffer = this.buffer;
         const bufferLength = this.bufferLength;
         const feedback = this.feedback;
+        const gain = this.gain;
         for (let i = 0; i < sampleCount; i++) {
             // Read
             let readIndex = writeIndex - delay;
             if (readIndex < 0) readIndex += bufferLength;
             const delayed = buffer[readIndex];
-            output[i] = delayed;
+            output[i] = delayed * gain;
 
             // Write
             buffer[writeIndex] = input[i] + delayed * feedback;
