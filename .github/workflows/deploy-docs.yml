@@ -32,7 +32,7 @@ jobs:
                   python-version: "3.13"
 
             - name: Install mkdocs
-              run: pip install mkdocs mkdocs-material pymdownx-extensions pygments
+              run: pip install mkdocs mkdocs-material Pygments
 
             - name: Build
               run: mkdocs build
