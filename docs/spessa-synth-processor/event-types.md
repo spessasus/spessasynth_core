@@ -218,3 +218,17 @@ This event is triggered when a master parameter changes.
 Note that this event usually triggers from the MIDI system change or user's change.
 
 [All master parameters can be found here](master-parameter.md)
+
+### `effectChange`
+
+This event is triggered when an effect processor has one of its parameters changed.
+
+- `effect`: `"reverb"|"chorus"|"delay"` - The effect processor that triggered the event.
+- `parameter`: varies - The parameter corresponding to the effect processor or `"macro"` if a preset macro was set.
+- `value`: `number` - The new 7-bit value of the parameter.
+
+The effects and their parameters can be found here:
+
+- [reverb](reverb-processor.md)
+- [chorus](chorus-processor.md)
+- [delay](delay-processor.md)

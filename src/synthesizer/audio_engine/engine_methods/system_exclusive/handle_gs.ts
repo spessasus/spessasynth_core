@@ -186,36 +186,62 @@ export function handleGS(
                                     // Reverb macro
                                     this.setReverbMacro(data);
                                     coolInfo("Reverb Macro", data);
+                                    // Event called in setMacro
                                     break;
                                 }
                                 case 0x31: {
                                     // Reverb character
                                     this.reverbProcessor.character = data;
                                     coolInfo("Reverb Character", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "character",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x32: {
                                     // Reverb pre-PLF
                                     this.reverbProcessor.preLowpass = data;
                                     coolInfo("Reverb Pre-LPF", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "preLowpass",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x33: {
                                     // Reverb level
                                     this.reverbProcessor.level = data;
                                     coolInfo("Reverb Level", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "level",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x34: {
                                     // Reverb time
                                     this.reverbProcessor.time = data;
                                     coolInfo("Reverb Time", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "time",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x35: {
                                     // Reverb delay feedback
                                     this.reverbProcessor.delayFeedback = data;
                                     coolInfo("Reverb Delay Feedback", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "delayFeedback",
+                                        value: data
+                                    });
                                     break;
                                 }
 
@@ -228,6 +254,11 @@ export function handleGS(
                                     // Reverb predelay time
                                     this.reverbProcessor.preDelayTime = data;
                                     coolInfo("Reverb Predelay Time", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "preDelayTime",
+                                        value: data
+                                    });
                                     break;
                                 }
 
@@ -236,42 +267,73 @@ export function handleGS(
                                     // Chorus macro
                                     this.setChorusMacro(data);
                                     coolInfo("Chorus Macro", data);
+                                    // Event called in setMacro
                                     break;
                                 }
                                 case 0x39: {
                                     // Chorus pre-LPF
                                     this.chorusProcessor.preLowpass = data;
                                     coolInfo("Pre-LPF", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "preLowpass",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x3a: {
                                     // Chorus level
                                     this.chorusProcessor.level = data;
                                     coolInfo("Chorus Level", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "level",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x3b: {
                                     // Chorus feedback
                                     this.chorusProcessor.feedback = data;
                                     coolInfo("Chorus Feedback", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "feedback",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x3c: {
                                     // Chorus delay
                                     this.chorusProcessor.delay = data;
                                     coolInfo("Chorus Delay", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "delay",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x3d: {
                                     // Chorus rate
                                     this.chorusProcessor.rate = data;
                                     coolInfo("Chorus Rate", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "rate",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x3e: {
                                     // Chorus depth
                                     this.chorusProcessor.depth = data;
                                     coolInfo("Chorus Depth", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "depth",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x3f: {
@@ -282,6 +344,11 @@ export function handleGS(
                                         "Chorus Send Level To Reverb",
                                         data
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "sendLevelToReverb",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x40: {
@@ -292,6 +359,11 @@ export function handleGS(
                                         "Chorus Send Level To Delay",
                                         data
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "sendLevelToDelay",
+                                        value: data
+                                    });
                                     break;
                                 }
 
@@ -300,60 +372,106 @@ export function handleGS(
                                     // Delay macro
                                     this.setDelayMacro(data);
                                     coolInfo("Delay Macro", data);
+                                    // Event called in setMacro
                                     break;
                                 }
                                 case 0x51: {
                                     // Delay pre-PLF
                                     this.delayProcessor.preLowpass = data;
                                     coolInfo("Delay Pre-LPF", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "preLowpass",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x52: {
                                     // Delay time center
                                     this.delayProcessor.timeCenter = data;
                                     coolInfo("Delay Time Center", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "timeCenter",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x53: {
                                     // Delay time ratio left
                                     this.delayProcessor.timeRatioLeft = data;
                                     coolInfo("Delay Time Ratio Left", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "timeRatioLeft",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x54: {
                                     // Delay time ratio right
                                     this.delayProcessor.timeRatioRight = data;
                                     coolInfo("Delay Time Ratio Right", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "timeRatioRight",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x55: {
                                     // Delay level center
                                     this.delayProcessor.levelCenter = data;
                                     coolInfo("Delay Level Center", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "levelCenter",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x56: {
                                     // Delay level left
                                     this.delayProcessor.levelLeft = data;
                                     coolInfo("Delay Level Left", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "levelLeft",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x57: {
                                     // Delay level right
                                     this.delayProcessor.levelRight = data;
                                     coolInfo("Delay Level Right", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "levelRight",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x58: {
                                     // Delay level
                                     this.delayProcessor.level = data;
                                     coolInfo("Delay Level", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "level",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x59: {
                                     // Delay feedback
                                     this.delayProcessor.feedback = data;
                                     coolInfo("Delay Feedback", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "feedback",
+                                        value: data
+                                    });
                                     break;
                                 }
                                 case 0x5a: {
@@ -364,6 +482,11 @@ export function handleGS(
                                         "Delay Send Level To Reverb",
                                         data
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "sendLevelToReverb",
+                                        value: data
+                                    });
                                     break;
                                 }
                             }

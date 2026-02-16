@@ -768,7 +768,8 @@ export class MIDIChannel {
     }
 
     protected resetDrumParams() {
-        if (this.synthCore.masterParameters.drumLock) return;
+        if (this.synthCore.masterParameters.drumLock || !this.drumChannel)
+            return;
         for (let i = 0; i < 128; i++) {
             const p = this.drumParams[i];
             p.pitch = 0;

@@ -901,6 +901,11 @@ export class SynthesizerCore {
                 break;
             }
         }
+        this.callEvent("effectChange", {
+            effect: "reverb",
+            parameter: "macro",
+            value: macro
+        });
     }
 
     protected setChorusMacro(macro: number) {
@@ -1001,6 +1006,11 @@ export class SynthesizerCore {
                 break;
             }
         }
+        this.callEvent("effectChange", {
+            effect: "chorus",
+            parameter: "macro",
+            value: macro
+        });
     }
 
     protected setDelayMacro(macro: number) {
@@ -1142,6 +1152,11 @@ export class SynthesizerCore {
                 break;
             }
         }
+        this.callEvent("effectChange", {
+            effect: "delay",
+            parameter: "macro",
+            value: macro
+        });
     }
 
     protected getCachedVoice(

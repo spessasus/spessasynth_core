@@ -157,6 +157,50 @@ export interface ChannelPropertyChangeCallback {
     property: ChannelProperty;
 }
 
+export type EffectChangeCallback =
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus" or "delay"
+           */
+          effect: "reverb";
+          /**
+           * The parameter type or "macro".
+           */
+          parameter: keyof ReverbProcessor | "macro";
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus" or "delay"
+           */
+          effect: "chorus";
+          /**
+           * The parameter type or "macro".
+           */
+          parameter: keyof ChorusProcessor | "macro";
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus" or "delay"
+           */
+          effect: "delay";
+          /**
+           * The parameter type or "macro".
+           */
+          parameter: keyof DelayProcessor | "macro";
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      };
+
 export interface SynthProcessorEventData {
     /**
      * This event fires when a note is played.
@@ -226,6 +270,11 @@ export interface SynthProcessorEventData {
      * This event fires when a channel property changes.
      */
     channelPropertyChange: ChannelPropertyChangeCallback;
+
+    /**
+     * This event fires when an effect processor is modified.
+     */
+    effectChange: EffectChangeCallback;
 }
 
 export type SynthProcessorEvent = {
@@ -413,3 +462,9 @@ export interface MasterParameterType {
      */
     deviceID: number;
 }
+
+export {
+    type ChorusProcessor,
+    type DelayProcessor,
+    type ReverbProcessor
+} from "./audio_engine/effects/types";
