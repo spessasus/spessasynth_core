@@ -157,6 +157,8 @@ export interface ChannelPropertyChangeCallback {
     property: ChannelProperty;
 }
 
+type FXType<K> = Exclude<keyof K, "process"> | "macro";
+
 export type EffectChangeCallback =
     | {
           /**
@@ -166,7 +168,7 @@ export type EffectChangeCallback =
           /**
            * The parameter type or "macro".
            */
-          parameter: keyof ReverbProcessor | "macro";
+          parameter: FXType<ReverbProcessor>;
           /**
            * The new 7-bit value.
            */
@@ -180,7 +182,7 @@ export type EffectChangeCallback =
           /**
            * The parameter type or "macro".
            */
-          parameter: keyof ChorusProcessor | "macro";
+          parameter: FXType<ChorusProcessor>;
           /**
            * The new 7-bit value.
            */
@@ -194,7 +196,7 @@ export type EffectChangeCallback =
           /**
            * The parameter type or "macro".
            */
-          parameter: keyof DelayProcessor | "macro";
+          parameter: FXType<DelayProcessor>;
           /**
            * The new 7-bit value.
            */
