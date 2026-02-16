@@ -136,6 +136,18 @@ export function handleXG(
                     break;
                 }
 
+                // Rev. channel
+                case 0x04: {
+                    channelObject.rxChannel = data + channelOffset;
+                    this.customChannelNumbers ||=
+                        channelObject.rxChannel !== channelObject.channel;
+                    coolInfo(
+                        `Rev. Channel on ${channel}`,
+                        channelObject.rxChannel
+                    );
+                    break;
+                }
+
                 // Poly/mono
                 case 0x05: {
                     channelObject.polyMode = data === 1;
@@ -188,14 +200,6 @@ export function handleXG(
                             pan
                         );
                     }
-                    break;
-                }
-                // Dry
-                case 0x11: {
-                    channelObject.controllerChange(
-                        midiControllers.mainVolume,
-                        data
-                    );
                     break;
                 }
 

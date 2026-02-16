@@ -15,6 +15,7 @@ import { MIDIChannel } from "./engine_components/midi_channel";
 import { SoundBankManager } from "./engine_components/sound_bank_manager";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager";
 import {
+    DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
     INITIAL_BUFFER_SIZE
 } from "./engine_components/synth_constants";
@@ -56,43 +57,23 @@ export class SynthesizerCore {
     /**
      * All MIDI channels of the synthesizer.
      */
-    public midiChannels: MIDIChannel[] = [];
-
-    /**
-     * The synthesizer's reverb processor.
-     */
-    public readonly reverbProcessor: ReverbProcessor;
-
+    public readonly midiChannels: MIDIChannel[] = [];
     /**
      * The reverb processor's input buffer.
      */
     public reverbInput = new Float32Array(INITIAL_BUFFER_SIZE);
-
-    /**
-     * The synthesizer's chorus processor.
-     */
-    public readonly chorusProcessor: ChorusProcessor;
-
     /**
      * The chorus processor's input buffer.
      */
     public chorusInput = new Float32Array(INITIAL_BUFFER_SIZE);
-
-    /**
-     * The synthesizer's delay processor.
-     */
-    public readonly delayProcessor: DelayProcessor;
-
     /**
      * The delay processor's input buffer.
      */
     public delayInput = new Float32Array(INITIAL_BUFFER_SIZE);
-
     /**
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
      */
     public delayActive = false;
-
     /**
      * The sound bank manager, which manages all sound banks and presets.
      */
@@ -201,11 +182,27 @@ export class SynthesizerCore {
      * Current total amount of voices that are currently playing.
      */
     public voiceCount = 0;
-
+    /**
+     * A sysEx may set a "Part" (channel) to receive on a different channel number.
+     * This slows down the access, so this toggle tracks if it's enabled or not.
+     */
+    public customChannelNumbers = false;
+    /**
+     * The synthesizer's reverb processor.
+     */
+    protected readonly reverbProcessor: ReverbProcessor;
+    /**
+     * The synthesizer's chorus processor.
+     */
+    protected readonly chorusProcessor: ChorusProcessor;
+    /**
+     * The synthesizer's delay processor.
+     */
+    protected readonly delayProcessor: DelayProcessor;
     /**
      * For F5 system exclusive.
      */
-    public channelOffset = 0;
+    protected portSelectChannelOffset = 0;
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -214,7 +211,12 @@ export class SynthesizerCore {
     /**
      * Synth's event queue from the main thread
      */
-    private eventQueue: { callback: () => unknown; time: number }[] = [];
+    private eventQueue: {
+        message: Uint8Array | number[];
+        force: boolean;
+        channelOffset: number;
+        time: number;
+    }[] = [];
     /**
      * The time of a single sample, in seconds.
      */
@@ -257,6 +259,92 @@ export class SynthesizerCore {
         for (let i = 0; i < this.masterParameters.voiceCap; i++) {
             this.voices.push(new Voice(this.sampleRate));
         }
+    }
+
+    public controllerChange(
+        channel: number,
+        controllerNumber: MIDIController,
+        controllerValue: number
+    ) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel)
+                    ch.controllerChange(controllerNumber, controllerValue);
+            return;
+        }
+        this.midiChannels[
+            channel + this.portSelectChannelOffset
+        ].controllerChange(controllerNumber, controllerValue);
+    }
+
+    public noteOn(channel: number, midiNote: number, velocity: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.noteOn(midiNote, velocity);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].noteOn(
+            midiNote,
+            velocity
+        );
+    }
+
+    public noteOff(channel: number, midiNote: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.noteOff(midiNote);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].noteOff(
+            midiNote
+        );
+    }
+
+    public polyPressure(channel: number, midiNote: number, pressure: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel)
+                    ch.polyPressure(midiNote, pressure);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].polyPressure(
+            midiNote,
+            pressure
+        );
+    }
+
+    public channelPressure(channel: number, pressure: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.channelPressure(pressure);
+            return;
+        }
+        this.midiChannels[
+            channel + this.portSelectChannelOffset
+        ].channelPressure(pressure);
+    }
+
+    public pitchWheel(channel: number, pitch: number, midiNote = -1) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.pitchWheel(pitch, midiNote);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].pitchWheel(
+            pitch,
+            midiNote
+        );
+    }
+
+    public programChange(channel: number, programNumber: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.programChange(programNumber);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].programChange(
+            programNumber
+        );
     }
 
     /**
@@ -303,99 +391,21 @@ export class SynthesizerCore {
      */
     public processMessage(
         message: Uint8Array | number[],
-        channelOffset: number,
-        force: boolean,
-        options: SynthMethodOptions
+        channelOffset = 0,
+        force = false,
+        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
-        const call = () => {
-            const statusByteData = getEvent(message[0] as MIDIMessageType);
-
-            const channel = statusByteData.channel + channelOffset;
-            // Process the event
-            switch (statusByteData.status as MIDIMessageType) {
-                case midiMessageTypes.noteOn: {
-                    const velocity = message[2];
-                    if (velocity > 0) {
-                        this.midiChannels[channel].noteOn(message[1], velocity);
-                    } else {
-                        this.midiChannels[channel].noteOff(message[1]);
-                    }
-                    break;
-                }
-
-                case midiMessageTypes.noteOff: {
-                    if (force) {
-                        this.midiChannels[channel].killNote(message[1]);
-                    } else {
-                        this.midiChannels[channel].noteOff(message[1]);
-                    }
-                    break;
-                }
-
-                case midiMessageTypes.pitchWheel: {
-                    // LSB | (MSB << 7)
-                    this.midiChannels[channel].pitchWheel(
-                        (message[2] << 7) | message[1]
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.controllerChange: {
-                    this.midiChannels[channel].controllerChange(
-                        message[1] as MIDIController,
-                        message[2]
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.programChange: {
-                    this.midiChannels[channel].programChange(message[1]);
-                    break;
-                }
-
-                case midiMessageTypes.polyPressure: {
-                    this.midiChannels[channel].polyPressure(
-                        message[1],
-                        message[2]
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.channelPressure: {
-                    this.midiChannels[channel].channelPressure(message[1]);
-                    break;
-                }
-
-                case midiMessageTypes.systemExclusive: {
-                    this.systemExclusive(
-                        new IndexedByteArray(message.slice(1)),
-                        channelOffset
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.reset: {
-                    // Do not **force** stop channels (breaks seamless loops, for example th06)
-                    this.stopAllChannels(false);
-                    this.resetAllControllers();
-                    break;
-                }
-
-                default: {
-                    break;
-                }
-            }
-        };
-
         const time = options.time;
         if (time > this.currentTime) {
             this.eventQueue.push({
-                callback: call.bind(this),
-                time: time
+                message,
+                channelOffset,
+                force,
+                time
             });
             this.eventQueue.sort((e1, e2) => e1.time - e2.time);
         } else {
-            call();
+            this.processMessageInternal(message, channelOffset, force);
         }
     }
 
@@ -471,7 +481,8 @@ export class SynthesizerCore {
         this.setMasterParameter("midiSystem", system);
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
-        this.channelOffset = 0;
+        this.portSelectChannelOffset = 0;
+        this.customChannelNumbers = false;
         this.setMIDIVolume(1);
         // Hall2 default
         this.setReverbMacro(4);
@@ -592,6 +603,7 @@ export class SynthesizerCore {
      *    │  Dry Output Pairs  │ │        Stereo Effects Output        │
      *    └────────────────────┘ └─────────────────────────────────────┘
      * ```
+     * The pipeline is quite similar to the one on SC-8850 manual page 78.
      * All output arrays must be the same length, the method will crash otherwise.
      * @param outputs The stereo pairs for each MIDI channel's dry output, will be wrapped if less.
      * @param effectsLeft The left stereo effect output buffer.
@@ -610,7 +622,14 @@ export class SynthesizerCore {
         if (this.eventQueue.length > 0) {
             const time = this.currentTime;
             while (this.eventQueue[0]?.time <= time) {
-                this.eventQueue.shift()?.callback();
+                const q = this.eventQueue.shift();
+                if (q) {
+                    this.processMessageInternal(
+                        q.message,
+                        q.channelOffset,
+                        q.force
+                    );
+                }
             }
         }
 
@@ -1145,6 +1164,86 @@ export class SynthesizerCore {
             this.getCachedVoiceIndex(patch, midiNote, velocity),
             voices
         );
+    }
+
+    private processMessageInternal(
+        message: Uint8Array | number[],
+        channelOffset: number,
+        force: boolean
+    ) {
+        const statusByteData = getEvent(message[0] as MIDIMessageType);
+
+        const channelNumber = statusByteData.channel + channelOffset;
+        // Process the event
+        switch (statusByteData.status as MIDIMessageType) {
+            case midiMessageTypes.noteOn: {
+                const velocity = message[2];
+                if (velocity > 0) {
+                    this.noteOn(channelNumber, message[1], velocity);
+                } else {
+                    this.noteOff(channelNumber, message[1]);
+                }
+                break;
+            }
+
+            case midiMessageTypes.noteOff: {
+                if (force) {
+                    this.midiChannels[channelNumber].killNote(message[1]);
+                } else {
+                    this.noteOff(channelNumber, message[1]);
+                }
+                break;
+            }
+
+            case midiMessageTypes.pitchWheel: {
+                // LSB | (MSB << 7)
+                this.pitchWheel(channelNumber, (message[2] << 7) | message[1]);
+                break;
+            }
+
+            case midiMessageTypes.controllerChange: {
+                this.controllerChange(
+                    channelNumber,
+                    message[1] as MIDIController,
+                    message[2]
+                );
+                break;
+            }
+
+            case midiMessageTypes.programChange: {
+                this.programChange(channelNumber, message[1]);
+                break;
+            }
+
+            case midiMessageTypes.polyPressure: {
+                this.polyPressure(channelNumber, message[1], message[2]);
+                break;
+            }
+
+            case midiMessageTypes.channelPressure: {
+                this.channelPressure(channelNumber, message[1]);
+                break;
+            }
+
+            case midiMessageTypes.systemExclusive: {
+                this.systemExclusive(
+                    new IndexedByteArray(message.slice(1)),
+                    channelOffset
+                );
+                break;
+            }
+
+            case midiMessageTypes.reset: {
+                // Do not **force** stop channels (breaks seamless loops, for example th06)
+                this.stopAllChannels(false);
+                this.resetAllControllers();
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
     }
 
     /**

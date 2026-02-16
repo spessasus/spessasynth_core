@@ -18,8 +18,9 @@ import type { SynthesizerCore } from "../synthesizer_core";
 export function systemExclusiveInternal(
     this: SynthesizerCore,
     syx: SysExAcceptedArray,
-    channelOffset: number
+    channelOffset = 0
 ) {
+    channelOffset += this.portSelectChannelOffset;
     const manufacturer = syx[0];
     // Ensure that the device ID matches
     if (
@@ -66,11 +67,11 @@ export function systemExclusiveInternal(
         // https://www.vogons.org/viewtopic.php?p=1404746#p1404746
         case 0xf5: {
             if (syx.length < 2) return;
-            this.channelOffset = (syx[1] - 1) * 16;
+            this.portSelectChannelOffset = (syx[1] - 1) * 16;
             // Create new port if needed
-            while (this.midiChannels.length <= this.channelOffset) {
+            while (this.midiChannels.length <= this.portSelectChannelOffset) {
                 SpessaSynthInfo(
-                    `%cPort select, channel offset %c${this.channelOffset}%c. Creating a new port!`,
+                    `%cPort select, channel offset %c${this.portSelectChannelOffset}%c. Creating a new port!`,
                     consoleColors.info,
                     consoleColors.value,
                     consoleColors.info

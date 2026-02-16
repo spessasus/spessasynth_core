@@ -1,7 +1,6 @@
 import { SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
 import {
-    DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
@@ -63,7 +62,7 @@ export class SpessaSynthProcessor {
         right: Float32Array,
         startIndex?: number,
         sampleCount?: number
-    ) => unknown;
+    ) => void;
 
     // noinspection JSUnusedGlobalSymbols
     /**
@@ -81,7 +80,109 @@ export class SpessaSynthProcessor {
         effectsRight: Float32Array,
         startIndex?: number,
         sampleCount?: number
-    ) => unknown;
+    ) => void;
+
+    /**
+     * Executes a system exclusive message for the synthesizer.
+     * @param syx The system exclusive message as an array of bytes.
+     * @param channelOffset The channel offset to apply (default is 0).
+     */
+    public readonly systemExclusive: (
+        syx: SysExAcceptedArray,
+        channelOffset?: number
+    ) => void;
+
+    /**
+     * Executes a MIDI controller change message on the specified channel.
+     * @param channel The MIDI channel to change the controller on.
+     * @param controllerNumber The MIDI controller number to change.
+     * @param controllerValue The value to set the controller to.
+     */
+    public readonly controllerChange: (
+        channel: number,
+        controllerNumber: MIDIController,
+        controllerValue: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Note-on message on the specified channel.
+     * @param channel The MIDI channel to send the note on.
+     * @param midiNote The MIDI note number to play.
+     * @param velocity The velocity of the note, from 0 to 127.
+     * @remarks
+     * If the velocity is 0, it will be treated as a Note-off message.
+     */
+    public readonly noteOn: (
+        channel: number,
+        midiNote: number,
+        velocity: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Note-off message on the specified channel.
+     * @param channel The MIDI channel to send the note off.
+     * @param midiNote The MIDI note number to stop playing.
+     */
+    public readonly noteOff: (channel: number, midiNote: number) => void;
+
+    /**
+     * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
+     * @param channel The MIDI channel to send the poly pressure on.
+     * @param midiNote The MIDI note number to apply the pressure to.
+     * @param pressure The pressure value, from 0 to 127.
+     */
+    public readonly polyPressure: (
+        channel: number,
+        midiNote: number,
+        pressure: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Channel Pressure (Aftertouch) message on the specified channel.
+     * @param channel The MIDI channel to send the channel pressure on.
+     * @param pressure The pressure value, from 0 to 127.
+     */
+    public readonly channelPressure: (
+        channel: number,
+        pressure: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Pitch Wheel message on the specified channel.
+     * @param channel The MIDI channel to send the pitch wheel on.
+     * @param pitch The new pitch value: 0-16384
+     * @param midiNote The MIDI note number (optional), pass -1 for the regular pitch wheel.
+     */
+    public readonly pitchWheel: (
+        channel: number,
+        pitch: number,
+        midiNote?: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Program Change message on the specified channel.
+     * @param channel The MIDI channel to send the program change on.
+     * @param programNumber The program number to change to, from 0 to 127.
+     */
+    public readonly programChange: (
+        channel: number,
+        programNumber: number
+    ) => void;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Processes a raw MIDI message.
+     * @param message The message to process.
+     * @param channelOffset The channel offset for the message.
+     * @param force If true, forces the message to be processed.
+     * @param options Additional options for scheduling the message.
+     */
+    public readonly processMessage: (
+        message: Uint8Array | number[],
+        channelOffset?: number,
+        force?: boolean,
+        options?: SynthMethodOptions
+    ) => void;
 
     /**
      * Core synthesis engine.
@@ -121,9 +222,19 @@ export class SpessaSynthProcessor {
             options
         );
 
-        // Bind rendering methods for less overhead
-        this.process = this.synthCore.process.bind(this.synthCore);
-        this.processSplit = this.synthCore.processSplit.bind(this.synthCore);
+        // Bind methods for less overhead
+        const c = this.synthCore;
+        this.process = c.process.bind(c);
+        this.processSplit = c.processSplit.bind(c);
+        this.systemExclusive = c.systemExclusive.bind(c);
+        this.controllerChange = c.controllerChange.bind(c);
+        this.noteOn = c.noteOn.bind(c);
+        this.noteOff = c.noteOff.bind(c);
+        this.polyPressure = c.polyPressure.bind(c);
+        this.channelPressure = c.channelPressure.bind(c);
+        this.pitchWheel = c.pitchWheel.bind(c);
+        this.programChange = c.programChange.bind(c);
+        this.processMessage = c.processMessage.bind(c);
 
         for (let i = 0; i < MIDI_CHANNEL_COUNT; i++) {
             // Don't send events as we're creating the initial channels
@@ -276,18 +387,6 @@ export class SpessaSynthProcessor {
     };
 
     /**
-     * Executes a system exclusive message for the synthesizer.
-     * @param syx The system exclusive message as an array of bytes.
-     * @param channelOffset The channel offset to apply (default is 0).
-     */
-    public systemExclusive(syx: SysExAcceptedArray, channelOffset = 0) {
-        this.synthCore.systemExclusive(
-            syx,
-            channelOffset + this.synthCore.channelOffset
-        );
-    }
-
-    /**
      * Sets a master parameter of the synthesizer.
      * @param type The type of the master parameter to set.
      * @param value The value to set for the master parameter.
@@ -412,93 +511,6 @@ export class SpessaSynthProcessor {
         this.synthCore.destroySynthProcessor();
     }
 
-    /**
-     * Executes a MIDI controller change message on the specified channel.
-     * @param channel The MIDI channel to change the controller on.
-     * @param controllerNumber The MIDI controller number to change.
-     * @param controllerValue The value to set the controller to.
-     */
-    public controllerChange(
-        channel: number,
-        controllerNumber: MIDIController,
-        controllerValue: number
-    ) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].controllerChange(controllerNumber, controllerValue);
-    }
-
-    /**
-     * Executes a MIDI Note-on message on the specified channel.
-     * @param channel The MIDI channel to send the note on.
-     * @param midiNote The MIDI note number to play.
-     * @param velocity The velocity of the note, from 0 to 127.
-     * @remarks
-     * If the velocity is 0, it will be treated as a Note-off message.
-     */
-    public noteOn(channel: number, midiNote: number, velocity: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].noteOn(midiNote, velocity);
-    }
-
-    /**
-     * Executes a MIDI Note-off message on the specified channel.
-     * @param channel The MIDI channel to send the note off.
-     * @param midiNote The MIDI note number to stop playing.
-     */
-    public noteOff(channel: number, midiNote: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].noteOff(midiNote);
-    }
-
-    /**
-     * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
-     * @param channel The MIDI channel to send the poly pressure on.
-     * @param midiNote The MIDI note number to apply the pressure to.
-     * @param pressure The pressure value, from 0 to 127.
-     */
-    public polyPressure(channel: number, midiNote: number, pressure: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].polyPressure(midiNote, pressure);
-    }
-
-    /**
-     * Executes a MIDI Channel Pressure (Aftertouch) message on the specified channel.
-     * @param channel The MIDI channel to send the channel pressure on.
-     * @param pressure The pressure value, from 0 to 127.
-     */
-    public channelPressure(channel: number, pressure: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].channelPressure(pressure);
-    }
-
-    /**
-     * Executes a MIDI Pitch Wheel message on the specified channel.
-     * @param channel The MIDI channel to send the pitch wheel on.
-     * @param pitch The new pitch value: 0-16384
-     * @param midiNote The MIDI note number, pass -1 for the regular pitch wheel
-     */
-    public pitchWheel(channel: number, pitch: number, midiNote = -1) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].pitchWheel(pitch, midiNote);
-    }
-
-    /**
-     * Executes a MIDI Program Change message on the specified channel.
-     * @param channel The MIDI channel to send the program change on.
-     * @param programNumber The program number to change to, from 0 to 127.
-     */
-    public programChange(channel: number, programNumber: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].programChange(programNumber);
-    }
-
     // noinspection JSUnusedGlobalSymbols
     /**
      * DEPRECATED, does nothing!
@@ -508,28 +520,6 @@ export class SpessaSynthProcessor {
     public killVoices(amount: number) {
         SpessaSynthWarn(
             `killVoices is deprecated, don't use it! Amount requested: ${amount}`
-        );
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Processes a raw MIDI message.
-     * @param message The message to process.
-     * @param channelOffset The channel offset for the message.
-     * @param force If true, forces the message to be processed.
-     * @param options Additional options for scheduling the message.
-     */
-    public processMessage(
-        message: Uint8Array | number[],
-        channelOffset = 0,
-        force = false,
-        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
-    ) {
-        this.synthCore.processMessage(
-            message,
-            channelOffset + this.synthCore.channelOffset,
-            force,
-            options
         );
     }
 

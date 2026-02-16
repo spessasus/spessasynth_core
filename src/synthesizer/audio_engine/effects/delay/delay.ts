@@ -242,7 +242,7 @@ export class SpessaSynthDelay implements DelayProcessor {
         const center = this.delayCenterOutput;
         for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
             const sample = center[i];
-            outputReverb[i] = sample * reverbGain;
+            outputReverb[i] += sample * reverbGain;
             const outSample = sample * gain;
             outputLeft[o] += outSample;
             outputRight[o] += outSample;

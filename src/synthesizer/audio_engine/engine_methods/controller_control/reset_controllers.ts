@@ -55,6 +55,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.octaveTuning.fill(0);
     resetPortamento.call(this, sendCCEvents);
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
+    this.rxChannel = this.channel;
     this.randomPan = false;
     this.cc1 = 0x10;
     this.cc2 = 0x11;

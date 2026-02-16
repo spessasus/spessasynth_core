@@ -398,6 +398,22 @@ export function handleGS(
                                     break;
                                 }
 
+                                case 0x02: {
+                                    // Rx. channel (0x10 is OFF)
+                                    channelObject.rxChannel =
+                                        data === 0x10
+                                            ? -1
+                                            : data + channelOffset;
+                                    this.customChannelNumbers ||=
+                                        channelObject.rxChannel !==
+                                        channelObject.channel;
+                                    coolInfo(
+                                        `Rx. Channel on ${channel}`,
+                                        channelObject.rxChannel
+                                    );
+                                    break;
+                                }
+
                                 case 0x13: {
                                     // Mono/poly
                                     channelObject.polyMode = data === 1;

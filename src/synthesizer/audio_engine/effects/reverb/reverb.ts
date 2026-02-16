@@ -174,8 +174,8 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
             case 4: {
                 // Hall2
-                this.characterGainCoefficient = 0.65;
-                this.dattorro.damping = 0.1;
+                this.characterGainCoefficient = 0.75;
+                this.dattorro.damping = 0.2;
                 this.characterLPFCoefficient = 0.2;
                 break;
             }

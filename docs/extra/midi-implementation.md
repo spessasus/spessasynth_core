@@ -311,8 +311,7 @@ Below are the supported GS SysEx Parameters.
 #### Patch Part Parameters
 
 - Tone Number (Bank + Program change)
-- Tone Map Number (Bank LSB)
-- Tone Map-0 Number (treated as Bank LSB)
+- Rx. Channel
 - Mono/Poly Mode
 - Use for Rhythm Part
 - Pitch Key Shift
@@ -333,10 +332,12 @@ Below are the supported GS SysEx Parameters.
 - TVA Release Time
 - Vibrato Delay
 - Scale Tuning
+- Tone Map Number (Bank LSB)
+- Tone Map-0 Number (treated as Bank LSB)
 
 #### Patch Part Parameters (Controllers)
 
-All Of them except for LFO rate as it's in Hz rather than cents.
+All of them except for LFO rate as it's in Hz rather than cents.
 
 These define how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system.
 
@@ -357,23 +358,28 @@ These define how a controller affects the sound. See page 198 of the SC-88Pro Ma
 
 Below are the supported part setup messages for XG.
 
-| Number (hex) | Name                                                   |
-| ------------ | ------------------------------------------------------ |
-| 01           | Bank Select MSB                                        |
-| 02           | Bank Select LSB                                        |
-| 03           | Program change                                         |
-| 0B           | Volume                                                 |
-| 0E           | Pan A value of 0 means random panning for every voice. |
-| 13           | Reverb                                                 |
-| 12           | Chorus                                                 |
-| 15           | Vibrato Rate                                           |
-| 16           | Vibrato Depth                                          |
-| 17           | Vibrato Decay                                          |
-| 18           | Filter Cutoff                                          |
-| 19           | Filter Resonance                                       |
-| 1A           | Attack Time                                            |
-| 1B           | Decay Time                                             |
-| 1C           | Release Time                                           |
+| Number (hex) | Name                                                    |
+| ------------ | ------------------------------------------------------- |
+| 01           | Bank Select MSB                                         |
+| 02           | Bank Select LSB                                         |
+| 03           | Program change                                          |
+| 04           | Receive channel number                                  |
+| 04           | Receive channel number                                  |
+| 05           | Poly/mono mode                                          |
+| 07           | Part mode                                               |
+| 08           | Note shift                                              |
+| 0B           | Volume                                                  |
+| 0E           | Pan, a value of 0 means random panning for every voice. |
+| 13           | Reverb                                                  |
+| 12           | Chorus                                                  |
+| 15           | Vibrato Rate                                            |
+| 16           | Vibrato Depth                                           |
+| 17           | Vibrato Decay                                           |
+| 18           | Filter Cutoff                                           |
+| 19           | Filter Resonance                                        |
+| 1A           | Attack Time                                             |
+| 1B           | Decay Time                                              |
+| 1C           | Release Time                                            |
 
 #### XG Drum Setup
 

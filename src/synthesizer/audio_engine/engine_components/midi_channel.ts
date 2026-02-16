@@ -183,6 +183,12 @@ export class MIDIChannel {
      * The channel's number (0-based index)
      */
     public readonly channel: number;
+
+    /**
+     * The channel's receiving number (0-based index)
+     * Only used when customChannelNumbers is enabled
+     */
+    public rxChannel: number;
     /**
      * Core synthesis engine.
      */
@@ -300,6 +306,7 @@ export class MIDIChannel {
         this.synthCore = synthProps;
         this.preset = preset;
         this.channel = channelNumber;
+        this.rxChannel = channelNumber;
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
         for (let i = 0; i < 128; i++) {
