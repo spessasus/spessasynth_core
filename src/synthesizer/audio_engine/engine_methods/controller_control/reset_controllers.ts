@@ -54,13 +54,13 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     // Reset system exclusive things
     this.octaveTuning.fill(0);
     resetPortamento.call(this, sendCCEvents);
-    this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
     this.rxChannel = this.channel;
     this.randomPan = false;
     this.cc1 = 0x10;
     this.cc2 = 0x11;
     this.drumMap = this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0;
     this.resetDrumParams();
+    this.resetVibratoParams();
 
     // Reset to poly
     if (
@@ -128,8 +128,6 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     // Reset pitch wheel
     this.perNotePitch = false;
     this.pitchWheel(8192);
-
-    this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
 
     for (let i = 0; i < 128; i++) {
         const resetValue = defaultMIDIControllerValues[i];

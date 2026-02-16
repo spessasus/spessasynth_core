@@ -105,9 +105,6 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
         // Process NRPNs
         case dataEntryStates.NRPFine: {
-            if (this.lockGSNRPNParams) {
-                return;
-            }
             const paramCoarse =
                 this.midiControllers[
                     midiControllers.nonRegisteredParameterMSB
@@ -149,6 +146,11 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                 // Part parameters
                 case nonRegisteredMSB.partParameter: {
+                    const paramLock =
+                        this.synthCore.masterParameters.nprnParamLock;
+                    const vibratoLock =
+                        this.synthCore.masterParameters.customVibratoLock ||
+                        paramLock;
                     switch (paramFine) {
                         default: {
                             if (dataCoarse === 64) {
@@ -171,7 +173,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Vibrato rate (custom vibrato)
                         case nonRegisteredLSB.vibratoRate: {
-                            if (dataCoarse === 64) {
+                            if (vibratoLock || dataCoarse === 64) {
                                 return;
                             }
                             addDefaultVibrato(this);
@@ -187,7 +189,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Vibrato depth (custom vibrato)
                         case nonRegisteredLSB.vibratoDepth: {
-                            if (dataCoarse === 64) {
+                            if (vibratoLock || dataCoarse === 64) {
                                 return;
                             }
                             addDefaultVibrato(this);
@@ -203,7 +205,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Vibrato delay (custom vibrato)
                         case nonRegisteredLSB.vibratoDelay: {
-                            if (dataCoarse === 64) {
+                            if (vibratoLock || dataCoarse === 64) {
                                 return;
                             }
                             addDefaultVibrato(this);
@@ -219,6 +221,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Filter cutoff
                         case nonRegisteredLSB.TVFFilterCutoff: {
+                            if (paramLock) return;
                             // Affect the "brightness" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.brightness,
@@ -234,6 +237,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         }
 
                         case nonRegisteredLSB.TVFFilterResonance: {
+                            if (paramLock) return;
                             // Affect the "resonance" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.filterResonance,
@@ -250,6 +254,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Attack time
                         case nonRegisteredLSB.EGAttackTime: {
+                            if (paramLock) return;
                             // Affect the "attack time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.attackTime,
@@ -264,7 +269,9 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                             break;
                         }
 
+                        // Decay time
                         case nonRegisteredLSB.EGDecayTime: {
+                            if (paramLock) return;
                             // Affect the "decay time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.decayTime,
@@ -281,6 +288,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Release time
                         case nonRegisteredLSB.EGReleaseTime: {
+                            if (paramLock) return;
                             // Affect the "release time" controller as we have a default modulator that controls it
                             this.controllerChange(
                                 midiControllers.releaseTime,

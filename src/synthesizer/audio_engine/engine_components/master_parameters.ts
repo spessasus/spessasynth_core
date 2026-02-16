@@ -21,6 +21,8 @@ export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     chorusLock: false,
     delayLock: false,
     drumLock: false,
+    customVibratoLock: false,
+    nprnParamLock: false,
     blackMIDIMode: false,
     transposition: 0,
     deviceID: ALL_CHANNELS_OR_DIFFERENT_ACTION

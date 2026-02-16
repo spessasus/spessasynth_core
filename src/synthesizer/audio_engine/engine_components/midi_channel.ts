@@ -155,16 +155,12 @@ export class MIDIChannel {
      */
     public lockedSystem: SynthSystem = "gs";
     /**
-     * Indicates whether the GS NRPN parameters are enabled for this channel.
-     */
-    public lockGSNRPNParams = false;
-    /**
      * The vibrato settings for the channel.
      * @property depth - Depth of the vibrato effect in cents.
      * @property delay - Delay before the vibrato effect starts (in seconds).
      * @property rate - Rate of the vibrato oscillation (in Hz).
      */
-    public channelVibrato: { delay: number; depth: number; rate: number } = {
+    public readonly channelVibrato = {
         delay: 0,
         depth: 0,
         rate: 0
@@ -313,6 +309,7 @@ export class MIDIChannel {
             this.drumParams.push(new DrumParameters());
         }
         this.resetDrumParams();
+        this.resetVibratoParams();
     }
 
     /**
@@ -622,33 +619,6 @@ export class MIDIChannel {
         this.patch.isGMGSDrum = drums;
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Sets a custom vibrato.
-     * @param depth In cents.
-     * @param rate In Hertz.
-     * @param delay seconds.
-     */
-    public setVibrato(depth: number, rate: number, delay: number) {
-        if (this.lockGSNRPNParams) {
-            return;
-        }
-        this.channelVibrato.rate = rate;
-        this.channelVibrato.delay = delay;
-        this.channelVibrato.depth = depth;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Disables and locks all GS NPRN parameters, including the custom vibrato.
-     */
-    public disableAndLockGSNRPN() {
-        this.lockGSNRPNParams = true;
-        this.channelVibrato.rate = 0;
-        this.channelVibrato.delay = 0;
-        this.channelVibrato.depth = 0;
-    }
-
     public resetGeneratorOverrides() {
         this.generatorOverrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
         this.generatorOverridesEnabled = false;
@@ -811,6 +781,13 @@ export class MIDIChannel {
             p.rxNoteOn = true;
             p.rxNoteOff = false;
         }
+    }
+
+    protected resetVibratoParams() {
+        if (this.synthCore.masterParameters.customVibratoLock) return;
+        this.channelVibrato.rate = 0;
+        this.channelVibrato.depth = 0;
+        this.channelVibrato.delay = 0;
     }
 
     protected computeModulatorsAll(

@@ -378,11 +378,23 @@ export interface MasterParameterType {
     delayLock: boolean;
     /**
      * If the synthesizer should prevent editing of the drum parameters.
-     * This effect is modified using MIDI system exclusive messages, so
+     * These params are modified using MIDI system exclusive messages or NRPN, so
      * the recommended use case would be setting
      * the drum parameters then locking it to prevent changes by MIDI files.
      */
     drumLock: boolean;
+    /**
+     * If the synthesizer should prevent applying the custom vibrato.
+     * This effect is modified using NRPN, so
+     * the recommended use case would be setting
+     * the custom vibrato then locking it to prevent changes by MIDI files.
+     */
+    customVibratoLock: boolean;
+    /**
+     * If the synthesizer should prevent changing any parameters via NRPN.
+     * This includes the custom vibrato parameters.
+     */
+    nprnParamLock: boolean;
     /**
      * Forces note killing instead of releasing. Improves performance in black MIDIs.
      */

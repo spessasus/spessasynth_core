@@ -47,6 +47,12 @@ interface SynthProcessorOptions {
 
 All properties are optional. If they are not supplied, the defaults will be used.
 
+## Effects
+
+- [Reverb](reverb-processor.md)
+- [Chorus](chorus-processor.md)
+- [Delay](delay-processor.md)
+
 ## Managers
 
 - [Key Modifier Manager](key-modifier-manager.md)

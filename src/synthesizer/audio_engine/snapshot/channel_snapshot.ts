@@ -38,11 +38,6 @@ export class ChannelSnapshot {
     public customControllers: Float32Array;
 
     /**
-     * Indicates whether the channel vibrato is locked.
-     */
-    public lockVibrato: boolean;
-
-    /**
      * The channel's vibrato settings.
      * @property depth Vibrato depth, in gain.
      * @property delay Vibrato delay from note on in seconds.
@@ -88,7 +83,6 @@ export class ChannelSnapshot {
         midiControllers: Int16Array,
         lockedControllers: boolean[],
         customControllers: Float32Array,
-        lockVibrato: boolean,
         channelVibrato: {
             delay: number;
             depth: number;
@@ -107,7 +101,6 @@ export class ChannelSnapshot {
         this.midiControllers = midiControllers;
         this.lockedControllers = lockedControllers;
         this.customControllers = customControllers;
-        this.lockVibrato = lockVibrato;
         this.channelVibrato = channelVibrato;
         this.keyShift = channelTransposeKeyShift;
         this.octaveTuning = channelOctaveTuning;
@@ -129,7 +122,6 @@ export class ChannelSnapshot {
             snapshot.midiControllers.slice(),
             [...snapshot.lockedControllers],
             snapshot.customControllers.slice(),
-            snapshot.lockVibrato,
             { ...snapshot.channelVibrato },
             snapshot.keyShift,
             snapshot.octaveTuning.slice(),
@@ -161,7 +153,6 @@ export class ChannelSnapshot {
             channelObject.midiControllers.slice(),
             [...channelObject.lockedControllers],
             channelObject.customControllers.slice(),
-            channelObject.lockGSNRPNParams,
             { ...channelObject.channelVibrato },
             channelObject.keyShift,
             channelObject.octaveTuning.slice(),
@@ -191,8 +182,9 @@ export class ChannelSnapshot {
         channelObject.updateChannelTuning();
 
         // Restore vibrato and transpose
-        channelObject.channelVibrato = this.channelVibrato;
-        channelObject.lockGSNRPNParams = this.lockVibrato;
+        channelObject.channelVibrato.rate = this.channelVibrato.rate;
+        channelObject.channelVibrato.delay = this.channelVibrato.delay;
+        channelObject.channelVibrato.depth = this.channelVibrato.depth;
         channelObject.keyShift = this.keyShift;
         channelObject.octaveTuning.set(this.octaveTuning);
         for (let i = 0; i < 128; i++) {

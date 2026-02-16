@@ -3,7 +3,7 @@ import {
     cbAttenuationToGain,
     timecentsToSeconds
 } from "../unit_converter";
-import { getLFOValue } from "./lfo";
+import { getLFOValue, getLFOValueSine } from "./lfo";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
@@ -179,9 +179,9 @@ export function renderVoice(
         this.midiControllers[midiControllers.modulationWheel] == 0 &&
         this.channelVibrato.depth > 0
     ) {
-        // Same as others
+        // Sine! (GS uses sine)
         cents +=
-            getLFOValue(
+            getLFOValueSine(
                 voice.startTime + this.channelVibrato.delay,
                 this.channelVibrato.rate,
                 timeNow
