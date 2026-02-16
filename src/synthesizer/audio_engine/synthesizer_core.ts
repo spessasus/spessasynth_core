@@ -914,6 +914,7 @@ export class SynthesizerCore {
         const chr = this.chorusProcessor;
         chr.level = 64;
         chr.preLowpass = 0;
+        chr.delay = 127;
         chr.sendLevelToDelay = 0;
         chr.sendLevelToReverb = 0;
         switch (macro) {

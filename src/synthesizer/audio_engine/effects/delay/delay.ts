@@ -188,7 +188,7 @@ export class SpessaSynthDelay implements DelayProcessor {
                 break;
             }
         }
-        this.delayCenterTime = this.sampleRate * (delayMs / 1000);
+        this.delayCenterTime = Math.max(2, this.sampleRate * (delayMs / 1000));
         this.delayCenter.time = this.delayCenterTime;
         this.delayLeft.time = this.delayCenterTime * this.delayLeftMultiplier;
         this.delayRight.time = this.delayCenterTime * this.delayRightMultiplier;
