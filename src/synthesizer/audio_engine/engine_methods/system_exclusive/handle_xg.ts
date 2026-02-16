@@ -309,6 +309,7 @@ export function handleXG(
 
         if (addr1 >> 4 === 3) {
             // Drum part setup
+            if (this.masterParameters.drumLock) return;
             const drumKey = addr2;
             switch (addr3) {
                 default: {

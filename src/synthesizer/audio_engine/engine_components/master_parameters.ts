@@ -17,6 +17,10 @@ export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     reverbGain: 1,
     chorusGain: 1,
     delayGain: 1,
+    reverbLock: false,
+    chorusLock: false,
+    delayLock: false,
+    drumLock: false,
     blackMIDIMode: false,
     transposition: 0,
     deviceID: ALL_CHANNELS_OR_DIFFERENT_ACTION

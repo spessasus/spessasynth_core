@@ -377,6 +377,13 @@ export interface MasterParameterType {
      */
     delayLock: boolean;
     /**
+     * If the synthesizer should prevent editing of the drum parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the drum parameters then locking it to prevent changes by MIDI files.
+     */
+    drumLock: boolean;
+    /**
      * Forces note killing instead of releasing. Improves performance in black MIDIs.
      */
     blackMIDIMode: boolean;

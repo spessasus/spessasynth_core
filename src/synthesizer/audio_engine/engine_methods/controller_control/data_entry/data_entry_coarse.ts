@@ -118,6 +118,13 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 ] >> 7;
             const dataFine =
                 this.midiControllers[midiControllers.dataEntryLSB] >> 7;
+            // Skip drums early
+            if (
+                this.synthCore.masterParameters.drumLock &&
+                paramCoarse >= nonRegisteredMSB.drumPitch &&
+                paramCoarse <= nonRegisteredMSB.drumDelay
+            )
+                return;
             switch (paramCoarse) {
                 default: {
                     if (dataCoarse === 64) {

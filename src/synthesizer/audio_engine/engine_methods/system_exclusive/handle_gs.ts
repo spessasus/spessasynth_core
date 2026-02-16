@@ -939,6 +939,7 @@ export function handleGS(
                         }
                     } else if (addr1 === 0x41) {
                         // Drum setup
+                        if (this.masterParameters.drumLock) return;
                         const map = (addr2 >> 4) + 1;
                         const drumKey = addr3;
                         const param = addr2 & 0xf;
