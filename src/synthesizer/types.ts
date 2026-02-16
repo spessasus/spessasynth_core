@@ -327,6 +327,11 @@ export interface MasterParameterType {
     masterPan: number;
     /**
      * The maximum number of voices that can be played at once.
+     *
+     * @remarks
+     * Increasing this value causes memory allocation for more voices.
+     * It is recommended to set it at the beginning, before rendering audio to avoid GC.
+     * Decreasing it does not cause memory usage change, so it's fine to use.
      */
     voiceCap: number;
     /**

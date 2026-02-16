@@ -45,13 +45,54 @@ where a new note will kill the previous one if it is still playing.
 
 The reverb gain, from 0 to any number. 1 is 100% reverb.
 
+### reverbLock
+
+If the synthesizer should prevent editing of the reverb parameters.
+This effect is modified using MIDI system exclusive messages, so
+the recommended use case would be setting
+the reverb parameters then locking it to prevent changes by MIDI files.
+
 ### chorusGain
 
 The chorus gain, from 0 to any number. 1 is 100% chorus.
 
+### chorusLock
+
+If the synthesizer should prevent editing of the chorus parameters.
+This effect is modified using MIDI system exclusive messages, so
+the recommended use case would be setting
+the chorus parameters then locking it to prevent changes by MIDI files.
+
 ### delayGain
 
 The delay gain, from 0 to any number. 1 is 100% delay.
+
+### delayLock
+
+If the synthesizer should prevent editing of the delay parameters.
+This effect is modified using MIDI system exclusive messages, so
+the recommended use case would be setting
+the delay parameters then locking it to prevent changes by MIDI files.
+
+### drumLock
+
+If the synthesizer should prevent editing of the drum parameters.
+These params are modified using MIDI system exclusive messages or NRPN, so
+the recommended use case would be setting
+the drum parameters then locking it to prevent changes by MIDI files.
+
+### customVibratoLock
+
+If the synthesizer should prevent applying the custom vibrato.
+This effect is modified using NRPN, so
+the recommended use case would be setting
+the custom vibrato then locking it to prevent changes by MIDI files.
+To disable it, make sure that it's unlocked, reset the synthesizer then lock it.
+
+### nprnParamLock
+
+If the synthesizer should prevent changing any parameters via NRPN.
+This includes the custom vibrato parameters.
 
 ### blackMIDIMode
 

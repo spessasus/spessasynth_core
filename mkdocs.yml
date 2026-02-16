@@ -68,6 +68,7 @@ nav:
     - Issue Tracker: "https://github.com/spessasus/spessasynth_core/issues"
     - Documentation:
           - getting-started/index.md
+          - extra/midi-implementation.md
           - SpessaSynthProcessor:
                 - spessa-synth-processor/index.md
                 - spessa-synth-processor/midi-channel.md
@@ -101,7 +102,6 @@ nav:
                 - writing-files/wav.md
                 - writing-files/midi.md
                 - writing-files/converting-between-formats.md
-          - extra/midi-implementation.md
 
     - Extra Info:
           - extra/all-npm-exports.md
