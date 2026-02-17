@@ -490,8 +490,77 @@ export function handleGS(
                                     break;
                                 }
                             }
+                            break;
                         }
 
+                        // EFX Parameter
+                        if (addr2 === 0x03) {
+                            if (addr3 >= 0x03 && addr3 <= 0x16) {
+                                this.insertionProcessor.setParameter(
+                                    addr3 - 3,
+                                    data
+                                );
+                                coolInfo(`EFX Parameter ${addr3 - 2}`, data);
+                                return;
+                            }
+                            switch (addr3) {
+                                default: {
+                                    sysExNotRecognized(syx, "Roland GS EFX");
+                                    return;
+                                }
+
+                                case 0x00: {
+                                    // EFX Type
+                                    const type = (data << 8) | syx[8];
+                                    const proc =
+                                        this.insertionEffects.get(type);
+                                    if (proc) {
+                                        coolInfo("EFX Type", type.toString(16));
+                                        this.insertionProcessor = proc;
+                                    } else {
+                                        this.insertionProcessor =
+                                            this.insertionFallback;
+                                        SpessaSynthInfo(
+                                            `%cUnsupported EFX processor: %c${type.toString(16)}%c, using Thru.`,
+                                            consoleColors.warn,
+                                            consoleColors.unrecognized,
+                                            consoleColors.warn
+                                        );
+                                    }
+                                    this.insertionProcessor.reset();
+                                    return;
+                                }
+
+                                case 0x17: {
+                                    // To reverb
+                                    // Divide, insertions use 0-1
+                                    this.insertionProcessor.sendLevelToDelay =
+                                        data / 127;
+                                    coolInfo("EFX Send Level to Reverb", data);
+                                    return;
+                                }
+
+                                case 0x18: {
+                                    // To chorus
+                                    // Divide, insertions use 0-1
+                                    this.insertionProcessor.sendLevelToChorus =
+                                        data / 127;
+                                    coolInfo("EFX Send Level to Chorus", data);
+                                    return;
+                                }
+
+                                case 0x19: {
+                                    // To delay
+                                    // Divide, insertions use 0-1
+                                    this.insertionProcessor.sendLevelToDelay =
+                                        data / 127;
+                                    coolInfo("EFX Send Level to Delay", data);
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Patch Parameters
                         if (addr2 >> 4 === 1) {
                             // This is an individual part (channel) parameter
                             // Determine the channel
@@ -1025,8 +1094,9 @@ export function handleGS(
                             }
                             return;
                         }
+
                         // Patch Parameter Tone Map
-                        else if (addr2 >> 4 === 4) {
+                        if (addr2 >> 4 === 4) {
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
@@ -1058,10 +1128,29 @@ export function handleGS(
                                     );
                                     break;
                                 }
+
+                                case 0x22: {
+                                    // EFX assign
+                                    const efx = data === 1;
+                                    channelObject.insertionEnabled = efx;
+                                    this.insertionActive = efx
+                                        ? true
+                                        : this.midiChannels.some(
+                                              (c) => c.insertionEnabled
+                                          );
+                                    coolInfo(
+                                        `Insertion for ${channel}`,
+                                        efx ? "ON" : "OFF"
+                                    );
+                                }
                             }
+                            return;
                         }
-                    } else if (addr1 === 0x41) {
-                        // Drum setup
+                        sysExNotRecognized(syx, "Roland GS Patch Parameter");
+                        return;
+                    }
+                    // Drum setup
+                    if (addr1 === 0x41) {
                         if (this.masterParameters.drumLock) return;
                         const map = (addr2 >> 4) + 1;
                         const drumKey = addr3;
@@ -1204,13 +1293,12 @@ export function handleGS(
                                 break;
                             }
                         }
-                    } else {
-                        // This is some other GS sysex...
-                        sysExNotRecognized(syx, "Roland GS");
                         return;
                     }
+                    // This is some other GS sysex...
+                    sysExNotRecognized(syx, "Roland GS");
+                    return;
                 }
-                return;
             }
 
             // GS Display

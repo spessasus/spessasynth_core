@@ -56,6 +56,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     resetPortamento.call(this, sendCCEvents);
     this.rxChannel = this.channel;
     this.randomPan = false;
+    this.insertionEnabled = false;
     this.cc1 = 0x10;
     this.cc2 = 0x11;
     this.drumMap = this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0;

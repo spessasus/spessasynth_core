@@ -110,6 +110,11 @@ export class MIDIChannel {
      * Enables random panning for every note played on this channel.
      */
     public randomPan = false;
+
+    /**
+     * Indicates whether this channel uses the insertion EFX processor.
+     */
+    public insertionEnabled = false;
     /**
      * CC1 for GS system exclusive.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.

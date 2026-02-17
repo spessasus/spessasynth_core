@@ -35,10 +35,17 @@ import {
 } from "../../midi/enums";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
-import { type DelayProcessor, NON_CC_INDEX_OFFSET } from "../exports";
+import {
+    type DelayProcessor,
+    type InsertionProcessor,
+    type InsertionProcessorConstructor,
+    NON_CC_INDEX_OFFSET
+} from "../exports";
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
 
-import type { ChorusProcessor, ReverbProcessor } from "./effects/types"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
+import { ThruEFX } from "./effects/insertion/thru";
+import { insertionList } from "./effects/insertion_list"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -58,6 +65,14 @@ export class SynthesizerCore {
      * All MIDI channels of the synthesizer.
      */
     public readonly midiChannels: MIDIChannel[] = [];
+    /**
+     * The insertion processor's left input buffer.
+     */
+    public insertionInputL = new Float32Array(INITIAL_BUFFER_SIZE);
+    /**
+     * The insertion processor's right input buffer.
+     */
+    public insertionInputR = new Float32Array(INITIAL_BUFFER_SIZE);
     /**
      * The reverb processor's input buffer.
      */
@@ -188,6 +203,24 @@ export class SynthesizerCore {
      */
     public customChannelNumbers = false;
     /**
+     * The fallback processor when the requested insertion is not available.
+     */
+    protected readonly insertionFallback = new ThruEFX();
+    /**
+     * The current insertion processor.
+     */
+    protected insertionProcessor: InsertionProcessor = this.insertionFallback;
+    /**
+     * All the insertion effects available to the processor.
+     * The key is the EFX type stored as MSB << 8 | LSB
+     */
+    protected readonly insertionEffects = new Map<number, InsertionProcessor>();
+    /**
+     * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
+     */
+    protected insertionActive = false;
+
+    /**
      * The synthesizer's reverb processor.
      */
     protected readonly reverbProcessor: ReverbProcessor;
@@ -253,6 +286,10 @@ export class SynthesizerCore {
         this.reverbProcessor = options.reverbProcessor;
         this.chorusProcessor = options.chorusProcessor;
         this.delayProcessor = options.delayProcessor;
+
+        // Register insertion
+        for (const insertion of insertionList)
+            this.registerInsertionProcessor(insertion);
 
         // Initialize voices
         this.voices = [];
@@ -491,6 +528,12 @@ export class SynthesizerCore {
         // Delay1 default
         this.setDelayMacro(0);
         this.delayActive = false;
+        this.insertionActive = false;
+        this.insertionProcessor = this.insertionFallback;
+        this.insertionProcessor.reset();
+        this.insertionProcessor.sendLevelToReverb = 40 / 127;
+        this.insertionProcessor.sendLevelToChorus = 0;
+        this.insertionProcessor.sendLevelToDelay = 0;
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
@@ -647,11 +690,17 @@ export class SynthesizerCore {
                 this.reverbInput = new Float32Array(sampleCount);
                 this.chorusInput = new Float32Array(sampleCount);
                 this.delayInput = new Float32Array(sampleCount);
+                this.insertionInputL = new Float32Array(sampleCount);
+                this.insertionInputR = new Float32Array(sampleCount);
             } else {
                 // Clear the buffers
                 this.reverbInput.fill(0);
                 this.chorusInput.fill(0);
-                this.delayInput.fill(0);
+                if (this.delayActive) this.delayInput.fill(0);
+                if (this.insertionActive) {
+                    this.insertionInputL.fill(0);
+                    this.insertionInputR.fill(0);
+                }
             }
         }
 
@@ -689,7 +738,29 @@ export class SynthesizerCore {
 
         // Process effects
         if (this.enableEffects) {
-            const { chorusInput, delayInput, reverbInput } = this;
+            const {
+                chorusInput,
+                delayInput,
+                reverbInput,
+                insertionInputR,
+                insertionInputL
+            } = this;
+
+            // Insertion first
+            if (this.insertionActive) {
+                this.insertionProcessor.process(
+                    insertionInputL,
+                    insertionInputR,
+                    effectsLeft,
+                    effectsRight,
+                    reverbInput,
+                    chorusInput,
+                    delayInput,
+                    startIndex,
+                    sampleCount
+                );
+            }
+
             // Chorus first, it feeds to reverb and delay
             this.chorusProcessor.process(
                 chorusInput,
@@ -1180,6 +1251,11 @@ export class SynthesizerCore {
             this.getCachedVoiceIndex(patch, midiNote, velocity),
             voices
         );
+    }
+
+    private registerInsertionProcessor(proc: InsertionProcessorConstructor) {
+        const p = new proc(this.sampleRate);
+        this.insertionEffects.set(p.type, p);
     }
 
     private processMessageInternal(

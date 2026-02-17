@@ -350,6 +350,18 @@ export function renderVoice(
     const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
     const gainRight = panTableRight[index] * gain * this.synthCore.panRight;
 
+    if (this.insertionEnabled) {
+        // Straight into the insertion EFX!
+        const insertionL = this.synthCore.insertionInputL;
+        const insertionR = this.synthCore.insertionInputR;
+        for (let i = 0; i < sampleCount; i++) {
+            const s = buffer[i];
+            insertionL[i] += gainLeft * s;
+            insertionR[i] += gainRight * s;
+        }
+        return;
+    }
+
     // Mix down the audio data
     for (let i = 0; i < sampleCount; i++) {
         const s = buffer[i];
