@@ -11,7 +11,7 @@ import Speaker from "speaker";
 
 // Process arguments
 const args = process.argv.slice(2);
-if (args.length !== 2) {
+if (args.length < 2) {
     console.info("Usage: tsx index.ts <soundbank path> <midi path>");
     process.exit();
 }

@@ -307,6 +307,11 @@ Below are the supported GS SysEx Parameters.
 - Delay Level
 - Delay Feedback
 - Delay Send Level To Reverb
+- EFX Type (see [supported EFX](#currently-implemented-efx))
+- EFX Parameter 1-20
+- EFX Send Level To Reverb
+- EFX Send Level To Chorus
+- EFX Send Level To Delay
 
 #### Patch Part Parameters
 
@@ -334,6 +339,7 @@ Below are the supported GS SysEx Parameters.
 - Scale Tuning
 - Tone Map Number (Bank LSB)
 - Tone Map-0 Number (treated as Bank LSB)
+- Part EFX Assign
 
 #### Patch Part Parameters (Controllers)
 
@@ -446,3 +452,11 @@ Implemented using 3 delay lines, with the central one having feedback and feedin
 Input is fed to all three.
 
 Disabled in XG mode as CC#94 (used as delay send level) is used for Variation which is not implemented.
+
+## Insertion Effects
+
+Spessasynth has an architecture to support SC-88Pro+ insertion EFX.
+
+### Currently implemented EFX
+
+- Stereo-EQ
