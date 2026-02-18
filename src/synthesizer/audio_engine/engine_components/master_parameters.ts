@@ -16,6 +16,13 @@ export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     monophonicRetriggerMode: false,
     reverbGain: 1,
     chorusGain: 1,
+    delayGain: 1,
+    reverbLock: false,
+    chorusLock: false,
+    delayLock: false,
+    drumLock: false,
+    customVibratoLock: false,
+    nprnParamLock: false,
     blackMIDIMode: false,
     transposition: 0,
     deviceID: ALL_CHANNELS_OR_DIFFERENT_ACTION

@@ -27,9 +27,11 @@ export function programChange(this: MIDIChannel, program: number) {
     this.preset = preset;
 
     // Drums first
+    // SC resets drum params on program change
     if (preset.isAnyDrums !== this.drumChannel) {
         this.setDrumFlag(preset.isAnyDrums);
     }
+    this.resetDrumParams();
     // Do not spread the preset as we don't want to copy it entirely.
     this.synthCore.callEvent("programChange", {
         channel: this.channel,

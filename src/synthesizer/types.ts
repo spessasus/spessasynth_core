@@ -6,6 +6,12 @@ import type {
 import type { CachedVoice } from "./audio_engine/engine_components/voice_cache";
 import type { MIDIController } from "../midi/enums";
 
+import type {
+    ChorusProcessor,
+    DelayProcessor,
+    ReverbProcessor
+} from "./audio_engine/effects/types";
+
 export type SynthSystem = "gm" | "gm2" | "gs" | "xg";
 
 export interface NoteOnCallback {
@@ -151,6 +157,52 @@ export interface ChannelPropertyChangeCallback {
     property: ChannelProperty;
 }
 
+type FXType<K> = Exclude<keyof K, "process"> | "macro";
+
+export type EffectChangeCallback =
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus" or "delay"
+           */
+          effect: "reverb";
+          /**
+           * The parameter type or "macro".
+           */
+          parameter: FXType<ReverbProcessor>;
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus" or "delay"
+           */
+          effect: "chorus";
+          /**
+           * The parameter type or "macro".
+           */
+          parameter: FXType<ChorusProcessor>;
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus" or "delay"
+           */
+          effect: "delay";
+          /**
+           * The parameter type or "macro".
+           */
+          parameter: FXType<DelayProcessor>;
+          /**
+           * The new 7-bit value.
+           */
+          value: number;
+      };
+
 export interface SynthProcessorEventData {
     /**
      * This event fires when a note is played.
@@ -220,6 +272,11 @@ export interface SynthProcessorEventData {
      * This event fires when a channel property changes.
      */
     channelPropertyChange: ChannelPropertyChangeCallback;
+
+    /**
+     * This event fires when an effect processor is modified.
+     */
+    effectChange: EffectChangeCallback;
 }
 
 export type SynthProcessorEvent = {
@@ -290,6 +347,21 @@ export interface SynthProcessorOptions {
      * Indicates if the effects are enabled. This can be changed later.
      */
     enableEffects: boolean;
+
+    /**
+     * Reverb processor for the synthesizer. Leave undefined to use the default.
+     */
+    reverbProcessor: ReverbProcessor;
+
+    /**
+     * Chorus processor for the synthesizer. Leave undefined to use the default.
+     */
+    chorusProcessor: ChorusProcessor;
+
+    /**
+     * Delay processor for the synthesizer. Leave undefined to use the default.
+     */
+    delayProcessor: DelayProcessor;
 }
 
 /**
@@ -306,6 +378,11 @@ export interface MasterParameterType {
     masterPan: number;
     /**
      * The maximum number of voices that can be played at once.
+     *
+     * @remarks
+     * Increasing this value causes memory allocation for more voices.
+     * It is recommended to set it at the beginning, before rendering audio to avoid GC.
+     * Decreasing it does not cause memory usage change, so it's fine to use.
      */
     voiceCap: number;
     /**
@@ -327,9 +404,53 @@ export interface MasterParameterType {
      */
     reverbGain: number;
     /**
+     * If the synthesizer should prevent editing of the reverb parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the reverb parameters then locking it to prevent changes by MIDI files.
+     */
+    reverbLock: boolean;
+    /**
      * The chorus gain, from 0 to any number. 1 is 100% chorus.
      */
     chorusGain: number;
+    /**
+     * If the synthesizer should prevent editing of the chorus parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the chorus parameters then locking it to prevent changes by MIDI files.
+     */
+    chorusLock: boolean;
+    /**
+     * The delay gain, from 0 to any number. 1 is 100% delay.
+     */
+    delayGain: number;
+    /**
+     * If the synthesizer should prevent editing of the delay parameters.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the delay parameters then locking it to prevent changes by MIDI files.
+     */
+    delayLock: boolean;
+    /**
+     * If the synthesizer should prevent editing of the drum parameters.
+     * These params are modified using MIDI system exclusive messages or NRPN, so
+     * the recommended use case would be setting
+     * the drum parameters then locking it to prevent changes by MIDI files.
+     */
+    drumLock: boolean;
+    /**
+     * If the synthesizer should prevent applying the custom vibrato.
+     * This effect is modified using NRPN, so
+     * the recommended use case would be setting
+     * the custom vibrato then locking it to prevent changes by MIDI files.
+     */
+    customVibratoLock: boolean;
+    /**
+     * If the synthesizer should prevent changing any parameters via NRPN.
+     * This includes the custom vibrato parameters.
+     */
+    nprnParamLock: boolean;
     /**
      * Forces note killing instead of releasing. Improves performance in black MIDIs.
      */
@@ -343,3 +464,9 @@ export interface MasterParameterType {
      */
     deviceID: number;
 }
+
+export {
+    type ChorusProcessor,
+    type DelayProcessor,
+    type ReverbProcessor
+} from "./audio_engine/effects/types";

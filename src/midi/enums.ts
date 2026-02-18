@@ -136,7 +136,7 @@ export const midiControllers = {
     reverbDepth: 91,
     tremoloDepth: 92,
     chorusDepth: 93,
-    detuneDepth: 94,
+    variationDepth: 94,
     phaserDepth: 95,
     dataIncrement: 96,
     dataDecrement: 97,

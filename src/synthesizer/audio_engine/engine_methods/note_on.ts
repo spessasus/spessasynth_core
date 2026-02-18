@@ -39,7 +39,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     const realKey =
         midiNote +
-        this.channelTransposeKeyShift +
+        this.keyShift +
         this.customControllers[customControllers.channelKeyShift];
     let internalMidiNote = realKey;
 
@@ -67,7 +67,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
 
     // Gain
-    const voiceGain = this.synthCore.keyModifierManager.getGain(
+    let voiceGain = this.synthCore.keyModifierManager.getGain(
         this.channel,
         realKey
     );
@@ -119,11 +119,57 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         velocity
     );
 
+    // Overrides
     // Zero means disabled
     let panOverride = 0;
+    let exclusiveOverride = 0;
+    let pitchOffset = 0;
+    let reverbSend = 1;
+    let chorusSend = 1;
+    let delaySend = 1;
     if (this.randomPan) {
         // The range is -500 to 500
         panOverride = Math.round(Math.random() * 1000 - 500);
+    }
+
+    // Drum parameters
+    if (this.drumChannel) {
+        const p = this.drumParams[internalMidiNote];
+        if (!p.rxNoteOn) {
+            return;
+        }
+        const drumPan = p.pan;
+        // If pan is different from default then it's overridden
+        if (drumPan !== 64) {
+            const targetPan =
+                Math.max(
+                    -63,
+                    Math.min(
+                        drumPan -
+                            64 +
+                            ((this.midiControllers[midiControllers.pan] >> 7) -
+                                64),
+                        63
+                    )
+                ) || 1; // Prevent 0 to not be flagged as disabled
+
+            panOverride =
+                drumPan === 0
+                    ? // 0 is random pan
+                      Math.round(Math.random() * 1000 - 500)
+                    : // 1 is set pan
+                      (targetPan / 63) * 500;
+        }
+
+        pitchOffset = p.pitch;
+        exclusiveOverride = p.exclusiveClass;
+        reverbSend = p.reverbGain;
+        chorusSend = p.chorusGain;
+        delaySend = p.delayGain;
+        // 1 is no override
+        if (voiceGain === 1) {
+            voiceGain = p.gain;
+        }
     }
 
     // Add voices
@@ -145,7 +191,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
         // Set cached data
         voice.generators.set(cached.generators);
-        voice.exclusiveClass = cached.exclusiveClass;
+        voice.exclusiveClass = exclusiveOverride || cached.exclusiveClass;
         voice.rootKey = cached.rootKey;
         voice.loopingMode = cached.loopingMode;
         voice.wavetable.sampleData = cached.sampleData;
@@ -281,16 +327,21 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.portamentoFromKey = portamentoFromKey;
         voice.portamentoDuration = portamentoDuration;
 
-        // Apply pan override
+        // Apply special params
         voice.overridePan = panOverride;
-
-        // Apply gain override
         voice.gainModifier = voiceGain;
+        voice.pitchOffset = pitchOffset;
+        voice.reverbSend = reverbSend;
+        voice.chorusSend = chorusSend;
+        voice.delaySend = delaySend;
 
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(
             -500,
-            Math.min(500, voice.modulatedGenerators[generatorTypes.pan])
+            Math.min(
+                500,
+                panOverride || voice.modulatedGenerators[generatorTypes.pan]
+            )
         ); //  -500 to 500
     }
     this.voiceCount += voices.length;

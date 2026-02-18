@@ -467,7 +467,7 @@ export function applySnapshotInternal(
             continue;
         }
         const transposeFloat =
-            channel.channelTransposeKeyShift +
+            channel.keyShift +
             channel.customControllers[customControllers.channelTransposeFine] /
                 100;
         if (transposeFloat !== 0) {

@@ -14,13 +14,13 @@ However, they can allow to manipulate the synth extensively.
 
 !!! Note
 
-    Note that methods here may not be 100% stable.
+    Note that methods here may not be 100% stable. Expect removals!
 
 ## Methods
 
 !!! Note
 
-    The MIDI methods (noteOn, noteOff, program change, etc.) are omitted here as they can be called from the `SpessaSynthProcessor` directly.
+    The MIDI methods (noteOn, noteOff, program change, etc.) are omitted here as they can be called from the `SpessaSynthProcessor` class.
 
 ### resetPreset
 
@@ -159,20 +159,6 @@ Sets the GM/GS drum flag.
 Parameters:
 
 - drums - the new flag value.
-
-### setVibrato
-
-Sets a custom vibrato.
-
-Parameters:
-
-- depth - in cents.
-- rate - in Hertz.
-- delay - in seconds.
-
-### disableAndLockGSNPRN
-
-Disables and locks all GS NPRN parameters, including the custom vibrato.
 
 ### killNote
 

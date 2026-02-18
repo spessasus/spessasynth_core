@@ -34,3 +34,5 @@ export const MIN_NOTE_LENGTH = 0.03;
 // This sounds way nicer for an instant hi-hat cutoff
 export const MIN_EXCLUSIVE_LENGTH = 0.07;
 export const SYNTHESIZER_GAIN = 1;
+// In samples
+export const INITIAL_BUFFER_SIZE = 128;
