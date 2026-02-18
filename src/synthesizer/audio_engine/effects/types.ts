@@ -242,7 +242,7 @@ export interface InsertionProcessor {
 
     /**
      * Sets an EFX parameter.
-     * @param parameter The parameter number (0-19).
+     * @param parameter The parameter number (0x03-0x16).
      * @param value The new value (0-127).
      */
     setParameter(parameter: number, value: number): void;

@@ -497,7 +497,7 @@ export function handleGS(
                         if (addr2 === 0x03) {
                             if (addr3 >= 0x03 && addr3 <= 0x16) {
                                 this.insertionProcessor.setParameter(
-                                    addr3 - 3,
+                                    addr3,
                                     data
                                 );
                                 coolInfo(`EFX Parameter ${addr3 - 2}`, data);
