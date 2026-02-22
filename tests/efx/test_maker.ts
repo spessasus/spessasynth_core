@@ -1,14 +1,59 @@
-import { IndexedByteArray, MIDIBuilder, midiMessageTypes } from "../../src";
+import {
+    IndexedByteArray,
+    MIDIBuilder,
+    midiControllers,
+    midiMessageTypes
+} from "../../src";
 import fs from "fs/promises";
 
-export class EFXTestMaker extends MIDIBuilder {
+class EFXTest {
+    private readonly builder;
+
+    public constructor(
+        builder: MIDITestMaker,
+        channel: number,
+        msb: number,
+        lsb: number
+    ) {
+        this.builder = builder;
+
+        // Type
+        this.builder.sendAddress(0x40, 0x03, 0x00, [msb, lsb]);
+        // EFX to channel
+        this.builder.sendAddress(0x40, 0x41, 0x22, [channel]);
+        // No reverb
+        this.builder.sendAddress(0x40, 0x03, 0x17, [0]);
+    }
+
+    public sweepParam(
+        param: number,
+        from: number,
+        to: number,
+        tickStep = 480,
+        dataStep = 1
+    ) {
+        let data = from;
+        while (data <= to) {
+            this.setParam(param, Math.min(data, to));
+            this.builder.ticks += tickStep;
+            data += dataStep;
+        }
+    }
+    public setParam(param: number, value: number) {
+        this.builder.sendAddress(0x40, 0x03, param, [value]);
+    }
+}
+
+export class MIDITestMaker extends MIDIBuilder {
     public ticks = 480;
     private readonly name;
+    private readonly channel;
 
-    public constructor(name: string) {
+    public constructor(name: string, channel = 0) {
         super({
             name
         });
+        this.channel = channel;
         this.name = name.replaceAll(" ", "_").toLowerCase();
         this.addEvent(
             0,
@@ -29,45 +74,35 @@ export class EFXTestMaker extends MIDIBuilder {
         );
     }
 
+    public testEFX(typeMSB: number, typeLSB: number) {
+        return new EFXTest(this, this.channel, typeMSB, typeLSB);
+    }
+
     public addControllerChange(
-        track: number,
-        channel: number,
         controllerNumber: number,
         controllerValue: number
     ) {
         super.addControllerChange(
             this.ticks,
-            track,
-            channel,
+            0,
+            this.channel,
             controllerNumber,
             controllerValue
         );
     }
 
-    public addProgramChange(
-        track: number,
-        channel: number,
-        programNumber: number
-    ) {
-        super.addProgramChange(this.ticks, track, channel, programNumber);
+    public addProgramChange(msb: number, lsb: number, program: number) {
+        this.addControllerChange(midiControllers.bankSelectLSB, lsb);
+        this.addControllerChange(midiControllers.bankSelect, msb);
+        super.addProgramChange(this.ticks, 0, this.channel, program);
     }
 
-    public addNoteOff(
-        track: number,
-        channel: number,
-        midiNote: number,
-        velocity: number = 64
-    ) {
-        super.addNoteOff(this.ticks, track, channel, midiNote, velocity);
+    public addNoteOff(midiNote: number, velocity: number = 64) {
+        super.addNoteOff(this.ticks, 0, this.channel, midiNote, velocity);
     }
 
-    public addNoteOn(
-        track: number,
-        channel: number,
-        midiNote: number,
-        velocity: number
-    ) {
-        super.addNoteOn(this.ticks, track, channel, midiNote, velocity);
+    public addNoteOn(midiNote: number, velocity: number) {
+        super.addNoteOn(this.ticks, 0, this.channel, midiNote, velocity);
     }
 
     public sendAddress(a1: number, a2: number, a3: number, data: number[]) {
@@ -92,33 +127,6 @@ export class EFXTestMaker extends MIDIBuilder {
                 0xf7 // End of exclusive
             ])
         );
-    }
-
-    public setEFX(msb: number, lsb: number) {
-        this.sendAddress(0x40, 0x03, 0x00, [msb, lsb]);
-        // EFX to channel 1
-        this.sendAddress(0x40, 0x41, 0x22, [1]);
-        // No reverb
-        this.sendAddress(0x40, 0x03, 0x17, [0]);
-    }
-
-    public sweepEFXParam(
-        param: number,
-        from: number,
-        to: number,
-        tickStep = 480,
-        dataStep = 1
-    ) {
-        let data = from;
-        while (data <= to) {
-            this.setEFXParam(param, Math.min(data, to));
-            this.ticks += tickStep;
-            data += dataStep;
-        }
-    }
-
-    public setEFXParam(param: number, value: number) {
-        this.sendAddress(0x40, 0x03, param, [value]);
     }
 
     public make() {
