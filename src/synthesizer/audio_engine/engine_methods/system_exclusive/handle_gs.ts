@@ -534,7 +534,7 @@ export function handleGS(
                                 case 0x17: {
                                     // To reverb
                                     // Divide, insertions use 0-1
-                                    this.insertionProcessor.sendLevelToDelay =
+                                    this.insertionProcessor.sendLevelToReverb =
                                         data / 127;
                                     coolInfo("EFX Send Level to Reverb", data);
                                     return;

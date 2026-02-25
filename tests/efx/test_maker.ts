@@ -20,7 +20,13 @@ class EFXTest {
         // Type
         this.builder.sendAddress(0x40, 0x03, 0x00, [msb, lsb]);
         // EFX to channel
-        this.builder.sendAddress(0x40, 0x41, 0x22, [channel]);
+        this.builder.sendAddress(
+            0x40,
+            0x40 |
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][channel],
+            0x22,
+            [1]
+        );
         // No reverb
         this.builder.sendAddress(0x40, 0x03, 0x17, [0]);
     }
@@ -38,6 +44,7 @@ class EFXTest {
             this.builder.ticks += tickStep;
             data += dataStep;
         }
+        this.setParam(param, Math.min(data, to));
     }
     public setParam(param: number, value: number) {
         this.builder.sendAddress(0x40, 0x03, param, [value]);

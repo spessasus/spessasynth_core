@@ -307,7 +307,7 @@ Below are the supported GS SysEx Parameters.
 - Delay Level
 - Delay Feedback
 - Delay Send Level To Reverb
-- EFX Type (see [supported EFX](#currently-implemented-efx))
+- EFX Type (see [supported EFX](#currently-implemented-insertion-effects))
 - EFX Parameter 1-20
 - EFX Send Level To Reverb
 - EFX Send Level To Chorus
@@ -455,8 +455,9 @@ Disabled in XG mode as CC#94 (used as delay send level) is used for Variation wh
 
 ## Insertion Effects
 
-Spessasynth has an architecture to support SC-88Pro+ insertion EFX.
+Spessasynth has an architecture to support SC-88Pro+ insertion effects.
 
-### Currently implemented EFX
+### Currently implemented insertion effects
 
 - Stereo-EQ
+- Phaser

@@ -201,6 +201,13 @@ export interface ChannelProperty {
      * Indicates whether the channel is a drum channel.
      */
     isDrum: boolean;
+
+    /**
+     * Indicates whether the channel uses an insertion effect.
+     * This means that there will be no separate dry output for processSplit().
+     */
+    isEFX: boolean;
+
     /**
      * The channel's transposition, in semitones.
      */

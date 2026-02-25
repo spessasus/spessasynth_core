@@ -764,7 +764,8 @@ export class MIDIChannel {
                 this.keyShift +
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
-            isDrum: this.drumChannel
+            isDrum: this.drumChannel,
+            isEFX: this.insertionEnabled
         };
         this.synthCore.callEvent("channelPropertyChange", {
             channel: this.channel,

@@ -13,7 +13,7 @@ const delayTimeSegments = [
     { start: 0x46, end: 0x50, timeStart: 50, resolution: 5 },
     { start: 0x50, end: 0x5a, timeStart: 100, resolution: 10 },
     { start: 0x5a, end: 0x69, timeStart: 200, resolution: 20 },
-    { start: 0x69, end: 0x73, timeStart: 500, resolution: 50 }
+    { start: 0x69, end: 0x74, timeStart: 500, resolution: 50 }
 ] as const;
 
 export class SpessaSynthDelay implements DelayProcessor {

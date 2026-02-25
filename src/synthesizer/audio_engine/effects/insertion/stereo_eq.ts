@@ -14,6 +14,7 @@ const zeroCoeffData = {
 /**
  * Stereo-EQ
  * This is a four-band stereo equalizer (low, mid x 2, high).
+ * Type: Stereo
  */
 export class StereoEQEFX implements InsertionProcessor {
     public readonly type = 0x01_00;
@@ -22,7 +23,7 @@ export class StereoEQEFX implements InsertionProcessor {
     public sendLevelToDelay = 0;
 
     private readonly sampleRate: number;
-    private gain = 1;
+    private level = 1;
     /**
      * Selects the frequency of the low range (200 Hz/400 Hz).
      * @private
@@ -111,7 +112,7 @@ export class StereoEQEFX implements InsertionProcessor {
     }
 
     public reset() {
-        this.gain = 1;
+        this.level = 1;
         this.lowFreq = 400;
         this.lowGain = 5;
         this.hiGain = -12;
@@ -192,7 +193,7 @@ export class StereoEQEFX implements InsertionProcessor {
             }
 
             case 0x16: {
-                this.gain = value / 127;
+                this.level = value / 127;
                 break;
             }
         }
@@ -211,7 +212,7 @@ export class StereoEQEFX implements InsertionProcessor {
         sampleCount: number
     ) {
         const {
-            gain,
+            level,
             sendLevelToChorus,
             sendLevelToDelay,
             sendLevelToReverb,
@@ -247,8 +248,8 @@ export class StereoEQEFX implements InsertionProcessor {
 
             // Mix
             const idx = startIndex + i;
-            outputLeft[idx] += sL * gain;
-            outputRight[idx] += sR * gain;
+            outputLeft[idx] += sL * level;
+            outputRight[idx] += sR * level;
             // Sends (index 0)
             const mono = 0.5 * (sL + sR);
             outputReverb[i] += mono * sendLevelToReverb;
