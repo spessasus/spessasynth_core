@@ -24,6 +24,7 @@ export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     customVibratoLock: false,
     nprnParamLock: false,
     blackMIDIMode: false,
+    autoAllocateVoices: false,
     transposition: 0,
     deviceID: ALL_CHANNELS_OR_DIFFERENT_ACTION
 };

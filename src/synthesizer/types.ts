@@ -391,6 +391,14 @@ export interface MasterParameterType {
      * Decreasing it does not cause memory usage change, so it's fine to use.
      */
     voiceCap: number;
+
+    /**
+     * Enabling this parameter will cause a new voice allocation when the voice cap is hit, rather than stealing existing voices.
+     *
+     * @remarks
+     * This is not recommended in real-time environments.
+     */
+    autoAllocateVoices: boolean;
     /**
      * The interpolation type used for sample playback.
      */

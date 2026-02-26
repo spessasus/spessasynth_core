@@ -398,6 +398,17 @@ export class SynthesizerCore {
             }
         }
         // No match, assign priorities
+        if (this.masterParameters.autoAllocateVoices) {
+            // Allocate a new voice and return it
+            const v = new Voice(this.sampleRate);
+            this.voices.push(v);
+            this.masterParameters.voiceCap++;
+            this.callEvent("masterParameterChange", {
+                parameter: "voiceCap",
+                value: this.masterParameters.voiceCap
+            });
+            return v;
+        }
         this.assignVoicePriorities();
         let lowest = this.voices[0];
         for (let i = 0; i < this.masterParameters.voiceCap; i++) {
