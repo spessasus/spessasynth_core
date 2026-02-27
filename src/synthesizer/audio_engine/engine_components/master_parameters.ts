@@ -23,6 +23,7 @@ export const DEFAULT_MASTER_PARAMETERS: MasterParameterType = {
     drumLock: false,
     customVibratoLock: false,
     nprnParamLock: false,
+    insertionEffectLock: false,
     blackMIDIMode: false,
     autoAllocateVoices: false,
     transposition: 0,

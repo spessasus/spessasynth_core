@@ -113,6 +113,15 @@ This effect is modified using MIDI system exclusive messages, so
 the recommended use case would be setting
 the delay parameters then locking it to prevent changes by MIDI files.
 
+### insertionEffectLock
+
+`boolean`
+
+If the synthesizer should prevent changing the insertion effect type and parameters (including enabling/disabling it on channels).
+This effect is modified using MIDI system exclusive messages, so
+the recommended use case would be setting
+the insertion effect type and parameters then locking it to prevent changes by MIDI files.
+
 ### drumLock
 
 `boolean`

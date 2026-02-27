@@ -35,7 +35,7 @@ const FEEDBACK = 0.85;
  *
  * Note: seems to use a triangle LFO for modulation
  */
-export class PhaserEFX implements InsertionProcessor {
+export class PhaserFX implements InsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

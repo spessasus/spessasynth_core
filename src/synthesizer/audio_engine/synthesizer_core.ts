@@ -44,7 +44,7 @@ import {
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
 
 import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
-import { ThruEFX } from "./effects/insertion/thru";
+import { ThruFX } from "./effects/insertion/thru";
 import { insertionList } from "./effects/insertion_list"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -205,7 +205,7 @@ export class SynthesizerCore {
     /**
      * The fallback processor when the requested insertion is not available.
      */
-    protected readonly insertionFallback = new ThruEFX();
+    protected readonly insertionFallback = new ThruFX();
     /**
      * The current insertion processor.
      */

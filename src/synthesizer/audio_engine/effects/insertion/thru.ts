@@ -1,6 +1,6 @@
 import type { InsertionProcessor } from "../types";
 
-export class ThruEFX implements InsertionProcessor {
+export class ThruFX implements InsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

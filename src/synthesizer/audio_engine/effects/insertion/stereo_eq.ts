@@ -16,7 +16,7 @@ const zeroCoeffData = {
  * This is a four-band stereo equalizer (low, mid x 2, high).
  * Type: Stereo
  */
-export class StereoEQEFX implements InsertionProcessor {
+export class StereoEQFX implements InsertionProcessor {
     public readonly type = 0x01_00;
     public sendLevelToReverb = 0;
     public sendLevelToChorus = 0;

@@ -495,6 +495,8 @@ export function handleGS(
 
                         // EFX Parameter
                         if (addr2 === 0x03) {
+                            if (this.masterParameters.insertionEffectLock)
+                                return;
                             if (addr3 >= 0x03 && addr3 <= 0x16) {
                                 this.insertionProcessor.setParameter(
                                     addr3,
@@ -1130,6 +1132,11 @@ export function handleGS(
                                 }
 
                                 case 0x22: {
+                                    if (
+                                        this.masterParameters
+                                            .insertionEffectLock
+                                    )
+                                        return;
                                     // EFX assign
                                     const efx = data === 1;
                                     channelObject.insertionEnabled = efx;

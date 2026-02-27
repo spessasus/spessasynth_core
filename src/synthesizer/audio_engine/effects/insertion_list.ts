@@ -1,10 +1,10 @@
 import type { InsertionProcessorConstructor } from "./types";
-import { ThruEFX } from "./insertion/thru";
-import { StereoEQEFX } from "./insertion/stereo_eq";
-import { PhaserEFX } from "./insertion/phaser";
+import { ThruFX } from "./insertion/thru";
+import { StereoEQFX } from "./insertion/stereo_eq";
+import { PhaserFX } from "./insertion/phaser";
 
 export const insertionList: InsertionProcessorConstructor[] = [
-    ThruEFX,
-    StereoEQEFX,
-    PhaserEFX
+    ThruFX,
+    StereoEQFX,
+    PhaserFX
 ];
