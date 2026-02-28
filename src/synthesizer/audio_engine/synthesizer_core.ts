@@ -538,18 +538,20 @@ export class SynthesizerCore {
         this.setChorusMacro(2);
         // Delay1 default
         this.setDelayMacro(0);
-        this.delayActive = false;
-        this.insertionActive = false;
-        this.insertionProcessor = this.insertionFallback;
-        this.insertionProcessor.reset();
-        this.insertionProcessor.sendLevelToReverb = 40 / 127;
-        this.insertionProcessor.sendLevelToChorus = 0;
-        this.insertionProcessor.sendLevelToDelay = 0;
-        this.callEvent("effectChange", {
-            effect: "insertion",
-            parameter: 0,
-            value: this.insertionProcessor.type
-        });
+        if (!this.masterParameters.delayLock) this.delayActive = false;
+        if (!this.masterParameters.insertionEffectLock) {
+            this.insertionActive = false;
+            this.insertionProcessor = this.insertionFallback;
+            this.insertionProcessor.reset();
+            this.insertionProcessor.sendLevelToReverb = 40 / 127;
+            this.insertionProcessor.sendLevelToChorus = 0;
+            this.insertionProcessor.sendLevelToDelay = 0;
+            this.callEvent("effectChange", {
+                effect: "insertion",
+                parameter: 0,
+                value: this.insertionProcessor.type
+            });
+        }
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
