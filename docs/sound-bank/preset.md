@@ -88,7 +88,7 @@ Checks if the bank and program numbers are the same for the given preset as this
 preset.matches(patch);
 ```
 
-- path - a MIDI patch to check.
+- patch - a MIDI patch to check.
 
 ### toMIDIString
 

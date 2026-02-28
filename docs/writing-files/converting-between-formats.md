@@ -46,7 +46,7 @@ const output = await sfont.writeDLS();
 
 ```ts
 const rmid = BasicMIDI.fromArrayBuffer(input);
-const output = await rmid.writeSF2();
+const output = rmid.writeMIDI();
 ```
 
 ## RMI To SF2/SF3

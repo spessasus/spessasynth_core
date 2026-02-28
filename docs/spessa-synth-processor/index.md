@@ -74,7 +74,7 @@ synth.renderAudio(
 
 !!! Tip
 
-    If `effetctsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
+    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
 
 ### renderAudioSplit
 
@@ -331,7 +331,7 @@ Use the sound bank manager directly.
 
 Remove the embedded sound bank from the synthesizer.
 
-## clearCache
+### clearCache
 
 Clear the synthesizer's voice cache.
 

@@ -6,13 +6,19 @@ They are described below.
 
 ### masterGain
 
+`number`
+
 The master gain, from 0 to any number. 1 is 100% volume.
 
 ### masterPan
 
-The master pan, from -1 (left) to 1 (right). 0 is center.
+`number`
+
+The master pan, from -1 (hard left) to 1 (hard right). 0 is center.
 
 ### voiceCap
+
+`number`
 
 The maximum number of voices that can be played at once.
 
@@ -24,6 +30,8 @@ The maximum number of voices that can be played at once.
 
 ### interpolationType
 
+`number`
+
 The interpolation type used for sample playback.
 The interpolation types defined are:
 
@@ -31,11 +39,19 @@ The interpolation types defined are:
 - 1 - nearest neighbor interpolation - fastest, but lowest quality (it may be desirable in some cases to make the sound "crispier")
 - 2 - hermite interpolation - slow, high quality (default)
 
+!!! Tip
+
+    You can also use the `interpolationTypes` enum.
+
 ### midiSystem
+
+`string`
 
 The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG, in lowercase)
 
 ### monophonicRetriggerMode
+
+`boolean`
 
 Indicates whether the synthesizer is in monophonic retrigger mode.
 This emulates the behavior of Microsoft GS Wavetable Synth,
@@ -43,21 +59,31 @@ where a new note will kill the previous one if it is still playing.
 
 ### reverbGain
 
+`number`
+
 The reverb gain, from 0 to any number. 1 is 100% reverb.
 
 ### chorusGain
+
+`number`
 
 The chorus gain, from 0 to any number. 1 is 100% chorus.
 
 ### blackMIDIMode
 
+`boolean`
+
 Forces note killing instead of releasing. Improves performance in black MIDIs.
 
 ### transposition
 
+`number`
+
 The global transposition in semitones. It can be decimal to provide microtonal tuning.
 
 ### deviceID
+
+`number`
 
 Synthesizer's device ID for system exclusive messages. Set to -1 to accept all by default.
 

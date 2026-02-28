@@ -32,13 +32,13 @@ The zone's generators, an array of [`Generator`](generator.md)s.
 
 ### modulators
 
-The zone's generators, an array of [`Modulators`](modulator.md)s.
+The zone's modulators, an array of [`Modulator`](modulator.md)s.
 
 ### fineTuning
 
 Allows setting and getting zone's fine-tuning in cents, taking in both coarse and fine generators.
 
-## methods
+## Methods
 
 ### setGenerator
 

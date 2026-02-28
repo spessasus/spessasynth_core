@@ -123,63 +123,45 @@ This function writes out an RMIDI file (MIDI + SF2).
 const rmidiBinary = midi.writeRMIDI(soundBankBinary, configuration);
 ```
 
+The method is called on a `BasicMIDI` instance; that instance is the MIDI file to embed.
+
 ### Parameters
 
 #### soundBankBinary
 
-The binary sound bank to embed into the file.
+`ArrayBuffer` - The binary sound bank (SF2 or DLS) to embed into the file.
 
-#### midi
+#### configuration
 
-`BasicMIDI` to embed.
+`Object`, optional - A partial options object. All properties are optional.
 
-#### soundfont
+- **bankOffset** - `number` - The bank offset to apply to the file. Default `0`. [See this for more info](https://github.com/spessasus/sf2-rmidi-specification#dbnk-chunk)
 
-`SoundFont2` - The soundfont that `soundfontBinary` contains. Used for correcting bank and program changes.
+- **soundBank** - `BasicSoundBank` - The sound bank instance that `soundBankBinary` contains. Used for correcting bank and program changes when `correctBankOffset` is enabled. If omitted, bank correction may be less accurate.
 
-#### bankOffset
+- **correctBankOffset** - `boolean` - If the function should correct all program-selects and bank-selects in the MIDI file to reflect the embedded sound bank (i.e., make it [self-contained](https://github.com/spessasus/sf2-rmidi-specification#self-contained-file)). Recommended unless a specific use-case is required. Default `true`.
 
-`number`, optional - The bank offset to apply to the file. A value of 0 is
-recommended. [See this for more info](https://github.com/spessasus/sf2-rmidi-specification#dbnk-chunk)
-
-#### encoding
-
-`string`, optional - The encoding to add to the INFO chunk of an RMID file. Make sure to pick a value that is acceptable
-by the `TextDecoder`
-
-#### metadata
-
-`Object`, optional - The metadata of the file. If left undefined, some basic metadata (like song's title) will be copied
-from the MIDI.
+- **metadata** - `Object` - The metadata of the file. If left undefined, some basic metadata (like the song's title) will be copied from the MIDI.
 
 !!! Important
 
-    All the properties below are *optional*.
+    All metadata properties below are *optional*.
 
 - name - `string` - the name of the song.
-- engineer - `string` - the engineer of the soundfont.
+- engineer - `string` - the engineer of the sound bank.
 - artist - `string` - the artist of the song.
 - album - `string` - the album's name.
 - genre - `string` - the song's genre.
 - comment - `string` - a comment about the song.
-- creationDate - `string` - the creation date of the file. If not provided, current day is used.
-- copyright - `string` - the copyright string. If not provided, `midi.copyright` is copied.
+- creationDate - `Date` - the creation date of the file. If not provided, current day is used.
+- copyright - `string` - the copyright string. If not provided, `midi.getExtraMetadata()` is used.
 - picture - `ArrayBuffer` - the album cover of the song. Binary data of the image.
-- midiEncoding - `string` - The encoding of the inner MIDI file. Make sure to pick a value that is acceptable by the
-  `TextDecoder`
+- midiEncoding - `string` - The encoding of the inner MIDI file. Make sure to pick a value acceptable by `TextDecoder`.
 
 !!! Warning
 
-    Providing *any* of the metadata fields overrides the encoding with `utf-8`.
+    Providing *any* of the metadata fields overrides the info encoding with `utf-8`.
     This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
-
-#### correctBankOffset
-
-`boolean`, optional - if the function should correct all the
-program-selects, and the bank-selects in the MIDI file to reflect the embedded soundfont
-(i.e., Make it [Self-contained](https://github.com/spessasus/sf2-rmidi-specification#self-contained-file)).
-Recommended unless a specific use-case is required.
-Defaults to `true`.
 
 !!! Tip
 
@@ -217,14 +199,14 @@ document.getElementById("export").onchange = async () => {
     );
 
     // trim the soundfont
-    soundBank.trimSoundBank(soundBank);
+    soundBank.trimSoundBank(midi);
     // write out with compression to save space (0.5 is medium quality)
     const soundfontBinary = await soundBank.writeSF2({
         compress: true,
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
     // get the rmidi
-    const rmidiBinary = midi.writeRMIDI(soundBankBinary, {
+    const rmidiBinary = midi.writeRMIDI(soundfontBinary, {
         soundBank,
         metadata: {
             name: "A cool song",

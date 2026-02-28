@@ -1,4 +1,4 @@
-# NPN Exports
+# NPM Exports
 
 This is a (non-exhaustive) list of exports in the NPM package.
 
@@ -33,7 +33,7 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - SoundBankLoader - the loader for SF2 or DLS files.
 - BasicSoundBank - represents a sound bank file. (be it DLS or SF2)
 - BasicSample - represents a sample. (be it DLS or SF2)
-- CreatedSample - a class that simplifies the process of creating a new sample.
+- EmptySample - a class that simplifies the process of creating a new sample.
 - BasicZone - represents a generic zone (only generators, modulators and ranges).
 - BasicGlobalZone - represents a global zone. Extends BasicZone but doesn't add properties.
 - BasicInstrumentZone - represents an instrument zone in a sound bank. Extends BasicZone with a `sample` property.
@@ -59,11 +59,9 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - BasicMIDI - the base class for MIDI sequences.
 - MIDIBuilder - the MIDI file builder.
 - MIDIMessage - represents a single MIDI/meta/sysEx event.
-- rmidInfoChunks - an enum for RMIDI info chunk data.
 
 ### Related enums
 
-- rmidInfoChunks - all the default RMIDI info chunk codes.
 - midiControllers - an enum for all MIDI controllers.
 - midiMessageTypes - an enum for all the MIDI event status bytes recognized.
 

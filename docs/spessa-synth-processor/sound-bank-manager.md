@@ -17,7 +17,7 @@ processor.soundBankManager.doSomething();
 This method removes a sound bank with a given ID from the sound bank list.
 
 ```ts
-function deleteSoundBank(id: number) {}
+function deleteSoundBank(id: string) {}
 ```
 
 - `id` - `string` - the ID of the sound bank to remove.

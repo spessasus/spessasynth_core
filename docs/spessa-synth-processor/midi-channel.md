@@ -14,13 +14,13 @@ However, they can allow to manipulate the synth extensively.
 
 !!! Note
 
-    Note that methods here may not be 100% stable.
+    Note that methods here may not be 100% stable. Expect removals!
 
 ## Methods
 
 !!! Note
 
-    The MIDI methods (noteOn, noteOff, program change, etc.) are omitted here as they can be called from the `SpessaSynthProcessor` directly.
+    The MIDI methods (noteOn, noteOff, program change, etc.) are omitted here as they can be called from the `SpessaSynthProcessor` class.
 
 ### resetPreset
 
@@ -107,7 +107,7 @@ Sets a custom controller.
 Parameters:
 
 - type - the custom controller to set
-- value - the nev value of this controller.
+- value - the new value of this controller.
 
 The custom controllers enum is called `customControllers` in the exports.
 

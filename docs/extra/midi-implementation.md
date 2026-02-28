@@ -8,7 +8,7 @@ This describes what messages SpessaSynth can receive.
 
 !!! Note
 
-     ⚠️NON-STANDARD!⚠️ means that this is an additional modulator that is not specified in the SF2 specification.
+     ⚠️NON-STANDARD!⚠️ means that this is an additional behavior that is not specified in the SF2 specification.
 
 | Message           | Supported? | Notes                                                                                                                |
 | ----------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -81,10 +81,8 @@ Below is the list of controllers supported by default.
 | 101                  | Registered Parameter Number MSB     | Parameter number (0 - 127)                                                                               | Selects a Registered Parameter's Coarse to the given value. [Here are the currently supported values.](#supported-registered-parameters).                              | none          |
 | 120 or 123           | All Notes Off or All Sound Off      | Not Applicable                                                                                           | Stops all the notes. Equivalent to MIDI "panic".                                                                                                                       | N.A.          |
 | 121                  | Reset All Controllers               | Not Applicable                                                                                           | Resets controllers to their default values according to the RP-15 recommended practice.                                                                                | N.A.          |
-| 124 or 125           | Omni mode On/Off                    | Not Applicable                                                                                           | Stops all the notes. Equivalent to MIDI "panic". This is for parity wit Roland GS devices.                                                                             | N.A.          |
+| 124 or 125           | Omni mode On/Off                    | Not Applicable                                                                                           | Stops all the notes. Equivalent to MIDI "panic". This is for parity with Roland GS devices.                                                                            | N.A.          |
 | 126 or 127           | Poly/Mono Mode On/Off               | Not Applicable                                                                                           | Setting the corresponding controller to any value to switch the Poly mode on or off. Mono mode allows only one note at a time on this channel.                         | Poly          |
-
-|
 
 ### Default controller values
 

@@ -73,9 +73,9 @@ This event is triggered when a controller is changed on any channel.
 - `controllerNumber`: `number` - the number of the MIDI controller list. Ranges from 0 to 127.
 - `controllerValue`: `number` - the new value of the controller. Ranges from 0 to 127.
 
-Note that this event is also called after `allcontrollerreset` if there were any locked controllers.
+Note that this event is also called after `allControllerReset` if there were any locked controllers.
 For example, if CC#1 was locked to 64,
-after `allcontrollerreset` a `controllerchange` event will be called with `controllerNumber` 1 and `controllerValue` 64.
+after `allControllerReset` a `controllerChange` event will be called with `controllerNumber` 1 and `controllerValue` 64.
 
 ### `programChange`
 
@@ -157,8 +157,8 @@ The event data is the preset list. Each item is a preset list entry:
 
 This event is triggered when all controllers and programs have been reset. Effectively a system reset.
 
-None. Note that if there were any locked controllers, they will be restored via `controllerchange` event after (like
-described in `controllerchange`).
+None. Note that if there were any locked controllers, they will be restored via `controllerChange` event after (like
+described in `controllerChange`).
 
 ### `soundBankError`
 

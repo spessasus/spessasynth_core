@@ -66,7 +66,7 @@ The sample's loop end index. In sample data points, relative to the start of the
 ### linkedTo
 
 Sample's linked instruments (the instruments that use it).
-Tote that duplicates are allowed since one instrument can use the same sample multiple times.
+Note that duplicates are allowed since one instrument can use the same sample multiple times.
 
 An array of `BasicInstrument`s.
 

@@ -280,7 +280,7 @@ midi.preloadSynth(synth);
 
 Updates all parameters. Call this after editing the contents of `midi.tracks` (the events).
 
-This updates parameters like `fistNoteOn`, `lastVoiceEventTick` or `loop`.
+This updates parameters like `firstNoteOn`, `lastVoiceEventTick` or `loop`.
 
 ```ts
 midi.flush();
