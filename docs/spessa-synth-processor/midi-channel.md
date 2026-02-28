@@ -107,24 +107,9 @@ Sets a custom controller.
 Parameters:
 
 - type - the custom controller to set
-- value - the nev value of this controller.
+- value - the new value of this controller.
 
 The custom controllers enum is called `customControllers` in the exports.
-
-### renderAudio
-
-Renders Float32 audio for this channel.
-
-Parameters:
-
-- outputLeft - the left output buffer.
-- outputRight - the right output buffer.
-- reverbOutputLeft - left output for reverb.
-- reverbOutputRight - right output for reverb.
-- chorusOutputLeft - left output for chorus.
-- chorusOutputRight - right output for chorus.
-- startIndex - start index offset.
-- sampleCount - sample count to render.
 
 ### setPresetLock
 

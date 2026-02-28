@@ -6,23 +6,15 @@
 
 This class represents a single modulator (map from a source to a given synthesis parameter)
 
-## ModulatorSource
-
-Represents a single modulator source.
-
-Properties below:
-
-###
-
 ## Properties
 
 ### primarySource
 
-The modulator's primary source, a `ModulatorSource` instance.
+The modulator's primary source, a [`ModulatorSource` instance.](modulator-source.md)
 
 ### secondarySource
 
-The modulator's secondary source, a `ModulatorSource` instance.
+The modulator's secondary source, a [`ModulatorSource` instance.](modulator-source.md)
 
 ### destination
 
@@ -109,7 +101,7 @@ Note: cB - centibels, 1/10 of a decibel
 ### SF2 Default
 
 These are the default modulators, as defined by the SF2.04 specification.
-Note that the [velocity to filter modulator is intentionally disabledt](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+Note that the [velocity to filter modulator is intentionally disabled](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
 
 | Source                       | Source Transform          | Secondary source                           | Destination          | Transform amount |
 | ---------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |

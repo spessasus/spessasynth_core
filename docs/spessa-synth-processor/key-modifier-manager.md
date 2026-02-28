@@ -12,7 +12,7 @@ Currently, it supports overriding:
 
 It is accessible via the `keyModifierManager` property of the [SpessaSynthProcessor class](index.md).
 
-## Properties
+## Methods
 
 ### addMapping
 

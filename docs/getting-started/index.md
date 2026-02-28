@@ -17,7 +17,7 @@ synth.soundBankManager.addSoundBank(arrayBuffer, "main");
 
 ## Understanding the audio loop
 
-Spessasynth*core provides very \_raw* access to the audio data, outputting float PCM samples.
+`spessasynth_core` provides very _raw_ access to the audio data, outputting float PCM samples.
 These samples can then be sent to speakers, saved somewhere or processed, for example in an `AudioWorklet`'s [`process` method](https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletProcessor/process).
 
 ### Example MIDI player audio loop
@@ -30,41 +30,31 @@ while (true) {
     sequencer.processTick();
     const samplesL = new Float32Array(bufferSize);
     const samplesR = new Float32Array(bufferSize);
-    const reverbL = new Float32Array(bufferSize);
-    const reverbR = new Float32Array(bufferSize);
-    const chorusL = new Float32Array(bufferSize);
-    const chorusR = new Float32Array(bufferSize);
-    processor.renderAudio(
-        [samplesL, samplesR],
-        [reverbL, reverbR],
-        [chorusL, chorusR]
-    );
+    processor.process(samplesL, samplesR);
     // process the audio here
 }
 ```
 
 This loop processes the sequencer before rendering the audio to the buffers.
-Note that spessasynth_core does not provide audio effects, so you will have to supply your own.
 
 Also keep in mind that the buffer size should not be larger than 256,
-as the renderAudio function calculates the envelopes and LFOs once,
+as the `process` function calculates the envelopes and LFOs once,
 so buffer size represents the shortest amount of time between those changes.
 
 To use a larger buffer, you can do:
 
 ```ts
 // divisible by 128
-const dry = [new Float32Array(2048), new Float32Array(2048)];
-const reverb = [new Float32Array(2048), new Float32Array(2048)];
-const chorus = [new Float32Array(2048), new Float32Array(2048)];
+const outL = new Float32Array(2048);
+const outR = new Float32Array(2048);
 // 2048 / 128 = 16;
 for (let i = 0; i < 16; i++) {
     // start rendering at a given offset and render 128 samples
-    processor.renderAudio(dry, reverb, chorus, i * 128, 128);
+    processor.process(outL, outR, i * 128, 128);
 }
 ```
 
-Check out the [renderAudio method](../spessa-synth-processor/index.md#renderaudio) for more information.
+Check out the [processo method](../spessa-synth-processor/index.md#process) for more information.
 
 ## Examples
 

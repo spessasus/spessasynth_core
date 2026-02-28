@@ -37,7 +37,7 @@ Refer to SC-8850 Owner's Manual p. 236 for the exact mapping of the values.
 
 ### timeRatioLeft
 
-0-120
+1-120
 4% - 500%
 This parameter sets the delay time of the delay located at the left as a percentage of
 the Delay Time Center (up to a max. of 1.0 s).

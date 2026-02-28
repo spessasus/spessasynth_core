@@ -65,11 +65,6 @@ with an object containing two properties:
 
 See [event types](event-types.md) for more info.
 
-### processTick
-
-Processes a single MIDI tick.
-You should call this every rendering quantum to process the sequencer events in real-time.
-
 ### duration
 
 The length of the current sequence in seconds.
@@ -118,6 +113,11 @@ This causes the sequencer to [preload](../midi/index.md#preloadsynth) all the so
 Defaults to true.
 
 ## Methods
+
+### processTick
+
+Processes a single MIDI tick.
+You should call this every rendering quantum to process the sequencer events in real-time.
 
 ### play
 

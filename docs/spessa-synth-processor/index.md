@@ -88,7 +88,7 @@ synth.process(left, right, (startIndex = 0), (sampleCount = all));
 Render PCM float32 audio data of separate channels + effects.
 
 ```ts
-synth.process(
+synth.processSplit(
     outputs,
     effectsLeft,
     effectsRight,
@@ -101,7 +101,7 @@ synth.process(
   for example, the first pair is first channels L and R outputs and so on. If there are fewer arrays than the channels,
   the extra channels will render into the same arrays.
 - effectsLeft - a `Float32Array`- the left output buffer for effects.
-- effectsRight - a `Float32Array`- the left output buffer for effects.
+- effectsRight - a `Float32Array` - the right output buffer for effects.
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.
@@ -339,7 +339,7 @@ Use the sound bank manager directly.
 
 Remove the embedded sound bank from the synthesizer.
 
-## clearCache
+### clearCache
 
 Clear the synthesizer's voice cache.
 
@@ -349,7 +349,7 @@ Render PCM float32 audio data to the stereo outputs.
 
 !!! Danger
 
-    This method has been deprecated in favor of `.process`
+    This method has been deprecated in favor of `process`
 
 ```ts
 synth.renderAudio(
@@ -379,11 +379,15 @@ synth.renderAudio(
 
 !!! Tip
 
-    If `effectsEnabled` is set to false, the effect arrays passed can be empty (`[]`).
+    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
 
 ### renderAudioSplit
 
 Render PCM float32 audio data of separate channels + effects.
+
+!!! Danger
+
+    This method has been deprecated in favor of `processSplit`
 
 ```ts
 synth.renderAudioSplit(

@@ -36,7 +36,7 @@ _If you're looking for the SpessaSynth web app, it can be found [here](https://s
   SF2 RMIDI format that spessasynth supports.
 - [Multi-Port files explained](extra/about-multi-port.md) - Explanation of the Multi-Port MIDI feature.
 - [The DLS Conversion problem](extra/dls-conversion-problem.md) - The limits of the SF2 → DLS conversion.
-- [NPM Exports](extra/all-npm-exports.md) - a listing of all the NPN exports in the `spessasynth_core` NPM package.
+- [NPM Exports](extra/all-npm-exports.md) - a listing of all the NPM exports in the `spessasynth_core` NPM package.
 
 !!! Tip
 
