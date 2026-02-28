@@ -8,6 +8,8 @@
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
       <excludeFolder url="file://$MODULE_DIR$/unused" />
       <excludeFolder url="file://$MODULE_DIR$/.husky/_" />
+      <excludeFolder url="file://$MODULE_DIR$/site" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/files/efx" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

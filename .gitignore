@@ -75,6 +75,7 @@ unused/
 /unused/reverb.js
 dist/
 /node_modules/
+site/
 
 
 # random files
