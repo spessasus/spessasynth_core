@@ -503,6 +503,11 @@ export function handleGS(
                                     data
                                 );
                                 coolInfo(`EFX Parameter ${addr3 - 2}`, data);
+                                this.callEvent("effectChange", {
+                                    effect: "insertion",
+                                    parameter: addr3,
+                                    value: data
+                                });
                                 return;
                             }
                             switch (addr3) {
@@ -530,6 +535,12 @@ export function handleGS(
                                         );
                                     }
                                     this.insertionProcessor.reset();
+                                    // Special case: 16-bit value
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: 0,
+                                        value: type
+                                    });
                                     return;
                                 }
 
@@ -539,6 +550,11 @@ export function handleGS(
                                     this.insertionProcessor.sendLevelToReverb =
                                         data / 127;
                                     coolInfo("EFX Send Level to Reverb", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: addr3,
+                                        value: data
+                                    });
                                     return;
                                 }
 
@@ -548,6 +564,11 @@ export function handleGS(
                                     this.insertionProcessor.sendLevelToChorus =
                                         data / 127;
                                     coolInfo("EFX Send Level to Chorus", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: addr3,
+                                        value: data
+                                    });
                                     return;
                                 }
 
@@ -557,6 +578,11 @@ export function handleGS(
                                     this.insertionProcessor.sendLevelToDelay =
                                         data / 127;
                                     coolInfo("EFX Send Level to Delay", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: addr3,
+                                        value: data
+                                    });
                                     return;
                                 }
                             }
@@ -1140,15 +1166,16 @@ export function handleGS(
                                     // EFX assign
                                     const efx = data === 1;
                                     channelObject.insertionEnabled = efx;
-                                    this.insertionActive = efx
-                                        ? true
-                                        : this.midiChannels.some(
-                                              (c) => c.insertionEnabled
-                                          );
+                                    this.insertionActive ||= efx;
                                     coolInfo(
                                         `Insertion for ${channel}`,
                                         efx ? "ON" : "OFF"
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: efx ? -1 : -2,
+                                        value: channel
+                                    });
                                 }
                             }
                             return;

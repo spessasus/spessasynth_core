@@ -545,6 +545,11 @@ export class SynthesizerCore {
         this.insertionProcessor.sendLevelToReverb = 40 / 127;
         this.insertionProcessor.sendLevelToChorus = 0;
         this.insertionProcessor.sendLevelToDelay = 0;
+        this.callEvent("effectChange", {
+            effect: "insertion",
+            parameter: 0,
+            value: this.insertionProcessor.type
+        });
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;

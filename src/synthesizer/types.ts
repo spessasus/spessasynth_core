@@ -162,7 +162,7 @@ type FXType<K> = Exclude<keyof K, "process"> | "macro";
 export type EffectChangeCallback =
     | {
           /**
-           * The effect that was changed, "reverb", "chorus" or "delay"
+           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
            */
           effect: "reverb";
           /**
@@ -176,7 +176,7 @@ export type EffectChangeCallback =
       }
     | {
           /**
-           * The effect that was changed, "reverb", "chorus" or "delay"
+           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
            */
           effect: "chorus";
           /**
@@ -190,7 +190,7 @@ export type EffectChangeCallback =
       }
     | {
           /**
-           * The effect that was changed, "reverb", "chorus" or "delay"
+           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
            */
           effect: "delay";
           /**
@@ -199,6 +199,33 @@ export type EffectChangeCallback =
           parameter: FXType<DelayProcessor>;
           /**
            * The new 7-bit value.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
+           */
+          effect: "insertion";
+
+          /**
+           * The parameter that was changed. This maps to GS address map at addr2 = 0x03.
+           * See SC-8850 Manual p.237,
+           * for example:
+           * - 0x0 - EFX type, the value is 16 bit in this special case. Note that this resets the parameters!
+           * - 0x3 - EFX param 1
+           * - 0x16 - EFX param 20 (usually level)
+           * - 0x17 - EFX send to reverb
+           *
+           * There are two exceptions:
+           * - -1 - the channel has ENABLED the effect.
+           * - -2 - the channel has DISABLED the effect.
+           * For both of these cases, `value` is the channel number.
+           */
+          parameter: number;
+
+          /**
+           * The new value for the parameter.
            */
           value: number;
       };
