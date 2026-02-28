@@ -99,7 +99,7 @@ export const nonResettableCCs = new Set<MIDIController>([
     midiControllers.reverbDepth,
     midiControllers.tremoloDepth,
     midiControllers.chorusDepth,
-    midiControllers.detuneDepth,
+    midiControllers.variationDepth,
     midiControllers.phaserDepth,
     midiControllers.soundVariation,
     midiControllers.filterResonance,
@@ -112,7 +112,16 @@ export const nonResettableCCs = new Set<MIDIController>([
     midiControllers.vibratoDelay,
     midiControllers.soundController10,
     midiControllers.polyModeOn,
-    midiControllers.monoModeOn
+    midiControllers.monoModeOn,
+    midiControllers.omniModeOn,
+    midiControllers.omniModeOff,
+    // RP-15: Do not reset RPN or NRPN
+    midiControllers.dataEntryMSB,
+    midiControllers.dataEntryLSB,
+    midiControllers.nonRegisteredParameterLSB,
+    midiControllers.nonRegisteredParameterMSB,
+    midiControllers.registeredParameterLSB,
+    midiControllers.registeredParameterMSB
 ] as const);
 
 /**
