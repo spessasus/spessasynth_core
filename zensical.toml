@@ -50,7 +50,7 @@ repo_name = "spessasus/spessasynth_core"
 nav = [
     {"Home" = "index.md"},
     {"Documentation" = [
-        "getting-started/index.md",
+        { "Getting Started " = ["getting-started/index.md"]},
         {"SpessaSynthProcessor" = [
             "spessa-synth-processor/index.md",
             "spessa-synth-processor/midi-channel.md",
