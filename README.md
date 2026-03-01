@@ -14,9 +14,9 @@ It allows you to:
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
-### v4.0.0 TypeScript Update is here!
+### v4.2.0 The Effects Update is here!
 
-[**Read about breaking changes here.**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
+Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 > **Tip:**
 >
@@ -80,6 +80,7 @@ It allows you to:
     - **Reverb:** _Multiple characters including delay and panning delay!_
     - **Chorus:** _Modulated delay lines with multiple presets!_
     - **Delay:** _Three delay lines for all of your delay needs!_
+    - **Insertion Effects:** _The ultimate effects, they can give your sounds a completely different character! (limited support)_
     - **Replaceable:** _Effects not to your taste? You can bring your own!_
 - **Excellent MIDI Standards Support:**
     - **MIDI Controller Support:** Default supported
