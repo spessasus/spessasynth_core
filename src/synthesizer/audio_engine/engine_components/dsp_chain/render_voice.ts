@@ -3,17 +3,15 @@ import {
     cbAttenuationToGain,
     timecentsToSeconds
 } from "../unit_converter";
-import { getLFOValue } from "./lfo";
+import { getLFOValue, getLFOValueSine } from "./lfo";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
-import { SpessaSynthWarn } from "../../../../utils/loggin"; // Optimized for spessasynth_lib's effects
+import { SpessaSynthWarn } from "../../../../utils/loggin";
+import { LowpassFilter } from "./lowpass_filter";
 
-// Optimized for spessasynth_lib's effects
-export const REVERB_DIVIDER = 3070;
-export const CHORUS_DIVIDER = 2000;
 const HALF_PI = Math.PI / 2;
 
 const MIN_PAN = -500;
@@ -37,10 +35,6 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * @param timeNow current time in seconds
  * @param outputL the left output buffer
  * @param outputR the right output buffer
- * @param reverbL left output for reverb
- * @param reverbR right output for reverb
- * @param chorusL left output for chorus
- * @param chorusR right output for chorus
  * @param startIndex
  * @param sampleCount
  */
@@ -50,10 +44,6 @@ export function renderVoice(
     timeNow: number,
     outputL: Float32Array,
     outputR: Float32Array,
-    reverbL: Float32Array,
-    reverbR: Float32Array,
-    chorusL: Float32Array,
-    chorusR: Float32Array,
     startIndex: number,
     sampleCount: number
 ) {
@@ -83,8 +73,9 @@ export function renderVoice(
 
     // Calculate tuning
     let cents =
+        voice.pitchOffset +
         voice.modulatedGenerators[generatorTypes.fineTune] + // Soundfont fine tune
-        this.channelOctaveTuning[voice.midiNote] + // MTS octave tuning
+        this.octaveTuning[voice.midiNote] + // MTS octave tuning
         this.channelTuningCents; // Channel tuning
     let semitones = voice.modulatedGenerators[generatorTypes.coarseTune]; // Soundfont coarse tuning
 
@@ -188,9 +179,9 @@ export function renderVoice(
         this.midiControllers[midiControllers.modulationWheel] == 0 &&
         this.channelVibrato.depth > 0
     ) {
-        // Same as others
+        // Sine! (GS uses sine)
         cents +=
-            getLFOValue(
+            getLFOValueSine(
                 voice.startTime + this.channelVibrato.delay,
                 this.channelVibrato.rate,
                 timeNow
@@ -254,8 +245,77 @@ export function renderVoice(
         buffer
     );
 
-    // Low pass filter
-    voice.filter.process(sampleCount, voice, buffer, lowpassExcursion);
+    // Low pass filter (inlined for performance, confirmed with node.js)
+    {
+        const f = voice.filter;
+        const initialFc =
+            voice.modulatedGenerators[generatorTypes.initialFilterFc];
+
+        if (f.initialized) {
+            /* Note:
+             * We only smooth out the initialFc part,
+             * the modulation envelope and LFO excursions are not smoothed.
+             */
+            f.currentInitialFc +=
+                (initialFc - f.currentInitialFc) *
+                LowpassFilter.smoothingConstant;
+        } else {
+            // Filter initialization, set the current fc to target
+            f.initialized = true;
+            f.currentInitialFc = initialFc;
+        }
+
+        // The final cutoff for this calculation
+        const targetCutoff = f.currentInitialFc + lowpassExcursion;
+        const modulatedResonance =
+            voice.modulatedGenerators[generatorTypes.initialFilterQ];
+        /* Note:
+         * the check for initialFC is because of the filter optimization
+         * (if cents are the maximum then the filter is open)
+         * filter cannot use this optimization if it's dynamic (see #53), and
+         * the filter can only be dynamic if the initial filter is not open
+         */
+        if (
+            f.currentInitialFc > 13_499 &&
+            targetCutoff > 13_499 &&
+            modulatedResonance === 0
+        ) {
+            f.currentInitialFc = 13_500;
+            // Filter is open
+        } else {
+            // Check if the frequency has changed. if so, calculate new coefficients
+            if (
+                Math.abs(f.lastTargetCutoff - targetCutoff) > 1 ||
+                f.resonanceCb !== modulatedResonance
+            ) {
+                f.lastTargetCutoff = targetCutoff;
+                f.resonanceCb = modulatedResonance;
+                f.calculateCoefficients(targetCutoff);
+            }
+
+            // Filter the input
+            // Initial filtering code was ported from meltysynth created by sinshu.
+            const { a0, a1, a2, a3, a4 } = f;
+            let { x1, x2, y1, y2 } = f;
+            for (let i = 0; i < sampleCount; i++) {
+                const input = buffer[i];
+                const filtered =
+                    a0 * input + a1 * x1 + a2 * x2 - a3 * y1 - y2 * a4;
+
+                // Set buffer
+                x2 = x1;
+                x1 = input;
+                y2 = y1;
+                y1 = filtered;
+
+                buffer[i] = filtered;
+            }
+            f.x1 = x1;
+            f.x2 = x2;
+            f.y1 = y1;
+            f.y2 = y2;
+        }
+    }
 
     // Vol env
     const envActive = voice.volEnv.process(
@@ -290,6 +350,18 @@ export function renderVoice(
     const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
     const gainRight = panTableRight[index] * gain * this.synthCore.panRight;
 
+    if (this.insertionEnabled) {
+        // Straight into the insertion EFX!
+        const insertionL = this.synthCore.insertionInputL;
+        const insertionR = this.synthCore.insertionInputR;
+        for (let i = 0; i < sampleCount; i++) {
+            const s = buffer[i];
+            insertionL[i] += gainLeft * s;
+            insertionR[i] += gainRight * s;
+        }
+        return;
+    }
+
     // Mix down the audio data
     for (let i = 0; i < sampleCount; i++) {
         const s = buffer[i];
@@ -303,37 +375,47 @@ export function renderVoice(
 
     // Disable reverb and chorus if necessary
     const reverbSend =
-        voice.modulatedGenerators[generatorTypes.reverbEffectsSend];
+        voice.modulatedGenerators[generatorTypes.reverbEffectsSend] *
+        voice.reverbSend;
     if (reverbSend > 0) {
-        // Reverb is mono so we need to multiply by gain
         const reverbGain =
             this.synthCore.masterParameters.reverbGain *
-            this.synthCore.reverbSend *
             gain *
-            (reverbSend / REVERB_DIVIDER);
+            (reverbSend / 1000);
+
+        const reverb = this.synthCore.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
-            const idx = i + startIndex;
-            const s = reverbGain * buffer[i];
-            reverbL[idx] += s;
-            reverbR[idx] += s;
+            reverb[i] += reverbGain * buffer[i];
         }
     }
 
     const chorusSend =
-        voice.modulatedGenerators[generatorTypes.chorusEffectsSend];
+        voice.modulatedGenerators[generatorTypes.chorusEffectsSend] *
+        voice.chorusSend;
     if (chorusSend > 0) {
-        // Chorus is stereo so we do not need to
         const chorusGain =
             this.synthCore.masterParameters.chorusGain *
-            this.synthCore.chorusSend *
-            (chorusSend / CHORUS_DIVIDER);
-        const chorusLeftGain = gainLeft * chorusGain;
-        const chorusRightGain = gainRight * chorusGain;
+            (chorusSend / 1000) *
+            gain;
+        const chorus = this.synthCore.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
-            const idx = i + startIndex;
-            const s = buffer[i];
-            chorusL[idx] += chorusLeftGain * s;
-            chorusR[idx] += chorusRightGain * s;
+            chorus[i] += chorusGain * buffer[i];
+        }
+    }
+
+    if (this.synthCore.delayActive) {
+        const delaySend =
+            this.midiControllers[midiControllers.variationDepth] *
+            voice.delaySend;
+        if (delaySend > 0) {
+            const delayGain =
+                gain *
+                this.synthCore.masterParameters.delayGain *
+                ((delaySend >> 7) / 127);
+            const delay = this.synthCore.delayInput;
+            for (let i = 0; i < sampleCount; i++) {
+                delay[i] += delayGain * buffer[i];
+            }
         }
     }
 }

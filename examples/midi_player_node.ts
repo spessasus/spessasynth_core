@@ -11,7 +11,7 @@ import Speaker from "speaker";
 
 // Process arguments
 const args = process.argv.slice(2);
-if (args.length !== 2) {
+if (args.length < 2) {
     console.info("Usage: tsx index.ts <soundbank path> <midi path>");
     process.exit();
 }
@@ -25,7 +25,7 @@ const sampleRate = 44100;
 SpessaSynthLogging(true, true, true);
 console.info("Initializing synthesizer...");
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEffects: false
+    enableEventSystem: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),
@@ -47,9 +47,8 @@ const audioStream = new Readable({
     read() {
         const left = new Float32Array(bufSize);
         const right = new Float32Array(bufSize);
-        const arr = [left, right];
         seq.processTick();
-        synth.renderAudio(arr, [], []);
+        synth.process(left, right);
 
         const interleaved = new Float32Array(left.length * 2);
         for (let i = 0; i < left.length; i++) {

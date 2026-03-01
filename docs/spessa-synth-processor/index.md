@@ -4,11 +4,6 @@ The core synthesis engine of SpessaSynth.
 This module converts sound bank and MIDI data into PCM audio data.
 The internal synthesis system is modeled after SoundFont2 synthesis model.
 
-## Example
-
-A good example of the processor in use can be
-seen [spessasynth_lib's AudioWorklet wrapper](https://github.com/spessasus/spessasynth_lib/blob/master/src/synthetizer/worklet_processor.js).
-
 ## Initialization
 
 ```ts
@@ -32,8 +27,31 @@ interface SynthProcessorOptions {
      * Indicates if the effects are enabled. This can be changed later.
      */
     enableEffects: boolean;
+
+    /**
+     * Reverb processor for the synthesizer. Leave undefined to use the default.
+     */
+    reverbProcessor: ReverbProcessor;
+
+    /**
+     * Chorus processor for the synthesizer. Leave undefined to use the default.
+     */
+    chorusProcessor: ChorusProcessor;
+
+    /**
+     * Delay processor for the synthesizer. Leave undefined to use the default.
+     */
+    delayProcessor: DelayProcessor;
 }
 ```
+
+All properties are optional. If they are not supplied, the defaults will be used.
+
+## Effects
+
+- [Reverb](reverb-processor.md)
+- [Chorus](chorus-processor.md)
+- [Delay](delay-processor.md)
 
 ## Managers
 
@@ -42,23 +60,16 @@ interface SynthProcessorOptions {
 
 ## Methods
 
-### renderAudio
+### process
 
-Render PCM float32 audio data to the stereo outputs.
+Render PCM float32 audio data to the stereo outputs and processes the effects if they are enabled.
 
 ```ts
-synth.renderAudio(
-    outputs,
-    reverb,
-    chorus,
-    (startIndex = 0),
-    (sampleCount = all)
-);
+synth.process(left, right, (startIndex = 0), (sampleCount = all));
 ```
 
-- outputs - an array of exactly two `Float32Array` - the left and right audio output buffer, respectively.
-- reverb - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
-- chorus - an array of exactly two `Float32Array` - the left and right audio buffer for the chorus processor.
+- left - a `Float32Array` - the left audio output buffer.
+- right - a `Float32Array` - the right audio output buffer.
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.
@@ -72,28 +83,25 @@ synth.renderAudio(
     `sampleCount` should be 128 samples or less.
     Larger values may cause memory allocation and incorrect playback!
 
-!!! Tip
-
-    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
-
-### renderAudioSplit
+### processSplit
 
 Render PCM float32 audio data of separate channels + effects.
 
 ```ts
-synth.renderAudioSplit(
-    reverbChannels,
-    chorusChannels,
-    separateChannels,
+synth.processSplit(
+    outputs,
+    effectsLeft,
+    effectsRight,
     (startIndex = 0),
     (sampleCount = all)
 );
 ```
 
-- reverbChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
-- chorusChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the chorus processor.
 - separateChannels - an array of `Float32Array` pairs - one pair represents one channel (`[L, R]`),
-  for example, the first pair is first channels L and R outputs and so on. If there are fewer arrays than the channels, the extra channels will render into the same arrays.
+  for example, the first pair is first channels L and R outputs and so on. If there are fewer arrays than the channels,
+  the extra channels will render into the same arrays.
+- effectsLeft - a `Float32Array`- the left output buffer for effects.
+- effectsRight - a `Float32Array` - the right output buffer for effects.
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.
@@ -334,6 +342,83 @@ Remove the embedded sound bank from the synthesizer.
 ### clearCache
 
 Clear the synthesizer's voice cache.
+
+### renderAudio
+
+Render PCM float32 audio data to the stereo outputs.
+
+!!! Danger
+
+    This method has been deprecated in favor of `process`
+
+```ts
+synth.renderAudio(
+    outputs,
+    reverb,
+    chorus,
+    (startIndex = 0),
+    (sampleCount = all)
+);
+```
+
+- outputs - an array of exactly two `Float32Array` - the left and right audio output buffer, respectively.
+- reverb - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
+- chorus - an array of exactly two `Float32Array` - the left and right audio buffer for the chorus processor.
+- startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
+- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
+  `startIndex`.
+
+**All `Float32Array`s must be the same length**
+
+!!! Danger
+
+    This method renders a single quantum of audio.
+    The LFOs and envelopes are only processed at the beginning.
+    `sampleCount` should be 128 samples or less.
+    Larger values may cause memory allocation and incorrect playback!
+
+!!! Tip
+
+    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
+
+### renderAudioSplit
+
+Render PCM float32 audio data of separate channels + effects.
+
+!!! Danger
+
+    This method has been deprecated in favor of `processSplit`
+
+```ts
+synth.renderAudioSplit(
+    reverbChannels,
+    chorusChannels,
+    separateChannels,
+    (startIndex = 0),
+    (sampleCount = all)
+);
+```
+
+- reverbChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the reverb processor.
+- chorusChannels - an array of exactly two `Float32Array` - the left and right audio buffer for the chorus processor.
+- separateChannels - an array of `Float32Array` pairs - one pair represents one channel (`[L, R]`),
+  for example, the first pair is first channels L and R outputs and so on. If there are fewer arrays than the channels, the extra channels will render into the same arrays.
+- startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
+- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
+  `startIndex`.
+
+**All `Float32Array`s must be the same length**
+
+!!! Danger
+
+    This method renders a single quantum of audio.
+    The LFOs and envelopes are only processed at the beginning.
+    `sampleCount` should be 128 samples or less.
+    Larger values may cause memory allocation and incorrect playback!
+
+!!! Tip
+
+    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
 
 ## Properties
 

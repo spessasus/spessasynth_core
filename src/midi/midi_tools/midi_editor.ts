@@ -43,7 +43,7 @@ function getControllerChange(
 function getDrumChange(channel: number, ticks: number): MIDIMessage {
     const chanAddress =
         0x10 |
-        [1, 2, 3, 4, 5, 6, 7, 8, 0, 9, 10, 11, 12, 13, 14, 15][channel % 16];
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][channel % 16];
     // Excluding manufacturerID DeviceID and ModelID (and F7)
     const sysexData = [
         0x41, // Roland
@@ -467,7 +467,7 @@ export function applySnapshotInternal(
             continue;
         }
         const transposeFloat =
-            channel.channelTransposeKeyShift +
+            channel.keyShift +
             channel.customControllers[customControllers.channelTransposeFine] /
                 100;
         if (transposeFloat !== 0) {

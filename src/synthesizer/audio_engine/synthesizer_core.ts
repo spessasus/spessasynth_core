@@ -14,7 +14,11 @@ import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { MIDIChannel } from "./engine_components/midi_channel";
 import { SoundBankManager } from "./engine_components/sound_bank_manager";
 import { KeyModifierManager } from "./engine_components/key_modifier_manager";
-import { DEFAULT_SYNTH_MODE } from "./engine_components/synth_constants";
+import {
+    DEFAULT_SYNTH_METHOD_OPTIONS,
+    DEFAULT_SYNTH_MODE,
+    INITIAL_BUFFER_SIZE
+} from "./engine_components/synth_constants";
 import { customControllers } from "../enums";
 import { modulatorSources } from "../../soundbank/enums";
 import {
@@ -31,8 +35,17 @@ import {
 } from "../../midi/enums";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
-import { NON_CC_INDEX_OFFSET } from "../exports";
+import {
+    type DelayProcessor,
+    type InsertionProcessor,
+    type InsertionProcessorConstructor,
+    NON_CC_INDEX_OFFSET
+} from "../exports";
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
+
+import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
+import { ThruFX } from "./effects/insertion/thru";
+import { insertionList } from "./effects/insertion_list"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -51,8 +64,31 @@ export class SynthesizerCore {
     /**
      * All MIDI channels of the synthesizer.
      */
-    public midiChannels: MIDIChannel[] = [];
-
+    public readonly midiChannels: MIDIChannel[] = [];
+    /**
+     * The insertion processor's left input buffer.
+     */
+    public insertionInputL = new Float32Array(INITIAL_BUFFER_SIZE);
+    /**
+     * The insertion processor's right input buffer.
+     */
+    public insertionInputR = new Float32Array(INITIAL_BUFFER_SIZE);
+    /**
+     * The reverb processor's input buffer.
+     */
+    public reverbInput = new Float32Array(INITIAL_BUFFER_SIZE);
+    /**
+     * The chorus processor's input buffer.
+     */
+    public chorusInput = new Float32Array(INITIAL_BUFFER_SIZE);
+    /**
+     * The delay processor's input buffer.
+     */
+    public delayInput = new Float32Array(INITIAL_BUFFER_SIZE);
+    /**
+     * Delay is not used outside SC-88+ MIDIs, this is an optimization.
+     */
+    public delayActive = false;
     /**
      * The sound bank manager, which manages all sound banks and presets.
      */
@@ -83,26 +119,13 @@ export class SynthesizerCore {
      */
     public midiVolume = 1;
     /**
-     * Set via system exclusive.
-     * Note: Remember to reset in system reset!
-     */
-    public reverbSend = 1;
-
-    /**
      * Are the chorus and reverb effects enabled?
      */
     public enableEffects: boolean;
-
     /**
      * Is the event system enabled?
      */
     public enableEventSystem: boolean;
-
-    /**
-     * Set via system exclusive.
-     * Note: Remember to reset in system reset!
-     */
-    public chorusSend = 1;
     /**
      * The pan of the left channel.
      */
@@ -136,12 +159,10 @@ export class SynthesizerCore {
         eventType: K,
         eventData: SynthProcessorEventData[K]
     ) => unknown;
-
     public readonly missingPresetHandler: (
         patch: MIDIPatch,
         system: SynthSystem
     ) => undefined | BasicPreset;
-
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting is calculated in getCachedVoiceIndex, returns a list of voices for this note.
@@ -176,11 +197,45 @@ export class SynthesizerCore {
      * Current total amount of voices that are currently playing.
      */
     public voiceCount = 0;
+    /**
+     * A sysEx may set a "Part" (channel) to receive on a different channel number.
+     * This slows down the access, so this toggle tracks if it's enabled or not.
+     */
+    public customChannelNumbers = false;
+    /**
+     * The fallback processor when the requested insertion is not available.
+     */
+    protected readonly insertionFallback = new ThruFX();
+    /**
+     * The current insertion processor.
+     */
+    protected insertionProcessor: InsertionProcessor = this.insertionFallback;
+    /**
+     * All the insertion effects available to the processor.
+     * The key is the EFX type stored as MSB << 8 | LSB
+     */
+    protected readonly insertionEffects = new Map<number, InsertionProcessor>();
+    /**
+     * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
+     */
+    protected insertionActive = false;
 
+    /**
+     * The synthesizer's reverb processor.
+     */
+    protected readonly reverbProcessor: ReverbProcessor;
+    /**
+     * The synthesizer's chorus processor.
+     */
+    protected readonly chorusProcessor: ChorusProcessor;
+    /**
+     * The synthesizer's delay processor.
+     */
+    protected readonly delayProcessor: DelayProcessor;
     /**
      * For F5 system exclusive.
      */
-    public channelOffset = 0;
+    protected portSelectChannelOffset = 0;
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -189,7 +244,12 @@ export class SynthesizerCore {
     /**
      * Synth's event queue from the main thread
      */
-    private eventQueue: { callback: () => unknown; time: number }[] = [];
+    private eventQueue: {
+        message: Uint8Array | number[];
+        force: boolean;
+        channelOffset: number;
+        time: number;
+    }[] = [];
     /**
      * The time of a single sample, in seconds.
      */
@@ -222,11 +282,106 @@ export class SynthesizerCore {
         this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44_100 / sampleRate);
         LowpassFilter.initCache(this.sampleRate);
 
+        // Initialize effects
+        this.reverbProcessor = options.reverbProcessor;
+        this.chorusProcessor = options.chorusProcessor;
+        this.delayProcessor = options.delayProcessor;
+
+        // Register insertion
+        for (const insertion of insertionList)
+            this.registerInsertionProcessor(insertion);
+
         // Initialize voices
         this.voices = [];
         for (let i = 0; i < this.masterParameters.voiceCap; i++) {
             this.voices.push(new Voice(this.sampleRate));
         }
+    }
+
+    public controllerChange(
+        channel: number,
+        controllerNumber: MIDIController,
+        controllerValue: number
+    ) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel)
+                    ch.controllerChange(controllerNumber, controllerValue);
+            return;
+        }
+        this.midiChannels[
+            channel + this.portSelectChannelOffset
+        ].controllerChange(controllerNumber, controllerValue);
+    }
+
+    public noteOn(channel: number, midiNote: number, velocity: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.noteOn(midiNote, velocity);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].noteOn(
+            midiNote,
+            velocity
+        );
+    }
+
+    public noteOff(channel: number, midiNote: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.noteOff(midiNote);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].noteOff(
+            midiNote
+        );
+    }
+
+    public polyPressure(channel: number, midiNote: number, pressure: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel)
+                    ch.polyPressure(midiNote, pressure);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].polyPressure(
+            midiNote,
+            pressure
+        );
+    }
+
+    public channelPressure(channel: number, pressure: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.channelPressure(pressure);
+            return;
+        }
+        this.midiChannels[
+            channel + this.portSelectChannelOffset
+        ].channelPressure(pressure);
+    }
+
+    public pitchWheel(channel: number, pitch: number, midiNote = -1) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.pitchWheel(pitch, midiNote);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].pitchWheel(
+            pitch,
+            midiNote
+        );
+    }
+
+    public programChange(channel: number, programNumber: number) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.rxChannel === channel) ch.programChange(programNumber);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].programChange(
+            programNumber
+        );
     }
 
     /**
@@ -243,6 +398,17 @@ export class SynthesizerCore {
             }
         }
         // No match, assign priorities
+        if (this.masterParameters.autoAllocateVoices) {
+            // Allocate a new voice and return it
+            const v = new Voice(this.sampleRate);
+            this.voices.push(v);
+            this.masterParameters.voiceCap++;
+            this.callEvent("masterParameterChange", {
+                parameter: "voiceCap",
+                value: this.masterParameters.voiceCap
+            });
+            return v;
+        }
         this.assignVoicePriorities();
         let lowest = this.voices[0];
         for (let i = 0; i < this.masterParameters.voiceCap; i++) {
@@ -273,99 +439,21 @@ export class SynthesizerCore {
      */
     public processMessage(
         message: Uint8Array | number[],
-        channelOffset: number,
-        force: boolean,
-        options: SynthMethodOptions
+        channelOffset = 0,
+        force = false,
+        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
-        const call = () => {
-            const statusByteData = getEvent(message[0] as MIDIMessageType);
-
-            const channel = statusByteData.channel + channelOffset;
-            // Process the event
-            switch (statusByteData.status as MIDIMessageType) {
-                case midiMessageTypes.noteOn: {
-                    const velocity = message[2];
-                    if (velocity > 0) {
-                        this.midiChannels[channel].noteOn(message[1], velocity);
-                    } else {
-                        this.midiChannels[channel].noteOff(message[1]);
-                    }
-                    break;
-                }
-
-                case midiMessageTypes.noteOff: {
-                    if (force) {
-                        this.midiChannels[channel].killNote(message[1]);
-                    } else {
-                        this.midiChannels[channel].noteOff(message[1]);
-                    }
-                    break;
-                }
-
-                case midiMessageTypes.pitchWheel: {
-                    // LSB | (MSB << 7)
-                    this.midiChannels[channel].pitchWheel(
-                        (message[2] << 7) | message[1]
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.controllerChange: {
-                    this.midiChannels[channel].controllerChange(
-                        message[1] as MIDIController,
-                        message[2]
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.programChange: {
-                    this.midiChannels[channel].programChange(message[1]);
-                    break;
-                }
-
-                case midiMessageTypes.polyPressure: {
-                    this.midiChannels[channel].polyPressure(
-                        message[0],
-                        message[1]
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.channelPressure: {
-                    this.midiChannels[channel].channelPressure(message[1]);
-                    break;
-                }
-
-                case midiMessageTypes.systemExclusive: {
-                    this.systemExclusive(
-                        new IndexedByteArray(message.slice(1)),
-                        channelOffset
-                    );
-                    break;
-                }
-
-                case midiMessageTypes.reset: {
-                    // Do not **force** stop channels (breaks seamless loops, for example th06)
-                    this.stopAllChannels(false);
-                    this.resetAllControllers();
-                    break;
-                }
-
-                default: {
-                    break;
-                }
-            }
-        };
-
         const time = options.time;
         if (time > this.currentTime) {
             this.eventQueue.push({
-                callback: call.bind(this),
-                time: time
+                message,
+                channelOffset,
+                force,
+                time
             });
             this.eventQueue.sort((e1, e2) => e1.time - e2.time);
         } else {
-            call();
+            this.processMessageInternal(message, channelOffset, force);
         }
     }
 
@@ -441,10 +529,29 @@ export class SynthesizerCore {
         this.setMasterParameter("midiSystem", system);
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
+        this.portSelectChannelOffset = 0;
+        this.customChannelNumbers = false;
         this.setMIDIVolume(1);
-        this.reverbSend = 1;
-        this.chorusSend = 1;
-        this.channelOffset = 0;
+        // Hall2 default
+        this.setReverbMacro(4);
+        // Chorus3 default
+        this.setChorusMacro(2);
+        // Delay1 default
+        this.setDelayMacro(0);
+        if (!this.masterParameters.delayLock) this.delayActive = false;
+        if (!this.masterParameters.insertionEffectLock) {
+            this.insertionActive = false;
+            this.insertionProcessor = this.insertionFallback;
+            this.insertionProcessor.reset();
+            this.insertionProcessor.sendLevelToReverb = 40 / 127;
+            this.insertionProcessor.sendLevelToChorus = 0;
+            this.insertionProcessor.sendLevelToDelay = 0;
+            this.callEvent("effectChange", {
+                effect: "insertion",
+                parameter: 0,
+                value: this.insertionProcessor.type
+            });
+        }
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
@@ -510,134 +617,207 @@ export class SynthesizerCore {
         }
     }
 
-    public renderAudio(
-        outputs: Float32Array[],
-        reverb: Float32Array[],
-        chorus: Float32Array[],
+    public process(
+        left: Float32Array,
+        right: Float32Array,
         startIndex = 0,
         sampleCount = 0
     ) {
-        // Process event queue
-        if (this.eventQueue.length > 0) {
-            const time = this.currentTime;
-            while (this.eventQueue[0]?.time <= time) {
-                this.eventQueue.shift()?.callback();
-            }
-        }
-        const revL = reverb[0];
-        const revR = reverb[1];
-        const chrL = chorus[0];
-        const chrR = chorus[1];
-
-        // Validate
-        startIndex = Math.max(startIndex, 0);
-        const quantumSize = sampleCount || outputs[0].length - startIndex;
-
-        // For every channel
-        for (const c of this.midiChannels) {
-            c.clearVoiceCount();
-        }
-        this.voiceCount = 0;
-        const cap = this.masterParameters.voiceCap;
-        for (let i = 0; i < cap; i++) {
-            const v = this.voices[i];
-            if (!v.isActive) {
-                continue;
-            }
-            const ch = this.midiChannels[v.channel];
-            if (ch.isMuted) continue;
-            ch.voiceCount++;
-            this.voiceCount++;
-            ch.renderVoice(
-                v,
-                this.currentTime,
-                outputs[0],
-                outputs[1],
-                revL,
-                revR,
-                chrL,
-                chrR,
-                startIndex,
-                quantumSize
-            );
-        }
-
-        for (const c of this.midiChannels) {
-            c.updateVoiceCount();
-        }
-
-        // Advance the time appropriately
-        this.currentTime += quantumSize * this.sampleTime;
+        this.processSplit(
+            [[left, right]],
+            left,
+            right,
+            startIndex,
+            sampleCount
+        );
     }
 
     /**
-     * Renders the float32 audio data of each channel; buffer size of 128 is recommended.
-     * All float arrays must have the same length.
-     * @param reverb reverb stereo channels (L, R).
-     * @param chorus chorus stereo channels (L, R).
-     * @param separate a total of 16 stereo pairs (L, R) for each MIDI channel.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     * The main rendering pipeline, renders all voices the processes the effects:
+     * ```
+     *                   ┌────────────────────────────────┐
+     *                   │        Voice Processor         │
+     *                   └───────────────┬────────────────┘
+     *                                   │
+     *              ┌──────────┬─────────┼────────────────────────┐
+     *              │          │         │                        │
+     *              │          │         𜸊                        │
+     *              │          │ ┌───────┴───────┐                │
+     *              │          │ │    Chorus     │                │
+     *              │          │ │   Processor   ├──────────┐     │
+     *              │          │ └─┬──────────┬──┘          │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          │             │     │
+     *              │          │   │          𜸊             𜸊     𜸊
+     *              │          │   │ ┌────────┴───────┐   ┌─┴─────┴────────┐
+     *              │          └───┼>┤     Delay      ├─>>┤     Reverb     │
+     *              │              │ │   Processor    │   │   Processor    │
+     *              │              │ └────────┬───────┘   └───────┬────────┘
+     *              │              │          │                   │
+     *              │              │          │                   │
+     *              │              │          │                   │
+     *              │              │          │                   │
+     *              𜸊              𜸊          𜸊                   𜸊
+     *    ┌─────────┴──────────┐ ┌─┴──────────┴───────────────────┴────┐
+     *    │  Dry Output Pairs  │ │        Stereo Effects Output        │
+     *    └────────────────────┘ └─────────────────────────────────────┘
+     * ```
+     * The pipeline is quite similar to the one on SC-8850 manual page 78.
+     * All output arrays must be the same length, the method will crash otherwise.
+     * @param outputs The stereo pairs for each MIDI channel's dry output, will be wrapped if less.
+     * @param effectsLeft The left stereo effect output buffer.
+     * @param effectsRight The right stereo effect output buffer.
+     * @param startIndex The index to start writing at into the output buffer.
+     * @param samples The amount of samples to write.
      */
-    public renderAudioSplit(
-        reverb: Float32Array[],
-        chorus: Float32Array[],
-        separate: Float32Array[][],
+    public processSplit(
+        outputs: Float32Array[][],
+        effectsLeft: Float32Array,
+        effectsRight: Float32Array,
         startIndex = 0,
-        sampleCount = 0
+        samples = 0
     ) {
         // Process event queue
         if (this.eventQueue.length > 0) {
             const time = this.currentTime;
             while (this.eventQueue[0]?.time <= time) {
-                this.eventQueue.shift()?.callback();
+                const q = this.eventQueue.shift();
+                if (q) {
+                    this.processMessageInternal(
+                        q.message,
+                        q.channelOffset,
+                        q.force
+                    );
+                }
             }
         }
-        const revL = reverb[0];
-        const revR = reverb[1];
-        const chrL = chorus[0];
-        const chrR = chorus[1];
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        const quantumSize = sampleCount || separate[0][0].length - startIndex;
+        const sampleCount = samples || outputs[0][0].length - startIndex;
 
-        // For every channel
+        // Grow buffers if needed
+        if (this.enableEffects) {
+            // Grow buffers if needed
+            if (this.reverbInput.length < sampleCount) {
+                SpessaSynthWarn(
+                    "Buffer size has increased, this will cause a memory allocation!"
+                );
+                this.reverbInput = new Float32Array(sampleCount);
+                this.chorusInput = new Float32Array(sampleCount);
+                this.delayInput = new Float32Array(sampleCount);
+                this.insertionInputL = new Float32Array(sampleCount);
+                this.insertionInputR = new Float32Array(sampleCount);
+            } else {
+                // Clear the buffers
+                this.reverbInput.fill(0);
+                this.chorusInput.fill(0);
+                if (this.delayActive) this.delayInput.fill(0);
+                if (this.insertionActive) {
+                    this.insertionInputL.fill(0);
+                    this.insertionInputR.fill(0);
+                }
+            }
+        }
+
+        // Clear voice count
         for (const c of this.midiChannels) {
             c.clearVoiceCount();
         }
         this.voiceCount = 0;
+
+        // Process voices
         const cap = this.masterParameters.voiceCap;
+        const outputCount = outputs.length;
         for (let i = 0; i < cap; i++) {
             const v = this.voices[i];
-            if (!v.isActive) {
+            const ch = this.midiChannels[v.channel];
+            if (!v.isActive || ch.isMuted) {
                 continue;
             }
-            const ch = this.midiChannels[v.channel];
-            if (ch.isMuted) continue;
-            const outputIndex = v.channel % separate.length;
-            ch.voiceCount++;
-            this.voiceCount++;
+
+            // Send the voice to appropriate output
+            const outputIndex = v.channel % outputCount;
             ch.renderVoice(
                 v,
                 this.currentTime,
-                separate[outputIndex][0],
-                separate[outputIndex][1],
-                revL,
-                revR,
-                chrL,
-                chrR,
+                outputs[outputIndex][0],
+                outputs[outputIndex][1],
                 startIndex,
-                quantumSize
+                sampleCount
+            );
+
+            // Update voice count
+            ch.voiceCount++;
+            this.voiceCount++;
+        }
+
+        // Process effects
+        if (this.enableEffects) {
+            const {
+                chorusInput,
+                delayInput,
+                reverbInput,
+                insertionInputR,
+                insertionInputL
+            } = this;
+
+            // Insertion first
+            if (this.insertionActive) {
+                this.insertionProcessor.process(
+                    insertionInputL,
+                    insertionInputR,
+                    effectsLeft,
+                    effectsRight,
+                    reverbInput,
+                    chorusInput,
+                    delayInput,
+                    startIndex,
+                    sampleCount
+                );
+            }
+
+            // Chorus first, it feeds to reverb and delay
+            this.chorusProcessor.process(
+                chorusInput,
+                effectsLeft,
+                effectsRight,
+                reverbInput,
+                delayInput,
+                startIndex,
+                sampleCount
+            );
+            // CC#94 in XG is variation, not delay
+            if (this.delayActive && this.masterParameters.midiSystem !== "xg") {
+                // Process delay
+                this.delayProcessor.process(
+                    delayInput,
+                    effectsLeft,
+                    effectsRight,
+                    reverbInput,
+                    startIndex,
+                    sampleCount
+                );
+            }
+            // Finally process the reverb processor (it goes directly into the output buffer)
+            this.reverbProcessor.process(
+                reverbInput,
+                effectsLeft,
+                effectsRight,
+                startIndex,
+                sampleCount
             );
         }
 
+        // Update voice count
         for (const c of this.midiChannels) {
             c.updateVoiceCount();
         }
 
         // Advance the time appropriately
-        this.currentTime += quantumSize * this.sampleTime;
+        this.currentTime += sampleCount * this.sampleTime;
     }
 
     /**
@@ -717,6 +897,358 @@ export class SynthesizerCore {
         }
     }
 
+    protected setReverbMacro(macro: number) {
+        if (this.masterParameters.reverbLock) return;
+        // SC-8850 manual page 81
+        const rev = this.reverbProcessor;
+        rev.level = 64;
+        rev.preDelayTime = 0;
+        rev.character = macro;
+        switch (macro) {
+            /**
+             * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
+             * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
+             * suitable value.
+             *
+             * Room1, Room2, Room3
+             * These reverbs simulate the reverberation of a room. They provide a well-defined
+             * spacious reverberation.
+             * Hall1, Hall2
+             * These reverbs simulate the reverberation of a concert hall. They provide a deeper
+             * reverberation than the Room reverbs.
+             * Plate
+             * This simulates a plate reverb (a studio device using a metal plate).
+             * Delay
+             * This is a conventional delay that produces echo effects.
+             * Panning Delay
+             * This is a special delay in which the delayed sounds move left and right.
+             * It is effective when you are listening in stereo.
+             */
+            default: {
+                // Room1
+                rev.character = 0;
+                rev.preLowpass = 3;
+                rev.time = 80;
+                rev.delayFeedback = 0;
+                rev.preDelayTime = 0;
+                break;
+            }
+
+            case 1: {
+                // Room2
+                rev.preLowpass = 4;
+                rev.time = 56;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 2: {
+                // Room3
+                rev.preLowpass = 0;
+                rev.time = 72;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 3: {
+                // Hall1
+                rev.preLowpass = 4;
+                rev.time = 72;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 4: {
+                // Hall2
+                rev.preLowpass = 0;
+                rev.time = 64;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 5: {
+                // Plate
+                rev.preLowpass = 0;
+                rev.time = 88;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 6: {
+                // Delay
+                rev.preLowpass = 0;
+                rev.time = 32;
+                rev.delayFeedback = 40;
+                break;
+            }
+
+            case 7: {
+                // Panning delay
+                rev.preLowpass = 0;
+                rev.time = 64;
+                rev.delayFeedback = 32;
+                break;
+            }
+        }
+        this.callEvent("effectChange", {
+            effect: "reverb",
+            parameter: "macro",
+            value: macro
+        });
+    }
+
+    protected setChorusMacro(macro: number) {
+        if (this.masterParameters.chorusLock) return;
+        // SC-8850 manual page 83
+        const chr = this.chorusProcessor;
+        chr.level = 64;
+        chr.preLowpass = 0;
+        chr.delay = 127;
+        chr.sendLevelToDelay = 0;
+        chr.sendLevelToReverb = 0;
+        switch (macro) {
+            /**
+             * CHORUS MACRO is a macro parameter that allows global setting of chorus parameters.
+             * When you select the chorus type with CHORUS MACRO, each chorus parameter will be set to their
+             * most suitable value.
+             *
+             * Chorus1, Chorus2, Chorus3, Chorus4
+             * These are conventional chorus effects that add spaciousness and depth to the
+             * sound.
+             * Feedback Chorus
+             * This is a chorus with a flanger-like effect and a soft sound.
+             * Flanger
+             * This is an effect sounding somewhat like a jet airplane taking off and landing.
+             * Short Delay
+             * This is a delay with a short delay time.
+             * Short Delay (FB)
+             * This is a short delay with many repeats.
+             */
+            default: {
+                // Chorus1
+                chr.feedback = 0;
+                chr.delay = 112;
+                chr.rate = 3;
+                chr.depth = 5;
+                break;
+            }
+
+            case 1: {
+                // Chorus2
+                chr.feedback = 5;
+                chr.delay = 80;
+                chr.rate = 9;
+                chr.depth = 19;
+                break;
+            }
+
+            case 2: {
+                // Chorus3
+                chr.feedback = 8;
+                chr.delay = 80;
+                chr.rate = 3;
+                chr.depth = 19;
+                break;
+            }
+
+            case 3: {
+                // Chorus4
+                chr.feedback = 16;
+                chr.delay = 64;
+                chr.rate = 9;
+                chr.depth = 16;
+                break;
+            }
+
+            case 4: {
+                // FbChorus
+                chr.feedback = 64;
+                chr.delay = 127;
+                chr.rate = 2;
+                chr.depth = 24;
+                break;
+            }
+
+            case 5: {
+                // Flanger
+                chr.feedback = 112;
+                chr.delay = 127;
+                chr.rate = 1;
+                chr.depth = 5;
+                break;
+            }
+
+            case 6: {
+                // SDelay
+                chr.feedback = 0;
+                chr.depth = 127;
+                chr.rate = 0;
+                chr.depth = 127;
+                break;
+            }
+
+            case 7: {
+                // SDelayFb
+                chr.feedback = 80;
+                chr.depth = 127;
+                chr.rate = 0;
+                chr.depth = 127;
+                break;
+            }
+        }
+        this.callEvent("effectChange", {
+            effect: "chorus",
+            parameter: "macro",
+            value: macro
+        });
+    }
+
+    protected setDelayMacro(macro: number) {
+        if (this.masterParameters.delayLock) return;
+        // SC-8850 manual page 85
+        const dly = this.delayProcessor;
+        dly.level = 64;
+        dly.preLowpass = 0;
+        dly.sendLevelToReverb = 0;
+        dly.levelRight = dly.levelLeft = 0;
+        dly.levelCenter = 127;
+        switch (macro) {
+            /**
+             * DELAY MACRO is a macro parameter that allows global setting of delay parameters. When you select the delay type with DELAY MACRO, each delay parameter will be set to their most
+             * suitable value.
+             *
+             * Delay1, Delay2, Delay3
+             * These are conventional delays. 1, 2 and 3 have progressively longer delay times.
+             * Delay4
+             * This is a delay with a rather short delay time.
+             * Pan Delay1. Pan Delay2. Pan Delay3
+             * The delay sound moves between left and right. This is effective when listening in
+             * stereo. 1, 2 and 3 have progressively longer delay times.
+             * Pan Delay4
+             * This is a rather short delay with the delayed sound moving between left and
+             * right.
+             * It is effective when listening in stereo.
+             * Dly To Rev
+             * Reverb is added to the delay sound, which moves between left and right.
+             * It is effective when listening in stereo.
+             * PanRepeat
+             * The delay sound moves between left and right,
+             * but the pan positioning is different from the effects listed above.
+             * It is effective when listening in stereo.
+             */
+            case 0:
+            default: {
+                // Delay1
+                dly.timeCenter = 97;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 80;
+                break;
+            }
+
+            case 1: {
+                // Delay2
+                dly.timeCenter = 106;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 80;
+                break;
+            }
+
+            case 2: {
+                // Delay3
+                dly.timeCenter = 115;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 3: {
+                // Delay4
+                dly.timeCenter = 83;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 4: {
+                // PanDelay1
+                dly.timeCenter = 105;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 125;
+                dly.levelRight = 60;
+                dly.feedback = 74;
+                break;
+            }
+
+            case 5: {
+                // PanDelay2
+                dly.timeCenter = 109;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 125;
+                dly.levelRight = 60;
+                dly.feedback = 71;
+                break;
+            }
+
+            case 6: {
+                // PanDelay3
+                dly.timeCenter = 115;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 120;
+                dly.levelRight = 64;
+                dly.feedback = 73;
+                break;
+            }
+
+            case 7: {
+                // PanDelay4
+                dly.timeCenter = 93;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 120;
+                dly.levelRight = 64;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 8: {
+                // DelayToReverb
+                dly.timeCenter = 109;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 114;
+                dly.levelRight = 60;
+                dly.feedback = 61;
+                dly.sendLevelToReverb = 36;
+                break;
+            }
+
+            case 9: {
+                // PanRepeat
+                dly.timeCenter = 110;
+                dly.timeRatioLeft = 21;
+                dly.timeRatioRight = 32;
+                dly.levelCenter = 97;
+                dly.levelLeft = 127;
+                dly.levelRight = 67;
+                dly.feedback = 40;
+                break;
+            }
+        }
+        this.callEvent("effectChange", {
+            effect: "delay",
+            parameter: "macro",
+            value: macro
+        });
+    }
+
     protected getCachedVoice(
         patch: MIDIPatch,
         midiNote: number,
@@ -737,6 +1269,91 @@ export class SynthesizerCore {
             this.getCachedVoiceIndex(patch, midiNote, velocity),
             voices
         );
+    }
+
+    private registerInsertionProcessor(proc: InsertionProcessorConstructor) {
+        const p = new proc(this.sampleRate);
+        this.insertionEffects.set(p.type, p);
+    }
+
+    private processMessageInternal(
+        message: Uint8Array | number[],
+        channelOffset: number,
+        force: boolean
+    ) {
+        const statusByteData = getEvent(message[0] as MIDIMessageType);
+
+        const channelNumber = statusByteData.channel + channelOffset;
+        // Process the event
+        switch (statusByteData.status as MIDIMessageType) {
+            case midiMessageTypes.noteOn: {
+                const velocity = message[2];
+                if (velocity > 0) {
+                    this.noteOn(channelNumber, message[1], velocity);
+                } else {
+                    this.noteOff(channelNumber, message[1]);
+                }
+                break;
+            }
+
+            case midiMessageTypes.noteOff: {
+                if (force) {
+                    this.midiChannels[channelNumber].killNote(message[1]);
+                } else {
+                    this.noteOff(channelNumber, message[1]);
+                }
+                break;
+            }
+
+            case midiMessageTypes.pitchWheel: {
+                // LSB | (MSB << 7)
+                this.pitchWheel(channelNumber, (message[2] << 7) | message[1]);
+                break;
+            }
+
+            case midiMessageTypes.controllerChange: {
+                this.controllerChange(
+                    channelNumber,
+                    message[1] as MIDIController,
+                    message[2]
+                );
+                break;
+            }
+
+            case midiMessageTypes.programChange: {
+                this.programChange(channelNumber, message[1]);
+                break;
+            }
+
+            case midiMessageTypes.polyPressure: {
+                this.polyPressure(channelNumber, message[1], message[2]);
+                break;
+            }
+
+            case midiMessageTypes.channelPressure: {
+                this.channelPressure(channelNumber, message[1]);
+                break;
+            }
+
+            case midiMessageTypes.systemExclusive: {
+                this.systemExclusive(
+                    new IndexedByteArray(message.slice(1)),
+                    channelOffset
+                );
+                break;
+            }
+
+            case midiMessageTypes.reset: {
+                // Do not **force** stop channels (breaks seamless loops, for example th06)
+                this.stopAllChannels(false);
+                this.resetAllControllers();
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
     }
 
     /**

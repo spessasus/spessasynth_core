@@ -104,6 +104,11 @@ export function controllerChange(
                 break;
             }
 
+            case midiControllers.variationDepth: {
+                this.synthCore.delayActive = true;
+                break;
+            }
+
             // Check for RPN and NPRN and data entry
             case midiControllers.registeredParameterLSB: {
                 this.dataEntryState = dataEntryStates.RPFine;

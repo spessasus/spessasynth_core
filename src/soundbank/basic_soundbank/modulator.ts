@@ -313,21 +313,6 @@ const defaultSoundFont2Modulators = [
 
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
-    // Cc 92 (tremolo) to modLFO volume
-    new DecodedModulator(
-        getModSourceEnum(
-            modulatorCurveTypes.linear,
-            false,
-            false,
-            true,
-            midiControllers.tremoloDepth
-        ) /*Linear forward unipolar cc 92 */,
-        0x0, // No controller
-        generatorTypes.modLfoToVolume,
-        24,
-        0
-    ),
-
     // Cc 73 (attack time) to volEnv attack
     new DecodedModulator(
         getModSourceEnum(

@@ -4,7 +4,7 @@ import {
     sysExNotRecognized
 } from "./helpers";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
-import { arrayToHexString, consoleColors } from "../../../../utils/other";
+import { consoleColors } from "../../../../utils/other";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
@@ -15,6 +15,16 @@ import {
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../../synthesizer_core";
+
+const coolInfo = (what: string, value: string | number | boolean) => {
+    SpessaSynthInfo(
+        `%cRoland GS ${what}%c is now set to %c${value}%c.`,
+        consoleColors.recognized,
+        consoleColors.info,
+        consoleColors.value,
+        consoleColors.info
+    );
+};
 
 /**
  * Handles a GS system exclusive
@@ -32,568 +42,1301 @@ export function handleGS(
     if (syx[3] === 0x12) {
         // Model ID
         switch (syx[2]) {
+            // GS
             case 0x42: {
-                // This is a GS sysex
+                {
+                    // This is a GS sysex
+                    const addr1 = syx[4];
+                    const addr2 = syx[5];
+                    const addr3 = syx[6];
 
-                const messageValue = syx[7];
-                // Syx[5] and [6] is the system parameter, syx[7] is the value
-                // Either patch common or SC-88 mode set
-                if (syx[4] === 0x40 || (syx[4] === 0x00 && syx[6] === 0x7f)) {
-                    // This is a channel parameter
-                    if ((syx[5] & 0x10) > 0) {
-                        // This is an individual part (channel) parameter
-                        // Determine the channel 0 means channel 10 (default), 1 means 1 etc.
-                        // SC-88Pro manual page 196
-                        const channel =
-                            [
-                                9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13,
-                                14, 15
-                            ][syx[5] & 0x0f] + channelOffset;
-                        // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
-                        const channelObject = this.midiChannels[channel];
-                        switch (syx[6]) {
-                            default: {
-                                // This is some other GS sysex...
-                                sysExNotRecognized(syx, "Roland GS");
-                                break;
+                    // Sanity check
+                    const data = Math.min(syx[7], 127);
+                    // SYSTEM MODE SET
+                    if (
+                        addr1 === 0 &&
+                        addr2 === 0 &&
+                        addr3 === 0x7f &&
+                        data === 0x00
+                    ) {
+                        // This is a GS reset
+                        SpessaSynthInfo(
+                            "%cGS Reset received!",
+                            consoleColors.info
+                        );
+                        this.resetAllControllers("gs");
+                        return;
+                    }
+
+                    // Patch Parameter
+                    if (addr1 === 0x40) {
+                        // System Parameter
+                        if (addr2 === 0x00) {
+                            switch (addr3) {
+                                case 0x00: {
+                                    // Roland GS master tune
+                                    const tune =
+                                        (data << 12) |
+                                        (syx[8] << 8) |
+                                        (syx[9] << 4) |
+                                        syx[10];
+                                    const cents = (tune - 1024) / 10;
+                                    this.setMasterTuning(cents);
+                                    coolInfo("Master Tune", cents);
+                                    break;
+                                }
+
+                                case 0x04: {
+                                    // Roland GS master volume
+                                    coolInfo("Master Volume", data);
+                                    break;
+                                }
+
+                                case 0x05: {
+                                    // Roland master key shift (transpose)
+                                    const transpose = data - 64;
+                                    coolInfo("Master Key-Shift", transpose);
+                                    this.setMasterTuning(transpose * 100);
+                                    break;
+                                }
+
+                                case 0x06: {
+                                    // Roland master pan
+                                    coolInfo("Master Pan", data);
+                                    this.setMasterParameter(
+                                        "masterPan",
+                                        (data - 64) / 64
+                                    );
+                                    break;
+                                }
+
+                                case 0x7f: {
+                                    // Roland mode set
+                                    // GS mode set
+                                    if (data === 0x00) {
+                                        // This is a GS reset
+                                        SpessaSynthInfo(
+                                            "%cGS Reset received!",
+                                            consoleColors.info
+                                        );
+                                        this.resetAllControllers("gs");
+                                    } else if (data === 0x7f) {
+                                        // GS mode off
+                                        SpessaSynthInfo(
+                                            "%cGS system off, switching to GM",
+                                            consoleColors.info
+                                        );
+                                        this.resetAllControllers("gm");
+                                    }
+                                    break;
+                                }
+
+                                default: {
+                                    sysExNotRecognized(syx, "Roland GS");
+                                    break;
+                                }
                             }
+                            return;
+                        }
 
-                            case 0x15: {
-                                // This is the Use for Drum Part sysex (multiple drums)
-                                const isDrums =
-                                    messageValue > 0 && syx[5] >> 4 > 0; // If set to other than 0, is a drum channel
-                                channelObject.setGSDrums(isDrums);
-                                SpessaSynthInfo(
-                                    `%cChannel %c${channel}%c ${
-                                        isDrums
-                                            ? "is now a drum channel"
-                                            : "now isn't a drum channel"
-                                    }%c via: %c${arrayToHexString(syx)}`,
-                                    consoleColors.info,
-                                    consoleColors.value,
-                                    consoleColors.recognized,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
+                        // Part Parameter, Patch Common (Effects)
+                        if (addr2 === 0x01) {
+                            const isReverb = addr3 >= 0x30 && addr3 <= 0x37;
+                            const isChorus = addr3 >= 0x38 && addr3 <= 0x40;
+                            const isDelay = addr3 >= 0x50 && addr3 <= 0x5a;
+                            // Disable effect editing if locked
+                            if (isReverb && this.masterParameters.reverbLock)
                                 return;
-                            }
-
-                            case 0x16: {
-                                // This is the pitch key shift sysex
-                                const keyShift = messageValue - 64;
-                                channelObject.setCustomController(
-                                    customControllers.channelKeyShift,
-                                    keyShift
-                                );
-                                sysExLogging(
-                                    syx,
-                                    channel,
-                                    keyShift,
-                                    "key shift",
-                                    "keys"
-                                );
+                            if (isChorus && this.masterParameters.chorusLock)
                                 return;
-                            }
+                            if (isDelay && this.masterParameters.delayLock)
+                                return;
+                            /*
+                            0x40 - chorus to delay
+                            enable delay that way
+                             */
+                            this.delayActive ||= addr3 === 0x40 || isDelay;
 
-                            // Pan position
-                            case 0x1c: {
-                                // 0 is random
-                                const panPosition = messageValue;
-                                if (panPosition === 0) {
-                                    channelObject.randomPan = true;
+                            switch (addr3) {
+                                default: {
                                     SpessaSynthInfo(
-                                        `%cRandom pan is set to %cON%c for %c${channel}`,
-                                        consoleColors.info,
-                                        consoleColors.recognized,
-                                        consoleColors.info,
-                                        consoleColors.value
+                                        `%cUnsupported Patch Common parameter: %c${addr3.toString(16)}`,
+                                        consoleColors.warn,
+                                        consoleColors.unrecognized
                                     );
-                                } else {
-                                    channelObject.randomPan = false;
-                                    channelObject.controllerChange(
-                                        midiControllers.pan,
-                                        panPosition
+                                    break;
+                                }
+
+                                case 0x00: {
+                                    // Patch name. cool!
+                                    // Not sure what to do with it, but let's log it!
+                                    const patchName = readBinaryString(
+                                        syx,
+                                        16,
+                                        7
                                     );
+                                    coolInfo(
+                                        `Patch Name for ${addr3 & 0x0f}`,
+                                        patchName
+                                    );
+                                    break;
                                 }
-                                break;
-                            }
-
-                            // Chorus send
-                            case 0x21: {
-                                channelObject.controllerChange(
-                                    midiControllers.chorusDepth,
-                                    messageValue
-                                );
-                                break;
-                            }
-
-                            // Reverb send
-                            case 0x22: {
-                                channelObject.controllerChange(
-                                    midiControllers.reverbDepth,
-                                    messageValue
-                                );
-                                break;
-                            }
-
-                            case 0x40:
-                            case 0x41:
-                            case 0x42:
-                            case 0x43:
-                            case 0x44:
-                            case 0x45:
-                            case 0x46:
-                            case 0x47:
-                            case 0x48:
-                            case 0x49:
-                            case 0x4a:
-                            case 0x4b: {
-                                // Scale tuning: up to 12 bytes
-                                const tuningBytes = syx.length - 9; // Data starts at 7, minus checksum and f7
-                                // Read em bytes
-                                const newTuning = new Int8Array(12);
-                                for (let i = 0; i < tuningBytes; i++) {
-                                    newTuning[i] = syx[i + 7] - 64;
+                                // Reverb
+                                case 0x30: {
+                                    // Reverb macro
+                                    this.setReverbMacro(data);
+                                    coolInfo("Reverb Macro", data);
+                                    // Event called in setMacro
+                                    break;
                                 }
-                                channelObject.setOctaveTuning(newTuning);
-                                const cents = messageValue - 64;
-                                sysExLogging(
-                                    syx,
-                                    channel,
-                                    newTuning.join(" "),
-                                    "octave scale tuning",
-                                    "cents"
+                                case 0x31: {
+                                    // Reverb character
+                                    this.reverbProcessor.character = data;
+                                    coolInfo("Reverb Character", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "character",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x32: {
+                                    // Reverb pre-PLF
+                                    this.reverbProcessor.preLowpass = data;
+                                    coolInfo("Reverb Pre-LPF", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "preLowpass",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x33: {
+                                    // Reverb level
+                                    this.reverbProcessor.level = data;
+                                    coolInfo("Reverb Level", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "level",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x34: {
+                                    // Reverb time
+                                    this.reverbProcessor.time = data;
+                                    coolInfo("Reverb Time", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "time",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x35: {
+                                    // Reverb delay feedback
+                                    this.reverbProcessor.delayFeedback = data;
+                                    coolInfo("Reverb Delay Feedback", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "delayFeedback",
+                                        value: data
+                                    });
+                                    break;
+                                }
+
+                                case 0x36: {
+                                    // Reverb send to chorus, legacy SC-55 that's recognized by later models and unsupported.
+                                    break;
+                                }
+
+                                case 0x37: {
+                                    // Reverb predelay time
+                                    this.reverbProcessor.preDelayTime = data;
+                                    coolInfo("Reverb Predelay Time", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "reverb",
+                                        parameter: "preDelayTime",
+                                        value: data
+                                    });
+                                    break;
+                                }
+
+                                // Chorus
+                                case 0x38: {
+                                    // Chorus macro
+                                    this.setChorusMacro(data);
+                                    coolInfo("Chorus Macro", data);
+                                    // Event called in setMacro
+                                    break;
+                                }
+                                case 0x39: {
+                                    // Chorus pre-LPF
+                                    this.chorusProcessor.preLowpass = data;
+                                    coolInfo("Pre-LPF", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "preLowpass",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x3a: {
+                                    // Chorus level
+                                    this.chorusProcessor.level = data;
+                                    coolInfo("Chorus Level", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "level",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x3b: {
+                                    // Chorus feedback
+                                    this.chorusProcessor.feedback = data;
+                                    coolInfo("Chorus Feedback", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "feedback",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x3c: {
+                                    // Chorus delay
+                                    this.chorusProcessor.delay = data;
+                                    coolInfo("Chorus Delay", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "delay",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x3d: {
+                                    // Chorus rate
+                                    this.chorusProcessor.rate = data;
+                                    coolInfo("Chorus Rate", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "rate",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x3e: {
+                                    // Chorus depth
+                                    this.chorusProcessor.depth = data;
+                                    coolInfo("Chorus Depth", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "depth",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x3f: {
+                                    // Chorus send level to reverb
+                                    this.chorusProcessor.sendLevelToReverb =
+                                        data;
+                                    coolInfo(
+                                        "Chorus Send Level To Reverb",
+                                        data
+                                    );
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "sendLevelToReverb",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x40: {
+                                    // Chorus send level to delay
+                                    this.chorusProcessor.sendLevelToDelay =
+                                        data;
+                                    coolInfo(
+                                        "Chorus Send Level To Delay",
+                                        data
+                                    );
+                                    this.callEvent("effectChange", {
+                                        effect: "chorus",
+                                        parameter: "sendLevelToDelay",
+                                        value: data
+                                    });
+                                    break;
+                                }
+
+                                // Delay
+                                case 0x50: {
+                                    // Delay macro
+                                    this.setDelayMacro(data);
+                                    coolInfo("Delay Macro", data);
+                                    // Event called in setMacro
+                                    break;
+                                }
+                                case 0x51: {
+                                    // Delay pre-PLF
+                                    this.delayProcessor.preLowpass = data;
+                                    coolInfo("Delay Pre-LPF", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "preLowpass",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x52: {
+                                    // Delay time center
+                                    this.delayProcessor.timeCenter = data;
+                                    coolInfo("Delay Time Center", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "timeCenter",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x53: {
+                                    // Delay time ratio left
+                                    this.delayProcessor.timeRatioLeft = data;
+                                    coolInfo("Delay Time Ratio Left", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "timeRatioLeft",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x54: {
+                                    // Delay time ratio right
+                                    this.delayProcessor.timeRatioRight = data;
+                                    coolInfo("Delay Time Ratio Right", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "timeRatioRight",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x55: {
+                                    // Delay level center
+                                    this.delayProcessor.levelCenter = data;
+                                    coolInfo("Delay Level Center", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "levelCenter",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x56: {
+                                    // Delay level left
+                                    this.delayProcessor.levelLeft = data;
+                                    coolInfo("Delay Level Left", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "levelLeft",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x57: {
+                                    // Delay level right
+                                    this.delayProcessor.levelRight = data;
+                                    coolInfo("Delay Level Right", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "levelRight",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x58: {
+                                    // Delay level
+                                    this.delayProcessor.level = data;
+                                    coolInfo("Delay Level", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "level",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x59: {
+                                    // Delay feedback
+                                    this.delayProcessor.feedback = data;
+                                    coolInfo("Delay Feedback", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "feedback",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                                case 0x5a: {
+                                    // Delay send level to reverb
+                                    this.delayProcessor.sendLevelToReverb =
+                                        data;
+                                    coolInfo(
+                                        "Delay Send Level To Reverb",
+                                        data
+                                    );
+                                    this.callEvent("effectChange", {
+                                        effect: "delay",
+                                        parameter: "sendLevelToReverb",
+                                        value: data
+                                    });
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+
+                        // EFX Parameter
+                        if (addr2 === 0x03) {
+                            if (this.masterParameters.insertionEffectLock)
+                                return;
+                            if (addr3 >= 0x03 && addr3 <= 0x16) {
+                                this.insertionProcessor.setParameter(
+                                    addr3,
+                                    data
                                 );
-                                channelObject.setTuning(cents);
-                                break;
+                                coolInfo(`EFX Parameter ${addr3 - 2}`, data);
+                                this.callEvent("effectChange", {
+                                    effect: "insertion",
+                                    parameter: addr3,
+                                    value: data
+                                });
+                                return;
+                            }
+                            switch (addr3) {
+                                default: {
+                                    sysExNotRecognized(syx, "Roland GS EFX");
+                                    return;
+                                }
+
+                                case 0x00: {
+                                    // EFX Type
+                                    const type = (data << 8) | syx[8];
+                                    const proc =
+                                        this.insertionEffects.get(type);
+                                    if (proc) {
+                                        coolInfo("EFX Type", type.toString(16));
+                                        this.insertionProcessor = proc;
+                                    } else {
+                                        this.insertionProcessor =
+                                            this.insertionFallback;
+                                        SpessaSynthInfo(
+                                            `%cUnsupported EFX processor: %c${type.toString(16)}%c, using Thru.`,
+                                            consoleColors.warn,
+                                            consoleColors.unrecognized,
+                                            consoleColors.warn
+                                        );
+                                    }
+                                    this.insertionProcessor.reset();
+                                    // Special case: 16-bit value
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: 0,
+                                        value: type
+                                    });
+                                    return;
+                                }
+
+                                case 0x17: {
+                                    // To reverb
+                                    // Divide, insertions use 0-1
+                                    this.insertionProcessor.sendLevelToReverb =
+                                        data / 127;
+                                    coolInfo("EFX Send Level to Reverb", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: addr3,
+                                        value: data
+                                    });
+                                    return;
+                                }
+
+                                case 0x18: {
+                                    // To chorus
+                                    // Divide, insertions use 0-1
+                                    this.insertionProcessor.sendLevelToChorus =
+                                        data / 127;
+                                    coolInfo("EFX Send Level to Chorus", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: addr3,
+                                        value: data
+                                    });
+                                    return;
+                                }
+
+                                case 0x19: {
+                                    // To delay
+                                    // Divide, insertions use 0-1
+                                    this.insertionProcessor.sendLevelToDelay =
+                                        data / 127;
+                                    this.delayActive = true;
+                                    coolInfo("EFX Send Level to Delay", data);
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: addr3,
+                                        value: data
+                                    });
+                                    return;
+                                }
                             }
                         }
-                        return;
-                    } else if ((syx[5] & 0x20) > 0) {
-                        // This is a channel parameter also
-                        // This is an individual part (channel) parameter
-                        // Determine the channel 0 means channel 10 (default), 1 means 1 etc.
-                        const channel =
-                            [
-                                9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13,
-                                14, 15
-                            ][syx[5] & 0x0f] + channelOffset;
-                        // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
-                        const channelObject = this.midiChannels[channel];
-                        const centeredValue = messageValue - 64;
-                        const normalizedValue = centeredValue / 64;
-                        const normalizedNotCentered = messageValue / 128;
 
-                        // Setup receivers for cc to parameter (sc-88 manual page 198)
-                        const setupReceivers = (
-                            source: number,
-                            sourceName: string,
-                            bipolar = false
-                        ) => {
-                            switch (syx[6] & 0x0f) {
+                        // Patch Parameters
+                        if (addr2 >> 4 === 1) {
+                            // This is an individual part (channel) parameter
+                            // Determine the channel
+                            // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
+                            // SC-88Pro manual page 196
+                            const channel =
+                                [
+                                    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
+                                    13, 14, 15
+                                ][addr2 & 0x0f] + channelOffset;
+                            // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                            const channelObject = this.midiChannels[channel];
+                            switch (addr3) {
+                                default: {
+                                    // This is some other GS sysex...
+                                    sysExNotRecognized(syx, "Roland GS");
+                                    return;
+                                }
+
                                 case 0x00: {
-                                    // See https://github.com/spessasus/SpessaSynth/issues/154
-                                    // Pitch control
-                                    // Special case:
-                                    // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
-                                    // Testcase: th07_03.mid
-                                    if (
-                                        source ===
-                                        NON_CC_INDEX_OFFSET +
-                                            modulatorSources.pitchWheel
-                                    ) {
-                                        channelObject.controllerChange(
-                                            midiControllers.registeredParameterMSB,
-                                            0x0
-                                        );
-                                        channelObject.controllerChange(
-                                            midiControllers.registeredParameterLSB,
-                                            0x0
-                                        );
-                                        channelObject.controllerChange(
-                                            midiControllers.dataEntryMSB,
-                                            Math.floor(centeredValue)
+                                    // Tone number (program change)
+                                    channelObject.controllerChange(
+                                        midiControllers.bankSelect,
+                                        data
+                                    );
+                                    channelObject.programChange(syx[8]);
+                                    break;
+                                }
+
+                                case 0x02: {
+                                    // Rx. channel (0x10 is OFF)
+                                    channelObject.rxChannel =
+                                        data === 0x10
+                                            ? -1
+                                            : data + channelOffset;
+                                    this.customChannelNumbers ||=
+                                        channelObject.rxChannel !==
+                                        channelObject.channel;
+                                    coolInfo(
+                                        `Rx. Channel on ${channel}`,
+                                        channelObject.rxChannel
+                                    );
+                                    break;
+                                }
+
+                                case 0x13: {
+                                    // Mono/poly
+                                    channelObject.polyMode = data === 1;
+                                    coolInfo(
+                                        `Mono/poly on ${channel}`,
+                                        channelObject.polyMode ? "POLY" : "MONO"
+                                    );
+                                    break;
+                                }
+
+                                case 0x14: {
+                                    // IGNORED!
+                                    coolInfo(`Assign mode on ${channel}`, data);
+                                    break;
+                                }
+
+                                case 0x15: {
+                                    // This is the Use for Drum Part sysex (multiple drums)
+                                    channelObject.drumMap = data;
+                                    const isDrums = data > 0; // If set to other than 0, is a drum channel
+                                    channelObject.setGSDrums(isDrums);
+                                    coolInfo(
+                                        `Drums on ${channel}`,
+                                        isDrums.toString()
+                                    );
+                                    return;
+                                }
+
+                                case 0x16: {
+                                    // This is the pitch key shift sysex
+                                    const keyShift = data - 64;
+                                    channelObject.setCustomController(
+                                        customControllers.channelKeyShift,
+                                        keyShift
+                                    );
+                                    coolInfo(
+                                        `Key shift on ${channel}`,
+                                        keyShift
+                                    );
+                                    return;
+                                }
+
+                                // Pitch offset fine in Hz is not supported so far
+
+                                case 0x19: {
+                                    // Part level (cc#7)
+                                    channelObject.controllerChange(
+                                        midiControllers.mainVolume,
+                                        data
+                                    );
+                                    return;
+                                }
+
+                                // Pan position
+                                case 0x1c: {
+                                    // 0 is random
+                                    const panPosition = data;
+                                    if (panPosition === 0) {
+                                        channelObject.randomPan = true;
+                                        coolInfo(
+                                            `Random pan on ${channel}`,
+                                            "ON"
                                         );
                                     } else {
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.fineTune,
-                                            centeredValue * 100,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            syx,
-                                            channel,
-                                            centeredValue,
-                                            `${sourceName} pitch control`,
-                                            "semitones"
+                                        channelObject.randomPan = false;
+                                        channelObject.controllerChange(
+                                            midiControllers.pan,
+                                            panPosition
                                         );
                                     }
                                     break;
                                 }
 
+                                case 0x1f: {
+                                    // CC1 controller number
+                                    channelObject.cc1 = data;
+                                    coolInfo("CC1 Controller Number", data);
+                                    break;
+                                }
+
+                                case 0x20: {
+                                    // CC2controller number
+                                    channelObject.cc2 = data;
+                                    coolInfo("CC2 Controller Number", data);
+                                    break;
+                                }
+
+                                // Chorus send
+                                case 0x21: {
+                                    channelObject.controllerChange(
+                                        midiControllers.chorusDepth,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                // Reverb send
+                                case 0x22: {
+                                    channelObject.controllerChange(
+                                        midiControllers.reverbDepth,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x2a: {
+                                    // Fine tune
+                                    // 0-16384
+                                    const tune = (data << 7) | syx[8];
+                                    const tuneCents = (tune - 8192) / 81.92;
+                                    channelObject.setTuning(tuneCents);
+                                    break;
+                                }
+
+                                // Delay send
+                                case 0x2c: {
+                                    channelObject.controllerChange(
+                                        midiControllers.variationDepth,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x30: {
+                                    // Vibrato rate
+                                    channelObject.controllerChange(
+                                        midiControllers.vibratoRate,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x31: {
+                                    // Vibrato depth
+                                    channelObject.controllerChange(
+                                        midiControllers.vibratoDepth,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x32: {
+                                    // Filter cutoff
+                                    // It's so out of order, Roland...
+                                    channelObject.controllerChange(
+                                        midiControllers.brightness,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x33: {
+                                    // Filter resonance
+                                    channelObject.controllerChange(
+                                        midiControllers.filterResonance,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x34: {
+                                    // Attack time
+                                    channelObject.controllerChange(
+                                        midiControllers.attackTime,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x35: {
+                                    // Decay time
+                                    channelObject.controllerChange(
+                                        midiControllers.decayTime,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x36: {
+                                    // Release time
+                                    channelObject.controllerChange(
+                                        midiControllers.releaseTime,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x37: {
+                                    // Vibrato delay
+                                    // It seems that they forgot about it and put it last...
+                                    channelObject.controllerChange(
+                                        midiControllers.vibratoDelay,
+                                        data
+                                    );
+                                    break;
+                                }
+
+                                case 0x40: {
+                                    // Scale tuning: up to 12 bytes
+                                    const tuningBytes = syx.length - 9; // Data starts at 7, minus checksum and f7
+                                    // Read em bytes
+                                    const newTuning = new Int8Array(12);
+                                    for (let i = 0; i < tuningBytes; i++) {
+                                        newTuning[i] = syx[i + 7] - 64;
+                                    }
+                                    channelObject.setOctaveTuning(newTuning);
+                                    const cents = data - 64;
+                                    coolInfo(
+                                        `Octave Scale Tuning on ${channel}`,
+                                        newTuning.join(", ")
+                                    );
+                                    channelObject.setTuning(cents);
+                                    break;
+                                }
+                            }
+                            return;
+                        }
+
+                        // Patch Parameter controllers
+                        if (addr2 >> 4 === 2) {
+                            // This is an individual part (channel) parameter
+                            // Determine the channel
+                            // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
+                            // SC-88Pro manual page 196
+                            const channel =
+                                [
+                                    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
+                                    13, 14, 15
+                                ][addr2 & 0x0f] + channelOffset;
+                            // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                            const channelObject = this.midiChannels[channel];
+                            const centeredValue = data - 64;
+                            const normalizedValue = centeredValue / 64;
+                            const normalizedNotCentered = data / 128;
+
+                            // Setup receivers for cc to parameter (sc-88 manual page 198)
+                            const setupReceivers = (
+                                source: number,
+                                sourceName: string,
+                                bipolar = false
+                            ) => {
+                                switch (addr3 & 0x0f) {
+                                    case 0x00: {
+                                        // See https://github.com/spessasus/SpessaSynth/issues/154
+                                        // Pitch control
+                                        // Special case:
+                                        // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
+                                        // Testcase: th07_03.mid
+                                        if (
+                                            source ===
+                                            NON_CC_INDEX_OFFSET +
+                                                modulatorSources.pitchWheel
+                                        ) {
+                                            channelObject.controllerChange(
+                                                midiControllers.registeredParameterMSB,
+                                                0x0
+                                            );
+                                            channelObject.controllerChange(
+                                                midiControllers.registeredParameterLSB,
+                                                0x0
+                                            );
+                                            channelObject.controllerChange(
+                                                midiControllers.dataEntryMSB,
+                                                Math.floor(centeredValue)
+                                            );
+                                        } else {
+                                            channelObject.sysExModulators.setModulator(
+                                                source as ModulatorSourceEnum,
+                                                generatorTypes.fineTune,
+                                                centeredValue * 100,
+                                                bipolar
+                                            );
+                                            sysExLogging(
+                                                channel,
+                                                centeredValue,
+                                                `${sourceName} pitch control`,
+                                                "semitones"
+                                            );
+                                        }
+                                        break;
+                                    }
+
+                                    case 0x01: {
+                                        // Cutoff
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.initialFilterFc,
+                                            normalizedValue * 9600,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedValue * 9600,
+                                            `${sourceName} pitch control`,
+                                            "cents"
+                                        );
+                                        break;
+                                    }
+
+                                    case 0x02: {
+                                        // Amplitude
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.initialAttenuation,
+                                            normalizedValue * 960, // Spec says "100%" so 960cB in sf2
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedValue * 960,
+                                            `${sourceName} amplitude`,
+                                            "cB"
+                                        );
+                                        break;
+                                    }
+
+                                    // Rate control is ignored as it is in hertz
+
+                                    case 0x04: {
+                                        // LFO1 pitch depth
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.vibLfoToPitch,
+                                            normalizedNotCentered * 600,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedNotCentered * 600,
+                                            `${sourceName} LFO1 pitch depth`,
+                                            "cents"
+                                        );
+                                        break;
+                                    }
+
+                                    case 0x05: {
+                                        // LFO1 filter depth
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.vibLfoToFilterFc,
+                                            normalizedNotCentered * 2400,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedNotCentered * 2400,
+                                            `${sourceName} LFO1 filter depth`,
+                                            "cents"
+                                        );
+                                        break;
+                                    }
+
+                                    case 0x06: {
+                                        // LFO1 amplitude depth
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.vibLfoToVolume,
+                                            normalizedValue * 960,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedValue * 960,
+                                            `${sourceName} LFO1 amplitude depth`,
+                                            "cB"
+                                        );
+                                        break;
+                                    }
+
+                                    // Rate control is ignored as it is in hertz
+
+                                    case 0x08: {
+                                        // LFO2 pitch depth
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.modLfoToPitch,
+                                            normalizedNotCentered * 600,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedNotCentered * 600,
+                                            `${sourceName} LFO2 pitch depth`,
+                                            "cents"
+                                        );
+                                        break;
+                                    }
+
+                                    case 0x09: {
+                                        // LFO2 filter depth
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.modLfoToFilterFc,
+                                            normalizedNotCentered * 2400,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedNotCentered * 2400,
+                                            `${sourceName} LFO2 filter depth`,
+                                            "cents"
+                                        );
+                                        break;
+                                    }
+
+                                    case 0x0a: {
+                                        // LFO2 amplitude depth
+                                        channelObject.sysExModulators.setModulator(
+                                            source as ModulatorSourceEnum,
+                                            generatorTypes.modLfoToVolume,
+                                            normalizedValue * 960,
+                                            bipolar
+                                        );
+                                        sysExLogging(
+                                            channel,
+                                            normalizedValue * 960,
+                                            `${sourceName} LFO2 amplitude depth`,
+                                            "cB"
+                                        );
+                                        break;
+                                    }
+                                }
+                            };
+
+                            // SC88 manual page 198
+                            switch (addr3 & 0xf0) {
+                                default: {
+                                    // This is some other GS sysex...
+                                    sysExNotRecognized(
+                                        syx,
+                                        "Roland GS Patch Parameter Controller"
+                                    );
+                                    break;
+                                }
+
+                                case 0x00: {
+                                    // Modulation wheel
+                                    setupReceivers(
+                                        midiControllers.modulationWheel,
+                                        "mod wheel"
+                                    );
+                                    break;
+                                }
+
+                                case 0x10: {
+                                    // Pitch wheel
+                                    setupReceivers(
+                                        NON_CC_INDEX_OFFSET +
+                                            modulatorSources.pitchWheel,
+                                        "pitch wheel",
+                                        true
+                                    );
+                                    break;
+                                }
+
+                                case 0x20: {
+                                    // Channel pressure
+                                    setupReceivers(
+                                        NON_CC_INDEX_OFFSET +
+                                            modulatorSources.channelPressure,
+                                        "channel pressure"
+                                    );
+                                    break;
+                                }
+
+                                case 0x30: {
+                                    // Poly pressure
+                                    setupReceivers(
+                                        NON_CC_INDEX_OFFSET +
+                                            modulatorSources.polyPressure,
+                                        "poly pressure"
+                                    );
+                                    break;
+                                }
+
+                                case 0x40: {
+                                    // CC1
+                                    setupReceivers(channelObject.cc1, "CC1");
+                                    break;
+                                }
+
+                                case 0x50: {
+                                    // CC2
+                                    setupReceivers(channelObject.cc2, "CC2");
+                                }
+                            }
+                            return;
+                        }
+
+                        // Patch Parameter Tone Map
+                        if (addr2 >> 4 === 4) {
+                            // This is an individual part (channel) parameter
+                            // Determine the channel
+                            // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
+                            // SC-88Pro manual page 196
+                            const channel =
+                                [
+                                    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
+                                    13, 14, 15
+                                ][addr2 & 0x0f] + channelOffset;
+                            // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                            const channelObject = this.midiChannels[channel];
+
+                            switch (addr3) {
+                                default: {
+                                    // This is some other GS sysex...
+                                    sysExNotRecognized(
+                                        syx,
+                                        "Roland GS Patch Part Parameter"
+                                    );
+                                    break;
+                                }
+
+                                case 0x00:
                                 case 0x01: {
-                                    // Cutoff
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.initialFilterFc,
-                                        normalizedValue * 9600,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedValue * 9600,
-                                        `${sourceName} pitch control`,
-                                        "cents"
+                                    // Tone map number (cc32)
+                                    channelObject.controllerChange(
+                                        midiControllers.bankSelectLSB,
+                                        data
                                     );
                                     break;
                                 }
 
-                                case 0x02: {
-                                    // Amplitude
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.initialAttenuation,
-                                        normalizedValue * 960, // Spec says "100%" so 960cB in sf2
-                                        bipolar
+                                case 0x22: {
+                                    if (
+                                        this.masterParameters
+                                            .insertionEffectLock
+                                    )
+                                        return;
+                                    // EFX assign
+                                    const efx = data === 1;
+                                    channelObject.insertionEnabled = efx;
+                                    this.insertionActive ||= efx;
+                                    coolInfo(
+                                        `Insertion for ${channel}`,
+                                        efx ? "ON" : "OFF"
                                     );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedValue * 960,
-                                        `${sourceName} amplitude`,
-                                        "cB"
-                                    );
-                                    break;
-                                }
-
-                                // Rate control is ignored as it is in hertz
-
-                                case 0x04: {
-                                    // LFO1 pitch depth
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.vibLfoToPitch,
-                                        normalizedNotCentered * 600,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedNotCentered * 600,
-                                        `${sourceName} LFO1 pitch depth`,
-                                        "cents"
-                                    );
-                                    break;
-                                }
-
-                                case 0x05: {
-                                    // LFO1 filter depth
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.vibLfoToFilterFc,
-                                        normalizedNotCentered * 2400,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedNotCentered * 2400,
-                                        `${sourceName} LFO1 filter depth`,
-                                        "cents"
-                                    );
-                                    break;
-                                }
-
-                                case 0x06: {
-                                    // LFO1 amplitude depth
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.vibLfoToVolume,
-                                        normalizedValue * 960,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedValue * 960,
-                                        `${sourceName} LFO1 amplitude depth`,
-                                        "cB"
-                                    );
-                                    break;
-                                }
-
-                                // Rate control is ignored as it is in hertz
-
-                                case 0x08: {
-                                    // LFO2 pitch depth
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.modLfoToPitch,
-                                        normalizedNotCentered * 600,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedNotCentered * 600,
-                                        `${sourceName} LFO2 pitch depth`,
-                                        "cents"
-                                    );
-                                    break;
-                                }
-
-                                case 0x09: {
-                                    // LFO2 filter depth
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.modLfoToFilterFc,
-                                        normalizedNotCentered * 2400,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedNotCentered * 2400,
-                                        `${sourceName} LFO2 filter depth`,
-                                        "cents"
-                                    );
-                                    break;
-                                }
-
-                                case 0x0a: {
-                                    // LFO2 amplitude depth
-                                    channelObject.sysExModulators.setModulator(
-                                        source as ModulatorSourceEnum,
-                                        generatorTypes.modLfoToVolume,
-                                        normalizedValue * 960,
-                                        bipolar
-                                    );
-                                    sysExLogging(
-                                        syx,
-                                        channel,
-                                        normalizedValue * 960,
-                                        `${sourceName} LFO2 amplitude depth`,
-                                        "cB"
-                                    );
-                                    break;
+                                    this.callEvent("effectChange", {
+                                        effect: "insertion",
+                                        parameter: efx ? -1 : -2,
+                                        value: channel
+                                    });
                                 }
                             }
-                        };
-
-                        // SC88 manual page 198
-                        switch (syx[6] & 0xf0) {
-                            default: {
-                                // This is some other GS sysex...
-                                sysExNotRecognized(syx, "Roland GS");
-                                break;
-                            }
-
-                            case 0x00: {
-                                // Modulation wheel
-                                setupReceivers(
-                                    midiControllers.modulationWheel,
-                                    "mod wheel"
-                                );
-                                break;
-                            }
-
-                            case 0x10: {
-                                // Pitch wheel
-                                setupReceivers(
-                                    NON_CC_INDEX_OFFSET +
-                                        modulatorSources.pitchWheel,
-                                    "pitch wheel",
-                                    true
-                                );
-                                break;
-                            }
-
-                            case 0x20: {
-                                // Channel pressure
-                                setupReceivers(
-                                    NON_CC_INDEX_OFFSET +
-                                        modulatorSources.channelPressure,
-                                    "channel pressure"
-                                );
-                                break;
-                            }
-
-                            case 0x30: {
-                                // Poly pressure
-                                setupReceivers(
-                                    NON_CC_INDEX_OFFSET +
-                                        modulatorSources.polyPressure,
-                                    "poly pressure"
-                                );
-                                break;
-                            }
+                            return;
                         }
+                        sysExNotRecognized(syx, "Roland GS Patch Parameter");
                         return;
-                    } else if (syx[5] === 0x00) {
-                        // This is a global system parameter
-                        switch (syx[6]) {
-                            default: {
-                                sysExNotRecognized(syx, "Roland GS");
-                                break;
-                            }
-
-                            case 0x7f: {
-                                // Roland mode set
-                                // GS mode set
-                                if (messageValue === 0x00) {
-                                    // This is a GS reset
-                                    SpessaSynthInfo(
-                                        "%cGS Reset received!",
-                                        consoleColors.info
-                                    );
-                                    this.resetAllControllers("gs");
-                                } else if (messageValue === 0x7f) {
-                                    // GS mode off
-                                    SpessaSynthInfo(
-                                        "%cGS system off, switching to GM",
-                                        consoleColors.info
-                                    );
-                                    this.resetAllControllers("gm");
-                                }
-                                break;
-                            }
-
-                            case 0x06: {
-                                // Roland master pan
-                                SpessaSynthInfo(
-                                    `%cRoland GS Master Pan set to: %c${messageValue}%c with: %c${arrayToHexString(
-                                        syx
-                                    )}`,
-                                    consoleColors.info,
-                                    consoleColors.value,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
-                                this.setMasterParameter(
-                                    "masterPan",
-                                    (messageValue - 64) / 64
-                                );
-                                break;
-                            }
-
-                            case 0x04: {
-                                // Roland GS master volume
-                                SpessaSynthInfo(
-                                    `%cRoland GS Master Volume set to: %c${messageValue}%c with: %c${arrayToHexString(
-                                        syx
-                                    )}`,
-                                    consoleColors.info,
-                                    consoleColors.value,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
-                                this.setMIDIVolume(messageValue / 127);
-                                break;
-                            }
-
-                            case 0x05: {
-                                // Roland master key shift (transpose)
-                                const transpose = messageValue - 64;
-                                SpessaSynthInfo(
-                                    `%cRoland GS Master Key-Shift set to: %c${transpose}%c with: %c${arrayToHexString(
-                                        syx
-                                    )}`,
-                                    consoleColors.info,
-                                    consoleColors.value,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
-                                this.setMasterTuning(transpose * 100);
-                                break;
-                            }
-                        }
-                        return;
-                    } else if (syx[5] === 0x01) {
-                        // This is a global system parameter also
-                        switch (syx[6]) {
-                            default: {
-                                sysExNotRecognized(syx, "Roland GS");
-                                break;
-                            }
-
-                            case 0x00: {
-                                // Patch name. cool!
-                                // Not sure what to do with it, but let's log it!
-                                const patchName = readBinaryString(syx, 16, 7);
-                                SpessaSynthInfo(
-                                    `%cGS Patch name: %c${patchName}`,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
-                                break;
-                            }
-
-                            case 0x33: {
-                                // Reverb level
-                                SpessaSynthInfo(
-                                    `%cGS Reverb level: %c${messageValue}`,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
-                                // 64 is the default
-                                this.reverbSend = messageValue / 64;
-                                break;
-                            }
-
-                            // Unsupported reverb params
-                            case 0x30:
-                            case 0x31:
-                            case 0x32:
-                            case 0x34:
-                            case 0x35:
-                            case 0x37: {
-                                SpessaSynthInfo(
-                                    `%cUnsupported GS Reverb Parameter: %c${syx[6].toString(16)}`,
-                                    consoleColors.warn,
-                                    consoleColors.unrecognized
-                                );
-                                break;
-                            }
-
-                            case 0x3a: {
-                                // Chorus level
-                                SpessaSynthInfo(
-                                    `%cGS Chorus level: %c${messageValue}`,
-                                    consoleColors.info,
-                                    consoleColors.value
-                                );
-                                // 64 is the default
-                                this.chorusSend = messageValue / 64;
-                                break;
-                            }
-
-                            // Unsupported chorus params
-                            case 0x38:
-                            case 0x39:
-                            case 0x3b:
-                            case 0x3c:
-                            case 0x3d:
-                            case 0x3e:
-                            case 0x3f:
-                            case 0x40: {
-                                SpessaSynthInfo(
-                                    `%cUnsupported GS Chorus Parameter: %c${syx[6].toString(16)}`,
-                                    consoleColors.warn,
-                                    consoleColors.unrecognized
-                                );
-                                break;
-                            }
-                        }
                     }
-                } else {
+                    // Drum setup
+                    if (addr1 === 0x41) {
+                        if (this.masterParameters.drumLock) return;
+                        const map = (addr2 >> 4) + 1;
+                        const drumKey = addr3;
+                        const param = addr2 & 0xf;
+                        switch (param) {
+                            default: {
+                                sysExNotRecognized(syx, "Roland GS Drum Setup");
+                                return;
+                            }
+
+                            case 0x0: {
+                                // Drum map name. cool!
+                                // Not sure what to do with it, but let's log it!
+                                const patchName = readBinaryString(syx, 12, 7);
+                                coolInfo(`Patch Name for MAP${map}`, patchName);
+                                break;
+                            }
+
+                            case 0x1: {
+                                // Here it's relative to 60, not 64 like NRPN. For some reason...
+                                const pitch = (data - 60) * 50;
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].pitch = pitch;
+                                }
+                                coolInfo(
+                                    `Drum Pitch for MAP${map}, key ${drumKey}`,
+                                    pitch
+                                );
+                                break;
+                            }
+
+                            case 0x2: {
+                                // Drum Level
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].gain = data / 120;
+                                }
+                                coolInfo(
+                                    `Drum Level for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+
+                            case 0x3: {
+                                // Drum Assign Group (exclusive class)
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].exclusiveClass =
+                                        data;
+                                }
+                                coolInfo(
+                                    `Drum Assign Group for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+
+                            case 0x4: {
+                                // Pan
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].pan = data;
+                                }
+                                coolInfo(
+                                    `Drum Pan for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+
+                            case 0x5: {
+                                // Reverb
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].reverbGain =
+                                        data / 127;
+                                }
+                                coolInfo(
+                                    `Drum Reverb for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+
+                            case 0x6: {
+                                // Chorus
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].chorusGain =
+                                        data / 127;
+                                }
+                                coolInfo(
+                                    `Drum Chorus for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+
+                            case 0x7: {
+                                // Receive Note Off
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].rxNoteOff =
+                                        data === 1;
+                                }
+                                coolInfo(
+                                    `Drum Note Off for MAP${map}, key ${drumKey}`,
+                                    data === 1
+                                );
+                                break;
+                            }
+
+                            case 0x8: {
+                                // Receive Note On
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].rxNoteOn =
+                                        data === 1;
+                                }
+                                coolInfo(
+                                    `Drum Note On for MAP${map}, key ${drumKey}`,
+                                    data === 1
+                                );
+                                break;
+                            }
+
+                            case 0x9: {
+                                // Delay
+                                for (const ch of this.midiChannels) {
+                                    if (ch.drumMap !== map) continue;
+                                    ch.drumParams[drumKey].delayGain =
+                                        data / 127;
+                                }
+                                coolInfo(
+                                    `Drum Delay for MAP${map}, key ${drumKey}`,
+                                    data
+                                );
+                                break;
+                            }
+                        }
+                        return;
+                    }
                     // This is some other GS sysex...
                     sysExNotRecognized(syx, "Roland GS");
+                    return;
                 }
-                return;
             }
 
+            // GS Display
             case 0x45: {
                 // 0x45: GS Display Data
                 // Check for embedded copyright
@@ -610,33 +1353,31 @@ export function handleGS(
                         this.callEvent("synthDisplay", [...syx]);
                     } else {
                         // This is some other GS sysex...
-                        sysExNotRecognized(syx, "Roland GS");
+                        sysExNotRecognized(syx, "Roland GS Display");
                     }
                 }
                 return;
             }
 
+            // Some Roland
             case 0x16: {
-                // Some Roland
                 if (syx[4] === 0x10) {
                     // This is a roland master volume message
                     this.setMIDIVolume(syx[7] / 100);
                     SpessaSynthInfo(
-                        `%cRoland Master Volume control set to: %c${syx[7]}%c via: %c${arrayToHexString(
-                            syx
-                        )}`,
-                        consoleColors.info,
-                        consoleColors.value,
+                        `%cRoland Master Volume control set to: %c${syx[7]}`,
                         consoleColors.info,
                         consoleColors.value
                     );
                     return;
+                } else {
+                    sysExNotRecognized(syx, "Roland");
                 }
             }
         }
     } else {
         // This is something else...
-        sysExNotRecognized(syx, "Roland GS");
+        sysExNotRecognized(syx, "Roland");
         return;
     }
 }

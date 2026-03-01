@@ -73,8 +73,8 @@ Below is the list of controllers supported by default.
 | 75                   | Decay time                          | The decay time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest ⚠️NON-STANDARD!⚠️             | Controls the decay time for the given patch.                                                                                                                           | 64            |
 | 84                   | Portamento Control                  | The key number glide should start from (0 - 127)                                                         | Controls the portamento target key. [See portamento implementation](#portamento-implementation)                                                                        | 0             |
 | 91                   | Effects 1 Depth (reverb)            | The reverb depth (0 - 127) [See important info](../sound-bank/modulator.md#reverb-and-chorus-modulators) | Controls the reverb effect send for the given channel.                                                                                                                 | 0             |
-| 92                   | Effects 2 Depth (tremolo)           | The tremolo depth (0 - 127) mapped to 25dB of loudness variation ⚠️NON-STANDARD!⚠️                       | Controls the tremolo (trembling) effect for the given patch.                                                                                                           | 0             |
 | 93                   | Effects 3 Depth (chorus)            | The chorus depth (0 - 127) [See important info](../sound-bank/modulator.md#reverb-and-chorus-modulators) | Controls the chorus effect for the given channel.                                                                                                                      | 0             |
+| 94                   | Effects 4 Depth (delay)             | The delay depth (0 - 127) Disabled in XG mode. ⚠️NON-STANDARD!⚠️                                         | Controls the delay effect for the given channel.                                                                                                                       | 0             |
 | 99                   | Non-Registered Parameter Number MSB | Parameter number (0 - 127)                                                                               | Selects a Non-Registered Parameter's Coarse to the given value. [Here are the currently supported values.](#supported-non-registered-parameters).                      | none          |
 | 98                   | Non-Registered Parameter Number LSB | Parameter number (0 - 127)                                                                               | Selects a Non-Registered Parameter's Fine to the given value. [Here are the currently supported values.](#supported-non-registered-parameters).                        | none          |
 | 100                  | Registered Parameter Number LSB     | Parameter number (0 - 127)                                                                               | Selects a Registered Parameter's Fine to the given value. [Here are the currently supported values.](#supported-registered-parameters).                                | none          |
@@ -109,11 +109,7 @@ Below are all the controller values which are not zero when the controllers are 
 | 78        | Sound Controller 9           | 64          |
 | 81        | General Purpose Controller 6 | 64          |
 | 83        | General Purpose Controller 8 | 64          |
-
-!!! TIP
-
-    Note that the reverb is set to 0 unlike the recommended 40 in the GM2 standard.
-    This is done to provide a clean output for any file that doesn't explicitly request reverb.
+| 91        | Reverb Send Level            | 40          |
 
 ## Parameter Numbers
 
@@ -135,15 +131,24 @@ Below is the list of currently implemented Non-Registered Parameters.
 Note that all these are non-standard GM.
 **These only apply for GS**
 
-| NRPN MSB | NRPN LSB | Name                   | Explanation                                                      | Default        |
-| -------- | -------- | ---------------------- | ---------------------------------------------------------------- | -------------- |
-| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                      | 0 (disabled)   |
-| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                     | 0 (disabled)   |
-| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                     | 0 (disabled)   |
-| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)          | 64 (no change) |
-| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance) | 64 (no change) |
-| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72            | 64 (no change) |
-| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73             | 64 (no change) |
+rr: Drum note number.
+
+| NRPN MSB | NRPN LSB | Name                   | Explanation                                                                   | Default                         |
+| -------- | -------- | ---------------------- | ----------------------------------------------------------------------------- | ------------------------------- |
+| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                                   | 0 (disabled)                    |
+| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                                  | 0 (disabled)                    |
+| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                                  | 0 (disabled)                    |
+| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)                       | 64 (no change)                  |
+| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance)              | 64 (no change)                  |
+| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72                         | 64 (no change)                  |
+| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73                          | 64 (no change)                  |
+| 0x18     | rr       | Drum Pitch             | Controls the pitch of the drum instrument.                                    | 0 (no change)                   |
+| 0x18     | rr       | Drum Pitch Fine        | Controls the pitch of the drum instrument in cents (XG only)                  | 0 (no change)                   |
+| 0x1a     | rr       | Drum Level             | Controls how loud the drum instrument is.                                     | 120 (normal)                    |
+| 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                |
+| 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127 |
+| 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument. (multiplicative of channel) | 0 (none)                        |
+| 0x1f     | rr       | Drum Delay             | Controls the delay level of the drum instrument. (multiplicative of channel)  | 0 (none)                        |
 
 #### Custom Vibrato
 
@@ -170,7 +175,7 @@ the original target of SpessaSynth.
 This can be useful as setting CC#1 to something like 1 (which is usually imperceptible),
 will disable the extra vibrato for this channel.
 
-[Custom vibrato can be disabled globally as well.](../spessa-synth-processor/midi-channel.md#disableandlockgsnprn)
+[Custom vibrato can be disabled globally as well.](../spessa-synth-processor/master-parameter.md#customvibratolock)
 
 #### SoundFont2 NRPN
 
@@ -216,6 +221,7 @@ Below is the list of currently implemented System Exclusive messages.
 | Roland SC Display Text | The text that SC-88 MIDIs display on the device. `synthdisplay` will be called.   |
 | Roland SC Dot Matrix   | A dot matrix display for the Sound Canvas devices. `synthdisplay` will be called. |
 | XG Display Letters     | The text that XG MIDIs display on the device. `synthdisplay` will be called.      |
+| XG Display Bitmap      | The dot matrix display for XG devices. `synthdisplay` will be called.             |
 | XG Master Tune         | Controls the overall synth's tuning.                                              |
 | XG Master Volume       | Controls the overall synth's volume.                                              |
 | XG Master Attenuator   | Controls the overall synth's attenuation (inverse of volume).                     |
@@ -260,41 +266,136 @@ Drums will be selected according to the [XG Validity Test](../spessa-synth-proce
 
 Below are the supported GS SysEx Parameters.
 
-| Name                    | Description                                                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Use for drums part      | Turns a specified channel into a drum channel.                                                                                         |
-| Master Pan              | Controls the overall synth's stereo panning.                                                                                           |
-| Master Volume           | Controls the overall synth's volume.                                                                                                   |
-| Master Reverb           | Controls the overall synth's reverb level.                                                                                             |
-| Master Chorus           | Controls the overall synth's chorus level.                                                                                             |
-| Key Shift               | Transposes the keys by a given amount.                                                                                                 |
-| Reverb Level            | Same as CC 91 (reverb depth)                                                                                                           |
-| Chorus Level            | Same as CC 92 (chorus depth)                                                                                                           |
-| Pan Position            | Same as CC 10 (pan position). A value of 0 means random panning for every voice.                                                       |
-| Scale Tuning            | Similar to MTS Scale Octave Tuning.                                                                                                    |
-| Controller to Parameter | Defines how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system. |
+#### System Parameters
+
+- System Mode Set (SC-88 Reset)
+
+#### Patch Common Parameters
+
+- Master Tune
+- Master Volume
+- Master Key-Shift
+- Master Pan
+- Mode Set (GS Reset)
+- Patch Name (logs to console)
+- Reverb Macro
+- Reverb Character
+- Reverb Pre-LPF
+- Reverb Level
+- Reverb Time
+- Reverb Delay Feedback
+- Reverb Predelay Time
+- Chorus Macro
+- Chorus Pre-LPF
+- Chorus Level
+- Chorus Feedback
+- Chorus Delay
+- Chorus Rate
+- Chorus Depth
+- Chorus Send Level To Reverb
+- Chorus Send Level To Delay
+- Delay Macro
+- Delay Pre-LPF
+- Delay Time Center
+- Delay Ratio Left
+- Delay Ratio Right
+- Delay Level Center
+- Delay Level Left
+- Delay Level Right
+- Delay Level
+- Delay Feedback
+- Delay Send Level To Reverb
+- EFX Type (see [supported EFX](#currently-implemented-insertion-effects))
+- EFX Parameter 1-20
+- EFX Send Level To Reverb
+- EFX Send Level To Chorus
+- EFX Send Level To Delay
+
+#### Patch Part Parameters
+
+- Tone Number (Bank + Program change)
+- Rx. Channel
+- Mono/Poly Mode
+- Use for Rhythm Part
+- Pitch Key Shift
+- Part Level
+- Part Pan Position
+- CC1 Controller Number
+- CC2 Controller Number
+- Chorus Send Level
+- Reverb Send Level
+- Pitch Fine Tune
+- Delay Send Level
+- Vibrato Rate
+- Vibrato Depth
+- TVF Cutoff
+- TVF Resonance
+- TVA Attack Time
+- TVA Decay Time
+- TVA Release Time
+- Vibrato Delay
+- Scale Tuning
+- Tone Map Number (Bank LSB)
+- Tone Map-0 Number (treated as Bank LSB)
+- Part EFX Assign
+
+#### Patch Part Parameters (Controllers)
+
+All of them except for LFO rate as it's in Hz rather than cents.
+
+These define how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system.
+
+#### Drum Setup Parameters
+
+- Drum Map Name (logs to console)
+- Pitch Coarse
+- Level
+- Assign Group Number (exclusive class override)
+- Pan Position
+- Reverb Send Level
+- Chorus Send Level
+- Rx. Note Off (implemented as forcing instant release)
+- Rx. Note On
+- Delay Send Level
 
 ### XG Part Setup
 
 Below are the supported part setup messages for XG.
 
-| Number (hex) | Name                                                   |
-| ------------ | ------------------------------------------------------ |
-| 01           | Bank Select MSB                                        |
-| 02           | Bank Select LSB                                        |
-| 03           | Program change                                         |
-| 0B           | Volume                                                 |
-| 0E           | Pan A value of 0 means random panning for every voice. |
-| 13           | Reverb                                                 |
-| 12           | Chorus                                                 |
-| 15           | Vibrato Rate                                           |
-| 16           | Vibrato Depth                                          |
-| 17           | Vibrato Decay                                          |
-| 18           | Filter Cutoff                                          |
-| 19           | Filter Resonance                                       |
-| 1A           | Attack Time                                            |
-| 1B           | Decay Time                                             |
-| 1C           | Release Time                                           |
+| Number (hex) | Name                                                    |
+| ------------ | ------------------------------------------------------- |
+| 01           | Bank Select MSB                                         |
+| 02           | Bank Select LSB                                         |
+| 03           | Program change                                          |
+| 04           | Receive channel number                                  |
+| 05           | Poly/mono mode                                          |
+| 07           | Part mode                                               |
+| 08           | Note shift                                              |
+| 0B           | Volume                                                  |
+| 0E           | Pan, a value of 0 means random panning for every voice. |
+| 13           | Reverb                                                  |
+| 12           | Chorus                                                  |
+| 15           | Vibrato Rate                                            |
+| 16           | Vibrato Depth                                           |
+| 17           | Vibrato Decay                                           |
+| 18           | Filter Cutoff                                           |
+| 19           | Filter Resonance                                        |
+| 1A           | Attack Time                                             |
+| 1B           | Decay Time                                              |
+| 1C           | Release Time                                            |
+
+#### XG Drum Setup
+
+The following drum setup messages are recognized:
+
+- Pitch Coarse
+- Pitch Fine (added to coarse so coarse must be sent first)
+- Alternate Group (exclusive class override)
+- Pan
+- Reverb Send
+- Chorus Send
+- Rev. Note Off (implemented as forcing instant release)
+- Rev. Note On
 
 ### MIDI Tuning Standard
 
@@ -321,4 +422,39 @@ That is:
   The final calculation is `portamentoSeconds = portaTimeToRate(cc5) * keyDistance`
 - The details of the `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/engine_methods/portamento_time.ts)
 - If you know a more accurate algorithm, please let me know!
-- Portamento is **experimental,** although I've found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
+- Portamento is **experimental,** although I found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
+
+## Effects
+
+SpessaSynth's effects are modeled after the Sound Canvas line.
+There are currently 3 effect processors, below are their built-in implementations.
+
+### Reverb
+
+Characters 0-5 use the Dattorro reverb model, based on [this processor](https://github.com/khoin/DattorroReverbNode).
+Each of the characters has parameters tuned to match the SC-55 effects more closely.
+The built-in pre-lowpass filter is used for the pre-LPF param.
+
+Character 6 uses a single delay line while character 7 uses a ping-pong delay.
+A simple 1st order lowpass filter is used for the pre-LPF param.
+
+### Chorus
+
+Implemented using 2 delay lines modulated by triangle LFOs.
+A simple 1st order lowpass filter is used for the pre-LPF param.
+
+### Delay
+
+Implemented using 3 delay lines, with the central one having feedback and feeding into the stereo delays.
+Input is fed to all three.
+
+Disabled in XG mode as CC#94 (used as delay send level) is used for Variation which is not implemented.
+
+## Insertion Effects
+
+Spessasynth has an architecture to support SC-88Pro+ insertion effects.
+
+### Currently implemented insertion effects
+
+- Stereo-EQ
+- Phaser

@@ -1,13 +1,12 @@
 import { SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
 import { consoleColors } from "../utils/other";
 import {
-    DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
     EMBEDDED_SOUND_BANK_ID,
     MIDI_CHANNEL_COUNT
 } from "./audio_engine/engine_components/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
+import { getDefaultSynthOptions } from "./audio_engine/engine_components/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
 import type {
@@ -49,28 +48,142 @@ export class SpessaSynthProcessor {
      * @param event The event that occurred.
      */
     public onEventCall?: (event: SynthProcessorEvent) => unknown;
+
+    /**
+     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
+     * All float arrays must have the same length.
+     * @param left the left output channel.
+     * @param right the right output channel.
+     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
+     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     */
+    public readonly process: (
+        left: Float32Array,
+        right: Float32Array,
+        startIndex?: number,
+        sampleCount?: number
+    ) => void;
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
      * All float arrays must have the same length.
-     * @param outputs output stereo channels (L, R).
-     * @param reverb reverb stereo channels (L, R).
-     * @param chorus chorus stereo channels (L, R).
+     * @param outputs any number stereo pairs (L, R) to render channels separately into.
+     * @param effectsLeft the left stereo effect output buffer.
+     * @param effectsRight the left stereo effect output buffer.
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
      */
-    public readonly renderAudio;
+    public readonly processSplit: (
+        outputs: Float32Array[][],
+        effectsLeft: Float32Array,
+        effectsRight: Float32Array,
+        startIndex?: number,
+        sampleCount?: number
+    ) => void;
+
+    /**
+     * Executes a system exclusive message for the synthesizer.
+     * @param syx The system exclusive message as an array of bytes.
+     * @param channelOffset The channel offset to apply (default is 0).
+     */
+    public readonly systemExclusive: (
+        syx: SysExAcceptedArray,
+        channelOffset?: number
+    ) => void;
+
+    /**
+     * Executes a MIDI controller change message on the specified channel.
+     * @param channel The MIDI channel to change the controller on.
+     * @param controllerNumber The MIDI controller number to change.
+     * @param controllerValue The value to set the controller to.
+     */
+    public readonly controllerChange: (
+        channel: number,
+        controllerNumber: MIDIController,
+        controllerValue: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Note-on message on the specified channel.
+     * @param channel The MIDI channel to send the note on.
+     * @param midiNote The MIDI note number to play.
+     * @param velocity The velocity of the note, from 0 to 127.
+     * @remarks
+     * If the velocity is 0, it will be treated as a Note-off message.
+     */
+    public readonly noteOn: (
+        channel: number,
+        midiNote: number,
+        velocity: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Note-off message on the specified channel.
+     * @param channel The MIDI channel to send the note off.
+     * @param midiNote The MIDI note number to stop playing.
+     */
+    public readonly noteOff: (channel: number, midiNote: number) => void;
+
+    /**
+     * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
+     * @param channel The MIDI channel to send the poly pressure on.
+     * @param midiNote The MIDI note number to apply the pressure to.
+     * @param pressure The pressure value, from 0 to 127.
+     */
+    public readonly polyPressure: (
+        channel: number,
+        midiNote: number,
+        pressure: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Channel Pressure (Aftertouch) message on the specified channel.
+     * @param channel The MIDI channel to send the channel pressure on.
+     * @param pressure The pressure value, from 0 to 127.
+     */
+    public readonly channelPressure: (
+        channel: number,
+        pressure: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Pitch Wheel message on the specified channel.
+     * @param channel The MIDI channel to send the pitch wheel on.
+     * @param pitch The new pitch value: 0-16384
+     * @param midiNote The MIDI note number (optional), pass -1 for the regular pitch wheel.
+     */
+    public readonly pitchWheel: (
+        channel: number,
+        pitch: number,
+        midiNote?: number
+    ) => void;
+
+    /**
+     * Executes a MIDI Program Change message on the specified channel.
+     * @param channel The MIDI channel to send the program change on.
+     * @param programNumber The program number to change to, from 0 to 127.
+     */
+    public readonly programChange: (
+        channel: number,
+        programNumber: number
+    ) => void;
+
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Renders the float32 audio data of each channel; buffer size of 128 is recommended.
-     * All float arrays must have the same length.
-     * @param reverbChannels reverb stereo channels (L, R).
-     * @param chorusChannels chorus stereo channels (L, R).
-     * @param separateChannels a total of 16 stereo pairs (L, R) for each MIDI channel.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     * Processes a raw MIDI message.
+     * @param message The message to process.
+     * @param channelOffset The channel offset for the message.
+     * @param force If true, forces the message to be processed.
+     * @param options Additional options for scheduling the message.
      */
-    public readonly renderAudioSplit;
+    public readonly processMessage: (
+        message: Uint8Array | number[],
+        channelOffset?: number,
+        force?: boolean,
+        options?: SynthMethodOptions
+    ) => void;
+
     /**
      * Core synthesis engine.
      */
@@ -87,12 +200,10 @@ export class SpessaSynthProcessor {
      */
     public constructor(
         sampleRate: number,
-        opts: Partial<SynthProcessorOptions> = DEFAULT_SYNTH_OPTIONS
+        opts: Partial<SynthProcessorOptions> = {}
     ) {
-        const options: SynthProcessorOptions = fillWithDefaults(
-            opts,
-            DEFAULT_SYNTH_OPTIONS
-        );
+        const defs = getDefaultSynthOptions(sampleRate);
+        const options: SynthProcessorOptions = fillWithDefaults(opts, defs);
         this.sampleRate = sampleRate;
         if (
             !Number.isFinite(options.initialTime) ||
@@ -111,11 +222,19 @@ export class SpessaSynthProcessor {
             options
         );
 
-        // Bind rendering methods for less overhead
-        this.renderAudio = this.synthCore.renderAudio.bind(this.synthCore);
-        this.renderAudioSplit = this.synthCore.renderAudioSplit.bind(
-            this.synthCore
-        );
+        // Bind methods for less overhead
+        const c = this.synthCore;
+        this.process = c.process.bind(c);
+        this.processSplit = c.processSplit.bind(c);
+        this.systemExclusive = c.systemExclusive.bind(c);
+        this.controllerChange = c.controllerChange.bind(c);
+        this.noteOn = c.noteOn.bind(c);
+        this.noteOff = c.noteOff.bind(c);
+        this.polyPressure = c.polyPressure.bind(c);
+        this.channelPressure = c.channelPressure.bind(c);
+        this.pitchWheel = c.pitchWheel.bind(c);
+        this.programChange = c.programChange.bind(c);
+        this.processMessage = c.processMessage.bind(c);
 
         for (let i = 0; i < MIDI_CHANNEL_COUNT; i++) {
             // Don't send events as we're creating the initial channels
@@ -197,6 +316,58 @@ export class SpessaSynthProcessor {
         return this.synthCore.keyModifierManager;
     }
 
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
+     * All float arrays must have the same length.
+     * @param outputs output stereo channels (L, R).
+     * @param reverb unused legacy parameter.
+     * @param chorus unused legacy parameter.
+     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
+     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     * @deprecated use process() as the effects are now integrated.
+     */
+    public renderAudio(
+        outputs: Float32Array[],
+        reverb: Float32Array[],
+        chorus: Float32Array[],
+        startIndex = 0,
+        sampleCount = 0
+    ) {
+        void reverb;
+        void chorus;
+        this.synthCore.process(outputs[0], outputs[1], startIndex, sampleCount);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Renders the float32 audio data of each channel, routing effects to external outputs.
+     * Buffer size of 128 is recommended.
+     * All float arrays must have the same length.
+     * @param reverbChannels unused legacy parameter.
+     * @param chorusChannels unused legacy parameter.
+     * @param separateChannels a total of 16 stereo pairs (L, R) for each MIDI channel.
+     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
+     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     * @deprecated use processSplit() as the effects are now integrated.
+     */
+    public renderAudioSplit(
+        reverbChannels: Float32Array[],
+        chorusChannels: Float32Array[],
+        separateChannels: Float32Array[][],
+        startIndex = 0,
+        sampleCount = 0
+    ) {
+        void chorusChannels;
+        this.synthCore.processSplit(
+            separateChannels,
+            reverbChannels[0],
+            reverbChannels[1],
+            startIndex,
+            sampleCount
+        );
+    }
+
     /**
      * A handler for missing presets during program change. By default, it warns to console.
      * @param patch The MIDI patch that was requested.
@@ -214,18 +385,6 @@ export class SpessaSynthProcessor {
         void system;
         return undefined;
     };
-
-    /**
-     * Executes a system exclusive message for the synthesizer.
-     * @param syx The system exclusive message as an array of bytes.
-     * @param channelOffset The channel offset to apply (default is 0).
-     */
-    public systemExclusive(syx: SysExAcceptedArray, channelOffset = 0) {
-        this.synthCore.systemExclusive(
-            syx,
-            channelOffset + this.synthCore.channelOffset
-        );
-    }
 
     /**
      * Sets a master parameter of the synthesizer.
@@ -352,93 +511,6 @@ export class SpessaSynthProcessor {
         this.synthCore.destroySynthProcessor();
     }
 
-    /**
-     * Executes a MIDI controller change message on the specified channel.
-     * @param channel The MIDI channel to change the controller on.
-     * @param controllerNumber The MIDI controller number to change.
-     * @param controllerValue The value to set the controller to.
-     */
-    public controllerChange(
-        channel: number,
-        controllerNumber: MIDIController,
-        controllerValue: number
-    ) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].controllerChange(controllerNumber, controllerValue);
-    }
-
-    /**
-     * Executes a MIDI Note-on message on the specified channel.
-     * @param channel The MIDI channel to send the note on.
-     * @param midiNote The MIDI note number to play.
-     * @param velocity The velocity of the note, from 0 to 127.
-     * @remarks
-     * If the velocity is 0, it will be treated as a Note-off message.
-     */
-    public noteOn(channel: number, midiNote: number, velocity: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].noteOn(midiNote, velocity);
-    }
-
-    /**
-     * Executes a MIDI Note-off message on the specified channel.
-     * @param channel The MIDI channel to send the note off.
-     * @param midiNote The MIDI note number to stop playing.
-     */
-    public noteOff(channel: number, midiNote: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].noteOff(midiNote);
-    }
-
-    /**
-     * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
-     * @param channel The MIDI channel to send the poly pressure on.
-     * @param midiNote The MIDI note number to apply the pressure to.
-     * @param pressure The pressure value, from 0 to 127.
-     */
-    public polyPressure(channel: number, midiNote: number, pressure: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].polyPressure(midiNote, pressure);
-    }
-
-    /**
-     * Executes a MIDI Channel Pressure (Aftertouch) message on the specified channel.
-     * @param channel The MIDI channel to send the channel pressure on.
-     * @param pressure The pressure value, from 0 to 127.
-     */
-    public channelPressure(channel: number, pressure: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].channelPressure(pressure);
-    }
-
-    /**
-     * Executes a MIDI Pitch Wheel message on the specified channel.
-     * @param channel The MIDI channel to send the pitch wheel on.
-     * @param pitch The new pitch value: 0-16384
-     * @param midiNote The MIDI note number, pass -1 for the regular pitch wheel
-     */
-    public pitchWheel(channel: number, pitch: number, midiNote = -1) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].pitchWheel(pitch, midiNote);
-    }
-
-    /**
-     * Executes a MIDI Program Change message on the specified channel.
-     * @param channel The MIDI channel to send the program change on.
-     * @param programNumber The program number to change to, from 0 to 127.
-     */
-    public programChange(channel: number, programNumber: number) {
-        this.synthCore.midiChannels[
-            channel + this.synthCore.channelOffset
-        ].programChange(programNumber);
-    }
-
     // noinspection JSUnusedGlobalSymbols
     /**
      * DEPRECATED, does nothing!
@@ -448,28 +520,6 @@ export class SpessaSynthProcessor {
     public killVoices(amount: number) {
         SpessaSynthWarn(
             `killVoices is deprecated, don't use it! Amount requested: ${amount}`
-        );
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Processes a raw MIDI message.
-     * @param message The message to process.
-     * @param channelOffset The channel offset for the message.
-     * @param force If true, forces the message to be processed.
-     * @param options Additional options for scheduling the message.
-     */
-    public processMessage(
-        message: Uint8Array | number[],
-        channelOffset = 0,
-        force = false,
-        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
-    ) {
-        this.synthCore.processMessage(
-            message,
-            channelOffset + this.synthCore.channelOffset,
-            force,
-            options
         );
     }
 

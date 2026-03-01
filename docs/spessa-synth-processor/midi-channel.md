@@ -111,21 +111,6 @@ Parameters:
 
 The custom controllers enum is called `customControllers` in the exports.
 
-### renderAudio
-
-Renders Float32 audio for this channel.
-
-Parameters:
-
-- outputLeft - the left output buffer.
-- outputRight - the right output buffer.
-- reverbOutputLeft - left output for reverb.
-- reverbOutputRight - right output for reverb.
-- chorusOutputLeft - left output for chorus.
-- chorusOutputRight - right output for chorus.
-- startIndex - start index offset.
-- sampleCount - sample count to render.
-
 ### setPresetLock
 
 Locks or unlocks the preset from MIDI program changes.
@@ -159,20 +144,6 @@ Sets the GM/GS drum flag.
 Parameters:
 
 - drums - the new flag value.
-
-### setVibrato
-
-Sets a custom vibrato.
-
-Parameters:
-
-- depth - in cents.
-- rate - in Hertz.
-- delay - in seconds.
-
-### disableAndLockGSNPRN
-
-Disables and locks all GS NPRN parameters, including the custom vibrato.
 
 ### killNote
 

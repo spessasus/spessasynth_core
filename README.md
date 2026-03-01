@@ -14,9 +14,9 @@ It allows you to:
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
-### v4.0.0 TypeScript Update is here!
+### v4.2.0 The Effects Update is here!
 
-[**Read about breaking changes here.**](https://spessasus.github.io/spessasynth_core/extra/3-28-migration-guide)
+Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 > **Tip:**
 >
@@ -76,6 +76,12 @@ It allows you to:
     - **Detects special articulator combinations:** _Such as vibratoLfoToPitch_
 - **Soundfont manager:** Stack multiple soundfonts!
 - **Unlimited channel count:** Your CPU is the limit!
+- **Built-in, configurable effects:**
+    - **Reverb:** _Multiple characters including delay and panning delay!_
+    - **Chorus:** _Modulated delay lines with multiple presets!_
+    - **Delay:** _Three delay lines for all of your delay needs!_
+    - **Insertion Effects:** _The ultimate effects, they can give your sounds a completely different character! (limited support)_
+    - **Replaceable:** _Effects not to your taste? You can bring your own!_
 - **Excellent MIDI Standards Support:**
     - **MIDI Controller Support:** Default supported
       controllers [here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#default-supported-controllers)
@@ -88,8 +94,9 @@ It allows you to:
     - **SoundFont2 NRPN Support**
     - [**AWE32**
       NRPN Compatibility Layer](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#awe32-nrpn-compatibility-layer)
-    - Supports some [**Roland GS** and **Yamaha XG**
-      system exclusives](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-system-exclusives)
+    - [**Roland GS** and **Yamaha XG**
+      support!](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-system-exclusives)
+    - Built-in effects are GS-Compatible!
 
 ### Powerful and Fast MIDI Sequencer
 

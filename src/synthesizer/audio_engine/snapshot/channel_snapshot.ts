@@ -1,6 +1,7 @@
 import type { SynthSystem } from "../../types";
 import { type SpessaSynthProcessor } from "../../processor";
 import type { MIDIPatchNamed } from "../../../soundbank/basic_soundbank/midi_patch";
+import { DrumParameters } from "../engine_components/drum_parameters";
 
 /**
  * Represents a snapshot of a single channel's state in the synthesizer.
@@ -37,11 +38,6 @@ export class ChannelSnapshot {
     public customControllers: Float32Array;
 
     /**
-     * Indicates whether the channel vibrato is locked.
-     */
-    public lockVibrato: boolean;
-
-    /**
      * The channel's vibrato settings.
      * @property depth Vibrato depth, in gain.
      * @property delay Vibrato delay from note on in seconds.
@@ -52,12 +48,17 @@ export class ChannelSnapshot {
     /**
      * Key shift for the channel.
      */
-    public channelTransposeKeyShift: number;
+    public keyShift: number;
 
     /**
      * The channel's octave tuning in cents.
      */
-    public channelOctaveTuning: Int8Array;
+    public octaveTuning: Int8Array;
+
+    /**
+     * Parameters for each drum instrument.
+     */
+    public drumParams: DrumParameters[];
 
     /**
      * Indicates whether the channel is muted.
@@ -82,7 +83,6 @@ export class ChannelSnapshot {
         midiControllers: Int16Array,
         lockedControllers: boolean[],
         customControllers: Float32Array,
-        lockVibrato: boolean,
         channelVibrato: {
             delay: number;
             depth: number;
@@ -90,6 +90,7 @@ export class ChannelSnapshot {
         },
         channelTransposeKeyShift: number,
         channelOctaveTuning: Int8Array,
+        drumParams: DrumParameters[],
         isMuted: boolean,
         drumChannel: boolean,
         channelNumber: number
@@ -100,10 +101,10 @@ export class ChannelSnapshot {
         this.midiControllers = midiControllers;
         this.lockedControllers = lockedControllers;
         this.customControllers = customControllers;
-        this.lockVibrato = lockVibrato;
         this.channelVibrato = channelVibrato;
-        this.channelTransposeKeyShift = channelTransposeKeyShift;
-        this.channelOctaveTuning = channelOctaveTuning;
+        this.keyShift = channelTransposeKeyShift;
+        this.octaveTuning = channelOctaveTuning;
+        this.drumParams = drumParams;
         this.isMuted = isMuted;
         this.drumChannel = drumChannel;
         this.channelNumber = channelNumber;
@@ -121,10 +122,10 @@ export class ChannelSnapshot {
             snapshot.midiControllers.slice(),
             [...snapshot.lockedControllers],
             snapshot.customControllers.slice(),
-            snapshot.lockVibrato,
             { ...snapshot.channelVibrato },
-            snapshot.channelTransposeKeyShift,
-            snapshot.channelOctaveTuning.slice(),
+            snapshot.keyShift,
+            snapshot.octaveTuning.slice(),
+            snapshot.drumParams.map((d) => new DrumParameters().copyInto(d)),
             snapshot.isMuted,
             snapshot.drumChannel,
             snapshot.channelNumber
@@ -152,10 +153,12 @@ export class ChannelSnapshot {
             channelObject.midiControllers.slice(),
             [...channelObject.lockedControllers],
             channelObject.customControllers.slice(),
-            channelObject.lockGSNRPNParams,
             { ...channelObject.channelVibrato },
-            channelObject.channelTransposeKeyShift,
-            channelObject.channelOctaveTuning.slice(),
+            channelObject.keyShift,
+            channelObject.octaveTuning.slice(),
+            channelObject.drumParams.map((d) =>
+                new DrumParameters().copyInto(d)
+            ),
             channelObject.isMuted,
             channelObject.drumChannel,
             channelNumber
@@ -179,10 +182,14 @@ export class ChannelSnapshot {
         channelObject.updateChannelTuning();
 
         // Restore vibrato and transpose
-        channelObject.channelVibrato = this.channelVibrato;
-        channelObject.lockGSNRPNParams = this.lockVibrato;
-        channelObject.channelTransposeKeyShift = this.channelTransposeKeyShift;
-        channelObject.channelOctaveTuning = this.channelOctaveTuning;
+        channelObject.channelVibrato.rate = this.channelVibrato.rate;
+        channelObject.channelVibrato.delay = this.channelVibrato.delay;
+        channelObject.channelVibrato.depth = this.channelVibrato.depth;
+        channelObject.keyShift = this.keyShift;
+        channelObject.octaveTuning.set(this.octaveTuning);
+        for (let i = 0; i < 128; i++) {
+            this.drumParams[i].copyInto(channelObject.drumParams[i]);
+        }
 
         // Restore preset and lock
         channelObject.setPresetLock(false);

@@ -8,7 +8,11 @@ import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode } from "../../types";
-import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
+import {
+    INITIAL_BUFFER_SIZE,
+    MIN_EXCLUSIVE_LENGTH,
+    MIN_NOTE_LENGTH
+} from "./synth_constants";
 import {
     HermiteOscillator,
     LinearOscillator,
@@ -92,7 +96,7 @@ export class Voice {
      * The buffer to use when rendering the voice (to avoid memory allocations)
      * If the user supplied a larger one, it must be resized.
      */
-    public buffer = new Float32Array(128);
+    public buffer = new Float32Array(INITIAL_BUFFER_SIZE);
 
     /**
      * Resonance offset, it is affected by the default resonant modulator
@@ -217,6 +221,26 @@ export class Voice {
      * From -500 to 500, where zero means disabled (use the channel pan). Used for random pan.
      */
     public overridePan = 0;
+
+    /**
+     * In cents, used for drum tuning.
+     */
+    public pitchOffset = 0;
+
+    /**
+     * Reverb send of the voice, used for drum parts, otherwise 1.
+     */
+    public reverbSend = 1;
+
+    /**
+     * Chorus send of the voice, used for drum parts, otherwise 1.
+     */
+    public chorusSend = 1;
+
+    /**
+     * Delay send of the voice, used for drum parts, otherwise 1.
+     */
+    public delaySend = 1;
 
     /**
      * Exclusive class number for hi-hats etc.

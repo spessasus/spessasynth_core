@@ -43,6 +43,9 @@ setResetValue(midiControllers.vibratoDelay, 64);
 setResetValue(midiControllers.generalPurposeController6, 64);
 setResetValue(midiControllers.generalPurposeController8, 64);
 
+// This one has changed many times during spessasynth's lifespan
+setResetValue(midiControllers.reverbDepth, 40);
+
 setResetValue(midiControllers.registeredParameterLSB, 127);
 setResetValue(midiControllers.registeredParameterMSB, 127);
 setResetValue(midiControllers.nonRegisteredParameterLSB, 127);
@@ -62,3 +65,8 @@ export const CUSTOM_CONTROLLER_TABLE_SIZE =
     Object.keys(customControllers).length;
 export const customResetArray = new Float32Array(CUSTOM_CONTROLLER_TABLE_SIZE);
 customResetArray[customControllers.modulationMultiplier] = 1;
+
+export const drumReverbResetArray = new Int8Array(128).fill(127);
+// Kicks have no reverb
+drumReverbResetArray[35] = 0;
+drumReverbResetArray[36] = 0;

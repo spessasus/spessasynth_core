@@ -19,16 +19,15 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
     this.masterParameters[parameter] = value;
     // Additional handling for specific parameters
     switch (parameter) {
+        default: {
+            break;
+        }
         case "masterPan": {
             let pan = value as number;
             // Clamp to 0-1 (0 is left)
             pan = pan / 2 + 0.5;
             this.panLeft = 1 - pan;
             this.panRight = pan;
-            break;
-        }
-
-        case "masterGain": {
             break;
         }
 
@@ -48,18 +47,6 @@ export function setMasterParameterInternal<P extends keyof MasterParameterType>(
                     this.voices.push(new Voice(this.sampleRate));
                 }
             }
-            break;
-        }
-
-        case "interpolationType": {
-            break;
-        }
-
-        case "midiSystem": {
-            break;
-        }
-
-        case "monophonicRetriggerMode": {
             break;
         }
 
