@@ -577,6 +577,7 @@ export function handleGS(
                                     // Divide, insertions use 0-1
                                     this.insertionProcessor.sendLevelToDelay =
                                         data / 127;
+                                    this.delayActive = true;
                                     coolInfo("EFX Send Level to Delay", data);
                                     this.callEvent("effectChange", {
                                         effect: "insertion",
