@@ -21,12 +21,18 @@ function zeroState(h: BiquadHistory) {
     h.x1 = h.x2 = h.y1 = h.y2 = 0;
 }
 
-// TODO: Fix the numbers to match manual
-const ALL_PASS_STAGES = 14;
-const DEPTH_DIV = 64;
-const MANUAL_MULTIPLIER = 2.5;
-const FEEDBACK = 0.85;
+/*
+After lots of testing, this was the closest I've been able to get.
+SC-Va shows a very strange logarithmic curve after 1000 Hz (55 manual), which I wasn't able to replicate, no matter how hard I tried.
+Values below that are pretty much spot on though.
+ */
+const ALL_PASS_STAGES = 8;
+const DEPTH_DIV = 128;
+const MANUAL_MULTIPLIER = 4;
+const MANUAL_OFFSET = 600;
+const FEEDBACK = 0.9;
 
+const PHASE_START = 0.35;
 /**
  * A phaser adds a phase-shifted sound to the original sound,
  * producing a twisting modulation that creates spaciousness
@@ -119,21 +125,20 @@ export class PhaserFX implements InsertionProcessor {
         a2: 0
     };
 
+    private manualOffset = MANUAL_OFFSET;
     private lowShelfStateL: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
     private lowShelfStateR: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
-
     private highShelfStateL: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
     private highShelfStateR: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
     private prevL = 0;
     private prevR = 0;
-
     /**
      * Adjusts the output level.
      * [0;1]
      * @private
      */
     private level = 104 / 127;
-    private phase = 0.4;
+    private phase = PHASE_START;
     private readonly sampleRate;
 
     public constructor(sampleRate: number) {
@@ -146,8 +151,8 @@ export class PhaserFX implements InsertionProcessor {
     }
 
     public reset() {
-        this.phase = 0.4;
-        this.manual = 620;
+        this.phase = PHASE_START;
+        this.setManual(620);
         this.rate = 0.85;
         this.depth = 64 / DEPTH_DIV;
         this.reso = 16 / 127;
@@ -180,6 +185,7 @@ export class PhaserFX implements InsertionProcessor {
             sendLevelToDelay,
             level,
             manual,
+            manualOffset,
             mix,
             lowShelfCoef,
             lowShelfStateR,
@@ -217,8 +223,10 @@ export class PhaserFX implements InsertionProcessor {
             // Triangle LFO
             const lfo = 2 * Math.abs(phase - 0.5);
             if ((phase += rateInc) >= 1) phase -= 1;
+            const lfoMul = 1 - depth * lfo;
+
             // Instantaneous modulated frequency (Hz), depth is fraction
-            const fc = manual * (MANUAL_MULTIPLIER - depth * lfo);
+            const fc = manualOffset + manual * lfoMul;
 
             // Convert to all-pass coefficient 'a' for first-order AP
             const tanTerm = Math.tan((Math.PI * fc) / sampleRate);
@@ -239,11 +247,6 @@ export class PhaserFX implements InsertionProcessor {
                 prevInR[stage] = apR;
                 prevOutR[stage] = outR;
                 apR = outR;
-                // FIXME: remove debug before merging!
-                if (!Number.isFinite(outL) || !Number.isFinite(outR)) {
-                    console.log(outR, outL, stage, fc, this.reso);
-                    throw new TypeError("NAN ALERT (testing)");
-                }
             }
             prevL = apL;
             prevR = apR;
@@ -272,8 +275,7 @@ export class PhaserFX implements InsertionProcessor {
             }
 
             case 0x03: {
-                this.manual = InsertionValueConverter.manual(value);
-                this.clearAllPass();
+                this.setManual(InsertionValueConverter.manual(value));
                 break;
             }
 
@@ -313,6 +315,16 @@ export class PhaserFX implements InsertionProcessor {
             }
         }
         this.updateShelves();
+    }
+
+    private setManual(manualIn: number) {
+        if (manualIn > 1000) {
+            this.manualOffset = MANUAL_OFFSET * 1.5 * MANUAL_MULTIPLIER;
+            this.manual = manualIn;
+        } else {
+            this.manualOffset = MANUAL_OFFSET;
+            this.manual = manualIn * MANUAL_MULTIPLIER;
+        }
     }
 
     private clearAllPass() {
