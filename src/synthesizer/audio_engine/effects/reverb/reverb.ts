@@ -1,4 +1,4 @@
-import type { ReverbProcessor } from "../types";
+import type { ReverbProcessor, ReverbProcessorSnapshot } from "../types";
 import { DattorroReverb } from "./dattorro";
 import { DelayLine } from "../delay_line";
 import { INITIAL_BUFFER_SIZE } from "../../engine_components/synth_constants";
@@ -368,6 +368,17 @@ export class SpessaSynthReverb implements ReverbProcessor {
                 return;
             }
         }
+    }
+
+    public getSnapshot(): ReverbProcessorSnapshot {
+        return {
+            level: this._level,
+            preLowpass: this._preLowpass,
+            character: this._character,
+            time: this._time,
+            delayFeedback: this._delayFeedback,
+            preDelayTime: this._preDelayTime
+        };
     }
 
     private updateFeedback() {

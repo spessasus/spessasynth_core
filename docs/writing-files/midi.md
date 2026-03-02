@@ -21,13 +21,17 @@ The returned value is an `ArrayBuffer` - a binary representation of the Standard
 ### modify
 
 Allows easily modifying the sequence's programs and controllers.
+All parameters are optional.
 
 ```ts
 midi.modify(
     desiredProgramChanges,
     desiredControllerChanges,
     desiredChannelsToClear,
-    desiredChannelsToTranspose
+    desiredChannelsToTranspose,
+    clearDrumParams,
+    reverbParams,
+    chorusParams
 );
 ```
 
@@ -56,6 +60,12 @@ midi.modify(
 ```
 
 - desiredChannelsToClear - an array of numbers, indicating the channel number to effectively mute.
+
+!!! Warning
+
+    Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the
+    original midi file is lost.
+
 - desiredChannelsToTranspose - an array of objects, defined as follows:
 
 ```ts
@@ -66,10 +76,10 @@ midi.modify(
  */
 ```
 
-!!! Warning
-
-    Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the
-    original midi file is lost.
+- clearDrumParams - `boolean`, if the drum editing parameters (such as pitch, pan, etc.) should be removed. Both XG and GS.
+- reverbParams - `ReverbProcessorSnapshot`, the desired GS reverb params, leave undefined for no change.
+- chorusParams - `ChorusProcessorSnapshot`, the desired GS chorus params, leave undefined for no change.
+- delayParams - `DelayProcessorSnapshot`, the desired GS delay params, leave undefined for no change.
 
 ### applySnapshot
 

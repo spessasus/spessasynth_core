@@ -4,9 +4,11 @@ Chorus broadens the spatial image of the sound, adding depth and richness.
 
 ## Editing the parameters
 
-Editing the parameters can be done via GS system exclusive messages.
+Editing the parameters can be done via GS system exclusive messages or by accessing the `.chorusProcessor` property.
 
-Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
+!!! Tip
+
+    Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
 
 ## Custom Processor
 
@@ -72,3 +74,7 @@ Process the effect and **adds** it to the output.
 - outputDelay - The mono input for delay. It always starts at index 0.
 - startIndex - The index to start mixing at into the output buffers.
 - sampleCount - The amount of samples to mix.
+
+### getSnapshot
+
+Returns a `ChorusProcessorSnapshot`. It contains all the properties of the `ChorusProcessor`, but not the `process` method (or `getSnapshot`).

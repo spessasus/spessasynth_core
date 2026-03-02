@@ -203,6 +203,18 @@ export class SynthesizerCore {
      */
     public customChannelNumbers = false;
     /**
+     * The synthesizer's reverb processor.
+     */
+    public readonly reverbProcessor: ReverbProcessor;
+    /**
+     * The synthesizer's chorus processor.
+     */
+    public readonly chorusProcessor: ChorusProcessor;
+    /**
+     * The synthesizer's delay processor.
+     */
+    public readonly delayProcessor: DelayProcessor;
+    /**
      * The fallback processor when the requested insertion is not available.
      */
     protected readonly insertionFallback = new ThruFX();
@@ -219,19 +231,6 @@ export class SynthesizerCore {
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      */
     protected insertionActive = false;
-
-    /**
-     * The synthesizer's reverb processor.
-     */
-    protected readonly reverbProcessor: ReverbProcessor;
-    /**
-     * The synthesizer's chorus processor.
-     */
-    protected readonly chorusProcessor: ChorusProcessor;
-    /**
-     * The synthesizer's delay processor.
-     */
-    protected readonly delayProcessor: DelayProcessor;
     /**
      * For F5 system exclusive.
      */

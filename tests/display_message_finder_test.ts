@@ -10,6 +10,12 @@ if (args.length !== 1) {
 }
 const midPath = args[0];
 
+const outPath = path.resolve(import.meta.dirname, "files/matched_files");
+await fs.rm(outPath, { recursive: true, force: true });
+await fs.mkdir(outPath, { recursive: true });
+
+let checkedFiles = 0;
+
 async function walk(dir: string) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
 
@@ -21,18 +27,22 @@ async function walk(dir: string) {
             continue;
         }
 
-        if (
-            path.extname(fullPath) !== ".mid" &&
-            path.extname(fullPath) !== ".midi"
-        )
-            continue;
+        const ext = path.extname(fullPath);
+        if (ext !== ".mid" && ext !== ".midi") continue;
         try {
-            checkMid(
-                BasicMIDI.fromArrayBuffer((await fs.readFile(fullPath)).buffer),
-                fullPath
-            );
+            if (
+                checkMid(
+                    BasicMIDI.fromArrayBuffer(
+                        (await fs.readFile(fullPath)).buffer
+                    ),
+                    fullPath
+                )
+            ) {
+                void fs.copyFile(fullPath, path.join(outPath, entry.name));
+            }
+            checkedFiles++;
         } catch (e) {
-            console.error(`Invalid MIDI file ${path.basename(fullPath)}`);
+            // Pass
         }
     }
 }
@@ -62,6 +72,10 @@ function checkMid(mid: BasicMIDI, path: string) {
             }
         }
     }
+    return false;
 }
 
 await walk(midPath);
+console.info(
+    `Checked ${checkedFiles} files. Saved matching files to ${outPath}`
+);

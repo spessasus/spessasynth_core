@@ -303,6 +303,27 @@ export class SpessaSynthProcessor {
     }
 
     /**
+     * Synthesizer's reverb processor.
+     */
+    public get reverbProcessor() {
+        return this.synthCore.reverbProcessor;
+    }
+
+    /**
+     * Synthesizer's chorus processor.
+     */
+    public get chorusProcessor() {
+        return this.synthCore.chorusProcessor;
+    }
+
+    /**
+     * Synthesizer's delay processor.
+     */
+    public get delayProcessor() {
+        return this.synthCore.delayProcessor;
+    }
+
+    /**
      * The sound bank manager, which manages all sound banks and presets.
      */
     public get soundBankManager() {

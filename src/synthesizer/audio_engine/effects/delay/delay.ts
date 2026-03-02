@@ -1,4 +1,4 @@
-import type { DelayProcessor } from "../types";
+import type { DelayProcessor, DelayProcessorSnapshot } from "../types";
 import { DelayLine } from "../delay_line";
 import { INITIAL_BUFFER_SIZE } from "../../engine_components/synth_constants";
 
@@ -269,6 +269,21 @@ export class SpessaSynthDelay implements DelayProcessor {
             outputRight[o] += sample * gain;
             outputReverb[i] += sample * reverbGain;
         }
+    }
+
+    public getSnapshot(): DelayProcessorSnapshot {
+        return {
+            level: this._level,
+            preLowpass: this._preLowpass,
+            timeCenter: this._timeCenter,
+            timeRatioRight: this._timeRatioRight,
+            timeRatioLeft: this._timeRatioLeft,
+            levelCenter: this._levelCenter,
+            levelLeft: this._levelLeft,
+            levelRight: this._levelRight,
+            feedback: this._feedback,
+            sendLevelToReverb: this._sendLevelToReverb
+        };
     }
 
     private updateGain() {

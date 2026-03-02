@@ -13,7 +13,7 @@ interface EffectProcessor {
      */
     preLowpass: number;
 }
-export interface ReverbProcessor extends EffectProcessor {
+export interface ReverbProcessorSnapshot extends EffectProcessor {
     /**
      * 0-7.
      * If character is not available, it should default to the first one.
@@ -41,7 +41,9 @@ export interface ReverbProcessor extends EffectProcessor {
      * Higher values result in a longer pre-delay time, simulating a larger reverberant space.
      */
     preDelayTime: number;
+}
 
+export interface ReverbProcessor extends ReverbProcessorSnapshot {
     /**
      * Process the effect and ADDS it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -57,9 +59,14 @@ export interface ReverbProcessor extends EffectProcessor {
         startIndex: number,
         sampleCount: number
     ): void;
+
+    /**
+     * Gets a synthesizer from this effect processor instance.
+     */
+    getSnapshot(): ReverbProcessorSnapshot;
 }
 
-export interface ChorusProcessor extends EffectProcessor {
+export interface ChorusProcessorSnapshot extends EffectProcessor {
     /**
      * 0-127
      * This parameter sets the level at which the chorus sound is re-input (fed back) into the
@@ -98,7 +105,9 @@ export interface ChorusProcessor extends EffectProcessor {
      * Higher values result in more sound being sent.
      */
     sendLevelToDelay: number;
+}
 
+export interface ChorusProcessor extends ChorusProcessorSnapshot {
     /**
      * Process the effect and ADDS it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -118,9 +127,14 @@ export interface ChorusProcessor extends EffectProcessor {
         startIndex: number,
         sampleCount: number
     ): void;
+
+    /**
+     * Gets a synthesizer from this effect processor instance.
+     */
+    getSnapshot(): ChorusProcessorSnapshot;
 }
 
-export interface DelayProcessor extends EffectProcessor {
+export interface DelayProcessorSnapshot extends EffectProcessor {
     /**
      * 0-115
      * 0.1ms-340ms-1000ms
@@ -186,7 +200,9 @@ export interface DelayProcessor extends EffectProcessor {
      * Higher values result in more sound being sent.
      */
     sendLevelToReverb: number;
+}
 
+export interface DelayProcessor extends DelayProcessorSnapshot {
     /**
      * Process the effect and ADDS it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -204,6 +220,11 @@ export interface DelayProcessor extends EffectProcessor {
         startIndex: number,
         sampleCount: number
     ): void;
+
+    /**
+     * Gets a synthesizer from this effect processor instance.
+     */
+    getSnapshot(): DelayProcessorSnapshot;
 }
 
 export interface InsertionProcessor {

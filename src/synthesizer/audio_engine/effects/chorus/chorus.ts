@@ -1,4 +1,4 @@
-import type { ChorusProcessor } from "../types";
+import type { ChorusProcessor, ChorusProcessorSnapshot } from "../types";
 
 class SpessaSynthChorus implements ChorusProcessor {
     /**
@@ -221,6 +221,19 @@ class SpessaSynthChorus implements ChorusProcessor {
         this.write = write;
         this.phase = phase;
         this.preLPFz = z;
+    }
+
+    public getSnapshot(): ChorusProcessorSnapshot {
+        return {
+            preLowpass: this._preLowpass,
+            depth: this._depth,
+            delay: this._delay,
+            sendLevelToDelay: this._sendLevelToDelay,
+            sendLevelToReverb: this._sendLevelToReverb,
+            rate: this._rate,
+            feedback: this._feedback,
+            level: this._level
+        };
     }
 }
 

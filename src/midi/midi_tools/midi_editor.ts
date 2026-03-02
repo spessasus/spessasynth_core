@@ -8,9 +8,20 @@ import {
 import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import { isGM2On, isGMOn, isGSOn, isXGOn } from "../../utils/sysex_detector";
+import {
+    isDrumEdit,
+    isGM2On,
+    isGMOn,
+    isGSChorus,
+    isGSDelay,
+    isGSOn,
+    isGSReverb,
+    isProgramChange,
+    isXGOn
+} from "../../utils/sysex_detector";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
+    type MIDIController,
     midiControllers,
     type MIDIMessageType,
     midiMessageTypes
@@ -26,6 +37,44 @@ import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/snapsho
 import type { SynthSystem } from "../../synthesizer/types";
 import { customControllers } from "../../synthesizer/enums";
 import { MIDIPatchTools } from "../../soundbank/basic_soundbank/midi_patch";
+import type {
+    ChorusProcessorSnapshot,
+    DelayProcessorSnapshot,
+    ReverbProcessorSnapshot
+} from "../../synthesizer/audio_engine/effects/types";
+
+const reverbAddressMap: ReverbProcessorSnapshot = {
+    character: 0x31,
+    preLowpass: 0x32,
+    level: 0x33,
+    time: 0x34,
+    delayFeedback: 0x35,
+    preDelayTime: 0x37
+};
+
+const chorusAddressMap: ChorusProcessorSnapshot = {
+    preLowpass: 0x39,
+    level: 0x3a,
+    feedback: 0x3b,
+    delay: 0x3c,
+    rate: 0x3d,
+    depth: 0x3e,
+    sendLevelToReverb: 0x3f,
+    sendLevelToDelay: 0x40
+};
+
+const delayAddressMap: DelayProcessorSnapshot = {
+    preLowpass: 0x51,
+    timeCenter: 0x52,
+    timeRatioLeft: 0x53,
+    timeRatioRight: 0x54,
+    levelCenter: 0x55,
+    levelLeft: 0x56,
+    levelRight: 0x57,
+    level: 0x58,
+    feedback: 0x59,
+    sendLevelToReverb: 0x5a
+};
 
 function getControllerChange(
     channel: number,
@@ -40,31 +89,40 @@ function getControllerChange(
     );
 }
 
+function sendAddress(
+    ticks: number,
+    a1: number,
+    a2: number,
+    a3: number,
+    data: number[]
+) {
+    // Calculate checksum
+    // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
+    const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
+    const checksum = (128 - (sum % 128)) & 0x7f;
+    return new MIDIMessage(
+        ticks,
+        midiMessageTypes.systemExclusive,
+        new Uint8Array([
+            0x41, // Roland
+            0x10, // Device ID (defaults to 16 on roland)
+            0x42, // GS
+            0x12, // Command ID (DT1)
+            a1,
+            a2,
+            a3,
+            ...data,
+            checksum,
+            0xf7 // End of exclusive
+        ])
+    );
+}
+
 function getDrumChange(channel: number, ticks: number): MIDIMessage {
     const chanAddress =
         0x10 |
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][channel % 16];
-    // Excluding manufacturerID DeviceID and ModelID (and F7)
-    const sysexData = [
-        0x41, // Roland
-        0x10, // Device ID (defaults to 16 on roland)
-        0x42, // GS
-        0x12, // Command ID (DT1) (whatever that means...)
-        0x40, // System parameter           }
-        chanAddress, // Channel parameter   } Address
-        0x15, // Drum change                }
-        0x01 // Is Drums                    } Data
-    ];
-    // Calculate checksum
-    // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
-    const sum = 0x40 + chanAddress + 0x15 + 0x01;
-    const checksum = 128 - (sum % 128);
-    // Add system exclusive to enable drums
-    return new MIDIMessage(
-        ticks,
-        midiMessageTypes.systemExclusive,
-        new IndexedByteArray([...sysexData, checksum, 0xf7])
-    );
+    return sendAddress(ticks, 40, chanAddress, 0x15, [0x01]);
 }
 
 /**
@@ -72,33 +130,41 @@ function getDrumChange(channel: number, ticks: number): MIDIMessage {
  * changing controllers and transposing channels. Note that this modifies the MIDI in-place.
  *
  * @param midi the midi to change
- * @param desiredProgramChanges - The programs to set on given channels.
- * @param desiredControllerChanges - The controllers to set on given channels.
- * @param desiredChannelsToClear - The channels to remove from the sequence.
- * @param desiredChannelsToTranspose - The channels to transpose.
+ * @param programChanges - The programs to set on given channels.
+ * @param controllerChanges - The controllers to set on given channels.
+ * @param channelsToClear - The channels to remove from the sequence.
+ * @param channelTransposes - The channels to transpose.
+ * @param clearDrumParams - If the drum editing parameters should be cleared.
+ * @param reverbParams - The desired GS reverb params, leave undefined for no change.
+ * @param chorusParams - The desired GS chorus params, leave undefined for no change.
+ * @param delayParams - The desired GS delay params, leave undefined for no change.
  */
 export function modifyMIDIInternal(
     midi: BasicMIDI,
-    desiredProgramChanges: DesiredProgramChange[] = [],
-    desiredControllerChanges: DesiredControllerChange[] = [],
-    desiredChannelsToClear: number[] = [],
-    desiredChannelsToTranspose: DesiredChannelTranspose[] = []
+    programChanges: DesiredProgramChange[] = [],
+    controllerChanges: DesiredControllerChange[] = [],
+    channelsToClear: number[] = [],
+    channelTransposes: DesiredChannelTranspose[] = [],
+    clearDrumParams = false,
+    reverbParams?: ReverbProcessorSnapshot,
+    chorusParams?: ChorusProcessorSnapshot,
+    delayParams?: DelayProcessorSnapshot
 ) {
     SpessaSynthGroupCollapsed(
         "%cApplying changes to the MIDI file...",
         consoleColors.info
     );
 
-    SpessaSynthInfo("Desired program changes:", desiredProgramChanges);
-    SpessaSynthInfo("Desired CC changes:", desiredControllerChanges);
-    SpessaSynthInfo("Desired channels to clear:", desiredChannelsToClear);
-    SpessaSynthInfo(
-        "Desired channels to transpose:",
-        desiredChannelsToTranspose
-    );
+    SpessaSynthInfo("Desired program changes:", programChanges);
+    SpessaSynthInfo("Desired CC changes:", controllerChanges);
+    SpessaSynthInfo("Desired channels to clear:", channelsToClear);
+    SpessaSynthInfo("Desired channels to transpose:", channelTransposes);
+    SpessaSynthInfo("Desired reverb parameters", reverbParams);
+    SpessaSynthInfo("Desired chorus parameters", chorusParams);
+    SpessaSynthInfo("Desired delay parameters", delayParams);
 
     const channelsToChangeProgram = new Set<number>();
-    for (const c of desiredProgramChanges) {
+    for (const c of programChanges) {
         channelsToChangeProgram.add(c.channel);
     }
 
@@ -157,12 +223,19 @@ export function modifyMIDIInternal(
      * RPN fine transpose
      */
     const fineTranspose = new Array<number>(channelsAmount).fill(0);
-    for (const transpose of desiredChannelsToTranspose) {
+    for (const transpose of channelTransposes) {
         const coarse = Math.trunc(transpose.keyShift);
         const fine = transpose.keyShift - coarse;
         coarseTranspose[transpose.channel] = coarse;
         fineTranspose[transpose.channel] = fine;
     }
+
+    // NRPN tracking (index)
+    let lastNrpnMsb = -1;
+    let lastNrpnMsbTrack = 0;
+    let lastNrpnLsb = -1;
+    let lastNrpnLsbTrack = 0;
+    let isNrpnMode = false;
 
     midi.iterate((e, trackNum, eventIndexes) => {
         const track = midi.tracks[trackNum];
@@ -194,7 +267,10 @@ export function modifyMIDIInternal(
         const midiChannel = e.statusByte & 0xf;
         const channel = midiChannel + portOffset;
         // Clear channel?
-        if (desiredChannelsToClear.includes(channel)) {
+        if (
+            e.statusByte !== midiMessageTypes.systemExclusive &&
+            channelsToClear.includes(channel)
+        ) {
             deleteThisEvent();
             return;
         }
@@ -209,7 +285,7 @@ export function modifyMIDIInternal(
                     // And since we use splice,
                     // Controllers get added first, then programs before them
                     // Now add controllers
-                    for (const change of desiredControllerChanges.filter(
+                    for (const change of controllerChanges.filter(
                         (c) => c.channel === channel
                     )) {
                         const ccChange = getControllerChange(
@@ -257,7 +333,7 @@ export function modifyMIDIInternal(
                     }
 
                     if (channelsToChangeProgram.has(channel)) {
-                        const change = desiredProgramChanges.find(
+                        const change = programChanges.find(
                             (c) => c.channel === channel
                         );
                         if (!change) {
@@ -356,8 +432,8 @@ export function modifyMIDIInternal(
 
             case midiMessageTypes.controllerChange: {
                 {
-                    const ccNum = e.data[0];
-                    const changes = desiredControllerChanges.find(
+                    const ccNum = e.data[0] as MIDIController;
+                    const changes = controllerChanges.find(
                         (c) =>
                             c.channel === channel &&
                             ccNum === c.controllerNumber
@@ -367,17 +443,72 @@ export function modifyMIDIInternal(
                         deleteThisEvent();
                         return;
                     }
-                    // Bank maybe?
-                    if (
-                        (ccNum === midiControllers.bankSelect ||
-                            ccNum === midiControllers.bankSelectLSB) &&
-                        channelsToChangeProgram.has(channel)
-                    ) {
-                        // BEGONE!
-                        deleteThisEvent();
+                    switch (ccNum) {
+                        case midiControllers.bankSelect:
+                        case midiControllers.bankSelectLSB: {
+                            if (channelsToChangeProgram.has(channel)) {
+                                // BEGONE!
+                                deleteThisEvent();
+                            }
+                            return;
+                        }
+
+                        case midiControllers.registeredParameterLSB:
+                        case midiControllers.registeredParameterMSB: {
+                            isNrpnMode = false;
+                            return;
+                        }
+
+                        case midiControllers.nonRegisteredParameterMSB: {
+                            lastNrpnMsb = eventIndexes[trackNum];
+                            lastNrpnMsbTrack = trackNum;
+                            isNrpnMode = true;
+                            return;
+                        }
+
+                        case midiControllers.nonRegisteredParameterLSB: {
+                            lastNrpnLsb = eventIndexes[trackNum];
+                            lastNrpnLsbTrack = trackNum;
+                            isNrpnMode = true;
+                            return;
+                        }
+
+                        // NRPN we care about only uses MSB
+                        case midiControllers.dataEntryMSB: {
+                            if (
+                                lastNrpnLsb &&
+                                lastNrpnMsb &&
+                                isNrpnMode &&
+                                clearDrumParams
+                            ) {
+                                const msb =
+                                    midi.tracks[lastNrpnMsbTrack].events[
+                                        lastNrpnMsb
+                                    ].data[1];
+                                // LSB is drum number here
+                                if (msb >= 0x18 && msb <= 0x1f) {
+                                    // Drum param, BEGONE!
+                                    deleteThisEvent();
+
+                                    // NRPN, BEGONE!
+                                    const lsbTrack =
+                                        midi.tracks[lastNrpnLsbTrack];
+                                    const msbTrack =
+                                        midi.tracks[lastNrpnMsbTrack];
+                                    lsbTrack.deleteEvent(lastNrpnLsb);
+                                    eventIndexes[lastNrpnLsbTrack]--;
+                                    msbTrack.deleteEvent(lastNrpnMsb);
+                                    eventIndexes[lastNrpnMsbTrack]--;
+                                }
+                            }
+                            return;
+                        }
+
+                        default: {
+                            return;
+                        }
                     }
                 }
-                break;
             }
 
             case midiMessageTypes.systemExclusive: {
@@ -389,26 +520,19 @@ export function modifyMIDIInternal(
                     );
                     system = "xg";
                     addedGs = true; // Flag as true so gs won't get added
-                } else if (
-                    e.data[0] === 0x43 && // Yamaha
-                    e.data[2] === 0x4c && // XG
-                    e.data[3] === 0x08 && // Part parameter
-                    e.data[5] === 0x03 // Program change
-                ) {
-                    // Check for xg program change
-                    // Do we delete it?
-                    if (channelsToChangeProgram.has(e.data[4] + portOffset)) {
-                        // This channel has program change. BEGONE!
-                        deleteThisEvent();
-                    }
-                } else if (isGM2On(e)) {
+
+                    return;
+                }
+                if (isGM2On(e)) {
                     SpessaSynthInfo(
                         "%cGM2 system on detected",
                         consoleColors.info
                     );
                     system = "gm2";
                     addedGs = true; // Flag as true so gs won't get added
-                } else if (isGSOn(e)) {
+                    return;
+                }
+                if (isGSOn(e)) {
                     // Check for GS on
                     // That's a GS on, we're done here
                     addedGs = true;
@@ -416,8 +540,9 @@ export function modifyMIDIInternal(
                         "%cGS on detected!",
                         consoleColors.recognized
                     );
-                    break;
-                } else if (isGMOn(e)) {
+                    return;
+                }
+                if (isGMOn(e)) {
                     // Check for GM on
                     // That's a GM1 system change, remove it!
                     SpessaSynthInfo(
@@ -426,12 +551,181 @@ export function modifyMIDIInternal(
                     );
                     deleteThisEvent();
                     addedGs = false;
+                    return;
+                }
+                // Drum setup
+                if (clearDrumParams && isDrumEdit(e.data)) {
+                    deleteThisEvent();
+                    return;
+                }
+
+                // GS effects
+                if (reverbParams && isGSReverb(e.data)) {
+                    // Delete all reverb params since we're setting new ones
+                    deleteThisEvent();
+                    return;
+                }
+
+                if (chorusParams && isGSChorus(e.data)) {
+                    // Delete all chorus params since we're setting new ones
+                    deleteThisEvent();
+                    return;
+                }
+
+                if (delayParams && isGSDelay(e.data)) {
+                    // Delete all delay params since we're setting new ones
+                    deleteThisEvent();
+                    return;
+                }
+
+                // SysEx can change programs
+                const prog = isProgramChange(e.data);
+                if (prog !== -1) {
+                    // Do we delete it?
+                    if (channelsToChangeProgram.has(prog + portOffset)) {
+                        // This channel has program change. BEGONE!
+                        deleteThisEvent();
+                    }
+                    return;
                 }
             }
         }
     });
+
+    // Add effects
+    const targetTicks = Math.max(0, midi.firstNoteOn - 10);
+    const targetTrack = midi.tracks[0];
+    const targetIndex = Math.max(
+        0,
+        targetTrack.events.findIndex((m) => m.ticks >= targetTicks) - 1
+    );
+    if (reverbParams) {
+        const m = reverbAddressMap;
+        const p = reverbParams;
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.character, [p.character]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.time, [p.time]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.delayFeedback, [
+                p.delayFeedback
+            ]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.preDelayTime, [
+                p.preDelayTime
+            ]),
+            targetIndex
+        );
+    }
+    if (chorusParams) {
+        const m = chorusAddressMap;
+        const p = chorusParams;
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
+                p.sendLevelToReverb
+            ]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToDelay, [
+                p.sendLevelToDelay
+            ]),
+            targetIndex
+        );
+    }
+    if (delayParams) {
+        const m = delayAddressMap;
+        const p = delayParams;
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.timeCenter, [p.timeCenter]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
+                p.timeRatioLeft
+            ]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.timeRatioRight, [
+                p.timeRatioRight
+            ]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.levelCenter, [
+                p.levelCenter
+            ]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.levelLeft, [p.levelLeft]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.levelRight, [p.levelRight]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
+            targetIndex
+        );
+        targetTrack.addEvent(
+            sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
+                p.sendLevelToReverb
+            ]),
+            targetIndex
+        );
+    }
+
     // Check for gs
-    if (!addedGs && desiredProgramChanges.length > 0) {
+    if (!addedGs && programChanges.length > 0) {
         // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)
         let index = 0;
         if (
@@ -503,6 +797,14 @@ export function applySnapshotInternal(
         programChanges,
         controllerChanges,
         channelsToClear,
-        channelsToTranspose
+        channelsToTranspose,
+        snapshot.masterParameters.drumLock,
+        snapshot.masterParameters.reverbLock
+            ? snapshot.reverbSnapshot
+            : undefined,
+        snapshot.masterParameters.chorusLock
+            ? snapshot.chorusSnapshot
+            : undefined,
+        snapshot.masterParameters.delayLock ? snapshot.delaySnapshot : undefined
     );
 }

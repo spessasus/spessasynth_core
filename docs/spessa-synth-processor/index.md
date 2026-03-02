@@ -469,9 +469,17 @@ A `Promise` that must be awaited before the processor is used with a compressed 
 
 The current time of the synthesizer, in seconds.
 
-!!! Warning
+### reverbProcessor
 
-    You should not modify this.
+Synthesizer's reverb processor, a [`ReverbProcessor` instance](reverb-processor.md)
+
+### chorusProcessor
+
+Synthesizer's chorus processor, a [`ChorusProcessor` instance](chorus-processor.md)
+
+### delayProcessor
+
+Synthesizer's delay processor, a [`DelayProcessor` instance](delay-processor.md)
 
 ### sampleRate
 

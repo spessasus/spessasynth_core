@@ -5,9 +5,11 @@ a short delay to the original sound.
 
 ## Editing the parameters
 
-Editing the parameters can be done via GS system exclusive messages.
+Editing the parameters can be done via GS system exclusive messages or by accessing the `.delayProcessor` property.
 
-Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
+!!! Tip
+
+    Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
 
 ## Custom Processor
 
@@ -94,3 +96,7 @@ Process the effect and **adds** it to the output.
 - outputReverb - The mono input for reverb. It always starts at index 0.
 - startIndex - The index to start mixing at into the output buffers.
 - sampleCount - The amount of samples to mix.
+
+### getSnapshot
+
+Returns a `DelayProcessorSnapshot`. It contains all the properties of the `DelayProcessor`, but not the `process` method (or `getSnapshot`).

@@ -10,7 +10,7 @@ export function getGsOn(ticks: number): MIDIMessage {
             0x41, // Roland
             0x10, // Device ID (defaults to 16 on roland)
             0x42, // GS
-            0x12, // Command ID (DT1) (whatever that means...)
+            0x12, // Command ID (DT1)
             0x40, // System parameter - Address
             0x00, // Global parameter -  Address
             0x7f, // GS Change - Address

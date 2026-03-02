@@ -47,6 +47,11 @@ import { parseDateString } from "../utils/load_date";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import type { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
+import type {
+    ChorusProcessorSnapshot,
+    DelayProcessorSnapshot,
+    ReverbProcessorSnapshot
+} from "../synthesizer/audio_engine/effects/types";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -417,19 +422,31 @@ export class BasicMIDI {
      * @param desiredControllerChanges - The controllers to set on given channels.
      * @param desiredChannelsToClear - The channels to remove from the sequence.
      * @param desiredChannelsToTranspose - The channels to transpose.
+     * @param clearDrumParams - If the drum parameters should be cleared.
+     * @param reverbParams - The desired GS reverb params, leave undefined for no change.
+     * @param chorusParams - The desired GS chorus params, leave undefined for no change.
+     * @param delayParams - The desired GS delay params, leave undefined for no change.
      */
     public modify(
         desiredProgramChanges: DesiredProgramChange[] = [],
         desiredControllerChanges: DesiredControllerChange[] = [],
         desiredChannelsToClear: number[] = [],
-        desiredChannelsToTranspose: DesiredChannelTranspose[] = []
+        desiredChannelsToTranspose: DesiredChannelTranspose[] = [],
+        clearDrumParams = false,
+        reverbParams?: ReverbProcessorSnapshot,
+        chorusParams?: ChorusProcessorSnapshot,
+        delayParams?: DelayProcessorSnapshot
     ) {
         modifyMIDIInternal(
             this,
             desiredProgramChanges,
             desiredControllerChanges,
             desiredChannelsToClear,
-            desiredChannelsToTranspose
+            desiredChannelsToTranspose,
+            clearDrumParams,
+            reverbParams,
+            chorusParams,
+            delayParams
         );
     }
 

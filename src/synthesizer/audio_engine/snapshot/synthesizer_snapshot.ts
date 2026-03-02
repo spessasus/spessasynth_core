@@ -2,6 +2,11 @@ import { ChannelSnapshot } from "./channel_snapshot";
 import { type KeyModifier } from "../engine_components/key_modifier_manager";
 import { type SpessaSynthProcessor } from "../../processor";
 import type { MasterParameterType } from "../../types";
+import type {
+    ChorusProcessorSnapshot,
+    DelayProcessorSnapshot,
+    ReverbProcessorSnapshot
+} from "../effects/types";
 
 /**
  * Represents a snapshot of the synthesizer's state.
@@ -19,14 +24,24 @@ export class SynthesizerSnapshot {
 
     public masterParameters: MasterParameterType;
 
+    public reverbSnapshot: ReverbProcessorSnapshot;
+    public chorusSnapshot: ChorusProcessorSnapshot;
+    public delaySnapshot: DelayProcessorSnapshot;
+
     public constructor(
         channelSnapshots: ChannelSnapshot[],
         masterParameters: MasterParameterType,
-        keyMappings: (KeyModifier | undefined)[][]
+        keyMappings: (KeyModifier | undefined)[][],
+        reverbSnapshot: ReverbProcessorSnapshot,
+        chorusSnapshot: ChorusProcessorSnapshot,
+        delaySnapshot: DelayProcessorSnapshot
     ) {
         this.channelSnapshots = channelSnapshots;
         this.masterParameters = masterParameters;
         this.keyMappings = keyMappings;
+        this.reverbSnapshot = reverbSnapshot;
+        this.chorusSnapshot = chorusSnapshot;
+        this.delaySnapshot = delaySnapshot;
     }
 
     /**
@@ -43,7 +58,10 @@ export class SynthesizerSnapshot {
         return new SynthesizerSnapshot(
             channelSnapshots,
             processor.getAllMasterParameters(),
-            processor.keyModifierManager.getMappings()
+            processor.keyModifierManager.getMappings(),
+            processor.reverbProcessor.getSnapshot(),
+            processor.chorusProcessor.getSnapshot(),
+            processor.delayProcessor.getSnapshot()
         );
     }
 
@@ -56,7 +74,10 @@ export class SynthesizerSnapshot {
         return new SynthesizerSnapshot(
             snapshot.channelSnapshots.map((s) => ChannelSnapshot.copyFrom(s)),
             { ...snapshot.masterParameters },
-            [...snapshot.keyMappings]
+            [...snapshot.keyMappings],
+            { ...snapshot.reverbSnapshot },
+            { ...snapshot.chorusSnapshot },
+            { ...snapshot.delaySnapshot }
         );
     }
 
@@ -65,17 +86,6 @@ export class SynthesizerSnapshot {
      * @param processor the processor to apply the snapshot to.
      */
     public apply(processor: SpessaSynthProcessor) {
-        type MasterParameterPair<K extends keyof MasterParameterType> = [
-            K,
-            MasterParameterType[K]
-        ];
-        const entries = Object.entries(
-            this.masterParameters
-        ) as MasterParameterPair<keyof MasterParameterType>[];
-        for (const [parameter, value] of entries) {
-            processor.setMasterParameter(parameter, value);
-        }
-
         // Restore key modifiers
         processor.keyModifierManager.setMappings(this.keyMappings);
 
@@ -87,6 +97,29 @@ export class SynthesizerSnapshot {
         // Restore channels
         for (const channelSnapshot of this.channelSnapshots) {
             channelSnapshot.apply(processor);
+        }
+
+        // Restore effect processors
+        for (const [key, value] of Object.entries(this.reverbSnapshot))
+            processor.reverbProcessor[key as keyof ReverbProcessorSnapshot] =
+                value as number;
+        for (const [key, value] of Object.entries(this.chorusSnapshot))
+            processor.chorusProcessor[key as keyof ChorusProcessorSnapshot] =
+                value as number;
+        for (const [key, value] of Object.entries(this.delaySnapshot))
+            processor.delayProcessor[key as keyof DelayProcessorSnapshot] =
+                value as number;
+
+        // Restore master parameters last
+        type MasterParameterPair<K extends keyof MasterParameterType> = [
+            K,
+            MasterParameterType[K]
+        ];
+        const entries = Object.entries(
+            this.masterParameters
+        ) as MasterParameterPair<keyof MasterParameterType>[];
+        for (const [parameter, value] of entries) {
+            processor.setMasterParameter(parameter, value);
         }
     }
 }
