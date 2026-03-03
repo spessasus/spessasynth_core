@@ -157,7 +157,7 @@ export interface ChannelPropertyChangeCallback {
     property: ChannelProperty;
 }
 
-type FXType<K> = Exclude<keyof K, "process"> | "macro";
+type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
 
 export type EffectChangeCallback =
     | {
