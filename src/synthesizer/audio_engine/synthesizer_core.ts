@@ -39,6 +39,7 @@ import {
     type DelayProcessor,
     type InsertionProcessor,
     type InsertionProcessorConstructor,
+    type InsertionProcessorSnapshot,
     NON_CC_INDEX_OFFSET
 } from "../exports";
 import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
@@ -235,6 +236,12 @@ export class SynthesizerCore {
      * For F5 system exclusive.
      */
     protected portSelectChannelOffset = 0;
+    /**
+     * For insertion snapshot tracking
+     * note: 255 means "no change"
+     * @protected
+     */
+    protected insertionParams = new Uint8Array(20).fill(255);
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -538,19 +545,7 @@ export class SynthesizerCore {
         // Delay1 default
         this.setDelayMacro(0);
         if (!this.masterParameters.delayLock) this.delayActive = false;
-        if (!this.masterParameters.insertionEffectLock) {
-            this.insertionActive = false;
-            this.insertionProcessor = this.insertionFallback;
-            this.insertionProcessor.reset();
-            this.insertionProcessor.sendLevelToReverb = 40 / 127;
-            this.insertionProcessor.sendLevelToChorus = 0;
-            this.insertionProcessor.sendLevelToDelay = 0;
-            this.callEvent("effectChange", {
-                effect: "insertion",
-                parameter: 0,
-                value: this.insertionProcessor.type
-            });
-        }
+        this.resetInsertion();
 
         if (!this.drumPreset || !this.defaultPreset) {
             return;
@@ -636,6 +631,11 @@ export class SynthesizerCore {
      * ```
      *                   ┌────────────────────────────────┐
      *                   │        Voice Processor         │
+     *                   └───────────────┬────────────────┘
+     *                                   │
+     *                   ┌───────────────┴────────────────┐
+     *                   │      Insertion Processor       │
+     *                   │      (Bypass or Process)       │
      *                   └───────────────┬────────────────┘
      *                                   │
      *              ┌──────────┬─────────┼────────────────────────┐
@@ -866,6 +866,23 @@ export class SynthesizerCore {
         this.cachedVoices.clear();
     }
 
+    public getInsertionSnapshot(): InsertionProcessorSnapshot {
+        return {
+            type: this.insertionProcessor.type,
+            sendLevelToReverb: Math.floor(
+                this.insertionProcessor.sendLevelToReverb * 127
+            ),
+            sendLevelToChorus: Math.floor(
+                this.insertionProcessor.sendLevelToChorus * 127
+            ),
+            sendLevelToDelay: Math.floor(
+                this.insertionProcessor.sendLevelToDelay * 127
+            ),
+            params: this.insertionParams.slice(),
+            channels: this.midiChannels.map((c) => c.insertionEnabled)
+        };
+    }
+
     /**
      * Copied callback so MIDI channels can call it.
      */
@@ -874,6 +891,22 @@ export class SynthesizerCore {
         eventData: SynthProcessorEventData[K]
     ) {
         this.eventCallbackHandler(eventName, eventData);
+    }
+
+    protected resetInsertion() {
+        if (this.masterParameters.insertionEffectLock) return;
+        this.insertionActive = false;
+        this.insertionProcessor = this.insertionFallback;
+        this.insertionProcessor.reset();
+        this.insertionProcessor.sendLevelToReverb = 40 / 127;
+        this.insertionProcessor.sendLevelToChorus = 0;
+        this.insertionProcessor.sendLevelToDelay = 0;
+        this.insertionParams.fill(255);
+        this.callEvent("effectChange", {
+            effect: "insertion",
+            parameter: 0,
+            value: this.insertionProcessor.type
+        });
     }
 
     /**

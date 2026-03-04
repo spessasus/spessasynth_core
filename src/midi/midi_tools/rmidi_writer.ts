@@ -16,7 +16,8 @@ import {
     isGMOn,
     isGSDrumsOn,
     isGSOn,
-    isXGOn
+    isXGOn,
+    syxToChannel
 } from "../../utils/sysex_detector";
 import {
     midiControllers,
@@ -105,10 +106,7 @@ function correctBankOffsetInternal(
                 }
                 return;
             }
-            const sysexChannel =
-                [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
-                    e.data[5] & 0x0f
-                ] + portOffset;
+            const sysexChannel = syxToChannel(e.data[5] & 0x0f) + portOffset;
             channelsInfo[sysexChannel].drums = !!(
                 e.data[7] > 0 && e.data[5] >> 4
             );
@@ -223,14 +221,14 @@ function correctBankOffsetInternal(
                 },
                 system
             ).program;
-            track.addEvent(
+            track.addEvents(
+                programIndex,
                 new MIDIMessage(
                     programTicks,
                     (midiMessageTypes.programChange |
                         midiChannel) as MIDIMessageType,
                     new IndexedByteArray([targetProgram])
-                ),
-                programIndex
+                )
             );
             indexToAdd = programIndex;
         }
@@ -254,14 +252,14 @@ function correctBankOffsetInternal(
             bankOffset,
             targetPreset.isXGDrums
         );
-        track.addEvent(
+        track.addEvents(
+            indexToAdd,
             new MIDIMessage(
                 ticks,
                 (midiMessageTypes.controllerChange |
                     midiChannel) as MIDIMessageType,
                 new IndexedByteArray([midiControllers.bankSelect, targetBank])
-            ),
-            indexToAdd
+            )
         );
     }
 
@@ -275,7 +273,7 @@ function correctBankOffsetInternal(
         if (mid.tracks[0].events[0].statusByte === midiMessageTypes.trackName) {
             index++;
         }
-        mid.tracks[0].addEvent(getGsOn(0), index);
+        mid.tracks[0].addEvents(index, getGsOn(0));
     }
 }
 

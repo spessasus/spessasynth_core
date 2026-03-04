@@ -26,6 +26,7 @@ import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../soundbank/basic_soundbank/midi_patch";
+import type { InsertionProcessorSnapshot } from "./audio_engine/effects/types";
 
 /**
  * Processor.ts
@@ -464,6 +465,13 @@ export class SpessaSynthProcessor {
      */
     public getSnapshot(): SynthesizerSnapshot {
         return SynthesizerSnapshot.create(this);
+    }
+
+    /**
+     * @internal
+     */
+    public getInsertionSnapshot(): InsertionProcessorSnapshot {
+        return this.synthCore.getInsertionSnapshot();
     }
 
     /**

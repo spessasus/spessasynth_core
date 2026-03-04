@@ -5,8 +5,39 @@ import type { MasterParameterType } from "../../types";
 import type {
     ChorusProcessorSnapshot,
     DelayProcessorSnapshot,
+    InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../effects/types";
+import { channelToSyx } from "../../../utils/sysex_detector";
+
+function sendAddress(
+    s: SpessaSynthProcessor,
+    a1: number,
+    a2: number,
+    a3: number,
+    data: number[],
+    offset = 0
+) {
+    // Calculate checksum
+    // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
+    const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
+    const checksum = (128 - (sum % 128)) & 0x7f;
+    s.systemExclusive(
+        [
+            0x41, // Roland
+            0x10, // Device ID (defaults to 16 on roland)
+            0x42, // GS
+            0x12, // Command ID (DT1) (whatever that means...)
+            a1,
+            a2,
+            a3,
+            ...data,
+            checksum,
+            0xf7 // End of exclusive
+        ],
+        offset
+    );
+}
 
 /**
  * Represents a snapshot of the synthesizer's state.
@@ -27,6 +58,7 @@ export class SynthesizerSnapshot {
     public reverbSnapshot: ReverbProcessorSnapshot;
     public chorusSnapshot: ChorusProcessorSnapshot;
     public delaySnapshot: DelayProcessorSnapshot;
+    public insertionSnapshot: InsertionProcessorSnapshot;
 
     public constructor(
         channelSnapshots: ChannelSnapshot[],
@@ -34,7 +66,8 @@ export class SynthesizerSnapshot {
         keyMappings: (KeyModifier | undefined)[][],
         reverbSnapshot: ReverbProcessorSnapshot,
         chorusSnapshot: ChorusProcessorSnapshot,
-        delaySnapshot: DelayProcessorSnapshot
+        delaySnapshot: DelayProcessorSnapshot,
+        insertionSnapshot: InsertionProcessorSnapshot
     ) {
         this.channelSnapshots = channelSnapshots;
         this.masterParameters = masterParameters;
@@ -42,6 +75,7 @@ export class SynthesizerSnapshot {
         this.reverbSnapshot = reverbSnapshot;
         this.chorusSnapshot = chorusSnapshot;
         this.delaySnapshot = delaySnapshot;
+        this.insertionSnapshot = insertionSnapshot;
     }
 
     /**
@@ -61,7 +95,8 @@ export class SynthesizerSnapshot {
             processor.keyModifierManager.getMappings(),
             processor.reverbProcessor.getSnapshot(),
             processor.chorusProcessor.getSnapshot(),
-            processor.delayProcessor.getSnapshot()
+            processor.delayProcessor.getSnapshot(),
+            processor.getInsertionSnapshot()
         );
     }
 
@@ -77,7 +112,8 @@ export class SynthesizerSnapshot {
             [...snapshot.keyMappings],
             { ...snapshot.reverbSnapshot },
             { ...snapshot.chorusSnapshot },
-            { ...snapshot.delaySnapshot }
+            { ...snapshot.delaySnapshot },
+            { ...snapshot.insertionSnapshot }
         );
     }
 
@@ -109,6 +145,27 @@ export class SynthesizerSnapshot {
         for (const [key, value] of Object.entries(this.delaySnapshot))
             processor.delayProcessor[key as keyof DelayProcessorSnapshot] =
                 value as number;
+
+        // Restore insertion
+        const is = this.insertionSnapshot;
+        sendAddress(processor, 0x40, 0x03, 0x00, [
+            is.type >> 8,
+            is.type & 0x7f
+        ]);
+        sendAddress(processor, 0x40, 0x03, 0x17, [is.sendLevelToReverb]);
+        sendAddress(processor, 0x40, 0x03, 0x18, [is.sendLevelToChorus]);
+        sendAddress(processor, 0x40, 0x03, 0x19, [is.sendLevelToDelay]);
+
+        for (let i = 0; i < is.params.length; i++) {
+            if (is.params[i] !== 255)
+                sendAddress(processor, 0x40, 0x03, 3 + i, [is.params[i]]);
+        }
+
+        for (let channel = 0; channel < is.channels.length; channel++) {
+            sendAddress(processor, 0x40, 0x40 | channelToSyx(channel), 0x22, [
+                is.channels[channel] ? 1 : 0
+            ]);
+        }
 
         // Restore master parameters last
         type MasterParameterPair<K extends keyof MasterParameterType> = [

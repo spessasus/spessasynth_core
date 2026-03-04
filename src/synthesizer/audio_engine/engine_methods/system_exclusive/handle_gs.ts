@@ -15,6 +15,7 @@ import {
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../../synthesizer_core";
+import { syxToChannel } from "../../../../utils/sysex_detector";
 
 const coolInfo = (what: string, value: string | number | boolean) => {
     SpessaSynthInfo(
@@ -502,6 +503,7 @@ export function handleGS(
                                     addr3,
                                     data
                                 );
+                                this.insertionParams[addr3 - 3] = data;
                                 coolInfo(`EFX Parameter ${addr3 - 2}`, data);
                                 this.callEvent("effectChange", {
                                     effect: "insertion",
@@ -534,6 +536,7 @@ export function handleGS(
                                             consoleColors.warn
                                         );
                                     }
+                                    this.insertionParams.fill(255);
                                     this.insertionProcessor.reset();
                                     // Special case: 16-bit value
                                     this.callEvent("effectChange", {
@@ -596,10 +599,7 @@ export function handleGS(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-88Pro manual page 196
                             const channel =
-                                [
-                                    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
-                                    13, 14, 15
-                                ][addr2 & 0x0f] + channelOffset;
+                                syxToChannel(addr2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const channelObject = this.midiChannels[channel];
                             switch (addr3) {
@@ -860,10 +860,7 @@ export function handleGS(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-88Pro manual page 196
                             const channel =
-                                [
-                                    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
-                                    13, 14, 15
-                                ][addr2 & 0x0f] + channelOffset;
+                                syxToChannel(addr2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const channelObject = this.midiChannels[channel];
                             const centeredValue = data - 64;
@@ -1131,10 +1128,7 @@ export function handleGS(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-88Pro manual page 196
                             const channel =
-                                [
-                                    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
-                                    13, 14, 15
-                                ][addr2 & 0x0f] + channelOffset;
+                                syxToChannel(addr2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const channelObject = this.midiChannels[channel];
 

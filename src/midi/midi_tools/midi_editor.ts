@@ -9,11 +9,13 @@ import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import {
+    channelToSyx,
     isDrumEdit,
     isGM2On,
     isGMOn,
     isGSChorus,
     isGSDelay,
+    isGSInsertion,
     isGSOn,
     isGSReverb,
     isProgramChange,
@@ -40,6 +42,7 @@ import { MIDIPatchTools } from "../../soundbank/basic_soundbank/midi_patch";
 import type {
     ChorusProcessorSnapshot,
     DelayProcessorSnapshot,
+    InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
 
@@ -119,10 +122,20 @@ function sendAddress(
 }
 
 function getDrumChange(channel: number, ticks: number): MIDIMessage {
-    const chanAddress =
-        0x10 |
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][channel % 16];
+    const chanAddress = 0x10 | channelToSyx(channel);
     return sendAddress(ticks, 40, chanAddress, 0x15, [0x01]);
+}
+
+export interface ModifyMIDIOptions {
+    programChanges: DesiredProgramChange[];
+    controllerChanges: DesiredControllerChange[];
+    channelsToClear: number[];
+    channelsToTranspose: DesiredChannelTranspose[];
+    clearDrumParams: boolean;
+    reverbParams?: ReverbProcessorSnapshot;
+    chorusParams?: ChorusProcessorSnapshot;
+    delayParams?: DelayProcessorSnapshot;
+    insertionParams?: InsertionProcessorSnapshot;
 }
 
 /**
@@ -138,17 +151,21 @@ function getDrumChange(channel: number, ticks: number): MIDIMessage {
  * @param reverbParams - The desired GS reverb params, leave undefined for no change.
  * @param chorusParams - The desired GS chorus params, leave undefined for no change.
  * @param delayParams - The desired GS delay params, leave undefined for no change.
+ * @param insertionParams - The insertion effect params, leave undefined for no change.
  */
 export function modifyMIDIInternal(
     midi: BasicMIDI,
-    programChanges: DesiredProgramChange[] = [],
-    controllerChanges: DesiredControllerChange[] = [],
-    channelsToClear: number[] = [],
-    channelTransposes: DesiredChannelTranspose[] = [],
-    clearDrumParams = false,
-    reverbParams?: ReverbProcessorSnapshot,
-    chorusParams?: ChorusProcessorSnapshot,
-    delayParams?: DelayProcessorSnapshot
+    {
+        programChanges = [],
+        controllerChanges = [],
+        channelsToClear = [],
+        channelsToTranspose = [],
+        clearDrumParams = false,
+        reverbParams,
+        chorusParams,
+        delayParams,
+        insertionParams
+    }: ModifyMIDIOptions
 ) {
     SpessaSynthGroupCollapsed(
         "%cApplying changes to the MIDI file...",
@@ -158,10 +175,11 @@ export function modifyMIDIInternal(
     SpessaSynthInfo("Desired program changes:", programChanges);
     SpessaSynthInfo("Desired CC changes:", controllerChanges);
     SpessaSynthInfo("Desired channels to clear:", channelsToClear);
-    SpessaSynthInfo("Desired channels to transpose:", channelTransposes);
+    SpessaSynthInfo("Desired channels to transpose:", channelsToTranspose);
     SpessaSynthInfo("Desired reverb parameters", reverbParams);
     SpessaSynthInfo("Desired chorus parameters", chorusParams);
     SpessaSynthInfo("Desired delay parameters", delayParams);
+    SpessaSynthInfo("Desired insertion parameters", insertionParams);
 
     const channelsToChangeProgram = new Set<number>();
     for (const c of programChanges) {
@@ -223,7 +241,7 @@ export function modifyMIDIInternal(
      * RPN fine transpose
      */
     const fineTranspose = new Array<number>(channelsAmount).fill(0);
-    for (const transpose of channelTransposes) {
+    for (const transpose of channelsToTranspose) {
         const coarse = Math.trunc(transpose.keyShift);
         const fine = transpose.keyShift - coarse;
         coarseTranspose[transpose.channel] = coarse;
@@ -247,7 +265,7 @@ export function modifyMIDIInternal(
         };
 
         const addEventBefore = (e: MIDIMessage, offset = 0) => {
-            track.addEvent(e, index + offset);
+            track.addEvents(index + offset, e);
             eventIndexes[trackNum]++;
         };
 
@@ -578,6 +596,12 @@ export function modifyMIDIInternal(
                     return;
                 }
 
+                if (insertionParams && isGSInsertion(e.data)) {
+                    // Delete all insertion params since we're setting new ones
+                    deleteThisEvent();
+                    return;
+                }
+
                 // SysEx can change programs
                 const prog = isProgramChange(e.data);
                 if (prog !== -1) {
@@ -602,125 +626,107 @@ export function modifyMIDIInternal(
     if (reverbParams) {
         const m = reverbAddressMap;
         const p = reverbParams;
-        targetTrack.addEvent(
+        targetTrack.addEvents(
+            targetIndex,
             sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.character, [p.character]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.time, [p.time]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.delayFeedback, [
                 p.delayFeedback
             ]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.preDelayTime, [
                 p.preDelayTime
-            ]),
-            targetIndex
+            ])
         );
     }
     if (chorusParams) {
         const m = chorusAddressMap;
         const p = chorusParams;
-        targetTrack.addEvent(
+        targetTrack.addEvents(
+            targetIndex,
             sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
                 p.sendLevelToReverb
             ]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToDelay, [
                 p.sendLevelToDelay
-            ]),
-            targetIndex
+            ])
         );
     }
     if (delayParams) {
         const m = delayAddressMap;
         const p = delayParams;
-        targetTrack.addEvent(
+        targetTrack.addEvents(
+            targetIndex,
             sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
-            targetIndex
-        );
-        targetTrack.addEvent(
+
             sendAddress(targetTicks, 0x40, 0x01, m.timeCenter, [p.timeCenter]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
                 p.timeRatioLeft
             ]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.timeRatioRight, [
                 p.timeRatioRight
             ]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.levelCenter, [
                 p.levelCenter
             ]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.levelLeft, [p.levelLeft]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.levelRight, [p.levelRight]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
-            targetIndex
-        );
-        targetTrack.addEvent(
             sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
                 p.sendLevelToReverb
+            ])
+        );
+    }
+
+    if (insertionParams) {
+        const p = insertionParams;
+
+        for (let channel = 0; channel < p.channels.length; channel++) {
+            if (p.channels[channel]) {
+                targetTrack.addEvents(
+                    targetTicks,
+                    sendAddress(
+                        targetTicks,
+                        0x40,
+                        0x40 | channelToSyx(channel),
+                        0x22,
+                        [1]
+                    )
+                );
+            }
+        }
+
+        for (let param = 0; param < p.params.length; param++) {
+            const value = p.params[param];
+            if (value === 255) continue;
+            targetTrack.addEvents(
+                targetIndex,
+                sendAddress(targetTicks, 0x40, 0x03, param + 3, [value])
+            );
+        }
+
+        // Last means that it will be first, so the order is:
+        // Type
+        // Sends
+        // Params
+        // Channels
+        targetTrack.addEvents(
+            targetIndex,
+            sendAddress(targetTicks, 0x40, 0x03, 0x00, [
+                p.type >> 8,
+                p.type & 0x7f
             ]),
-            targetIndex
+            sendAddress(targetTicks, 0x40, 0x03, 0x17, [p.sendLevelToReverb]),
+            sendAddress(targetTicks, 0x40, 0x03, 0x18, [p.sendLevelToChorus]),
+            sendAddress(targetTicks, 0x40, 0x03, 0x19, [p.sendLevelToDelay])
         );
     }
 
@@ -733,7 +739,7 @@ export function modifyMIDIInternal(
         ) {
             index++;
         }
-        midi.tracks[0].addEvent(getGsOn(0), index);
+        midi.tracks[0].addEvents(index, getGsOn(0));
         SpessaSynthInfo("%cGS on not detected. Adding it.", consoleColors.info);
     }
     midi.flush();
@@ -793,18 +799,23 @@ export function applySnapshotInternal(
             });
         }
     }
-    midi.modify(
+    midi.modify({
         programChanges,
         controllerChanges,
         channelsToClear,
-        channelsToTranspose,
-        snapshot.masterParameters.drumLock,
-        snapshot.masterParameters.reverbLock
+        channelsToTranspose: channelsToTranspose,
+        clearDrumParams: snapshot.masterParameters.drumLock,
+        reverbParams: snapshot.masterParameters.reverbLock
             ? snapshot.reverbSnapshot
             : undefined,
-        snapshot.masterParameters.chorusLock
+        chorusParams: snapshot.masterParameters.chorusLock
             ? snapshot.chorusSnapshot
             : undefined,
-        snapshot.masterParameters.delayLock ? snapshot.delaySnapshot : undefined
-    );
+        delayParams: snapshot.masterParameters.delayLock
+            ? snapshot.delaySnapshot
+            : undefined,
+        insertionParams: snapshot.masterParameters.insertionEffectLock
+            ? snapshot.insertionSnapshot
+            : undefined
+    });
 }

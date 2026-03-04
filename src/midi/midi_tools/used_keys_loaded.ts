@@ -10,7 +10,8 @@ import {
     isGMOn,
     isGSDrumsOn,
     isGSOn,
-    isXGOn
+    isXGOn,
+    syxToChannel
 } from "../../utils/sysex_detector";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
@@ -184,9 +185,8 @@ export function getUsedProgramsAndKeys(
                         return;
                     }
                     const sysexChannel =
-                        [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
-                            event.data[5] & 0x0f
-                        ] + mid.portChannelOffsetMap[ports[trackNum]];
+                        syxToChannel(event.data[5] & 0x0f) +
+                        mid.portChannelOffsetMap[ports[trackNum]];
                     const isDrum = !!(event.data[7] > 0 && event.data[5] >> 4);
                     ch = channelPresets[sysexChannel];
                     ch.isDrum = isDrum;
