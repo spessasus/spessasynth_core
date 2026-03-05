@@ -1,25 +1,13 @@
 import type { InsertionProcessor } from "../types";
 import { InsertionValueConverter } from "./convert";
-
-interface BiquadCoeffs {
-    b0: number;
-    b1: number;
-    b2: number;
-    a0: number;
-    a1: number;
-    a2: number;
-}
-
-interface BiquadHistory {
-    x1: number;
-    x2: number;
-    y1: number;
-    y2: number;
-}
-
-function zeroState(h: BiquadHistory) {
-    h.x1 = h.x2 = h.y1 = h.y2 = 0;
-}
+import {
+    type BiquadCoeffs,
+    type BiquadState,
+    computeShelfCoeffs,
+    processBiquad,
+    zeroCoeffs,
+    zeroState
+} from "./utils";
 
 /*
 After lots of testing, this was the closest I've been able to get.
@@ -108,28 +96,14 @@ export class PhaserFX implements InsertionProcessor {
     private readonly prevOutR: Float32Array;
 
     // Biquad shelving coefficients and states (per channel)
-    private readonly lowShelfCoef: BiquadCoeffs = {
-        b0: 1,
-        b1: 0,
-        b2: 0,
-        a0: 1,
-        a1: 0,
-        a2: 0
-    };
-    private readonly highShelfCoef: BiquadCoeffs = {
-        b0: 1,
-        b1: 0,
-        b2: 0,
-        a0: 1,
-        a1: 0,
-        a2: 0
-    };
+    private readonly lowShelfCoef: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly highShelfCoef: BiquadCoeffs = { ...zeroCoeffs };
 
     private manualOffset = MANUAL_OFFSET;
-    private lowShelfStateL: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
-    private lowShelfStateR: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
-    private highShelfStateL: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
-    private highShelfStateR: BiquadHistory = { x1: 0, x2: 0, y1: 0, y2: 0 };
+    private lowShelfStateL: BiquadState = { x1: 0, x2: 0, y1: 0, y2: 0 };
+    private lowShelfStateR: BiquadState = { x1: 0, x2: 0, y1: 0, y2: 0 };
+    private highShelfStateL: BiquadState = { x1: 0, x2: 0, y1: 0, y2: 0 };
+    private highShelfStateR: BiquadState = { x1: 0, x2: 0, y1: 0, y2: 0 };
     private prevL = 0;
     private prevR = 0;
     /**
@@ -339,19 +313,19 @@ export class PhaserFX implements InsertionProcessor {
     }
 
     private updateShelves() {
-        computeShelfCoefs(
+        computeShelfCoeffs(
             this.lowShelfCoef,
             this.lowGain,
             200,
             this.sampleRate,
-            "low"
+            true
         );
-        computeShelfCoefs(
+        computeShelfCoeffs(
             this.highShelfCoef,
             this.hiGain,
             4000,
             this.sampleRate,
-            "high"
+            false
         );
     }
 
@@ -359,70 +333,12 @@ export class PhaserFX implements InsertionProcessor {
         x: number,
         lowC: BiquadCoeffs,
         highC: BiquadCoeffs,
-        lowState: BiquadHistory,
-        highState: BiquadHistory
+        lowState: BiquadState,
+        highState: BiquadState
     ) {
         // Low shelf
         const l = processBiquad(x, lowC, lowState);
         // High shelf
         return processBiquad(l, highC, highState);
     }
-}
-
-function processBiquad(x: number, coeffs: BiquadCoeffs, state: BiquadHistory) {
-    // Direct form I
-    const y =
-        coeffs.b0 * x +
-        coeffs.b1 * state.x1 +
-        coeffs.b2 * state.x2 -
-        coeffs.a1 * state.y1 -
-        coeffs.a2 * state.y2;
-    state.x2 = state.x1;
-    state.x1 = x;
-    state.y2 = state.y1;
-    state.y1 = y;
-    return y;
-}
-// Compute biquad shelf coefficients using RBJ cookbook
-function computeShelfCoefs(
-    coeffs: BiquadCoeffs,
-    dbGain: number,
-    f0: number,
-    fs: number,
-    type: "low" | "high"
-) {
-    const A = Math.pow(10, dbGain / 40);
-    const w0 = (2 * Math.PI * f0) / fs;
-    const cosw0 = Math.cos(w0);
-    const sinw0 = Math.sin(w0);
-    const S = 1;
-    const alpha = (sinw0 / 2) * Math.sqrt((A + 1 / A) * (1 / S - 1) + 2);
-
-    let b0: number, b1: number, b2: number, a0: number, a1: number, a2: number;
-
-    if (type === "low") {
-        // Low shelf
-        b0 = A * (A + 1 - (A - 1) * cosw0 + 2 * Math.sqrt(A) * alpha);
-        b1 = 2 * A * (A - 1 - (A + 1) * cosw0);
-        b2 = A * (A + 1 - (A - 1) * cosw0 - 2 * Math.sqrt(A) * alpha);
-        a0 = A + 1 + (A - 1) * cosw0 + 2 * Math.sqrt(A) * alpha;
-        a1 = -2 * (A - 1 + (A + 1) * cosw0);
-        a2 = A + 1 + (A - 1) * cosw0 - 2 * Math.sqrt(A) * alpha;
-    } else {
-        // High shelf
-        b0 = A * (A + 1 + (A - 1) * cosw0 + 2 * Math.sqrt(A) * alpha);
-        b1 = -2 * A * (A - 1 + (A + 1) * cosw0);
-        b2 = A * (A + 1 + (A - 1) * cosw0 - 2 * Math.sqrt(A) * alpha);
-        a0 = A + 1 - (A - 1) * cosw0 + 2 * Math.sqrt(A) * alpha;
-        a1 = 2 * (A - 1 - (A + 1) * cosw0);
-        a2 = A + 1 - (A - 1) * cosw0 - 2 * Math.sqrt(A) * alpha;
-    }
-
-    // Normalize
-    coeffs.b0 = b0 / a0;
-    coeffs.b1 = b1 / a0;
-    coeffs.b2 = b2 / a0;
-    coeffs.a0 = 1;
-    coeffs.a1 = a1 / a0;
-    coeffs.a2 = a2 / a0;
 }

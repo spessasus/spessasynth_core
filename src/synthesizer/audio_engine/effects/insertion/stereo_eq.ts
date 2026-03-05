@@ -1,15 +1,12 @@
 import type { InsertionProcessor } from "../types";
 import { InsertionValueConverter } from "./convert";
-
-const zeroHistory = { x1: 0, x2: 0, y1: 0, y2: 0 } as BiquadHistory;
-const zeroCoeffData = {
-    b0: 1,
-    b1: 0,
-    b2: 0,
-    a0: 1,
-    a1: 0,
-    a2: 0
-} as BiquadCoeffs;
+import {
+    type BiquadCoeffs,
+    processBiquad,
+    zeroCoeffs,
+    zeroStateC,
+    zeroState
+} from "./utils";
 
 /**
  * Stereo-EQ
@@ -91,19 +88,19 @@ export class StereoEQFX implements InsertionProcessor {
      */
     private m2Gain = -8;
 
-    private readonly lowCoeffs: BiquadCoeffs = { ...zeroCoeffData };
-    private readonly m1Coeffs: BiquadCoeffs = { ...zeroCoeffData };
-    private readonly m2Coeffs: BiquadCoeffs = { ...zeroCoeffData };
-    private readonly hiCoeffs: BiquadCoeffs = { ...zeroCoeffData };
+    private readonly lowCoeffs: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly m1Coeffs: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly m2Coeffs: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly hiCoeffs: BiquadCoeffs = { ...zeroCoeffs };
 
-    private readonly lowStateL = { ...zeroHistory };
-    private readonly lowStateR = { ...zeroHistory };
-    private readonly m1StateL = { ...zeroHistory };
-    private readonly m1StateR = { ...zeroHistory };
-    private readonly m2StateL = { ...zeroHistory };
-    private readonly m2StateR = { ...zeroHistory };
-    private readonly hiStateL = { ...zeroHistory };
-    private readonly hiStateR = { ...zeroHistory };
+    private readonly lowStateL = { ...zeroStateC };
+    private readonly lowStateR = { ...zeroStateC };
+    private readonly m1StateL = { ...zeroStateC };
+    private readonly m1StateR = { ...zeroStateC };
+    private readonly m2StateL = { ...zeroStateC };
+    private readonly m2StateR = { ...zeroStateC };
+    private readonly hiStateL = { ...zeroStateC };
+    private readonly hiStateR = { ...zeroStateC };
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
@@ -234,17 +231,17 @@ export class StereoEQFX implements InsertionProcessor {
             let sR = inputRight[i];
 
             // Low -> m1 -> m2 -> hi
-            sL = applyBiquad(sL, lowCoeffs, lowStateL);
-            sR = applyBiquad(sR, lowCoeffs, lowStateR);
+            sL = processBiquad(sL, lowCoeffs, lowStateL);
+            sR = processBiquad(sR, lowCoeffs, lowStateR);
 
-            sL = applyBiquad(sL, m1Coeffs, m1StateL);
-            sR = applyBiquad(sR, m1Coeffs, m1StateR);
+            sL = processBiquad(sL, m1Coeffs, m1StateL);
+            sR = processBiquad(sR, m1Coeffs, m1StateR);
 
-            sL = applyBiquad(sL, m2Coeffs, m2StateL);
-            sR = applyBiquad(sR, m2Coeffs, m2StateR);
+            sL = processBiquad(sL, m2Coeffs, m2StateL);
+            sR = processBiquad(sR, m2Coeffs, m2StateR);
 
-            sL = applyBiquad(sL, hiCoeffs, hiStateL);
-            sR = applyBiquad(sR, hiCoeffs, hiStateR);
+            sL = processBiquad(sL, hiCoeffs, hiStateL);
+            sR = processBiquad(sR, hiCoeffs, hiStateR);
 
             // Mix
             const idx = startIndex + i;
@@ -259,7 +256,7 @@ export class StereoEQFX implements InsertionProcessor {
     }
 
     private updateCoefficients() {
-        // Dividing low and hi gain by 2 seems to improve accuraacy to SCVA
+        // Dividing low and hi gain by 2 seems to improve accuracy to SCVA
         computeLowShelfCoeffs(
             this.lowCoeffs,
             this.lowFreq,
@@ -290,42 +287,6 @@ export class StereoEQFX implements InsertionProcessor {
             this.sampleRate
         );
     }
-}
-
-interface BiquadCoeffs {
-    b0: number;
-    b1: number;
-    b2: number;
-    a0: number;
-    a1: number;
-    a2: number;
-}
-
-interface BiquadHistory {
-    x1: number;
-    x2: number;
-    y1: number;
-    y2: number;
-}
-
-function applyBiquad(x: number, c: BiquadCoeffs, s: BiquadHistory) {
-    // Direct Form I:
-    // Y = (b0*x + b1*x1 + b2*x2 - a1*y1 - a2*y2) / a0
-    const y =
-        (c.b0 * x + c.b1 * s.x1 + c.b2 * s.x2 - c.a1 * s.y1 - c.a2 * s.y2) /
-        c.a0;
-
-    // Shift state
-    s.x2 = s.x1;
-    s.x1 = x;
-    s.y2 = s.y1;
-    s.y1 = y;
-
-    return y;
-}
-
-function zeroState(h: BiquadHistory) {
-    h.x1 = h.x2 = h.y1 = h.y2 = 0;
 }
 
 /**
