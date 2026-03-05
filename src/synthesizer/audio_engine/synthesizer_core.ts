@@ -110,7 +110,7 @@ export class SynthesizerCore {
     /**
      * The master parameters of the synthesizer.
      */
-    public masterParameters = DEFAULT_MASTER_PARAMETERS;
+    public masterParameters = { ...DEFAULT_MASTER_PARAMETERS }; // Copy, not set!
     /**
      * The current time of the synthesizer, in seconds.
      */
