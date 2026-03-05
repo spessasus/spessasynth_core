@@ -26,6 +26,15 @@ class EFXTest {
         this.builder.sendAddress(0x40, 0x03, 0x17, [0]);
     }
 
+    public testEqAndLevel() {
+        // Low gain
+        this.sweepParam(0x13, 52, 76);
+        // Hi gain
+        this.sweepParam(0x14, 52, 76);
+        // Level
+        this.sweepParam(0x16, 0, 127, 480, 16);
+    }
+
     public sweepParam(
         param: number,
         from: number,

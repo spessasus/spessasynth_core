@@ -1,13 +1,24 @@
 import type { InsertionProcessor } from "../types";
 import {
+    applyShelves,
     type BiquadCoeffs,
     type BiquadState,
     computeShelfCoeffs,
-    processBiquad,
     zeroCoeffs,
     zeroState,
     zeroStateC
 } from "./utils";
+import { InsertionValueConverter } from "./convert";
+
+const PI_2 = Math.PI * 2;
+
+// This EFX seems to lower the gain (checking after normalizing with a dry voice at the same velocity)
+// Why, Roland???
+const GAIN_LVL = 0.935;
+// Sonic visualizer is very helpful here
+const LEVEL_EXP = 2;
+
+const PAN_SMOOTHING = 0.01;
 
 const DEFAULT_LEVEL = 127;
 export class AutoPanFX implements InsertionProcessor {
@@ -71,6 +82,9 @@ export class AutoPanFX implements InsertionProcessor {
      */
     private level = DEFAULT_LEVEL / 127;
 
+    private currentPan = 0;
+    private phase = 0;
+
     // Biquad shelving coefficients and states (per channel)
     private readonly lsCoeffs: BiquadCoeffs = { ...zeroCoeffs };
     private readonly hsCoeffs: BiquadCoeffs = { ...zeroCoeffs };
@@ -86,16 +100,17 @@ export class AutoPanFX implements InsertionProcessor {
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.reset();
-
-        // TODO: REMOVE this and implement
-        // Right now it's just so i can commit to master
-        console.log(this.modDepth, this.modRate, this.modWave);
     }
 
     public reset() {
+        this.modWave = 1;
+        this.modRate = 3.05;
+        this.modDepth = 96;
         this.lowGain = 0;
         this.hiGain = 0;
         this.level = DEFAULT_LEVEL / 127;
+        this.currentPan = 0;
+        this.phase = 0;
         zeroState(this.hsStateR);
         zeroState(this.hsStateL);
         zeroState(this.lsStateR);
@@ -124,27 +139,73 @@ export class AutoPanFX implements InsertionProcessor {
             lsStateR,
             hsCoeffs,
             hsStateR,
-            hsStateL
+            hsStateL,
+            modWave
         } = this;
+        const depth = Math.pow(this.modDepth / 127, LEVEL_EXP);
+        const scale = (2 / (1 + depth)) * GAIN_LVL;
+        const rateInc = this.modRate / this.sampleRate;
+        let { phase, currentPan } = this;
         for (let i = 0; i < sampleCount; i++) {
             // Apply EQ to input (EQ is applied regardless of mix)
-            const sL = this.applyShelves(
+            const sL = applyShelves(
                 inputLeft[i],
-                lsCoeffs,
-                hsCoeffs,
-                lsStateR,
-                hsStateR
-            );
-            const sR = this.applyShelves(
-                inputRight[i],
                 lsCoeffs,
                 hsCoeffs,
                 lsStateL,
                 hsStateL
             );
+            const sR = applyShelves(
+                inputRight[i],
+                lsCoeffs,
+                hsCoeffs,
+                lsStateR,
+                hsStateR
+            );
 
-            const outL = sL * level;
-            const outR = sR * level;
+            // -1 left
+            // 1 right
+            let lfo: number;
+            switch (modWave) {
+                default: {
+                    // 0 -> triangle
+                    lfo = 1 - 4 * Math.abs(phase - 0.5);
+                    break;
+                }
+
+                case 1: {
+                    // 1 - square
+                    // This weird half-sine wave is what SC-VA produces so we have to keep it
+                    lfo = phase > 0.5 ? -1 : -Math.cos((phase - 0.75) * PI_2);
+                    break;
+                }
+
+                case 2: {
+                    // 2 - sine
+                    lfo = Math.sin(PI_2 * phase);
+                    break;
+                }
+
+                case 3: {
+                    // Saw1
+                    lfo = 1 - 2 * phase;
+                    break;
+                }
+
+                case 4: {
+                    // Saw2
+                    lfo = 2 * phase - 1;
+                    break;
+                }
+            }
+            if ((phase += rateInc) >= 1) phase -= 1;
+            currentPan += (lfo - currentPan) * PAN_SMOOTHING;
+            const pan = currentPan * depth;
+            const gainL = (1 - pan) * 0.5 * scale;
+            const gainR = (1 + pan) * 0.5 * scale;
+
+            const outL = sL * level * gainL;
+            const outR = sR * level * gainR;
 
             // Mix
             const idx = startIndex + i;
@@ -155,11 +216,28 @@ export class AutoPanFX implements InsertionProcessor {
             outputChorus[i] += mono * sendLevelToChorus;
             outputDelay[i] += mono * sendLevelToDelay;
         }
+        this.currentPan = currentPan;
+        this.phase = phase;
     }
 
     public setParameter(parameter: number, value: number) {
         switch (parameter) {
             default: {
+                break;
+            }
+
+            case 0x03: {
+                this.modWave = value;
+                break;
+            }
+
+            case 0x04: {
+                this.modRate = InsertionValueConverter.rate1(value);
+                break;
+            }
+
+            case 0x05: {
+                this.modDepth = value;
                 break;
             }
 
@@ -196,18 +274,5 @@ export class AutoPanFX implements InsertionProcessor {
             this.sampleRate,
             false
         );
-    }
-
-    private applyShelves(
-        x: number,
-        lowC: BiquadCoeffs,
-        highC: BiquadCoeffs,
-        lowState: BiquadState,
-        highState: BiquadState
-    ) {
-        // Low shelf
-        const l = processBiquad(x, lowC, lowState);
-        // High shelf
-        return processBiquad(l, highC, highState);
     }
 }

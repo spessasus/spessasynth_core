@@ -1,10 +1,10 @@
-import { midiControllers } from "../../src";
 import { MIDITestMaker } from "./test_maker";
+import { midiControllers } from "../../src";
 
-const test = new MIDITestMaker("Phaser");
+const test = new MIDITestMaker("Auto Pan");
 
-// P5 Square
-test.addProgramChange(16, 3, 80);
+// SC-55 sine
+test.addProgramChange(8, 1, 80);
 
 // No vibrato nor filter
 test.addControllerChange(midiControllers.vibratoDepth, 0);
@@ -17,37 +17,27 @@ test.addNoteOn(60, 120);
 test.ticks += 480;
 test.addNoteOff(60);
 
-const efx = test.testEFX(0x01, 0x20);
+const efx = test.testEFX(0x01, 0x26);
 test.ticks += 480;
 test.addNoteOn(60, 120);
 
 // Default test
 test.ticks += 2560;
 
-// Manual
-efx.sweepParam(3, 0, 127, 480, 16);
+// Mod wave
+efx.sweepParam(3, 0, 4, 960, 1);
 
-// Reset manual
-efx.setParam(3, 36);
-
-// Rate
+// Mod rate
 efx.sweepParam(4, 0, 127, 480, 16);
 
-// Reset rate
-efx.setParam(4, 16);
+// Set back to triangle
+efx.setParam(3, 0);
 
-// Depth
-efx.sweepParam(5, 0, 127, 480, 16);
+// Mod depth
+efx.sweepParam(5, 0, 127, 240, 8);
 
-// Test depth
-
-test.ticks += 1080;
-
-// Resonance
-efx.sweepParam(6, 0, 127, 480, 16);
-
-// Mix
-efx.sweepParam(7, 0, 127, 480, 16);
+// Play at highest for a bit
+test.ticks += 960;
 
 efx.testEqAndLevel();
 

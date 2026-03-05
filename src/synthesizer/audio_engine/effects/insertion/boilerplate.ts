@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { InsertionProcessor } from "../types";
 import {
+    applyShelves,
     type BiquadCoeffs,
     type BiquadState,
     computeShelfCoeffs,
-    processBiquad,
     zeroCoeffs,
-    zeroStateC,
-    zeroState
+    zeroState,
+    zeroStateC
 } from "./utils";
 
 const DEFAULT_LEVEL = 127; // CHANGE THIS
@@ -101,19 +101,19 @@ class BoilerplateFX implements InsertionProcessor {
         } = this;
         for (let i = 0; i < sampleCount; i++) {
             // Apply EQ to input (EQ is applied regardless of mix)
-            const sL = this.applyShelves(
+            const sL = applyShelves(
                 inputLeft[i],
-                lsCoeffs,
-                hsCoeffs,
-                lsStateR,
-                hsStateR
-            );
-            const sR = this.applyShelves(
-                inputRight[i],
                 lsCoeffs,
                 hsCoeffs,
                 lsStateL,
                 hsStateL
+            );
+            const sR = applyShelves(
+                inputRight[i],
+                lsCoeffs,
+                hsCoeffs,
+                lsStateR,
+                hsStateR
             );
 
             const outL = sL * level;
@@ -169,18 +169,5 @@ class BoilerplateFX implements InsertionProcessor {
             this.sampleRate,
             false
         );
-    }
-
-    private applyShelves(
-        x: number,
-        lowC: BiquadCoeffs,
-        highC: BiquadCoeffs,
-        lowState: BiquadState,
-        highState: BiquadState
-    ) {
-        // Low shelf
-        const l = processBiquad(x, lowC, lowState);
-        // High shelf
-        return processBiquad(l, highC, highState);
     }
 }

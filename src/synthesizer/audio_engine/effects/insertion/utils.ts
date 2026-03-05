@@ -25,7 +25,41 @@ export const zeroCoeffs = {
     a0: 1,
     a1: 0,
     a2: 0
-}; // Compute biquad shelf coefficients using RBJ cookbook
+};
+
+export function applyShelves(
+    x: number,
+    lowC: BiquadCoeffs,
+    highC: BiquadCoeffs,
+    lowS: BiquadState,
+    highS: BiquadState
+) {
+    // Direct form I (inlined for performance)
+    // Low shelf
+    const l =
+        lowC.b0 * x +
+        lowC.b1 * lowS.x1 +
+        lowC.b2 * lowS.x2 -
+        lowC.a1 * lowS.y1 -
+        lowC.a2 * lowS.y2;
+    lowS.x2 = lowS.x1;
+    lowS.x1 = x;
+    lowS.y2 = lowS.y1;
+    lowS.y1 = l;
+    // High shelf
+    const h =
+        highC.b0 * l +
+        highC.b1 * highS.x1 +
+        highC.b2 * highS.x2 -
+        highC.a1 * highS.y1 -
+        highC.a2 * highS.y2;
+    highS.x2 = highS.x1;
+    highS.x1 = l;
+    highS.y2 = highS.y1;
+    highS.y1 = h;
+    return h;
+}
+
 export function processBiquad(
     x: number,
     coeffs: BiquadCoeffs,

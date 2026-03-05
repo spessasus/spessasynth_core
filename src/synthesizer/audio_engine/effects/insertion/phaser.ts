@@ -1,10 +1,10 @@
 import type { InsertionProcessor } from "../types";
 import { InsertionValueConverter } from "./convert";
 import {
+    applyShelves,
     type BiquadCoeffs,
     type BiquadState,
     computeShelfCoeffs,
-    processBiquad,
     zeroCoeffs,
     zeroState
 } from "./utils";
@@ -179,14 +179,14 @@ export class PhaserFX implements InsertionProcessor {
         const fb = this.reso * FEEDBACK;
         for (let i = 0; i < sampleCount; i++) {
             // Apply EQ to input (EQ is applied regardless of mix)
-            const sL = this.applyShelves(
+            const sL = applyShelves(
                 inputLeft[i],
                 lowShelfCoef,
                 highShelfCoef,
                 lowShelfStateL,
                 highShelfStateL
             );
-            const sR = this.applyShelves(
+            const sR = applyShelves(
                 inputRight[i],
                 lowShelfCoef,
                 highShelfCoef,
@@ -327,18 +327,5 @@ export class PhaserFX implements InsertionProcessor {
             this.sampleRate,
             false
         );
-    }
-
-    private applyShelves(
-        x: number,
-        lowC: BiquadCoeffs,
-        highC: BiquadCoeffs,
-        lowState: BiquadState,
-        highState: BiquadState
-    ) {
-        // Low shelf
-        const l = processBiquad(x, lowC, lowState);
-        // High shelf
-        return processBiquad(l, highC, highState);
     }
 }
