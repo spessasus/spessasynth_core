@@ -246,6 +246,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             (-2 * Math.PI * this.preLPFfc) / this.sampleRate
         );
         this.preLPFa = 1 - decay;
+        this.updateLowpass();
     }
 
     /**
