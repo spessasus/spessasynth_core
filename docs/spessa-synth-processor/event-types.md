@@ -201,6 +201,13 @@ export interface ChannelProperty {
      * Indicates whether the channel is a drum channel.
      */
     isDrum: boolean;
+
+    /**
+     * Indicates whether the channel uses an insertion effect.
+     * This means that there will be no separate dry output for processSplit().
+     */
+    isEFX: boolean;
+
     /**
      * The channel's transposition, in semitones.
      */
@@ -218,3 +225,41 @@ This event is triggered when a master parameter changes.
 Note that this event usually triggers from the MIDI system change or user's change.
 
 [All master parameters can be found here](master-parameter.md)
+
+### `effectChange`
+
+This event is triggered when an effect processor has one of its parameters changed.
+
+- `effect`: `"reverb"|"chorus"|"delay"|"insertion"` - The effect processor that triggered the event.
+- `parameter`: varies - The parameter corresponding to the effect processor or `"macro"` if a preset macro was set.
+- `value`: `number` - The new 7-bit value of the parameter.
+
+The effects and their parameters can be found here:
+
+- [reverb](reverb-processor.md)
+- [chorus](chorus-processor.md)
+- [delay](delay-processor.md)
+
+#### Insertion
+
+The parameters behave a bit differently when the `effect` is set to `"insertion"`:
+
+- `parameter`: `number`
+
+The parameter that was changed. This maps to GS address map at addr2 = 0x03.
+See SC-8850 Manual p.237,
+for example:
+
+- `0x0` - EFX type, the value is 16 bit in this special case. Note that this resets the parameters!
+- `0x3` - EFX param 1
+- `0x16` - EFX param 20 (usually level)
+- `0x17` - EFX send to reverb
+  For these, the value is a 7-bit number set via the system exclusive.
+
+There are two exceptions:
+
+- `-1` - the channel has ENABLED the effect.
+- `-2` - the channel has DISABLED the effect.
+  For both of these cases, `value` is the channel number.
+
+`value`: `number` - the new value for the given parameter.

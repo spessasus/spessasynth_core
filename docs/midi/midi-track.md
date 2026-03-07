@@ -57,6 +57,21 @@ track.addEvent(event, index);
 - event - the `MIDIMessage` to add.
 - index - the index at which to add this event.
 
+!!! Warning
+
+    This method is deprecated, please use `addEvents` instead!
+
+### addEvents
+
+Adds events to the track.
+
+```ts
+track.addEvent(index, ...events);
+```
+
+- index - the index at which to add these events.
+- event - the `MIDIMessage`s to add.
+
 ### deleteEvent
 
 Removes an event from the track.

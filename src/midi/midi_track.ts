@@ -43,9 +43,19 @@ export class MIDITrack {
      * Adds an event to the track.
      * @param event The event to add.
      * @param index The index at which to add this event.
+     * @deprecated Use addEvents instead
      */
     public addEvent(event: MIDIMessage, index: number) {
         (this.events as MIDIMessage[]).splice(index, 0, event);
+    }
+
+    /**
+     * Adds events to the track.
+     * @param index The index at which to add these event.
+     * @param events The events to add.
+     */
+    public addEvents(index: number, ...events: MIDIMessage[]) {
+        (this.events as MIDIMessage[]).splice(index, 0, ...events);
     }
 
     /**

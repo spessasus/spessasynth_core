@@ -62,19 +62,6 @@ export function setTimeToInternal(
     const pitchWheels = new Array<number>(channelsToSave).fill(8192);
 
     /**
-     * Save programs here and send them only after
-     */
-    const programs: { program: number; bank: number; actualBank: number }[] =
-        [];
-    for (let i = 0; i < channelsToSave; i++) {
-        programs.push({
-            program: -1,
-            bank: 0,
-            actualBank: 0
-        });
-    }
-
-    /**
      * Save controllers here and send them only after
      */
     const savedControllers: number[][] = [];
@@ -149,17 +136,6 @@ export function setTimeToInternal(
                 break;
             }
 
-            case midiMessageTypes.programChange: {
-                // Empty tracks cannot program change
-                if (this._midiData.isMultiPort && track.channels.size === 0) {
-                    break;
-                }
-                const p = programs[channel];
-                p.program = event.data[0];
-                p.actualBank = p.bank;
-                break;
-            }
-
             case midiMessageTypes.controllerChange: {
                 // Empty tracks cannot controller change
                 if (this._midiData.isMultiPort && track.channels.size === 0) {
@@ -169,11 +145,7 @@ export function setTimeToInternal(
                 const controllerNumber = event.data[0] as MIDIController;
                 if (isCCNonSkippable(controllerNumber)) {
                     const ccV = event.data[1];
-                    if (controllerNumber === midiControllers.bankSelect) {
-                        // Add the bank to be saved
-                        programs[channel].bank = ccV;
-                        break;
-                    } else if (
+                    if (
                         controllerNumber === midiControllers.resetAllControllers
                     ) {
                         resetAllControllers(channel);
@@ -197,6 +169,12 @@ export function setTimeToInternal(
                 savedTempoTrack = trackIndex;
                 break;
             }
+
+            /*
+            Program change cannot be skipped.
+            Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
+            Testcase: (GS88Pro)Th19_1S(KR.Palto47)
+             */
 
             default: {
                 this.processEvent(event, trackIndex);
@@ -236,22 +214,6 @@ export function setTimeToInternal(
                 ) {
                     this.sendMIDICC(channel, index as MIDIController, value);
                 }
-            }
-        }
-        // Restore programs
-        if (programs[channel].actualBank >= 0) {
-            const p = programs[channel];
-            if (p.program === -1) {
-                // No program change, apply the current bank select
-                this.sendMIDICC(channel, midiControllers.bankSelect, p.bank);
-            } else {
-                // A program change has occurred, apply the actual bank when program change was executed
-                this.sendMIDICC(
-                    channel,
-                    midiControllers.bankSelect,
-                    p.actualBank
-                );
-                this.sendMIDIProgramChange(channel, p.program);
             }
         }
     }

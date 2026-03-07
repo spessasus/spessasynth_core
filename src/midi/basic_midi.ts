@@ -22,9 +22,6 @@ import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import type {
-    DesiredChannelTranspose,
-    DesiredControllerChange,
-    DesiredProgramChange,
     MIDIFormat,
     MIDILoop,
     MIDILoopType,
@@ -35,7 +32,8 @@ import type {
 } from "./types";
 import {
     applySnapshotInternal,
-    modifyMIDIInternal
+    modifyMIDIInternal,
+    type ModifyMIDIOptions
 } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
@@ -414,23 +412,36 @@ export class BasicMIDI {
      * Allows easy editing of the file by removing channels, changing programs,
      * changing controllers and transposing channels. Note that this modifies the MIDI *in-place*.
      * @param desiredProgramChanges - The programs to set on given channels.
-     * @param desiredControllerChanges - The controllers to set on given channels.
-     * @param desiredChannelsToClear - The channels to remove from the sequence.
-     * @param desiredChannelsToTranspose - The channels to transpose.
+     * @param controllerChanges - The controllers to set on given channels.
+     * @param channelsToClear - The channels to remove from the sequence.
+     * @param channelsToTranspose - The channels to transpose.
+     * @param clearDrumParams - If the drum parameters should be cleared.
+     * @param reverbParams - The desired GS reverb params, leave undefined for no change.
+     * @param chorusParams - The desired GS chorus params, leave undefined for no change.
+     * @param delayParams - The desired GS delay params, leave undefined for no change.
      */
-    public modify(
-        desiredProgramChanges: DesiredProgramChange[] = [],
-        desiredControllerChanges: DesiredControllerChange[] = [],
-        desiredChannelsToClear: number[] = [],
-        desiredChannelsToTranspose: DesiredChannelTranspose[] = []
-    ) {
-        modifyMIDIInternal(
-            this,
-            desiredProgramChanges,
-            desiredControllerChanges,
-            desiredChannelsToClear,
-            desiredChannelsToTranspose
-        );
+    public modify({
+        programChanges = [],
+        controllerChanges = [],
+        channelsToClear = [],
+        channelsToTranspose = [],
+        clearDrumParams = false,
+        reverbParams,
+        chorusParams,
+        delayParams,
+        insertionParams
+    }: ModifyMIDIOptions) {
+        modifyMIDIInternal(this, {
+            programChanges,
+            controllerChanges,
+            channelsToClear,
+            channelsToTranspose,
+            clearDrumParams,
+            reverbParams,
+            chorusParams,
+            delayParams,
+            insertionParams
+        });
     }
 
     // noinspection JSUnusedGlobalSymbols

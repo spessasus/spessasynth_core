@@ -20,8 +20,7 @@ const sfPath = args[0];
 const sf = await fs.readFile(sfPath);
 SpessaSynthLogging(true, true, true);
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEventSystem: false,
-    enableEffects: false
+    enableEventSystem: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),
@@ -48,7 +47,7 @@ const speaker = new Speaker({
 });
 
 // Initialize the audio stream
-const quantum = 128;
+const quantum = 64;
 const blockSize = 4;
 const left = new Float32Array(quantum * blockSize);
 const right = new Float32Array(quantum * blockSize);
@@ -63,7 +62,7 @@ setInterval(() => {
     right.fill(0);
     let write = 0;
     for (let i = 0; i < blockSize; i++) {
-        synth.renderAudio([left, right], [], [], write, quantum);
+        synth.process(left, right, write, quantum);
         write += quantum;
     }
 
