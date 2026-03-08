@@ -4,8 +4,8 @@ import {
     type BiquadCoeffs,
     processBiquad,
     zeroCoeffs,
-    zeroStateC,
-    zeroState
+    zeroState,
+    zeroStateC
 } from "./utils";
 
 /**
@@ -320,12 +320,12 @@ function computePeakingEQCoeffs(
     const a1 = -2 * cosw0;
     const a2 = 1 - alpha / A;
 
-    coeffs.a0 = a0;
-    coeffs.a1 = a1;
-    coeffs.a2 = a2;
-    coeffs.b0 = b0;
-    coeffs.b1 = b1;
-    coeffs.b2 = b2;
+    coeffs.a0 = 1;
+    coeffs.a1 = a1 / a0;
+    coeffs.a2 = a2 / a0;
+    coeffs.b0 = b0 / a0;
+    coeffs.b1 = b1 / a0;
+    coeffs.b2 = b2 / a0;
 }
 
 function computeLowShelfCoeffs(
@@ -348,12 +348,12 @@ function computeLowShelfCoeffs(
     const a1 = -2 * (A - 1 + (A + 1) * cosw0);
     const a2 = A + 1 + (A - 1) * cosw0 - 2 * Math.sqrt(A) * alpha;
 
-    coeffs.a0 = a0;
-    coeffs.a1 = a1;
-    coeffs.a2 = a2;
-    coeffs.b0 = b0;
-    coeffs.b1 = b1;
-    coeffs.b2 = b2;
+    coeffs.a0 = 1;
+    coeffs.a1 = a1 / a0;
+    coeffs.a2 = a2 / a0;
+    coeffs.b0 = b0 / a0;
+    coeffs.b1 = b1 / a0;
+    coeffs.b2 = b2 / a0;
 }
 
 function computeHighShelfCoeffs(
@@ -376,10 +376,10 @@ function computeHighShelfCoeffs(
     const a1 = 2 * (A - 1 - (A + 1) * cosw0);
     const a2 = A + 1 - (A - 1) * cosw0 - 2 * Math.sqrt(A) * alpha;
 
-    coeffs.a0 = a0;
-    coeffs.a1 = a1;
-    coeffs.a2 = a2;
-    coeffs.b0 = b0;
-    coeffs.b1 = b1;
-    coeffs.b2 = b2;
+    coeffs.a0 = 1;
+    coeffs.a1 = a1 / a0;
+    coeffs.a2 = a2 / a0;
+    coeffs.b0 = b0 / a0;
+    coeffs.b1 = b1 / a0;
+    coeffs.b2 = b2 / a0;
 }
