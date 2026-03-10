@@ -1,6 +1,7 @@
 import {
     IndexedByteArray,
     MIDIBuilder,
+    type MIDIController,
     midiControllers,
     midiMessageTypes
 } from "../../src";
@@ -100,6 +101,22 @@ export class MIDITestMaker extends MIDIBuilder {
             controllerNumber,
             controllerValue
         );
+    }
+
+    public sweepCC(
+        cc: MIDIController,
+        from: number,
+        to: number,
+        tickStep = 480,
+        dataStep = 1
+    ) {
+        let data = from;
+        while (data <= to) {
+            this.addControllerChange(cc, Math.min(data, to));
+            this.ticks += tickStep;
+            data += dataStep;
+        }
+        this.addControllerChange(cc, Math.min(data, to));
     }
 
     public addProgramChange(msb: number, lsb: number, program: number) {

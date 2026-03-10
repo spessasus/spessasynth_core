@@ -14,6 +14,22 @@ export interface BiquadState {
     y2: number;
 }
 
+const HALF_PI = Math.PI / 2;
+
+const MIN_PAN = -64;
+const MAX_PAN = 63;
+const PAN_RESOLUTION = MAX_PAN - MIN_PAN;
+// Initialize pan lookup tables
+export const panTableLeft = new Float32Array(PAN_RESOLUTION + 1);
+export const panTableRight = new Float32Array(PAN_RESOLUTION + 1);
+for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
+    // Clamp to 0-1
+    const realPan = (pan - MIN_PAN) / PAN_RESOLUTION;
+    const tableIndex = pan - MIN_PAN;
+    panTableLeft[tableIndex] = Math.cos(HALF_PI * realPan);
+    panTableRight[tableIndex] = Math.sin(HALF_PI * realPan);
+}
+
 export function zeroState(h: BiquadState) {
     h.x1 = h.x2 = h.y1 = h.y2 = 0;
 }

@@ -459,3 +459,4 @@ Spessasynth has an architecture to support SC-88Pro+ insertion effects.
 - Stereo-EQ
 - Phaser
 - Auto Pan
+- Auto Wah
