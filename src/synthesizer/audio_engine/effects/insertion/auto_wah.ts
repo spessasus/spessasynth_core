@@ -29,6 +29,7 @@ const releaseTime = 0.1;
 const SENS_COEFF = 27;
 const PEAK_DB = 28;
 const HPF_Q = -28;
+const HPF_FC = 400;
 const MANUAL_SCALE = 0.62;
 const FC_SMOOTH = 0.005;
 const DEPTH_MUL = 5;
@@ -247,7 +248,7 @@ export class AutoWahFX implements InsertionProcessor {
             let processedSample = s;
 
             if (filType === 1) {
-                computeHighpassCoeffs(hpCoeffs, base, hpfPeak, sampleRate);
+                computeHighpassCoeffs(hpCoeffs, HPF_FC, hpfPeak, sampleRate);
                 processedSample = processBiquad(
                     processedSample,
                     hpCoeffs,
