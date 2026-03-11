@@ -4,11 +4,13 @@ import { StereoEQFX } from "./insertion/stereo_eq";
 import { PhaserFX } from "./insertion/phaser";
 import { AutoPanFX } from "./insertion/auto_pan";
 import { AutoWahFX } from "./insertion/auto_wah";
+import { PhAutoWahFx } from "./insertion/ph_auto_wah";
 
 export const insertionList: InsertionProcessorConstructor[] = [
     ThruFX,
     StereoEQFX,
     PhaserFX,
     AutoPanFX,
-    AutoWahFX
+    AutoWahFX,
+    PhAutoWahFx
 ];

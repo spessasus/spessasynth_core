@@ -1,6 +1,6 @@
 import type { DelayProcessor, DelayProcessorSnapshot } from "../types";
 import { DelayLine } from "../delay_line";
-import { INITIAL_BUFFER_SIZE } from "../../engine_components/synth_constants";
+import { SPESSA_BUFSIZE } from "../../engine_components/synth_constants";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!
@@ -36,8 +36,8 @@ export class SpessaSynthDelay implements DelayProcessor {
     private readonly delayRight;
     private readonly delayCenter;
     private readonly sampleRate;
-    private delayCenterOutput = new Float32Array(INITIAL_BUFFER_SIZE);
-    private delayPreLPF = new Float32Array(INITIAL_BUFFER_SIZE);
+    private delayCenterOutput = new Float32Array(SPESSA_BUFSIZE);
+    private delayPreLPF = new Float32Array(SPESSA_BUFSIZE);
     private delayCenterTime;
     private delayLeftMultiplier = 0.04;
     private delayRightMultiplier = 0.04;

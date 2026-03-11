@@ -212,9 +212,14 @@ export class AutoWahFX implements InsertionProcessor {
         const rateInc = this.rate / this.sampleRate;
         const peak = Math.pow(10, ((this.peak / 127) * PEAK_DB) / 20);
         const hpfPeak = Math.pow(10, ((this.peak / 127) * HPF_Q) / 20);
+        // FIXME: Polarity in 11Gtr_EFX shows that this is very wrong...
         const pol = this.polarity === 0 ? -1 : DEPTH_MUL;
         const depth = (this.depth / 127) * pol;
         const sens = this.sens / 127;
+
+        const index = (pan + 64) | 0;
+        const gainL = panTableLeft[index];
+        const gainR = panTableRight[index];
         for (let i = 0; i < sampleCount; i++) {
             // Mono!
             const s = applyShelves(
@@ -259,9 +264,8 @@ export class AutoWahFX implements InsertionProcessor {
             const mono = processBiquad(processedSample, coeffs, state) * level;
 
             // Pan
-            const index = (pan + 64) | 0;
-            const outL = mono * panTableLeft[index];
-            const outR = mono * panTableRight[index];
+            const outL = mono * gainL;
+            const outR = mono * gainR;
 
             // Mix
             const idx = startIndex + i;

@@ -17,7 +17,7 @@ import { KeyModifierManager } from "./engine_components/key_modifier_manager";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
-    INITIAL_BUFFER_SIZE
+    SPESSA_BUFSIZE
 } from "./engine_components/synth_constants";
 import { customControllers } from "../enums";
 import { modulatorSources } from "../../soundbank/enums";
@@ -69,23 +69,23 @@ export class SynthesizerCore {
     /**
      * The insertion processor's left input buffer.
      */
-    public insertionInputL = new Float32Array(INITIAL_BUFFER_SIZE);
+    public insertionInputL = new Float32Array(SPESSA_BUFSIZE);
     /**
      * The insertion processor's right input buffer.
      */
-    public insertionInputR = new Float32Array(INITIAL_BUFFER_SIZE);
+    public insertionInputR = new Float32Array(SPESSA_BUFSIZE);
     /**
      * The reverb processor's input buffer.
      */
-    public reverbInput = new Float32Array(INITIAL_BUFFER_SIZE);
+    public reverbInput = new Float32Array(SPESSA_BUFSIZE);
     /**
      * The chorus processor's input buffer.
      */
-    public chorusInput = new Float32Array(INITIAL_BUFFER_SIZE);
+    public chorusInput = new Float32Array(SPESSA_BUFSIZE);
     /**
      * The delay processor's input buffer.
      */
-    public delayInput = new Float32Array(INITIAL_BUFFER_SIZE);
+    public delayInput = new Float32Array(SPESSA_BUFSIZE);
     /**
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
      */

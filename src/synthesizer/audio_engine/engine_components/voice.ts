@@ -9,9 +9,9 @@ import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode } from "../../types";
 import {
-    INITIAL_BUFFER_SIZE,
     MIN_EXCLUSIVE_LENGTH,
-    MIN_NOTE_LENGTH
+    MIN_NOTE_LENGTH,
+    SPESSA_BUFSIZE
 } from "./synth_constants";
 import {
     HermiteOscillator,
@@ -96,7 +96,7 @@ export class Voice {
      * The buffer to use when rendering the voice (to avoid memory allocations)
      * If the user supplied a larger one, it must be resized.
      */
-    public buffer = new Float32Array(INITIAL_BUFFER_SIZE);
+    public buffer = new Float32Array(SPESSA_BUFSIZE);
 
     /**
      * Resonance offset, it is affected by the default resonant modulator
