@@ -3,6 +3,7 @@ import {
     audioToWav,
     BasicMIDI,
     SoundBankLoader,
+    SpessaSynthLogging,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
@@ -21,14 +22,14 @@ const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const sampleRate = 44100;
 const sampleCount = Math.ceil(44100 * (midi.duration + 2));
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEventSystem: false,
-    enableEffects: false
+    enableEventSystem: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
 await synth.processorInitialized;
+SpessaSynthLogging(true, true, true);
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
 seq.play();
@@ -41,13 +42,12 @@ let filledSamples = 0;
 const BUFFER_SIZE = 128;
 let i = 0;
 const durationRounded = Math.floor(seq.midiData!.duration * 100) / 100;
-const outputArray = [outLeft, outRight];
 while (filledSamples < sampleCount) {
     // Process sequencer
     seq.processTick();
     // Render
     const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
-    synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+    synth.process(outLeft, outRight, filledSamples, bufferSize);
     filledSamples += bufferSize;
     i++;
     // Log progress

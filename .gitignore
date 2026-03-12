@@ -76,6 +76,7 @@ unused/
 dist/
 /node_modules/
 site/
+.cache
 
 
 # random files

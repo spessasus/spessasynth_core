@@ -1,6 +1,7 @@
 import {
     CONTROLLER_TABLE_SIZE,
     CUSTOM_CONTROLLER_TABLE_SIZE,
+    drumReverbResetArray,
     NON_CC_INDEX_OFFSET
 } from "./controller_tables";
 import {
@@ -14,7 +15,7 @@ import { dataEntryFine } from "../engine_methods/controller_control/data_entry/d
 import { controllerChange } from "../engine_methods/controller_control/controller_change";
 import { dataEntryCoarse } from "../engine_methods/controller_control/data_entry/data_entry_coarse";
 import { noteOn } from "../engine_methods/note_on";
-import { noteOff } from "../engine_methods/stopping_notes/note_off";
+import { noteOff } from "../engine_methods/note_off";
 import { programChange } from "../engine_methods/program_change";
 import {
     DEFAULT_PERCUSSION,
@@ -41,12 +42,13 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import { modulatorSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
+import { DrumParameters } from "./drum_parameters";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
  */
 export class MIDIChannel {
-    /*
+    /**
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
      * such as volume, pan, modulation, etc.
@@ -81,20 +83,25 @@ export class MIDIChannel {
         CUSTOM_CONTROLLER_TABLE_SIZE
     );
     /**
-     * The key shift of the channel (in semitones).
-     */
-    public channelTransposeKeyShift = 0;
-    /**
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
      * Note: Repeated every 12 notes.
      */
-    public channelOctaveTuning: Int8Array = new Int8Array(128);
+    public readonly octaveTuning: Int8Array = new Int8Array(128);
+
+    /**
+     * Parameters for each drum instrument.
+     */
+    public readonly drumParams: DrumParameters[] = [];
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */
     public sysExModulators: DynamicModulatorSystem =
         new DynamicModulatorSystem();
+    /**
+     * The key shift of the channel (in semitones).
+     */
+    public keyShift = 0;
     /**
      * Indicates whether this channel is a drum channel.
      */
@@ -103,6 +110,27 @@ export class MIDIChannel {
      * Enables random panning for every note played on this channel.
      */
     public randomPan = false;
+
+    /**
+     * Indicates whether this channel uses the insertion EFX processor.
+     */
+    public insertionEnabled = false;
+    /**
+     * CC1 for GS system exclusive.
+     * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
+     */
+    public cc1 = 0x10;
+    /**
+     * CC2 for GS system exclusive.
+     * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
+     */
+    public cc2 = 0x11;
+    /**
+     * Drum map for GS system exclusive tracking.
+     * Only used for selecting the correct channel when setting drum parameters through sysEx,
+     * as those don't specify the channel, but the drum number.
+     */
+    public drumMap = 0;
     /**
      * The current state of the data entry for the channel.
      */
@@ -132,16 +160,12 @@ export class MIDIChannel {
      */
     public lockedSystem: SynthSystem = "gs";
     /**
-     * Indicates whether the GS NRPN parameters are enabled for this channel.
-     */
-    public lockGSNRPNParams = false;
-    /**
      * The vibrato settings for the channel.
      * @property depth - Depth of the vibrato effect in cents.
      * @property delay - Delay before the vibrato effect starts (in seconds).
      * @property rate - Rate of the vibrato oscillation (in Hz).
      */
-    public channelVibrato: { delay: number; depth: number; rate: number } = {
+    public readonly channelVibrato = {
         delay: 0,
         depth: 0,
         rate: 0
@@ -160,6 +184,12 @@ export class MIDIChannel {
      * The channel's number (0-based index)
      */
     public readonly channel: number;
+
+    /**
+     * The channel's receiving number (0-based index)
+     * Only used when customChannelNumbers is enabled
+     */
+    public rxChannel: number;
     /**
      * Core synthesis engine.
      */
@@ -277,8 +307,14 @@ export class MIDIChannel {
         this.synthCore = synthProps;
         this.preset = preset;
         this.channel = channelNumber;
+        this.rxChannel = channelNumber;
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
+        for (let i = 0; i < 128; i++) {
+            this.drumParams.push(new DrumParameters());
+        }
+        this.resetDrumParams();
+        this.resetVibratoParams();
     }
 
     /**
@@ -321,18 +357,18 @@ export class MIDIChannel {
         }
         const keyShift = Math.trunc(semitones);
         const currentTranspose =
-            this.channelTransposeKeyShift +
+            this.keyShift +
             this.customControllers[customControllers.channelTransposeFine] /
                 100;
         if ((this.drumChannel && !force) || semitones === currentTranspose) {
             return;
         }
-        if (keyShift !== this.channelTransposeKeyShift) {
+        if (keyShift !== this.keyShift) {
             // Stop all
             this.stopAllNotes();
         }
         // Apply transpose
-        this.channelTransposeKeyShift = keyShift;
+        this.keyShift = keyShift;
         this.setCustomController(
             customControllers.channelTransposeFine,
             (semitones - keyShift) * 100
@@ -350,9 +386,8 @@ export class MIDIChannel {
         if (tuning.length !== 12) {
             throw new Error("Tuning is not the length of 12.");
         }
-        this.channelOctaveTuning = new Int8Array(128);
         for (let i = 0; i < 128; i++) {
-            this.channelOctaveTuning[i] = tuning[i % 12];
+            this.octaveTuning[i] = tuning[i % 12];
         }
     }
 
@@ -589,33 +624,6 @@ export class MIDIChannel {
         this.patch.isGMGSDrum = drums;
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Sets a custom vibrato.
-     * @param depth In cents.
-     * @param rate In Hertz.
-     * @param delay seconds.
-     */
-    public setVibrato(depth: number, rate: number, delay: number) {
-        if (this.lockGSNRPNParams) {
-            return;
-        }
-        this.channelVibrato.rate = rate;
-        this.channelVibrato.delay = delay;
-        this.channelVibrato.depth = depth;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Disables and locks all GS NPRN parameters, including the custom vibrato.
-     */
-    public disableAndLockGSNRPN() {
-        this.lockGSNRPNParams = true;
-        this.channelVibrato.rate = 0;
-        this.channelVibrato.delay = 0;
-        this.channelVibrato.depth = 0;
-    }
-
     public resetGeneratorOverrides() {
         this.generatorOverrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
         this.generatorOverridesEnabled = false;
@@ -753,15 +761,40 @@ export class MIDIChannel {
                 ] / 128,
             isMuted: this.isMuted,
             transposition:
-                this.channelTransposeKeyShift +
+                this.keyShift +
                 this.customControllers[customControllers.channelTransposeFine] /
                     100,
-            isDrum: this.drumChannel
+            isDrum: this.drumChannel,
+            isEFX: this.insertionEnabled
         };
         this.synthCore.callEvent("channelPropertyChange", {
             channel: this.channel,
             property: data
         });
+    }
+
+    protected resetDrumParams() {
+        if (this.synthCore.masterParameters.drumLock || !this.drumChannel)
+            return;
+        for (let i = 0; i < 128; i++) {
+            const p = this.drumParams[i];
+            p.pitch = 0;
+            p.gain = 1;
+            p.exclusiveClass = 0;
+            p.pan = 64;
+            p.reverbGain = drumReverbResetArray[i] / 127;
+            p.chorusGain = 0; // No drums have chorus
+            p.delayGain = 0; // No drums have delay
+            p.rxNoteOn = true;
+            p.rxNoteOff = false;
+        }
+    }
+
+    protected resetVibratoParams() {
+        if (this.synthCore.masterParameters.customVibratoLock) return;
+        this.channelVibrato.rate = 0;
+        this.channelVibrato.depth = 0;
+        this.channelVibrato.delay = 0;
     }
 
     protected computeModulatorsAll(
@@ -804,7 +837,7 @@ export class MIDIChannel {
         }
         if (isDrum) {
             // Clear transpose
-            this.channelTransposeKeyShift = 0;
+            this.keyShift = 0;
             this.drumChannel = true;
         } else {
             this.drumChannel = false;

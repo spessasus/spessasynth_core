@@ -1,6 +1,4 @@
 import { absCentsToHz, cbAttenuationToGain } from "../unit_converter";
-import type { Voice } from "../voice";
-import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
  * Lowpass_filter.ts
@@ -32,14 +30,14 @@ interface CachedCoefficient {
 
 export class LowpassFilter {
     /**
+     * For smoothing the filter cutoff frequency.
+     */
+    public static smoothingConstant = 1;
+    /**
      * Cached coefficient calculations.
      * stored as cachedCoefficients[resonanceCb + currentInitialFc * 961].
      */
     private static cachedCoefficients = new Map<number, CachedCoefficient>();
-    /**
-     * For smoothing the filter cutoff frequency.
-     */
-    private static smoothingConstant = 1;
     /**
      * Resonance in centibels.
      */
@@ -51,48 +49,48 @@ export class LowpassFilter {
     /**
      * Filter coefficient 1.
      */
-    private a0 = 0;
+    public a0 = 0;
     /**
      * Filter coefficient 2.
      */
-    private a1 = 0;
+    public a1 = 0;
     /**
      * Filter coefficient 3.
      */
-    private a2 = 0;
+    public a2 = 0;
     /**
      * Filter coefficient 4.
      */
-    private a3 = 0;
+    public a3 = 0;
     /**
      * Filter coefficient 5.
      */
-    private a4 = 0;
+    public a4 = 0;
     /**
      * Input history 1.
      */
-    private x1 = 0;
+    public x1 = 0;
     /**
      * Input history 2.
      */
-    private x2 = 0;
+    public x2 = 0;
     /**
      * Output history 1.
      */
-    private y1 = 0;
+    public y1 = 0;
     /**
      * Output history 2.
      */
-    private y2 = 0;
+    public y2 = 0;
     /**
      * For tracking the last cutoff frequency in the apply method, absolute cents.
      * Set to infinity to force recalculation.
      */
-    private lastTargetCutoff = Infinity;
+    public lastTargetCutoff = Infinity;
     /**
      * Used for tracking if the filter has been initialized.
      */
-    private initialized = false;
+    public initialized = false;
     /**
      * Filter's sample rate in Hz.
      */
@@ -139,86 +137,6 @@ export class LowpassFilter {
         this.y1 = 0;
         this.y2 = 0;
         this.initialized = false;
-    }
-
-    /**
-     * Applies the lowpass filter to the output buffer of a voice.
-     * @param sampleCount The amount of samples to write.
-     * @param voice The voice to apply the filter to.
-     * @param outputBuffer The output buffer to filter.
-     * @param fcOffset The frequency excursion in cents to apply to the filter.
-     */
-    public process(
-        sampleCount: number,
-        voice: Voice,
-        outputBuffer: Float32Array,
-        fcOffset: number
-    ) {
-        const initialFc =
-            voice.modulatedGenerators[generatorTypes.initialFilterFc];
-
-        if (this.initialized) {
-            /* Note:
-             * We only smooth out the initialFc part,
-             * the modulation envelope and LFO excursions are not smoothed.
-             */
-            this.currentInitialFc +=
-                (initialFc - this.currentInitialFc) *
-                LowpassFilter.smoothingConstant;
-        } else {
-            // Filter initialization, set the current fc to target
-            this.initialized = true;
-            this.currentInitialFc = initialFc;
-        }
-
-        // The final cutoff for this calculation
-        const targetCutoff = this.currentInitialFc + fcOffset;
-        const modulatedResonance =
-            voice.modulatedGenerators[generatorTypes.initialFilterQ];
-        /* Note:
-         * the check for initialFC is because of the filter optimization
-         * (if cents are the maximum then the filter is open)
-         * filter cannot use this optimization if it's dynamic (see #53), and
-         * the filter can only be dynamic if the initial filter is not open
-         */
-        if (
-            this.currentInitialFc > 13_499 &&
-            targetCutoff > 13_499 &&
-            modulatedResonance === 0
-        ) {
-            this.currentInitialFc = 13_500;
-            return; // Filter is open
-        }
-
-        // Check if the frequency has changed. if so, calculate new coefficients
-        if (
-            Math.abs(this.lastTargetCutoff - targetCutoff) > 1 ||
-            this.resonanceCb !== modulatedResonance
-        ) {
-            this.lastTargetCutoff = targetCutoff;
-            this.resonanceCb = modulatedResonance;
-            this.calculateCoefficients(targetCutoff);
-        }
-
-        // Filter the input
-        // Initial filtering code was ported from meltysynth created by sinshu.
-        for (let i = 0; i < sampleCount; i++) {
-            const input = outputBuffer[i];
-            const filtered =
-                this.a0 * input +
-                this.a1 * this.x1 +
-                this.a2 * this.x2 -
-                this.a3 * this.y1 -
-                this.y2 * this.a4;
-
-            // Set buffer
-            this.x2 = this.x1;
-            this.x1 = input;
-            this.y2 = this.y1;
-            this.y1 = filtered;
-
-            outputBuffer[i] = filtered;
-        }
     }
 
     /**

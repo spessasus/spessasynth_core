@@ -21,55 +21,120 @@ The returned value is an `ArrayBuffer` - a binary representation of the Standard
 ### modify
 
 Allows easily modifying the sequence's programs and controllers.
+All parameters are optional.
 
 ```ts
-midi.modify(
-    desiredProgramChanges,
-    desiredControllerChanges,
-    desiredChannelsToClear,
-    desiredChannelsToTranspose
-);
+midi.modify({
+    programChanges,
+    controllerChanges,
+    channelsToClear,
+    channelsToTranspose,
+    clearDrumParams,
+    reverbParams,
+    chorusParams,
+    delayParams,
+    insertionParams
+});
 ```
 
-- desiredProgramChanges - an array of objects, defined as follows:
+- programChanges - an array of objects, defined as follows (note the `extends MIDIPatch`):
 
 ```ts
-/**
- * @typedef desiredProgramChange {Object}
- * @property {number} channel - the channel to modify. Note that this allows going over 16 if the MIDI is a multi port file
- * @property {number} program - the MIDI program to use.
- * @property {number} bank - the bank to use.
- * @property {boolean} isDrum - if the channel is a drum channel. Will add GS Use Drums System exclusive and GS on if needed
- */
+interface DesiredProgramChange extends MIDIPatch {
+    /**
+     * The channel number.
+     */
+    channel: number;
+}
 ```
 
-- desiredControllerChanges - an array of objects, defined as follows:
+- controllerChanges - an array of objects, defined as follows:
 
 ```ts
-/**
- * @typedef desiredControllerChange {Object}
- * @property {number} channel - same as above.
- * @property {number} controllerNumber - the MIDI CC number to use.
- * @property {number} controllerValue - the desired value of the controller.
- *
- */
+interface DesiredControllerChange {
+    /**
+     * The channel number.
+     */
+    channel: number;
+
+    /**
+     * The MIDI controller number.
+     */
+    controllerNumber: number;
+
+    /**
+     * The new controller value.
+     */
+    controllerValue: number;
+}
 ```
 
-- desiredChannelsToClear - an array of numbers, indicating the channel number to effectively mute.
-- desiredChannelsToTranspose - an array of objects, defined as follows:
-
-```ts
-/**
- * @typedef desiredTranspose {Object}
- * @property {number} channel - same as above.
- * @property {number} keyShift - the amount to shift the notes on this channel by. Can be negative. The decimal part will be tuned via the RPN fine tune command if provided.
- */
-```
+- channelsToClear - an array of numbers, indicating the channel number to effectively mute.
 
 !!! Warning
 
     Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the
     original midi file is lost.
+
+- channelsToTranspose - an array of objects, defined as follows:
+
+```ts
+interface DesiredChannelTranspose {
+    /**
+     * The channel number.
+     */
+    channel: number;
+
+    /**
+     * The number of semitones to transpose.
+     * This can use floating point numbers, which will be used to fine-tune the pitch in cents using RPN.
+     */
+    keyShift: number;
+}
+```
+
+- clearDrumParams - `boolean`, if the drum editing parameters (such as pitch, pan, etc.) should be removed. Both XG and GS.
+- reverbParams - `ReverbProcessorSnapshot`, the desired GS reverb params, leave undefined for no change.
+- chorusParams - `ChorusProcessorSnapshot`, the desired GS chorus params, leave undefined for no change.
+- delayParams - `DelayProcessorSnapshot`, the desired GS delay params, leave undefined for no change.
+- insertionParams - `InsertionProcessorSnapshot`, the desired GS insertion params, leave undefined for no change.
+  Object is defined as follows:
+
+```ts
+interface InsertionProcessorSnapshot {
+    type: number;
+    /**
+     * Parameters for the effect, 255 means "no change"
+     */
+    params: Uint8Array;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of insertion sound that will be sent to the reverb.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToReverb: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of insertion sound that will be sent to the chorus.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToChorus: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of insertion sound that will be sent to the delay.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToDelay: number;
+
+    /**
+     * A boolean list for channels that have the insertion effect enabled.
+     */
+    channels: boolean[];
+}
+```
 
 ### applySnapshot
 

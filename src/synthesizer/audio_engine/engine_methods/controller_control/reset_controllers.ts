@@ -26,9 +26,7 @@ export function resetPortamento(this: MIDIChannel, sendCC: boolean) {
  * except for the locked controllers.
  */
 export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
-    this.channelOctaveTuning.fill(0);
-
-    // Reset the array
+    // Reset controller the array
     for (const [cc, resetValue] of defaultMIDIControllerValues.entries()) {
         if (this.lockedControllers[cc]) {
             continue;
@@ -53,9 +51,27 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
             this.midiControllers[cc] = resetValue;
         }
     }
+    // Reset system exclusive things
+    this.octaveTuning.fill(0);
     resetPortamento.call(this, sendCCEvents);
-    this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
+    this.rxChannel = this.channel;
     this.randomPan = false;
+    if (
+        this.insertionEnabled &&
+        !this.synthCore.masterParameters.insertionEffectLock
+    ) {
+        this.synthCore.callEvent("effectChange", {
+            effect: "insertion",
+            parameter: -2,
+            value: this.channel
+        });
+        this.insertionEnabled = false;
+    }
+    this.cc1 = 0x10;
+    this.cc2 = 0x11;
+    this.drumMap = this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0;
+    this.resetDrumParams();
+    this.resetVibratoParams();
 
     // Reset to poly
     if (
@@ -129,14 +145,9 @@ export const nonResettableCCs = new Set<MIDIController>([
  * Reset controllers according to RP-15 Recommended Practice.
  */
 export function resetControllersRP15Compliant(this: MIDIChannel) {
-    // Reset tunings
-    this.channelOctaveTuning.fill(0);
-
     // Reset pitch wheel
     this.perNotePitch = false;
     this.pitchWheel(8192);
-
-    this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
 
     for (let i = 0; i < 128; i++) {
         const resetValue = defaultMIDIControllerValues[i];
@@ -148,7 +159,6 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
             this.controllerChange(i as MIDIController, resetValue >> 7);
         }
     }
-    resetPortamento.call(this, true);
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
 }

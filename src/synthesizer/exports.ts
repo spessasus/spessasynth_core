@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./enums";
 export * from "./audio_engine/engine_components/controller_tables";
+export * from "./audio_engine/effects/types";
 
 export { SpessaSynthProcessor } from "./processor";
 export { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
