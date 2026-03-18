@@ -956,7 +956,7 @@ export class SynthesizerCore {
              * This is a special delay in which the delayed sounds move left and right.
              * It is effective when you are listening in stereo.
              */
-            default: {
+            case 0: {
                 // Room1
                 rev.character = 0;
                 rev.preLowpass = 3;
@@ -1021,6 +1021,13 @@ export class SynthesizerCore {
                 rev.delayFeedback = 32;
                 break;
             }
+
+            default: {
+                // Check for invalid macros
+                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+                SpessaSynthWarn(`Invalid reverb macro: ${macro}`);
+                return;
+            }
         }
         this.callEvent("effectChange", {
             effect: "reverb",
@@ -1056,7 +1063,7 @@ export class SynthesizerCore {
              * Short Delay (FB)
              * This is a short delay with many repeats.
              */
-            default: {
+            case 0: {
                 // Chorus1
                 chr.feedback = 0;
                 chr.delay = 112;
@@ -1127,6 +1134,13 @@ export class SynthesizerCore {
                 chr.depth = 127;
                 break;
             }
+
+            default: {
+                // Check for invalid macros
+                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+                SpessaSynthWarn(`Invalid chorus macro: ${macro}`);
+                return;
+            }
         }
         this.callEvent("effectChange", {
             effect: "chorus",
@@ -1168,8 +1182,7 @@ export class SynthesizerCore {
              * but the pan positioning is different from the effects listed above.
              * It is effective when listening in stereo.
              */
-            case 0:
-            default: {
+            case 0: {
                 // Delay1
                 dly.timeCenter = 97;
                 dly.timeRatioRight = dly.timeRatioLeft = 1;
@@ -1272,6 +1285,13 @@ export class SynthesizerCore {
                 dly.levelRight = 67;
                 dly.feedback = 40;
                 break;
+            }
+
+            default: {
+                // Check for invalid macros
+                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+                SpessaSynthWarn(`Invalid delay macro: ${macro}`);
+                return;
             }
         }
         this.callEvent("effectChange", {
