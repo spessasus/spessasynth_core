@@ -1,5 +1,5 @@
 import { midiControllers } from "../../src";
-import { MIDITestMaker } from "./test_maker";
+import { MIDITestMaker } from "../test_maker";
 
 const test = new MIDITestMaker("Phaser");
 
@@ -53,4 +53,4 @@ efx.testEqAndLevel();
 
 test.addNoteOff(60);
 
-test.make();
+test.make("efx");

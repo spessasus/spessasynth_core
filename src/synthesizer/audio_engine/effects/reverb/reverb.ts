@@ -3,6 +3,8 @@ import { DattorroReverb } from "./dattorro";
 import { DelayLine } from "../delay_line";
 import { SPESSA_BUFSIZE } from "../../engine_components/synth_constants";
 
+const DELAY_GAIN = 1.5;
+
 export class SpessaSynthReverb implements ReverbProcessor {
     /**
      * Dattorro reverb processor.
@@ -406,7 +408,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
         this.dattorro.gain =
             (this._level / 348) * this.characterGainCoefficient;
         // SC-VA: Delay seems to be quite loud
-        this.delayGain = this._level / 127;
+        this.delayGain = (this._level / 127) * DELAY_GAIN;
     }
 
     private updateTime() {

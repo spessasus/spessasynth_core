@@ -1,5 +1,5 @@
 import { midiControllers } from "../../src";
-import { MIDITestMaker } from "./test_maker";
+import { MIDITestMaker } from "../test_maker";
 
 const test = new MIDITestMaker("Phaser Manual Param");
 
@@ -34,4 +34,4 @@ efx.sweepParam(3, 0, 127);
 test.ticks += 480;
 test.addNoteOff(NOTE);
 
-test.make();
+test.make("efx");

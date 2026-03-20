@@ -1,5 +1,5 @@
 import { midiControllers } from "../../src";
-import { MIDITestMaker } from "./test_maker";
+import { MIDITestMaker } from "../test_maker";
 
 const test = new MIDITestMaker("Stereo EQ");
 
@@ -49,4 +49,4 @@ efx.sweepParam(0xc, 52, 76);
 
 test.addNoteOff(60);
 
-test.make();
+test.make("efx");

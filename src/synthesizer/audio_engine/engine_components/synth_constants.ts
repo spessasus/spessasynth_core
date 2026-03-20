@@ -36,3 +36,10 @@ export const MIN_EXCLUSIVE_LENGTH = 0.07;
 export const SYNTHESIZER_GAIN = 1;
 // In samples
 export const SPESSA_BUFSIZE = 128;
+
+/**
+ * This is needed because effects (regular ones) are send straight from the mono signal, whereas
+ * insertion effects receive the panned audio (twice), which reduces gain by a factor of cos(pi/4) * cos(pi/4) (master pan + voice pan).
+ * This reverses it.
+ */
+export const EFX_SENDS_GAIN_CORRECTION = 1 / Math.cos(Math.PI / 4) ** 2;

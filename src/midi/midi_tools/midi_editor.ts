@@ -704,6 +704,7 @@ export function modifyMIDIInternal(
             }
         }
 
+        // Params and sends
         for (let param = 0; param < p.params.length; param++) {
             const value = p.params[param];
             if (value === 255) continue;
@@ -715,18 +716,14 @@ export function modifyMIDIInternal(
 
         // Last means that it will be first, so the order is:
         // Type
-        // Sends
-        // Params
+        // Params and sends
         // Channels
         targetTrack.addEvents(
             targetIndex,
             sendAddress(targetTicks, 0x40, 0x03, 0x00, [
                 p.type >> 8,
                 p.type & 0x7f
-            ]),
-            sendAddress(targetTicks, 0x40, 0x03, 0x17, [p.sendLevelToReverb]),
-            sendAddress(targetTicks, 0x40, 0x03, 0x18, [p.sendLevelToChorus]),
-            sendAddress(targetTicks, 0x40, 0x03, 0x19, [p.sendLevelToDelay])
+            ])
         );
     }
 

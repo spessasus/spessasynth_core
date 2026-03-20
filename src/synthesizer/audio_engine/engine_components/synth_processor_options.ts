@@ -1,6 +1,6 @@
 import type { SynthProcessorOptions } from "../../types";
 import { SpessaSynthReverb } from "../effects/reverb/reverb";
-import SpessaSynthChorus from "../effects/chorus/chorus";
+import { SpessaSynthChorus } from "../effects/chorus/chorus";
 import { SpessaSynthDelay } from "../effects/delay/delay";
 
 export function getDefaultSynthOptions(

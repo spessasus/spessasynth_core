@@ -1,4 +1,4 @@
-import { MIDITestMaker } from "./test_maker";
+import { MIDITestMaker } from "../test_maker";
 import { midiControllers } from "../../src";
 
 const test = new MIDITestMaker("Tremolo");
@@ -41,4 +41,4 @@ test.ticks += 960;
 
 test.addNoteOff(60);
 
-test.make();
+test.make("efx");

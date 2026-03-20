@@ -1,4 +1,4 @@
-import { MIDITestMaker } from "./test_maker";
+import { MIDITestMaker } from "../test_maker";
 import { midiControllers } from "../../src";
 
 const test = new MIDITestMaker("Auto Pan");
@@ -43,4 +43,4 @@ efx.testEqAndLevel();
 
 test.addNoteOff(60);
 
-test.make();
+test.make("efx");

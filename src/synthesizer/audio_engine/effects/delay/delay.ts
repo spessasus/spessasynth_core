@@ -16,6 +16,8 @@ const delayTimeSegments = [
     { start: 0x69, end: 0x74, timeStart: 500, resolution: 50 }
 ] as const;
 
+const DELAY_GAIN = 1.66;
+
 export class SpessaSynthDelay implements DelayProcessor {
     /**
      * Cutoff frequency
@@ -100,7 +102,7 @@ export class SpessaSynthDelay implements DelayProcessor {
 
     public set level(value: number) {
         this._level = value;
-        this.gain = value / 127;
+        this.gain = (value / 127) * DELAY_GAIN;
     }
 
     private _levelCenter = 127;

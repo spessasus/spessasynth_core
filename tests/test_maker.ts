@@ -4,9 +4,10 @@ import {
     type MIDIController,
     midiControllers,
     midiMessageTypes
-} from "../../src";
+} from "../src";
 import fs from "fs/promises";
-import { channelToSyx } from "../../src/utils/sysex_detector";
+import { channelToSyx } from "../src/utils/sysex_detector";
+import * as path from "node:path";
 
 class EFXTest {
     private readonly builder;
@@ -43,13 +44,15 @@ class EFXTest {
         tickStep = 480,
         dataStep = 1
     ) {
-        let data = from;
-        while (data <= to) {
-            this.setParam(param, Math.min(data, to));
-            this.builder.ticks += tickStep;
-            data += dataStep;
-        }
-        this.setParam(param, Math.min(data, to));
+        this.builder.sweepAddress(
+            0x40,
+            0x03,
+            param,
+            from,
+            to,
+            tickStep,
+            dataStep
+        );
     }
     public setParam(param: number, value: number) {
         this.builder.sendAddress(0x40, 0x03, param, [value]);
@@ -101,6 +104,24 @@ export class MIDITestMaker extends MIDIBuilder {
             controllerNumber,
             controllerValue
         );
+    }
+
+    public sweepAddress(
+        a1: number,
+        a2: number,
+        a3: number,
+        from: number,
+        to: number,
+        tickStep = 480,
+        dataStep = 1
+    ) {
+        let data = from;
+        while (data <= to) {
+            this.sendAddress(a1, a2, a3, [Math.min(data, to)]);
+            this.ticks += tickStep;
+            data += dataStep;
+        }
+        this.sendAddress(a1, a2, a3, [Math.min(data, to)]);
     }
 
     public sweepCC(
@@ -157,15 +178,21 @@ export class MIDITestMaker extends MIDIBuilder {
         );
     }
 
-    public make() {
+    public make(dirname = "") {
         this.flush();
-        fs.mkdir("../files/efx", { recursive: true }).then(() =>
+
+        const outPath = `files/${dirname}`;
+        const resolve = path.resolve(import.meta.dirname, outPath);
+
+        fs.mkdir(resolve, { recursive: true }).then(() =>
             fs
                 .writeFile(
-                    `../files/efx/${this.name}.mid`,
+                    path.resolve(resolve, `${this.name}.mid`),
                     new Uint8Array(this.writeMIDI())
                 )
-                .then(() => console.info(`File written to ${this.name}.mid`))
+                .then(() =>
+                    console.info(`File written to ${resolve}/${this.name}.mid`)
+                )
         );
     }
 }

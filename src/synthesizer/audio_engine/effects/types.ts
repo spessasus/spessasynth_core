@@ -296,30 +296,9 @@ export interface InsertionProcessor {
 export interface InsertionProcessorSnapshot {
     type: number;
     /**
-     * Parameters for the effect, 255 means "no change"
+     * 20 parameters for the effect, 255 means "no change" + 3 effect sends (index 20, 21, 22)
      */
     params: Uint8Array;
-
-    /**
-     * 0-127
-     * This parameter sets the amount of insertion sound that will be sent to the reverb.
-     * Higher values result in more sound being sent.
-     */
-    sendLevelToReverb: number;
-
-    /**
-     * 0-127
-     * This parameter sets the amount of insertion sound that will be sent to the chorus.
-     * Higher values result in more sound being sent.
-     */
-    sendLevelToChorus: number;
-
-    /**
-     * 0-127
-     * This parameter sets the amount of insertion sound that will be sent to the delay.
-     * Higher values result in more sound being sent.
-     */
-    sendLevelToDelay: number;
 
     /**
      * A boolean list for channels that have the insertion effect enabled.

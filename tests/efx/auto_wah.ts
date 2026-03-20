@@ -1,4 +1,4 @@
-import { MIDITestMaker } from "./test_maker";
+import { MIDITestMaker } from "../test_maker";
 import { midiControllers } from "../../src";
 
 const test = new MIDITestMaker("Auto Wah");
@@ -84,4 +84,4 @@ efx.sweepParam(0x15, 0, 127, 30);
 
 test.addNoteOff(24);
 
-test.make();
+test.make("efx");

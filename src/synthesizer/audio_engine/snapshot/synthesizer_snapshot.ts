@@ -152,9 +152,6 @@ export class SynthesizerSnapshot {
             is.type >> 8,
             is.type & 0x7f
         ]);
-        sendAddress(processor, 0x40, 0x03, 0x17, [is.sendLevelToReverb]);
-        sendAddress(processor, 0x40, 0x03, 0x18, [is.sendLevelToChorus]);
-        sendAddress(processor, 0x40, 0x03, 0x19, [is.sendLevelToDelay]);
 
         for (let i = 0; i < is.params.length; i++) {
             if (is.params[i] !== 255)

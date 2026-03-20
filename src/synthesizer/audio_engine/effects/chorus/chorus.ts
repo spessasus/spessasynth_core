@@ -1,6 +1,8 @@
 import type { ChorusProcessor, ChorusProcessorSnapshot } from "../types";
 
-class SpessaSynthChorus implements ChorusProcessor {
+const CHORUS_GAIN = 1.3;
+
+export class SpessaSynthChorus implements ChorusProcessor {
     /**
      * Cutoff frequency
      * @private
@@ -21,7 +23,7 @@ class SpessaSynthChorus implements ChorusProcessor {
     private readonly sampleRate;
     private phase = 0;
     private write = 0;
-    private gain = 1;
+    private gain = 0.5;
     private reverbGain = 0;
     private delayGain = 0;
     private depthSamples = 0;
@@ -133,7 +135,7 @@ class SpessaSynthChorus implements ChorusProcessor {
         return this._level;
     }
     public set level(value: number) {
-        this.gain = value / 127;
+        this.gain = (value / 127) * CHORUS_GAIN;
         this._level = value;
     }
 
@@ -236,5 +238,3 @@ class SpessaSynthChorus implements ChorusProcessor {
         };
     }
 }
-
-export default SpessaSynthChorus;

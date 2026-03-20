@@ -17,6 +17,7 @@ import { KeyModifierManager } from "./engine_components/key_modifier_manager";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
+    EFX_SENDS_GAIN_CORRECTION,
     SPESSA_BUFSIZE
 } from "./engine_components/synth_constants";
 import { customControllers } from "../enums";
@@ -130,11 +131,11 @@ export class SynthesizerCore {
     /**
      * The pan of the left channel.
      */
-    public panLeft = 0.5;
+    public panLeft = Math.cos(Math.PI / 4); // Center
     /**
      * The pan of the right channel.
      */
-    public panRight = 0.5;
+    public panRight = Math.cos(Math.PI / 4); // Center
     /**
      * Synth's default (reset) preset.
      */
@@ -238,10 +239,12 @@ export class SynthesizerCore {
     protected portSelectChannelOffset = 0;
     /**
      * For insertion snapshot tracking
+     * 20 parameters (0-19) + 3 sends
+     * Index to gs is Addr3 - 3 (for example EFX PARAMETER 1 is 0x03 and here it's 0)
      * note: 255 means "no change"
      * @protected
      */
-    protected insertionParams = new Uint8Array(20).fill(255);
+    protected insertionParams = new Uint8Array(23).fill(255);
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -296,6 +299,7 @@ export class SynthesizerCore {
         // Register insertion
         for (const insertion of insertionList)
             this.registerInsertionProcessor(insertion);
+        this.resetInsertionParams(); // Initial setup
 
         // Initialize voices
         this.voices = [];
@@ -869,15 +873,6 @@ export class SynthesizerCore {
     public getInsertionSnapshot(): InsertionProcessorSnapshot {
         return {
             type: this.insertionProcessor.type,
-            sendLevelToReverb: Math.floor(
-                this.insertionProcessor.sendLevelToReverb * 127
-            ),
-            sendLevelToChorus: Math.floor(
-                this.insertionProcessor.sendLevelToChorus * 127
-            ),
-            sendLevelToDelay: Math.floor(
-                this.insertionProcessor.sendLevelToDelay * 127
-            ),
             params: this.insertionParams.slice(),
             channels: this.midiChannels.map((c) => c.insertionEnabled)
         };
@@ -893,15 +888,24 @@ export class SynthesizerCore {
         this.eventCallbackHandler(eventName, eventData);
     }
 
+    protected resetInsertionParams() {
+        // No change
+        this.insertionParams.fill(255);
+        this.insertionParams[20] = 40; // Reverb
+        this.insertionParams[21] = 0; // Chorus
+        this.insertionParams[22] = 0; // Delay
+    }
+
     protected resetInsertion() {
         if (this.masterParameters.insertionEffectLock) return;
         this.insertionActive = false;
         this.insertionProcessor = this.insertionFallback;
         this.insertionProcessor.reset();
-        this.insertionProcessor.sendLevelToReverb = 40 / 127;
+        this.insertionProcessor.sendLevelToReverb =
+            (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
         this.insertionProcessor.sendLevelToChorus = 0;
         this.insertionProcessor.sendLevelToDelay = 0;
-        this.insertionParams.fill(255);
+        this.resetInsertionParams();
         this.callEvent("effectChange", {
             effect: "insertion",
             parameter: 0,
