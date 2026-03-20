@@ -193,7 +193,7 @@ export class SpessaSynthSequencer {
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
-     * Songs are shuffled on a `loadNewSequence` call.
+     * Songs are shuffled on a `loadNewSongList` call.
      */
     public get shuffleMode(): boolean {
         return this._shuffleMode;
@@ -203,7 +203,7 @@ export class SpessaSynthSequencer {
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
-     * Songs are shuffled on a `loadNewSequence` call.
+     * Songs are shuffled on a `loadNewSongList` call.
      */
     public set shuffleMode(on: boolean) {
         this._shuffleMode = on;

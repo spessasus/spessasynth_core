@@ -81,7 +81,7 @@ This field can be set to trigger a change.
 Controls if the sequencer should shuffle the songs in the song list.
 If true, the sequencer will play the songs in a random order.
 
-Songs are shuffled on a `loadNewSequence` call.
+Songs are shuffled on a `loadNewSongList` call.
 
 ### playbackRate
 
