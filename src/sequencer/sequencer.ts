@@ -29,9 +29,9 @@ export class SpessaSynthSequencer {
     public songs: BasicMIDI[] = [];
     /**
      * The shuffled song indexes.
-     * This is used when shuffleMode is enabled.
+     * This is used when shuffle mode is enabled.
      */
-    public shuffledSongIndexes: number[] = [];
+    public readonly shuffledSongIndexes: number[] = [];
     /**
      * The synthesizer connected to the sequencer.
      */
@@ -170,7 +170,7 @@ export class SpessaSynthSequencer {
     // noinspection JSUnusedGlobalSymbols
     /**
      * The current song index in the song list.
-     * If shuffleMode is enabled, this is the index of the shuffled song list.
+     * If shuffle mode is enabled, this is the index of the shuffled song list.
      */
     public get songIndex(): number {
         return this._songIndex;
@@ -179,7 +179,7 @@ export class SpessaSynthSequencer {
     // noinspection JSUnusedGlobalSymbols
     /**
      * The current song index in the song list.
-     * If shuffleMode is enabled, this is the index of the shuffled song list.
+     * If shuffle mode is enabled, this is the index of the shuffled song list.
      */
     public set songIndex(value: number) {
         this._songIndex = value;
@@ -193,6 +193,7 @@ export class SpessaSynthSequencer {
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
+     * Songs are shuffled on a `loadNewSequence` call.
      */
     public get shuffleMode(): boolean {
         return this._shuffleMode;
@@ -202,16 +203,10 @@ export class SpessaSynthSequencer {
     /**
      * Controls if the sequencer should shuffle the songs in the song list.
      * If true, the sequencer will play the songs in a random order.
+     * Songs are shuffled on a `loadNewSequence` call.
      */
     public set shuffleMode(on: boolean) {
         this._shuffleMode = on;
-        if (on) {
-            this.shuffleSongIndexes();
-            this._songIndex = 0;
-            this.loadCurrentSong();
-        } else {
-            this._songIndex = this.shuffledSongIndexes[this._songIndex];
-        }
     }
 
     /**
@@ -484,7 +479,7 @@ export class SpessaSynthSequencer {
 
     protected shuffleSongIndexes() {
         const indexes = this.songs.map((_, i) => i);
-        this.shuffledSongIndexes = [];
+        this.shuffledSongIndexes.length = 0;
         while (indexes.length > 0) {
             const index = indexes[Math.floor(Math.random() * indexes.length)];
             this.shuffledSongIndexes.push(index);
@@ -595,18 +590,6 @@ export class SpessaSynthSequencer {
             midiMessageTypes.controllerChange | channel,
             type,
             value
-        ]);
-    }
-
-    protected sendMIDIProgramChange(channel: number, program: number) {
-        if (!this.externalMIDIPlayback) {
-            this.synth.programChange(channel, program);
-            return;
-        }
-        channel %= 16;
-        this.sendMIDIMessage([
-            midiMessageTypes.programChange | channel,
-            program
         ]);
     }
 

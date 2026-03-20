@@ -23,7 +23,7 @@ An array of `BasicMIDI`s, the current song list.
 ### shuffledSongIndexes
 
 The shuffled song indexes.
-This is used when shuffleMode is enabled.
+This is used when shuffle mode is enabled.
 An array of numbers.
 
 ### synth
@@ -72,7 +72,7 @@ The length of the current sequence in seconds.
 ### songIndex
 
 The current song index in the song list.
-If shuffleMode is enabled, this is the index of the shuffled song list.
+If shuffle mode is enabled, this is the index of the shuffled song list.
 
 This field can be set to trigger a change.
 
@@ -81,7 +81,7 @@ This field can be set to trigger a change.
 Controls if the sequencer should shuffle the songs in the song list.
 If true, the sequencer will play the songs in a random order.
 
-This field can be set to trigger a change.
+Songs are shuffled on a `loadNewSequence` call.
 
 ### playbackRate
 
