@@ -324,6 +324,10 @@ synth.applySynthesizerSnapshot(snapshot);
 
 - snapshot - the snapshot to apply.
 
+!!! WARNING
+
+    This method overrides the existing master parameters with the ones from the snapshot.
+
 ### getSnapshot
 
 Get a [SynthesizerSnapshot](synthesizer-snapshot.md) instance of this synthesizer.

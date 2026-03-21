@@ -45,6 +45,10 @@ snapshot.apply(synth);
 
 - synth - the processor to apply the snapshot to.
 
+!!! WARNING
+
+    This method overrides the existing master parameters with the ones from the snapshot.
+
 ## Properties
 
 ### channelSnapshots
