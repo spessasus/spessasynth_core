@@ -3,14 +3,14 @@
 <img src='https://raw.githubusercontent.com/spessasus/SpessaSynth/refs/heads/master/src/website/spessasynth_logo_rounded.png' width='300' alt='SpessaSynth logo'>
 </p>
 
-_A powerful SF2/DLS/MIDI TypeScript/JavaScript library. It works with any modern JS environment that supports
+_A powerful multipurpose SF2/DLS/MIDI JavaScript library. It works with any modern JS environment that supports
 WebAssembly._
 
 It allows you to:
 
 - Play MIDI files using SF2/SF3/DLS files!
 - Read and write MIDI files!
-- Write SF2/SF3 files!
+- Read and write SF2/SF3 files!
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
@@ -23,7 +23,7 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 > Looking for an easy-to-use WebAudioAPI browser wrapper?
 > Try [spessasynth_lib](https://github.com/spessasus/spessasynth_lib)!
 
-### [Project site (consider giving it a star!)](https://github.com/spessasus/spessasynth_core)
+**[Project site (consider giving it a star!)](https://github.com/spessasus/spessasynth_core)**
 
 ### Made with spessasynth_core
 
@@ -44,12 +44,12 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 ### Easy Integration
 
-- **Modular design:** _Easy integration into other projects (load what you need)_
+- **Modular design:** _Easy integration into other projects (only load what you need)_
 - **Flexible:** _It's not just a MIDI player!_
 - **Easy to Use:** _Basic setup is
   just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
 - **No dependencies:** _Batteries included!_
-- **TypeScript definitions:** _Autocompletion in IDEs!_
+- **Full TypeScript definitions:** _Autocompletion in IDEs!_
 
 ### Powerful MIDI Synthesizer
 
@@ -57,13 +57,11 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 - **Excellent SoundFont support:**
     - **Full Generator Support**
     - **Full Modulator Support:** _First (to my knowledge) JavaScript SoundFont synth with that feature!_
-    - **GeneralUserGS Compatible:**
+    - **GeneralUser-GS Compatible:**
       _[See more here!](https://github.com/mrbumpy409/GeneralUser-GS/blob/main/documentation/README.md)_
     - **SoundFont3 Support:** Play compressed SoundFonts!
     - **Experimental SF2Pack Support:** Play soundfonts compressed with BASSMIDI! (_Note: only works with vorbis
       compression_)
-    - **Can load very large SoundFonts:** up to 4GB! _Note: Only Firefox handles this well; Chromium has a hard-coded
-      memory limit_
 - **Great DLS Support:**
     - **DLS Level 1 Support**
     - **DLS Level 2 Support**
@@ -74,14 +72,15 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
     - **A-Law encoding support**
     - **Both unsigned 8-bit and signed 16-bit sample support (24-bit theoretically supported as well!)**
     - **Detects special articulator combinations:** _Such as vibratoLfoToPitch_
-- **Soundfont manager:** Stack multiple soundfonts!
+- **Sound bank manager:** Stack multiple sound banks!
 - **Unlimited channel count:** Your CPU is the limit!
 - **Built-in, configurable effects:**
     - **Reverb:** _Multiple characters including delay and panning delay!_
     - **Chorus:** _Modulated delay lines with multiple presets!_
     - **Delay:** _Three delay lines for all of your delay needs!_
     - **Insertion Effects:** _The ultimate effects, they can give your sounds a completely different character! (limited support)_
-    - **Replaceable:** _Effects not to your taste? You can bring your own!_
+    - **GS Compatible:** _MIDI files can configure the effects accurately!_
+    - **Replaceable:** _Effects not to your liking? You can replace them with your own!_
 - **Excellent MIDI Standards Support:**
     - **MIDI Controller Support:** Default supported
       controllers [here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#default-supported-controllers)
@@ -89,14 +88,13 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
     - **Sound Controllers:** _Real-time filter and envelope control!_
     - **MIDI Tuning Standard Support:**
       _[more info here](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#midi-tuning-standard)_
-    - [Full **RPN** and limited **NRPN**
+    - [Full **RPN** and extensive **NRPN**
       support](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-registered-parameters)
     - **SoundFont2 NRPN Support**
     - [**AWE32**
       NRPN Compatibility Layer](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#awe32-nrpn-compatibility-layer)
     - [**Roland GS** and **Yamaha XG**
       support!](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-system-exclusives)
-    - Built-in effects are GS-Compatible!
 
 ### Powerful and Fast MIDI Sequencer
 
@@ -181,7 +179,7 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 ### Limitations
 
-- Synth's performance may be questionable sometimes
+- Audio engine is written in pure TypeScript, so it may not be as performant as native implementations
 - [SF2 to DLS Conversion limits](https://spessasus.github.io/spessasynth_core/extra/dls-conversion-problem)
 
 #### TODO
@@ -208,6 +206,8 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 ### Short example: MIDI to wav converter
 
+For use with node.js
+
 ```ts
 import * as fs from "fs/promises";
 import {
@@ -226,24 +226,30 @@ if (args.length !== 3) {
     );
     process.exit();
 }
+// Read MIDI and sound bank
 const sf = await fs.readFile(args[0]);
 const mid = await fs.readFile(args[1]);
+// Parse the MIDI and sound bank
 const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
-const sampleRate = 44100;
-const sampleCount = Math.ceil(44100 * (midi.duration + 2));
+const soundBank = SoundBankLoader.fromArrayBuffer(sf.buffer);
+
+// Initialize the synthesizer
+const sampleRate = 48000;
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEventSystem: false,
-    enableEffects: false
+    enableEventSystem: false
 });
-synth.soundBankManager.addSoundBank(
-    SoundBankLoader.fromArrayBuffer(sf.buffer),
-    "main"
-);
+synth.soundBankManager.addSoundBank(soundBank, "main");
 await synth.processorInitialized;
+// Enable uncapped voice count
+synth.setMasterParameter("autoAllocateVoices", true);
+
+// Initialize the sequencer
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
 seq.play();
 
+// Prepare the output buffers
+const sampleCount = Math.ceil(sampleRate * (midi.duration + 2));
 const outLeft = new Float32Array(sampleCount);
 const outRight = new Float32Array(sampleCount);
 const start = performance.now();
@@ -252,13 +258,12 @@ let filledSamples = 0;
 const BUFFER_SIZE = 128;
 let i = 0;
 const durationRounded = Math.floor(seq.midiData!.duration * 100) / 100;
-const outputArray = [outLeft, outRight];
 while (filledSamples < sampleCount) {
     // Process sequencer
     seq.processTick();
     // Render
     const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
-    synth.renderAudio(outputArray, [], [], filledSamples, bufferSize);
+    synth.process(outLeft, outRight, filledSamples, bufferSize);
     filledSamples += bufferSize;
     i++;
     // Log progress
@@ -282,6 +287,8 @@ await fs.writeFile(args[2], new Uint8Array(wave));
 console.info(`File written to ${args[2]}`);
 ```
 
+Read more in the [documentation](https://spessasus.github.io/spessasynth_core)
+
 ### Building
 
 To build the NPM package, do:
@@ -301,6 +308,7 @@ Licensed under the Apache-2.0 License.
 #### Legal
 
 This project is in no way endorsed or otherwise affiliated with the MIDI Manufacturers Association,
-Creative Technology Ltd. or E-mu Systems, Inc., or any other organization mentioned.
+Roland Corporation, Yamaha Corporation, Creative Technology Ltd. or E-mu Systems, Inc.,
+or any other organization mentioned.
 SoundFont® is a registered trademark of Creative Technology Ltd.
 All other trademarks are the property of their respective owners.
