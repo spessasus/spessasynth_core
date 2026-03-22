@@ -175,13 +175,11 @@ export class SpessaSynthProcessor {
      * Processes a raw MIDI message.
      * @param message The message to process.
      * @param channelOffset The channel offset for the message.
-     * @param force If true, forces the message to be processed.
      * @param options Additional options for scheduling the message.
      */
     public readonly processMessage: (
         message: Uint8Array | number[],
         channelOffset?: number,
-        force?: boolean,
         options?: SynthMethodOptions
     ) => void;
 

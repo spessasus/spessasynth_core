@@ -137,9 +137,6 @@ synth.processMessage(message, (channelOffset = 0), force, eventOptions);
 
 - message - `Uint8Array` - The MIDI message to process.
 - channelOffset - number, optional - adds to the channel number of the message. It defaults to 0.
-- force - boolean - forces the message. That is:
-    - kills a note instead of releasing it
-    - force sets a controller
 - eventOptions - an object, currently defined properties are:
     - time - number - time in seconds for when the message is executed.
       This allows message scheduling.

@@ -255,7 +255,6 @@ export class SynthesizerCore {
      */
     private eventQueue: {
         message: Uint8Array | number[];
-        force: boolean;
         channelOffset: number;
         time: number;
     }[] = [];
@@ -444,13 +443,11 @@ export class SynthesizerCore {
      * Processes a raw MIDI message.
      * @param message The message to process.
      * @param channelOffset The channel offset for the message.
-     * @param force If true, forces the message to be processed.
      * @param options Additional options for scheduling the message.
      */
     public processMessage(
         message: Uint8Array | number[],
         channelOffset = 0,
-        force = false,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
         const time = options.time;
@@ -458,12 +455,11 @@ export class SynthesizerCore {
             this.eventQueue.push({
                 message,
                 channelOffset,
-                force,
                 time
             });
             this.eventQueue.sort((e1, e2) => e1.time - e2.time);
         } else {
-            this.processMessageInternal(message, channelOffset, force);
+            this.processMessageInternal(message, channelOffset);
         }
     }
 
@@ -688,11 +684,7 @@ export class SynthesizerCore {
             while (this.eventQueue[0]?.time <= time) {
                 const q = this.eventQueue.shift();
                 if (q) {
-                    this.processMessageInternal(
-                        q.message,
-                        q.channelOffset,
-                        q.force
-                    );
+                    this.processMessageInternal(q.message, q.channelOffset);
                 }
             }
         }
@@ -1334,8 +1326,7 @@ export class SynthesizerCore {
 
     private processMessageInternal(
         message: Uint8Array | number[],
-        channelOffset: number,
-        force: boolean
+        channelOffset: number
     ) {
         const statusByteData = getEvent(message[0] as MIDIMessageType);
 
@@ -1353,11 +1344,7 @@ export class SynthesizerCore {
             }
 
             case midiMessageTypes.noteOff: {
-                if (force) {
-                    this.midiChannels[channelNumber].killNote(message[1]);
-                } else {
-                    this.noteOff(channelNumber, message[1]);
-                }
+                this.noteOff(channelNumber, message[1]);
                 break;
             }
 

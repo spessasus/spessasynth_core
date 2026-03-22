@@ -15,8 +15,6 @@ import { BankSelectHacks } from "../../../../utils/midi_hacks";
  * midiControllers table and handling special cases like bank select,
  * data entry, and sustain pedal. It also computes modulators for all voices
  * in the channel based on the controller change.
- * If the controller number is greater than 127, it is treated as a channel
- * configuration controller, and the `force` parameter must be set to true
  * to allow changes.
  */
 export function controllerChange(
