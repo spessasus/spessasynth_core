@@ -104,6 +104,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
         }
 
         // Process NRPNs
+        case dataEntryStates.NRPCoarse:
         case dataEntryStates.NRPFine: {
             const paramCoarse =
                 this.midiControllers[
