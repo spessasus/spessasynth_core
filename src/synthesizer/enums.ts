@@ -22,14 +22,40 @@ export type DataEntryState =
     (typeof dataEntryStates)[keyof typeof dataEntryStates];
 
 export const customControllers = {
-    channelTuning: 0, // Cents, RPN for fine tuning
-    channelTransposeFine: 1, // Cents, only the decimal tuning, (e.g., transpose is 4.5,
-    // Then shift by 4 keys + tune by 50 cents)
-    modulationMultiplier: 2, // Cents, set by modulation depth RPN
-    masterTuning: 3, // Cents, set by system exclusive
-    channelTuningSemitones: 4, // Semitones, for RPN coarse tuning
-    channelKeyShift: 5, // Key shift: for system exclusive
-    sf2NPRNGeneratorLSB: 6 // Sf2 NPRN LSB for selecting a generator value
+    /**
+     * Cents, RPN for fine-tuning
+     */
+    channelTuning: 0,
+    /**
+     * Cents, only the decimal tuning, (e.g., transpose is 4.5,
+     * Then shift by 4 keys + tune by 50 cents)
+     */
+    channelTransposeFine: 1,
+    /**
+     * The MIDI specification assumes the default modulation depth is 50 cents,
+     * but it may vary for different sound banks.
+     * For example, if you want a modulation depth of 100 cents,
+     * the multiplier will be 2,
+     * which, for a preset with a depth of 50,
+     * will create a total modulation depth of 100 cents.
+     */
+    modulationMultiplier: 2,
+    /**
+     * Cents, set by system exclusive
+     */
+    masterTuning: 3,
+    /**
+     * Semitones, for RPN coarse tuning
+     */
+    channelTuningSemitones: 4,
+    /**
+     * Key shift: for system exclusive
+     */
+    channelKeyShift: 5,
+    /**
+     * Sf2 NPRN LSB for selecting a generator value
+     */
+    sf2NPRNGeneratorLSB: 6
 } as const;
 
 export type CustomController =

@@ -960,18 +960,32 @@ export function handleGS(
 
                                     case 0x04: {
                                         // LFO1 pitch depth
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.vibLfoToPitch,
-                                            normalizedNotCentered * 600,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            normalizedNotCentered * 600,
-                                            `${sourceName} LFO1 pitch depth`,
-                                            "cents"
-                                        );
+                                        // Special case:
+                                        // If the source is a mod wheel, it's a strange way of setting the modulation depth
+                                        // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
+                                        if (
+                                            source ===
+                                            midiControllers.modulationWheel
+                                        ) {
+                                            const cents =
+                                                normalizedNotCentered * 600;
+                                            channelObject.customControllers[
+                                                customControllers.modulationMultiplier
+                                            ] = cents / 50;
+                                        } else {
+                                            channelObject.sysExModulators.setModulator(
+                                                source as ModulatorSourceEnum,
+                                                generatorTypes.vibLfoToPitch,
+                                                normalizedNotCentered * 600,
+                                                bipolar
+                                            );
+                                            sysExLogging(
+                                                channel,
+                                                normalizedNotCentered * 600,
+                                                `${sourceName} LFO1 pitch depth`,
+                                                "cents"
+                                            );
+                                        }
                                         break;
                                     }
 
