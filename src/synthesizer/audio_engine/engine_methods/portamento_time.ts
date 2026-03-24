@@ -91,7 +91,15 @@ function portaTimeToRate(cc: number): number {
         // JavaScript has sadly no bitscan operations for bittwiddling-like optimizations, so we use a series of comparisons here.
         // Note: modified to please the TypeScript compiler.
         const thresholds = [2, 4, 8, 16, 32, 64, 80, 96, 112, 120, 124];
-        const s = thresholds.findLastIndex((t) => t < cc) + 1;
+        // No findLast in es 2022 :((
+        let s = -1;
+        for (let i = thresholds.length - 1; i >= 0; i--) {
+            if (thresholds[i] < cc) {
+                s = i;
+                break;
+            }
+        }
+        s += 1;
 
         const t = (cc - x0[s]) * ih[s];
         return (
