@@ -90,7 +90,7 @@ export class WaveSample extends DLSVerifier {
             const cbSize = readLittleEndianIndexed(chunk.data, 4);
             if (cbSize !== WSMP_LOOP_SIZE) {
                 SpessaSynthWarn(
-                    `CbSize for loop in wsmp mismatch. Expected ${WSMP_SIZE}, got ${cbSize}.`
+                    `CbSize for loop in wsmp mismatch. Expected ${WSMP_LOOP_SIZE}, got ${cbSize}.`
                 );
             }
             // Loop type: loop normally or loop until release (like soundfont)
