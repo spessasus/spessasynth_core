@@ -84,7 +84,7 @@ function readALAW(
         const s16sample = input > 127 ? mantissa : -mantissa;
 
         // Convert to float
-        sampleData[i] = s16sample / 32_678;
+        sampleData[i] = s16sample / 32_768;
     }
     return sampleData;
 }
