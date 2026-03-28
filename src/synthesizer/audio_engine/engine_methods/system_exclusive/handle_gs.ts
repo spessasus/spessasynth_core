@@ -1222,10 +1222,14 @@ export function handleGS(
 
                             case 0x1: {
                                 // Here it's relative to 60, not 64 like NRPN. For some reason...
-                                const pitch = (data - 60) * 50;
+
+                                const pitch = data - 60;
                                 for (const ch of this.midiChannels) {
                                     if (ch.drumMap !== map) continue;
-                                    ch.drumParams[drumKey].pitch = pitch;
+                                    // Apply same thing: SC-55 uses 100 cents, SC-88 and above is 50
+                                    ch.drumParams[drumKey].pitch =
+                                        pitch *
+                                        (ch.patch.bankLSB === 1 ? 100 : 50);
                                 }
                                 coolInfo(
                                     `Drum Pitch for MAP${map}, key ${drumKey}`,

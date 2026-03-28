@@ -30,47 +30,50 @@ builder.addEvent(
 
 let ticks = 780;
 
-function sendAddress(a1: number, a2: number, a3: number, data: number) {
-    // Calculate checksum
-    // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
-    const sum = a1 + a2 + a3 + data;
-    const checksum = (128 - (sum % 128)) & 0x7f;
-    builder.addEvent(
-        ticks,
-        0,
-        midiMessageTypes.systemExclusive,
-        new IndexedByteArray([
-            0x41, // Roland
-            0x10, // Device ID (defaults to 16 on roland)
-            0x42, // GS
-            0x12, // Command ID (DT1) (whatever that means...)
-            a1,
-            a2,
-            a3,
-            data,
-            checksum,
-            0xf7 // End of exclusive
-        ])
-    );
-}
+let MIDI_NOTE = 50;
 
 builder.addControllerChange(ticks, 0, 9, midiControllers.reverbDepth, 0);
-// SC-88 MAP ROOM
+// SC-88Pro MAP STANDARD
 builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 3);
-builder.addProgramChange(ticks, 0, 9, 8);
+builder.addProgramChange(ticks, 0, 9, 0);
 
 let pitch = 50;
 while (pitch <= 70) {
     // Rate
-    sendAddress(0x41, 0x01, 40, Math.min(127, pitch));
+    builder.addControllerChange(
+        ticks,
+        0,
+        9,
+        midiControllers.nonRegisteredParameterMSB,
+        0x18
+    );
+    builder.addControllerChange(
+        ticks,
+        0,
+        9,
+        midiControllers.nonRegisteredParameterLSB,
+        MIDI_NOTE
+    );
+    builder.addControllerChange(
+        ticks,
+        0,
+        9,
+        midiControllers.dataEntryMSB,
+        pitch
+    );
     ticks += 240;
-    builder.addNoteOn(ticks, 0, 9, 40, 120);
+    builder.addNoteOn(ticks, 0, 9, MIDI_NOTE, 120);
     ticks += 80;
-    builder.addNoteOff(ticks, 0, 9, 40);
+    builder.addNoteOff(ticks, 0, 9, MIDI_NOTE);
     pitch += 1;
 }
 
 ticks += 480;
+
+MIDI_NOTE = 48; // The same tom pitch compared to 88Pro
+// SC-55 MAP STANDARD
+builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 1);
+builder.addProgramChange(ticks, 0, 9, 0);
 
 ticks += 480;
 
@@ -89,7 +92,7 @@ while (pitch <= 70) {
         0,
         9,
         midiControllers.nonRegisteredParameterLSB,
-        40
+        MIDI_NOTE
     );
     builder.addControllerChange(
         ticks,
@@ -99,9 +102,9 @@ while (pitch <= 70) {
         pitch
     );
     ticks += 240;
-    builder.addNoteOn(ticks, 0, 9, 40, 120);
+    builder.addNoteOn(ticks, 0, 9, MIDI_NOTE, 120);
     ticks += 80;
-    builder.addNoteOff(ticks, 0, 9, 40);
+    builder.addNoteOff(ticks, 0, 9, MIDI_NOTE);
     pitch += 1;
 }
 

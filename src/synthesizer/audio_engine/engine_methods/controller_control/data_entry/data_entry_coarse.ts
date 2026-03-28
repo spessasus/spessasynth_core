@@ -311,9 +311,10 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     /**
                      * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
                      * it's actually 50 cents! (not for XG though)
+                     * also if SC-55 preset is explicitly requested (MAP1 - LSB 1), it's 100 cents as well!
                      */
                     const pitch =
-                        this.channelSystem === "xg"
+                        this.channelSystem === "xg" || this.patch.bankLSB === 1
                             ? (dataCoarse - 64) * 100
                             : (dataCoarse - 64) * 50;
                     this.drumParams[paramFine].pitch = pitch;
