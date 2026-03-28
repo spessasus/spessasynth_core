@@ -307,5 +307,6 @@ export interface InsertionProcessorSnapshot {
 }
 
 export type InsertionProcessorConstructor = new (
-    sampleRate: number
+    sampleRate: number,
+    maxBufferSize: number
 ) => InsertionProcessor;

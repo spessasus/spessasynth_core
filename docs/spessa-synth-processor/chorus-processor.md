@@ -73,7 +73,7 @@ Process the effect and **adds** it to the output.
 - outputReverb - The mono input for reverb. It always starts at index 0.
 - outputDelay - The mono input for delay. It always starts at index 0.
 - startIndex - The index to start mixing at into the output buffers.
-- sampleCount - The amount of samples to mix.
+- sampleCount - The amount of samples to mix. This will never be larger than `maxBufferSize` of the parent `SpessaSynthProcessor` instance.
 
 ### getSnapshot
 

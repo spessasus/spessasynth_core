@@ -369,6 +369,12 @@ export interface ChannelProperty {
 
 export interface SynthProcessorOptions {
     /**
+     * The maximum buffer size the synthesizer can render at once.
+     * Attempting to `.process()` more samples than this will result in an error.
+     * Defaults to 128.
+     */
+    maxBufferSize: number;
+    /**
      * Indicates if the event system is enabled. This can be changed later.
      */
     enableEventSystem: boolean;
@@ -384,17 +390,17 @@ export interface SynthProcessorOptions {
     /**
      * Reverb processor for the synthesizer. Leave undefined to use the default.
      */
-    reverbProcessor: ReverbProcessor;
+    reverbProcessor?: ReverbProcessor;
 
     /**
      * Chorus processor for the synthesizer. Leave undefined to use the default.
      */
-    chorusProcessor: ChorusProcessor;
+    chorusProcessor?: ChorusProcessor;
 
     /**
      * Delay processor for the synthesizer. Leave undefined to use the default.
      */
-    delayProcessor: DelayProcessor;
+    delayProcessor?: DelayProcessor;
 }
 
 /**

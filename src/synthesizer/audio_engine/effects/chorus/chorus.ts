@@ -31,12 +31,14 @@ export class SpessaSynthChorus implements ChorusProcessor {
     private rateInc = 0;
     private feedbackGain = 0;
 
-    public constructor(sampleRate: number) {
+    public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
         this.leftDelayBuffer = new Float32Array(sampleRate);
         this.rightDelayBuffer = new Float32Array(sampleRate);
         // Update alpha
         this.preLowpass = 0;
+        // For consistency across effects
+        void maxBufferSize;
     }
 
     private _sendLevelToReverb = 0;

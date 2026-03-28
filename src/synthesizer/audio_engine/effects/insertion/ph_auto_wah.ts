@@ -1,7 +1,6 @@
 import type { InsertionProcessor } from "../types";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
-import { SPESSA_BUFSIZE } from "../../engine_components/synth_constants";
 import { panTableLeft, panTableRight } from "./utils";
 
 /*
@@ -44,12 +43,15 @@ export class PhAutoWahFx implements InsertionProcessor {
 
     private readonly phaser;
     private readonly autoWah;
-    private bufferPh = new Float32Array(SPESSA_BUFSIZE);
-    private bufferAw = new Float32Array(SPESSA_BUFSIZE);
+    private readonly bufferPh;
+    private readonly bufferAw;
 
-    public constructor(sampleRate: number) {
+    public constructor(sampleRate: number, maxBufferSize: number) {
         this.phaser = new PhaserFX(sampleRate);
         this.autoWah = new AutoWahFX(sampleRate);
+        this.bufferAw = new Float32Array(maxBufferSize);
+        this.bufferPh = new Float32Array(maxBufferSize);
+
         this.phaser.sendLevelToReverb = 0;
         this.phaser.sendLevelToChorus = 0;
         this.phaser.sendLevelToDelay = 0;
@@ -88,11 +90,6 @@ export class PhAutoWahFx implements InsertionProcessor {
             level
         } = this;
 
-        // Resize buffer if needed
-        if (sampleCount > this.bufferPh.length) {
-            this.bufferPh = new Float32Array(sampleCount);
-            this.bufferAw = new Float32Array(sampleCount);
-        }
         const { bufferPh, bufferAw } = this;
         // Process phaser
         this.bufferPh.fill(0);

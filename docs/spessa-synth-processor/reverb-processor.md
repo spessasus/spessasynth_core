@@ -62,7 +62,7 @@ Process the effect and **adds** it to the output.
 - outputLeft - The left output buffer.
 - outputRight - The right output buffer.
 - startIndex - The index to start mixing at into the output buffers.
-- sampleCount - The amount of samples to mix.
+- sampleCount - The amount of samples to mix. This will never be larger than `maxBufferSize` of the parent `SpessaSynthProcessor` instance.
 
 ### getSnapshot
 

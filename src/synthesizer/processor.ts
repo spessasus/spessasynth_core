@@ -6,7 +6,7 @@ import {
     MIDI_CHANNEL_COUNT
 } from "./audio_engine/engine_components/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { getDefaultSynthOptions } from "./audio_engine/engine_components/synth_processor_options";
+import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/engine_components/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
 import type {
@@ -51,7 +51,7 @@ export class SpessaSynthProcessor {
     public onEventCall?: (event: SynthProcessorEvent) => unknown;
 
     /**
-     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
+     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`
      * All float arrays must have the same length.
      * @param left the left output channel.
      * @param right the right output channel.
@@ -67,7 +67,7 @@ export class SpessaSynthProcessor {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
+     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize
      * All float arrays must have the same length.
      * @param outputs any number stereo pairs (L, R) to render channels separately into.
      * @param effectsLeft the left stereo effect output buffer.
@@ -201,8 +201,7 @@ export class SpessaSynthProcessor {
         sampleRate: number,
         opts: Partial<SynthProcessorOptions> = {}
     ) {
-        const defs = getDefaultSynthOptions(sampleRate);
-        const options: SynthProcessorOptions = fillWithDefaults(opts, defs);
+        const options = fillWithDefaults(opts, DEFAULT_SYNTH_OPTIONS);
         this.sampleRate = sampleRate;
         if (
             !Number.isFinite(options.initialTime) ||
@@ -356,7 +355,26 @@ export class SpessaSynthProcessor {
     ) {
         void reverb;
         void chorus;
-        this.synthCore.process(outputs[0], outputs[1], startIndex, sampleCount);
+        const maxBuff = this.synthCore.maxBufferSize;
+        if (sampleCount > maxBuff) {
+            let samples = 0;
+            while (samples < sampleCount) {
+                const blockSize = Math.min(maxBuff, sampleCount - samples);
+                this.synthCore.process(
+                    outputs[0],
+                    outputs[1],
+                    startIndex + samples,
+                    blockSize
+                );
+                samples += blockSize;
+            }
+        } else
+            this.synthCore.process(
+                outputs[0],
+                outputs[1],
+                startIndex,
+                sampleCount
+            );
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -379,13 +397,28 @@ export class SpessaSynthProcessor {
         sampleCount = 0
     ) {
         void chorusChannels;
-        this.synthCore.processSplit(
-            separateChannels,
-            reverbChannels[0],
-            reverbChannels[1],
-            startIndex,
-            sampleCount
-        );
+        const maxBuff = this.synthCore.maxBufferSize;
+        if (sampleCount > maxBuff) {
+            let samples = 0;
+            while (samples < sampleCount) {
+                const blockSize = Math.min(maxBuff, sampleCount - samples);
+                this.synthCore.processSplit(
+                    separateChannels,
+                    reverbChannels[0],
+                    reverbChannels[1],
+                    startIndex + samples,
+                    blockSize
+                );
+                samples += blockSize;
+            }
+        } else
+            this.synthCore.processSplit(
+                separateChannels,
+                reverbChannels[0],
+                reverbChannels[1],
+                startIndex,
+                sampleCount
+            );
     }
 
     /**

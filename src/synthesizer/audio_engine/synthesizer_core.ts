@@ -17,8 +17,7 @@ import { KeyModifierManager } from "./engine_components/key_modifier_manager";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
-    EFX_SENDS_GAIN_CORRECTION,
-    SPESSA_BUFSIZE
+    EFX_SENDS_GAIN_CORRECTION
 } from "./engine_components/synth_constants";
 import { customControllers } from "../enums";
 import { modulatorSources } from "../../soundbank/enums";
@@ -47,7 +46,10 @@ import { LowpassFilter } from "./engine_components/dsp_chain/lowpass_filter";
 
 import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
 import { ThruFX } from "./effects/insertion/thru";
-import { insertionList } from "./effects/insertion_list"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+import { insertionList } from "./effects/insertion_list";
+import { SpessaSynthReverb } from "./effects/reverb/reverb";
+import { SpessaSynthChorus } from "./effects/chorus/chorus";
+import { SpessaSynthDelay } from "./effects/delay/delay"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -68,25 +70,34 @@ export class SynthesizerCore {
      */
     public readonly midiChannels: MIDIChannel[] = [];
     /**
+     * The maximum allowed buffer size to render.
+     */
+    public readonly maxBufferSize: number;
+    /**
+     * The buffer to use when rendering a voice.
+     */
+    public readonly voiceBuffer;
+
+    /**
      * The insertion processor's left input buffer.
      */
-    public insertionInputL = new Float32Array(SPESSA_BUFSIZE);
+    public readonly insertionInputL;
     /**
      * The insertion processor's right input buffer.
      */
-    public insertionInputR = new Float32Array(SPESSA_BUFSIZE);
+    public readonly insertionInputR;
     /**
      * The reverb processor's input buffer.
      */
-    public reverbInput = new Float32Array(SPESSA_BUFSIZE);
+    public readonly reverbInput;
     /**
      * The chorus processor's input buffer.
      */
-    public chorusInput = new Float32Array(SPESSA_BUFSIZE);
+    public readonly chorusInput;
     /**
      * The delay processor's input buffer.
      */
-    public delayInput = new Float32Array(SPESSA_BUFSIZE);
+    public readonly delayInput;
     /**
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
      */
@@ -282,6 +293,7 @@ export class SynthesizerCore {
         this.currentTime = options.initialTime;
         this.enableEffects = options.enableEffects;
         this.enableEventSystem = options.enableEventSystem;
+        this.maxBufferSize = options.maxBufferSize;
         // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
         // Volume  smoothing factor
         this.gainSmoothingFactor =
@@ -290,10 +302,24 @@ export class SynthesizerCore {
         this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44_100 / sampleRate);
         LowpassFilter.initCache(this.sampleRate);
 
+        const bufSize = this.maxBufferSize;
         // Initialize effects
-        this.reverbProcessor = options.reverbProcessor;
-        this.chorusProcessor = options.chorusProcessor;
-        this.delayProcessor = options.delayProcessor;
+        this.reverbProcessor =
+            options.reverbProcessor ??
+            new SpessaSynthReverb(sampleRate, bufSize);
+        this.chorusProcessor =
+            options.chorusProcessor ??
+            new SpessaSynthChorus(sampleRate, bufSize);
+        this.delayProcessor =
+            options.delayProcessor ?? new SpessaSynthDelay(sampleRate, bufSize);
+
+        // Initialize buffers
+        this.voiceBuffer = new Float32Array(bufSize);
+        this.insertionInputL = new Float32Array(bufSize);
+        this.insertionInputR = new Float32Array(bufSize);
+        this.reverbInput = new Float32Array(bufSize);
+        this.chorusInput = new Float32Array(bufSize);
+        this.delayInput = new Float32Array(bufSize);
 
         // Register insertion
         for (const insertion of insertionList)
@@ -692,29 +718,18 @@ export class SynthesizerCore {
         // Validate
         startIndex = Math.max(startIndex, 0);
         const sampleCount = samples || outputs[0][0].length - startIndex;
+        if (sampleCount > this.maxBufferSize)
+            throw new Error(
+                `Requested ${sampleCount} samples, but maxBufferSize is ${this.maxBufferSize}`
+            );
 
-        // Grow buffers if needed
-        if (this.enableEffects) {
-            // Grow buffers if needed
-            if (this.reverbInput.length < sampleCount) {
-                SpessaSynthWarn(
-                    "Buffer size has increased, this will cause a memory allocation!"
-                );
-                this.reverbInput = new Float32Array(sampleCount);
-                this.chorusInput = new Float32Array(sampleCount);
-                this.delayInput = new Float32Array(sampleCount);
-                this.insertionInputL = new Float32Array(sampleCount);
-                this.insertionInputR = new Float32Array(sampleCount);
-            } else {
-                // Clear the buffers
-                this.reverbInput.fill(0);
-                this.chorusInput.fill(0);
-                if (this.delayActive) this.delayInput.fill(0);
-                if (this.insertionActive) {
-                    this.insertionInputL.fill(0);
-                    this.insertionInputR.fill(0);
-                }
-            }
+        // Clear the buffers
+        this.reverbInput.fill(0);
+        this.chorusInput.fill(0);
+        if (this.delayActive) this.delayInput.fill(0);
+        if (this.insertionActive) {
+            this.insertionInputL.fill(0);
+            this.insertionInputR.fill(0);
         }
 
         // Clear voice count
@@ -1320,7 +1335,7 @@ export class SynthesizerCore {
     }
 
     private registerInsertionProcessor(proc: InsertionProcessorConstructor) {
-        const p = new proc(this.sampleRate);
+        const p = new proc(this.sampleRate, this.maxBufferSize);
         this.insertionEffects.set(p.type, p);
     }
 

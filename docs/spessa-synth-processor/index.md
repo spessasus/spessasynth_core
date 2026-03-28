@@ -13,45 +13,24 @@ const synth = new SpessaSynthProcessor(sampleRate, options);
 - sampleRate - number - sample rate in Hertz, for example 44,100Hz.
 - options - optional configuration, explained below:
 
-```ts
-interface SynthProcessorOptions {
-    /**
-     * Indicates if the event system is enabled. This can be changed later.
-     */
-    enableEventSystem: boolean;
-    /**
-     * The initial time of the synth, in seconds.
-     */
-    initialTime: number;
-    /**
-     * Indicates if the effects are enabled. This can be changed later.
-     */
-    enableEffects: boolean;
+### Synth processor options
 
-    /**
-     * Reverb processor for the synthesizer. Leave undefined to use the default.
-     */
-    reverbProcessor: ReverbProcessor;
-
-    /**
-     * Chorus processor for the synthesizer. Leave undefined to use the default.
-     */
-    chorusProcessor: ChorusProcessor;
-
-    /**
-     * Delay processor for the synthesizer. Leave undefined to use the default.
-     */
-    delayProcessor: DelayProcessor;
-}
-```
+- maxBufferSize - `number` - The maximum buffer size the synthesizer can render at once.
+  Attempting to `.process()` more samples than this will result in an error. Defaults to 128.
+- enable event system - `boolean` - Indicates if the event system is enabled. This can be changed later.
+- initialTime - `number` - The initial time of the synth, in seconds.
+- enableEffects - `boolean` - Indicates if the effects are enabled. This can be changed later.
+- reverbProcessor - `ReverbProcessor` - Reverb processor for the synthesizer. Leave undefined to use the default.
+- chorusProcessor - `ChorusProcessor` - Chorus processor for the synthesizer. Leave undefined to use the default.
+- delayProcessor - `DelayProcessor` - Delay processor for the synthesizer. Leave undefined to use the default.
 
 All properties are optional. If they are not supplied, the defaults will be used.
 
 ## Effects
 
-- [Reverb](reverb-processor.md)
-- [Chorus](chorus-processor.md)
-- [Delay](delay-processor.md)
+- [Reverb](reverb-processor.md) - How to implement your own reverb processor.
+- [Chorus](chorus-processor.md) - How to implement your own chorus processor.
+- [Delay](delay-processor.md) - How to implement your own delay processor.
 
 ## Managers
 
@@ -80,8 +59,7 @@ synth.process(left, right, (startIndex = 0), (sampleCount = all));
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
-    `sampleCount` should be 128 samples or less.
-    Larger values may cause memory allocation and incorrect playback!
+    `sampleCount` cannot exceed `maxBufferSize`. Larger values will throw an exception!
 
 ### processSplit
 
@@ -112,12 +90,7 @@ synth.processSplit(
 
     This method renders a single quantum of audio.
     The LFOs and envelopes are only processed at the beginning.
-    `sampleCount` should be 128 samples or less.
-    Larger values may cause memory allocation and incorrect playback!
-
-!!! Tip
-
-    If `enableEffects` is set to false, the effect arrays passed can be empty (`[]`).
+    `sampleCount` cannot exceed `maxBufferSize`. Larger values will throw an exception!
 
 ### destroySynthProcessor
 

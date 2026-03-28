@@ -1,7 +1,6 @@
 import type { ReverbProcessor, ReverbProcessorSnapshot } from "../types";
 import { DattorroReverb } from "./dattorro";
 import { DelayLine } from "../delay_line";
-import { SPESSA_BUFSIZE } from "../../engine_components/synth_constants";
 
 const DELAY_GAIN = 1.5;
 
@@ -25,25 +24,25 @@ export class SpessaSynthReverb implements ReverbProcessor {
      * Output of the left (and mono) delay.
      * @private
      */
-    private delayLeftOutput = new Float32Array(SPESSA_BUFSIZE);
+    private readonly delayLeftOutput;
 
     /**
      * Output of the right delay.
      * @private
      */
-    private delayRightOutput = new Float32Array(SPESSA_BUFSIZE);
+    private readonly delayRightOutput;
 
     /**
      * Input into the left delay. Mixed dry input and right output.
      * @private
      */
-    private delayLeftInput = new Float32Array(SPESSA_BUFSIZE);
+    private readonly delayLeftInput;
 
     /**
      * Pre LPF buffer for the delay characters.
      * @private
      */
-    private delayPreLPF = new Float32Array(SPESSA_BUFSIZE);
+    private readonly delayPreLPF;
     /**
      * Sample rate of the processor.
      * @private
@@ -93,8 +92,13 @@ export class SpessaSynthReverb implements ReverbProcessor {
      */
     private panDelayFeedback = 0;
 
-    public constructor(sampleRate: number) {
+    public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
+
+        this.delayLeftOutput = new Float32Array(maxBufferSize);
+        this.delayRightOutput = new Float32Array(maxBufferSize);
+        this.delayLeftInput = new Float32Array(maxBufferSize);
+        this.delayPreLPF = new Float32Array(maxBufferSize);
         this.dattorro = new DattorroReverb(sampleRate);
         this.delayLeft = new DelayLine(sampleRate);
         this.delayRight = new DelayLine(sampleRate);
@@ -281,11 +285,6 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
             case 6: {
                 // Delay
-                // Grow buffer if needed
-                if (this.delayLeftOutput.length < sampleCount) {
-                    this.delayLeftOutput = new Float32Array(sampleCount);
-                    this.delayPreLPF = new Float32Array(sampleCount);
-                }
                 // Process pre-lowpass
                 let delayIn: Float32Array;
                 if (this._preLowpass > 0) {
@@ -320,13 +319,6 @@ export class SpessaSynthReverb implements ReverbProcessor {
             }
             case 7: {
                 // Panning Delay
-                // Grow buffer if needed
-                if (this.delayLeftOutput.length < sampleCount) {
-                    this.delayLeftOutput = new Float32Array(sampleCount);
-                    this.delayRightOutput = new Float32Array(sampleCount);
-                    this.delayLeftInput = new Float32Array(sampleCount);
-                    this.delayPreLPF = new Float32Array(sampleCount);
-                }
                 // Process pre-lowpass
                 let delayIn: Float32Array;
                 if (this._preLowpass > 0) {

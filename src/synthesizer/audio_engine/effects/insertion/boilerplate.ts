@@ -60,9 +60,10 @@ class BoilerplateFX implements InsertionProcessor {
     private hsStateL: BiquadState = { ...zeroStateC };
     private readonly sampleRate;
 
-    public constructor(sampleRate: number) {
+    public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
         this.reset();
+        void maxBufferSize; // REMOVE THIS
     }
 
     public reset() {

@@ -1,6 +1,5 @@
 import type { DelayProcessor, DelayProcessorSnapshot } from "../types";
 import { DelayLine } from "../delay_line";
-import { SPESSA_BUFSIZE } from "../../engine_components/synth_constants";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!
@@ -38,16 +37,18 @@ export class SpessaSynthDelay implements DelayProcessor {
     private readonly delayRight;
     private readonly delayCenter;
     private readonly sampleRate;
-    private delayCenterOutput = new Float32Array(SPESSA_BUFSIZE);
-    private delayPreLPF = new Float32Array(SPESSA_BUFSIZE);
+    private readonly delayCenterOutput;
+    private readonly delayPreLPF;
     private delayCenterTime;
     private delayLeftMultiplier = 0.04;
     private delayRightMultiplier = 0.04;
     private gain = 0;
     private reverbGain = 0;
 
-    public constructor(sampleRate: number) {
+    public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
+        this.delayCenterOutput = new Float32Array(maxBufferSize);
+        this.delayPreLPF = new Float32Array(maxBufferSize);
         this.delayCenterTime = 0.34 * sampleRate;
         // All delays are capped at 1s
         this.delayCenter = new DelayLine(sampleRate);
@@ -204,12 +205,6 @@ export class SpessaSynthDelay implements DelayProcessor {
         startIndex: number,
         sampleCount: number
     ): void {
-        // Grow buffer if needed
-        if (this.delayCenterOutput.length < sampleCount) {
-            this.delayCenterOutput = new Float32Array(sampleCount);
-            this.delayPreLPF = new Float32Array(sampleCount);
-        }
-
         // Process pre-lowpass
         let delayIn: Float32Array;
         if (this._preLowpass > 0) {

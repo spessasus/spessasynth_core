@@ -9,7 +9,6 @@ import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
-import { SpessaSynthWarn } from "../../../../utils/loggin";
 import { LowpassFilter } from "./lowpass_filter";
 
 const HALF_PI = Math.PI / 2;
@@ -68,6 +67,7 @@ export function renderVoice(
     // Testcase: mono mode with chords
     if (!voice.isActive) return;
 
+    const core = this.synthCore;
     // TUNING
     let targetKey = voice.targetKey;
 
@@ -80,8 +80,7 @@ export function renderVoice(
     let semitones = voice.modulatedGenerators[generatorTypes.coarseTune]; // Soundfont coarse tuning
 
     // MIDI tuning standard
-    const tuning =
-        this.synthCore.tunings[this.preset!.program * 128 + voice.realKey];
+    const tuning = core.tunings[this.preset!.program * 128 + voice.realKey];
     if (tuning !== -1) {
         // Tuning is encoded as float
         // For example: 60.56 means key 60 and 56 cents
@@ -217,16 +216,7 @@ export function renderVoice(
     );
 
     // SYNTHESIS
-    // Does the buffer need to grow?
-    // Never shrink though, as we only render sample count into it.
-    // A valid use case for shrinking buffer size is rendering a specific count in 128-long chunks + a smaller one to align
-    if (voice.buffer.length < sampleCount) {
-        SpessaSynthWarn(`Buffer size has changed from ${voice.buffer.length} to ${sampleCount}! 
-        This will cause a memory allocation!`);
-        voice.buffer = new Float32Array(sampleCount);
-    }
-    const buffer = voice.buffer;
-
+    const buffer = core.voiceBuffer;
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
         voice.isActive = voice.volEnv.process(
@@ -337,23 +327,21 @@ export function renderVoice(
         // Smooth out pan to prevent clicking
         voice.currentPan +=
             (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
-            this.synthCore.panSmoothingFactor;
+            core.panSmoothingFactor;
         pan = voice.currentPan;
     }
 
     const gain =
-        this.synthCore.masterParameters.masterGain *
-        this.synthCore.midiVolume *
-        voice.gainModifier;
+        core.masterParameters.masterGain * core.midiVolume * voice.gainModifier;
     const index = (pan + 500) | 0;
     // Get voice's gain levels for each channel
-    const gainLeft = panTableLeft[index] * gain * this.synthCore.panLeft;
-    const gainRight = panTableRight[index] * gain * this.synthCore.panRight;
+    const gainLeft = panTableLeft[index] * gain * core.panLeft;
+    const gainRight = panTableRight[index] * gain * core.panRight;
 
     if (this.insertionEnabled) {
         // Straight into the insertion EFX!
-        const insertionL = this.synthCore.insertionInputL;
-        const insertionR = this.synthCore.insertionInputR;
+        const insertionL = core.insertionInputL;
+        const insertionR = core.insertionInputR;
         for (let i = 0; i < sampleCount; i++) {
             const s = buffer[i];
             insertionL[i] += gainLeft * s;
@@ -369,7 +357,7 @@ export function renderVoice(
         outputL[idx] += gainLeft * s;
         outputR[idx] += gainRight * s;
     }
-    if (!this.synthCore.enableEffects) {
+    if (!core.enableEffects) {
         return;
     }
 
@@ -379,11 +367,9 @@ export function renderVoice(
         voice.reverbSend;
     if (reverbSend > 0) {
         const reverbGain =
-            this.synthCore.masterParameters.reverbGain *
-            gain *
-            (reverbSend / 1000);
+            core.masterParameters.reverbGain * gain * (reverbSend / 1000);
 
-        const reverb = this.synthCore.reverbInput;
+        const reverb = core.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
             reverb[i] += reverbGain * buffer[i];
         }
@@ -394,25 +380,23 @@ export function renderVoice(
         voice.chorusSend;
     if (chorusSend > 0) {
         const chorusGain =
-            this.synthCore.masterParameters.chorusGain *
-            (chorusSend / 1000) *
-            gain;
-        const chorus = this.synthCore.chorusInput;
+            core.masterParameters.chorusGain * (chorusSend / 1000) * gain;
+        const chorus = core.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
             chorus[i] += chorusGain * buffer[i];
         }
     }
 
-    if (this.synthCore.delayActive) {
+    if (core.delayActive) {
         const delaySend =
             this.midiControllers[midiControllers.variationDepth] *
             voice.delaySend;
         if (delaySend > 0) {
             const delayGain =
                 gain *
-                this.synthCore.masterParameters.delayGain *
+                core.masterParameters.delayGain *
                 ((delaySend >> 7) / 127);
-            const delay = this.synthCore.delayInput;
+            const delay = core.delayInput;
             for (let i = 0; i < sampleCount; i++) {
                 delay[i] += delayGain * buffer[i];
             }
