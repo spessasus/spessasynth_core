@@ -21,7 +21,7 @@ import {
     getStringBytes,
     readBinaryStringIndexed
 } from "../../utils/byte_functions/string";
-import { parseDateString } from "../../utils/load_date";
+import { parseDateString, toISODateString } from "../../utils/date";
 import {
     readLittleEndianIndexed,
     writeDword
@@ -440,7 +440,7 @@ export class DownloadableSounds extends DLSVerifier {
                 }
 
                 case "creationDate": {
-                    writeDLSInfo("ICRD", (data as Date).toISOString());
+                    writeDLSInfo("ICRD", toISODateString(data as Date));
                     break;
                 }
 

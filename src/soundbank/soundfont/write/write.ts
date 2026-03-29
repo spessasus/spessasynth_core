@@ -32,6 +32,7 @@ import type {
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { ExtendedSF2Chunks } from "./types";
 import { writeSF2Elements } from "./write_sf2_elements";
+import { toISODateString } from "../../../utils/date";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     compress: false,
@@ -145,7 +146,7 @@ ${bank.soundBankInfo.subject}`
             }
 
             case "creationDate": {
-                writeSF2Info("ICRD", (data as Date).toISOString());
+                writeSF2Info("ICRD", toISODateString(data as Date));
                 break;
             }
 

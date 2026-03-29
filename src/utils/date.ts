@@ -1,6 +1,10 @@
 // Attempt to load a date from string
 import { SpessaSynthWarn } from "./loggin";
 
+export function toISODateString(date: Date) {
+    return date.toISOString().split(".")[0] + "Z";
+}
+
 // Needed because
 // Invalid date: "sábado 26 setembro 2020, 16:40:14". Replacing with the current date!
 const translationPortuguese = new Map([

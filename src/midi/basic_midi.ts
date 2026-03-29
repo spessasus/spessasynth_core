@@ -41,7 +41,7 @@ import { midiMessageTypes } from "./enums";
 import type { GenericRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
-import { parseDateString } from "../utils/load_date";
+import { parseDateString, toISODateString } from "../utils/date";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import type { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
@@ -519,7 +519,7 @@ export class BasicMIDI {
             this.rmidiInfo.picture = new Uint8Array(infoData as ArrayBuffer);
         } else if (infoType === "creationDate") {
             this.rmidiInfo.creationDate = getStringBytes(
-                (infoData as Date).toISOString(),
+                toISODateString(infoData as Date),
                 true
             );
         } else {

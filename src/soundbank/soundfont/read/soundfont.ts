@@ -24,7 +24,7 @@ import { readZoneIndexes } from "./zones";
 import type { SF2InfoFourCC } from "../../types";
 import type { Generator } from "../../basic_soundbank/generator";
 import type { Modulator } from "../../basic_soundbank/modulator";
-import { parseDateString } from "../../../utils/load_date";
+import { parseDateString } from "../../../utils/date";
 
 /**
  * Soundfont.ts

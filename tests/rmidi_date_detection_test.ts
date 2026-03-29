@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "node:path";
 import { BasicMIDI, SpessaSynthLogging } from "../src";
+import { toISODateString } from "../src/utils/date";
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -27,7 +28,7 @@ for (const entry of entries) {
         console.info(
             dec.decode(rmid.rmidiInfo.creationDate),
             " decoded as date -> ",
-            rmid.getRMIDInfo("creationDate")!.toISOString()
+            toISODateString(rmid.getRMIDInfo("creationDate")!)
         );
     }
 }
