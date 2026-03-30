@@ -872,7 +872,7 @@ export function handleGS(
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const channelObject = this.midiChannels[channel];
                             const centeredValue = data - 64;
-                            const normalizedValue = centeredValue / 64;
+                            const centeredNormalized = centeredValue / 64;
                             const normalizedNotCentered = data / 128;
 
                             // Setup receivers for cc to parameter (sc-88 manual page 198)
@@ -927,12 +927,12 @@ export function handleGS(
                                         channelObject.sysExModulators.setModulator(
                                             source as ModulatorSourceEnum,
                                             generatorTypes.initialFilterFc,
-                                            normalizedValue * 9600,
+                                            centeredNormalized * 9600,
                                             bipolar
                                         );
                                         sysExLogging(
                                             channel,
-                                            normalizedValue * 9600,
+                                            centeredNormalized * 9600,
                                             `${sourceName} pitch control`,
                                             "cents"
                                         );
@@ -944,12 +944,12 @@ export function handleGS(
                                         channelObject.sysExModulators.setModulator(
                                             source as ModulatorSourceEnum,
                                             generatorTypes.initialAttenuation,
-                                            normalizedValue * 960, // Spec says "100%" so 960cB in sf2
+                                            centeredNormalized * 960, // Spec says "100%" so 960cB in sf2
                                             bipolar
                                         );
                                         sysExLogging(
                                             channel,
-                                            normalizedValue * 960,
+                                            centeredNormalized * 960,
                                             `${sourceName} amplitude`,
                                             "cB"
                                         );
@@ -1011,12 +1011,12 @@ export function handleGS(
                                         channelObject.sysExModulators.setModulator(
                                             source as ModulatorSourceEnum,
                                             generatorTypes.vibLfoToVolume,
-                                            normalizedValue * 960,
+                                            normalizedNotCentered * -960,
                                             bipolar
                                         );
                                         sysExLogging(
                                             channel,
-                                            normalizedValue * 960,
+                                            normalizedNotCentered * -960,
                                             `${sourceName} LFO1 amplitude depth`,
                                             "cB"
                                         );
@@ -1064,12 +1064,12 @@ export function handleGS(
                                         channelObject.sysExModulators.setModulator(
                                             source as ModulatorSourceEnum,
                                             generatorTypes.modLfoToVolume,
-                                            normalizedValue * 960,
+                                            normalizedNotCentered * -960,
                                             bipolar
                                         );
                                         sysExLogging(
                                             channel,
-                                            normalizedValue * 960,
+                                            normalizedNotCentered * -960,
                                             `${sourceName} LFO2 amplitude depth`,
                                             "cB"
                                         );
