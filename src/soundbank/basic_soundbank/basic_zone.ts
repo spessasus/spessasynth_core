@@ -62,6 +62,9 @@ export class BasicZone {
 
     /**
      * Adds to a given generator, or its default value.
+     * @param type the generator type.
+     * @param value the value to add.
+     * @param validate if the value should be clamped to allowed limits.
      */
     public addToGenerator(type: GeneratorType, value: number, validate = true) {
         const genValue = this.getGenerator(type, generatorLimits[type].def);
@@ -70,6 +73,9 @@ export class BasicZone {
 
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
+     * @param type the generator type.
+     * @param value the value to set. Set to null to remove this generator (set as "unset").
+     * @param validate if the value should be clamped to allowed limits.
      */
     public setGenerator(
         type: GeneratorType,
@@ -107,7 +113,7 @@ export class BasicZone {
 
     /**
      * Adds generators to the zone.
-     * @param generators
+     * @param generators the generators to add.
      */
     public addGenerators(...generators: Generator[]) {
         for (const g of generators) {
@@ -137,10 +143,20 @@ export class BasicZone {
         }
     }
 
+    /**
+     * Adds modulators to the zone.
+     * @param modulators the modulators to add.
+     */
     public addModulators(...modulators: Modulator[]) {
         this.modulators.push(...modulators);
     }
 
+    /**
+     * Gets a generator value.
+     * @param generatorType the generator type.
+     * @param notFoundValue if the generator is not found, this value is returned. A default value can be passed here, or null for example,
+     * to check if the generator is set.
+     */
     public getGenerator<K>(
         generatorType: GeneratorType,
         notFoundValue: number | K

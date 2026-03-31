@@ -2,43 +2,11 @@
  * Instrument_zones.ts
  * purpose: reads instrument zones from soundfont and gets their respective samples and generators and modulators
  */
-import { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
 import type { SoundFontInstrument } from "./instruments";
 import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
-import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import { generatorTypes } from "../../basic_soundbank/generator_types";
-
-export class SoundFontInstrumentZone extends BasicInstrumentZone {
-    /**
-     * Creates a zone (instrument)
-     */
-    public constructor(
-        inst: BasicInstrument,
-        modulators: Modulator[],
-        generators: Generator[],
-        samples: BasicSample[]
-    ) {
-        const sampleID = generators.find(
-            (g) => g.generatorType === generatorTypes.sampleID
-        );
-        let sample;
-        if (sampleID) {
-            sample = samples[sampleID.generatorValue];
-        } else {
-            throw new Error("No sample ID found in instrument zone.");
-        }
-        if (!sample) {
-            throw new Error(
-                `Invalid sample ID: ${sampleID.generatorValue}, available samples: ${samples.length}`
-            );
-        }
-        super(inst, sample);
-        this.addGenerators(...generators);
-        this.addModulators(...modulators);
-    }
-}
 
 /**
  * Reads the given instrument zone

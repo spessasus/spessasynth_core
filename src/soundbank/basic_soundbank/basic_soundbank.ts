@@ -11,7 +11,6 @@ import {
 } from "../soundfont/write/write";
 import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
 import { BasicSample, EmptySample } from "./basic_sample";
-import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
 import { BankSelectHacks } from "../../utils/midi_hacks";
@@ -32,6 +31,7 @@ import {
     DEFAULT_DLS_OPTIONS,
     DownloadableSounds
 } from "../downloadable_sounds/downloadable_sounds";
+import { Generator } from "./generator";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -152,7 +152,7 @@ export class BasicSoundBank {
 
         inst.createZone(sample);
         const zone2 = inst.createZone(sample);
-        zone2.addGenerators(new Generator(generatorTypes.fineTune, -9));
+        zone2.setGenerator(generatorTypes.fineTune, -9);
 
         font.addInstruments(inst);
 

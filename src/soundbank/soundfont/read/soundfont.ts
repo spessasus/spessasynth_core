@@ -311,18 +311,12 @@ export class SoundFont2 extends BasicSoundBank {
         for (const s of samples) s.name = s.name.trim();
         this.samples.push(...samples);
 
-        /**
-         * Read all the instrument generators
-         */
-        const instrumentGenerators: Generator[] = readGenerators(igenChunk);
+        // Read modulators and generators
+        const instrumentGenerators = readGenerators(igenChunk);
+        const instrumentModulators = readModulators(imodChunk);
 
-        /**
-         * Read all the instrument modulators
-         */
-        const instrumentModulators: Modulator[] = readModulators(imodChunk);
-
+        // Read the instruments
         const instruments = readInstruments(instChunk);
-
         if (xdtaChunk && xChunks.inst) {
             // Apply extensions to instruments
             const xInst = readInstruments(xChunks.inst);
@@ -368,18 +362,12 @@ export class SoundFont2 extends BasicSoundBank {
             instruments
         );
 
-        /**
-         * Read all the preset generators
-         */
+        // Read preset modulators and generators
         const presetGenerators: Generator[] = readGenerators(pgenChunk);
-
-        /**
-         * Read all the preset modulators
-         */
         const presetModulators: Modulator[] = readModulators(pmodChunk);
 
+        // Read presets
         const presets = readPresets(phdrChunk, this);
-
         if (xdtaChunk && xChunks.phdr) {
             // Apply extensions to presets
             const xPreset = readPresets(xChunks.phdr, this);

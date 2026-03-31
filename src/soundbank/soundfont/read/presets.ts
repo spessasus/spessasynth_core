@@ -2,11 +2,12 @@ import { RIFFChunk } from "../../../utils/riff_chunk";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { BasicPreset } from "../../basic_soundbank/basic_preset";
-import { SoundFontPresetZone } from "./preset_zones";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
+import { BasicPresetZone } from "../../basic_soundbank/basic_preset_zone";
+import { generatorTypes } from "../../basic_soundbank/generator_types";
 
 /**
  * Parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
@@ -44,13 +45,24 @@ export class SoundFontPreset extends BasicPreset {
         modulators: Modulator[],
         generators: Generator[],
         instruments: BasicInstrument[]
-    ): SoundFontPresetZone {
-        const z = new SoundFontPresetZone(
-            this,
-            modulators,
-            generators,
-            instruments
+    ) {
+        const instrumentID = generators.find(
+            (g) => g.generatorType === generatorTypes.instrument
         );
+        let instrument;
+        if (instrumentID) {
+            instrument = instruments[instrumentID.generatorValue];
+        } else {
+            throw new Error("No instrument ID found in preset zone.");
+        }
+        if (!instrument) {
+            throw new Error(
+                `Invalid instrument ID: ${instrumentID.generatorValue}, available instruments: ${instruments.length}`
+            );
+        }
+        const z = new BasicPresetZone(this, instrument);
+        z.addGenerators(...generators);
+        z.addModulators(...modulators);
         this.zones.push(z);
         return z;
     }

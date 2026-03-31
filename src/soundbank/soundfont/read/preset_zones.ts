@@ -1,7 +1,5 @@
-import { BasicPresetZone } from "../../basic_soundbank/basic_preset_zone";
 import { Generator } from "../../basic_soundbank/generator";
 import { Modulator } from "../../basic_soundbank/modulator";
-import type { BasicPreset } from "../../basic_soundbank/basic_preset";
 import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { SoundFontPreset } from "./presets";
 import { generatorTypes } from "../../basic_soundbank/generator_types";
@@ -10,36 +8,6 @@ import { generatorTypes } from "../../basic_soundbank/generator_types";
  * Preset_zones.ts
  * purpose: reads preset zones from soundfont and gets their respective samples and generators and modulators
  */
-
-export class SoundFontPresetZone extends BasicPresetZone {
-    /**
-     * Creates a zone (preset)
-     */
-    public constructor(
-        preset: BasicPreset,
-        modulators: Modulator[],
-        generators: Generator[],
-        instruments: BasicInstrument[]
-    ) {
-        const instrumentID = generators.find(
-            (g) => g.generatorType === generatorTypes.instrument
-        );
-        let instrument;
-        if (instrumentID) {
-            instrument = instruments[instrumentID.generatorValue];
-        } else {
-            throw new Error("No instrument ID found in preset zone.");
-        }
-        if (!instrument) {
-            throw new Error(
-                `Invalid instrument ID: ${instrumentID.generatorValue}, available instruments: ${instruments.length}`
-            );
-        }
-        super(preset, instrument);
-        this.addGenerators(...generators);
-        this.addModulators(...modulators);
-    }
-}
 
 /**
  * Reads the given preset zone

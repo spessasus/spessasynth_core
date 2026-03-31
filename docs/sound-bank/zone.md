@@ -73,7 +73,7 @@ zone.copyFrom(zone);
 
 - zone - the `BasicZone` to copy from.
 
-## Sub classes
+## Sub-classes
 
 ### BasicInstrumentZone
 

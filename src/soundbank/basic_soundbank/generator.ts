@@ -22,7 +22,7 @@ export class Generator {
      * Constructs a new generator
      * @param type generator type
      * @param value generator value
-     * @param validate if the limits should be validated
+     * @param validate if the limits should be validated and clamped.
      */
     public constructor(type: GeneratorType, value: number, validate = true) {
         this.generatorType = type;
