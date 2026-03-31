@@ -1,10 +1,16 @@
-import { cbAttenuationToGain, timecentsToSeconds } from "../unit_converter";
+import {
+    CENTIBEL_LOOKUP_TABLE,
+    MIN_CENTIBELS,
+    timecentsToSeconds
+} from "../unit_converter";
 import type { Voice } from "../voice";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
 
 /**
  * Volume_envelope.ts
  * purpose: applies a volume envelope for a given voice
+ *
+ * For performance reasons, cbAttenuationToGain is inlined here.
  */
 
 // Per SF2 definition
@@ -114,22 +120,21 @@ export class VolumeEnvelope {
      * @param sampleCount the amount of samples to write
      * @param buffer the audio buffer to modify
      * @param gainTarget the gain target to smooth.
-     * @param centibelOffset the centibel offset to apply.
+     * @param gainOffset the gain offset to apply.
      * @returns if the voice is still active
      */
     public process(
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number
+        gainOffset: number
     ): boolean {
-        // RELEASE PHASE
         if (this.enteredRelease) {
             return this.releasePhase(
                 sampleCount,
                 buffer,
                 gainTarget,
-                centibelOffset
+                gainOffset
             );
         }
 
@@ -139,47 +144,43 @@ export class VolumeEnvelope {
                     sampleCount,
                     buffer,
                     gainTarget,
-                    centibelOffset,
+                    gainOffset,
                     0
                 );
             }
-
             case 1: {
                 return this.attackPhase(
                     sampleCount,
                     buffer,
                     gainTarget,
-                    centibelOffset,
+                    gainOffset,
                     0
                 );
             }
-
             case 2: {
                 return this.holdPhase(
                     sampleCount,
                     buffer,
                     gainTarget,
-                    centibelOffset,
+                    gainOffset,
                     0
                 );
             }
-
             case 3: {
                 return this.decayPhase(
                     sampleCount,
                     buffer,
                     gainTarget,
-                    centibelOffset,
+                    gainOffset,
                     0
                 );
             }
-
             case 4: {
                 return this.sustainPhase(
                     sampleCount,
                     buffer,
                     gainTarget,
-                    centibelOffset,
+                    gainOffset,
                     0
                 );
             }
@@ -301,9 +302,12 @@ export class VolumeEnvelope {
             PERCEIVED_CB_SILENCE;
 
         // Set the initial gain
-        this.currentGain = cbAttenuationToGain(
-            voice.modulatedGenerators[generatorTypes.initialAttenuation]
-        );
+        this.currentGain =
+            CENTIBEL_LOOKUP_TABLE[
+                (voice.modulatedGenerators[generatorTypes.initialAttenuation] -
+                    MIN_CENTIBELS) |
+                    0
+            ];
 
         // Calculate absolute times (they can change so we have to recalculate every time
         this.sustainCb = Math.min(
@@ -365,7 +369,7 @@ export class VolumeEnvelope {
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number
+        gainOffset: number
     ) {
         let { sampleTime, currentGain, attenuationCb } = this;
         const {
@@ -379,10 +383,7 @@ export class VolumeEnvelope {
         let elapsedRelease = sampleTime - releaseStartTimeSamples;
         const cbDifference = CB_SILENCE - releaseStartCb;
 
-        let smooth = false;
-        if (currentGain !== gainTarget) {
-            smooth = true;
-        }
+        const smooth = currentGain !== gainTarget;
 
         for (let i = 0; i < sampleCount; i++) {
             if (smooth) {
@@ -395,8 +396,10 @@ export class VolumeEnvelope {
                 releaseStartCb;
 
             buffer[i] *=
-                cbAttenuationToGain(attenuationCb + centibelOffset) *
-                currentGain;
+                CENTIBEL_LOOKUP_TABLE[(attenuationCb - MIN_CENTIBELS) | 0] *
+                currentGain *
+                gainOffset;
+
             sampleTime++;
             elapsedRelease++;
         }
@@ -412,7 +415,7 @@ export class VolumeEnvelope {
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number,
+        gainOffset: number,
         filledBuffer: number
     ) {
         const { delayEnd } = this;
@@ -441,7 +444,7 @@ export class VolumeEnvelope {
             sampleCount,
             buffer,
             gainTarget,
-            centibelOffset,
+            gainOffset,
             filledBuffer
         );
     }
@@ -450,7 +453,7 @@ export class VolumeEnvelope {
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number,
+        gainOffset: number,
         filledBuffer: number
     ) {
         const { attackEnd, attackDuration, gainSmoothing } = this;
@@ -462,7 +465,6 @@ export class VolumeEnvelope {
             this.attenuationCb = 0;
 
             // Attack phase: ramp from 0 to attenuation
-            const gainOffset = cbAttenuationToGain(centibelOffset);
             while (sampleTime < attackEnd) {
                 if (smooth) {
                     currentGain += (gainTarget - currentGain) * gainSmoothing;
@@ -492,7 +494,7 @@ export class VolumeEnvelope {
             sampleCount,
             buffer,
             gainTarget,
-            centibelOffset,
+            gainOffset,
             filledBuffer
         );
     }
@@ -501,7 +503,7 @@ export class VolumeEnvelope {
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number,
+        gainOffset: number,
         filledBuffer: number
     ) {
         const { holdEnd, gainSmoothing } = this;
@@ -513,7 +515,6 @@ export class VolumeEnvelope {
             // Peak, no attenuation
             this.attenuationCb = 0;
 
-            const gainOffset = cbAttenuationToGain(centibelOffset);
             while (sampleTime < holdEnd) {
                 if (smooth) {
                     currentGain += (gainTarget - currentGain) * gainSmoothing;
@@ -539,7 +540,7 @@ export class VolumeEnvelope {
             sampleCount,
             buffer,
             gainTarget,
-            centibelOffset,
+            gainOffset,
             filledBuffer
         );
     }
@@ -548,14 +549,13 @@ export class VolumeEnvelope {
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number,
+        gainOffset: number,
         filledBuffer: number
     ) {
         const { decayDuration, decayEnd, gainSmoothing, sustainCb } = this;
         let { sampleTime, currentGain, attenuationCb } = this;
         const smooth = currentGain !== gainTarget;
 
-        // Decay phase: linear ramp from attenuation to sustain
         if (sampleTime < decayEnd) {
             while (sampleTime < decayEnd) {
                 if (smooth) {
@@ -568,7 +568,8 @@ export class VolumeEnvelope {
                 // Apply gain to buffer
                 buffer[filledBuffer] *=
                     currentGain *
-                    cbAttenuationToGain(attenuationCb + centibelOffset);
+                    CENTIBEL_LOOKUP_TABLE[(attenuationCb - MIN_CENTIBELS) | 0] *
+                    gainOffset;
 
                 sampleTime++;
                 if (++filledBuffer >= sampleCount) {
@@ -589,7 +590,7 @@ export class VolumeEnvelope {
             sampleCount,
             buffer,
             gainTarget,
-            centibelOffset,
+            gainOffset,
             filledBuffer
         );
     }
@@ -598,7 +599,7 @@ export class VolumeEnvelope {
         sampleCount: number,
         buffer: Float32Array,
         gainTarget: number,
-        centibelOffset: number,
+        gainOffset: number,
         filledBuffer: number
     ) {
         const { sustainCb, gainSmoothing } = this;
@@ -626,7 +627,9 @@ export class VolumeEnvelope {
                 // Apply gain to buffer
                 buffer[filledBuffer] *=
                     currentGain *
-                    cbAttenuationToGain(sustainCb + centibelOffset);
+                    CENTIBEL_LOOKUP_TABLE[(sustainCb - MIN_CENTIBELS) | 0] *
+                    gainOffset;
+
                 sampleTime++;
                 filledBuffer++;
             }

@@ -50,14 +50,16 @@ export function absCentsToHz(cents: number): number {
 
 // Centibel lookup table (1 cB precision)
 // 1 dB = 10 cB
-const MIN_CENTIBELS = -16_600; // -1660 dB
+export const MIN_CENTIBELS = -16_600; // -1660 dB
 const MAX_CENTIBELS = 16_000; //  1600 dB
 
-const centibelLookUpTable = new Float32Array(MAX_CENTIBELS - MIN_CENTIBELS + 1);
+export const CENTIBEL_LOOKUP_TABLE = new Float32Array(
+    MAX_CENTIBELS - MIN_CENTIBELS + 1
+);
 
-for (let i = 0; i < centibelLookUpTable.length; i++) {
+for (let i = 0; i < CENTIBEL_LOOKUP_TABLE.length; i++) {
     const centibels = MIN_CENTIBELS + i;
-    centibelLookUpTable[i] = Math.pow(10, -centibels / 200);
+    CENTIBEL_LOOKUP_TABLE[i] = Math.pow(10, -centibels / 200);
 }
 
 /**
@@ -66,5 +68,5 @@ for (let i = 0; i < centibelLookUpTable.length; i++) {
  * @return The gain value.
  */
 export function cbAttenuationToGain(centibels: number): number {
-    return centibelLookUpTable[(centibels - MIN_CENTIBELS) | 0];
+    return CENTIBEL_LOOKUP_TABLE[(centibels - MIN_CENTIBELS) | 0];
 }

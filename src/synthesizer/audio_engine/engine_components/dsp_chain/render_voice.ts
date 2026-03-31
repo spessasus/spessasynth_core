@@ -202,6 +202,7 @@ export function renderVoice(
 
     // Default resonant modulator: it does not affect the filter gain (neither XG nor GS did that)
     volumeExcursionCentibels -= voice.resonanceOffset;
+    const gainOffset = cbAttenuationToGain(volumeExcursionCentibels);
 
     // Finally, calculate the playback rate
     const centsTotal = (cents + semitones * 100) | 0;
@@ -312,7 +313,7 @@ export function renderVoice(
         sampleCount,
         buffer,
         gainTarget,
-        volumeExcursionCentibels
+        gainOffset
     );
 
     // Note, we do not use &&= as it short-circuits!
