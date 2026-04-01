@@ -19,12 +19,8 @@ import {
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import { BasicZone } from "../basic_soundbank/basic_zone";
-import { BasicInstrumentZone, Modulator } from "../exports";
+import { BasicInstrumentZone } from "../exports";
 import { SpessaSynthWarn } from "../../utils/loggin";
-import {
-    DLS_1_NO_VIBRATO_MOD,
-    DLS_1_NO_VIBRATO_PRESSURE
-} from "./default_dls_modulators";
 import { ConnectionBlock } from "./connection_block";
 
 type KeyToEnv =
@@ -279,16 +275,6 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             connection.toSFModulator(zone);
         }
 
-        // It seems that dls 1 does not have vibrato lfo, so we shall disable it
-        if (this.mode === "dls1") {
-            zone.addModulators(
-                // Modulation to vibrato
-                Modulator.copyFrom(DLS_1_NO_VIBRATO_MOD),
-                Modulator.copyFrom(DLS_1_NO_VIBRATO_PRESSURE)
-                // Pressure to vibrato
-            );
-        }
-
         // Perform correction for the key to something generators
         for (const connection of this.connectionBlocks) {
             if (connection.source.source !== dlsSources.keyNum) {
@@ -338,6 +324,34 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                     );
                     break;
                 }
+            }
+        }
+
+        // Perform DLS1 corrections
+        if (this.mode === "dls1") {
+            // DLS1 only has modulation LFO.
+            // Copy the parameters to vib LFO and convert all pitch values to vibrato LFO (including mod wheel modulator)
+            // This ensures that it stays in sync when using things like GS controller matrix
+
+            // Copy over delay and rate to vibrato LFO
+            zone.setGenerator(
+                generatorTypes.delayVibLFO,
+                zone.getGenerator(generatorTypes.delayModLFO, null)
+            );
+            zone.setGenerator(
+                generatorTypes.freqVibLFO,
+                zone.getGenerator(generatorTypes.freqModLFO, null)
+            );
+
+            // Convert pitch excursion to vibrato LFO
+            zone.setGenerator(
+                generatorTypes.vibLfoToPitch,
+                zone.getGenerator(generatorTypes.modLfoToPitch, null)
+            );
+
+            for (const mod of zone.modulators) {
+                if (mod.destination === generatorTypes.modLfoToPitch)
+                    mod.destination = generatorTypes.vibLfoToPitch;
             }
         }
     }
