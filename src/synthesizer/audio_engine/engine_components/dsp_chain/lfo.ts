@@ -15,7 +15,7 @@ export function getLFOValue(
     frequency: number,
     currentTime: number
 ): number {
-    if (currentTime < startTime) {
+    if (currentTime < startTime || frequency === 0) {
         return 0;
     }
 

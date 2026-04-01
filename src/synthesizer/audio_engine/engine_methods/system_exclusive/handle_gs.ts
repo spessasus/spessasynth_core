@@ -8,11 +8,7 @@ import { consoleColors } from "../../../../utils/other";
 import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
-import {
-    type ModulatorSourceEnum,
-    modulatorSources
-} from "../../../../soundbank/enums";
-import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
+import { modulatorSources } from "../../../../soundbank/enums";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../../synthesizer_core";
 import { syxToChannel } from "../../../../utils/sysex_detector";
@@ -870,214 +866,7 @@ export function handleGS(
                             const channel =
                                 syxToChannel(addr2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
-                            const channelObject = this.midiChannels[channel];
-                            const centeredValue = data - 64;
-                            const centeredNormalized = centeredValue / 64;
-                            const normalizedNotCentered = data / 128;
-
-                            // Setup receivers for cc to parameter (sc-88 manual page 198)
-                            const setupReceivers = (
-                                source: number,
-                                sourceName: string,
-                                bipolar = false
-                            ) => {
-                                switch (addr3 & 0x0f) {
-                                    case 0x00: {
-                                        // See https://github.com/spessasus/SpessaSynth/issues/154
-                                        // Pitch control
-                                        // Special case:
-                                        // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
-                                        // Testcase: th07_03.mid
-                                        if (
-                                            source ===
-                                            NON_CC_INDEX_OFFSET +
-                                                modulatorSources.pitchWheel
-                                        ) {
-                                            channelObject.controllerChange(
-                                                midiControllers.registeredParameterMSB,
-                                                0x0
-                                            );
-                                            channelObject.controllerChange(
-                                                midiControllers.registeredParameterLSB,
-                                                0x0
-                                            );
-                                            channelObject.controllerChange(
-                                                midiControllers.dataEntryMSB,
-                                                Math.floor(centeredValue)
-                                            );
-                                        } else {
-                                            channelObject.sysExModulators.setModulator(
-                                                source as ModulatorSourceEnum,
-                                                generatorTypes.fineTune,
-                                                centeredValue * 100,
-                                                bipolar
-                                            );
-                                            sysExLogging(
-                                                channel,
-                                                centeredValue,
-                                                `${sourceName} pitch control`,
-                                                "semitones"
-                                            );
-                                        }
-                                        break;
-                                    }
-
-                                    case 0x01: {
-                                        // Cutoff
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.initialFilterFc,
-                                            centeredNormalized * 9600,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            centeredNormalized * 9600,
-                                            `${sourceName} pitch control`,
-                                            "cents"
-                                        );
-                                        break;
-                                    }
-
-                                    case 0x02: {
-                                        // Amplitude
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.initialAttenuation,
-                                            centeredNormalized * 960, // Spec says "100%" so 960cB in sf2
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            centeredNormalized * 960,
-                                            `${sourceName} amplitude`,
-                                            "cB"
-                                        );
-                                        break;
-                                    }
-
-                                    // Rate control is ignored as it is in hertz
-
-                                    case 0x04: {
-                                        // LFO1 pitch depth
-                                        // Special case:
-                                        // If the source is a mod wheel, it's a strange way of setting the modulation depth
-                                        // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
-                                        if (
-                                            source ===
-                                            midiControllers.modulationWheel
-                                        ) {
-                                            const cents =
-                                                normalizedNotCentered * 600;
-                                            channelObject.customControllers[
-                                                customControllers.modulationMultiplier
-                                            ] = cents / 50;
-                                        } else {
-                                            channelObject.sysExModulators.setModulator(
-                                                source as ModulatorSourceEnum,
-                                                generatorTypes.vibLfoToPitch,
-                                                normalizedNotCentered * 600,
-                                                bipolar
-                                            );
-                                            sysExLogging(
-                                                channel,
-                                                normalizedNotCentered * 600,
-                                                `${sourceName} LFO1 pitch depth`,
-                                                "cents"
-                                            );
-                                        }
-                                        break;
-                                    }
-
-                                    case 0x05: {
-                                        // LFO1 filter depth
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.vibLfoToFilterFc,
-                                            normalizedNotCentered * 2400,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            normalizedNotCentered * 2400,
-                                            `${sourceName} LFO1 filter depth`,
-                                            "cents"
-                                        );
-                                        break;
-                                    }
-
-                                    case 0x06: {
-                                        // LFO1 amplitude depth
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.vibLfoToVolume,
-                                            normalizedNotCentered * -960,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            normalizedNotCentered * -960,
-                                            `${sourceName} LFO1 amplitude depth`,
-                                            "cB"
-                                        );
-                                        break;
-                                    }
-
-                                    // Rate control is ignored as it is in hertz
-
-                                    case 0x08: {
-                                        // LFO2 pitch depth
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.modLfoToPitch,
-                                            normalizedNotCentered * 600,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            normalizedNotCentered * 600,
-                                            `${sourceName} LFO2 pitch depth`,
-                                            "cents"
-                                        );
-                                        break;
-                                    }
-
-                                    case 0x09: {
-                                        // LFO2 filter depth
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.modLfoToFilterFc,
-                                            normalizedNotCentered * 2400,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            normalizedNotCentered * 2400,
-                                            `${sourceName} LFO2 filter depth`,
-                                            "cents"
-                                        );
-                                        break;
-                                    }
-
-                                    case 0x0a: {
-                                        // LFO2 amplitude depth
-                                        channelObject.sysExModulators.setModulator(
-                                            source as ModulatorSourceEnum,
-                                            generatorTypes.modLfoToVolume,
-                                            normalizedNotCentered * -960,
-                                            bipolar
-                                        );
-                                        sysExLogging(
-                                            channel,
-                                            normalizedNotCentered * -960,
-                                            `${sourceName} LFO2 amplitude depth`,
-                                            "cB"
-                                        );
-                                        break;
-                                    }
-                                }
-                            };
-
+                            const ch = this.midiChannels[channel];
                             // SC88 manual page 198
                             switch (addr3 & 0xf0) {
                                 default: {
@@ -1091,7 +880,26 @@ export function handleGS(
 
                                 case 0x00: {
                                     // Modulation wheel
-                                    setupReceivers(
+                                    if ((addr3 & 0x0f) === 0x04) {
+                                        // LFO1 Pitch depth
+                                        // Special case:
+                                        // If the source is a mod wheel, it's a strange way of setting the modulation depth
+                                        // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
+                                        const cents = (data / 127) * 600;
+                                        ch.customControllers[
+                                            customControllers.modulationMultiplier
+                                        ] = cents / 50;
+                                        sysExLogging(
+                                            ch.channel,
+                                            cents,
+                                            "modulation wheel depth",
+                                            "cents"
+                                        );
+                                        break;
+                                    }
+                                    ch.sysExModulators.setupReceiver(
+                                        addr3,
+                                        data,
                                         midiControllers.modulationWheel,
                                         "mod wheel"
                                     );
@@ -1100,7 +908,28 @@ export function handleGS(
 
                                 case 0x10: {
                                     // Pitch wheel
-                                    setupReceivers(
+                                    if ((addr3 & 0x0f) === 0x00) {
+                                        // See https://github.com/spessasus/SpessaSynth/issues/154
+                                        // Pitch control
+                                        // Special case:
+                                        // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
+                                        // Testcase: th07_03.mid
+                                        const centeredValue = data - 64;
+                                        ch.midiControllers[
+                                            NON_CC_INDEX_OFFSET +
+                                                modulatorSources.pitchWheelRange
+                                        ] = centeredValue << 7;
+                                        sysExLogging(
+                                            ch.channel,
+                                            centeredValue,
+                                            "pitch wheel range",
+                                            "semitones"
+                                        );
+                                        break;
+                                    }
+                                    ch.sysExModulators.setupReceiver(
+                                        addr3,
+                                        data,
                                         NON_CC_INDEX_OFFSET +
                                             modulatorSources.pitchWheel,
                                         "pitch wheel",
@@ -1111,7 +940,9 @@ export function handleGS(
 
                                 case 0x20: {
                                     // Channel pressure
-                                    setupReceivers(
+                                    ch.sysExModulators.setupReceiver(
+                                        addr3,
+                                        data,
                                         NON_CC_INDEX_OFFSET +
                                             modulatorSources.channelPressure,
                                         "channel pressure"
@@ -1121,7 +952,9 @@ export function handleGS(
 
                                 case 0x30: {
                                     // Poly pressure
-                                    setupReceivers(
+                                    ch.sysExModulators.setupReceiver(
+                                        addr3,
+                                        data,
                                         NON_CC_INDEX_OFFSET +
                                             modulatorSources.polyPressure,
                                         "poly pressure"
@@ -1131,13 +964,23 @@ export function handleGS(
 
                                 case 0x40: {
                                     // CC1
-                                    setupReceivers(channelObject.cc1, "CC1");
+                                    ch.sysExModulators.setupReceiver(
+                                        addr3,
+                                        data,
+                                        ch.cc1,
+                                        "CC1"
+                                    );
                                     break;
                                 }
 
                                 case 0x50: {
                                     // CC2
-                                    setupReceivers(channelObject.cc2, "CC2");
+                                    ch.sysExModulators.setupReceiver(
+                                        addr3,
+                                        data,
+                                        ch.cc2,
+                                        "CC2"
+                                    );
                                 }
                             }
                             return;

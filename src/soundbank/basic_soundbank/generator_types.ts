@@ -66,9 +66,21 @@ export const generatorTypes = Object.freeze({
     unused5: 59,                     // Unused
     endOper: 60,                     // End marker
 
-    // Additional generators that are used in system exclusives and will not be saved
-    vibLfoToVolume: 61,
-    vibLfoToFilterFc: 62
+    // Additional generators that are used in system exclusives and will not be saved (controller matrix)
+
+    // [-1000;1000] -> 1/10%
+    amplitude: 61,
+    // [-1000;1000] -> Hz/100
+    vibLfoRate: 62,
+    // [0;1000] -> 1/10%
+    vibLfoAmplitudeDepth: 63,
+    // Like modLfoToFilterFc
+    vibLfoToFilterFc: 64,
+    // [-1000;1000] -> Hz/100
+    modLfoRate: 65,
+    // [0;1000] -> 1/10%
+    modLfoAmplitudeDepth: 66,
+
 } as const);
 
 export type GeneratorType =
@@ -98,14 +110,12 @@ export const generatorLimits: Readonly<Record<number, { min: number, max: number
     [generatorTypes.initialFilterFc]:             { min:   1500,  max: 13_500, def:  13_500, nrpn: 2 },
     [generatorTypes.initialFilterQ]:              { min:       0, max:    960, def:       0, nrpn: 1 },
     [generatorTypes.modLfoToFilterFc]:            { min: -12_000, max: 12_000, def:       0, nrpn: 2 },
-    [generatorTypes.vibLfoToFilterFc]:            { min: -12_000, max: 12_000, def:       0, nrpn: 2 }, // NON-STANDARD
     [generatorTypes.modEnvToFilterFc]:            { min: -12_000, max: 12_000, def:       0, nrpn: 2 },
 
     [generatorTypes.endAddrsCoarseOffset]:        { min: -32_768, max: 32_768, def:       0, nrpn: 1 },
 
     // Volume modulation
     [generatorTypes.modLfoToVolume]:              { min:    -960, max:    960, def:       0, nrpn: 1 },
-    [generatorTypes.vibLfoToVolume]:              { min:    -960, max:    960, def:       0, nrpn: 1 }, // NON-STANDARD
 
     // Effects / pan
     [generatorTypes.chorusEffectsSend]:           { min:       0, max:   1000, def:       0, nrpn: 1 },
@@ -149,7 +159,15 @@ export const generatorLimits: Readonly<Record<number, { min: number, max: number
     [generatorTypes.scaleTuning]:                 { min:       0, max:   1200, def:     100, nrpn: 1 },
     [generatorTypes.exclusiveClass]:              { min:       0, max: 99_999, def:       0, nrpn: 0 },
     [generatorTypes.overridingRootKey]:           { min:      -1, max:    127, def:      -1, nrpn: 0 },
-    [generatorTypes.sampleModes]:                 { min:       0, max:      3, def:       0, nrpn: 0 }
+    [generatorTypes.sampleModes]:                 { min:       0, max:      3, def:       0, nrpn: 0 },
+
+    // Non-standard
+    [generatorTypes.amplitude]:                   { min:   -1000, max:   1000, def:       0, nrpn: 1 },
+    [generatorTypes.vibLfoRate]:                  { min:   -1000, max:   1000, def:       0, nrpn: 1 },
+    [generatorTypes.vibLfoToFilterFc]:            { min: -12_000, max: 12_000, def:       0, nrpn: 2 },
+    [generatorTypes.vibLfoAmplitudeDepth]:        { min:       0, max:   1000, def:       0, nrpn: 1 },
+    [generatorTypes.modLfoRate]:                  { min:   -1000, max:   1000, def:       0, nrpn: 1 },
+    [generatorTypes.modLfoAmplitudeDepth]:        { min:       0, max:   1000, def:       0, nrpn: 1 },
 });
 
 const defaultGeneratorValues = new Int16Array(GENERATORS_AMOUNT);

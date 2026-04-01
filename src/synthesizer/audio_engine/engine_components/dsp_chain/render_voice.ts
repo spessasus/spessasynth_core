@@ -68,16 +68,18 @@ export function renderVoice(
     if (!voice.isActive) return;
 
     const core = this.synthCore;
+    const modulated = voice.modulatedGenerators;
+
+    // CALCULATION START
     // TUNING
     let targetKey = voice.targetKey;
-
     // Calculate tuning
     let cents =
         voice.pitchOffset +
-        voice.modulatedGenerators[generatorTypes.fineTune] + // Soundfont fine tune
+        modulated[generatorTypes.fineTune] + // Soundfont fine tune
         this.octaveTuning[voice.midiNote] + // MTS octave tuning
         this.channelTuningCents; // Channel tuning
-    let semitones = voice.modulatedGenerators[generatorTypes.coarseTune]; // Soundfont coarse tuning
+    let semitones = modulated[generatorTypes.coarseTune]; // Soundfont coarse tuning
 
     // MIDI tuning standard
     const tuning = core.tunings[this.preset!.program * 128 + voice.realKey];
@@ -104,29 +106,27 @@ export function renderVoice(
 
     // Calculate tuning by key using soundfont's scale tuning
     cents +=
-        (targetKey - voice.rootKey) *
-        voice.modulatedGenerators[generatorTypes.scaleTuning];
+        (targetKey - voice.rootKey) * modulated[generatorTypes.scaleTuning];
 
     // Low pass excursion with LFO and mod envelope
     let lowpassExcursion = 0;
     let volumeExcursionCentibels = 0;
+    let voiceGain =
+        voice.gainModifier * (1 + modulated[generatorTypes.amplitude] / 1000);
 
     // Vibrato LFO
-    const vibPitchDepth =
-        voice.modulatedGenerators[generatorTypes.vibLfoToPitch];
-    const vibVolDepth =
-        voice.modulatedGenerators[generatorTypes.vibLfoToVolume];
-    const vibFilterDepth =
-        voice.modulatedGenerators[generatorTypes.vibLfoToFilterFc];
-    if (vibPitchDepth !== 0 || vibVolDepth !== 0 || vibFilterDepth !== 0) {
+    const vibPitchDepth = modulated[generatorTypes.vibLfoToPitch];
+    const vibFilterDepth = modulated[generatorTypes.vibLfoToFilterFc];
+    const vibAmplitudeDepth = modulated[generatorTypes.vibLfoAmplitudeDepth];
+    if (vibPitchDepth !== 0 || vibFilterDepth !== 0 || vibAmplitudeDepth) {
         // Calculate start time and lfo value
         const vibStart =
             voice.startTime +
-            timecentsToSeconds(
-                voice.modulatedGenerators[generatorTypes.delayVibLFO]
-            );
-        const vibFreqHz = absCentsToHz(
-            voice.modulatedGenerators[generatorTypes.freqVibLFO]
+            timecentsToSeconds(modulated[generatorTypes.delayVibLFO]);
+        const vibFreqHz = Math.max(
+            0,
+            absCentsToHz(modulated[generatorTypes.freqVibLFO]) +
+                modulated[generatorTypes.vibLfoRate] / 100
         );
         const vibLfoValue = getLFOValue(vibStart, vibFreqHz, timeNow);
         // Use modulation multiplier (RPN modulation depth)
@@ -134,30 +134,33 @@ export function renderVoice(
             vibLfoValue *
             (vibPitchDepth *
                 this.customControllers[customControllers.modulationMultiplier]);
-        // Vol env volume offset
-        // Negate the lfo value because audigy starts with increase rather than decrease
-        volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
         // Low pass frequency
         lowpassExcursion += vibLfoValue * vibFilterDepth;
+
+        // Amplitude depth
+        voiceGain *= 1 - ((1 - vibLfoValue) / 2) * (vibAmplitudeDepth / 1000);
     }
 
     // Mod LFO
-    const modPitchDepth =
-        voice.modulatedGenerators[generatorTypes.modLfoToPitch];
-    const modVolDepth =
-        voice.modulatedGenerators[generatorTypes.modLfoToVolume];
-    const modFilterDepth =
-        voice.modulatedGenerators[generatorTypes.modLfoToFilterFc];
+    const modPitchDepth = modulated[generatorTypes.modLfoToPitch];
+    const modVolDepth = modulated[generatorTypes.modLfoToVolume];
+    const modFilterDepth = modulated[generatorTypes.modLfoToFilterFc];
+    const modAmplitudeDepth = modulated[generatorTypes.modLfoAmplitudeDepth];
     // Don't compute mod lfo unless necessary
-    if (modPitchDepth !== 0 || modFilterDepth !== 0 || modVolDepth !== 0) {
+    if (
+        modPitchDepth !== 0 ||
+        modFilterDepth !== 0 ||
+        modVolDepth !== 0 ||
+        modAmplitudeDepth !== 0
+    ) {
         // Calculate start time and lfo value
         const modStart =
             voice.startTime +
-            timecentsToSeconds(
-                voice.modulatedGenerators[generatorTypes.delayModLFO]
-            );
-        const modFreqHz = absCentsToHz(
-            voice.modulatedGenerators[generatorTypes.freqModLFO]
+            timecentsToSeconds(modulated[generatorTypes.delayModLFO]);
+        const modFreqHz = Math.max(
+            0,
+            absCentsToHz(modulated[generatorTypes.freqModLFO]) +
+                modulated[generatorTypes.modLfoRate] / 100
         );
         const modLfoValue = getLFOValue(modStart, modFreqHz, timeNow);
         // Use modulation multiplier (RPN modulation depth)
@@ -170,6 +173,9 @@ export function renderVoice(
         volumeExcursionCentibels += -modLfoValue * modVolDepth;
         // Low pass frequency
         lowpassExcursion += modLfoValue * modFilterDepth;
+
+        // Amplitude depth
+        voiceGain *= 1 - ((1 - modLfoValue) / 2) * (modAmplitudeDepth / 1000);
     }
 
     // Channel vibrato (GS NRPN)
@@ -188,10 +194,8 @@ export function renderVoice(
     }
 
     // Mod env
-    const modEnvPitchDepth =
-        voice.modulatedGenerators[generatorTypes.modEnvToPitch];
-    const modEnvFilterDepth =
-        voice.modulatedGenerators[generatorTypes.modEnvToFilterFc];
+    const modEnvPitchDepth = modulated[generatorTypes.modEnvToPitch];
+    const modEnvFilterDepth = modulated[generatorTypes.modEnvToFilterFc];
     // Don't compute mod env unless necessary
     if (modEnvFilterDepth !== 0 || modEnvPitchDepth !== 0) {
         const modEnv = voice.modEnv.process(voice, timeNow);
@@ -202,7 +206,7 @@ export function renderVoice(
 
     // Default resonant modulator: it does not affect the filter gain (neither XG nor GS did that)
     volumeExcursionCentibels -= voice.resonanceOffset;
-    const gainOffset = cbAttenuationToGain(volumeExcursionCentibels);
+    voiceGain *= cbAttenuationToGain(volumeExcursionCentibels);
 
     // Finally, calculate the playback rate
     const centsTotal = (cents + semitones * 100) | 0;
@@ -213,19 +217,14 @@ export function renderVoice(
 
     // Gain target
     const gainTarget = cbAttenuationToGain(
-        voice.modulatedGenerators[generatorTypes.initialAttenuation]
+        modulated[generatorTypes.initialAttenuation]
     );
 
     // SYNTHESIS
     const buffer = core.voiceBuffer;
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.isActive = voice.volEnv.process(
-            sampleCount,
-            buffer,
-            gainTarget,
-            volumeExcursionCentibels
-        );
+        voice.isActive = voice.volEnv.process(sampleCount, buffer, gainTarget);
         return;
     }
 
@@ -239,8 +238,7 @@ export function renderVoice(
     // Low pass filter (inlined for performance, confirmed with node.js)
     {
         const f = voice.filter;
-        const initialFc =
-            voice.modulatedGenerators[generatorTypes.initialFilterFc];
+        const initialFc = modulated[generatorTypes.initialFilterFc];
 
         if (f.initialized) {
             /* Note:
@@ -258,8 +256,7 @@ export function renderVoice(
 
         // The final cutoff for this calculation
         const targetCutoff = f.currentInitialFc + lowpassExcursion;
-        const modulatedResonance =
-            voice.modulatedGenerators[generatorTypes.initialFilterQ];
+        const modulatedResonance = modulated[generatorTypes.initialFilterQ];
         /* Note:
          * the check for initialFC is because of the filter optimization
          * (if cents are the maximum then the filter is open)
@@ -309,12 +306,7 @@ export function renderVoice(
     }
 
     // Vol env
-    const envActive = voice.volEnv.process(
-        sampleCount,
-        buffer,
-        gainTarget,
-        gainOffset
-    );
+    const envActive = voice.volEnv.process(sampleCount, buffer, gainTarget);
 
     // Note, we do not use &&= as it short-circuits!
     // And we don't do = either as wavetable might've marked it as inactive (end of sample)
@@ -327,13 +319,12 @@ export function renderVoice(
     } else {
         // Smooth out pan to prevent clicking
         voice.currentPan +=
-            (voice.modulatedGenerators[generatorTypes.pan] - voice.currentPan) *
+            (modulated[generatorTypes.pan] - voice.currentPan) *
             core.panSmoothingFactor;
         pan = voice.currentPan;
     }
 
-    const gain =
-        core.masterParameters.masterGain * core.midiVolume * voice.gainModifier;
+    const gain = core.masterParameters.masterGain * core.midiVolume * voiceGain;
     const index = (pan + 500) | 0;
     // Get voice's gain levels for each channel
     const gainLeft = panTableLeft[index] * gain * core.panLeft;
@@ -364,8 +355,7 @@ export function renderVoice(
 
     // Disable reverb and chorus if necessary
     const reverbSend =
-        voice.modulatedGenerators[generatorTypes.reverbEffectsSend] *
-        voice.reverbSend;
+        modulated[generatorTypes.reverbEffectsSend] * voice.reverbSend;
     if (reverbSend > 0) {
         const reverbGain =
             core.masterParameters.reverbGain * gain * (reverbSend / 1000);
@@ -377,8 +367,7 @@ export function renderVoice(
     }
 
     const chorusSend =
-        voice.modulatedGenerators[generatorTypes.chorusEffectsSend] *
-        voice.chorusSend;
+        modulated[generatorTypes.chorusEffectsSend] * voice.chorusSend;
     if (chorusSend > 0) {
         const chorusGain =
             core.masterParameters.chorusGain * (chorusSend / 1000) * gain;

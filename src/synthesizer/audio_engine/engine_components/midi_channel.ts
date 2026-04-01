@@ -96,8 +96,7 @@ export class MIDIChannel {
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      */
-    public sysExModulators: DynamicModulatorSystem =
-        new DynamicModulatorSystem();
+    public readonly sysExModulators;
     /**
      * The key shift of the channel (in semitones).
      */
@@ -116,12 +115,12 @@ export class MIDIChannel {
      */
     public insertionEnabled = false;
     /**
-     * CC1 for GS system exclusive.
+     * CC1 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
      */
     public cc1 = 0x10;
     /**
-     * CC2 for GS system exclusive.
+     * CC2 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
      */
     public cc2 = 0x11;
@@ -308,6 +307,7 @@ export class MIDIChannel {
         this.preset = preset;
         this.channel = channelNumber;
         this.rxChannel = channelNumber;
+        this.sysExModulators = new DynamicModulatorSystem(channelNumber);
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
         for (let i = 0; i < 128; i++) {
@@ -550,7 +550,7 @@ export class MIDIChannel {
 
     public updateChannelTuning() {
         this.channelTuningCents =
-            this.customControllers[customControllers.channelTuning] + // RPN channel fine tuning
+            this.customControllers[customControllers.channelTuning] + // RPN channel fine-tuning
             this.customControllers[customControllers.channelTransposeFine] + // User tuning (transpose)
             this.customControllers[customControllers.masterTuning] + // Master tuning, set by sysEx
             this.customControllers[customControllers.channelTuningSemitones] *

@@ -344,8 +344,7 @@ Below are the supported GS SysEx Parameters.
 
 #### Patch Part Parameters (Controllers)
 
-All of them except for LFO rate as it's in Hz rather than cents.
-
+All of them! At least, in theory.
 These define how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system.
 
 #### Drum Setup Parameters
