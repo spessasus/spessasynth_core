@@ -210,7 +210,7 @@ export class WaveSample extends DLSVerifier {
         const wsmpGain16 = this.gain >> 16;
         const wsmpAttenuation = -wsmpGain16;
         // Apply the E-MU attenuation correction here
-        const wsmpAttenuationCorrected = wsmpAttenuation / 0.4;
+        const wsmpAttenuationCorrected = Math.floor(wsmpAttenuation / 0.4);
 
         if (wsmpAttenuationCorrected !== 0) {
             zone.setGenerator(
