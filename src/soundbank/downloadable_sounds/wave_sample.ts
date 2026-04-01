@@ -149,7 +149,7 @@ export class WaveSample extends DLSVerifier {
         waveSample.fineTune = zone.fineTuning + zone.sample.pitchCorrection;
         // E-mu attenuation correction
         const attenuationCb =
-            zone.getGenerator(generatorTypes.initialAttenuation, 0) * 0.4;
+            Math.floor(zone.getGenerator(generatorTypes.initialAttenuation, 0) * 0.4);
         // Gain is stored as a 32-bit value, shift here
         waveSample.gain = -attenuationCb << 16;
         const loopingMode = zone.getGenerator(
