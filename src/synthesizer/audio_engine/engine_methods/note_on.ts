@@ -6,6 +6,7 @@ import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_typ
 import { midiControllers } from "../../../midi/enums";
 import { customControllers } from "../../enums";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
+import { timecentsToSeconds } from "../engine_components/unit_converter";
 
 const clamp = (num: number, min: number, max: number) =>
     Math.max(min, Math.min(max, num));
@@ -175,13 +176,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     // Add voices
     for (const cached of voices) {
         const voice = this.synthCore.assignVoice();
-        voice.setup(
-            this.synthCore.currentTime,
-            this.channel,
-            internalMidiNote,
-            velocity,
-            realKey
-        );
+        const now = this.synthCore.currentTime;
+        voice.setup(now, this.channel, internalMidiNote, velocity, realKey);
 
         // Select the correct oscillator
         voice.wavetable =
@@ -199,7 +195,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.targetKey = cached.targetKey;
 
         // Set modulators
-        if (this.sysExModulators.modulatorList.length > 0) {
+        if (this.sysExModulators.active) {
             // We have to copy them...
             voice.modulators = [...cached.modulators];
             // Dynamic modulators
@@ -269,6 +265,18 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.modEnv.init(voice);
 
         voice.filter.init();
+
+        // Calculate LFO start times
+        voice.vibLfoStartTime =
+            now +
+            timecentsToSeconds(
+                voice.modulatedGenerators[generatorTypes.delayVibLFO]
+            );
+        voice.modLfoStartTime =
+            now +
+            timecentsToSeconds(
+                voice.modulatedGenerators[generatorTypes.delayModLFO]
+            );
 
         // Modulate sample offsets (these are not real time)
         const cursorStartOffset =

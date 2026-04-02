@@ -1,4 +1,8 @@
-import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
+import {
+    DecodedModulator,
+    getModSourceEnum,
+    Modulator
+} from "../../../soundbank/basic_soundbank/modulator";
 import {
     generatorTypes,
     modulatorCurveTypes,
@@ -8,6 +12,24 @@ import { NON_CC_INDEX_OFFSET } from "./controller_tables";
 import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
 import { sysExLogging } from "../engine_methods/system_exclusive/helpers";
+import { midiControllers } from "../../../midi/enums";
+
+const INITIAL_MODULATORS = [
+    // Vibrato rate to that one GS rate (in bare Hz) map for special cases such as J-Cycle.mid
+    new DecodedModulator(
+        getModSourceEnum(
+            modulatorCurveTypes.linear,
+            true,
+            false,
+            true,
+            midiControllers.vibratoRate
+        ), // Linear forward bipolar
+        0x0, // No controller
+        generatorTypes.vibLfoRate,
+        1000,
+        0
+    )
+];
 
 /**
  * A class for dynamic modulators
@@ -18,6 +40,7 @@ export class DynamicModulatorSystem {
      * The current dynamic modulator list.
      */
     public modulatorList: { mod: Modulator; id: string }[] = [];
+    public active = false;
     private readonly channelNumber;
 
     public constructor(channelNumber: number) {
@@ -25,7 +48,18 @@ export class DynamicModulatorSystem {
     }
 
     public resetModulators() {
-        this.modulatorList = [];
+        this.modulatorList = INITIAL_MODULATORS.map((m) => {
+            return {
+                mod: m,
+                id: this.getModulatorID(
+                    m.primarySource.toSourceEnum(),
+                    m.destination,
+                    m.primarySource.isBipolar,
+                    m.primarySource.isNegative
+                )
+            };
+        });
+        this.active = false;
     }
 
     public setupReceiver(
@@ -35,6 +69,7 @@ export class DynamicModulatorSystem {
         sourceName: string,
         bipolar = false
     ) {
+        this.active = true;
         const centeredValue = data - 64;
         const centeredNormalized = centeredValue / 64;
         const normalizedNotCentered = data / 127;

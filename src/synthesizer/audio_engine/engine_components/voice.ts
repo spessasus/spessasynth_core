@@ -243,6 +243,13 @@ export class Voice {
      */
     public overrideReleaseVolEnv = 0;
 
+    // Vibrato LFO data
+    public vibLfoPhase = 0;
+    public vibLfoStartTime = 0;
+    // Mod LFO data
+    public modLfoPhase = 0;
+    public modLfoStartTime = 0;
+
     public constructor(sampleRate: number) {
         this.volEnv = new VolumeEnvelope(sampleRate);
         this.filter = new LowpassFilter(sampleRate);
@@ -349,5 +356,8 @@ export class Voice {
         this.overrideReleaseVolEnv = 0;
         this.portamentoDuration = 0;
         this.portamentoFromKey = -1;
+        // Important, these start at 1/4 way there!
+        this.vibLfoPhase = 0.25;
+        this.modLfoPhase = 0.25;
     }
 }

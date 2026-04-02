@@ -174,6 +174,13 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Vibrato rate (custom vibrato)
                         case nonRegisteredLSB.vibratoRate: {
+                            if (this.sysExModulators.active) {
+                                this.controllerChange(
+                                    midiControllers.vibratoRate,
+                                    dataCoarse
+                                );
+                                return;
+                            }
                             if (vibratoLock || dataCoarse === 64) {
                                 return;
                             }

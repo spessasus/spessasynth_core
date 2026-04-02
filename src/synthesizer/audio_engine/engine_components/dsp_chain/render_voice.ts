@@ -1,9 +1,5 @@
-import {
-    absCentsToHz,
-    cbAttenuationToGain,
-    timecentsToSeconds
-} from "../unit_converter";
-import { getLFOValue, getLFOValueSine } from "./lfo";
+import { absCentsToHz, cbAttenuationToGain } from "../unit_converter";
+import { getLFOValueSine } from "./lfo";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
@@ -68,6 +64,7 @@ export function renderVoice(
     if (!voice.isActive) return;
 
     const core = this.synthCore;
+    const sampleRate = core.sampleRate;
     const modulated = voice.modulatedGenerators;
 
     // CALCULATION START
@@ -115,67 +112,75 @@ export function renderVoice(
         voice.gainModifier * (1 + modulated[generatorTypes.amplitude] / 1000);
 
     // Vibrato LFO
-    const vibPitchDepth = modulated[generatorTypes.vibLfoToPitch];
-    const vibFilterDepth = modulated[generatorTypes.vibLfoToFilterFc];
-    const vibAmplitudeDepth = modulated[generatorTypes.vibLfoAmplitudeDepth];
-    if (vibPitchDepth !== 0 || vibFilterDepth !== 0 || vibAmplitudeDepth) {
-        // Calculate start time and lfo value
-        const vibStart =
-            voice.startTime +
-            timecentsToSeconds(modulated[generatorTypes.delayVibLFO]);
-        const vibFreqHz = Math.max(
-            0,
-            absCentsToHz(modulated[generatorTypes.freqVibLFO]) +
-                modulated[generatorTypes.vibLfoRate] / 100
-        );
-        const vibLfoValue = getLFOValue(vibStart, vibFreqHz, timeNow);
-        // Use modulation multiplier (RPN modulation depth)
-        cents +=
-            vibLfoValue *
-            (vibPitchDepth *
-                this.customControllers[customControllers.modulationMultiplier]);
-        // Low pass frequency
-        lowpassExcursion += vibLfoValue * vibFilterDepth;
+    if (timeNow >= voice.vibLfoStartTime) {
+        const vibPitchDepth = modulated[generatorTypes.vibLfoToPitch];
+        const vibFilterDepth = modulated[generatorTypes.vibLfoToFilterFc];
+        const vibAmplitudeDepth =
+            modulated[generatorTypes.vibLfoAmplitudeDepth];
+        if (vibPitchDepth !== 0 || vibFilterDepth !== 0 || vibAmplitudeDepth) {
+            const vibFreqHz = Math.max(
+                0,
+                absCentsToHz(modulated[generatorTypes.freqVibLFO]) +
+                    modulated[generatorTypes.vibLfoRate] / 100
+            );
+            const rateInc = (vibFreqHz * sampleCount) / sampleRate;
+            const vibLfoValue = 1 - 4 * Math.abs(voice.vibLfoPhase - 0.5);
+            if ((voice.vibLfoPhase += rateInc) >= 1) voice.vibLfoPhase -= 1;
+            // Use modulation multiplier (RPN modulation depth)
+            cents +=
+                vibLfoValue *
+                (vibPitchDepth *
+                    this.customControllers[
+                        customControllers.modulationMultiplier
+                    ]);
+            // Low pass frequency
+            lowpassExcursion += vibLfoValue * vibFilterDepth;
 
-        // Amplitude depth
-        voiceGain *= 1 - ((1 - vibLfoValue) / 2) * (vibAmplitudeDepth / 1000);
+            // Amplitude depth
+            voiceGain *=
+                1 - ((vibLfoValue + 1) / 2) * (vibAmplitudeDepth / 1000);
+        }
     }
 
     // Mod LFO
-    const modPitchDepth = modulated[generatorTypes.modLfoToPitch];
-    const modVolDepth = modulated[generatorTypes.modLfoToVolume];
-    const modFilterDepth = modulated[generatorTypes.modLfoToFilterFc];
-    const modAmplitudeDepth = modulated[generatorTypes.modLfoAmplitudeDepth];
-    // Don't compute mod lfo unless necessary
-    if (
-        modPitchDepth !== 0 ||
-        modFilterDepth !== 0 ||
-        modVolDepth !== 0 ||
-        modAmplitudeDepth !== 0
-    ) {
-        // Calculate start time and lfo value
-        const modStart =
-            voice.startTime +
-            timecentsToSeconds(modulated[generatorTypes.delayModLFO]);
-        const modFreqHz = Math.max(
-            0,
-            absCentsToHz(modulated[generatorTypes.freqModLFO]) +
-                modulated[generatorTypes.modLfoRate] / 100
-        );
-        const modLfoValue = getLFOValue(modStart, modFreqHz, timeNow);
-        // Use modulation multiplier (RPN modulation depth)
-        cents +=
-            modLfoValue *
-            (modPitchDepth *
-                this.customControllers[customControllers.modulationMultiplier]);
-        // Vol env volume offset
-        // Negate the lfo value because audigy starts with increase rather than decrease
-        volumeExcursionCentibels += -modLfoValue * modVolDepth;
-        // Low pass frequency
-        lowpassExcursion += modLfoValue * modFilterDepth;
+    if (timeNow >= voice.modLfoStartTime) {
+        const modPitchDepth = modulated[generatorTypes.modLfoToPitch];
+        const modVolDepth = modulated[generatorTypes.modLfoToVolume];
+        const modFilterDepth = modulated[generatorTypes.modLfoToFilterFc];
+        const modAmplitudeDepth =
+            modulated[generatorTypes.modLfoAmplitudeDepth];
+        // Don't compute mod lfo unless necessary
+        if (
+            modPitchDepth !== 0 ||
+            modFilterDepth !== 0 ||
+            modVolDepth !== 0 ||
+            modAmplitudeDepth !== 0
+        ) {
+            const modFreqHz = Math.max(
+                0,
+                absCentsToHz(modulated[generatorTypes.freqModLFO]) +
+                    modulated[generatorTypes.modLfoRate] / 100
+            );
+            const rateInc = (modFreqHz * sampleCount) / sampleRate;
+            const modLfoValue = 1 - 4 * Math.abs(voice.modLfoPhase - 0.5);
+            if ((voice.modLfoPhase += rateInc) >= 1) voice.modLfoPhase -= 1;
+            // Use modulation multiplier (RPN modulation depth)
+            cents +=
+                modLfoValue *
+                (modPitchDepth *
+                    this.customControllers[
+                        customControllers.modulationMultiplier
+                    ]);
+            // Vol env volume offset
+            // Negate the lfo value because audigy starts with increase rather than decrease
+            volumeExcursionCentibels += -modLfoValue * modVolDepth;
+            // Low pass frequency
+            lowpassExcursion += modLfoValue * modFilterDepth;
 
-        // Amplitude depth
-        voiceGain *= 1 - ((1 - modLfoValue) / 2) * (modAmplitudeDepth / 1000);
+            // Amplitude depth
+            voiceGain *=
+                1 - ((modLfoValue + 1) / 2) * (modAmplitudeDepth / 1000);
+        }
     }
 
     // Channel vibrato (GS NRPN)
@@ -206,7 +211,6 @@ export function renderVoice(
 
     // Default resonant modulator: it does not affect the filter gain (neither XG nor GS did that)
     volumeExcursionCentibels -= voice.resonanceOffset;
-    voiceGain *= cbAttenuationToGain(volumeExcursionCentibels);
 
     // Finally, calculate the playback rate
     const centsTotal = (cents + semitones * 100) | 0;
@@ -216,9 +220,9 @@ export function renderVoice(
     }
 
     // Gain target
-    const gainTarget = cbAttenuationToGain(
-        modulated[generatorTypes.initialAttenuation]
-    );
+    const gainTarget =
+        cbAttenuationToGain(modulated[generatorTypes.initialAttenuation]) *
+        cbAttenuationToGain(volumeExcursionCentibels);
 
     // SYNTHESIS
     const buffer = core.voiceBuffer;
