@@ -348,6 +348,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 generatorTypes.vibLfoToPitch,
                 zone.getGenerator(generatorTypes.modLfoToPitch, null)
             );
+            zone.setGenerator(generatorTypes.modLfoToPitch, null);
 
             for (const mod of zone.modulators) {
                 if (mod.destination === generatorTypes.modLfoToPitch)
