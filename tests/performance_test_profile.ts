@@ -23,6 +23,6 @@ await runPerformanceTest(soundFontFile, midiFile, 1);
 
 const { profile } = await session.post("Profiler.stop");
 
-console.log(`CPU profile written to: ${outfile}`);
+console.info(`CPU profile written to: ${outfile}`);
 
 await writeFile(outfile, JSON.stringify(profile));
