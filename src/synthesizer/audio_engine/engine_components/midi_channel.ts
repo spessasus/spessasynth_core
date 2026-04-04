@@ -22,7 +22,7 @@ import {
     GENERATOR_OVERRIDE_NO_CHANGE_VALUE
 } from "./synth_constants";
 import { DynamicModulatorSystem } from "./dynamic_modulator_system";
-import { computeModulators } from "./compute_modulator";
+import { computeModulator, computeModulators } from "./compute_modulator";
 import {
     generatorLimits,
     GENERATORS_AMOUNT,
@@ -288,6 +288,7 @@ export class MIDIChannel {
      * A small optimization that disables applying overrides until at least one is set.
      */
     protected generatorOverridesEnabled = false;
+    protected readonly computeModulator = computeModulator.bind(this);
     protected readonly computeModulators = computeModulators.bind(this);
     /**
      * For tracking voice count changes

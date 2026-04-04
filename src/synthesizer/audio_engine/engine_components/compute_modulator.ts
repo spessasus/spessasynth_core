@@ -2,15 +2,74 @@ import { generatorLimits } from "../../../soundbank/basic_soundbank/generator_ty
 import type { MIDIChannel } from "./midi_channel";
 import type { Voice } from "./voice";
 import { modulatorSources } from "../../../soundbank/enums";
-import { NON_CC_INDEX_OFFSET } from "./controller_tables"; /**
- * Compute_modulator.ts
- * purpose: contains a function for computing all modulators
- */
+import { NON_CC_INDEX_OFFSET } from "./controller_tables";
+import { customControllers } from "../../enums";
 
 /**
  * Compute_modulator.ts
  * purpose: contains a function for computing all modulators
  */
+const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
+
+/**
+ * Computes a given modulator
+ * @param voice the voice of this modulator.
+ * @param pitchWheel the pitch wheel value, as channel determines if it's a per-note or a global value.
+ * @param modulatorIndex the modulator to compute
+ * @returns the computed value
+ */
+export function computeModulator(
+    this: MIDIChannel,
+    voice: Voice,
+    pitchWheel: number,
+    modulatorIndex: number
+) {
+    const modulator = voice.modulators[modulatorIndex];
+    if (modulator.transformAmount === 0) {
+        voice.modulatorValues[modulatorIndex] = 0;
+        return 0;
+    }
+    const sourceValue = modulator.primarySource.getValue(
+        this.midiControllers,
+        pitchWheel,
+        voice
+    );
+    const secondSrcValue = modulator.secondarySource.getValue(
+        this.midiControllers,
+        pitchWheel,
+        voice
+    );
+
+    // See the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
+    let transformAmount = modulator.transformAmount;
+    if (modulator.isEffectModulator && transformAmount <= 1000) {
+        transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;
+        transformAmount = Math.min(transformAmount, 1000);
+    }
+
+    // Compute the modulator
+    let computedValue = sourceValue * secondSrcValue * transformAmount;
+
+    if (modulator.transformType === 2) {
+        // Abs value
+        computedValue = Math.abs(computedValue);
+    }
+
+    // Resonant modulator: take its value and ensure that it won't change the final gain
+    if (modulator.isDefaultResonantModulator) {
+        // Half the gain, negates the filter
+        voice.resonanceOffset = Math.max(0, computedValue / 2);
+    }
+
+    // Modulation depth
+    if (modulator.isModWheelModulator) {
+        computedValue *=
+            this.customControllers[customControllers.modulationMultiplier];
+    }
+
+    voice.modulatorValues[modulatorIndex] = computedValue;
+    return computedValue;
+}
 
 /**
  * Computes modulators of a given voice. Source and index indicate what modulators shall be computed.
@@ -53,7 +112,7 @@ export function computeModulators(
                 Math.max(
                     -32_768,
                     modulatedGenerators[mod.destination] +
-                        voice.computeModulator(this.midiControllers, pitch, i)
+                        this.computeModulator(voice, pitch, i)
                 )
             );
         }
@@ -87,7 +146,7 @@ export function computeModulators(
             const destination = mod.destination;
             let outputValue = generators[destination];
             // Compute our modulator
-            voice.computeModulator(this.midiControllers, pitch, i);
+            this.computeModulator(voice, pitch, i);
 
             // Sum the values of all modulators for this destination
             for (let j = 0; j < modulators.length; j++) {

@@ -3,7 +3,6 @@ import { getLFOValueSine } from "./lfo";
 import type { Voice } from "../voice";
 import type { MIDIChannel } from "../midi_channel";
 import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_types";
-import { customControllers } from "../../../enums";
 import { midiControllers } from "../../../../midi/enums";
 import { LowpassFilter } from "./lowpass_filter";
 
@@ -126,13 +125,7 @@ export function renderVoice(
             const rateInc = (vibFreqHz * sampleCount) / sampleRate;
             const vibLfoValue = 1 - 4 * Math.abs(voice.vibLfoPhase - 0.5);
             if ((voice.vibLfoPhase += rateInc) >= 1) voice.vibLfoPhase -= 1;
-            // Use modulation multiplier (RPN modulation depth)
-            cents +=
-                vibLfoValue *
-                (vibPitchDepth *
-                    this.customControllers[
-                        customControllers.modulationMultiplier
-                    ]);
+            cents += vibLfoValue * vibPitchDepth;
             // Low pass frequency
             lowpassExcursion += vibLfoValue * vibFilterDepth;
 
@@ -164,13 +157,7 @@ export function renderVoice(
             const rateInc = (modFreqHz * sampleCount) / sampleRate;
             const modLfoValue = 1 - 4 * Math.abs(voice.modLfoPhase - 0.5);
             if ((voice.modLfoPhase += rateInc) >= 1) voice.modLfoPhase -= 1;
-            // Use modulation multiplier (RPN modulation depth)
-            cents +=
-                modLfoValue *
-                (modPitchDepth *
-                    this.customControllers[
-                        customControllers.modulationMultiplier
-                    ]);
+            cents += modLfoValue * modPitchDepth;
             // Vol env volume offset
             // Negate the lfo value because audigy starts with increase rather than decrease
             volumeExcursionCentibels += -modLfoValue * modVolDepth;

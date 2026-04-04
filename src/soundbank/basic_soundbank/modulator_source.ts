@@ -199,7 +199,7 @@ export class ModulatorSource {
         const transformType =
             (this.isBipolar ? 0b10 : 0b00) | (this.isNegative ? 1 : 0);
 
-        return precomputedTransforms[
+        return precomputedModulatorTransforms[
             MODULATOR_RESOLUTION *
                 (this.curveType * MOD_CURVE_TYPES_AMOUNT + transformType) +
                 rawValue
@@ -211,7 +211,7 @@ export class ModulatorSource {
  * To get the value, you do
  * MODULATOR_RESOLUTION * (MOD_CURVE_TYPES_AMOUNT * curveType + transformType) + your raw value as 14-bit number (0 - 16,383)
  */
-const precomputedTransforms = new Float32Array(
+export const precomputedModulatorTransforms = new Float32Array(
     MODULATOR_RESOLUTION *
         MOD_SOURCE_TRANSFORM_POSSIBILITIES *
         MOD_CURVE_TYPES_AMOUNT
@@ -227,11 +227,12 @@ for (let curveType = 0; curveType < MOD_CURVE_TYPES_AMOUNT; curveType++) {
             MODULATOR_RESOLUTION *
             (curveType * MOD_CURVE_TYPES_AMOUNT + transformType);
         for (let value = 0; value < MODULATOR_RESOLUTION; value++) {
-            precomputedTransforms[tableIndex + value] = getModulatorCurveValue(
-                transformType,
-                curveType as ModulatorCurveType,
-                value / MODULATOR_RESOLUTION
-            );
+            precomputedModulatorTransforms[tableIndex + value] =
+                getModulatorCurveValue(
+                    transformType,
+                    curveType as ModulatorCurveType,
+                    value / MODULATOR_RESOLUTION
+                );
         }
     }
 }

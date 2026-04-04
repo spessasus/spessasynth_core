@@ -73,13 +73,18 @@ export class Modulator {
      * - still can be disabled if the soundfont has its own modulator curve
      * - this fixes the very low amount of reverb by default and doesn't break soundfonts
      */
-    public readonly isEffectModulator: boolean = false;
+    public readonly isEffectModulator;
 
     /**
      * The default resonant modulator does not affect the filter gain.
      * Neither XG nor GS responded to cc #74 in that way.
      */
-    public readonly isDefaultResonantModulator: boolean = false;
+    public readonly isDefaultResonantModulator;
+
+    /**
+     * If this is a modulation wheel modulator (for modulation depth range).
+     */
+    public readonly isModWheelModulator;
 
     /**
      * The primary source of this modulator.
@@ -101,7 +106,8 @@ export class Modulator {
         amount = 0,
         transformType: ModulatorTransformType = 0,
         isEffectModulator = false,
-        isDefaultResonantModulator = false
+        isDefaultResonantModulator = false,
+        isModWheelModulator = false
     ) {
         this.primarySource = primarySource;
         this.secondarySource = secondarySource;
@@ -111,6 +117,7 @@ export class Modulator {
         this.transformType = transformType;
         this.isEffectModulator = isEffectModulator;
         this.isDefaultResonantModulator = isDefaultResonantModulator;
+        this.isModWheelModulator = isModWheelModulator;
     }
 
     private get destinationName() {
@@ -155,7 +162,8 @@ export class Modulator {
             mod.transformAmount,
             mod.transformType,
             mod.isEffectModulator,
-            mod.isDefaultResonantModulator
+            mod.isDefaultResonantModulator,
+            mod.isModWheelModulator
         );
     }
 
@@ -220,14 +228,22 @@ export class DecodedModulator extends Modulator {
             secondarySourceEnum === 0x0 &&
             destination === generatorTypes.initialFilterQ;
 
+        const s1 = ModulatorSource.fromSourceEnum(sourceEnum);
+        const s2 = ModulatorSource.fromSourceEnum(secondarySourceEnum);
+
+        const isModWheelModulator =
+            (s1.isCC && s1.index === midiControllers.modulationWheel) ||
+            (s2.isCC && s2.index === midiControllers.modulationWheel);
+
         super(
-            ModulatorSource.fromSourceEnum(sourceEnum),
-            ModulatorSource.fromSourceEnum(secondarySourceEnum),
+            s1,
+            s2,
             destination,
             amount,
             transformType as ModulatorTransformType,
             isEffectModulator,
-            isDefaultResonantModulator
+            isDefaultResonantModulator,
+            isModWheelModulator
         );
 
         if (this.destination > MAX_GENERATOR) {
