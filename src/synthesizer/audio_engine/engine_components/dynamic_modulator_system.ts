@@ -1,7 +1,6 @@
 import {
     DecodedModulator,
-    getModSourceEnum,
-    Modulator
+    getModSourceEnum
 } from "../../../soundbank/basic_soundbank/modulator";
 import {
     generatorTypes,
@@ -13,21 +12,24 @@ import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator
 import { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
 import { sysExLogging } from "../engine_methods/system_exclusive/helpers";
 import { midiControllers } from "../../../midi/enums";
+import { VoiceModulator } from "./voice_modulator";
 
-const INITIAL_MODULATORS = [
+const INITIAL_MODULATORS: VoiceModulator[] = [
     // Vibrato rate to that one GS rate (in bare Hz) map for special cases such as J-Cycle.mid
-    new DecodedModulator(
-        getModSourceEnum(
-            modulatorCurveTypes.linear,
-            true,
-            false,
-            true,
-            midiControllers.vibratoRate
-        ), // Linear forward bipolar
-        0x0, // No controller
-        generatorTypes.vibLfoRate,
-        1000,
-        0
+    VoiceModulator.fromModulator(
+        new DecodedModulator(
+            getModSourceEnum(
+                modulatorCurveTypes.linear,
+                true,
+                false,
+                true,
+                midiControllers.vibratoRate
+            ), // Linear forward bipolar
+            0x0, // No controller
+            generatorTypes.vibLfoRate,
+            1000,
+            0
+        )
     )
 ];
 
@@ -39,7 +41,7 @@ export class DynamicModulatorSystem {
     /**
      * The current dynamic modulator list.
      */
-    public modulatorList: { mod: Modulator; id: string }[] = [];
+    public modulatorList: { mod: VoiceModulator; id: string }[] = [];
     public active = false;
     private readonly channelNumber;
 
@@ -299,7 +301,7 @@ export class DynamicModulatorSystem {
                 srcNum = source;
                 isCC = true;
             }
-            const modulator = new Modulator(
+            const modulator = VoiceModulator.fromData(
                 new ModulatorSource(
                     srcNum,
                     modulatorCurveTypes.linear,

@@ -39,7 +39,7 @@ export function getModSourceEnum(
     ).toSourceEnum();
 }
 
-const defaultResonantModSource = getModSourceEnum(
+export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
     modulatorCurveTypes.linear,
     true,
     false,
@@ -64,29 +64,6 @@ export class Modulator {
     public transformType: ModulatorTransformType = 0;
 
     /**
-     * Indicates if the given modulator is chorus or reverb effects modulator.
-     * This is done to simulate BASSMIDI effects behavior:
-     * - defaults to 1000 transform amount rather than 200
-     * - values can be changed, but anything above 200 is 1000
-     * (except for values above 1000, they are copied directly)
-     * - all values below are multiplied by 5 (200 * 5 = 1000)
-     * - still can be disabled if the soundfont has its own modulator curve
-     * - this fixes the very low amount of reverb by default and doesn't break soundfonts
-     */
-    public readonly isEffectModulator;
-
-    /**
-     * The default resonant modulator does not affect the filter gain.
-     * Neither XG nor GS responded to cc #74 in that way.
-     */
-    public readonly isDefaultResonantModulator;
-
-    /**
-     * If this is a modulation wheel modulator (for modulation depth range).
-     */
-    public readonly isModWheelModulator;
-
-    /**
      * The primary source of this modulator.
      */
     public readonly primarySource: ModulatorSource;
@@ -104,10 +81,7 @@ export class Modulator {
         secondarySource = new ModulatorSource(),
         destination: GeneratorType = generatorTypes.INVALID,
         amount = 0,
-        transformType: ModulatorTransformType = 0,
-        isEffectModulator = false,
-        isDefaultResonantModulator = false,
-        isModWheelModulator = false
+        transformType: ModulatorTransformType = 0
     ) {
         this.primarySource = primarySource;
         this.secondarySource = secondarySource;
@@ -115,9 +89,6 @@ export class Modulator {
         this.destination = destination;
         this.transformAmount = amount;
         this.transformType = transformType;
-        this.isEffectModulator = isEffectModulator;
-        this.isDefaultResonantModulator = isDefaultResonantModulator;
-        this.isModWheelModulator = isModWheelModulator;
     }
 
     private get destinationName() {
@@ -160,10 +131,7 @@ export class Modulator {
             ModulatorSource.copyFrom(mod.secondarySource),
             mod.destination,
             mod.transformAmount,
-            mod.transformType,
-            mod.isEffectModulator,
-            mod.isDefaultResonantModulator,
-            mod.isModWheelModulator
+            mod.transformType
         );
     }
 
@@ -217,33 +185,12 @@ export class DecodedModulator extends Modulator {
         amount: number,
         transformType: number
     ) {
-        const isEffectModulator =
-            (sourceEnum === 0x00_db || sourceEnum === 0x00_dd) &&
-            secondarySourceEnum === 0x0 &&
-            (destination === generatorTypes.reverbEffectsSend ||
-                destination === generatorTypes.chorusEffectsSend);
-
-        const isDefaultResonantModulator =
-            sourceEnum === defaultResonantModSource &&
-            secondarySourceEnum === 0x0 &&
-            destination === generatorTypes.initialFilterQ;
-
-        const s1 = ModulatorSource.fromSourceEnum(sourceEnum);
-        const s2 = ModulatorSource.fromSourceEnum(secondarySourceEnum);
-
-        const isModWheelModulator =
-            (s1.isCC && s1.index === midiControllers.modulationWheel) ||
-            (s2.isCC && s2.index === midiControllers.modulationWheel);
-
         super(
-            s1,
-            s2,
+            ModulatorSource.fromSourceEnum(sourceEnum),
+            ModulatorSource.fromSourceEnum(secondarySourceEnum),
             destination,
             amount,
-            transformType as ModulatorTransformType,
-            isEffectModulator,
-            isDefaultResonantModulator,
-            isModWheelModulator
+            transformType as ModulatorTransformType
         );
 
         if (this.destination > MAX_GENERATOR) {
@@ -391,7 +338,7 @@ const defaultSpessaSynthModulators = [
 
     // Cc 71 (filter Q) to filter Q (default resonant modulator)
     new DecodedModulator(
-        defaultResonantModSource,
+        DEFAULT_RESONANT_MOD_SOURCE,
         0x0, // No controller
         generatorTypes.initialFilterQ,
         200,

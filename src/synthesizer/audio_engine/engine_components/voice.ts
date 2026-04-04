@@ -5,7 +5,6 @@
 import { LowpassFilter } from "./dsp_chain/lowpass_filter";
 import { VolumeEnvelope } from "./dsp_chain/volume_envelope";
 import { ModulationEnvelope } from "./dsp_chain/modulation_envelope";
-import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode } from "../../types";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "./synth_constants";
@@ -17,6 +16,7 @@ import {
 } from "./dsp_chain/wavetable_oscillator";
 import { type InterpolationType } from "../../enums";
 import { DEFAULT_MASTER_PARAMETERS } from "./master_parameters";
+import type { VoiceModulator } from "./voice_modulator";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
 
@@ -69,7 +69,7 @@ export class Voice {
     /**
      * The voice's modulators.
      */
-    public modulators = new Array<Modulator>();
+    public modulators = new Array<VoiceModulator>();
 
     /**
      * The current values for the respective modulators.

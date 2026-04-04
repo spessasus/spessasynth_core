@@ -1,7 +1,7 @@
-import type { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import type { VoiceParameters } from "../../../soundbank/types";
 import { generatorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import type { SampleLoopingMode } from "../../types";
+import { VoiceModulator } from "./voice_modulator";
 
 /**
  * Represents a cached voice
@@ -20,7 +20,7 @@ export class CachedVoice {
     /**
      * The voice's modulators.
      */
-    public readonly modulators: Modulator[];
+    public readonly modulators: VoiceModulator[];
 
     /**
      * Exclusive class number for hi-hats etc.
@@ -65,7 +65,9 @@ export class CachedVoice {
     ) {
         const sample = voiceParams.sample;
         const generators = voiceParams.generators;
-        this.modulators = voiceParams.modulators;
+        this.modulators = voiceParams.modulators.map(
+            VoiceModulator.fromModulator.bind(VoiceModulator)
+        );
         this.generators = generators;
 
         // Root key override
