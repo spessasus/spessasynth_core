@@ -258,7 +258,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                         destination === dlsDestinations.modEnvHold ||
                         destination === dlsDestinations.modEnvDecay ||
                         destination === dlsDestinations.volEnvHold ||
-                        destination == dlsDestinations.volEnvDecay
+                        destination === dlsDestinations.volEnvDecay
                     ) {
                         // Skip, will be applied later
                         continue;

@@ -116,7 +116,11 @@ export function renderVoice(
         const vibFilterDepth = modulated[generatorTypes.vibLfoToFilterFc];
         const vibAmplitudeDepth =
             modulated[generatorTypes.vibLfoAmplitudeDepth];
-        if (vibPitchDepth !== 0 || vibFilterDepth !== 0 || vibAmplitudeDepth) {
+        if (
+            vibPitchDepth !== 0 ||
+            vibFilterDepth !== 0 ||
+            vibAmplitudeDepth !== 0
+        ) {
             const vibFreqHz = Math.max(
                 0,
                 absCentsToHz(modulated[generatorTypes.freqVibLFO]) +
@@ -173,7 +177,7 @@ export function renderVoice(
     // Channel vibrato (GS NRPN)
     if (
         // Only enabled when modulation wheel is disabled (to prevent overlap)
-        this.midiControllers[midiControllers.modulationWheel] == 0 &&
+        this.midiControllers[midiControllers.modulationWheel] === 0 &&
         this.channelVibrato.depth > 0
     ) {
         // Sine! (GS uses sine)

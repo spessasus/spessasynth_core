@@ -160,7 +160,7 @@ export function handleXG(
 
                 // Part mode
                 case 0x07: {
-                    channelObject.setDrums(data != 0);
+                    channelObject.setDrums(data !== 0);
                     break;
                 }
 

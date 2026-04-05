@@ -58,7 +58,7 @@ export class BasicMIDI {
     /**
      * The time division of the sequence, representing the number of MIDI ticks per beat.
      */
-    public timeDivision = 0;
+    public timeDivision = 480;
 
     /**
      * The duration of the sequence, in seconds.
