@@ -227,7 +227,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
 
     private writeHeader() {
         // Region header
-        const rgnhData = new IndexedByteArray(12);
+        const rgnhData = new IndexedByteArray(14);
         // KeyRange
         writeWord(rgnhData, Math.max(this.keyRange.min, 0));
         writeWord(rgnhData, this.keyRange.max);

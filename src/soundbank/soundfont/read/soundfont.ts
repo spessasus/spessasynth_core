@@ -323,7 +323,7 @@ export class SoundFont2 extends BasicSoundBank {
             if (xInst.length === instruments.length) {
                 for (const [i, inst] of instruments.entries()) {
                     inst.name += xInst[i].name;
-                    inst.zoneStartIndex |= xInst[i].zoneStartIndex;
+                    inst.zoneStartIndex |= xInst[i].zoneStartIndex << 16;
                 }
                 // Adjust zone counts
                 for (const [i, inst] of instruments.entries()) {
@@ -374,7 +374,7 @@ export class SoundFont2 extends BasicSoundBank {
             if (xPreset.length === presets.length) {
                 for (const [i, pres] of presets.entries()) {
                     pres.name += xPreset[i].name;
-                    pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
+                    pres.zoneStartIndex |= xPreset[i].zoneStartIndex << 16;
                 }
                 // Adjust zone counts
                 for (const [i, preset] of presets.entries()) {
