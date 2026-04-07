@@ -17,55 +17,65 @@ A custom chorus processor must implement the following parameters and behavior.
 
 ### level
 
-0-127
+`0-127`
+
 This parameter sets the amount of the effect sent to the effect output.
 
 ### preLowpass
 
-0-7
+`0-7`
+
 A low-pass filter can be applied to the sound coming into the effect to cut the high
 frequency range. Higher values will cut more of the high frequencies, resulting in a
 more mellow effect sound.
 
 ### feedback
 
-0-127
+`0-127`
+
 This parameter sets the level at which the chorus sound is re-input (fed back) into the
 chorus. By using feedback, a denser chorus sound can be created.
 Higher values result in a greater feedback level.
 
 ### delay
 
-0-127
+`0-127`
+
 This parameter sets the delay time of the chorus effect.
 
 ### rate
 
-0-127
+`0-127`
+
 This parameter sets the speed (frequency) at which the chorus sound is modulated.
 Higher values result in faster modulation.
 
 ### depth
 
-0-127
+`0-127`
+
 This parameter sets the depth at which the chorus sound is modulated.
 Higher values result in deeper modulation.
 
 ### sendLevelToReverb
 
-0-127
+`0-127`
+
 This parameter sets the amount of chorus sound that will be sent to the reverb.
 Higher values result in more sound being sent.
 
 ### sendLevelToDelay
 
-0-127
+`0-127`
+
 This parameter sets the amount of chorus sound that will be sent to the delay.
 Higher values result in more sound being sent.
 
 ### process
 
 Process the effect and **adds** it to the output.
+
+`process(input, outputLeft, outputRight, outputReverb, outputDelay, startIndex, sampleCount)`
 
 - input - The input buffer to process. It always starts at index 0.
 - outputLeft - The left output buffer.
