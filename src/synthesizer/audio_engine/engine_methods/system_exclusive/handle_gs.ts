@@ -650,7 +650,7 @@ export function handleGS(
                                 }
 
                                 case 0x14: {
-                                    // IGNORED!
+                                    channelObject.assignMode = data;
                                     coolInfo(`Assign mode on ${channel}`, data);
                                     break;
                                 }

@@ -54,7 +54,10 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
 
     // Monophonic retrigger
-    if (this.synthCore.masterParameters.monophonicRetriggerMode) {
+    if (
+        this.synthCore.masterParameters.monophonicRetriggerMode ||
+        this.assignMode === 0
+    ) {
         this.killNote(midiNote);
     }
 

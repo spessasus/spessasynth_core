@@ -319,6 +319,7 @@ Below are the supported GS SysEx Parameters.
 - Tone Number (Bank + Program change)
 - Rx. Channel
 - Mono/Poly Mode
+- Assign mode (Limited Multi treated as Full Multi)
 - Use for Rhythm Part
 - Pitch Key Shift
 - Part Level

@@ -55,6 +55,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.octaveTuning.fill(0);
     resetPortamento.call(this, sendCCEvents);
     this.rxChannel = this.channel;
+    this.assignMode = 2;
     this.randomPan = false;
     if (
         this.insertionEnabled &&

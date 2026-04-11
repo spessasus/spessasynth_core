@@ -109,7 +109,17 @@ export class MIDIChannel {
      * Enables random panning for every note played on this channel.
      */
     public randomPan = false;
-
+    /**
+     * Assign mode for the channel.
+     * ASSIGN MODE is the parameter that determines how voice assignment will be handled when sounds overlap on identical note numbers in the same channel (i.e., repeatedly struck notes).
+     * This is initialized to a mode suitable for each Part, so for general purposes there is no need to change this.
+     *
+     * 0 - Single: If the same note is played multiple times in succession, the previously-sounding note will be completely silenced, and then the new note will be sounded.
+     * 1 - LimitedMulti: If the same note is played multiple times in succession, the previously-sounding note will be continued to a certain extent even after the new note is sounded. (Default setting)
+     * 2 - FullMulti: If the same note is played multiple times in succession, the previously-sounding note(s) will continue sounding for their natural length even after the new note is sounded.
+     * We treat LimitedMulti like FullMulti
+     */
+    public assignMode = 2;
     /**
      * Indicates whether this channel uses the insertion EFX processor.
      */
@@ -117,11 +127,13 @@ export class MIDIChannel {
     /**
      * CC1 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
+     * Default is 16
      */
     public cc1 = 0x10;
     /**
      * CC2 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
+     * Default is 17
      */
     public cc2 = 0x11;
     /**
