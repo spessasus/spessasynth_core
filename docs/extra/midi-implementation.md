@@ -82,7 +82,7 @@ Below is the list of controllers supported by default.
 | 120 or 123           | All Notes Off or All Sound Off      | Not Applicable                                                                                           | Stops all the notes. Equivalent to MIDI "panic".                                                                                                                       | N.A.          |
 | 121                  | Reset All Controllers               | Not Applicable                                                                                           | Resets controllers to their default values according to the RP-15 recommended practice.                                                                                | N.A.          |
 | 124 or 125           | Omni mode On/Off                    | Not Applicable                                                                                           | Stops all the notes. Equivalent to MIDI "panic". This is for parity with Roland GS devices.                                                                            | N.A.          |
-| 126 or 127           | Poly/Mono Mode On/Off               | Not Applicable                                                                                           | Setting the corresponding controller to any value to switch the Poly mode on or off. Mono mode allows only one note at a time on this channel.                         | Poly          |
+| 126 or 127           | Poly/Mono Mode On/Off               | Not Applicable                                                                                           | Setting the corresponding controller to any value to switch the Poly mode on or off. [See poly/mono implementation](#polymono-implementation)                          | Poly          |
 
 ### Default controller values
 
@@ -265,101 +265,232 @@ Bank LSB and MSB are processed.
 MSB can be used to turn a channel into a drum channel.
 Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
 
-### GS Parameters
+### Roland GS
 
-Below are the supported GS SysEx Parameters.
+Below are the supported Roland GS messages.
 
-#### System Parameters
+#### System Parameters, Patch Common Parameters
 
-- System Mode Set (SC-88 Reset)
+These are global parameters, affecting the entire synthesizer.
 
-#### Patch Common Parameters
+##### System Mode Set (SC-88+ Reset)
 
-- Master Tune
-- Master Volume
-- Master Key-Shift
-- Master Pan
-- Mode Set (GS Reset)
-- Patch Name (logs to console)
-- Reverb Macro
-- Reverb Character
-- Reverb Pre-LPF
-- Reverb Level
-- Reverb Time
-- Reverb Delay Feedback
-- Reverb Predelay Time
-- Chorus Macro
-- Chorus Pre-LPF
-- Chorus Level
-- Chorus Feedback
-- Chorus Delay
-- Chorus Rate
-- Chorus Depth
-- Chorus Send Level To Reverb
-- Chorus Send Level To Delay
-- Delay Macro
-- Delay Pre-LPF
-- Delay Time Center
-- Delay Ratio Left
-- Delay Ratio Right
-- Delay Level Center
-- Delay Level Left
-- Delay Level Right
-- Delay Level
+Treated like a GS reset.
+
+##### Master Tune
+
+Precise synth tuning in cents.
+
+##### Master Volume
+
+Master gain of the synthesizer, treated like GM volume message.
+
+##### Master Key-Shift
+
+Master transposition of the synthesizer.
+
+##### Master Pan
+
+Master stereo pan position of the synthesizer.
+
+##### Mode Set
+
+Resets the synthesizer and switches it to GS mode. (GS reset)
+
+##### Patch Name
+
+Treated as recognized, decide name is logged to console if output is enabled.
+
+##### Reverb Parameters
+
+- Macro (all GS macros are supported)
+- Character
+- Pre-LPF
+- Level
+- Time
 - Delay Feedback
-- Delay Send Level To Reverb
-- EFX Type (see [supported EFX](#currently-implemented-insertion-effects))
-- EFX Parameter 1-20
-- EFX Send Level To Reverb
-- EFX Send Level To Chorus
-- EFX Send Level To Delay
+- Predelay Time
+
+These are forwarded to the reverb processor.
+
+##### Chorus Parameters
+
+- Macro (all GS macros are supported)
+- Pre-LPF
+- Level
+- Feedback
+- Delay
+- Rate
+- Depth
+- Send Level To Reverb
+- Send Level To Delay
+
+These are forwarded to the chorus processor.
+
+##### Delay Parameters
+
+- Macro (all GS macros are supported)
+- Pre-LPF
+- Time Center
+- Ratio Left
+- Ratio Right
+- Level Center
+- Level Left
+- Level Right
+- Level
+- Feedback
+- Send Level To Reverb
+
+These are forwarded to the delay processor.
+
+##### EFX Parameters
+
+EFX means Insertion Effect. Both are used interchangeably.
+
+- EFX Type
+- EFX parameters 1-20
+- Send Level To Reverb
+- Send Level To Chorus
+- Send Level To Delay
+
+These are forwarded to the insertion processor. See [supported insertion effects](#currently-implemented-insertion-effects)
 
 #### Patch Part Parameters
 
-- Tone Number (Bank + Program change)
-- Rx. Channel
-- Mono/Poly Mode
-- Assign mode (Limited Multi treated as Full Multi)
-- Use for Rhythm Part
-- Pitch Key Shift
-- Part Level
-- Part Pan Position
-- CC1 Controller Number
-- CC2 Controller Number
-- Chorus Send Level
-- Reverb Send Level
-- Pitch Fine Tune
-- Delay Send Level
-- Vibrato Rate
-- Vibrato Depth
-- TVF Cutoff
-- TVF Resonance
-- TVA Attack Time
-- TVA Decay Time
-- TVA Release Time
-- Vibrato Delay
-- Scale Tuning
-- Tone Map Number (Bank LSB)
-- Tone Map-0 Number (treated as Bank LSB)
-- Part EFX Assign
+Part (channel) specific parameters.
+
+##### Tone Number
+
+Bank MSB + Program change in one message.
+
+##### Rx. Channel
+
+Channel number receive.
+This allows to combine two instruments on "one" channel.
+
+##### Mono/Poly Mode
+
+Switches between poly and mono modes.
+See [implementation details](#polymono-implementation).
+
+##### Assign mode
+
+ASSIGN MODE is the parameter that determines how voice assignment will be
+handled when sounds overlap on identical note numbers in the same channel
+(i.e., repeatedly struck notes).
+This is initialized to a mode suitable for each Part,
+so for general purposes there is no need to change this.
+Modes:
+
+- Single: If the same note is played multiple times in succession, the previously-sounding note will be completely silenced, and then the new note will be sounded.
+- LimitedMulti: If the same note is played multiple times in succession, the previously-sounding note will be continued to a certain extent even after the new note is sounded. (Default setting)
+- FullMulti: If the same note is played multiple times in succession, the previously-sounding note(s) will continue sounding for their natural length even after the new note is sounded.
+
+Note that spessasynth treats LimitedMulti like FullMulti.
+
+##### Use for Rhythm Part
+
+This message allows to turn any channel into a drum channel.
+Unlike with sound canvases, there's no limit to drum channels the synthesizer can have.
+The map number is stored in the channel for drum tuning.
+
+##### Pitch Key Shift
+
+Channel transposition in semitones (the MIDI notes are shifted)
+
+##### MIDI Controller aliases
+
+These system exclusives are equivalent to the following [MIDI controllers](#default-supported-controllers)
+
+- Part Level = CC#7.
+- Part Pan Position = CC#10, except for -64 which enables random panning for every note.
+- Chorus Send Level = CC#93
+- Reverb Send Level = CC#91
+- Delay Send Level = CC#94
+- Vibrato Rate = CC#76
+- Vibrato Depth = CC#77
+- Vibrato Delay = CC#78
+- TVF Cutoff = CC#74
+- TVF Resonance = CC#71
+- TVA Attack Time = CC#73
+- TVA Decay Time = CC#75
+- TVA Release Time = CC#72
+
+##### CC1, CC2 Controller Number
+
+These two controllers can be bound in the [controller matrix](#patch-part-parameters-controllers)
+to control a specific voice parameter.
+
+##### Pitch Fine Tune
+
+Same as the Fine-Tuning RPN, in cents.
+
+##### Scale Tuning
+
+Treated like MTS octave tuning, allows to tune an octave in cents.
+Tuning is repeated for all octaves.
+
+##### Tone Map Number, Tone Map-0 Number
+
+Treated as Bank LSB controller change.
+
+##### Part EFX Assign
+
+Defines if the channel should use the insertion effect or not.
+If it does, all of its audio gets routed through the insertion effect
+and therefore all effect sends have no effect on it,
+as these are determined by the insertion processor, which receives dry voice data.
 
 #### Patch Part Parameters (Controllers)
 
-All of them! At least, in theory.
-These define how a controller affects the sound. See page 198 of the SC-88Pro Manual. This is implemented using a dynamic modulator system.
+All of them are supported! At least, in theory.
+These define how a controller affects the sound.
+See page 198 of the SC-88Pro Manual.
+This is implemented using a dynamic modulator system and additional generators to cover the linear time and hertz range.
 
 #### Drum Setup Parameters
 
-- Drum Map Name (logs to console)
-- Pitch Coarse
-- Level
-- Assign Group Number (exclusive class override)
-- Pan Position
-- Reverb Send Level
-- Chorus Send Level
-- Rx. Note Off (implemented as forcing instant release)
-- Rx. Note On
-- Delay Send Level
+The following messages allow to tune drum instruments.
+A drum instrument is defined as a single MIDI key in the drum preset.
+These search for a matching drum channel with the correct MAP number set.
+
+##### Drum Map Name
+
+The name is recognized and logged to console.
+
+##### Pitch Coarse
+
+Relative pitch tuning of the instrument
+Precision depends on the mode:
+
+- Bank LSB value of 1 indicates an SC-55 preset, the resolution is 100 cents, i.e. a semitone
+- Any other value is treated as SC-88 or higher, where the resolution (for whateve reason) is 50 cents.
+
+##### Level
+
+The drum's loudness. These are normalized against 120 (`gain = data / 120`).
+
+##### Assign Group Number
+
+This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.
+
+##### MIDI controllers
+
+Like a [regular aliases](#midi-controller-aliases), except for a specific drum instrument and not the whole channel.
+
+- Pan Position = CC#10, except for -64 which enables random panning for every note.
+- Chorus Send Level = CC#93
+- Reverb Send Level = CC#91
+- Delay Send Level = CC#94
+
+##### Rx. Note Off
+
+Enabling this (as it is disabled by default)
+forces the drum instrument to immediately terminate when it receives a Note Off.
+
+##### Rx. Note On
+
+This allows to disable a specific drum instrument from receiving Note On events.
 
 ### XG Part Setup
 
@@ -411,6 +542,13 @@ RT means realtime and NRT means non-realtime (both are treated as realtime).
 | Scale Octave Tuning (1 byte) (RT/NRT)  | Tuning a single octave, applies to all of them. |
 | Scale Octave Tuning (2 bytes) (RT/NRT) | Same as above.                                  |
 | Single Note Tuning change (RT/NRT)     | Tunes a single note.                            |
+
+### Poly/Mono implementation
+
+SpessaSynth's poly/mono mode implementation works like GS implementation:
+
+- Poly mode - regular playback, multiple notes are allowed on the channel
+- Mono mode - any note on message will immediately force all current voices on this channel to shut down.
 
 ### Portamento Implementation
 
