@@ -124,14 +124,13 @@ export function processEventInternal(
         }
 
         case midiMessageTypes.setTempo: {
-            let tempoBPM = 60_000_000 / readBigEndian(event.data, 3);
+            const tempoBPM = 60_000_000 / readBigEndian(event.data, 3);
             this.oneTickToSeconds =
                 60 / (tempoBPM * this._midiData!.timeDivision);
             if (this.oneTickToSeconds === 0) {
                 this.oneTickToSeconds =
                     60 / (120 * this._midiData!.timeDivision);
                 SpessaSynthInfo("invalid tempo! falling back to 120 BPM");
-                tempoBPM = 120;
             }
             break;
         }

@@ -226,7 +226,8 @@ export class SoundFont2 extends BasicSoundBank {
             } catch (error) {
                 SpessaSynthGroupEnd();
                 throw new Error(
-                    `SF2Pack Ogg Vorbis decode error: ${error as Error}`
+                    `SF2Pack Ogg Vorbis decode error: ${error as Error}`,
+                    { cause: error }
                 );
             }
             SpessaSynthInfo(

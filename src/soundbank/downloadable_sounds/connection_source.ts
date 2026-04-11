@@ -156,7 +156,7 @@ export class ConnectionSource {
     }
 
     public toSFSource(): ModulatorSource | undefined {
-        let sourceEnum: ModulatorSourceIndex | undefined = undefined;
+        let sourceEnum: ModulatorSourceIndex | undefined;
         let isCC = false;
         switch (this.source) {
             default:

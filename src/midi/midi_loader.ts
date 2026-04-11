@@ -56,7 +56,7 @@ export function loadMIDIFromArrayBufferInternal(
     SpessaSynthGroupCollapsed(`%cParsing MIDI File...`, consoleColors.info);
     outputMIDI.fileName = fileName;
     const binaryData = new IndexedByteArray(arrayBuffer);
-    let smfFileBinary = binaryData;
+    let smfFileBinary;
 
     const readMIDIChunk = (fileByteArray: IndexedByteArray): MIDIChunk => {
         const type = readBinaryStringIndexed(fileByteArray, 4);
@@ -94,7 +94,7 @@ export function loadMIDIFromArrayBufferInternal(
         if (riff.header !== "data") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
-                `Invalid RMIDI Chunk header! Expected "data", got "${rmid}"`
+                `Invalid RMIDI Chunk header! Expected "data", got "${riff.header}"`
             );
         }
         // OutputMIDI is a rmid, load the midi into an array for parsing

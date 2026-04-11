@@ -303,7 +303,8 @@ class XMFNode {
                     SpessaSynthGroupEnd();
                     if (error instanceof Error) {
                         throw new Error(
-                            `Error unpacking XMF file contents: ${error.message}.`
+                            `Error unpacking XMF file contents: ${error.message}.`,
+                            { cause: error }
                         );
                     }
                 }

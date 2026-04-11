@@ -354,7 +354,7 @@ export class DownloadableSounds extends DLSVerifier {
     }
 
     /**
-     * Writes an SF2 file
+     * Writes a DLS file
      * @param options
      */
     public async write(options: DLSWriteOptions = DEFAULT_DLS_OPTIONS) {
