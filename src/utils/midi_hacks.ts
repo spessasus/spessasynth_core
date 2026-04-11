@@ -68,7 +68,7 @@ export class BankSelectHacks {
         return Math.min(bankMSB + bankOffset, 127);
     }
 
-    public static subtrackBankOffset(
+    public static subtractBankOffset(
         bankMSB: number,
         bankOffset: number,
         xgDrums = true

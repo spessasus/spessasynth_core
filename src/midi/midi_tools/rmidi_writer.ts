@@ -122,7 +122,7 @@ function correctBankOffsetInternal(
                 program: sentProgram,
                 bankLSB: channel.lastBankLSB?.data?.[1] ?? 0,
                 // Make sure to take bank offset into account
-                bankMSB: BankSelectHacks.subtrackBankOffset(
+                bankMSB: BankSelectHacks.subtractBankOffset(
                     channel.lastBank?.data?.[1] ?? 0,
                     mid.bankOffset
                 ),
