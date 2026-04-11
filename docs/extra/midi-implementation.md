@@ -17,8 +17,8 @@ This describes what messages SpessaSynth can receive.
 | Note Aftertouch   | ✔️         | Recognized, but no special behavior (Per SF2 specification). Has to be defined with modulators or system exclusives. |
 | Controller Change | ✔️         | [See below](#default-supported-controllers)                                                                          |
 | Program Change    | ✔️         | GM, GM2, GS, XG                                                                                                      |
-| Channel Pressure  | ✔️         | 50 cents of vibrato                                                                                                  |
-| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel range (both semitones and cents) See [per-note pitch wheel](#per-note-pitch-wheel)         |
+| Channel Pressure  | ✔️         | 50 cents of vibrato (Per SF2 specification)                                                                          |
+| Pitch Wheel       | ✔️         | Controlled by Pitch Wheel Range (both semitones and cents) See [per-note pitch wheel](#per-note-pitch-wheel)         |
 | System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                                                            |
 | Time Code         | ❌         | Not Applicable                                                                                                       |
 | Song Position     | ❌         | Not Applicable                                                                                                       |
@@ -29,7 +29,7 @@ This describes what messages SpessaSynth can receive.
 | MIDI Continue     | ❌         | Not Applicable                                                                                                       |
 | MIDI Stop         | ❌         | Not Applicable                                                                                                       |
 | Active Sense      | ❌         | Not Applicable                                                                                                       |
-| System Reset      | ✔️         | Can only be received via MIDI ports as 0xFF in MIDI files means a meta message                                       |
+| System Reset      | ✔️         | This mesage can only be received via MIDI commands as 0xFF in MIDI files means a meta message.                       |
 
 ### Per-note Pitch Wheel
 
@@ -44,7 +44,8 @@ The per-note mode will activate on using the API and deactivate on channel or sy
 Below is the list of controllers supported by default.
 !!! Note
 
-    Theoretically all controllers are supported as it depends on the SoundFont's modulators. These are the controllers that are supported by default/have default modulators.
+    Theoretically all controllers are supported as it depends on the modulators.
+    These are the controllers that are supported natively or have default modulators.
 
 !!! Note
 
@@ -120,13 +121,13 @@ Below are all the controller values which are not zero when the controllers are 
 
 Below is the list of currently implemented Registered Parameters.
 
-| RPN MSB | RPN LSB | Name                     | Explanation                                                                                                                                                                                                                                                    | Default                      |
-| ------- | ------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 0       | 0       | Pitch Wheel range        | The range in semitones of the `synth.pitchWheel()` method.                                                                                                                                                                                                     | 2 semitones                  |
-| 0       | 2       | Channel Coarse Tuning    | The channel's tuning in semitones                                                                                                                                                                                                                              | No tuning (0 semitones)      |
-| 0       | 3       | Channel Fine Tuning      | The channel's tuning, like a pitch wheel message (precise tuning in 2 semitones)                                                                                                                                                                               | No tuning (0 cents)          |
-| 0       | 5       | Channel Modulation Depth | The channel's modulation (vibrato) depth. Note that this doesn't set the cents directly, but rather scales the soundfont modulator value (for example if set to twice the MIDI default value, the modulator controlling vibrato depth will be multiplied by 2) | default sf2 depth (50 cents) |
-| 127     | 127     | Reset parameters         | Resets all parameters                                                                                                                                                                                                                                          | N.A.                         |
+| RPN MSB | RPN LSB | Name                     | Explanation                                                                                                                                                                                                                                          | Default                      |
+| ------- | ------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 0       | 0       | Pitch Wheel range        | The range in semitones of the `synth.pitchWheel()` method.                                                                                                                                                                                           | 2 semitones                  |
+| 0       | 2       | Channel Coarse Tuning    | The channel's tuning in semitones                                                                                                                                                                                                                    | No tuning (0 semitones)      |
+| 0       | 3       | Channel Fine Tuning      | The channel's tuning, like a pitch wheel message (precise tuning in 2 semitones)                                                                                                                                                                     | No tuning (0 cents)          |
+| 0       | 5       | Channel Modulation Depth | The channel's modulation (vibrato) depth. Note that this doesn't set the cents directly, but rather scales the modulator value (for example if set to twice the MIDI default value, the modulator controlling vibrato depth will be multiplied by 2) | default sf2 depth (50 cents) |
+| 127     | 127     | Reset parameters         | Resets all parameters                                                                                                                                                                                                                                | N.A.                         |
 
 ### Supported Non-Registered Parameters
 
@@ -136,22 +137,22 @@ Note that all these are non-standard GM.
 
 rr: Drum note number.
 
-| NRPN MSB | NRPN LSB | Name                   | Explanation                                                                   | Default                         |
-| -------- | -------- | ---------------------- | ----------------------------------------------------------------------------- | ------------------------------- |
-| 0x1      | 0x8      | Vibrato rate (custom)  | Controls the vibrato rate. More info below.                                   | 0 (disabled)                    |
-| 0x1      | 0x9      | Vibrato depth (custom) | Controls the vibrato depth. More info below.                                  | 0 (disabled)                    |
-| 0x1      | 0xA      | Vibrato delay (custom) | Controls the vibrato delay. More info below.                                  | 0 (disabled)                    |
-| 0x1      | 0x20     | TVF Filter Cutoff      | Controls the filter cutoff using the CC 74 (brightness)                       | 64 (no change)                  |
-| 0x1      | 0x21     | TVF Filter Resonance   | Controls the filter resonance using the CC 71 (filter resonance)              | 64 (no change)                  |
-| 0x01     | 0x66     | EG Release Time        | Controls the volume envelope release time using CC 72                         | 64 (no change)                  |
-| 0x01     | 0x64     | EG Attack Time         | Controls the volume envelope attack time using CC 73                          | 64 (no change)                  |
-| 0x18     | rr       | Drum Pitch             | Controls the pitch of the drum instrument.                                    | 0 (no change)                   |
-| 0x18     | rr       | Drum Pitch Fine        | Controls the pitch of the drum instrument in cents (XG only)                  | 0 (no change)                   |
-| 0x1a     | rr       | Drum Level             | Controls how loud the drum instrument is.                                     | 120 (normal)                    |
-| 0x1c     | rr       | Drum Pan               | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                |
-| 0x1d     | rr       | Drum Reverb            | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127 |
-| 0x1e     | rr       | Drum Chorus            | Controls the chorus level of the drum instrument. (multiplicative of channel) | 0 (none)                        |
-| 0x1f     | rr       | Drum Delay             | Controls the delay level of the drum instrument. (multiplicative of channel)  | 0 (none)                        |
+| NRPN MSB | NRPN LSB | Name                       | Explanation                                                                   | Default                         |
+| -------- | -------- | -------------------------- | ----------------------------------------------------------------------------- | ------------------------------- |
+| 0x1      | 0x8      | Vibrato rate **(custom)**  | Controls the vibrato rate. More info below.                                   | 0 (disabled)                    |
+| 0x1      | 0x9      | Vibrato depth **(custom)** | Controls the vibrato depth. More info below.                                  | 0 (disabled)                    |
+| 0x1      | 0xA      | Vibrato delay **(custom)** | Controls the vibrato delay. More info below.                                  | 0 (disabled)                    |
+| 0x1      | 0x20     | TVF Filter Cutoff          | Controls the filter cutoff using the CC 74 (brightness)                       | 64 (no change)                  |
+| 0x1      | 0x21     | TVF Filter Resonance       | Controls the filter resonance using the CC 71 (filter resonance)              | 64 (no change)                  |
+| 0x01     | 0x66     | EG Release Time            | Controls the volume envelope release time using CC 72                         | 64 (no change)                  |
+| 0x01     | 0x64     | EG Attack Time             | Controls the volume envelope attack time using CC 73                          | 64 (no change)                  |
+| 0x18     | rr       | Drum Pitch                 | Controls the pitch of the drum instrument.                                    | 0 (no change)                   |
+| 0x18     | rr       | Drum Pitch Fine            | Controls the pitch of the drum instrument in cents (XG only)                  | 0 (no change)                   |
+| 0x1a     | rr       | Drum Level                 | Controls how loud the drum instrument is.                                     | 120 (normal)                    |
+| 0x1c     | rr       | Drum Pan                   | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                |
+| 0x1d     | rr       | Drum Reverb                | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127 |
+| 0x1e     | rr       | Drum Chorus                | Controls the chorus level of the drum instrument. (multiplicative of channel) | 0 (none)                        |
+| 0x1f     | rr       | Drum Delay                 | Controls the delay level of the drum instrument. (multiplicative of channel)  | 0 (none)                        |
 
 #### Custom Vibrato
 
@@ -188,7 +189,7 @@ as defined in Section 9.6 of the SoundFont2.04 specification.
 #### AWE32 NRPN Compatibility Layer
 
 As of 3.26.11, spessasynth supports emulation of the AWE32 NRPN generator modification.
-The implementation is similar to fluidsynth's emulation,
+The implementation is similar to FluidSynth's emulation,
 as it has been tested and found relatively accurate to the sound cards.
 Here are some useful resources about this:
 
@@ -196,9 +197,9 @@ Here are some useful resources about this:
 - [AWE32 Developer's Information Pack](https://github.com/user-attachments/files/15757220/adip301.pdf)
 - [S. Christian Collins's AWE32 MIDI Conversion Repository](https://github.com/mrbumpy409/AWE32-midi-conversions)
 - [S. Christian Collins's AWE32 NRPN Filter Tests](https://github.com/mrbumpy409/SoundFont-Spec-Test/tree/main/NRPN%20test%20-%20filter)
-- [Fluidsynth AWE32 NPRN implementation](https://github.com/FluidSynth/fluidsynth/wiki/FluidFeatures#nrpn-control-change-implementation-chart)
+- [FluidSynth AWE32 NPRN implementation](https://github.com/FluidSynth/fluidsynth/wiki/FluidFeatures#nrpn-control-change-implementation-chart)
 
-There are a few differences from fluidsynth's implementation:
+There are a few differences from FluidSynth's implementation:
 
 - LSB 16 overrides the `fineTune` generator instead of emitting a pitch-wheel event.
 - Effect generators get overridden directly rather than passing through the modulator.
@@ -215,21 +216,15 @@ Below is the list of currently implemented System Exclusive messages.
 | GM on                  | Turns the GM mode on. Ignores all the Bank Select controllers.                    |
 | GM off                 | Turns the GM mode off. Defaults to GS                                             |
 | GM2 on                 | Turns the GM2 mode on.                                                            |
-| GS Reset               | Turns on the Roland GS mode.                                                      |
-| XG Reset               | Turns on the Yamaha XG mode. Changes the bank selection system to XG.             |
 | Roland Master Volume   | Controls the overall synth's volume.                                              |
-| GS Parameters          | See [this for more info](#gs-parameters)                                          |
+| Roland GS              | See [this for more info](#roland-gs)                                              |
 | MIDI Master Volume     | Controls the overall synth's volume.                                              |
 | MIDI Master Balance    | Controls the overall synth's stereo panning.                                      |
 | Roland SC Display Text | The text that SC-88 MIDIs display on the device. `synthdisplay` will be called.   |
 | Roland SC Dot Matrix   | A dot matrix display for the Sound Canvas devices. `synthdisplay` will be called. |
 | XG Display Letters     | The text that XG MIDIs display on the device. `synthdisplay` will be called.      |
 | XG Display Bitmap      | The dot matrix display for XG devices. `synthdisplay` will be called.             |
-| XG Master Tune         | Controls the overall synth's tuning.                                              |
-| XG Master Volume       | Controls the overall synth's volume.                                              |
-| XG Master Attenuator   | Controls the overall synth's attenuation (inverse of volume).                     |
-| XG Master Transpose    | Controls the overall synth's transposition.                                       |
-| XG Part Setup          | See [this for more info](#xg-part-setup)                                          |
+| Yamaha XG              | See [this for more info](#xg-part-setup)                                          |
 | MIDI Tuning Standard   | See [this for more info](#midi-tuning-standard)                                   |
 
 ### Supported Bank systems
@@ -264,6 +259,9 @@ Yamaha XG.
 Bank LSB and MSB are processed.
 MSB can be used to turn a channel into a drum channel.
 Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
+
+Channel timbre and mixing can be adjusted with **XG Part Setup** system exclusives (see [Yamaha XG](#yamaha-xg)), which map to the same MIDI controllers as the corresponding GS part aliases where applicable.
+Per-drum editing uses **XG Drum Setup** messages; those updates are applied on every drum channel for the given note number.
 
 ### Roland GS
 
@@ -464,7 +462,7 @@ Relative pitch tuning of the instrument
 Precision depends on the mode:
 
 - Bank LSB value of 1 indicates an SC-55 preset, the resolution is 100 cents, i.e. a semitone
-- Any other value is treated as SC-88 or higher, where the resolution (for whateve reason) is 50 cents.
+- Any other value is treated as SC-88 or higher, where the resolution (for whatever reason) is 50 cents.
 
 ##### Level
 
@@ -492,44 +490,108 @@ forces the drum instrument to immediately terminate when it receives a Note Off.
 
 This allows to disable a specific drum instrument from receiving Note On events.
 
-### XG Part Setup
+### Yamaha XG
 
-Below are the supported part setup messages for XG.
+Below are the supported Yamaha XG system exclusive messages.
 
-| Number (hex) | Name                                                    |
-| ------------ | ------------------------------------------------------- |
-| 01           | Bank Select MSB                                         |
-| 02           | Bank Select LSB                                         |
-| 03           | Program change                                          |
-| 04           | Receive channel number                                  |
-| 05           | Poly/mono mode                                          |
-| 07           | Part mode                                               |
-| 08           | Note shift                                              |
-| 0B           | Volume                                                  |
-| 0E           | Pan, a value of 0 means random panning for every voice. |
-| 13           | Reverb                                                  |
-| 12           | Chorus                                                  |
-| 15           | Vibrato Rate                                            |
-| 16           | Vibrato Depth                                           |
-| 17           | Vibrato Decay                                           |
-| 18           | Filter Cutoff                                           |
-| 19           | Filter Resonance                                        |
-| 1A           | Attack Time                                             |
-| 1B           | Decay Time                                              |
-| 1C           | Release Time                                            |
+#### System parameters
+
+These are global parameters, affecting the entire synthesizer.
+
+##### Master Tune
+
+14-bit value from MIDI nibbles, centered on 1024. In 1/10th of a cent.
+
+##### Master Volume
+
+Master output gain, same role as the GM MIDI Master Volume system exclusive (normalized from 0 to 127).
+
+##### Master Attenuation
+
+Output attenuation; higher values mean quieter output (implemented as master volume from `127 − data`).
+
+##### Master Transpose
+
+Master transposition in semitones, 64 means no shift.
+
+##### XG Reset
+
+`0x7E` and `0x7F` in the system parameter block perform an XG reset and switch the synth into XG mode.
+The XG mode disables the delay effect.
+
+#### Reverb, chorus, and variation block
+
+Messages under address `0x02 0x01` (reverb, chorus, and variation parameter addresses) are _not supported (yet)_.
+They are recognized only for logging; parameters are not applied to the effect engines.
+
+#### XG Part Setup
+
+Part (channel) parameters use address byte `0x08`, with the second address byte selecting the MIDI channel. **They are only applied when the synthesizer is in XG mode.**
+
+| Number (hex) | Name                   | Description                                                                                                                                                                                     |
+| ------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01           | Bank Select MSB        | Same as CC#0 (bank select).                                                                                                                                                                     |
+| 02           | Bank Select LSB        | Same as CC#32 (bank select LSB).                                                                                                                                                                |
+| 03           | Program change         | Same as a MIDI program change on that part's channel.                                                                                                                                           |
+| 04           | Receive channel number | Sets which MIDI channel the part listens on, like GS _Rx. Channel_. Enables layering two parts on one incoming channel.                                                                         |
+| 05           | Poly/mono mode         | `1` = polyphonic, other values = monophonic. See [poly/mono implementation](#polymono-implementation).                                                                                          |
+| 07           | Part mode              | `0` = normal (melodic) part; any non-zero value turns the part into a drum part. In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. |
+| 08           | Note shift             | Channel note shift in semitones: `data − 64`. Ignored on drum parts.                                                                                                                            |
+| 0B           | Volume                 | Same as CC#7 (main volume).                                                                                                                                                                     |
+| 0E           | Pan                    | Same as CC#10, except value `0` enables random pan for every new voice on that channel.                                                                                                         |
+| 12           | Chorus                 | Same as CC#93 (chorus send).                                                                                                                                                                    |
+| 13           | Reverb                 | Same as CC#91 (reverb send).                                                                                                                                                                    |
+| 15           | Vibrato Rate           | Same as CC#76.                                                                                                                                                                                  |
+| 16           | Vibrato Depth          | Same as CC#77.                                                                                                                                                                                  |
+| 17           | Vibrato Delay          | Same as CC#78.                                                                                                                                                                                  |
+| 18           | Filter Cutoff          | Same as CC#74 (brightness).                                                                                                                                                                     |
+| 19           | Filter Resonance       | Same as CC#71 (filter resonance).                                                                                                                                                               |
+| 1A           | Attack Time            | Same as CC#73 (attack time).                                                                                                                                                                    |
+| 1B           | Decay Time             | Same as CC#75 (decay time).                                                                                                                                                                     |
+| 1C           | Release Time           | Same as CC#72 (release time).                                                                                                                                                                   |
 
 #### XG Drum Setup
 
-The following drum setup messages are recognized:
+The following messages allow to tune drum instruments.
+A drum instrument is defined as a single MIDI key in the drum preset.
 
-- Pitch Coarse
-- Pitch Fine (added to coarse so coarse must be sent first)
-- Alternate Group (exclusive class override)
-- Pan
-- Reverb Send
-- Chorus Send
-- Rev. Note Off (implemented as forcing instant release)
-- Rev. Note On
+Edits are applied to _every drum channel_: for each note/key,
+all drum channels get the same stored parameters, as there isn't a MAP system, like in GS.
+
+##### Pitch coarse
+
+Relative pitch in cents: `(data − 64) * 100`, matching XG coarse drum pitch resolution (see also [Drum Pitch NRPN](#supported-non-registered-parameters)).
+
+##### Pitch fine
+
+Cent tuning for the drum instrument.
+Send coarse tuning before fine if you rely on a defined baseline; fine is cumulative.
+
+##### Drum level
+
+Normalizes loudness as `gain = data / 120` (same scaling as GS drum level).
+
+##### Alternate group
+
+Overrides the `exclusiveClass` generator for that drum instrument.
+
+##### MIDI controllers
+
+Like regular controllers, except for a specific drum instrument and not the whole channel.
+
+- Pan Position = CC#10, except for -64 which enables random panning for every note.
+- Chorus Send Level = CC#93
+- Reverb Send Level = CC#91
+- Delay Send Level = CC#94
+
+##### Receive note off
+
+Enabling this (as it is disabled by default)
+forces the drum instrument to immediately terminate when it receives a Note Off.
+
+##### Receive note on
+
+This allows to disable a specific drum instrument from receiving Note On events.
 
 ### MIDI Tuning Standard
 
