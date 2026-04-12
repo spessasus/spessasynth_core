@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "./indexed_array";
 import { writeBinaryStringIndexed } from "./byte_functions/string";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "./riff_chunk";
+import { RIFFChunk } from "./riff_chunk";
 import { writeLittleEndianIndexed } from "./byte_functions/little_endian";
 import { DEFAULT_WAV_WRITE_OPTIONS, type WaveWriteOptions } from "./exports";
 import { fillWithDefaults } from "./fill_with_defaults";
@@ -31,7 +31,7 @@ export function audioToWav(
     if (infoOn) {
         const encoder = new TextEncoder();
         const infoChunks = [
-            writeRIFFChunkRaw(
+            RIFFChunk.write(
                 "ICMT",
                 encoder.encode("Created with SpessaSynth"),
                 true
@@ -39,25 +39,25 @@ export function audioToWav(
         ];
         if (metadata.artist) {
             infoChunks.push(
-                writeRIFFChunkRaw("IART", encoder.encode(metadata.artist), true)
+                RIFFChunk.write("IART", encoder.encode(metadata.artist), true)
             );
         }
         if (metadata.album) {
             infoChunks.push(
-                writeRIFFChunkRaw("IPRD", encoder.encode(metadata.album), true)
+                RIFFChunk.write("IPRD", encoder.encode(metadata.album), true)
             );
         }
         if (metadata.genre) {
             infoChunks.push(
-                writeRIFFChunkRaw("IGNR", encoder.encode(metadata.genre), true)
+                RIFFChunk.write("IGNR", encoder.encode(metadata.genre), true)
             );
         }
         if (metadata.title) {
             infoChunks.push(
-                writeRIFFChunkRaw("INAM", encoder.encode(metadata.title), true)
+                RIFFChunk.write("INAM", encoder.encode(metadata.title), true)
             );
         }
-        infoChunk = writeRIFFChunkParts("INFO", infoChunks, true);
+        infoChunk = RIFFChunk.writeParts("INFO", infoChunks, true);
     }
 
     // Prepare CUE chunk
@@ -83,7 +83,7 @@ export function audioToWav(
         writeLittleEndianIndexed(cueEnd, 0, 4); // BlockStart, always 0
         writeLittleEndianIndexed(cueEnd, loopEndSamples, 4); // SampleOffset
 
-        cueChunk = writeRIFFChunkParts("cue ", [
+        cueChunk = RIFFChunk.writeParts("cue ", [
             new IndexedByteArray([2, 0, 0, 0]), // Cue points count
             cueStart,
             cueEnd

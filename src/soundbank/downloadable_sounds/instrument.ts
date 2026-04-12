@@ -1,13 +1,7 @@
 import { DownloadableSoundsArticulation } from "./articulation";
 import { DownloadableSoundsRegion } from "./region";
 import { type MIDIPatchNamed } from "../basic_soundbank/midi_patch";
-import {
-    findRIFFListType,
-    readRIFFChunk,
-    type RIFFChunk,
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     getStringBytes,
     readBinaryStringIndexed
@@ -83,11 +77,11 @@ export class DownloadableSoundsInstrument
 
         // Read the instrument name in INFO
         let instrumentName = ``;
-        const infoChunk = findRIFFListType(chunks, "INFO");
+        const infoChunk = RIFFChunk.findType(chunks, "INFO");
         if (infoChunk) {
-            let info = readRIFFChunk(infoChunk.data);
+            let info = RIFFChunk.read(infoChunk.data);
             while (info.header !== "INAM") {
-                info = readRIFFChunk(infoChunk.data);
+                info = RIFFChunk.read(infoChunk.data);
             }
             instrumentName = readBinaryStringIndexed(
                 info.data,
@@ -128,7 +122,7 @@ export class DownloadableSoundsInstrument
         );
 
         // List of regions
-        const regionListChunk = findRIFFListType(chunks, "lrgn");
+        const regionListChunk = RIFFChunk.findType(chunks, "lrgn");
         if (!regionListChunk) {
             SpessaSynthGroupEnd();
             throw new Error("No region list!");
@@ -138,7 +132,7 @@ export class DownloadableSoundsInstrument
 
         // Read regions
         for (let i = 0; i < regions; i++) {
-            const chunk = readRIFFChunk(regionListChunk.data);
+            const chunk = RIFFChunk.read(regionListChunk.data);
             this.verifyHeader(chunk, "LIST");
             const type = readBinaryStringIndexed(
                 chunk.data,
@@ -196,7 +190,7 @@ export class DownloadableSoundsInstrument
         const chunks = [this.writeHeader()];
 
         const regionChunks = this.regions.map((r) => r.write());
-        chunks.push(writeRIFFChunkParts("lrgn", regionChunks, true));
+        chunks.push(RIFFChunk.writeParts("lrgn", regionChunks, true));
 
         // This will mostly be false as SF2 -> DLS can't have both global and local regions,
         // So it only has global, hence this check.
@@ -205,10 +199,10 @@ export class DownloadableSoundsInstrument
         }
 
         // Write the name
-        const inam = writeRIFFChunkRaw("INAM", getStringBytes(this.name, true));
-        chunks.push(writeRIFFChunkRaw("INFO", inam, false, true));
+        const inam = RIFFChunk.write("INAM", getStringBytes(this.name, true));
+        chunks.push(RIFFChunk.write("INFO", inam, false, true));
         SpessaSynthGroupEnd();
-        return writeRIFFChunkParts("ins ", chunks, true);
+        return RIFFChunk.writeParts("ins ", chunks, true);
     }
 
     /**
@@ -280,6 +274,6 @@ export class DownloadableSoundsInstrument
         writeDword(inshData, ulBank); // UlBank
         writeDword(inshData, this.program & 127); // UlInstrument
 
-        return writeRIFFChunkRaw("insh", inshData);
+        return RIFFChunk.write("insh", inshData);
     }
 }

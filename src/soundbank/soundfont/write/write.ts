@@ -1,8 +1,5 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../../utils/riff_chunk";
+import { RIFFChunk } from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import { consoleColors } from "../../../utils/other";
 import { getSDTA } from "./sdta";
@@ -94,7 +91,7 @@ export async function writeSF2Internal(
 
     const writeSF2Info = (type: SF2InfoFourCC, data: string) => {
         infoArrays.push(
-            writeRIFFChunkRaw(
+            RIFFChunk.write(
                 type,
                 getStringBytes(data, true, true) // Pad with zero and ensure even length
             )
@@ -105,13 +102,13 @@ export async function writeSF2Internal(
     const ifilData = new IndexedByteArray(4);
     writeWord(ifilData, bank.soundBankInfo.version.major);
     writeWord(ifilData, bank.soundBankInfo.version.minor);
-    infoArrays.push(writeRIFFChunkRaw("ifil", ifilData));
+    infoArrays.push(RIFFChunk.write("ifil", ifilData));
 
     if (bank.soundBankInfo.romVersion) {
         const ifilData = new IndexedByteArray(4);
         writeWord(ifilData, bank.soundBankInfo.romVersion.major);
         writeWord(ifilData, bank.soundBankInfo.romVersion.minor);
-        infoArrays.push(writeRIFFChunkRaw("iver", ifilData));
+        infoArrays.push(RIFFChunk.write("iver", ifilData));
     }
 
     // Special comment case: merge subject and comment
@@ -207,7 +204,7 @@ ${bank.soundBankInfo.subject}`
         // Terminal modulator, is zero
         writeLittleEndianIndexed(dmodData, 0, MOD_BYTE_SIZE);
 
-        infoArrays.push(writeRIFFChunkRaw("DMOD", dmodData));
+        infoArrays.push(RIFFChunk.write("DMOD", dmodData));
     }
 
     SpessaSynthGroupEnd();
@@ -255,7 +252,7 @@ ${bank.soundBankInfo.subject}`
         shdrChunk
     ];
     // Combine in the soundfont spec order
-    const pdtaChunk = writeRIFFChunkParts(
+    const pdtaChunk = RIFFChunk.writeParts(
         "pdta",
         chunks.map((c) => c.pdta),
         true
@@ -276,7 +273,7 @@ ${bank.soundBankInfo.subject}`
             consoleColors.value
         );
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
-        const xpdtaChunk = writeRIFFChunkParts(
+        const xpdtaChunk = RIFFChunk.writeParts(
             "xdta",
             chunks.map((c) => c.xdta),
             true
@@ -284,10 +281,10 @@ ${bank.soundBankInfo.subject}`
         infoArrays.push(xpdtaChunk);
     }
 
-    const infoChunk = writeRIFFChunkParts("INFO", infoArrays, true);
+    const infoChunk = RIFFChunk.writeParts("INFO", infoArrays, true);
     SpessaSynthInfo("%cWriting the output file...", consoleColors.info);
     // Finally, combine everything
-    const main = writeRIFFChunkParts("RIFF", [
+    const main = RIFFChunk.writeParts("RIFF", [
         getStringBytes("sfbk"),
         infoChunk,
         sdtaChunk,

@@ -6,7 +6,7 @@ import { applyPresetZones } from "./preset_zones";
 import { readPresets } from "./presets";
 import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
-import { readRIFFChunk, RIFFChunk } from "../../../utils/riff_chunk";
+import { RIFFChunk } from "../../../utils/riff_chunk";
 import { consoleColors } from "../../../utils/other";
 import {
     SpessaSynthGroup,
@@ -52,7 +52,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
 
         // Read the main chunk
-        const firstChunk = readRIFFChunk(mainFileArray, false);
+        const firstChunk = RIFFChunk.read(mainFileArray, false);
         this.verifyHeader(firstChunk, "riff");
 
         const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
@@ -70,7 +70,7 @@ export class SoundFont2 extends BasicSoundBank {
         const isSF2Pack = type === "sfpk";
 
         // INFO
-        const infoChunk = readRIFFChunk(mainFileArray);
+        const infoChunk = RIFFChunk.read(mainFileArray);
         this.verifyHeader(infoChunk, "list");
         const infoString = readBinaryStringIndexed(infoChunk.data, 4);
         if (infoString !== "INFO") {
@@ -83,7 +83,7 @@ export class SoundFont2 extends BasicSoundBank {
         let xdtaChunk: RIFFChunk | undefined;
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
-            const chunk = readRIFFChunk(infoChunk.data);
+            const chunk = RIFFChunk.read(infoChunk.data);
             const text = readBinaryString(chunk.data, chunk.data.length);
             // Special cases
             const headerTyped = chunk.header as SF2InfoFourCC;
@@ -189,25 +189,25 @@ export class SoundFont2 extends BasicSoundBank {
         }> = {};
         if (xdtaChunk !== undefined) {
             // Read the hydra chunks
-            xChunks.phdr = readRIFFChunk(xdtaChunk.data);
-            xChunks.pbag = readRIFFChunk(xdtaChunk.data);
-            xChunks.pmod = readRIFFChunk(xdtaChunk.data);
-            xChunks.pgen = readRIFFChunk(xdtaChunk.data);
-            xChunks.inst = readRIFFChunk(xdtaChunk.data);
-            xChunks.ibag = readRIFFChunk(xdtaChunk.data);
-            xChunks.imod = readRIFFChunk(xdtaChunk.data);
-            xChunks.igen = readRIFFChunk(xdtaChunk.data);
-            xChunks.shdr = readRIFFChunk(xdtaChunk.data);
+            xChunks.phdr = RIFFChunk.read(xdtaChunk.data);
+            xChunks.pbag = RIFFChunk.read(xdtaChunk.data);
+            xChunks.pmod = RIFFChunk.read(xdtaChunk.data);
+            xChunks.pgen = RIFFChunk.read(xdtaChunk.data);
+            xChunks.inst = RIFFChunk.read(xdtaChunk.data);
+            xChunks.ibag = RIFFChunk.read(xdtaChunk.data);
+            xChunks.imod = RIFFChunk.read(xdtaChunk.data);
+            xChunks.igen = RIFFChunk.read(xdtaChunk.data);
+            xChunks.shdr = RIFFChunk.read(xdtaChunk.data);
         }
 
         // SDTA
-        const sdtaChunk = readRIFFChunk(mainFileArray, false);
+        const sdtaChunk = RIFFChunk.read(mainFileArray, false);
         this.verifyHeader(sdtaChunk, "list");
         this.verifyText(readBinaryStringIndexed(mainFileArray, 4), "sdta");
 
         // Smpl
         SpessaSynthInfo("%cVerifying smpl chunk...", consoleColors.warn);
-        const sampleDataChunk = readRIFFChunk(mainFileArray, false);
+        const sampleDataChunk = RIFFChunk.read(mainFileArray, false);
         this.verifyHeader(sampleDataChunk, "smpl");
         let sampleData: IndexedByteArray | Float32Array;
         // SF2Pack: the entire data is compressed
@@ -249,36 +249,36 @@ export class SoundFont2 extends BasicSoundBank {
 
         // PDTA
         SpessaSynthInfo("%cLoading preset data chunk...", consoleColors.warn);
-        const presetChunk = readRIFFChunk(mainFileArray);
+        const presetChunk = RIFFChunk.read(mainFileArray);
         this.verifyHeader(presetChunk, "list");
         readBinaryStringIndexed(presetChunk.data, 4);
 
         // Read the hydra chunks
-        const phdrChunk = readRIFFChunk(presetChunk.data);
+        const phdrChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(phdrChunk, "phdr");
 
-        const pbagChunk = readRIFFChunk(presetChunk.data);
+        const pbagChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(pbagChunk, "pbag");
 
-        const pmodChunk = readRIFFChunk(presetChunk.data);
+        const pmodChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(pmodChunk, "pmod");
 
-        const pgenChunk = readRIFFChunk(presetChunk.data);
+        const pgenChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(pgenChunk, "pgen");
 
-        const instChunk = readRIFFChunk(presetChunk.data);
+        const instChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(instChunk, "inst");
 
-        const ibagChunk = readRIFFChunk(presetChunk.data);
+        const ibagChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(ibagChunk, "ibag");
 
-        const imodChunk = readRIFFChunk(presetChunk.data);
+        const imodChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(imodChunk, "imod");
 
-        const igenChunk = readRIFFChunk(presetChunk.data);
+        const igenChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(igenChunk, "igen");
 
-        const shdrChunk = readRIFFChunk(presetChunk.data);
+        const shdrChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(shdrChunk, "shdr");
 
         SpessaSynthInfo("%cParsing samples...", consoleColors.info);

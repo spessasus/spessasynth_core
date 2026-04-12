@@ -10,7 +10,7 @@ import { BAG_BYTE_SIZE, BasicZone } from "../../basic_soundbank/basic_zone";
 import type { ExtendedSF2Chunks } from "./types";
 import { INST_BYTE_SIZE } from "../../basic_soundbank/basic_instrument";
 import { PHDR_BYTE_SIZE } from "../../basic_soundbank/basic_preset";
-import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import { RIFFChunk } from "../../../utils/riff_chunk";
 import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { writeWord } from "../../../utils/byte_functions/little_endian";
 
@@ -125,28 +125,28 @@ export function writeSF2Elements(
         writeXdta:
             Math.max(currentGenIndex, currentModIndex, zoneIndex) > 0xff_ff,
         gen: {
-            pdta: writeRIFFChunkRaw(genHeader, genData),
+            pdta: RIFFChunk.write(genHeader, genData),
             // Same as pmod, this chunk includes only the terminal generator record to allow reuse of the pdta parser.
-            xdta: writeRIFFChunkRaw(
+            xdta: RIFFChunk.write(
                 modHeader,
                 new IndexedByteArray(GEN_BYTE_SIZE)
             )
         },
         mod: {
-            pdta: writeRIFFChunkRaw(modHeader, modData),
+            pdta: RIFFChunk.write(modHeader, modData),
             // This chunk exists solely to preserve parser compatibility and contains only the terminal modulator record.
-            xdta: writeRIFFChunkRaw(
+            xdta: RIFFChunk.write(
                 modHeader,
                 new IndexedByteArray(MOD_BYTE_SIZE)
             )
         },
         bag: {
-            pdta: writeRIFFChunkRaw(bagHeader, bagData.pdta),
-            xdta: writeRIFFChunkRaw(bagHeader, bagData.xdta)
+            pdta: RIFFChunk.write(bagHeader, bagData.pdta),
+            xdta: RIFFChunk.write(bagHeader, bagData.xdta)
         },
         hdr: {
-            pdta: writeRIFFChunkRaw(hdrHeader, hdrData.pdta),
-            xdta: writeRIFFChunkRaw(hdrHeader, hdrData.xdta)
+            pdta: RIFFChunk.write(hdrHeader, hdrData.pdta),
+            xdta: RIFFChunk.write(hdrHeader, hdrData.xdta)
         }
     };
 }

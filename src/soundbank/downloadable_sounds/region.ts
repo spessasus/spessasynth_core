@@ -2,11 +2,7 @@ import { DownloadableSoundsArticulation } from "./articulation";
 import type { GenericRange } from "../types";
 import { WaveSample } from "./wave_sample";
 import { WaveLink } from "./wave_link";
-import {
-    type RIFFChunk,
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import { SpessaSynthWarn } from "../../utils/loggin";
 import {
     readLittleEndianIndexed,
@@ -187,7 +183,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             this.waveLink.write(),
             this.articulation.write()
         ];
-        return writeRIFFChunkParts("rgn2", chunks, true);
+        return RIFFChunk.writeParts("rgn2", chunks, true);
     }
 
     public toSFZone(
@@ -239,6 +235,6 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         writeWord(rgnhData, this.keyGroup);
         // UsLayer
         writeWord(rgnhData, this.usLayer);
-        return writeRIFFChunkRaw("rgnh", rgnhData);
+        return RIFFChunk.write("rgnh", rgnhData);
     }
 }

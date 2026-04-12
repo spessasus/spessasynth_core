@@ -5,13 +5,7 @@ import {
     type GeneratorType,
     generatorTypes
 } from "../enums";
-import {
-    findRIFFListType,
-    readRIFFChunk,
-    type RIFFChunk,
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
     writeDword
@@ -112,13 +106,13 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
      * @param chunks
      */
     public read(chunks: RIFFChunk[]) {
-        const lart = findRIFFListType(chunks, "lart");
-        const lar2 = findRIFFListType(chunks, "lar2");
+        const lart = RIFFChunk.findType(chunks, "lart");
+        const lar2 = RIFFChunk.findType(chunks, "lar2");
 
         if (lart) {
             this.mode = "dls1";
             while (lart.data.currentIndex < lart.data.length) {
-                const art1 = readRIFFChunk(lart.data);
+                const art1 = RIFFChunk.read(lart.data);
                 // Note:
                 // DLS Specification says that lar2 should only have art2, but a DirectMusic Producer example
                 // "FarmGame.dls" has 'art1' in there.
@@ -143,7 +137,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         } else if (lar2) {
             this.mode = "dls2";
             while (lar2.data.currentIndex < lar2.data.length) {
-                const art2 = readRIFFChunk(lar2.data);
+                const art2 = RIFFChunk.read(lar2.data);
                 // Note:
                 // DLS Specification says that lar2 should only have art2, but a DirectMusic Producer example
                 // "FarmGame.dls" has 'art1' in there.
@@ -177,11 +171,11 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         writeDword(art2Data, this.connectionBlocks.length); // CConnectionBlocks
 
         const out = this.connectionBlocks.map((a) => a.write());
-        const art2 = writeRIFFChunkParts(
+        const art2 = RIFFChunk.writeParts(
             this.mode === "dls2" ? "art2" : "art1",
             [art2Data, ...out]
         );
-        return writeRIFFChunkRaw(
+        return RIFFChunk.write(
             this.mode === "dls2" ? "lar2" : "lart",
             art2,
             false,

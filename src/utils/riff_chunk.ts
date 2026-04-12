@@ -59,143 +59,152 @@ export class RIFFChunk {
         this.size = size;
         this.data = data;
     }
-}
 
-export function readRIFFChunk(
-    dataArray: IndexedByteArray,
-    readData = true,
-    forceShift = false
-): RIFFChunk {
-    const header = readBinaryStringIndexed(dataArray, 4) as FourCC;
+    /**
+     * Reads a RIFF chunk from an array.
+     * @param dataArray the array to read from.
+     * @param readData if the data should be read as well.
+     * @param forceShift if the index should be shifted to the end of the chunk even if the data has not been read.
+     */
+    public static read(
+        dataArray: IndexedByteArray,
+        readData = true,
+        forceShift = false
+    ): RIFFChunk {
+        const header = readBinaryStringIndexed(dataArray, 4) as FourCC;
 
-    let size = readLittleEndianIndexed(dataArray, 4);
-    // @ts-expect-error Not all RIFF files are compliant
-    if (header === "") {
-        // Safeguard against evil DLS files
-        // The test case: CrysDLS v1.23.dls
-        // https://github.com/spessasus/spessasynth_core/issues/5
-        size = 0;
-    }
-    const chunkData = readData
-        ? dataArray.slice(dataArray.currentIndex, dataArray.currentIndex + size)
-        : new IndexedByteArray(0);
-    if (readData || forceShift) {
-        dataArray.currentIndex += size;
-        if (size % 2 !== 0) {
-            dataArray.currentIndex++;
+        let size = readLittleEndianIndexed(dataArray, 4);
+        // @ts-expect-error Not all RIFF files are compliant
+        if (header === "") {
+            // Safeguard against evil DLS files
+            // The test case: CrysDLS v1.23.dls
+            // https://github.com/spessasus/spessasynth_core/issues/5
+            size = 0;
         }
-    }
-
-    return new RIFFChunk(header, size, chunkData);
-}
-
-/**
- * Writes a RIFF chunk correctly
- * @param header fourCC
- * @param data chunk data
- * @param addZeroByte add a zero byte into the chunk size
- * @param isList adds "LIST" as the chunk type and writes the actual type at the start of the data
- * @returns the binary data
- */
-export function writeRIFFChunkRaw(
-    header: FourCC,
-    data: Uint8Array,
-    addZeroByte = false,
-    isList = false
-): IndexedByteArray {
-    if (header.length !== 4) {
-        throw new Error(`Invalid header length: ${header}`);
-    }
-    let dataStartOffset = 8;
-    let headerWritten = header;
-    let dataLength = data.length;
-    if (addZeroByte) {
-        dataLength++;
-    }
-    let writtenSize = dataLength;
-    if (isList) {
-        // Written header is LIST and the passed header is the first 4 bytes of chunk data
-        dataStartOffset += 4;
-        writtenSize += 4;
-        headerWritten = "LIST";
-    }
-    let finalSize = dataStartOffset + dataLength;
-    if (finalSize % 2 !== 0) {
-        // Pad byte does not get included in the size
-        finalSize++;
-    }
-
-    const outArray = new IndexedByteArray(finalSize);
-    // FourCC ("RIFF", "LIST", "pdta" etc.)
-    writeBinaryStringIndexed(outArray, headerWritten);
-    // Chunk size
-    writeDword(outArray, writtenSize);
-    if (isList) {
-        // List type (e.g. "INFO")
-        writeBinaryStringIndexed(outArray, header);
-    }
-    outArray.set(data, dataStartOffset);
-    return outArray;
-}
-
-/**
- * Writes RIFF chunk given binary blobs
- * @param header fourCC
- * @param chunks chunk data parts, it will be combined in order
- * @param isList adds "LIST" as the chunk type and writes the actual type at the start of the data
- * @returns the binary data
- */
-export function writeRIFFChunkParts(
-    header: FourCC,
-    chunks: Uint8Array[],
-    isList = false
-): IndexedByteArray {
-    let dataOffset = 8;
-    let headerWritten = header;
-    const dataLength = chunks.reduce((len, c) => c.length + len, 0);
-    let writtenSize = dataLength;
-    if (isList) {
-        // Written header is LIST and the passed header is the first 4 bytes of chunk data
-        dataOffset += 4;
-        writtenSize += 4;
-        headerWritten = "LIST";
-    }
-    let finalSize = dataOffset + dataLength;
-    if (finalSize % 2 !== 0) {
-        // Pad byte does not get included in the size
-        finalSize++;
-    }
-
-    const outArray = new IndexedByteArray(finalSize);
-    // FourCC ("RIFF", "LIST", "pdta" etc.)
-    writeBinaryStringIndexed(outArray, headerWritten);
-    // Chunk size
-    writeDword(outArray, writtenSize);
-    if (isList) {
-        // List type (e.g. "INFO")
-        writeBinaryStringIndexed(outArray, header);
-    }
-    for (const c of chunks) {
-        outArray.set(c, dataOffset);
-        dataOffset += c.length;
-    }
-    return outArray;
-}
-
-/**
- * Finds a given type in a list.
- * @remarks
- * Also skips the current index to after the list FourCC.
- */
-export function findRIFFListType(
-    collection: RIFFChunk[],
-    type: FourCC
-): RIFFChunk | undefined {
-    return collection.find((c) => {
-        if (c.header !== "LIST") {
-            return false;
+        const chunkData = readData
+            ? dataArray.slice(
+                  dataArray.currentIndex,
+                  dataArray.currentIndex + size
+              )
+            : new IndexedByteArray(0);
+        if (readData || forceShift) {
+            dataArray.currentIndex += size;
+            if (size % 2 !== 0) {
+                dataArray.currentIndex++;
+            }
         }
-        c.data.currentIndex = 4;
-        return readBinaryString(c.data, 4) === type;
-    });
+
+        return new RIFFChunk(header, size, chunkData);
+    }
+
+    /**
+     * Writes a RIFF chunk correctly.
+     * @param header the fourCC code of the header.
+     * @param data the binary chunk data.
+     * @param addZeroByte if a zero byte should be at the end of the chunk's data.
+     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
+     * @returns the binary data.
+     */
+    public static write(
+        header: FourCC,
+        data: Uint8Array,
+        addZeroByte = false,
+        isList = false
+    ): IndexedByteArray {
+        if (header.length !== 4) {
+            throw new Error(`Invalid header length: ${header}`);
+        }
+        let dataStartOffset = 8;
+        let headerWritten = header;
+        let dataLength = data.length;
+        if (addZeroByte) {
+            dataLength++;
+        }
+        let writtenSize = dataLength;
+        if (isList) {
+            // Written header is LIST and the passed header is the first 4 bytes of chunk data
+            dataStartOffset += 4;
+            writtenSize += 4;
+            headerWritten = "LIST";
+        }
+        let finalSize = dataStartOffset + dataLength;
+        if (finalSize % 2 !== 0) {
+            // Pad byte does not get included in the size
+            finalSize++;
+        }
+
+        const outArray = new IndexedByteArray(finalSize);
+        // FourCC ("RIFF", "LIST", "pdta" etc.)
+        writeBinaryStringIndexed(outArray, headerWritten);
+        // Chunk size
+        writeDword(outArray, writtenSize);
+        if (isList) {
+            // List type (e.g. "INFO")
+            writeBinaryStringIndexed(outArray, header);
+        }
+        outArray.set(data, dataStartOffset);
+        return outArray;
+    }
+
+    /**
+     * Writes RIFF chunk given binary blobs.
+     * @param header  the fourCC code of the header.
+     * @param chunks binary chunk data parts, will be combined in order.
+     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
+     * @returns the binary data
+     */
+    public static writeParts(
+        header: FourCC,
+        chunks: Uint8Array[],
+        isList = false
+    ): IndexedByteArray {
+        let dataOffset = 8;
+        let headerWritten = header;
+        const dataLength = chunks.reduce((len, c) => c.length + len, 0);
+        let writtenSize = dataLength;
+        if (isList) {
+            // Written header is LIST and the passed header is the first 4 bytes of chunk data
+            dataOffset += 4;
+            writtenSize += 4;
+            headerWritten = "LIST";
+        }
+        let finalSize = dataOffset + dataLength;
+        if (finalSize % 2 !== 0) {
+            // Pad byte does not get included in the size
+            finalSize++;
+        }
+
+        const outArray = new IndexedByteArray(finalSize);
+        // FourCC ("RIFF", "LIST", "pdta" etc.)
+        writeBinaryStringIndexed(outArray, headerWritten);
+        // Chunk size
+        writeDword(outArray, writtenSize);
+        if (isList) {
+            // List type (e.g. "INFO")
+            writeBinaryStringIndexed(outArray, header);
+        }
+        for (const c of chunks) {
+            outArray.set(c, dataOffset);
+            dataOffset += c.length;
+        }
+        return outArray;
+    }
+
+    /**
+     * Finds a given type in a list.
+     * @remarks
+     * Also skips the current index to after the list FourCC.
+     */
+    public static findType(
+        collection: RIFFChunk[],
+        type: FourCC
+    ): RIFFChunk | undefined {
+        return collection.find((c) => {
+            if (c.header !== "LIST") {
+                return false;
+            }
+            c.data.currentIndex = 4;
+            return readBinaryString(c.data, 4) === type;
+        });
+    }
 }

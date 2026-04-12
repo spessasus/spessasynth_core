@@ -1,5 +1,5 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
 import {
@@ -330,7 +330,7 @@ export function writeRMIDIInternal(
     // Info data for RMID
     const infoContent: Uint8Array[] = [];
     const writeInfo = (type: RMIDInfoFourCC, data: Uint8Array) => {
-        infoContent.push(writeRIFFChunkRaw(type, data));
+        infoContent.push(RIFFChunk.write(type, data));
     };
 
     for (const v of Object.entries(mid.rmidiInfo)) {
@@ -411,15 +411,15 @@ export function writeRMIDIInternal(
     // Bank offset
     const DBNK = new IndexedByteArray(2);
     writeLittleEndianIndexed(DBNK, options.bankOffset, 2);
-    infoContent.push(writeRIFFChunkRaw("DBNK", DBNK));
+    infoContent.push(RIFFChunk.write("DBNK", DBNK));
 
     // Combine and write out
     SpessaSynthInfo("%cFinished!", consoleColors.info);
     SpessaSynthGroupEnd();
-    return writeRIFFChunkParts("RIFF", [
+    return RIFFChunk.writeParts("RIFF", [
         getStringBytes("RMID"),
-        writeRIFFChunkRaw("data", newMid),
-        writeRIFFChunkParts("INFO", infoContent, true),
+        RIFFChunk.write("data", newMid),
+        RIFFChunk.writeParts("INFO", infoContent, true),
         new IndexedByteArray(soundBankBinary)
     ]).buffer;
 }

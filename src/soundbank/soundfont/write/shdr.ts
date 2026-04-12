@@ -4,7 +4,7 @@ import {
     writeDword,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
-import { writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import { RIFFChunk } from "../../../utils/riff_chunk";
 import { SF3_BIT_FLIT } from "../read/samples";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 
@@ -69,8 +69,8 @@ export function getSHDR(
     // Write EOS and zero everything else
     writeBinaryStringIndexed(shdrData, "EOS", sampleLength);
     writeBinaryStringIndexed(xshdrData, "EOS", sampleLength);
-    const shdr = writeRIFFChunkRaw("shdr", shdrData);
-    const xshdr = writeRIFFChunkRaw("shdr", xshdrData);
+    const shdr = RIFFChunk.write("shdr", shdrData);
+    const xshdr = RIFFChunk.write("shdr", xshdrData);
     return {
         pdta: shdr,
         xdta: xshdr

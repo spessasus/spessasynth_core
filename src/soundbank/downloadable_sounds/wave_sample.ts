@@ -1,5 +1,5 @@
 import type { DLSLoop } from "../types";
-import { type RIFFChunk, writeRIFFChunkRaw } from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
     signedInt16,
@@ -276,6 +276,6 @@ export class WaveSample extends DLSVerifier {
             writeDword(wsmpData, loop.loopStart);
             writeDword(wsmpData, loop.loopLength);
         }
-        return writeRIFFChunkRaw("wsmp", wsmpData);
+        return RIFFChunk.write("wsmp", wsmpData);
     }
 }

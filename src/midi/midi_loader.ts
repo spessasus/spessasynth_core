@@ -7,7 +7,6 @@ import {
     SpessaSynthInfo,
     SpessaSynthWarn
 } from "../utils/loggin";
-import { readRIFFChunk } from "../utils/riff_chunk";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import {
@@ -20,6 +19,7 @@ import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat, RMIDInfoFourCC } from "./types";
 import { MIDITrack } from "./midi_track";
+import { RIFFChunk } from "../utils/riff_chunk";
 
 /**
  * Midi_loader.ts
@@ -90,7 +90,7 @@ export function loadMIDIFromArrayBufferInternal(
                 `Invalid RMIDI Header! Expected "RMID", got "${rmid}"`
             );
         }
-        const riff = readRIFFChunk(binaryData);
+        const riff = RIFFChunk.read(binaryData);
         if (riff.header !== "data") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
@@ -105,7 +105,7 @@ export function loadMIDIFromArrayBufferInternal(
         // Keep loading chunks until we get the "SFBK" header
         while (binaryData.currentIndex < binaryData.length) {
             const startIndex = binaryData.currentIndex;
-            const currentChunk = readRIFFChunk(binaryData, true);
+            const currentChunk = RIFFChunk.read(binaryData, true);
             if (currentChunk.header === "RIFF") {
                 const type = readBinaryStringIndexed(
                     currentChunk.data,
@@ -137,7 +137,7 @@ export function loadMIDIFromArrayBufferInternal(
                         consoleColors.recognized
                     );
                     while (currentChunk.data.currentIndex < currentChunk.size) {
-                        const infoChunk = readRIFFChunk(
+                        const infoChunk = RIFFChunk.read(
                             currentChunk.data,
                             true
                         );

@@ -10,13 +10,7 @@ import type {
 } from "../types";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
-import {
-    findRIFFListType,
-    readRIFFChunk,
-    RIFFChunk,
-    writeRIFFChunkParts,
-    writeRIFFChunkRaw
-} from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     getStringBytes,
     readBinaryStringIndexed
@@ -63,7 +57,7 @@ export class DownloadableSounds extends DLSVerifier {
         SpessaSynthGroup("%cParsing DLS file...", consoleColors.info);
 
         // Read the main chunk
-        const firstChunk = readRIFFChunk(dataArray, false);
+        const firstChunk = RIFFChunk.read(dataArray, false);
         this.verifyHeader(firstChunk, "RIFF");
         this.verifyText(
             readBinaryStringIndexed(dataArray, 4).toLowerCase(),
@@ -75,7 +69,7 @@ export class DownloadableSounds extends DLSVerifier {
          */
         const chunks: RIFFChunk[] = [];
         while (dataArray.currentIndex < dataArray.length) {
-            chunks.push(readRIFFChunk(dataArray));
+            chunks.push(RIFFChunk.read(dataArray));
         }
 
         const dls = new DownloadableSounds();
@@ -86,10 +80,10 @@ export class DownloadableSounds extends DLSVerifier {
         dls.soundBankInfo.comment = "(no description)";
 
         // Read info
-        const infoChunk = findRIFFListType(chunks, "INFO");
+        const infoChunk = RIFFChunk.findType(chunks, "INFO");
         if (infoChunk) {
             while (infoChunk.data.currentIndex < infoChunk.data.length) {
-                const infoPart = readRIFFChunk(infoChunk.data);
+                const infoPart = RIFFChunk.read(infoChunk.data);
                 const headerTyped = infoPart.header as DLSInfoFourCC;
                 const text = readBinaryStringIndexed(
                     infoPart.data,
@@ -154,7 +148,7 @@ export class DownloadableSounds extends DLSVerifier {
         );
 
         // Read the wave list
-        const waveListChunk = findRIFFListType(chunks, "wvpl");
+        const waveListChunk = RIFFChunk.findType(chunks, "wvpl");
         if (!waveListChunk) {
             this.parsingError("No wvpl chunk!");
             return 5 as never;
@@ -165,7 +159,7 @@ export class DownloadableSounds extends DLSVerifier {
         }
 
         // Read the instrument list
-        const instrumentListChunk = findRIFFListType(chunks, "lins");
+        const instrumentListChunk = RIFFChunk.findType(chunks, "lins");
         if (!instrumentListChunk) {
             this.parsingError("No lins chunk!");
             return 5 as never;
@@ -362,13 +356,13 @@ export class DownloadableSounds extends DLSVerifier {
         // Write colh
         const colhNum = new IndexedByteArray(4);
         writeDword(colhNum, this.instruments.length);
-        const colh = writeRIFFChunkRaw("colh", colhNum);
+        const colh = RIFFChunk.write("colh", colhNum);
         SpessaSynthGroupCollapsed(
             "%cWriting instruments...",
             consoleColors.info
         );
 
-        const lins = writeRIFFChunkParts(
+        const lins = RIFFChunk.writeParts(
             "lins",
             this.instruments.map((i) => i.write()),
             true
@@ -397,7 +391,7 @@ export class DownloadableSounds extends DLSVerifier {
             samples.push(out);
             written++;
         }
-        const wvpl = writeRIFFChunkParts("wvpl", samples, true);
+        const wvpl = RIFFChunk.writeParts("wvpl", samples, true);
         SpessaSynthInfo("%cSucceeded!", consoleColors.recognized);
 
         // Write ptbl
@@ -407,14 +401,14 @@ export class DownloadableSounds extends DLSVerifier {
         for (const offset of ptblOffsets) {
             writeDword(ptblData, offset);
         }
-        const ptbl = writeRIFFChunkRaw("ptbl", ptblData);
+        const ptbl = RIFFChunk.write("ptbl", ptblData);
         this.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
 
         // Write INFO
         const infos: Uint8Array[] = [];
 
         const writeDLSInfo = (type: DLSInfoFourCC, data: string) => {
-            infos.push(writeRIFFChunkRaw(type, getStringBytes(data, true)));
+            infos.push(RIFFChunk.write(type, getStringBytes(data, true)));
         };
 
         for (const [t, d] of Object.entries(this.soundBankInfo)) {
@@ -472,10 +466,10 @@ export class DownloadableSounds extends DLSVerifier {
                 }
             }
         }
-        const info = writeRIFFChunkParts("INFO", infos, true);
+        const info = RIFFChunk.writeParts("INFO", infos, true);
 
         SpessaSynthInfo("%cCombining everything...");
-        const out = writeRIFFChunkParts("RIFF", [
+        const out = RIFFChunk.writeParts("RIFF", [
             getStringBytes("DLS "),
             colh,
             lins,

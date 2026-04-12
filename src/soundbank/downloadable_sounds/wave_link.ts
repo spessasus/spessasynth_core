@@ -1,4 +1,4 @@
-import { type RIFFChunk, writeRIFFChunkRaw } from "../../utils/riff_chunk";
+import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
     writeDword,
@@ -97,6 +97,6 @@ export class WaveLink {
         writeWord(wlnkData, this.phaseGroup); // UsPhaseGroup
         writeDword(wlnkData, this.channel); // UlChannel
         writeDword(wlnkData, this.tableIndex); // UlTableIndex
-        return writeRIFFChunkRaw("wlnk", wlnkData);
+        return RIFFChunk.write("wlnk", wlnkData);
     }
 }
