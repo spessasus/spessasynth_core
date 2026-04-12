@@ -37,6 +37,10 @@ export class VolumeEnvelope {
      */
     public readonly sampleRate: number;
     /**
+     * The target gain for the current rendering block.
+     */
+    public outputGain = 0;
+    /**
      * The current attenuation of the envelope in cB.
      */
     public attenuationCb: number = CB_SILENCE;
@@ -104,7 +108,11 @@ export class VolumeEnvelope {
 
     private readonly gainSmoothing;
 
-    private currentGain = 0;
+    /**
+     * The current peak gain, used for smoothing.
+     * @private
+     */
+    private peakGain = 0;
 
     /**
      * @param sampleRate Hz
@@ -112,42 +120,6 @@ export class VolumeEnvelope {
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.gainSmoothing = GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
-    }
-
-    /**
-     * Applies volume envelope gain to the given output buffer.
-     * Essentially we use approach of 100dB is silence, 0dB is peak.
-     * @param sampleCount the amount of samples to write
-     * @param buffer the audio buffer to modify
-     * @param gainTarget the gain target to smooth.
-     * @returns if the voice is still active
-     */
-    public process(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number
-    ): boolean {
-        if (this.enteredRelease) {
-            return this.releasePhase(sampleCount, buffer, gainTarget);
-        }
-
-        switch (this.state) {
-            case 0: {
-                return this.delayPhase(sampleCount, buffer, gainTarget, 0);
-            }
-            case 1: {
-                return this.attackPhase(sampleCount, buffer, gainTarget, 0);
-            }
-            case 2: {
-                return this.holdPhase(sampleCount, buffer, gainTarget, 0);
-            }
-            case 3: {
-                return this.decayPhase(sampleCount, buffer, gainTarget, 0);
-            }
-            case 4: {
-                return this.sustainPhase(sampleCount, buffer, gainTarget, 0);
-            }
-        }
     }
 
     /**
@@ -265,12 +237,13 @@ export class VolumeEnvelope {
             PERCEIVED_CB_SILENCE;
 
         // Set the initial gain
-        this.currentGain =
+        this.peakGain =
             CENTIBEL_LOOKUP_TABLE[
                 (voice.modulatedGenerators[generatorTypes.initialAttenuation] -
                     MIN_CENTIBELS) |
                     0
             ];
+        this.outputGain = this.peakGain;
 
         // Calculate absolute times (they can change so we have to recalculate every time
         this.sustainCb = Math.min(
@@ -321,252 +294,131 @@ export class VolumeEnvelope {
         }
     }
 
+    /**
+     * Calculates the gain value for the last sample in the block and writes it to `outputGain`.
+     * Essentially we use approach of 100dB is silence, 0dB is peak.
+     * @param sampleCount the amount of samples to write
+     * @param gainTarget the gain target to smooth.
+     * @returns if the voice has finished.
+     */
+    public process(sampleCount: number, gainTarget: number): boolean {
+        const {
+            releaseStartTimeSamples,
+            releaseStartCb,
+            releaseDuration,
+            gainSmoothing,
+            delayEnd,
+            attackEnd,
+            attackDuration,
+            holdEnd,
+            decayEnd,
+            decayDuration,
+            sustainCb
+        } = this;
+        // Advance time by the entire block to calculate the last sample's gain
+        const sampleTime = (this.sampleTime += sampleCount);
+
+        // Gain smoothing
+        if (this.peakGain !== gainTarget) {
+            this.peakGain += (gainTarget - this.peakGain) * gainSmoothing;
+        }
+        const peakGain = this.peakGain;
+
+        if (this.enteredRelease) {
+            // How much time has passed since release was started?
+            const elapsedRelease = sampleTime - releaseStartTimeSamples;
+            const cbDifference = CB_SILENCE - releaseStartCb;
+
+            // Linearly ramp down decibels
+            this.attenuationCb =
+                (elapsedRelease / releaseDuration) * cbDifference +
+                releaseStartCb;
+            this.outputGain =
+                CENTIBEL_LOOKUP_TABLE[
+                    (this.attenuationCb - MIN_CENTIBELS) | 0
+                ] * peakGain;
+            return this.attenuationCb < PERCEIVED_CB_SILENCE;
+        }
+        switch (this.state) {
+            case 0: {
+                // Delay phase: no sound is produced
+                if (sampleTime < delayEnd) {
+                    // Silence
+                    this.attenuationCb = CB_SILENCE;
+                    this.outputGain = 0;
+                    return true;
+                }
+                this.state++;
+            }
+            // Fallthrough
+            case 1: {
+                // Attack phase: ramp from 0 to attenuation
+                if (sampleTime < attackEnd) {
+                    // Set current attenuation to peak as its invalid during this phase
+                    this.attenuationCb = 0;
+                    // Special case: linear gain ramp instead of linear db ramp
+                    const linearGain =
+                        1 - (attackEnd - sampleTime) / attackDuration;
+                    this.outputGain = linearGain * peakGain;
+                    return true;
+                }
+
+                this.state++;
+            }
+            // Fallthrough
+            case 2: {
+                // Hold/peak phase: stay at max volume
+                if (sampleTime < holdEnd) {
+                    // Peak, no attenuation
+                    this.attenuationCb = 0;
+                    this.outputGain = peakGain;
+                    return true;
+                }
+                this.state++;
+            }
+            // Fallthrough
+            case 3: {
+                if (sampleTime < decayEnd) {
+                    // Linear centibel ramp down to sustain
+                    this.attenuationCb =
+                        (1 - (decayEnd - sampleTime) / decayDuration) *
+                        sustainCb;
+                    this.outputGain =
+                        peakGain *
+                        CENTIBEL_LOOKUP_TABLE[
+                            (this.attenuationCb - MIN_CENTIBELS) | 0
+                        ];
+                    return true;
+                }
+                this.state++;
+            }
+            // Fallthrough
+            case 4: {
+                if (
+                    this.canEndOnSilentSustain &&
+                    sustainCb >= PERCEIVED_CB_SILENCE
+                ) {
+                    // Make sure to fill with silence
+                    // https://github.com/spessasus/spessasynth_core/issues/57
+                    this.attenuationCb = CB_SILENCE;
+                    this.outputGain = 0;
+                    return false;
+                }
+
+                // Sustain phase: stay at sustain
+                this.attenuationCb = sustainCb;
+                this.outputGain =
+                    peakGain *
+                    CENTIBEL_LOOKUP_TABLE[(sustainCb - MIN_CENTIBELS) | 0];
+                return true;
+            }
+        }
+    }
+
     private timecentsToSamples(tc: number) {
         return Math.max(
             0,
             Math.floor(timecentsToSeconds(tc) * this.sampleRate)
         );
-    }
-
-    private releasePhase(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number
-    ) {
-        let { sampleTime, currentGain, attenuationCb } = this;
-        const {
-            releaseStartTimeSamples,
-            releaseStartCb,
-            releaseDuration,
-            gainSmoothing
-        } = this;
-
-        // How much time has passed since release was started?
-        let elapsedRelease = sampleTime - releaseStartTimeSamples;
-        const cbDifference = CB_SILENCE - releaseStartCb;
-
-        const smooth = currentGain !== gainTarget;
-
-        for (let i = 0; i < sampleCount; i++) {
-            if (smooth) {
-                currentGain += (gainTarget - currentGain) * gainSmoothing;
-            }
-
-            // Linearly ramp down decibels
-            attenuationCb =
-                (elapsedRelease / releaseDuration) * cbDifference +
-                releaseStartCb;
-
-            buffer[i] *=
-                CENTIBEL_LOOKUP_TABLE[(attenuationCb - MIN_CENTIBELS) | 0] *
-                currentGain;
-
-            sampleTime++;
-            elapsedRelease++;
-        }
-
-        this.sampleTime = sampleTime;
-        this.currentGain = currentGain;
-        this.attenuationCb = attenuationCb;
-
-        return attenuationCb < PERCEIVED_CB_SILENCE;
-    }
-
-    private delayPhase(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number,
-        filledBuffer: number
-    ) {
-        const { delayEnd } = this;
-        let { sampleTime } = this;
-
-        // Delay phase: no sound is produced
-        if (sampleTime < delayEnd) {
-            // Silence
-            this.attenuationCb = CB_SILENCE;
-
-            const delaySamples = Math.min(delayEnd - sampleTime, sampleCount);
-            buffer.fill(0, filledBuffer, filledBuffer + delaySamples);
-            filledBuffer += delaySamples;
-            sampleTime += delaySamples;
-
-            if (filledBuffer >= sampleCount) {
-                this.sampleTime = sampleTime;
-                return true;
-            }
-        }
-
-        this.sampleTime = sampleTime;
-        this.state++;
-
-        return this.attackPhase(sampleCount, buffer, gainTarget, filledBuffer);
-    }
-
-    private attackPhase(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number,
-        filledBuffer: number
-    ) {
-        const { attackEnd, attackDuration, gainSmoothing } = this;
-        let { sampleTime, currentGain } = this;
-        const smooth = currentGain !== gainTarget;
-
-        if (sampleTime < attackEnd) {
-            // Set current attenuation to peak as its invalid during this phase
-            this.attenuationCb = 0;
-
-            // Attack phase: ramp from 0 to attenuation
-            while (sampleTime < attackEnd) {
-                if (smooth) {
-                    currentGain += (gainTarget - currentGain) * gainSmoothing;
-                }
-
-                // Special case: linear gain ramp instead of linear db ramp
-                const linearGain =
-                    1 - (attackEnd - sampleTime) / attackDuration; // 0 to 1
-
-                // Apply gain to buffer
-                buffer[filledBuffer] *= linearGain * currentGain;
-
-                sampleTime++;
-                if (++filledBuffer >= sampleCount) {
-                    this.sampleTime = sampleTime;
-                    this.currentGain = currentGain;
-                    return true;
-                }
-            }
-        }
-
-        this.sampleTime = sampleTime;
-        this.currentGain = currentGain;
-        this.state++;
-
-        return this.holdPhase(sampleCount, buffer, gainTarget, filledBuffer);
-    }
-
-    private holdPhase(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number,
-        filledBuffer: number
-    ) {
-        const { holdEnd, gainSmoothing } = this;
-        let { sampleTime, currentGain } = this;
-        const smooth = currentGain !== gainTarget;
-
-        // Hold/peak phase: stay at max volume
-        if (sampleTime < holdEnd) {
-            // Peak, no attenuation
-            this.attenuationCb = 0;
-
-            while (sampleTime < holdEnd) {
-                if (smooth) {
-                    currentGain += (gainTarget - currentGain) * gainSmoothing;
-                }
-
-                // Apply gain to buffer
-                buffer[filledBuffer] *= currentGain;
-
-                sampleTime++;
-                if (++filledBuffer >= sampleCount) {
-                    this.sampleTime = sampleTime;
-                    this.currentGain = currentGain;
-                    return true;
-                }
-            }
-        }
-
-        this.sampleTime = sampleTime;
-        this.currentGain = currentGain;
-        this.state++;
-
-        return this.decayPhase(sampleCount, buffer, gainTarget, filledBuffer);
-    }
-
-    private decayPhase(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number,
-        filledBuffer: number
-    ) {
-        const { decayDuration, decayEnd, gainSmoothing, sustainCb } = this;
-        let { sampleTime, currentGain, attenuationCb } = this;
-        const smooth = currentGain !== gainTarget;
-
-        if (sampleTime < decayEnd) {
-            while (sampleTime < decayEnd) {
-                if (smooth) {
-                    currentGain += (gainTarget - currentGain) * gainSmoothing;
-                }
-                // Linear ramp down to sustain
-                attenuationCb =
-                    (1 - (decayEnd - sampleTime) / decayDuration) * sustainCb;
-
-                // Apply gain to buffer
-                buffer[filledBuffer] *=
-                    currentGain *
-                    CENTIBEL_LOOKUP_TABLE[(attenuationCb - MIN_CENTIBELS) | 0];
-
-                sampleTime++;
-                if (++filledBuffer >= sampleCount) {
-                    this.sampleTime = sampleTime;
-                    this.currentGain = currentGain;
-                    this.attenuationCb = attenuationCb;
-                    return true;
-                }
-            }
-        }
-
-        this.sampleTime = sampleTime;
-        this.currentGain = currentGain;
-        this.attenuationCb = attenuationCb;
-        this.state++;
-
-        return this.sustainPhase(sampleCount, buffer, gainTarget, filledBuffer);
-    }
-
-    private sustainPhase(
-        sampleCount: number,
-        buffer: Float32Array,
-        gainTarget: number,
-        filledBuffer: number
-    ) {
-        const { sustainCb, gainSmoothing } = this;
-
-        if (this.canEndOnSilentSustain && sustainCb >= PERCEIVED_CB_SILENCE) {
-            // Make sure to fill with silence
-            // https://github.com/spessasus/spessasynth_core/issues/57
-            buffer.fill(0, filledBuffer, sampleCount);
-            return false;
-        }
-
-        let { sampleTime, currentGain } = this;
-        const smooth = currentGain !== gainTarget;
-
-        // Sustain phase: stay at sustain
-        if (filledBuffer < sampleCount) {
-            // Stay at sustain
-            this.attenuationCb = sustainCb;
-
-            while (filledBuffer < sampleCount) {
-                if (smooth) {
-                    currentGain += (gainTarget - currentGain) * gainSmoothing;
-                }
-
-                // Apply gain to buffer
-                buffer[filledBuffer] *=
-                    currentGain *
-                    CENTIBEL_LOOKUP_TABLE[(sustainCb - MIN_CENTIBELS) | 0];
-
-                sampleTime++;
-                filledBuffer++;
-            }
-        }
-
-        this.sampleTime = sampleTime;
-        this.currentGain = currentGain;
-        return true;
     }
 }

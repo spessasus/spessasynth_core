@@ -215,20 +215,32 @@ export function renderVoice(
         cbAttenuationToGain(modulated[generatorTypes.initialAttenuation]) *
         cbAttenuationToGain(volumeExcursionCentibels);
 
-    // SYNTHESIS
-    const buffer = core.voiceBuffer;
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.isActive = voice.volEnv.process(sampleCount, buffer, gainTarget);
+        voice.isActive = voice.volEnv.process(sampleCount, gainTarget);
         return;
     }
 
+    // SYNTHESIS
+    const buffer = core.voiceBuffer;
     // Wave table oscillator
     voice.isActive = voice.wavetable.process(
         sampleCount,
         voice.tuningRatio,
         buffer
     );
+
+    // Vol env (output gain calculation)
+    let sampleGain = voice.volEnv.outputGain;
+    const envActive = voice.volEnv.process(sampleCount, gainTarget);
+    const sampleGainInc = (voice.volEnv.outputGain - sampleGain) / sampleCount;
+
+    // Write the gain here
+
+    for (let i = 0; i < sampleCount; i++) {
+        buffer[i] *= sampleGain;
+        sampleGain += sampleGainInc;
+    }
 
     // Low pass filter (inlined for performance, confirmed with node.js)
     {
@@ -299,9 +311,6 @@ export function renderVoice(
             f.y2 = y2;
         }
     }
-
-    // Vol env
-    const envActive = voice.volEnv.process(sampleCount, buffer, gainTarget);
 
     // Note, we do not use &&= as it short-circuits!
     // And we don't do = either as wavetable might've marked it as inactive (end of sample)
