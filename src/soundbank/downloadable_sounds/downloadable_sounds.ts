@@ -80,7 +80,7 @@ export class DownloadableSounds extends DLSVerifier {
         dls.soundBankInfo.comment = "(no description)";
 
         // Read info
-        const infoChunk = RIFFChunk.findType(chunks, "INFO");
+        const infoChunk = RIFFChunk.findListType(chunks, "INFO");
         if (infoChunk) {
             while (infoChunk.data.currentIndex < infoChunk.data.length) {
                 const infoPart = RIFFChunk.read(infoChunk.data);
@@ -148,7 +148,7 @@ export class DownloadableSounds extends DLSVerifier {
         );
 
         // Read the wave list
-        const waveListChunk = RIFFChunk.findType(chunks, "wvpl");
+        const waveListChunk = RIFFChunk.findListType(chunks, "wvpl");
         if (!waveListChunk) {
             this.parsingError("No wvpl chunk!");
             return 5 as never;
@@ -159,7 +159,7 @@ export class DownloadableSounds extends DLSVerifier {
         }
 
         // Read the instrument list
-        const instrumentListChunk = RIFFChunk.findType(chunks, "lins");
+        const instrumentListChunk = RIFFChunk.findListType(chunks, "lins");
         if (!instrumentListChunk) {
             this.parsingError("No lins chunk!");
             return 5 as never;

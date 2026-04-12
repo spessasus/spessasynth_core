@@ -74,7 +74,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
         );
 
         // Read sample name
-        const waveInfo = RIFFChunk.findType(chunks, "INFO");
+        const waveInfo = RIFFChunk.findListType(chunks, "INFO");
         if (waveInfo) {
             let infoChunk = RIFFChunk.read(waveInfo.data);
             while (

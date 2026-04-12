@@ -106,23 +106,21 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
      * @param chunks
      */
     public read(chunks: RIFFChunk[]) {
-        const lart = RIFFChunk.findType(chunks, "lart");
-        const lar2 = RIFFChunk.findType(chunks, "lar2");
+        const lart = RIFFChunk.findListType(chunks, "lart");
+        const lar2 = RIFFChunk.findListType(chunks, "lar2");
 
         if (lart) {
             this.mode = "dls1";
             while (lart.data.currentIndex < lart.data.length) {
-                const art1 = RIFFChunk.read(lart.data);
+                const chunk = RIFFChunk.read(lart.data);
                 // Note:
                 // DLS Specification says that lar2 should only have art2, but a DirectMusic Producer example
                 // "FarmGame.dls" has 'art1' in there.
                 // Hence, we allow art2 in lart and art1 in lar2.
-                DownloadableSoundsArticulation.verifyHeader(
-                    art1,
-                    "art1",
-                    "art2"
-                );
-                const artData = art1.data;
+                if (chunk.header !== "art1" && chunk.header !== "art2")
+                    // There may be a cdl chunk, testcase romania_main.dls
+                    continue;
+                const artData = chunk.data;
                 const cbSize = readLittleEndianIndexed(artData, 4);
                 if (cbSize !== 8) {
                     SpessaSynthWarn(
@@ -137,17 +135,15 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         } else if (lar2) {
             this.mode = "dls2";
             while (lar2.data.currentIndex < lar2.data.length) {
-                const art2 = RIFFChunk.read(lar2.data);
+                const chunk = RIFFChunk.read(lar2.data);
                 // Note:
                 // DLS Specification says that lar2 should only have art2, but a DirectMusic Producer example
                 // "FarmGame.dls" has 'art1' in there.
                 // Hence, we allow art2 in lart and art1 in lar2.
-                DownloadableSoundsArticulation.verifyHeader(
-                    art2,
-                    "art2",
-                    "art1"
-                );
-                const artData = art2.data;
+                if (chunk.header !== "art1" && chunk.header !== "art2")
+                    // There may be a cdl chunk, testcase romania_main.dls
+                    continue;
+                const artData = chunk.data;
                 const cbSize = readLittleEndianIndexed(artData, 4);
                 if (cbSize !== 8) {
                     SpessaSynthWarn(

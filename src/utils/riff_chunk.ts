@@ -195,7 +195,7 @@ export class RIFFChunk {
      * @remarks
      * Also skips the current index to after the list FourCC.
      */
-    public static findType(
+    public static findListType(
         collection: RIFFChunk[],
         type: FourCC
     ): RIFFChunk | undefined {

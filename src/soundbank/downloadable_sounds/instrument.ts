@@ -77,7 +77,7 @@ export class DownloadableSoundsInstrument
 
         // Read the instrument name in INFO
         let instrumentName = ``;
-        const infoChunk = RIFFChunk.findType(chunks, "INFO");
+        const infoChunk = RIFFChunk.findListType(chunks, "INFO");
         if (infoChunk) {
             let info = RIFFChunk.read(infoChunk.data);
             while (info.header !== "INAM") {
@@ -122,7 +122,7 @@ export class DownloadableSoundsInstrument
         );
 
         // List of regions
-        const regionListChunk = RIFFChunk.findType(chunks, "lrgn");
+        const regionListChunk = RIFFChunk.findListType(chunks, "lrgn");
         if (!regionListChunk) {
             SpessaSynthGroupEnd();
             throw new Error("No region list!");
