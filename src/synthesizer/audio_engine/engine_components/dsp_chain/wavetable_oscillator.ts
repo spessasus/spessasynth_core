@@ -93,6 +93,8 @@ export class LinearOscillator extends WavetableOscillator {
 
                 // Flag the voice as finished if needed
                 if (ceil >= end) {
+                    // Fill the rest with zeros (testcase drum_spam_test.mid)
+                    outputBuffer.fill(0, i, sampleCount);
                     return false;
                 }
 
@@ -138,6 +140,8 @@ export class NearestOscillator extends WavetableOscillator {
             for (let i = 0; i < sampleCount; i++) {
                 // Flag the voice as finished if needed
                 if (cursor >= end) {
+                    // Fill the rest with zeros (testcase drum_spam_test.mid)
+                    outputBuffer.fill(0, i, sampleCount);
                     return false;
                 }
 
@@ -213,6 +217,8 @@ export class HermiteOscillator extends WavetableOscillator {
 
                 // Flag as finished if needed
                 if (y3 >= end) {
+                    // Fill the rest with zeros (testcase drum_spam_test.mid)
+                    outputBuffer.fill(0, i, sampleCount);
                     return false;
                 }
 
