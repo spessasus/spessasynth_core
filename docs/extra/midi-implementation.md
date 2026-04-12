@@ -132,8 +132,7 @@ Below is the list of currently implemented Registered Parameters.
 ### Supported Non-Registered Parameters
 
 Below is the list of currently implemented Non-Registered Parameters.
-Note that all these are non-standard GM.
-**These only apply for GS**
+Note that all these are not from GM, but come from XG and GS.
 
 rr: Drum note number.
 
@@ -259,9 +258,6 @@ Yamaha XG.
 Bank LSB and MSB are processed.
 MSB can be used to turn a channel into a drum channel.
 Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
-
-Channel timbre and mixing can be adjusted with **XG Part Setup** system exclusives (see [Yamaha XG](#yamaha-xg)), which map to the same MIDI controllers as the corresponding GS part aliases where applicable.
-Per-drum editing uses **XG Drum Setup** messages; those updates are applied on every drum channel for the given note number.
 
 ### Roland GS
 
@@ -516,17 +512,17 @@ Master transposition in semitones, 64 means no shift.
 
 ##### XG Reset
 
-`0x7E` and `0x7F` in the system parameter block perform an XG reset and switch the synth into XG mode.
+Performs an XG reset and switch the synth into XG mode.
 The XG mode disables the delay effect.
 
 #### Reverb, chorus, and variation block
 
-Messages under address `0x02 0x01` (reverb, chorus, and variation parameter addresses) are _not supported (yet)_.
+Reverb, chorus, and variation parameter addresses are _not supported (yet)_.
 They are recognized only for logging; parameters are not applied to the effect engines.
 
 #### XG Part Setup
 
-Part (channel) parameters use address byte `0x08`, with the second address byte selecting the MIDI channel. **They are only applied when the synthesizer is in XG mode.**
+Part (channel) parameters set a specific parameter for a specific channel.
 
 | Number (hex) | Name                   | Description                                                                                                                                                                                     |
 | ------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
