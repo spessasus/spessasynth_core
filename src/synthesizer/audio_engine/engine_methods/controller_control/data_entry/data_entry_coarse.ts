@@ -130,7 +130,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         return;
                     }
                     SpessaSynthInfo(
-                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramFine
+                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse
                             .toString(16)
                             .toUpperCase()} 0x${paramFine
                             .toString(16)

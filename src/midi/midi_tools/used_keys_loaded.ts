@@ -1,7 +1,8 @@
 import {
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
-    SpessaSynthInfo
+    SpessaSynthInfo,
+    SpessaSynthWarn
 } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
@@ -80,8 +81,20 @@ export function getUsedProgramsAndKeys(
     const ports = mid.tracks.map((t) => t.port);
 
     mid.iterate((event, trackNum) => {
-        if (event.statusByte === midiMessageTypes.midiPort) {
-            ports[trackNum] = event.data[0];
+        // Do not assign ports to empty tracks
+        // Testcase Cueshe - Bakit 1.mid
+        if (
+            event.statusByte === midiMessageTypes.midiPort &&
+            mid.tracks[trackNum].channels.size > 0
+        ) {
+            let port = event.data[0];
+            if (mid.portChannelOffsetMap[port] === undefined) {
+                SpessaSynthWarn(
+                    `Invalid port ${port} on track ${trackNum}. (No offset found in the MIDI map.`
+                );
+                port = 0;
+            }
+            ports[trackNum] = port;
             return;
         }
         const status = event.statusByte & 0xf0;

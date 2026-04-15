@@ -31,6 +31,15 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                     7);
             switch (rpnValue) {
                 default: {
+                    SpessaSynthInfo(
+                        `%cUnrecognized RPN LSB for %c${this.channel}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
+                        consoleColors.warn,
+                        consoleColors.recognized,
+                        consoleColors.warn,
+                        consoleColors.unrecognized,
+                        consoleColors.warn,
+                        consoleColors.value
+                    );
                     break;
                 }
 
@@ -89,25 +98,32 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
         }
 
         case dataEntryStates.NRPFine: {
-            const NRPNCoarse =
+            const paramCoarse =
                 this.midiControllers[
                     midiControllers.nonRegisteredParameterMSB
                 ] >> 7;
-            const NRPNFine =
+            const paramFine =
                 this.midiControllers[
                     midiControllers.nonRegisteredParameterLSB
                 ] >> 7;
-            if (NRPNCoarse === nonRegisteredMSB.SF2) {
+
+            // SF2 and GS NRPN don't use lsb (but sometimes these are still sent!)
+            if (
+                paramCoarse === nonRegisteredMSB.SF2 ||
+                (paramCoarse >= nonRegisteredMSB.drumPitch &&
+                    paramFine <= nonRegisteredMSB.drumDelay) ||
+                paramCoarse === nonRegisteredMSB.partParameter
+            ) {
                 return;
             }
-            switch (NRPNCoarse) {
+            switch (paramCoarse) {
                 default: {
                     SpessaSynthInfo(
-                        `%cUnrecognized NRPN LSB for %c${this.channel}%c: %c(0x${NRPNFine.toString(
-                            16
-                        ).toUpperCase()} 0x${NRPNFine.toString(
-                            16
-                        ).toUpperCase()})%c data value: %c${dataValue}`,
+                        `%cUnrecognized NRPN LSB for %c${this.channel}%c: %c(0x${paramCoarse
+                            .toString(16)
+                            .toUpperCase()} 0x${paramFine
+                            .toString(16)
+                            .toUpperCase()})%c data value: %c${dataValue}`,
                         consoleColors.warn,
                         consoleColors.recognized,
                         consoleColors.warn,
@@ -121,7 +137,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                 case nonRegisteredMSB.awe32: {
                     handleAWE32NRPN.call(
                         this,
-                        NRPNFine,
+                        paramFine,
                         dataValue,
                         this.midiControllers[midiControllers.dataEntryMSB] >> 7
                     );
