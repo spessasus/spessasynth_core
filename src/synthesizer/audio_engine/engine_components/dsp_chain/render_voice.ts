@@ -231,16 +231,12 @@ export function renderVoice(
     );
 
     // Vol env (output gain calculation)
-    let sampleGain = voice.volEnv.outputGain;
+    // Get the previous value
+    let gain = voice.volEnv.outputGain;
+    // Compute the new value
     const envActive = voice.volEnv.process(sampleCount, gainTarget);
-    const sampleGainInc = (voice.volEnv.outputGain - sampleGain) / sampleCount;
-
-    // Write the gain here
-
-    for (let i = 0; i < sampleCount; i++) {
-        buffer[i] *= sampleGain;
-        sampleGain += sampleGainInc;
-    }
+    // Calculate increase
+    const gainInc = (voice.volEnv.outputGain - gain) / sampleCount;
 
     // Low pass filter (inlined for performance, confirmed with node.js)
     {
@@ -276,7 +272,11 @@ export function renderVoice(
             modulatedResonance === 0
         ) {
             f.currentInitialFc = 13_500;
-            // Filter is open
+            // Filter is open, apply gain
+            for (let i = 0; i < sampleCount; i++) {
+                buffer[i] *= gain;
+                gain += gainInc;
+            }
         } else {
             // Check if the frequency has changed. if so, calculate new coefficients
             if (
@@ -303,7 +303,11 @@ export function renderVoice(
                 y2 = y1;
                 y1 = filtered;
 
-                buffer[i] = filtered;
+                // Apply filter and THEN gain
+                // Per SF2 spec apply order, also see
+                // https://github.com/FluidSynth/fluidsynth/issues/1427
+                buffer[i] = filtered * gain;
+                gain += gainInc;
             }
             f.x1 = x1;
             f.x2 = x2;
@@ -328,11 +332,12 @@ export function renderVoice(
         pan = voice.currentPan;
     }
 
-    const gain = core.masterParameters.masterGain * core.midiVolume * voiceGain;
+    const outputGain =
+        core.masterParameters.masterGain * core.midiVolume * voiceGain;
     const index = (pan + 500) | 0;
     // Get voice's gain levels for each channel
-    const gainLeft = panTableLeft[index] * gain * core.panLeft;
-    const gainRight = panTableRight[index] * gain * core.panRight;
+    const gainLeft = panTableLeft[index] * outputGain * core.panLeft;
+    const gainRight = panTableRight[index] * outputGain * core.panRight;
 
     if (this.insertionEnabled) {
         // Straight into the insertion EFX!
@@ -362,7 +367,7 @@ export function renderVoice(
         modulated[generatorTypes.reverbEffectsSend] * voice.reverbSend;
     if (reverbSend > 0) {
         const reverbGain =
-            core.masterParameters.reverbGain * gain * (reverbSend / 1000);
+            core.masterParameters.reverbGain * outputGain * (reverbSend / 1000);
 
         const reverb = core.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
@@ -374,7 +379,7 @@ export function renderVoice(
         modulated[generatorTypes.chorusEffectsSend] * voice.chorusSend;
     if (chorusSend > 0) {
         const chorusGain =
-            core.masterParameters.chorusGain * (chorusSend / 1000) * gain;
+            core.masterParameters.chorusGain * (chorusSend / 1000) * outputGain;
         const chorus = core.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
             chorus[i] += chorusGain * buffer[i];
@@ -387,7 +392,7 @@ export function renderVoice(
             voice.delaySend;
         if (delaySend > 0) {
             const delayGain =
-                gain *
+                outputGain *
                 core.masterParameters.delayGain *
                 ((delaySend >> 7) / 127);
             const delay = core.delayInput;

@@ -17,9 +17,6 @@ import { generatorTypes } from "../../../../soundbank/basic_soundbank/generator_
 const CB_SILENCE = 960;
 const PERCEIVED_CB_SILENCE = 900;
 
-// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
-const GAIN_SMOOTHING_FACTOR = 0.01;
-
 /**
  * VOL ENV STATES:
  * 0 - delay
@@ -106,8 +103,6 @@ export class VolumeEnvelope {
      */
     private canEndOnSilentSustain = false;
 
-    private readonly gainSmoothing;
-
     /**
      * The current peak gain, used for smoothing.
      * @private
@@ -119,7 +114,6 @@ export class VolumeEnvelope {
      */
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
-        this.gainSmoothing = GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
     }
 
     /**
@@ -298,16 +292,14 @@ export class VolumeEnvelope {
      * Calculates the gain value for the last sample in the block and writes it to `outputGain`.
      * Essentially we use approach of 100dB is silence, 0dB is peak.
      * @param sampleCount the amount of samples to write
-     * @param gainTarget the gain target to smooth.
+     * @param gainTarget the gain to apply.
      * @returns if the voice has finished.
      */
     public process(sampleCount: number, gainTarget: number): boolean {
-        // FIXME: Broken volenv, testcase gm.dls
         const {
             releaseStartTimeSamples,
             releaseStartCb,
             releaseDuration,
-            gainSmoothing,
             delayEnd,
             attackEnd,
             attackDuration,
@@ -318,12 +310,6 @@ export class VolumeEnvelope {
         } = this;
         // Advance time by the entire block to calculate the last sample's gain
         const sampleTime = (this.sampleTime += sampleCount);
-
-        // Gain smoothing
-        if (this.peakGain !== gainTarget) {
-            this.peakGain += (gainTarget - this.peakGain) * gainSmoothing;
-        }
-        const peakGain = this.peakGain;
 
         if (this.enteredRelease) {
             // How much time has passed since release was started?
@@ -337,7 +323,7 @@ export class VolumeEnvelope {
             this.outputGain =
                 CENTIBEL_LOOKUP_TABLE[
                     (this.attenuationCb - MIN_CENTIBELS) | 0
-                ] * peakGain;
+                ] * gainTarget;
             return this.attenuationCb < PERCEIVED_CB_SILENCE;
         }
         switch (this.state) {
@@ -360,7 +346,7 @@ export class VolumeEnvelope {
                     // Special case: linear gain ramp instead of linear db ramp
                     const linearGain =
                         1 - (attackEnd - sampleTime) / attackDuration;
-                    this.outputGain = linearGain * peakGain;
+                    this.outputGain = linearGain * gainTarget;
                     return true;
                 }
 
@@ -372,7 +358,7 @@ export class VolumeEnvelope {
                 if (sampleTime < holdEnd) {
                     // Peak, no attenuation
                     this.attenuationCb = 0;
-                    this.outputGain = peakGain;
+                    this.outputGain = gainTarget;
                     return true;
                 }
                 this.state++;
@@ -385,7 +371,7 @@ export class VolumeEnvelope {
                         (1 - (decayEnd - sampleTime) / decayDuration) *
                         sustainCb;
                     this.outputGain =
-                        peakGain *
+                        gainTarget *
                         CENTIBEL_LOOKUP_TABLE[
                             (this.attenuationCb - MIN_CENTIBELS) | 0
                         ];
@@ -409,7 +395,7 @@ export class VolumeEnvelope {
                 // Sustain phase: stay at sustain
                 this.attenuationCb = sustainCb;
                 this.outputGain =
-                    peakGain *
+                    gainTarget *
                     CENTIBEL_LOOKUP_TABLE[(sustainCb - MIN_CENTIBELS) | 0];
                 return true;
             }
