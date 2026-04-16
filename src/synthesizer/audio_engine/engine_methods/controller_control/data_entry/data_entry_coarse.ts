@@ -68,18 +68,6 @@ const coolInfo = (
     );
 };
 
-const addDefaultVibrato = (chan: MIDIChannel) => {
-    if (
-        chan.channelVibrato.delay === 0 &&
-        chan.channelVibrato.rate === 0 &&
-        chan.channelVibrato.depth === 0
-    ) {
-        chan.channelVibrato.depth = 50;
-        chan.channelVibrato.rate = 8;
-        chan.channelVibrato.delay = 0.6;
-    }
-};
-
 /**
  * Executes a data entry coarse (MSB) change for the current channel.
  * @param dataCoarse The value to set for the data entry coarse controller (0-127).
@@ -87,16 +75,6 @@ const addDefaultVibrato = (chan: MIDIChannel) => {
 export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
     // Store in cc table
     this.midiControllers[midiControllers.dataEntryMSB] = dataCoarse << 7;
-    /*
-    A note on this vibrato.
-    This is a completely custom vibrato, with its own oscillator and parameters.
-    It is disabled by default,
-    only being enabled when one of the NPRN messages changing it is received
-    and stays on until the next system-reset.
-    It was implemented very early in SpessaSynth's development,
-    because I wanted support for Touhou MIDIs :-)
-     */
-
     switch (this.dataEntryState) {
         default:
         case dataEntryStates.Idle: {
@@ -149,9 +127,6 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 case nonRegisteredMSB.partParameter: {
                     const paramLock =
                         this.synthCore.masterParameters.nprnParamLock;
-                    const vibratoLock =
-                        this.synthCore.masterParameters.customVibratoLock ||
-                        paramLock;
                     switch (paramFine) {
                         default: {
                             if (dataCoarse === 64) {
@@ -174,55 +149,45 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                         // Vibrato rate (custom vibrato)
                         case nonRegisteredLSB.vibratoRate: {
-                            if (this.sysExModulators.active) {
-                                this.controllerChange(
-                                    midiControllers.vibratoRate,
-                                    dataCoarse
-                                );
-                                return;
-                            }
-                            if (vibratoLock || dataCoarse === 64) {
-                                return;
-                            }
-                            addDefaultVibrato(this);
-                            this.channelVibrato.rate = (dataCoarse / 64) * 8;
+                            this.controllerChange(
+                                midiControllers.vibratoRate,
+                                dataCoarse
+                            );
                             coolInfo(
                                 this.channel,
                                 "Vibrato rate",
-                                `${dataCoarse} = ${this.channelVibrato.rate}`,
-                                "Hz"
+                                `${dataCoarse}`,
+                                ""
                             );
                             break;
                         }
 
                         // Vibrato depth (custom vibrato)
                         case nonRegisteredLSB.vibratoDepth: {
-                            if (vibratoLock || dataCoarse === 64) {
-                                return;
-                            }
-                            addDefaultVibrato(this);
-                            this.channelVibrato.depth = dataCoarse / 2;
+                            this.controllerChange(
+                                midiControllers.vibratoDepth,
+                                dataCoarse
+                            );
                             coolInfo(
                                 this.channel,
                                 "Vibrato depth",
-                                `${dataCoarse} = ${this.channelVibrato.depth}`,
-                                "cents of detune"
+                                `${dataCoarse}`,
+                                ""
                             );
                             break;
                         }
 
                         // Vibrato delay (custom vibrato)
                         case nonRegisteredLSB.vibratoDelay: {
-                            if (vibratoLock || dataCoarse === 64) {
-                                return;
-                            }
-                            addDefaultVibrato(this);
-                            this.channelVibrato.delay = dataCoarse / 64 / 3;
+                            this.controllerChange(
+                                midiControllers.vibratoDelay,
+                                dataCoarse
+                            );
                             coolInfo(
                                 this.channel,
                                 "Vibrato delay",
-                                `${dataCoarse} = ${this.channelVibrato.delay}`,
-                                "seconds"
+                                `${dataCoarse}`,
+                                ""
                             );
                             break;
                         }

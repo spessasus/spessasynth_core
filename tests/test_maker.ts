@@ -131,13 +131,14 @@ export class MIDITestMaker extends MIDIBuilder {
         tickStep = 480,
         dataStep = 1
     ) {
+        const step = from <= to ? dataStep : -dataStep;
         let data = from;
-        while (data <= to) {
-            this.addControllerChange(cc, Math.min(data, to));
+        while ((step > 0 && data <= to) || (step < 0 && data >= to)) {
+            this.addControllerChange(cc, data);
             this.ticks += tickStep;
-            data += dataStep;
+            data += step;
         }
-        this.addControllerChange(cc, Math.min(data, to));
+        this.addControllerChange(cc, to);
     }
 
     public addProgramChange(msb: number, lsb: number, program: number) {

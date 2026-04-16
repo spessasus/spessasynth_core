@@ -4,6 +4,11 @@ import { type MIDIController, midiControllers } from "../../../../midi/enums";
 import { customControllers, dataEntryStates } from "../../../enums";
 import { DEFAULT_PERCUSSION } from "../../engine_components/synth_constants";
 import { BankSelectHacks } from "../../../../utils/midi_hacks";
+import { presetVibratoData } from "../../engine_components/vibrato_data";
+
+function normalizeMiddle(x: number) {
+    return (x - 8192) / 8193;
+}
 
 /**
  * Handles MIDI controller changes for a channel.
@@ -213,6 +218,38 @@ export function controllerChange(
                             }
                         }
                 }
+                break;
+            }
+
+            case midiControllers.vibratoRate:
+            case midiControllers.vibratoDelay:
+            case midiControllers.vibratoDepth: {
+                if (
+                    !this.synthCore.masterParameters.customVibratoLock &&
+                    !this.sysExModulators.active
+                ) {
+                    const b = this.patch.bankMSB;
+                    const p = this.patch.program;
+                    const mc = this.midiControllers;
+                    const rateOffset =
+                        normalizeMiddle(mc[midiControllers.vibratoRate]) * 10;
+                    const delayOffset =
+                        normalizeMiddle(mc[midiControllers.vibratoDelay]) * 10;
+                    const depthOffset =
+                        normalizeMiddle(mc[midiControllers.vibratoDepth]) * 600;
+                    const data =
+                        presetVibratoData.find((d) => d.p === p && d.b === b) ??
+                        presetVibratoData.find((d) => d.p === p) ??
+                        presetVibratoData[0];
+                    this.channelVibrato.rate = Math.max(0, data.r + rateOffset);
+                    this.channelVibrato.delay = Math.max(
+                        0,
+                        data.d + delayOffset
+                    );
+                    this.channelVibrato.depth = Math.max(0, depthOffset);
+                }
+
+                this.computeModulatorsAll(1, controllerNumber);
                 break;
             }
 
