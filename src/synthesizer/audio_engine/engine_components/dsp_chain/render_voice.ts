@@ -215,20 +215,28 @@ export function renderVoice(
         cbAttenuationToGain(modulated[generatorTypes.initialAttenuation]) *
         cbAttenuationToGain(volumeExcursionCentibels);
 
-    // SYNTHESIS
-    const buffer = core.voiceBuffer;
     // Looping mode 2: start on release. process only volEnv
     if (voice.loopingMode === 2 && !voice.isInRelease) {
-        voice.isActive = voice.volEnv.process(sampleCount, buffer, gainTarget);
+        voice.isActive = voice.volEnv.process(sampleCount, gainTarget);
         return;
     }
 
+    // SYNTHESIS
+    const buffer = core.voiceBuffer;
     // Wave table oscillator
     voice.isActive = voice.wavetable.process(
         sampleCount,
         voice.tuningRatio,
         buffer
     );
+
+    // Vol env (output gain calculation)
+    // Get the previous value
+    let gain = voice.volEnv.outputGain;
+    // Compute the new value
+    const envActive = voice.volEnv.process(sampleCount, gainTarget);
+    // Calculate increase
+    const gainInc = (voice.volEnv.outputGain - gain) / sampleCount;
 
     // Low pass filter (inlined for performance, confirmed with node.js)
     {
@@ -264,7 +272,11 @@ export function renderVoice(
             modulatedResonance === 0
         ) {
             f.currentInitialFc = 13_500;
-            // Filter is open
+            // Filter is open, apply gain
+            for (let i = 0; i < sampleCount; i++) {
+                buffer[i] *= gain;
+                gain += gainInc;
+            }
         } else {
             // Check if the frequency has changed. if so, calculate new coefficients
             if (
@@ -291,7 +303,11 @@ export function renderVoice(
                 y2 = y1;
                 y1 = filtered;
 
-                buffer[i] = filtered;
+                // Apply filter and THEN gain
+                // Per SF2 spec apply order, also see
+                // https://github.com/FluidSynth/fluidsynth/issues/1427
+                buffer[i] = filtered * gain;
+                gain += gainInc;
             }
             f.x1 = x1;
             f.x2 = x2;
@@ -299,9 +315,6 @@ export function renderVoice(
             f.y2 = y2;
         }
     }
-
-    // Vol env
-    const envActive = voice.volEnv.process(sampleCount, buffer, gainTarget);
 
     // Note, we do not use &&= as it short-circuits!
     // And we don't do = either as wavetable might've marked it as inactive (end of sample)
@@ -319,11 +332,12 @@ export function renderVoice(
         pan = voice.currentPan;
     }
 
-    const gain = core.masterParameters.masterGain * core.midiVolume * voiceGain;
+    const outputGain =
+        core.masterParameters.masterGain * core.midiVolume * voiceGain;
     const index = (pan + 500) | 0;
     // Get voice's gain levels for each channel
-    const gainLeft = panTableLeft[index] * gain * core.panLeft;
-    const gainRight = panTableRight[index] * gain * core.panRight;
+    const gainLeft = panTableLeft[index] * outputGain * core.panLeft;
+    const gainRight = panTableRight[index] * outputGain * core.panRight;
 
     if (this.insertionEnabled) {
         // Straight into the insertion EFX!
@@ -353,7 +367,7 @@ export function renderVoice(
         modulated[generatorTypes.reverbEffectsSend] * voice.reverbSend;
     if (reverbSend > 0) {
         const reverbGain =
-            core.masterParameters.reverbGain * gain * (reverbSend / 1000);
+            core.masterParameters.reverbGain * outputGain * (reverbSend / 1000);
 
         const reverb = core.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
@@ -365,7 +379,7 @@ export function renderVoice(
         modulated[generatorTypes.chorusEffectsSend] * voice.chorusSend;
     if (chorusSend > 0) {
         const chorusGain =
-            core.masterParameters.chorusGain * (chorusSend / 1000) * gain;
+            core.masterParameters.chorusGain * (chorusSend / 1000) * outputGain;
         const chorus = core.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
             chorus[i] += chorusGain * buffer[i];
@@ -378,7 +392,7 @@ export function renderVoice(
             voice.delaySend;
         if (delaySend > 0) {
             const delayGain =
-                gain *
+                outputGain *
                 core.masterParameters.delayGain *
                 ((delaySend >> 7) / 127);
             const delay = core.delayInput;
