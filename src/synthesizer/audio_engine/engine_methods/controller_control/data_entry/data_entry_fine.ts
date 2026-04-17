@@ -111,7 +111,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
             if (
                 paramCoarse === nonRegisteredMSB.SF2 ||
                 (paramCoarse >= nonRegisteredMSB.drumPitch &&
-                    paramFine <= nonRegisteredMSB.drumDelay) ||
+                    paramCoarse <= nonRegisteredMSB.drumDelay) ||
                 paramCoarse === nonRegisteredMSB.partParameter
             ) {
                 return;
