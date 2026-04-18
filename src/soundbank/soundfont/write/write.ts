@@ -22,8 +22,7 @@ import {
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
     SF2InfoFourCC,
-    SoundBankInfoData,
-    SoundBankInfoFourCC,
+    SF2VersionTag,
     SoundFont2WriteOptions
 } from "../../types";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
@@ -33,8 +32,6 @@ import { toISODateString } from "../../../utils/date";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     compress: false,
-    compressionFunction: undefined,
-    progressFunction: undefined,
     writeDefaultModulators: true,
     writeExtendedLimits: true,
     decompress: false
@@ -77,19 +74,22 @@ export async function writeSF2Internal(
      * Write INFO
      */
     const infoArrays: IndexedByteArray[] = [];
-    bank.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    const info = bank.soundBankInfo;
+    const version: SF2VersionTag = { ...info.version };
     if (options?.compress || bank.samples.some((s) => s.isCompressed)) {
         // Set version to 3
-        bank.soundBankInfo.version.major = 3;
-        bank.soundBankInfo.version.minor = 0;
+        version.major = 3;
+        version.minor = 0;
     }
     if (options?.decompress) {
         // Set version to 2.4
-        bank.soundBankInfo.version.major = 2;
-        bank.soundBankInfo.version.minor = 4;
+        version.major = 2;
+        version.minor = 4;
     }
 
-    const writeSF2Info = (type: SF2InfoFourCC, data: string) => {
+    const writeSF2Info = (type: SF2InfoFourCC, data?: string) => {
+        if (!data) return;
+
         infoArrays.push(
             RIFFChunk.write(
                 type,
@@ -98,86 +98,35 @@ export async function writeSF2Internal(
         );
     };
 
-    // Write versions
-    const ifilData = new IndexedByteArray(4);
-    writeWord(ifilData, bank.soundBankInfo.version.major);
-    writeWord(ifilData, bank.soundBankInfo.version.minor);
-    infoArrays.push(RIFFChunk.write("ifil", ifilData));
-
-    if (bank.soundBankInfo.romVersion) {
+    // Write info
+    // Go with the SFSpec order (write functions auto skip if null)
+    // Version writing needs special handling
+    {
         const ifilData = new IndexedByteArray(4);
-        writeWord(ifilData, bank.soundBankInfo.romVersion.major);
-        writeWord(ifilData, bank.soundBankInfo.romVersion.minor);
+        writeWord(ifilData, version.major);
+        writeWord(ifilData, version.minor);
+        infoArrays.push(RIFFChunk.write("ifil", ifilData));
+    }
+    writeSF2Info("isng", info.soundEngine);
+    writeSF2Info("INAM", info.name);
+    writeSF2Info("irom", info.romInfo);
+    if (info.romVersion) {
+        const ifilData = new IndexedByteArray(4);
+        writeWord(ifilData, info.romVersion.major);
+        writeWord(ifilData, info.romVersion.minor);
         infoArrays.push(RIFFChunk.write("iver", ifilData));
     }
-
+    writeSF2Info("ICRD", toISODateString(info.creationDate));
+    writeSF2Info("IENG", info.engineer);
+    writeSF2Info("IPRD", info.product);
+    writeSF2Info("ICOP", info.copyright);
     // Special comment case: merge subject and comment
-    const commentText =
-        (bank.soundBankInfo?.comment ?? "") +
-        (bank.soundBankInfo.subject
-            ? `
-${bank.soundBankInfo.subject}`
-            : "");
-
-    for (const [t, d] of Object.entries(bank.soundBankInfo)) {
-        const type = t as SoundBankInfoFourCC;
-        const data = d as SoundBankInfoData[SoundBankInfoFourCC];
-        if (!data) {
-            continue;
-        }
-
-        switch (type) {
-            case "name": {
-                writeSF2Info("INAM", data as string);
-                break;
-            }
-
-            case "comment": {
-                writeSF2Info("ICMT", commentText);
-                break;
-            }
-
-            case "copyright": {
-                writeSF2Info("ICOP", data as string);
-                break;
-            }
-
-            case "creationDate": {
-                writeSF2Info("ICRD", toISODateString(data as Date));
-                break;
-            }
-
-            case "engineer": {
-                writeSF2Info("IENG", data as string);
-                break;
-            }
-
-            case "product": {
-                writeSF2Info("IPRD", data as string);
-                break;
-            }
-
-            case "romInfo": {
-                writeSF2Info("irom", data as string);
-                break;
-            }
-
-            case "software": {
-                writeSF2Info("ISFT", data as string);
-                break;
-            }
-
-            case "soundEngine": {
-                writeSF2Info("isng", data as string);
-                break;
-            }
-
-            case "subject": {
-                // Merged with the comment
-                break;
-            }
-        }
-    }
+    const commentText = info?.subject
+        ? (info?.comment ? info.comment + "\n" : "") + info.subject
+        : info?.comment;
+    writeSF2Info("ICMT", commentText);
+    const software = options.software ?? "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    writeSF2Info("ISFT", software);
 
     // Do not write unchanged default modulators
     const unchangedDefaultModulators = bank.defaultModulators.some(
@@ -268,17 +217,18 @@ ${bank.soundBankInfo.subject}`
 
     if (writeXdta) {
         SpessaSynthInfo(
-            `%cWriting the xdta chunk as writeExendedLimits is enabled and at least one condition was met.`,
+            `%cWriting the xdta chunk as writeExtendedLimits is enabled and at least one condition was met.`,
             consoleColors.info,
             consoleColors.value
         );
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
-        const xpdtaChunk = RIFFChunk.writeParts(
-            "xdta",
-            chunks.map((c) => c.xdta),
-            true
+        infoArrays.push(
+            RIFFChunk.writeParts(
+                "xdta",
+                chunks.map((c) => c.xdta),
+                true
+            )
         );
-        infoArrays.push(xpdtaChunk);
     }
 
     const infoChunk = RIFFChunk.writeParts("INFO", infoArrays, true);
@@ -291,7 +241,7 @@ ${bank.soundBankInfo.subject}`
         pdtaChunk
     ]);
     SpessaSynthInfo(
-        `%cSaved succesfully! Final file size: %c${main.length}`,
+        `%cSaved successfully! Final file size: %c${main.length}`,
         consoleColors.info,
         consoleColors.recognized
     );

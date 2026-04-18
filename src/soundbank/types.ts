@@ -177,10 +177,23 @@ export type ProgressFunction = (
     sampleCount: number
 ) => Promise<unknown>;
 
+interface SoundBankWriteOptions {
+    /**
+     * A function to show progress for writing large sound banks. It can be undefined.
+     */
+    progressFunction?: ProgressFunction;
+
+    /**
+     * The `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
+     * This field indicates the last software that was used to edit this sound bank.
+     */
+    software?: string;
+}
+
 /**
  * Options for writing a SoundFont2 file.
  */
-export interface SoundFont2WriteOptions {
+export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
     /**
      * If the soundfont should be compressed with a given function.
      */
@@ -190,11 +203,6 @@ export interface SoundFont2WriteOptions {
      * The function for compressing samples. It can be undefined if not compressed.
      */
     compressionFunction?: SampleEncodingFunction;
-
-    /**
-     * A function to show progress for writing large banks. It can be undefined.
-     */
-    progressFunction?: ProgressFunction;
 
     /**
      * If the DMOD chunk should be written. Recommended.
@@ -217,12 +225,7 @@ export interface SoundFont2WriteOptions {
 /**
  * Options for writing a DLS file.
  */
-export interface DLSWriteOptions {
-    /**
-     * A function to show progress for writing large banks. It can be undefined.
-     */
-    progressFunction?: ProgressFunction;
-}
+export type DLSWriteOptions = SoundBankWriteOptions;
 
 export interface GenericRange {
     min: number;
