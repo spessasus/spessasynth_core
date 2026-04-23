@@ -76,7 +76,7 @@ export class SoundFont2 extends BasicSoundBank {
         if (infoString !== "INFO") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
-                `Invalid soundFont! Expected "INFO" or "${infoString}"`
+                `Invalid soundFont! Expected "INFO" got "${infoString}"`
             );
         }
 
