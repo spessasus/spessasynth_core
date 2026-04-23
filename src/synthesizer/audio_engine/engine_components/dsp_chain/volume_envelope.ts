@@ -104,12 +104,6 @@ export class VolumeEnvelope {
     private canEndOnSilentSustain = false;
 
     /**
-     * The current peak gain, used for smoothing.
-     * @private
-     */
-    private peakGain = 0;
-
-    /**
      * @param sampleRate Hz
      */
     public constructor(sampleRate: number) {
@@ -226,18 +220,10 @@ export class VolumeEnvelope {
         this.enteredRelease = false;
         this.state = 0;
         this.sampleTime = 0;
+        this.outputGain = 0;
         this.canEndOnSilentSustain =
             voice.modulatedGenerators[generatorTypes.sustainVolEnv] >=
             PERCEIVED_CB_SILENCE;
-
-        // Set the initial gain
-        this.peakGain =
-            CENTIBEL_LOOKUP_TABLE[
-                (voice.modulatedGenerators[generatorTypes.initialAttenuation] -
-                    MIN_CENTIBELS) |
-                    0
-            ];
-        this.outputGain = this.peakGain;
 
         // Calculate absolute times (they can change so we have to recalculate every time
         this.sustainCb = Math.min(

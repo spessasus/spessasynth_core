@@ -5,8 +5,7 @@ import type {
     DLSInfoFourCC,
     DLSWriteOptions,
     SF2VersionTag,
-    SoundBankInfoData,
-    SoundBankInfoFourCC
+    SoundBankInfoData
 } from "../types";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { consoleColors } from "../../utils/other";
@@ -39,10 +38,11 @@ export class DownloadableSounds extends DLSVerifier {
     public readonly samples = new Array<DownloadableSoundsSample>();
     public readonly instruments = new Array<DownloadableSoundsInstrument>();
     public soundBankInfo: SoundBankInfoData = {
-        name: "Unnamed",
+        name: "Unnamed DLS sound bank",
         creationDate: new Date(),
         software: "SpessaSynth",
         soundEngine: "DLS Level 2.2",
+        product: "SpessaSynth DLS",
         version: {
             major: 2,
             minor: 4
@@ -73,11 +73,6 @@ export class DownloadableSounds extends DLSVerifier {
         }
 
         const dls = new DownloadableSounds();
-
-        // Set some defaults
-        dls.soundBankInfo.name = "Unnamed DLS";
-        dls.soundBankInfo.product = "SpessaSynth DLS";
-        dls.soundBankInfo.comment = "(no description)";
 
         // Read info
         const infoChunk = RIFFChunk.findListType(chunks, "INFO");
@@ -311,9 +306,6 @@ export class DownloadableSounds extends DLSVerifier {
         );
         const dls = new DownloadableSounds();
         dls.soundBankInfo = { ...bank.soundBankInfo };
-        dls.soundBankInfo.comment =
-            (dls.soundBankInfo.comment ?? "(No description)") +
-            "\nConverted from SF2 to DLS with SpessaSynth";
 
         for (const s of bank.samples) {
             dls.samples.push(DownloadableSoundsSample.fromSFSample(s));
@@ -406,67 +398,20 @@ export class DownloadableSounds extends DLSVerifier {
 
         // Write INFO
         const infos: Uint8Array[] = [];
-
-        const writeDLSInfo = (type: DLSInfoFourCC, data: string) => {
+        const info = this.soundBankInfo;
+        const writeDLSInfo = (type: DLSInfoFourCC, data?: string) => {
+            if (!data) return;
             infos.push(RIFFChunk.write(type, getStringBytes(data, true)));
         };
 
-        for (const [t, d] of Object.entries(this.soundBankInfo)) {
-            const type = t as SoundBankInfoFourCC;
-            const data = d as SoundBankInfoData[SoundBankInfoFourCC];
-            if (!data) {
-                continue;
-            }
-            switch (type) {
-                case "name": {
-                    writeDLSInfo("INAM", data as string);
-                    break;
-                }
-
-                case "comment": {
-                    writeDLSInfo("ICMT", data as string);
-                    break;
-                }
-
-                case "copyright": {
-                    writeDLSInfo("ICOP", data as string);
-                    break;
-                }
-
-                case "creationDate": {
-                    writeDLSInfo("ICRD", toISODateString(data as Date));
-                    break;
-                }
-
-                case "engineer": {
-                    writeDLSInfo("IENG", data as string);
-                    break;
-                }
-
-                case "product": {
-                    writeDLSInfo("IPRD", data as string);
-                    break;
-                }
-
-                case "romVersion":
-                case "version":
-                case "soundEngine":
-                case "romInfo": {
-                    // Not writable
-                    break;
-                }
-
-                case "software": {
-                    writeDLSInfo("ISFT", data as string);
-                    break;
-                }
-
-                case "subject": {
-                    writeDLSInfo("ISBJ", data as string);
-                }
-            }
-        }
-        const info = RIFFChunk.writeParts("INFO", infos, true);
+        writeDLSInfo("INAM", info.name);
+        writeDLSInfo("ICMT", info.comment);
+        writeDLSInfo("ICOP", info.copyright);
+        writeDLSInfo("ICRD", toISODateString(info.creationDate));
+        writeDLSInfo("IENG", info.engineer);
+        writeDLSInfo("IPRD", info.product);
+        writeDLSInfo("ISFT", options.software ?? "SpessaSynth"); // ( ͡° ͜ʖ ͡°)
+        writeDLSInfo("ISBJ", info.subject);
 
         SpessaSynthInfo("%cCombining everything...");
         const out = RIFFChunk.writeParts("RIFF", [
@@ -475,7 +420,7 @@ export class DownloadableSounds extends DLSVerifier {
             lins,
             ptbl,
             wvpl,
-            info
+            RIFFChunk.writeParts("INFO", infos, true)
         ]);
 
         SpessaSynthInfo("%cSaved successfully!", consoleColors.recognized);
@@ -493,9 +438,6 @@ export class DownloadableSounds extends DLSVerifier {
         soundBank.soundBankInfo.version.minor = 4;
         soundBank.soundBankInfo.version.major = 2;
         soundBank.soundBankInfo = { ...this.soundBankInfo };
-        soundBank.soundBankInfo.comment =
-            (soundBank.soundBankInfo.comment ?? "(No description)") +
-            "\nConverted from DLS to SF2 with SpessaSynth";
 
         for (const sample of this.samples) {
             sample.toSFSample(soundBank);

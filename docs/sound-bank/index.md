@@ -199,8 +199,10 @@ Writes out a DLS Level 2 sound bank. The returned value is an `ArrayBuffer` - th
 const dls = await soundBank.writeDLS(options);
 ```
 
-- `options` - An optional object:
+- `options` - An optional object (all properties are optional):
     - `progressFunction` - [See this for a detailed explanation](#progressfunction)
+    - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
+      This field indicates the last software that was used to edit this sound bank.
 
 !!! Danger
 
@@ -223,7 +225,7 @@ Write out an SF2 or SF3 file. The return value is an `ArrayBuffer` - the binary 
 const binary = await soundBank.writeSF2(options);
 ```
 
-- `options` - An optional object:
+- `options` - An optional object (all properties are optional):
     - `writeDefaultModulators` - a `boolean` indicating if
       the [DMOD chunk](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md) should be
       written.
@@ -240,6 +242,8 @@ const binary = await soundBank.writeSF2(options);
       Defaults to false and not recommended.
     - `progressFunction` - [See this for a detailed explanation](#progressfunction)
     - `compressionFunction` - [See this for a detailed explanation](#compressionfunction)
+    - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
+      This field indicates the last software that was used to edit this sound bank.
 
 !!! Important
 
