@@ -7,7 +7,7 @@ import {
     modulatorSources
 } from "../enums";
 import { ModulatorSource } from "../basic_soundbank/modulator_source";
-import { type MIDIController, midiControllers } from "../../midi/enums";
+import { midiControllers } from "../../midi/enums";
 import type { ModulatorSourceIndex } from "../types";
 
 export class ConnectionSource {
@@ -62,7 +62,7 @@ export class ConnectionSource {
         let sourceEnum: DLSSource | undefined = undefined;
         if (source.isCC) {
             // DLS only supports a specific set of controllers
-            switch (source.index as MIDIController) {
+            switch (source.index) {
                 case midiControllers.modulationWheel: {
                     sourceEnum = dlsSources.modulationWheel;
                     break;

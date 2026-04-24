@@ -88,7 +88,7 @@ export function setTimeToInternal(
         }
         for (const [i, element] of defaultControllerArray.entries()) {
             if (!nonResettableCCs.has(i as MIDIController)) {
-                savedControllers[chan][i] = element as MIDIController;
+                savedControllers[chan][i] = element;
             }
         }
     }
@@ -122,7 +122,7 @@ export function setTimeToInternal(
                     ...defaultControllerArray
                 ] as MIDIController[];
                 savedControllers[channel][midiControllers.portamentoControl] =
-                    event.data[0] as MIDIController;
+                    event.data[0];
                 break;
             }
 
@@ -155,8 +155,7 @@ export function setTimeToInternal(
                     savedControllers[channel] ??= [
                         ...defaultControllerArray
                     ] as MIDIController[];
-                    savedControllers[channel][controllerNumber] = event
-                        .data[1] as MIDIController;
+                    savedControllers[channel][controllerNumber] = event.data[1];
                 }
                 break;
             }

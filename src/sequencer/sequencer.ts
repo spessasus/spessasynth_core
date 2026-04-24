@@ -80,9 +80,7 @@ export class SpessaSynthSequencer {
      * Processes a single MIDI tick.
      * You should call this every rendering quantum to process the sequencer events in real-time.
      */
-    public processTick: typeof processTick = processTick.bind(
-        this
-    ) as typeof processTick;
+    public processTick: typeof processTick = processTick.bind(this);
     /**
      * The time of the first note in seconds.
      */

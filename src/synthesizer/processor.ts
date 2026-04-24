@@ -51,7 +51,7 @@ export class SpessaSynthProcessor {
     public onEventCall?: (event: SynthProcessorEvent) => unknown;
 
     /**
-     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`
+     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`.
      * All float arrays must have the same length.
      * @param left the left output channel.
      * @param right the right output channel.
@@ -67,7 +67,7 @@ export class SpessaSynthProcessor {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize
+     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`.
      * All float arrays must have the same length.
      * @param outputs any number stereo pairs (L, R) to render channels separately into.
      * @param effectsLeft the left stereo effect output buffer.

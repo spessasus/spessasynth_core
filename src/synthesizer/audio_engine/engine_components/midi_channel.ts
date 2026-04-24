@@ -211,7 +211,7 @@ export class MIDIChannel {
      * @param midiNote The MIDI note number (0-127).
      * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
      */
-    public noteOn = noteOn.bind(this) as typeof noteOn;
+    public noteOn = noteOn.bind(this);
     // (A hacky way to split the class into multiple files)
     /**
      * Releases a note by its MIDI note number.
@@ -219,54 +219,44 @@ export class MIDIChannel {
      * it kills the note instead of releasing it.
      * @param midiNote The MIDI note number to release (0-127).
      */
-    public noteOff = noteOff.bind(this) as typeof noteOff;
+    public noteOff = noteOff.bind(this);
     // Bind all methods to the instance
     /**
      * Changes the program (preset) of the channel.
      * @param programNumber The program number (0-127) to change to.
      */
-    public programChange = programChange.bind(this) as typeof programChange;
+    public programChange = programChange.bind(this);
     // CC (Continuous Controller)
-    public controllerChange = controllerChange.bind(
-        this
-    ) as typeof controllerChange;
+    public controllerChange = controllerChange.bind(this);
     /**
      * Reset all controllers for channel.
      * This will reset all controllers to their default values,
      * except for the locked controllers.
      */
-    public readonly resetControllers = resetControllers.bind(
-        this
-    ) as typeof resetControllers;
-    public readonly resetPreset = resetPreset.bind(this) as typeof resetPreset;
+    public readonly resetControllers = resetControllers.bind(this);
+    public readonly resetPreset = resetPreset.bind(this);
     /**
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      * Reset controllers according to RP-15 Recommended Practice.
      */
     public readonly resetControllersRP15Compliant =
-        resetControllersRP15Compliant.bind(
-            this
-        ) as typeof resetControllersRP15Compliant;
+        resetControllersRP15Compliant.bind(this);
     /**
      * Reset all parameters to their default values.
      * This includes NRPN and RPN controllers, data entry state,
      * and generator overrides and offsets.
      */
-    public resetParameters = resetParameters.bind(
-        this
-    ) as typeof resetParameters;
+    public resetParameters = resetParameters.bind(this);
     /**
      * Executes a data entry fine (LSB) change for the current channel.
      * @param dataValue The value to set for the data entry fine controller (0-127).
      */
-    public dataEntryFine = dataEntryFine.bind(this) as typeof dataEntryFine;
+    public dataEntryFine = dataEntryFine.bind(this);
     /**
      * Executes a data entry coarse (MSB) change for the current channel.
      * @param dataValue The value to set for the data entry coarse controller (0-127).
      */
-    public dataEntryCoarse = dataEntryCoarse.bind(
-        this
-    ) as typeof dataEntryCoarse;
+    public dataEntryCoarse = dataEntryCoarse.bind(this);
     // Voice rendering methods
     public readonly renderVoice = renderVoice.bind(this);
     /**
