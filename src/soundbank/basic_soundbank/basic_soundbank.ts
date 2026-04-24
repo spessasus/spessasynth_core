@@ -592,12 +592,12 @@ export class BasicSoundBank {
                     consoleColors.info,
                     consoleColors.recognized
                 );
-            }
-            SpessaSynthInfo(
-                `%c${info}: %c${(value as string | Date).toLocaleString()}`,
-                consoleColors.info,
-                consoleColors.recognized
-            );
+            } else
+                SpessaSynthInfo(
+                    `%c${info}: %c${(value as string | Date).toLocaleString()}`,
+                    consoleColors.info,
+                    consoleColors.recognized
+                );
         }
     }
 }

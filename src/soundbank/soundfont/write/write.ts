@@ -20,11 +20,7 @@ import {
     SPESSASYNTH_DEFAULT_MODULATORS
 } from "../../basic_soundbank/modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
-import type {
-    SF2InfoFourCC,
-    SF2VersionTag,
-    SoundFont2WriteOptions
-} from "../../types";
+import type { SF2InfoFourCC, SoundFont2WriteOptions } from "../../types";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { ExtendedSF2Chunks } from "./types";
 import { writeSF2Elements } from "./write_sf2_elements";
@@ -75,16 +71,15 @@ export async function writeSF2Internal(
      */
     const infoArrays: IndexedByteArray[] = [];
     const info = bank.soundBankInfo;
-    const version: SF2VersionTag = { ...info.version };
     if (options?.compress || bank.samples.some((s) => s.isCompressed)) {
         // Set version to 3
-        version.major = 3;
-        version.minor = 0;
+        info.version.major = 3;
+        info.version.minor = 0;
     }
     if (options?.decompress) {
         // Set version to 2.4
-        version.major = 2;
-        version.minor = 4;
+        info.version.major = 2;
+        info.version.minor = 4;
     }
 
     const writeSF2Info = (type: SF2InfoFourCC, data?: string) => {
@@ -103,8 +98,8 @@ export async function writeSF2Internal(
     // Version writing needs special handling
     {
         const ifilData = new IndexedByteArray(4);
-        writeWord(ifilData, version.major);
-        writeWord(ifilData, version.minor);
+        writeWord(ifilData, info.version.major);
+        writeWord(ifilData, info.version.minor);
         infoArrays.push(RIFFChunk.write("ifil", ifilData));
     }
     writeSF2Info("isng", info.soundEngine);

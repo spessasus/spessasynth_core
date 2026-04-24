@@ -330,12 +330,12 @@ export class DownloadableSounds extends DLSVerifier {
                     consoleColors.info,
                     consoleColors.recognized
                 );
-            }
-            SpessaSynthInfo(
-                `%c${info}: %c${(value as string | Date).toLocaleString()}`,
-                consoleColors.info,
-                consoleColors.recognized
-            );
+            } else
+                SpessaSynthInfo(
+                    `%c${info}: %c${(value as string | Date).toLocaleString()}`,
+                    consoleColors.info,
+                    consoleColors.recognized
+                );
         }
     }
 

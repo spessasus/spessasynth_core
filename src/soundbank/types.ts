@@ -196,6 +196,7 @@ interface SoundBankWriteOptions {
 export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
     /**
      * If the soundfont should be compressed with a given function.
+     * This changes the version to 3.0.
      */
     compress: boolean;
 
@@ -218,6 +219,7 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
 
     /**
      * If an SF3 bank should be decompressed back to SF2. Not recommended.
+     * This changes the version to 2.4.
      */
     decompress: boolean;
 }
