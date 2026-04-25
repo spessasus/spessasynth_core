@@ -138,6 +138,13 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 - **Easy saving:**
   _[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writermidi)_
 
+#### Read and play XMF files
+
+- **Read the eXtensible Music Format files:** With embedded DLS sound banks!
+- **MXMF support:** Mobile XMF for old phone ringtones!
+- **Compression support:** Zlib compressed files can still be read!
+- **Seamless integration:** Read like RMIDI files!
+
 #### Read and write SoundFont2 files
 
 - **Easy info access:** _Just
@@ -191,7 +198,7 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 - [FluidSynth](https://github.com/FluidSynth/fluidsynth) - for the source code that helped implement functionality and
   fixes
-- [Polyphone](https://www.polyphone-soundfonts.com/) - for the soundfont testing and editing tool
+- [Polyphone](https://github.com/davy7125/polyphone/) - for the soundfont testing and editing tool
 - [Meltysynth](https://github.com/sinshu/meltysynth) - for the initial low-pass filter implementation
 - [RecordingBlogs](https://www.recordingblogs.com/) - for detailed explanations on MIDI messages
 - [stbvorbis.js](https://github.com/hajimehoshi/stbvorbis.js) - for the Vorbis decoder
