@@ -27,10 +27,9 @@ import { writeSF2Elements } from "./write_sf2_elements";
 import { toISODateString } from "../../../utils/date";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
-    compress: false,
     writeDefaultModulators: true,
     writeExtendedLimits: true,
-    decompress: false
+    software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
 };
 
 /**
@@ -39,48 +38,20 @@ export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
  * @param writeOptions the options for writing.
  * @returns the binary file data.
  */
-export async function writeSF2Internal(
+export function writeSF2Internal(
     bank: BasicSoundBank,
-    writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
-): Promise<ArrayBuffer> {
+    writeOptions: Partial<SoundFont2WriteOptions>
+) {
     const options: SoundFont2WriteOptions = fillWithDefaults(
         writeOptions,
         DEFAULT_SF2_WRITE_OPTIONS
     );
-    if (options?.compress) {
-        if (typeof options?.compressionFunction !== "function") {
-            throw new TypeError(
-                "No compression function supplied but compression enabled."
-            );
-        }
-        if (options?.decompress) {
-            throw new Error("Decompressed and compressed at the same time.");
-        }
-    }
     SpessaSynthGroupCollapsed("%cSaving soundbank...", consoleColors.info);
-    SpessaSynthInfo(
-        `%cCompression: %c${options?.compress || "false"}%c`,
-        consoleColors.info,
-        consoleColors.recognized,
-        consoleColors.info,
-        consoleColors.recognized
-    );
     SpessaSynthGroup("%cWriting INFO...", consoleColors.info);
     /**
      * Write INFO
      */
     const infoArrays: IndexedByteArray[] = [];
-    const info = bank.soundBankInfo;
-    if (options?.compress || bank.samples.some((s) => s.isCompressed)) {
-        // Set version to 3
-        info.version.major = 3;
-        info.version.minor = 0;
-    }
-    if (options?.decompress) {
-        // Set version to 2.4
-        info.version.major = 2;
-        info.version.minor = 4;
-    }
 
     const writeSF2Info = (type: SF2InfoFourCC, data?: string) => {
         if (!data) return;
@@ -95,6 +66,8 @@ export async function writeSF2Internal(
 
     // Write info
     // Go with the SFSpec order (write functions auto skip if null)
+
+    const info = bank.soundBankInfo;
     // Version writing needs special handling
     {
         const ifilData = new IndexedByteArray(4);
@@ -120,7 +93,7 @@ export async function writeSF2Internal(
         ? (info?.comment ? info.comment + "\n" : "") + info.subject
         : info?.comment;
     writeSF2Info("ICMT", commentText);
-    const software = options.software ?? "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+    const software = options.software;
     writeSF2Info("ISFT", software);
 
     // Do not write unchanged default modulators
@@ -156,15 +129,7 @@ export async function writeSF2Internal(
     // Write sdta
     const smplStartOffsets: number[] = [];
     const smplEndOffsets: number[] = [];
-    const sdtaChunk = await getSDTA(
-        bank,
-        smplStartOffsets,
-        smplEndOffsets,
-        options.compress,
-        options.decompress,
-        options?.compressionFunction,
-        options?.progressFunction
-    );
+    const sdtaChunk = getSDTA(bank, smplStartOffsets, smplEndOffsets);
 
     SpessaSynthInfo("%cWriting PDTA...", consoleColors.info);
     // Write pdta

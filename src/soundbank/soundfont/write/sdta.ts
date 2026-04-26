@@ -4,7 +4,6 @@ import { writeLittleEndianIndexed } from "../../../utils/byte_functions/little_e
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
-import type { ProgressFunction, SampleEncodingFunction } from "../../types";
 
 /*
 Sdta structure:
@@ -23,47 +22,28 @@ const SDTA_TO_DATA_OFFSET =
     4 + // "smpl"
     4; // Smpl size
 
-export async function getSDTA(
+export function getSDTA(
     bank: BasicSoundBank,
     smplStartOffsets: number[],
-    smplEndOffsets: number[],
-    compress: boolean,
-    decompress: boolean,
-    vorbisFunc?: SampleEncodingFunction,
-    progressFunc?: ProgressFunction
-): Promise<Uint8Array> {
+    smplEndOffsets: number[]
+) {
     // Write smpl: write int16 data of each sample linearly
     // Get size (calling getAudioData twice doesn't matter since it gets cached)
     let writtenCount = 0;
     let smplChunkSize = 0;
-    const sampleDatas: Uint8Array[] = [];
+    const sampleData: Uint8Array[] = [];
 
-    // Linear async is faster here as the writing function usually uses a single wasm instance
     for (const s of bank.samples) {
-        if (compress && vorbisFunc) {
-            await s.compressSample(vorbisFunc);
-        }
-        if (decompress) {
-            s.setAudioData(s.getAudioData(), s.sampleRate);
-        }
-
         // Raw data: either copy s16le or encoded vorbis or encode manually if overridden
         // Use set timeout so the thread doesn't die
         const r = s.getRawData(true);
         writtenCount++;
-        await progressFunc?.(s.name, writtenCount, bank.samples.length);
-
         SpessaSynthInfo(
-            `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
+            `%cWrote sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}.`,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info,
-            s.isCompressed
-                ? consoleColors.recognized
-                : consoleColors.unrecognized,
-            consoleColors.info
+            consoleColors.recognized
         );
 
         /* 6.1 Sample Data Format in the smpl Sub-chunk
@@ -73,7 +53,7 @@ export async function getSDTA(
         This doesn't apply to sf3 tho
          */
         smplChunkSize += r.length + (s.isCompressed ? 0 : 92);
-        sampleDatas.push(r);
+        sampleData.push(r);
     }
 
     if (smplChunkSize % 2 !== 0) {
@@ -94,7 +74,7 @@ export async function getSDTA(
     let offset = 0;
     // Write out
     for (const [i, sample] of bank.samples.entries()) {
-        const data = sampleDatas[i];
+        const data = sampleData[i];
         sdta.set(data, offset + SDTA_TO_DATA_OFFSET);
         let startOffset;
         let endOffset;

@@ -159,6 +159,8 @@ export type SampleEncodingFunction = (
 
 export type ModulatorSourceIndex = ModulatorSourceEnum | MIDIController;
 
+export type SampleEncodingFormat = "pcm" | "compressed";
+
 /**
  * A function to track progress during writing.
  */
@@ -177,34 +179,51 @@ export type ProgressFunction = (
     sampleCount: number
 ) => Promise<unknown>;
 
-interface SoundBankWriteOptions {
+export type SetSampleFormatOptions = {
     /**
-     * A function to show progress for writing large sound banks. It can be undefined.
+     * A function to show progress for compressing. It can be undefined.
      */
     progressFunction?: ProgressFunction;
+} & (
+    | {
+          /**
+           * The sample format to use.
+           * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
+           * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+           *
+           * Note that decompressing usually results in permanent sample quality loss!
+           */
+          format: "pcm";
+      }
+    | {
+          /**
+           * The sample format to use.
+           * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
+           * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+           *
+           * Note that decompressing usually results in permanent sample quality loss!
+           */
+          format: "compressed";
 
+          /**
+           * The function for compressing samples.
+           */
+          compressionFunction: SampleEncodingFunction;
+      }
+);
+
+interface SoundBankWriteOptions {
     /**
-     * The `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
+     * The `ISFT` field to set when writing. If unset, `SpessaSynth` is written.
      * This field indicates the last software that was used to edit this sound bank.
      */
-    software?: string;
+    software: string;
 }
 
 /**
  * Options for writing a SoundFont2 file.
  */
 export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
-    /**
-     * If the soundfont should be compressed with a given function.
-     * This changes the version to 3.0.
-     */
-    compress: boolean;
-
-    /**
-     * The function for compressing samples. It can be undefined if not compressed.
-     */
-    compressionFunction?: SampleEncodingFunction;
-
     /**
      * If the DMOD chunk should be written. Recommended.
      * Note that it will only be written if the modulators are unchanged.
@@ -216,12 +235,6 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
      * Note that it will only be written needed.
      */
     writeExtendedLimits: boolean;
-
-    /**
-     * If an SF3 bank should be decompressed back to SF2. Not recommended.
-     * This changes the version to 2.4.
-     */
-    decompress: boolean;
 }
 
 /**

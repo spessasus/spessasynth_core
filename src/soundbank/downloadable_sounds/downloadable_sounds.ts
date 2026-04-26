@@ -29,9 +29,10 @@ import {
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { DownloadableSoundsRegion } from "./region";
+import { fillWithDefaults } from "../../utils/fill_with_defaults";
 
 export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
-    progressFunction: undefined
+    software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
 };
 
 export class DownloadableSounds extends DLSVerifier {
@@ -340,10 +341,14 @@ export class DownloadableSounds extends DLSVerifier {
     }
 
     /**
-     * Writes a DLS file
-     * @param options
+     * Writes a DLS file.
+     * @param writeOptions the options for writing the file.
      */
-    public async write(options: DLSWriteOptions = DEFAULT_DLS_OPTIONS) {
+    public write(writeOptions: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
+        const options: DLSWriteOptions = fillWithDefaults(
+            writeOptions,
+            DEFAULT_DLS_OPTIONS
+        );
         SpessaSynthGroupCollapsed("%cSaving DLS...", consoleColors.info);
         // Write colh
         const colhNum = new IndexedByteArray(4);
@@ -373,10 +378,12 @@ export class DownloadableSounds extends DLSVerifier {
         let written = 0;
         for (const s of this.samples) {
             const out = s.write();
-            await options?.progressFunction?.(
-                s.name,
-                written,
-                this.samples.length
+            SpessaSynthInfo(
+                `%cWrote sample %c${written}. ${s.name}%c of %c${this.samples.length}.`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info,
+                consoleColors.recognized
             );
             ptblOffsets.push(currentIndex);
             currentIndex += out.length;
@@ -394,7 +401,7 @@ export class DownloadableSounds extends DLSVerifier {
             writeDword(ptblData, offset);
         }
         const ptbl = RIFFChunk.write("ptbl", ptblData);
-        this.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+        this.soundBankInfo.software = options.software;
 
         // Write INFO
         const infos: Uint8Array[] = [];
@@ -410,7 +417,7 @@ export class DownloadableSounds extends DLSVerifier {
         writeDLSInfo("ICRD", toISODateString(info.creationDate));
         writeDLSInfo("IENG", info.engineer);
         writeDLSInfo("IPRD", info.product);
-        writeDLSInfo("ISFT", options.software ?? "SpessaSynth"); // ( ͡° ͜ʖ ͡°)
+        writeDLSInfo("ISFT", options.software);
         writeDLSInfo("ISBJ", info.subject);
 
         SpessaSynthInfo("%cCombining everything...");

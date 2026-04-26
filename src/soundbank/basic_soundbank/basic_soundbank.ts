@@ -19,6 +19,7 @@ import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type {
     DLSWriteOptions,
+    SetSampleFormatOptions,
     SF2VersionTag,
     SoundBankInfoData,
     SoundFont2WriteOptions
@@ -128,7 +129,7 @@ export class BasicSoundBank {
     /**
      * Creates a simple sound bank with one saw wave preset.
      */
-    public static async getSampleSoundBankFile(): Promise<ArrayBuffer> {
+    public static getSampleSoundBankFile() {
         const font = new BasicSoundBank();
         const sampleData = new Float32Array(128);
         for (let i = 0; i < 128; i++) {
@@ -164,7 +165,7 @@ export class BasicSoundBank {
 
         font.soundBankInfo.name = "Dummy";
         font.flush();
-        return await font.writeSF2();
+        return font.writeSF2();
     }
 
     /**
@@ -210,13 +211,72 @@ export class BasicSoundBank {
     }
 
     /**
+     * Sets the sound bank's sample format _in place_.
+     * @param options options for writing the file.
+     */
+    public async setSampleFormat(options: SetSampleFormatOptions) {
+        let writtenCount = 0;
+        const format = options.format;
+        const progressFunc = options.progressFunction;
+        // Linear async is faster here as the writing function usually uses a single WASM instance
+        for (const s of this.samples) {
+            switch (format) {
+                default:
+                case "pcm": {
+                    s.setAudioData(s.getAudioData(), s.sampleRate);
+                    break;
+                }
+
+                case "compressed": {
+                    const f = options.compressionFunction;
+                    if (!f)
+                        throw new Error(
+                            `No compression function supplied but '${format}' was requested.`
+                        );
+                    await s.compressSample(f);
+                }
+            }
+            writtenCount++;
+            await progressFunc?.(s.name, writtenCount, this.samples.length);
+
+            SpessaSynthInfo(
+                `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info,
+                s.isCompressed
+                    ? consoleColors.recognized
+                    : consoleColors.unrecognized,
+                consoleColors.info
+            );
+        }
+        // Change format
+        switch (format) {
+            default:
+            case "pcm": {
+                // Set version to 2.4
+                this.soundBankInfo.version.major = 2;
+                this.soundBankInfo.version.minor = 4;
+                break;
+            }
+
+            case "compressed": {
+                // Set version to 3
+                this.soundBankInfo.version.major = 3;
+                this.soundBankInfo.version.minor = 0;
+            }
+        }
+    }
+
+    /**
      * Write the sound bank as a .dls file. This may not be 100% accurate.
-     * @param options - options for writing the file.
+     * Note that samples are always written in the s16le PCM encoding.
+     * @param options options for writing the file.
      * @returns the binary file.
      */
-    public async writeDLS(
-        options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
-    ): Promise<ArrayBuffer> {
+    public writeDLS(options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
         const dls = DownloadableSounds.fromSF(this);
         return dls.write(options);
     }
@@ -226,9 +286,9 @@ export class BasicSoundBank {
      * @param writeOptions the options for writing.
      * @returns the binary file data.
      */
-    public async writeSF2(
+    public writeSF2(
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
-    ): Promise<ArrayBuffer> {
+    ) {
         return writeSF2Internal(this, writeOptions);
     }
 

@@ -266,10 +266,11 @@ document.getElementById("export").onchange = async () => {
     // trim the soundfont
     soundBank.trimSoundBank(midi);
     // write out with compression to save space (0.5 is medium quality)
-    const soundfontBinary = await soundBank.writeSF2({
-        compress: true,
+    await soundBank.setSampleFormat({
+        format: "compressed",
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
+    const soundfontBinary = soundBank.writeSF2();
     // get the rmidi
     const rmidiBinary = midi.writeRMIDI(soundfontBinary, {
         soundBank,
