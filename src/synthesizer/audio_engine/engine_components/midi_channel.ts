@@ -753,7 +753,7 @@ export class MIDIChannel {
             return;
         }
         const data: ChannelProperty = {
-            voicesAmount: this.voiceCount,
+            voiceCount: this.voiceCount,
             pitchWheel:
                 this.midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
