@@ -228,6 +228,7 @@ const dls = soundBank.writeDLS(options);
 ```
 
 - `options` - An optional object (all properties are optional):
+    - `progressFunction` - [See this for a detailed explanation](#progressfunction)
     - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
       This field indicates the last software that was used to edit this sound bank.
 
@@ -257,6 +258,7 @@ const binary = soundBank.writeSF2(options);
       the [xdta chunk](https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md) should be written
       to allow virtually infinite parameters.
       Defaults to true.
+    - `progressFunction` - [See this for a detailed explanation](#progressfunction)
     - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
       This field indicates the last software that was used to edit this sound bank.
 
@@ -349,16 +351,15 @@ Deletes everything irreversibly.
 
 ### progressFunction
 
-This _optional_ function gets called after every sample has been encoded.
+This _optional_ function gets called for operations that take a long time (for example sample writing).
 It can be useful for displaying progress for long writing operations.
 
 It takes the following arguments:
 
-- name - `string` - sample's name.
-- writtenCount - `number` - the count of written samples so far.
-- totalSampleCount - `number` - the total number of samples.
+- progress - `number` - the estimated progress of writing.
 
 Please note that it's usually only effective when writing with compression, as raw writing is inlined for speed.
+If you are writing from a separate thread (e.g. a worker thread), then even inlined writing should show progress.
 
 ### compressionFunction
 
@@ -381,7 +382,8 @@ It must return an `Uint8Array` instance containing the compressed bitstream.
 Import your function:
 
 ```ts
-import { encodeVorbis } from "./libvorbis/encode_vorbis.js"; // adjust the path if necessary
+// Example name, yours will be different
+import { encodeVorbis } from "./libvorbis/encode_vorbis.js";
 ```
 
 Then pass it to the compressing method:

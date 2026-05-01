@@ -4,6 +4,7 @@ import { writeLittleEndianIndexed } from "../../../utils/byte_functions/little_e
 import { SpessaSynthInfo } from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
+import type { ProgressFunction } from "../../types";
 
 /*
 Sdta structure:
@@ -25,7 +26,8 @@ const SDTA_TO_DATA_OFFSET =
 export function getSDTA(
     bank: BasicSoundBank,
     smplStartOffsets: number[],
-    smplEndOffsets: number[]
+    smplEndOffsets: number[],
+    progressFunction?: ProgressFunction
 ) {
     // Write smpl: write int16 data of each sample linearly
     // Get size (calling getAudioData twice doesn't matter since it gets cached)
@@ -38,6 +40,7 @@ export function getSDTA(
         // Use set timeout so the thread doesn't die
         const r = s.getRawData(true);
         writtenCount++;
+        progressFunction?.(writtenCount / bank.samples.length);
         SpessaSynthInfo(
             `%cWrote sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}.`,
             consoleColors.info,

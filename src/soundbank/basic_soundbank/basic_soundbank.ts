@@ -210,6 +210,7 @@ export class BasicSoundBank {
         this.addSamples(...sampleList);
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets the sound bank's sample format _in place_.
      * @param options options for writing the file.
@@ -237,7 +238,7 @@ export class BasicSoundBank {
                 }
             }
             writtenCount++;
-            await progressFunc?.(s.name, writtenCount, this.samples.length);
+            progressFunc?.(writtenCount / this.samples.length);
 
             SpessaSynthInfo(
                 `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
@@ -277,8 +278,19 @@ export class BasicSoundBank {
      * @returns the binary file.
      */
     public writeDLS(options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
-        const dls = DownloadableSounds.fromSF(this);
-        return dls.write(options);
+        const pFunc = options.progressFunction;
+        // First half (progress 0-0.5)
+        const dls = DownloadableSounds.fromSF(
+            this,
+            pFunc ? (p: number) => pFunc(p / 2) : undefined
+        );
+        // Second half (progress 0.5-1)
+        return dls.write({
+            ...options,
+            progressFunction: pFunc
+                ? (p: number) => pFunc(0.5 + p / 2)
+                : undefined
+        });
     }
 
     /**

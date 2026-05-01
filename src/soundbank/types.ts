@@ -159,25 +159,15 @@ export type SampleEncodingFunction = (
 
 export type ModulatorSourceIndex = ModulatorSourceEnum | MIDIController;
 
-export type SampleEncodingFormat = "pcm" | "compressed";
-
 /**
  * A function to track progress during writing.
  */
 export type ProgressFunction = (
     /**
-     * The written sample name.
+     * Estimated progress, from 0 to 1.
      */
-    sampleName: string,
-    /**
-     * The sample's index.
-     */
-    sampleIndex: number,
-    /**
-     * The total sample count for progress displaying.
-     */
-    sampleCount: number
-) => Promise<unknown>;
+    progress: number
+) => unknown;
 
 export type SetSampleFormatOptions = {
     /**
@@ -218,6 +208,11 @@ interface SoundBankWriteOptions {
      * This field indicates the last software that was used to edit this sound bank.
      */
     software: string;
+
+    /**
+     * A function for long operations. It can be undefined.
+     */
+    progressFunction?: ProgressFunction;
 }
 
 /**

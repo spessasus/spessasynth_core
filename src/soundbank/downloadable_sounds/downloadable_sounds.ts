@@ -4,6 +4,7 @@ import { DownloadableSoundsInstrument } from "./instrument";
 import type {
     DLSInfoFourCC,
     DLSWriteOptions,
+    ProgressFunction,
     SF2VersionTag,
     SoundBankInfoData
 } from "../types";
@@ -299,8 +300,12 @@ export class DownloadableSounds extends DLSVerifier {
 
     /**
      * Performs a full conversion from BasicSoundBank to DownloadableSounds.
+     * Includes an optional progress function for transforming the samples.
      */
-    public static fromSF(bank: BasicSoundBank) {
+    public static fromSF(
+        bank: BasicSoundBank,
+        progressFunc?: ProgressFunction
+    ) {
         SpessaSynthGroupCollapsed(
             "%cSaving SF2 to DLS level 2...",
             consoleColors.info
@@ -308,8 +313,10 @@ export class DownloadableSounds extends DLSVerifier {
         const dls = new DownloadableSounds();
         dls.soundBankInfo = { ...bank.soundBankInfo };
 
-        for (const s of bank.samples) {
+        for (let i = 0; i < bank.samples.length; i++) {
+            const s = bank.samples[i];
             dls.samples.push(DownloadableSoundsSample.fromSFSample(s));
+            progressFunc?.(i / bank.samples.length);
         }
         for (const p of bank.presets) {
             dls.instruments.push(
@@ -378,6 +385,7 @@ export class DownloadableSounds extends DLSVerifier {
         let written = 0;
         for (const s of this.samples) {
             const out = s.write();
+            options.progressFunction?.(written / this.samples.length);
             SpessaSynthInfo(
                 `%cWrote sample %c${written}. ${s.name}%c of %c${this.samples.length}.`,
                 consoleColors.info,
