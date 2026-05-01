@@ -181,9 +181,9 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             this.writeHeader(),
             this.waveSample.write(),
             this.waveLink.write(),
-            this.articulation.write()
+            ...this.articulation.write()
         ];
-        return RIFFChunk.writeParts("rgn2", chunks, true);
+        return RIFFChunk.getParts("rgn2", chunks, true);
     }
 
     public toSFZone(

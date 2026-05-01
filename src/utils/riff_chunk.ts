@@ -4,6 +4,7 @@ import {
     writeDword
 } from "./byte_functions/little_endian";
 import {
+    getStringBytes,
     readBinaryString,
     readBinaryStringIndexed,
     writeBinaryStringIndexed
@@ -147,11 +148,50 @@ export class RIFFChunk {
     }
 
     /**
-     * Writes RIFF chunk given binary blobs.
+     * "Writes" a RIFF chunk as a list of binary blobs,
+     * which can be appended to a list without using more memory,
+     * then finally allocated at the end with `writeParts`.
+     * This allows avoiding large array allocations and only one writeParts call at the end.
      * @param header  the fourCC code of the header.
      * @param chunks binary chunk data parts, will be combined in order.
      * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
-     * @returns the binary data
+     * @returns the chunk as binary blobs.
+     */
+    public static getParts(
+        header: FourCC,
+        chunks: Uint8Array[],
+        isList = false
+    ) {
+        let headerWritten = header;
+        let totalSize = chunks.reduce((len, c) => c.length + len, 0);
+        if (isList) {
+            // Written header is LIST and the passed header is the first 4 bytes of chunk data
+            totalSize += 4;
+            headerWritten = "LIST";
+        }
+        const dwordSize = new IndexedByteArray(4);
+        writeDword(dwordSize, totalSize);
+        // Header (LIST or actual header), then size
+        const parts: Uint8Array[] = [getStringBytes(headerWritten), dwordSize];
+
+        // If LIST, the actual chunk "type" is at the beginning of data
+        if (isList) parts.push(getStringBytes(header));
+        // Data
+        parts.push(...chunks);
+
+        // Pad byte, does not get included in the size
+        if (totalSize % 2 !== 0) parts.push(new Uint8Array(1));
+
+        return parts;
+    }
+
+    /**
+     * Writes RIFF chunk given binary blobs.
+     * It merges them together into data and allocates one large array.
+     * @param header  the fourCC code of the header.
+     * @param chunks binary chunk data parts, will be combined in order.
+     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
+     * @returns the binary data.
      */
     public static writeParts(
         header: FourCC,

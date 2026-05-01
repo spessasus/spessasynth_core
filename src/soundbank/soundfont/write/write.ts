@@ -51,15 +51,15 @@ export function writeSF2Internal(
     /**
      * Write INFO
      */
-    const infoArrays: IndexedByteArray[] = [];
+    const infoArrays: Uint8Array[] = [];
 
     const writeSF2Info = (type: SF2InfoFourCC, data?: string) => {
         if (!data) return;
 
         infoArrays.push(
-            RIFFChunk.write(
+            ...RIFFChunk.getParts(
                 type,
-                getStringBytes(data, true, true) // Pad with zero and ensure even length
+                [getStringBytes(data, true, true)] // Pad with zero and ensure even length
             )
         );
     };
@@ -121,7 +121,7 @@ export function writeSF2Internal(
         // Terminal modulator, is zero
         writeLittleEndianIndexed(dmodData, 0, MOD_BYTE_SIZE);
 
-        infoArrays.push(RIFFChunk.write("DMOD", dmodData));
+        infoArrays.push(...RIFFChunk.getParts("DMOD", [dmodData]));
     }
 
     SpessaSynthGroupEnd();
@@ -161,7 +161,7 @@ export function writeSF2Internal(
         shdrChunk
     ];
     // Combine in the soundfont spec order
-    const pdtaChunk = RIFFChunk.writeParts(
+    const pdtaChunk = RIFFChunk.getParts(
         "pdta",
         chunks.map((c) => c.pdta),
         true
@@ -183,7 +183,7 @@ export function writeSF2Internal(
         );
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
         infoArrays.push(
-            RIFFChunk.writeParts(
+            ...RIFFChunk.getParts(
                 "xdta",
                 chunks.map((c) => c.xdta),
                 true
@@ -191,14 +191,14 @@ export function writeSF2Internal(
         );
     }
 
-    const infoChunk = RIFFChunk.writeParts("INFO", infoArrays, true);
+    const infoChunk = RIFFChunk.getParts("INFO", infoArrays, true);
     SpessaSynthInfo("%cWriting the output file...", consoleColors.info);
     // Finally, combine everything
     const main = RIFFChunk.writeParts("RIFF", [
         getStringBytes("sfbk"),
-        infoChunk,
-        sdtaChunk,
-        pdtaChunk
+        ...infoChunk,
+        ...sdtaChunk,
+        ...pdtaChunk
     ]);
     SpessaSynthInfo(
         `%cSaved successfully! Final file size: %c${main.length}`,

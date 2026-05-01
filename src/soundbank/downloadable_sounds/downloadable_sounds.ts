@@ -366,7 +366,7 @@ export class DownloadableSounds extends DLSVerifier {
             consoleColors.info
         );
 
-        const lins = RIFFChunk.writeParts(
+        const lins = RIFFChunk.getParts(
             "lins",
             this.instruments.map((i) => i.write()),
             true
@@ -381,7 +381,7 @@ export class DownloadableSounds extends DLSVerifier {
 
         let currentIndex = 0;
         const ptblOffsets = [];
-        const samples: IndexedByteArray[] = [];
+        const samples: Uint8Array[] = [];
         let written = 0;
         for (const s of this.samples) {
             const out = s.write();
@@ -394,11 +394,11 @@ export class DownloadableSounds extends DLSVerifier {
                 consoleColors.recognized
             );
             ptblOffsets.push(currentIndex);
-            currentIndex += out.length;
-            samples.push(out);
+            currentIndex += out.reduce((sum, cur) => sum + cur.length, 0);
+            samples.push(...out);
             written++;
         }
-        const wvpl = RIFFChunk.writeParts("wvpl", samples, true);
+        const wvpl = RIFFChunk.getParts("wvpl", samples, true);
         SpessaSynthInfo("%cSucceeded!", consoleColors.recognized);
 
         // Write ptbl
@@ -416,7 +416,9 @@ export class DownloadableSounds extends DLSVerifier {
         const info = this.soundBankInfo;
         const writeDLSInfo = (type: DLSInfoFourCC, data?: string) => {
             if (!data) return;
-            infos.push(RIFFChunk.write(type, getStringBytes(data, true)));
+            infos.push(
+                ...RIFFChunk.getParts(type, [getStringBytes(data, true)])
+            );
         };
 
         writeDLSInfo("INAM", info.name);
@@ -432,10 +434,10 @@ export class DownloadableSounds extends DLSVerifier {
         const out = RIFFChunk.writeParts("RIFF", [
             getStringBytes("DLS "),
             colh,
-            lins,
+            ...lins,
             ptbl,
-            wvpl,
-            RIFFChunk.writeParts("INFO", infos, true)
+            ...wvpl,
+            ...RIFFChunk.getParts("INFO", infos, true)
         ]);
 
         SpessaSynthInfo("%cSaved successfully!", consoleColors.recognized);
