@@ -289,14 +289,14 @@ export class SpessaSynthProcessor {
     /**
      * Current total amount of voices that are currently playing.
      */
-    public get totalVoicesAmount() {
+    public get voiceCount() {
         return this.synthCore.voiceCount;
     }
 
     /**
      * The current time of the synthesizer, in seconds. You probably should not modify this directly.
      */
-    public get currentSynthTime() {
+    public get currentTime() {
         return this.synthCore.currentTime;
     }
 
