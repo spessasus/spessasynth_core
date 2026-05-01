@@ -29,6 +29,7 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 
 - [SpessaSynth Online SF2/DLS MIDI Player](https://spessasus.github.io/SpessaSynth)
 - [SpessaFont Online SoundFont/DLS Editor](https://spessasus.github.io/SpessaFont)
+- [signal - Online MIDI Editor](https://signalmidi.app/)
 
 ### [Documentation](https://spessasus.github.io/spessasynth_core)
 
