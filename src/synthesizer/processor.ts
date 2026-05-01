@@ -151,7 +151,7 @@ export class SpessaSynthProcessor {
     /**
      * Executes a MIDI Pitch Wheel message on the specified channel.
      * @param channel The MIDI channel to send the pitch wheel on.
-     * @param pitch The new pitch value: 0-16384
+     * @param pitch The new pitch value: 0-16383
      * @param midiNote The MIDI note number (optional), pass -1 for the regular pitch wheel.
      */
     public readonly pitchWheel: (

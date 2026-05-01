@@ -340,7 +340,7 @@ export interface ChannelProperty {
      */
     voiceCount: number;
     /**
-     * The channel's current pitch wheel 0 - 16384.
+     * The channel's current pitch wheel 0 - 16383.
      */
     pitchWheel: number;
     /**

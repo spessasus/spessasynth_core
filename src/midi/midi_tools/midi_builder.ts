@@ -253,24 +253,21 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick time of the event.
      * @param track the track to use.
      * @param channel the channel to use.
-     * @param MSB SECOND byte of the MIDI pitchWheel message.
-     * @param LSB FIRST byte of the MIDI pitchWheel message.
+     * @param pitch the pitch (0 - 16383).
      */
     public addPitchWheel(
         ticks: number,
         track: number,
         channel: number,
-        MSB: number,
-        LSB: number
+        pitch: number
     ) {
         channel %= 16;
-        MSB %= 128;
-        LSB %= 128;
+        pitch %= 16_384;
         this.addEvent(
             ticks,
             track,
             (midiMessageTypes.pitchWheel | channel) as MIDIMessageType,
-            [LSB, MSB]
+            [pitch & 0x7f, (pitch >> 7) & 0x7f]
         );
     }
 }
