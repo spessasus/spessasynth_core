@@ -87,16 +87,20 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     if (
         !this.drumChannel && // No portamento on drum channel
         portaControl !== internalMidiNote && // If the same note, there's no portamento
-        this.midiControllers[midiControllers.portamentoOnOff] >= 8192 && // (64 << 7)
-        portamentoTime > 0 // 0 duration means no portamento
+        this.midiControllers[midiControllers.portamentoOnOff] >= 8192 // (64 << 7)
     ) {
-        if (portaControl > 0) {
+        if (
+            portamentoTime > 0 && // 0 duration means no portamento
+            portaControl > 0
+        ) {
             // Key 0 means initial portamento (no portamento)
             const diff = Math.abs(internalMidiNote - portaControl);
             portamentoDuration = portamentoTimeToSeconds(portamentoTime, diff);
             portamentoFromKey = portaControl;
         }
         // Set portamento control to previous value
+        // Note: track even when porta time is 0, see
+        // https://github.com/spessasus/spessasynth_core/issues/77
         this.controllerChange(
             midiControllers.portamentoControl,
             internalMidiNote
