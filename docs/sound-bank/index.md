@@ -57,7 +57,7 @@ The creation date of this sound bank, a `Date` object.
 
 !!! Note
 
-    Note that if the date text is invalid, the current date will be used instead.
+    If the date text is invalid, the current date will be used instead.
     If you have a valid date in your sound bank, and it still fails to parse, please open an issue!
 
 #### soundEngine

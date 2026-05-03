@@ -126,10 +126,11 @@ synth.noteOn(channel, midiNote, velocity);
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
 - midiNote - the note to play. Ranges from 0 to 127.
-- velocity - controls how loud the note is.
-  Note that velocity of 0 has
-  the same effect as using `noteOff`.
-  Ranges from 0 to 127, where 127 is the loudest and 1 is the quietest.
+- velocity - controls how loud the note is. Ranges from 0 to 127, where 127 is the loudest and 1 is the quietest.
+
+!!! Note
+
+    Velocity of 0 has the same effect as using `noteOff`.
 
 ### noteOff
 
@@ -204,7 +205,7 @@ synth.controllerChange(channel, controllerNumber, controllerValue);
 
 !!! Note
 
-    Note that theoretically all controllers are supported as it depends on the SoundFont's modulators.
+    Theoretically all controllers are supported as it depends on the SoundFont's modulators.
 
 ### resetAllControllers
 

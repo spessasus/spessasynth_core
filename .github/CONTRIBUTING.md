@@ -11,8 +11,10 @@ Use the GitHub issue forms and please avoid using the "Blank" template unless ab
 
 ### Contributing a patch/enhancement
 
-Please see [Developing](https://spessasus.github.io/spessasynth_core/extra/developer-docs/)
+Please see [Developing](https://spessasus.github.io/spessasynth_core/extra/developer-docs/) for a detailed explanation.
 
-Also, please note that all of spessasynth*core code \_must* be able to run in the `AudioWorkletGlobalScope`,
-otherwise the pull request will not be accepted.
-This means that WebWorkers, TextDecoders, etc. are _not allowed._ Or a fallback function must be provided if they are used.
+### License notice
+
+When submitting a pull request to `spessasynth_core`, you are giving [Spessasus](https://github.com/spessasus) the right to license
+your contributions under the [Apache License 2.0](../LICENSE), and you irrevocably permit a potential
+future re-licensing of `spessasynth_core`, containing your contributions, under any open source license.

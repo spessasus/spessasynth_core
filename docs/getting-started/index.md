@@ -59,7 +59,10 @@ Check out the [processo method](../spessa-synth-processor/index.md#process) for 
 ## Examples
 
 You can find all examples in the `examples` directory in this repository.
-Note that `midi_player_node` requires the `speaker` package to be installed (`npm install speaker`)
+
+!!! Note
+
+    The `midi_player_node` example requires the `speaker` package to be installed (`npm install speaker`)
 
 ### MIDI to WAV converter
 

@@ -96,12 +96,15 @@ Below is the default modulator list for SpessaSynth.
 
     SpessaSynth implements the [default modulators proposal](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md).
 
-Note: cB - centibels, 1/10 of a decibel
+Note: cB - centibels, 1/10 of a decibel.
 
 ### SF2 Default
 
 These are the default modulators, as defined by the SF2.04 specification.
-Note that the [velocity to filter modulator is intentionally disabled](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+
+!!! Note
+
+    The [velocity to filter modulator is intentionally disabled](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
 
 | Source                       | Source Transform          | Secondary source                           | Destination          | Transform amount |
 | ---------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |
@@ -152,23 +155,23 @@ SpessaSynth has custom behavior for these modulators, emulating BASSMIDI:
 
 - The modulators affected are all modulators
   that use **Reverb depth Negative Unipolar Linear or Chorus depth Negative Unipolar Linear** as a primary source
-  and **No Controller\* as the secondary source and either **reverbEffectsSend** or **chorusEffectsSend\*\* as the
+  and **No Controller** as the secondary source and either **reverbEffectsSend** or **chorusEffectsSend** as the
   destination
 - The transform amount is multiplied by **5** if the initial transform amount is below 1000
-- If the transform is multiplied, it is capped at **1000**
+- If the transform is multiplied, it is capped at **1000**.
 
 #### Reasoning
 
-The amount of 200 (SF2 default) is too low for these modulators, according to Ian from Un4seen.
-I agree with him
-and also set the default to 1000 (actually it's 200 multiplied by 5 which is 1000).
+The amount of `200` (SF2 default) is too low for these modulators, according to Ian from [Un4seen.](https://www.un4seen.com/)
+I agree with this,
+and also set the default to `1000` (actually it's `200` multiplied by `5` which is `1000`).
 But this poses a few problems without using the solution above:
 
-- soundfonts that assume default reverb of 200 will have almost inaudible effects.
-  For example, a soundfont might want to slightly decrease the reverb, by setting it to 150, for example.
-  It is way less than the default 1000,
-  and the approach above will make it 150 \* 5 = 750 which is still less than default,
+- soundfonts that assume default reverb of `200` will have almost inaudible effects.
+  For example, a soundfont might want to slightly decrease the reverb, by setting it to `150`, for example.
+  It is way less than the default `1000`,
+  and the approach above will make it `150 * 5 = 750` which is still less than default,
   but more audible.
 - This approach still allows disabling these modulators.
-- Some soundfonts assume a default reverb of 1000 and set some to 800 or similar.
-  Using default 200 will cause a big imbalance between the custom and default modulators.
+- Some soundfonts assume a default reverb of `1000` and set some to `800` or similar.
+  Using default `200` will cause a big imbalance between the custom and default modulators.

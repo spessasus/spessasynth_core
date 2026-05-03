@@ -8,6 +8,19 @@ I recommend developing the libraries with using the web app as the test environm
 extensively.
 It also enforces the requirement of **spessasynth_core being able to run in the AudioWorklet scope.**
 
+!!! Warning
+
+    All of `spessasynth_core`'s code _must_ be able to run in the `AudioWorkletGlobalScope`,
+    otherwise the pull request will not be accepted.
+    This means that TextDecoders, etc. are _not allowed in the audio playback code._ Or a fallback function must be provided if they are used.
+    Code that is not related to audio (e.g. decoding MIDI text metadata) is allowed to use these.
+
+!!! Warning
+
+    No Web or Node APIs can be used in the library code. All of the source code must be able to run on both the Web and in Node.js.
+
+    Examples and tests are intended for the Node.js environment _only_, the may use Node.js APIs.
+
 ### Preparation
 
 1. If you are on Windows, [obtain WSL](https://learn.microsoft.com/en-us/windows/wsl/install).

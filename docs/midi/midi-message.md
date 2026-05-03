@@ -16,8 +16,13 @@ The status byte of the message as a number from 0 to 255.
 
 !!! Note
 
-    Note that for Meta Events, the status byte is the SECOND status byte, not the 0xFF!
+    For Meta Events, the status byte is the SECOND status byte, not the 0xFF!
 
 ### data
 
 An `IndexedByteArray`(Pretty much exactly the same as `Uint8Array`) instance of the event's binary data.
+
+!!! Warning
+
+    For System Exclusive events, the data omits the `0xF0` byte as it is already stored in `statusByte`.
+    This is very important!

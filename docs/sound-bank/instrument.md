@@ -23,9 +23,12 @@ The instrument's zones, an array of `BasicInstrumentZone`s.
 ### linkedTo
 
 Instrument's linked presets (the presets that use it).
-Note that duplicates are allowed since one preset can use the same instrument multiple times.
 
 An array of `BasicPreset`s.
+
+!!! Note
+
+    Duplicate entries are allowed since one preset can use the same instrument multiple times.
 
 ## Methods
 
