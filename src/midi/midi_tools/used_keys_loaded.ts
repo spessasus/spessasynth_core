@@ -148,7 +148,7 @@ export function getUsedProgramsAndKeys(
             case midiMessageTypes.systemExclusive: {
                 // Check for drum sysex
                 {
-                    const syx = SysEx.analyze(e);
+                    const syx = SysEx.analyze(e.data);
                     switch (syx.type) {
                         default: {
                             return;
@@ -173,6 +173,7 @@ export function getUsedProgramsAndKeys(
                             return;
                         }
 
+                        case "GM Off":
                         case "GM On": {
                             system = "gm";
                             SpessaSynthInfo(

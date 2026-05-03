@@ -27,7 +27,7 @@ const coolInfo = (what: string, value: string | number | boolean) => {
 /**
  * Handles a GS system exclusive
  * http://www.bandtrax.com.au/sysex.htm
- * https://cdn.roland.com/assets/media/pdf/AT-20R_30R_MI.pdf
+ * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
  * @param syx
  * @param channelOffset
  */
@@ -593,7 +593,7 @@ export function handleGS(
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
-                            // SC-88Pro manual page 196
+                            // SC-8850 manual, page 237
                             const channel =
                                 SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
@@ -854,12 +854,11 @@ export function handleGS(
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
-                            // SC-88Pro manual page 196
+                            // SC-8850 manual, page 237
                             const channel =
                                 SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
-                            // SC88 manual page 198
                             switch (a3 & 0xf0) {
                                 default: {
                                     // This is some other GS sysex...
@@ -983,7 +982,7 @@ export function handleGS(
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
-                            // SC-88Pro manual page 196
+                            // SC-8850 manual, page 237
                             const channel =
                                 SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)

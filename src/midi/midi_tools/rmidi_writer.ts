@@ -79,7 +79,7 @@ function correctBankOffsetInternal(
         }
 
         if (status === midiMessageTypes.systemExclusive) {
-            const syx = SysEx.analyze(e);
+            const syx = SysEx.analyze(e.data);
             switch (syx.type) {
                 default: {
                     return;
@@ -103,6 +103,7 @@ function correctBankOffsetInternal(
                     return;
                 }
 
+                case "GM Off":
                 case "GM On": {
                     // We do not want gm1
                     system = "gm";

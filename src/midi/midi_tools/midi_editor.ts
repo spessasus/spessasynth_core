@@ -486,7 +486,7 @@ export function modifyMIDIInternal(
             }
 
             case midiMessageTypes.systemExclusive: {
-                const syx = SysEx.analyze(e);
+                const syx = SysEx.analyze(e.data);
                 switch (syx.type) {
                     default: {
                         return;
@@ -523,6 +523,7 @@ export function modifyMIDIInternal(
                         return;
                     }
 
+                    case "GM Off":
                     case "GM On": {
                         // Check for GM on
                         // That's a GM1 system change, remove it!

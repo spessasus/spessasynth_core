@@ -4,11 +4,13 @@ import {
     midiControllers,
     midiMessageTypes
 } from "../midi/enums";
+import type { SysExAcceptedArray } from "../synthesizer/audio_engine/engine_methods/system_exclusive/helpers";
 
 export type AnalyzedSystemExclusive =
     | { type: "Other" }
     | { type: "XG Reset" }
     | { type: "GM On" }
+    | { type: "GM Off" }
     | { type: "GM2 On" }
     | { type: "GS Reset" }
     | { type: "Reverb Param" }
@@ -29,18 +31,19 @@ export type AnalyzedSystemExclusive =
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedSystemExclusive;
 
 /**
- * A set of handy functions for working with system exclusive messages.
+ * A set of handy functions for working with System Exclusive messages.
+ * @internal
  */
 export class SysEx {
     /**
-     * Analyzes a MIDI system exclusive message
+     * Analyzes a MIDI System Exclusive message
      * and returns an identification and data for it.
-     * @param e the message to analyze
+     * @param syx the System Exclusive message, WITHOUT the first 0xF0 System Exclusive byte!
      */
-    public static analyze(e: MIDIMessage): AnalyzedSystemExclusive {
-        // At least Manufacturer ID, Device ID and XG model ID
-        if (e.data.length < 3) return OTHER;
-        switch (e.data[0]) {
+    public static analyze(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
+        // At least Manufacturer ID, Device ID and XG/GS model ID
+        if (syx.length < 3) return OTHER;
+        switch (syx[0]) {
             default: {
                 return OTHER;
             }
@@ -49,17 +52,17 @@ export class SysEx {
             case 0x7e:
             // Realtime GM
             case 0x7f: {
-                return this.analyzeGM(e);
+                return this.analyzeGM(syx);
             }
 
             // Roland
             case 0x41: {
-                return this.analyzeGS(e);
+                return this.analyzeGS(syx);
             }
 
             // Yamaha
             case 0x43: {
-                return this.analyzeXG(e);
+                return this.analyzeXG(syx);
             }
         }
     }
@@ -85,15 +88,15 @@ export class SysEx {
     }
 
     /**
-     * Gets raw GS System Exclusive bytes
+     * Gets raw GS System Exclusive message, without the 0xF0 status byte.
      * @param a1 Address 1
      * @param a2 Address 2
      * @param a3 Address 3
-     * @param data Data, can be multiple bytes
+     * @param data Data, can be multiple bytes.
      */
     public static gsData(a1: number, a2: number, a3: number, data: number[]) {
         // Calculate checksum
-        // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
+        // SC 8850 manual, page 245
         const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
         const checksum = (128 - (sum % 128)) & 0x7f;
         return [
@@ -138,21 +141,20 @@ export class SysEx {
     }
 
     /**
-     * Gets a GS reset message system exclusive
+     * Gets a GS reset message System Exclusive
      * @param ticks
      */
     public static gsReset(ticks: number): MIDIMessage {
         return this.gsMessage(
             ticks,
-            0x00, // System parameter - Address
+            0x40, // System parameter - Address
             0x00, // Global mode parameter -  Address
             0x7f, // MODE SET - Address
-            [0x00] // MODE-1 (Single module mode) - Data
+            [0x00] // 00 = GS Reset - Data
         );
     }
 
-    private static analyzeGM(e: MIDIMessage): AnalyzedSystemExclusive {
-        const syx = e.data;
+    private static analyzeGM(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
         if (syx.length < 4 || syx[2] !== 0x09) return OTHER;
         switch (syx[3]) {
             default: {
@@ -164,8 +166,7 @@ export class SysEx {
             }
 
             case 0x02: {
-                // We are a GS synth, default to GS if GM is off
-                return { type: "GS Reset" };
+                return { type: "GM Off" };
             }
 
             case 0x03: {
@@ -174,8 +175,7 @@ export class SysEx {
         }
     }
 
-    private static analyzeXG(e: MIDIMessage): AnalyzedSystemExclusive {
-        const syx = e.data;
+    private static analyzeXG(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
         // Ensure XG
         if (syx[2] !== 0x4c || syx.length < 7) return OTHER;
         const a1 = syx[3]; // Address 1
@@ -388,9 +388,7 @@ export class SysEx {
         return OTHER;
     }
 
-    private static analyzeGS(e: MIDIMessage): AnalyzedSystemExclusive {
-        const syx = e.data;
-
+    private static analyzeGS(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
         if (
             syx.length < 10 ||
             // Model ID (GS)
@@ -408,12 +406,23 @@ export class SysEx {
 
         // GS reset check
         if (
-            // Address 1 is 0x00 for SC-88 and 0x40 for SC-55
+            // Address 1 is 0x00 for SC-88 SYSTEM MODE SET and 0x40 for SC-55 MODE SET
+            (a1 === 0x00 || a1 === 0x40) &&
             a2 === 0x00 && // MODE
-            a3 === 0x7f && // SET
-            data === 0x00 // GS Reset/Mode-1
-        )
-            return { type: "GS Reset" };
+            a3 === 0x7f // SET
+        ) {
+            switch (data) {
+                case 0x00: {
+                    // GS Reset/Mode-1
+                    return { type: "GS Reset" };
+                }
+
+                case 0x7f: {
+                    // GS Off, default to gm
+                    return { type: "GM On" };
+                }
+            }
+        }
 
         if (a1 === 0x41) return { type: "Drum Setup" };
         if (a1 !== 0x40) return OTHER;
