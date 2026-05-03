@@ -34,14 +34,18 @@ This describes what messages SpessaSynth can receive.
 ### Per-note Pitch Wheel
 
 As of 4.1.0 SpessaSynth supports per-note Pitch Wheel as a part of the MIDI 2.0 specification.
-Note that this is API-only, there are no MIDI messages that allow for changing it for now.
 The per-note mode will activate on using the API and deactivate on channel or system reset.
+
+!!! Note
+
+    This is API-only, there are no MIDI messages that allow for changing it for now.
 
 ## Controllers
 
 ### Default Supported Controllers
 
 Below is the list of controllers supported by default.
+
 !!! Note
 
     Theoretically all controllers are supported as it depends on the modulators.
@@ -132,7 +136,10 @@ Below is the list of currently implemented Registered Parameters.
 ### Supported Non-Registered Parameters
 
 Below is the list of currently implemented Non-Registered Parameters.
-Note that all these are not from GM, but come from XG and GS.
+
+!!! Note
+
+    All of these are not from GM, but come from XG and GS.
 
 rr: Drum note number.
 

@@ -59,8 +59,14 @@ The list of all presets in the sound bank stack with bank offsets applied.
 Each item is a preset list entry:
 
 - The properties of a [MIDI Patch](midi-patch.md).
-- `name`: `string` - The name of the preset.
-- `isAnyDrums`: `boolean` - if this preset is a drum preset. \*This is the correct way of distinguishing between drum and melodic presets.
+- `name` - The name of the preset.
+- `isAnyDrums` - if this preset is a drum preset.
+
+!!! Warning
+
+    `isAnyDrums` is the correct way of distinguishing between drum and melodic presets.
+
+    _Do not_ use `isGMGSDrum` as the indication!
 
 ### priorityOrder
 

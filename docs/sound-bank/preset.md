@@ -119,6 +119,10 @@ const synthesisData = preset.getVoiceParameters(midiNote, velocity);
 
 The returned value is an array of objects:
 
-- generators - an `Int16Array` containing the generator values at their respective indexes (`generators[type] = value`). Note that the E-mu attenuation correction is already performed.
+- generators - an `Int16Array` containing the generator values at their respective indexes (`generators[type] = value`).
 - modulators - an array of [`Modulator`](modulator.md)s.
 - sample - a [`BasicSample`](sample.md)
+
+!!! Note
+
+    The `E-mu` attenuation correction (`initialAttenuation` generator value being multiplied by `0.4`) is already performed.

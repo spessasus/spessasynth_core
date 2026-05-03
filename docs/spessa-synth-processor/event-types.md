@@ -151,14 +151,24 @@ The event data is the preset list. Each item is a preset list entry:
 
 - The properties of a [MIDI Patch](midi-patch.md).
 - `name`: `string` - The name of the preset.
-- `isAnyDrums`: `boolean` - if this preset is a drum preset. \*This is the correct way of distinguishing between drum and melodic presets.
+- `isAnyDrums`: `boolean` - if this preset is a drum preset.
+
+!!! Warning
+
+    `isAnyDrums` is the correct way of distinguishing between drum and melodic presets.
+
+    _Do not_ use `isGMGSDrum` as the indication!
 
 ### `allControllerReset`
 
 This event is triggered when all controllers and programs have been reset. Effectively a system reset.
 
-None. Note that if there were any locked controllers, they will be restored via `controllerChange` event after (like
-described in `controllerChange`).
+None.
+
+!!! Note
+
+    If there were any locked controllers, they will be restored via `controllerChange` event after (like
+    described in `controllerChange`).
 
 ### `soundBankError`
 

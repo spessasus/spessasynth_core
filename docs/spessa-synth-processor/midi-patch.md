@@ -18,7 +18,9 @@ The MIDI program number, from 0 to 127.
 
 Bank LSB controller, 0 to 127. This is mostly used in XG and GM2 for selecting variations of instruments, much like MSB in GS.
 
-Note that the SF2 format does not support writing the bank LSB number so the `wBank` is still interpreted as both and flattened when writing.
+!!! Note
+
+    The SF2 format does not support writing the bank LSB number so the `wBank` is still interpreted as both and flattened when writing.
 
 ### bankMSB
 

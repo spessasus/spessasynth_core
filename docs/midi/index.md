@@ -144,9 +144,13 @@ The [MIDI file format.](https://www.music.mcgill.ca/~ich/classes/mumt306/Standar
 The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
 Otherwise, this object is empty.
 Info type: Chunk data as a binary array.
-Note that text chunks contain a terminal zero byte.
 
 !!! Note
+
+    Text chunks contain a terminal zero byte, please take that into account when feeding the data to a `TextDecoder`.
+    [`getRMIDInfo`](#getrmidinfo) takes care of this automatically.
+
+!!! Tip
 
     See [SF2 RMIDI Extension Specification](https://github.com/spessasus/sf2-rmidi-specification#readme) for more info.
 
@@ -245,7 +249,10 @@ midi.secondsToMIDITicks(seconds);
 - seconds - `number` - the time in seconds.
 
 The returned value is the time in MIDI ticks from the start of the MIDI to the given second.
-Note that the returned value will always be rounded to the nearest integer.
+
+!!! Note
+
+    The returned value will always be rounded to the nearest integer.
 
 ### getUsedProgramsAndKeys
 
@@ -364,9 +371,11 @@ midi.getName((encoding = "Shift_JIS"));
 
 - encoding - The encoding to use if the MIDI uses an extended code page.
 
-Note that RMIDI encoding overrides the provided encoding.
-
 The returned value is a string - the name of the song or the file name if it's not specified. Otherwise, empty.
+
+!!! Note
+
+    The RMIDI encoding overrides the provided encoding.
 
 ### getExtraMetadata
 
@@ -378,9 +387,11 @@ midi.getExtraMetadata((encoding = "Shift_JIS"));
 
 - encoding - The encoding to use if the MIDI uses an extended code page.
 
-Note that RMIDI encoding overrides the provided encoding.
-
 The returned value is an array of strings - each `extraMetadata` decoded and sanitized.
+
+!!! Note
+
+    The RMIDI encoding overrides the provided encoding.
 
 ### setRMIDInfo
 

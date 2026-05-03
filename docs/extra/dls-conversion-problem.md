@@ -18,7 +18,7 @@ This means that the program has to combine all zones from all instruments in a p
 And since soundfont can have up to 2^16 generators, complex sound banks **cannot be converted back from DLS into SF2.**
 SpessaSynth tries to put as many generators as it can into the global zone to decrease the count,
 but it does not always work.
-Note that it can read these large DLS files without issue, converting them back into SF2 is the problem.
+It can read these large DLS files without issue, converting them back into SF2 is the problem.
 
 Also, there is simply a lack of documentation or software to test with. The only ones I am aware of are:
 

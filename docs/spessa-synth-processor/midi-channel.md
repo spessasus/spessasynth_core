@@ -14,7 +14,7 @@ However, they can allow to manipulate the synth extensively.
 
 !!! Note
 
-    Note that methods here may not be 100% stable. Expect removals!
+    Methods here may not be 100% stable. Expect removals!
 
 ## Methods
 
@@ -122,20 +122,26 @@ locked - If the preset should be locked.
 ### setDrums
 
 Changes the preset to, or from drums.
-Note that this executes a program change.
 
 Parameters:
 
 - isDrum - if the channel should be a drum preset or not.
 
+!!! Note
+
+    This executes a program change.
+
 ### setPatch
 
 Sets the channel to a given MIDI patch.
-Note that this executes a program change.
 
 Parameters:
 
 - patch - the [MIDI Patch](midi-patch.md) to set the channel to.
+
+!!! Note
+
+    This executes a program change.
 
 ### setGSDrums
 
