@@ -4,6 +4,7 @@ import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
 import type { DLSLoopType, ModulatorSourceEnum } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
+import type { BasicPreset } from "./basic_soundbank/basic_preset";
 
 export interface SoundBankManagerListEntry {
     /**
@@ -244,13 +245,19 @@ export interface GenericRange {
 
 export interface DLSLoop {
     loopType: DLSLoopType;
-    /*
-    Specifies the start point of the loop in samples as an absolute offset from the beginning of the
-    data in the <data-ck> subchunk of the <wave-list> wave file chunk.
+    /**
+     * Specifies the start point of the loop in samples as an absolute offset from the beginning of the
+     * data in the <data-ck> subchunk of the <wave-list> wave file chunk.
      */
     loopStart: number;
-    /*
-    Specifies the length of the loop in samples.
+    /**
+     * Specifies the length of the loop in samples.
      */
     loopLength: number;
 }
+
+/**
+ * Key - the preset
+ * Value - the set of key combinations, stored as `{key}-{velocity}` string.
+ */
+export type PresetsWithKeyCombinations = Map<BasicPreset, Set<string>>;

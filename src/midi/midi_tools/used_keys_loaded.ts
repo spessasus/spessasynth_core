@@ -30,7 +30,7 @@ interface InternalChannelType {
 export function getUsedProgramsAndKeys(
     mid: BasicMIDI,
     soundBank: BasicSoundBank | SoundBankManager
-): Map<BasicPreset, Set<string>> {
+) {
     SpessaSynthGroupCollapsed(
         "%cSearching for all used programs and keys...",
         consoleColors.info

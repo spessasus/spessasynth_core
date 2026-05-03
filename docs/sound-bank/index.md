@@ -306,15 +306,22 @@ Returns the copied preset, if a preset exists with that name, it is returned ins
 
 Updates internal values. Call after updating the preset list.
 
-### trimSoundBank
+### trim
 
 Trims a sound bank to only contain samples in a given MIDI file.
 
 ```ts
-soundBank.trimSoundBank(midi);
+soundBank.trim(presetData);
 ```
 
-- `midi` - `BasicMIDI` - The MIDI file for which to trim the soundBank.
+- `presetData` - `PresetsWithKeyCombinations` - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
+  Absent presets will be removed from the sound bank,
+  and samples that don't get activated in the remaining presets will be removed as well.
+
+!!! Note
+
+    This exact type is returned from [`getUsedProgramsAndKeys`](../midi/index.md#getusedprogramsandkeys)
+    in the `BasicMIDI` class.
 
 ### removeUnusedElements
 

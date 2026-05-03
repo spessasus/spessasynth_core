@@ -38,11 +38,13 @@ import {
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes } from "./enums";
-import type { GenericRange } from "../soundbank/types";
+import type {
+    GenericRange,
+    PresetsWithKeyCombinations
+} from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString, toISODateString } from "../utils/date";
-import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
 import type { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 
@@ -326,7 +328,7 @@ export class BasicMIDI {
      */
     public getUsedProgramsAndKeys(
         soundbank: BasicSoundBank | SoundBankManager
-    ): Map<BasicPreset, Set<string>> {
+    ): PresetsWithKeyCombinations {
         return getUsedProgramsAndKeys(this, soundbank);
     }
 

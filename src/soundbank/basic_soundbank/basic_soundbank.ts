@@ -1,5 +1,4 @@
 import {
-    SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
@@ -15,10 +14,10 @@ import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
-import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type {
     DLSWriteOptions,
+    PresetsWithKeyCombinations,
     SetSampleFormatOptions,
     SF2VersionTag,
     SoundBankInfoData,
@@ -415,10 +414,12 @@ export class BasicSoundBank {
     }
 
     /**
-     * Trims a sound bank to only contain samples in a given MIDI file.
-     * @param mid - the MIDI file
+     * Trims the sound bank _in-place_ to only contain samples in a given MIDI file.
+     * @param presetData - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
+     * Absent presets will be removed from the sound bank,
+     * and samples that don't get activated in the remaining presets will be removed as well.
      */
-    public trimSoundBank(mid: BasicMIDI) {
+    public trim(presetData: PresetsWithKeyCombinations) {
         const trimInstrumentZones = (
             instrument: BasicInstrument,
             combos: { key: number; velocity: number }[]
@@ -469,14 +470,12 @@ export class BasicSoundBank {
             return trimmedIZones;
         };
 
-        SpessaSynthGroup("%cTrimming sound bank...", consoleColors.info);
-        const usedProgramsAndKeys = mid.getUsedProgramsAndKeys(this);
-
         SpessaSynthGroupCollapsed(
-            "%cModifying sound bank...",
+            "%cTrimming sound bank...",
             consoleColors.info
         );
-        SpessaSynthInfo("Detected keys for midi:", usedProgramsAndKeys);
+
+        SpessaSynthInfo("Combinations to trim for:", presetData);
         // Modify the sound bank to only include programs and samples that are used
         for (
             let presetIndex = 0;
@@ -484,7 +483,7 @@ export class BasicSoundBank {
             presetIndex++
         ) {
             const p = this.presets[presetIndex];
-            const used = usedProgramsAndKeys.get(p);
+            const used = presetData.get(p);
             if (used === undefined) {
                 SpessaSynthInfo(
                     `%cDeleting preset %c${p.name}%c and its zones`,
@@ -566,7 +565,6 @@ export class BasicSoundBank {
         this.removeUnusedElements();
 
         SpessaSynthInfo("%cSound bank modified!", consoleColors.recognized);
-        SpessaSynthGroupEnd();
         SpessaSynthGroupEnd();
     }
 
