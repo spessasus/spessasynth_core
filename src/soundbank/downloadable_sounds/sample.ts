@@ -152,7 +152,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
     public write() {
         const fmt = this.writeFmt();
         const wsmp = this.waveSample.write();
-        const data = RIFFChunk.write("data", this.dataChunk.data);
+        const data = RIFFChunk.getParts("data", [this.dataChunk.data]);
 
         const inam = RIFFChunk.write("INAM", getStringBytes(this.name, true));
         const info = RIFFChunk.write("INFO", inam, false, true);
@@ -162,7 +162,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
             consoleColors.value,
             consoleColors.recognized
         );
-        return RIFFChunk.writeParts("wave", [fmt, wsmp, data, info], true);
+        return RIFFChunk.getParts("wave", [fmt, wsmp, ...data, info], true);
     }
 
     private writeFmt() {

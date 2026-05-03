@@ -187,21 +187,23 @@ export class DownloadableSoundsInstrument
             consoleColors.recognized,
             consoleColors.info
         );
-        const chunks = [this.writeHeader()];
+        const chunks: Uint8Array[] = [this.writeHeader()];
 
-        const regionChunks = this.regions.map((r) => r.write());
-        chunks.push(RIFFChunk.writeParts("lrgn", regionChunks, true));
+        const regionChunks = this.regions.flatMap((r) => r.write());
+        chunks.push(...RIFFChunk.getParts("lrgn", regionChunks, true));
 
         // This will mostly be false as SF2 -> DLS can't have both global and local regions,
         // So it only has global, hence this check.
         if (this.articulation.length > 0) {
-            chunks.push(this.articulation.write());
+            chunks.push(...this.articulation.write());
         }
 
         // Write the name
         const inam = RIFFChunk.write("INAM", getStringBytes(this.name, true));
         chunks.push(RIFFChunk.write("INFO", inam, false, true));
         SpessaSynthGroupEnd();
+        // This one can explode in length (causing a maximum argument crash),
+        // So keep as writeParts, not getParts
         return RIFFChunk.writeParts("ins ", chunks, true);
     }
 

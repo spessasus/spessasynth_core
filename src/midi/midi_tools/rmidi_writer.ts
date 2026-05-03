@@ -12,14 +12,6 @@ import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endi
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
-    isGM2On,
-    isGMOn,
-    isGSDrumsOn,
-    isGSOn,
-    isXGOn,
-    syxToChannel
-} from "../../utils/sysex_detector";
-import {
     midiControllers,
     type MIDIMessageType,
     midiMessageTypes
@@ -27,12 +19,12 @@ import {
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
-import { getGsOn } from "./get_gs_on";
 import type { SynthSystem } from "../../synthesizer/types";
 import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
+import { SysEx } from "../../utils/sysex";
 
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
@@ -87,30 +79,86 @@ function correctBankOffsetInternal(
         }
 
         if (status === midiMessageTypes.systemExclusive) {
-            // Check for drum sysex
-            if (!isGSDrumsOn(e)) {
+            const syx = SysEx.analyze(e.data);
+            switch (syx.type) {
+                default: {
+                    return;
+                }
+
+                // Check for drum sysex
+                case "Drums On": {
+                    const sysexChannel = syx.channel + portOffset;
+                    channelsInfo[sysexChannel].drums = syx.isDrum;
+                    return;
+                }
+
                 // Check for XG
-                if (isXGOn(e)) {
+                case "XG Reset": {
                     system = "xg";
-                } else if (isGSOn(e)) {
+                    return;
+                }
+
+                case "GS Reset": {
                     system = "gs";
-                } else if (isGMOn(e)) {
+                    return;
+                }
+
+                case "GM Off":
+                case "GM On": {
                     // We do not want gm1
                     system = "gm";
                     unwantedSystems.push({
                         tNum: trackNum,
                         e: e
                     });
-                } else if (isGM2On(e)) {
-                    system = "gm2";
+                    return;
                 }
-                return;
+
+                case "GM2 On": {
+                    system = "gm2";
+                    return;
+                }
+
+                case "Controller Change": {
+                    // Replace the system exclusive with a regular controller change
+                    const t = mid.tracks[trackNum];
+                    const index = t.events.indexOf(e);
+                    const newEvent = new MIDIMessage(
+                        e.ticks,
+                        (midiMessageTypes.controllerChange |
+                            syx.channel) as MIDIMessageType,
+                        new Uint8Array([syx.controller, syx.value])
+                    );
+                    t.events[index] = newEvent;
+                    e = newEvent;
+                    SpessaSynthInfo(
+                        "%cReplaced a system exclusive with controller change!",
+                        consoleColors.info
+                    );
+
+                    break; // Do not return, keep parsing
+                }
+
+                case "Program Change": {
+                    // Replace the system exclusive with a regular program
+                    const t = mid.tracks[trackNum];
+                    const index = t.events.indexOf(e);
+                    const newEvent = new MIDIMessage(
+                        e.ticks,
+                        (midiMessageTypes.programChange |
+                            syx.channel) as MIDIMessageType,
+                        new Uint8Array([syx.value])
+                    );
+                    t.events[index] = newEvent;
+                    e = newEvent;
+                    SpessaSynthInfo(
+                        "%cReplaced a system exclusive with program change!",
+                        consoleColors.info
+                    );
+
+                    break; // Do not return, keep parsing
+                }
             }
-            const sysexChannel = syxToChannel(e.data[5] & 0x0f) + portOffset;
-            channelsInfo[sysexChannel].drums = !!(
-                e.data[7] > 0 && e.data[5] >> 4
-            );
-            return;
         }
 
         // Program change
@@ -273,7 +321,7 @@ function correctBankOffsetInternal(
         if (mid.tracks[0].events[0].statusByte === midiMessageTypes.trackName) {
             index++;
         }
-        mid.tracks[0].addEvents(index, getGsOn(0));
+        mid.tracks[0].addEvents(index, SysEx.gsReset(0));
     }
 }
 

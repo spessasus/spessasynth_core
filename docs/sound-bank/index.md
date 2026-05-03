@@ -191,12 +191,40 @@ bank.addCompletePresets(presets);
 
 - presets - an array of `BasicPreset`s to add.
 
+### setSampleFormat
+
+Sets the sound bank's sample format _in place_.
+
+```ts
+await soundBank.setSampleFormat(options);
+```
+
+- `options` - An optional object (all properties are optional):
+    - `format` - The sample format to use:
+        - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
+        - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+    - `compressionFunction` - [See this for a detailed explanation](#compressionfunction). It can be undefined if the format is `pcm`.
+    - `progressFunction` - [See this for a detailed explanation](#progressfunction)
+
+!!! Important
+
+    This method is _asynchronous._
+
+!!! Warning
+
+    Note that decompressing (sample format `pcm`) usually results
+    in permanent sample quality loss!
+
+!!! Warning
+
+    This method is memory and CPU intensive with large sound banks.
+
 ### writeDLS
 
 Writes out a DLS Level 2 sound bank. The returned value is an `ArrayBuffer` - the binary of the file.
 
 ```ts
-const dls = await soundBank.writeDLS(options);
+const dls = soundBank.writeDLS(options);
 ```
 
 - `options` - An optional object (all properties are optional):
@@ -209,10 +237,6 @@ const dls = await soundBank.writeDLS(options);
     This method is limited.
     [See this for more info.](../extra/dls-conversion-problem.md)
 
-!!! Important
-
-    This method is _asynchronous._
-
 !!! Warning
 
     This method is memory and CPU intensive with large sound banks.
@@ -222,7 +246,7 @@ const dls = await soundBank.writeDLS(options);
 Write out an SF2 or SF3 file. The return value is an `ArrayBuffer` - the binary of the file.
 
 ```ts
-const binary = await soundBank.writeSF2(options);
+const binary = soundBank.writeSF2(options);
 ```
 
 - `options` - An optional object (all properties are optional):
@@ -234,24 +258,9 @@ const binary = await soundBank.writeSF2(options);
       the [xdta chunk](https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md) should be written
       to allow virtually infinite parameters.
       Defaults to true.
-    - `compress` - A `boolean` indicating if any uncompressed samples should be compressed using the lossy Ogg Vorbis
-      codec. This significantly reduces file size.
-      Defaults to false.
-    - `decompress` - A `boolean` indicating if any compressed samples should be decompressed.
-      If false, the compressed samples are preserved which results in faster write time and no quality loss.
-      Defaults to false and not recommended.
     - `progressFunction` - [See this for a detailed explanation](#progressfunction)
-    - `compressionFunction` - [See this for a detailed explanation](#compressionfunction)
     - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
       This field indicates the last software that was used to edit this sound bank.
-
-!!! Important
-
-    This method is _asynchronous._
-
-!!! Note
-
-    If the sound bank was already compressed, it will not be decompressed to avoid losing quality.
 
 !!! Warning
 
@@ -297,15 +306,22 @@ Returns the copied preset, if a preset exists with that name, it is returned ins
 
 Updates internal values. Call after updating the preset list.
 
-### trimSoundBank
+### trim
 
 Trims a sound bank to only contain samples in a given MIDI file.
 
 ```ts
-soundBank.trimSoundBank(midi);
+soundBank.trim(presetData);
 ```
 
-- `midi` - `BasicMIDI` - The MIDI file for which to trim the soundBank.
+- `presetData` - `PresetsWithKeyCombinations` - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
+  Absent presets will be removed from the sound bank,
+  and samples that don't get activated in the remaining presets will be removed as well.
+
+!!! Note
+
+    This exact type is returned from [`getUsedProgramsAndKeys`](../midi/index.md#getusedprogramsandkeys)
+    in the `BasicMIDI` class.
 
 ### removeUnusedElements
 
@@ -342,20 +358,19 @@ Deletes everything irreversibly.
 
 ### progressFunction
 
-This _optional_ function gets called after every sample has been written.
+This _optional_ function gets called for operations that take a long time (for example sample writing).
 It can be useful for displaying progress for long writing operations.
 
 It takes the following arguments:
 
-- name - `string` - sample's name.
-- writtenCount - `number` - the count of written samples so far.
-- totalSampleCount - `number` - the total number of samples.
+- progress - `number` - the estimated progress of writing.
 
 Please note that it's usually only effective when writing with compression, as raw writing is inlined for speed.
+If you are writing from a separate thread (e.g. a worker thread), then even inlined writing should show progress.
 
 ### compressionFunction
 
-This function must be provided if `compress` is enabled.
+This function must be provided if `compressed` format is chosen.
 
 The function takes the following arguments:
 
@@ -374,14 +389,15 @@ It must return an `Uint8Array` instance containing the compressed bitstream.
 Import your function:
 
 ```ts
-import { encodeVorbis } from "./libvorbis/encode_vorbis.js"; // adjust the path if necessary
+// Example name, yours will be different
+import { encodeVorbis } from "./libvorbis/encode_vorbis.js";
 ```
 
-Then pass it to the write method:
+Then pass it to the compressing method:
 
 ```ts
-const file = await soundBank.writeSF2({
-    compress: true,
+await soundBank.setSampleFormat({
+    format: "compressed",
     compressionFunction: encodeVorbis
 });
 ```

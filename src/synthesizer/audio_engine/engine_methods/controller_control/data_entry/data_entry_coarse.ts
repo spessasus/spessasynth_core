@@ -30,7 +30,7 @@ export const nonRegisteredMSB = {
 };
 
 /**
- * https://cdn.roland.com/assets/media/pdf/SC-88PRO_OM.pdf
+ * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
  * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
  * These also seem to match XG
  * @enum {number}

@@ -230,7 +230,7 @@ The method is called on a `BasicMIDI` instance; that instance is the MIDI file t
 
 !!! Tip
 
-    use [trimSoundBank](../sound-bank/index.md#trimsoundbank) to drastically reduce the file size.
+    use [trim](../sound-bank/index.md#trim) to drastically reduce the file size.
     consider also using compression (like shown in example) to save even more space.
     (using these both methods, I managed to cram a 1GB soundfont into a 5MB RMIDI!)
 
@@ -264,12 +264,13 @@ document.getElementById("export").onchange = async () => {
     );
 
     // trim the soundfont
-    soundBank.trimSoundBank(midi);
+    soundBank.trim(midi);
     // write out with compression to save space (0.5 is medium quality)
-    const soundfontBinary = await soundBank.writeSF2({
-        compress: true,
+    await soundBank.setSampleFormat({
+        format: "compressed",
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
+    const soundfontBinary = soundBank.writeSF2();
     // get the rmidi
     const rmidiBinary = midi.writeRMIDI(soundfontBinary, {
         soundBank,

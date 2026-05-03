@@ -6,7 +6,7 @@ import {
     midiMessageTypes
 } from "../src";
 import fs from "fs/promises";
-import { channelToSyx } from "../src/utils/sysex_detector";
+import { channelToSyx } from "../src/utils/sysex";
 import * as path from "node:path";
 
 class EFXTest {

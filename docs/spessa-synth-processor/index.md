@@ -432,15 +432,15 @@ Parameters the function gets called with:
 
 If a `BasicPreset` instance is returned by the function, it will be used by the channel.
 
-### totalVoicesAmount
+### voiceCount
 
-The current total amount of voices that are currently playing, a number.
+The current total amount of voices that are playing, a number.
 
 ### processorInitialized
 
 A `Promise` that must be awaited before the processor is used with a compressed sound bank.
 
-### currentSynthTime
+### currentTime
 
 The current time of the synthesizer, in seconds.
 

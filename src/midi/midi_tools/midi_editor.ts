@@ -8,19 +8,7 @@ import {
 import { consoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import {
-    channelToSyx,
-    isDrumEdit,
-    isGM2On,
-    isGMOn,
-    isGSChorus,
-    isGSDelay,
-    isGSInsertion,
-    isGSOn,
-    isGSReverb,
-    isProgramChange,
-    isXGOn
-} from "../../utils/sysex_detector";
+
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
     type MIDIController,
@@ -28,7 +16,6 @@ import {
     type MIDIMessageType,
     midiMessageTypes
 } from "../enums";
-import { getGsOn } from "./get_gs_on";
 import type {
     DesiredChannelTranspose,
     DesiredControllerChange,
@@ -45,6 +32,7 @@ import type {
     InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
+import { SysEx } from "../../utils/sysex";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -90,40 +78,6 @@ function getControllerChange(
         (midiMessageTypes.controllerChange | (channel % 16)) as MIDIMessageType,
         new IndexedByteArray([cc, value])
     );
-}
-
-function sendAddress(
-    ticks: number,
-    a1: number,
-    a2: number,
-    a3: number,
-    data: number[]
-) {
-    // Calculate checksum
-    // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
-    const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
-    const checksum = (128 - (sum % 128)) & 0x7f;
-    return new MIDIMessage(
-        ticks,
-        midiMessageTypes.systemExclusive,
-        new Uint8Array([
-            0x41, // Roland
-            0x10, // Device ID (defaults to 16 on roland)
-            0x42, // GS
-            0x12, // Command ID (DT1)
-            a1,
-            a2,
-            a3,
-            ...data,
-            checksum,
-            0xf7 // End of exclusive
-        ])
-    );
-}
-
-function getDrumChange(channel: number, ticks: number): MIDIMessage {
-    const chanAddress = 0x10 | channelToSyx(channel);
-    return sendAddress(ticks, 40, chanAddress, 0x15, [0x01]);
 }
 
 export interface ModifyMIDIOptions {
@@ -424,7 +378,9 @@ export function modifyMIDIInternal(
                                 consoleColors.recognized,
                                 consoleColors.value
                             );
-                            addEventBefore(getDrumChange(midiChannel, e.ticks));
+                            addEventBefore(
+                                SysEx.gsDrumChange(midiChannel, e.ticks)
+                            );
                         }
                     }
                 }
@@ -530,87 +486,125 @@ export function modifyMIDIInternal(
             }
 
             case midiMessageTypes.systemExclusive: {
-                // Check for xg on
-                if (isXGOn(e)) {
-                    SpessaSynthInfo(
-                        "%cXG system on detected",
-                        consoleColors.info
-                    );
-                    system = "xg";
-                    addedGs = true; // Flag as true so gs won't get added
-
-                    return;
-                }
-                if (isGM2On(e)) {
-                    SpessaSynthInfo(
-                        "%cGM2 system on detected",
-                        consoleColors.info
-                    );
-                    system = "gm2";
-                    addedGs = true; // Flag as true so gs won't get added
-                    return;
-                }
-                if (isGSOn(e)) {
-                    // Check for GS on
-                    // That's a GS on, we're done here
-                    addedGs = true;
-                    SpessaSynthInfo(
-                        "%cGS on detected!",
-                        consoleColors.recognized
-                    );
-                    return;
-                }
-                if (isGMOn(e)) {
-                    // Check for GM on
-                    // That's a GM1 system change, remove it!
-                    SpessaSynthInfo(
-                        "%cGM on detected, removing!",
-                        consoleColors.info
-                    );
-                    deleteThisEvent();
-                    addedGs = false;
-                    return;
-                }
-                // Drum setup
-                if (clearDrumParams && isDrumEdit(e.data)) {
-                    deleteThisEvent();
-                    return;
-                }
-
-                // GS effects
-                if (reverbParams && isGSReverb(e.data)) {
-                    // Delete all reverb params since we're setting new ones
-                    deleteThisEvent();
-                    return;
-                }
-
-                if (chorusParams && isGSChorus(e.data)) {
-                    // Delete all chorus params since we're setting new ones
-                    deleteThisEvent();
-                    return;
-                }
-
-                if (delayParams && isGSDelay(e.data)) {
-                    // Delete all delay params since we're setting new ones
-                    deleteThisEvent();
-                    return;
-                }
-
-                if (insertionParams && isGSInsertion(e.data)) {
-                    // Delete all insertion params since we're setting new ones
-                    deleteThisEvent();
-                    return;
-                }
-
-                // SysEx can change programs
-                const prog = isProgramChange(e.data);
-                if (prog !== -1) {
-                    // Do we delete it?
-                    if (channelsToChangeProgram.has(prog + portOffset)) {
-                        // This channel has program change. BEGONE!
-                        deleteThisEvent();
+                const syx = SysEx.analyze(e.data);
+                switch (syx.type) {
+                    default: {
+                        return;
                     }
-                    return;
+
+                    case "XG Reset": {
+                        SpessaSynthInfo(
+                            "%cXG system on detected",
+                            consoleColors.info
+                        );
+                        system = "xg";
+                        addedGs = true; // Flag as true so gs won't get added
+                        return;
+                    }
+
+                    case "GM2 On": {
+                        SpessaSynthInfo(
+                            "%cGM2 system on detected",
+                            consoleColors.info
+                        );
+                        system = "gm2";
+                        addedGs = true; // Flag as true so gs won't get added
+                        return;
+                    }
+
+                    case "GS Reset": {
+                        // Check for GS on
+                        // That's a GS on, we're done here
+                        addedGs = true;
+                        SpessaSynthInfo(
+                            "%cGS on detected!",
+                            consoleColors.recognized
+                        );
+                        return;
+                    }
+
+                    case "GM Off":
+                    case "GM On": {
+                        // Check for GM on
+                        // That's a GM1 system change, remove it!
+                        SpessaSynthInfo(
+                            "%cGM on detected, removing!",
+                            consoleColors.info
+                        );
+                        deleteThisEvent();
+                        addedGs = false;
+                        return;
+                    }
+
+                    case "Drum Setup": {
+                        // Drum setup
+                        if (clearDrumParams) deleteThisEvent();
+                        return;
+                    }
+
+                    case "Reverb Param": {
+                        // Delete all reverb params since we're setting new ones
+                        if (reverbParams) deleteThisEvent();
+
+                        return;
+                    }
+
+                    case "Chorus Param": {
+                        // Delete all chorus params since we're setting new ones
+                        if (chorusParams) deleteThisEvent();
+                        return;
+                    }
+
+                    case "Delay Param": {
+                        // Delete all delay params since we're setting new ones
+                        if (delayParams) deleteThisEvent();
+                        return;
+                    }
+
+                    case "Insertion Param": {
+                        // Delete all insertion params since we're setting new ones
+                        if (insertionParams) deleteThisEvent();
+                        return;
+                    }
+
+                    case "Program Change": {
+                        // SysEx can change programs
+                        // Do we delete it?
+                        if (
+                            channelsToChangeProgram.has(
+                                syx.channel + portOffset
+                            )
+                        ) {
+                            // This channel has program change. BEGONE!
+                            deleteThisEvent();
+                        }
+                        return;
+                    }
+
+                    case "Controller Change": {
+                        // SysEx can change controllers too!
+                        const ccNum = syx.controller;
+                        const channel = syx.channel;
+                        const changes = controllerChanges.find(
+                            (c) =>
+                                c.channel === channel &&
+                                ccNum === c.controllerNumber
+                        );
+                        if (changes !== undefined) {
+                            // This controller is locked, BEGONE CHANGE!
+                            deleteThisEvent();
+                            return;
+                        }
+                        if (
+                            (ccNum === midiControllers.bankSelect ||
+                                ccNum === midiControllers.bankSelectLSB) &&
+                            channelsToChangeProgram.has(channel)
+                        ) {
+                            // BEGONE!
+                            deleteThisEvent();
+                        }
+                        return;
+                    }
                 }
             }
         }
@@ -628,14 +622,18 @@ export function modifyMIDIInternal(
         const p = reverbParams;
         targetTrack.addEvents(
             targetIndex,
-            sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
-            sendAddress(targetTicks, 0x40, 0x01, m.character, [p.character]),
-            sendAddress(targetTicks, 0x40, 0x01, m.time, [p.time]),
-            sendAddress(targetTicks, 0x40, 0x01, m.delayFeedback, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+                p.preLowpass
+            ]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.character, [
+                p.character
+            ]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.time, [p.time]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.delayFeedback, [
                 p.delayFeedback
             ]),
-            sendAddress(targetTicks, 0x40, 0x01, m.preDelayTime, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preDelayTime, [
                 p.preDelayTime
             ])
         );
@@ -645,16 +643,18 @@ export function modifyMIDIInternal(
         const p = chorusParams;
         targetTrack.addEvents(
             targetIndex,
-            sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
-            sendAddress(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
-            sendAddress(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
-            sendAddress(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
-            sendAddress(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
-            sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+                p.preLowpass
+            ]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
                 p.sendLevelToReverb
             ]),
-            sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToDelay, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToDelay, [
                 p.sendLevelToDelay
             ])
         );
@@ -664,23 +664,31 @@ export function modifyMIDIInternal(
         const p = delayParams;
         targetTrack.addEvents(
             targetIndex,
-            sendAddress(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            sendAddress(targetTicks, 0x40, 0x01, m.preLowpass, [p.preLowpass]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+                p.preLowpass
+            ]),
 
-            sendAddress(targetTicks, 0x40, 0x01, m.timeCenter, [p.timeCenter]),
-            sendAddress(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.timeCenter, [
+                p.timeCenter
+            ]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
                 p.timeRatioLeft
             ]),
-            sendAddress(targetTicks, 0x40, 0x01, m.timeRatioRight, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioRight, [
                 p.timeRatioRight
             ]),
-            sendAddress(targetTicks, 0x40, 0x01, m.levelCenter, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.levelCenter, [
                 p.levelCenter
             ]),
-            sendAddress(targetTicks, 0x40, 0x01, m.levelLeft, [p.levelLeft]),
-            sendAddress(targetTicks, 0x40, 0x01, m.levelRight, [p.levelRight]),
-            sendAddress(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
-            sendAddress(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.levelLeft, [
+                p.levelLeft
+            ]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.levelRight, [
+                p.levelRight
+            ]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
+            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
                 p.sendLevelToReverb
             ])
         );
@@ -693,10 +701,10 @@ export function modifyMIDIInternal(
             if (p.channels[channel]) {
                 targetTrack.addEvents(
                     targetTicks,
-                    sendAddress(
+                    SysEx.gsMessage(
                         targetTicks,
                         0x40,
-                        0x40 | channelToSyx(channel),
+                        0x40 | SysEx.channelToSyx(channel),
                         0x22,
                         [1]
                     )
@@ -710,7 +718,7 @@ export function modifyMIDIInternal(
             if (value === 255) continue;
             targetTrack.addEvents(
                 targetIndex,
-                sendAddress(targetTicks, 0x40, 0x03, param + 3, [value])
+                SysEx.gsMessage(targetTicks, 0x40, 0x03, param + 3, [value])
             );
         }
 
@@ -720,7 +728,7 @@ export function modifyMIDIInternal(
         // Channels
         targetTrack.addEvents(
             targetIndex,
-            sendAddress(targetTicks, 0x40, 0x03, 0x00, [
+            SysEx.gsMessage(targetTicks, 0x40, 0x03, 0x00, [
                 p.type >> 8,
                 p.type & 0x7f
             ])
@@ -736,7 +744,7 @@ export function modifyMIDIInternal(
         ) {
             index++;
         }
-        midi.tracks[0].addEvents(index, getGsOn(0));
+        midi.tracks[0].addEvents(index, SysEx.gsReset(0));
         SpessaSynthInfo("%cGS on not detected. Adding it.", consoleColors.info);
     }
     midi.flush();

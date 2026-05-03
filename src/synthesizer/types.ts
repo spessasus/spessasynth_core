@@ -336,11 +336,11 @@ export type CachedVoiceList = CachedVoice[];
 
 export interface ChannelProperty {
     /**
-     * The channel's current voice amount.
+     * The channel's current amount of voices.
      */
-    voicesAmount: number;
+    voiceCount: number;
     /**
-     * The channel's current pitch wheel 0 - 16384.
+     * The channel's current pitch wheel 0 - 16383.
      */
     pitchWheel: number;
     /**

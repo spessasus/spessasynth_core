@@ -144,13 +144,13 @@ mid.addControllerChange(
 Adds a new "pitch wheel" message.
 
 ```ts
-mid.addPitchWheel(ticks, track, channel, MSB, LSB);
+mid.addPitchWheel(ticks, track, channel, pitch);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
 - `track` - `number` - the track to use.
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
-- `MSB` and `LSB` - both `number` - 7-bit numbers that form a 14-bit pitch wheel value.
+- `pitch` - `number` - the new 14-bit pitch value. Ranges from 0 to 16,383. Value of 8192 centers the wheel (no change)
 
 !!! Tip
 
@@ -161,6 +161,9 @@ mid.addPitchWheel(ticks, track, channel, MSB, LSB);
 The below code produces a file that plays C Major scale.
 
 ```ts
+import { MIDIBuilder } from "spessasynth_core";
+import fs from "fs/promises";
+
 // Create a new MIDI file
 const mid = new MIDIBuilder({
     name: "C Major Scale"
@@ -187,12 +190,7 @@ mid.addNoteOff(10000, 0, 0, 72);
 // Finalize the MIDI file
 mid.flush();
 
-// Write the MIDI file to a blob and save it
-const b = mid.writeMIDI();
-const blob = new Blob([b.buffer], { type: "audio/mid" });
-const url = URL.createObjectURL(blob);
-const a = document.createElement("a");
-a.href = url;
-a.download = "C_major_scale.mid";
-a.click();
+// Write the MIDI file
+const file = mid.writeMIDI();
+await fs.writeFile("c_major_scale.mid", new Uint8Array(file));
 ```

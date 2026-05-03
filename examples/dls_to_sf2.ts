@@ -18,7 +18,7 @@ const bank = SoundBankLoader.fromArrayBuffer(dls.buffer);
 console.timeEnd("Loaded in");
 console.time("Converted in");
 console.info(`Name: ${bank.soundBankInfo.name}`);
-const outSF2 = await bank.writeSF2();
+const outSF2 = bank.writeSF2();
 console.timeEnd("Converted in");
 console.info(`Writing file...`);
 await fs.writeFile(sf2Path, new Uint8Array(outSF2));

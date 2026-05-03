@@ -32,10 +32,10 @@ const midi = BasicMIDI.fromArrayBuffer((await fs.readFile(midPath)).buffer);
 console.info("Loaded bank and MIDI!");
 
 // Trim sf2 for midi
-bank.trimSoundBank(midi);
+bank.trim(midi.getUsedProgramsAndKeys(bank));
 
 // Write rmid
-const rmidi = midi.writeRMIDI(await bank.writeSF2(), {
+const rmidi = midi.writeRMIDI(bank.writeSF2(), {
     soundBank: bank
 });
 await fs.writeFile(outPath, new Uint8Array(rmidi));

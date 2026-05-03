@@ -443,7 +443,7 @@ export class MIDIChannel {
 
     /**
      * Sets the pitch of the given channel.
-     * @param pitch The pitch (0 - 16384)
+     * @param pitch The pitch (0 - 16383)
      * @param midiNote The MIDI note number, pass -1 for the regular pitch wheel
      */
     public pitchWheel(pitch: number, midiNote = -1) {
@@ -753,7 +753,7 @@ export class MIDIChannel {
             return;
         }
         const data: ChannelProperty = {
-            voicesAmount: this.voiceCount,
+            voiceCount: this.voiceCount,
             pitchWheel:
                 this.midiControllers[
                     NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel

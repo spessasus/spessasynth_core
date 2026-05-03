@@ -55,7 +55,7 @@ const right = new Float32Array(quantum * blockSize);
 let startTime = performance.now();
 setInterval(() => {
     const t = (performance.now() - startTime) / 1000;
-    if (synth.currentSynthTime - t > 0.5) {
+    if (synth.currentTime - t > 0.5) {
         return;
     }
     left.fill(0);

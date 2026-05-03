@@ -17,7 +17,7 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
     if (!midi.tracks) {
         throw new Error("MIDI has no tracks!");
     }
-    const binaryTrackData: Uint8Array[] = [];
+    const binaryTrackData: number[][] = [];
     for (const track of midi.tracks) {
         const binaryTrack = [];
         let currentTick = 0;
@@ -76,11 +76,11 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
         }
         // Write endOfTrack
         binaryTrack.push(0, 0xff, midiMessageTypes.endOfTrack, 0);
-        binaryTrackData.push(new Uint8Array(binaryTrack));
+        binaryTrackData.push(binaryTrack);
     }
 
     // Write the file
-    const binaryData: number[] = [];
+    let binaryData: number[] = [];
     // Write header
     writeText("MThd", binaryData); // MThd
     binaryData.push(
@@ -95,7 +95,7 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
     for (const track of binaryTrackData) {
         // Write track header
         writeText("MTrk", binaryData); // MTrk
-        binaryData.push(...writeBigEndian(track.length, 4), ...track); // Write data
+        binaryData = binaryData.concat(writeBigEndian(track.length, 4), track); // Write data
     }
     return new Uint8Array(binaryData).buffer;
 }

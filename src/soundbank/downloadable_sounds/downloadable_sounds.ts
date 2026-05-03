@@ -4,6 +4,7 @@ import { DownloadableSoundsInstrument } from "./instrument";
 import type {
     DLSInfoFourCC,
     DLSWriteOptions,
+    ProgressFunction,
     SF2VersionTag,
     SoundBankInfoData
 } from "../types";
@@ -29,9 +30,10 @@ import {
 import { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { DownloadableSoundsRegion } from "./region";
+import { fillWithDefaults } from "../../utils/fill_with_defaults";
 
 export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
-    progressFunction: undefined
+    software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
 };
 
 export class DownloadableSounds extends DLSVerifier {
@@ -298,8 +300,12 @@ export class DownloadableSounds extends DLSVerifier {
 
     /**
      * Performs a full conversion from BasicSoundBank to DownloadableSounds.
+     * Includes an optional progress function for transforming the samples.
      */
-    public static fromSF(bank: BasicSoundBank) {
+    public static fromSF(
+        bank: BasicSoundBank,
+        progressFunc?: ProgressFunction
+    ) {
         SpessaSynthGroupCollapsed(
             "%cSaving SF2 to DLS level 2...",
             consoleColors.info
@@ -307,8 +313,10 @@ export class DownloadableSounds extends DLSVerifier {
         const dls = new DownloadableSounds();
         dls.soundBankInfo = { ...bank.soundBankInfo };
 
-        for (const s of bank.samples) {
+        for (let i = 0; i < bank.samples.length; i++) {
+            const s = bank.samples[i];
             dls.samples.push(DownloadableSoundsSample.fromSFSample(s));
+            progressFunc?.(i / bank.samples.length);
         }
         for (const p of bank.presets) {
             dls.instruments.push(
@@ -340,10 +348,14 @@ export class DownloadableSounds extends DLSVerifier {
     }
 
     /**
-     * Writes a DLS file
-     * @param options
+     * Writes a DLS file.
+     * @param writeOptions the options for writing the file.
      */
-    public async write(options: DLSWriteOptions = DEFAULT_DLS_OPTIONS) {
+    public write(writeOptions: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
+        const options: DLSWriteOptions = fillWithDefaults(
+            writeOptions,
+            DEFAULT_DLS_OPTIONS
+        );
         SpessaSynthGroupCollapsed("%cSaving DLS...", consoleColors.info);
         // Write colh
         const colhNum = new IndexedByteArray(4);
@@ -354,7 +366,7 @@ export class DownloadableSounds extends DLSVerifier {
             consoleColors.info
         );
 
-        const lins = RIFFChunk.writeParts(
+        const lins = RIFFChunk.getParts(
             "lins",
             this.instruments.map((i) => i.write()),
             true
@@ -369,21 +381,24 @@ export class DownloadableSounds extends DLSVerifier {
 
         let currentIndex = 0;
         const ptblOffsets = [];
-        const samples: IndexedByteArray[] = [];
+        const samples: Uint8Array[] = [];
         let written = 0;
         for (const s of this.samples) {
             const out = s.write();
-            await options?.progressFunction?.(
-                s.name,
-                written,
-                this.samples.length
+            options.progressFunction?.(written / this.samples.length);
+            SpessaSynthInfo(
+                `%cWrote sample %c${written}. ${s.name}%c of %c${this.samples.length}.`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info,
+                consoleColors.recognized
             );
             ptblOffsets.push(currentIndex);
-            currentIndex += out.length;
-            samples.push(out);
+            currentIndex += out.reduce((sum, cur) => sum + cur.length, 0);
+            samples.push(...out);
             written++;
         }
-        const wvpl = RIFFChunk.writeParts("wvpl", samples, true);
+        const wvpl = RIFFChunk.getParts("wvpl", samples, true);
         SpessaSynthInfo("%cSucceeded!", consoleColors.recognized);
 
         // Write ptbl
@@ -394,14 +409,16 @@ export class DownloadableSounds extends DLSVerifier {
             writeDword(ptblData, offset);
         }
         const ptbl = RIFFChunk.write("ptbl", ptblData);
-        this.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
+        this.soundBankInfo.software = options.software;
 
         // Write INFO
         const infos: Uint8Array[] = [];
         const info = this.soundBankInfo;
         const writeDLSInfo = (type: DLSInfoFourCC, data?: string) => {
             if (!data) return;
-            infos.push(RIFFChunk.write(type, getStringBytes(data, true)));
+            infos.push(
+                ...RIFFChunk.getParts(type, [getStringBytes(data, true)])
+            );
         };
 
         writeDLSInfo("INAM", info.name);
@@ -410,17 +427,17 @@ export class DownloadableSounds extends DLSVerifier {
         writeDLSInfo("ICRD", toISODateString(info.creationDate));
         writeDLSInfo("IENG", info.engineer);
         writeDLSInfo("IPRD", info.product);
-        writeDLSInfo("ISFT", options.software ?? "SpessaSynth"); // ( ͡° ͜ʖ ͡°)
+        writeDLSInfo("ISFT", options.software);
         writeDLSInfo("ISBJ", info.subject);
 
         SpessaSynthInfo("%cCombining everything...");
         const out = RIFFChunk.writeParts("RIFF", [
             getStringBytes("DLS "),
             colh,
-            lins,
+            ...lins,
             ptbl,
-            wvpl,
-            RIFFChunk.writeParts("INFO", infos, true)
+            ...wvpl,
+            ...RIFFChunk.getParts("INFO", infos, true)
         ]);
 
         SpessaSynthInfo("%cSaved successfully!", consoleColors.recognized);

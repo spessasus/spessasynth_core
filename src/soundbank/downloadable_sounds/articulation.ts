@@ -167,14 +167,13 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         writeDword(art2Data, this.connectionBlocks.length); // CConnectionBlocks
 
         const out = this.connectionBlocks.map((a) => a.write());
-        const art2 = RIFFChunk.writeParts(
+        const art2 = RIFFChunk.getParts(
             this.mode === "dls2" ? "art2" : "art1",
             [art2Data, ...out]
         );
-        return RIFFChunk.write(
+        return RIFFChunk.getParts(
             this.mode === "dls2" ? "lar2" : "lart",
             art2,
-            false,
             true
         );
     }

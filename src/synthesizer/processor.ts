@@ -151,7 +151,7 @@ export class SpessaSynthProcessor {
     /**
      * Executes a MIDI Pitch Wheel message on the specified channel.
      * @param channel The MIDI channel to send the pitch wheel on.
-     * @param pitch The new pitch value: 0-16384
+     * @param pitch The new pitch value: 0-16383
      * @param midiNote The MIDI note number (optional), pass -1 for the regular pitch wheel.
      */
     public readonly pitchWheel: (
@@ -289,14 +289,14 @@ export class SpessaSynthProcessor {
     /**
      * Current total amount of voices that are currently playing.
      */
-    public get totalVoicesAmount() {
+    public get voiceCount() {
         return this.synthCore.voiceCount;
     }
 
     /**
      * The current time of the synthesizer, in seconds. You probably should not modify this directly.
      */
-    public get currentSynthTime() {
+    public get currentTime() {
         return this.synthCore.currentTime;
     }
 

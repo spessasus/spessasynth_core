@@ -1,5 +1,4 @@
 import {
-    SpessaSynthGroup,
     SpessaSynthGroupCollapsed,
     SpessaSynthGroupEnd,
     SpessaSynthInfo
@@ -15,10 +14,11 @@ import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
-import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type {
     DLSWriteOptions,
+    PresetsWithKeyCombinations,
+    SetSampleFormatOptions,
     SF2VersionTag,
     SoundBankInfoData,
     SoundFont2WriteOptions
@@ -128,7 +128,7 @@ export class BasicSoundBank {
     /**
      * Creates a simple sound bank with one saw wave preset.
      */
-    public static async getSampleSoundBankFile(): Promise<ArrayBuffer> {
+    public static getSampleSoundBankFile() {
         const font = new BasicSoundBank();
         const sampleData = new Float32Array(128);
         for (let i = 0; i < 128; i++) {
@@ -164,7 +164,7 @@ export class BasicSoundBank {
 
         font.soundBankInfo.name = "Dummy";
         font.flush();
-        return await font.writeSF2();
+        return font.writeSF2();
     }
 
     /**
@@ -209,16 +209,87 @@ export class BasicSoundBank {
         this.addSamples(...sampleList);
     }
 
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Sets the sound bank's sample format _in place_.
+     * @param options options for writing the file.
+     */
+    public async setSampleFormat(options: SetSampleFormatOptions) {
+        let writtenCount = 0;
+        const format = options.format;
+        const progressFunc = options.progressFunction;
+        // Linear async is faster here as the writing function usually uses a single WASM instance
+        for (const s of this.samples) {
+            switch (format) {
+                default:
+                case "pcm": {
+                    s.setAudioData(s.getAudioData(), s.sampleRate);
+                    break;
+                }
+
+                case "compressed": {
+                    const f = options.compressionFunction;
+                    if (!f)
+                        throw new Error(
+                            `No compression function supplied but '${format}' was requested.`
+                        );
+                    await s.compressSample(f);
+                }
+            }
+            writtenCount++;
+            progressFunc?.(writtenCount / this.samples.length);
+
+            SpessaSynthInfo(
+                `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info,
+                s.isCompressed
+                    ? consoleColors.recognized
+                    : consoleColors.unrecognized,
+                consoleColors.info
+            );
+        }
+        // Change format
+        switch (format) {
+            default:
+            case "pcm": {
+                // Set version to 2.4
+                this.soundBankInfo.version.major = 2;
+                this.soundBankInfo.version.minor = 4;
+                break;
+            }
+
+            case "compressed": {
+                // Set version to 3
+                this.soundBankInfo.version.major = 3;
+                this.soundBankInfo.version.minor = 0;
+            }
+        }
+    }
+
     /**
      * Write the sound bank as a .dls file. This may not be 100% accurate.
-     * @param options - options for writing the file.
+     * Note that samples are always written in the s16le PCM encoding.
+     * @param options options for writing the file.
      * @returns the binary file.
      */
-    public async writeDLS(
-        options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS
-    ): Promise<ArrayBuffer> {
-        const dls = DownloadableSounds.fromSF(this);
-        return dls.write(options);
+    public writeDLS(options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
+        const pFunc = options.progressFunction;
+        // First half (progress 0-0.5)
+        const dls = DownloadableSounds.fromSF(
+            this,
+            pFunc ? (p: number) => pFunc(p / 2) : undefined
+        );
+        // Second half (progress 0.5-1)
+        return dls.write({
+            ...options,
+            progressFunction: pFunc
+                ? (p: number) => pFunc(0.5 + p / 2)
+                : undefined
+        });
     }
 
     /**
@@ -226,9 +297,9 @@ export class BasicSoundBank {
      * @param writeOptions the options for writing.
      * @returns the binary file data.
      */
-    public async writeSF2(
+    public writeSF2(
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
-    ): Promise<ArrayBuffer> {
+    ) {
         return writeSF2Internal(this, writeOptions);
     }
 
@@ -343,10 +414,12 @@ export class BasicSoundBank {
     }
 
     /**
-     * Trims a sound bank to only contain samples in a given MIDI file.
-     * @param mid - the MIDI file
+     * Trims the sound bank _in-place_ to only contain samples in a given MIDI file.
+     * @param presetData - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
+     * Absent presets will be removed from the sound bank,
+     * and samples that don't get activated in the remaining presets will be removed as well.
      */
-    public trimSoundBank(mid: BasicMIDI) {
+    public trim(presetData: PresetsWithKeyCombinations) {
         const trimInstrumentZones = (
             instrument: BasicInstrument,
             combos: { key: number; velocity: number }[]
@@ -397,14 +470,12 @@ export class BasicSoundBank {
             return trimmedIZones;
         };
 
-        SpessaSynthGroup("%cTrimming sound bank...", consoleColors.info);
-        const usedProgramsAndKeys = mid.getUsedProgramsAndKeys(this);
-
         SpessaSynthGroupCollapsed(
-            "%cModifying sound bank...",
+            "%cTrimming sound bank...",
             consoleColors.info
         );
-        SpessaSynthInfo("Detected keys for midi:", usedProgramsAndKeys);
+
+        SpessaSynthInfo("Combinations to trim for:", presetData);
         // Modify the sound bank to only include programs and samples that are used
         for (
             let presetIndex = 0;
@@ -412,7 +483,7 @@ export class BasicSoundBank {
             presetIndex++
         ) {
             const p = this.presets[presetIndex];
-            const used = usedProgramsAndKeys.get(p);
+            const used = presetData.get(p);
             if (used === undefined) {
                 SpessaSynthInfo(
                     `%cDeleting preset %c${p.name}%c and its zones`,
@@ -494,7 +565,6 @@ export class BasicSoundBank {
         this.removeUnusedElements();
 
         SpessaSynthInfo("%cSound bank modified!", consoleColors.recognized);
-        SpessaSynthGroupEnd();
         SpessaSynthGroupEnd();
     }
 

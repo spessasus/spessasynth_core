@@ -142,7 +142,7 @@ export class SpessaSynthSequencer {
      */
     public constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
-        this.absoluteStartTime = this.synth.currentSynthTime;
+        this.absoluteStartTime = this.synth.currentTime;
     }
 
     protected _midiData?: BasicMIDI;
@@ -244,7 +244,7 @@ export class SpessaSynthSequencer {
         }
 
         return (
-            (this.synth.currentSynthTime - this.absoluteStartTime) *
+            (this.synth.currentTime - this.absoluteStartTime) *
             this._playbackRate
         );
     }
@@ -433,7 +433,7 @@ export class SpessaSynthSequencer {
         }
         this.callEvent("midiMessage", {
             message,
-            time: this.synth.currentSynthTime
+            time: this.synth.currentTime
         });
     }
 
@@ -509,7 +509,7 @@ export class SpessaSynthSequencer {
      */
     protected recalculateStartTime(time: number) {
         this.absoluteStartTime =
-            this.synth.currentSynthTime - time / this._playbackRate;
+            this.synth.currentTime - time / this._playbackRate;
     }
 
     /**
