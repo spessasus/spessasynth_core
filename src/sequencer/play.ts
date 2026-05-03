@@ -121,8 +121,16 @@ export function setTimeToInternal(
                 savedControllers[channel] ??= [
                     ...defaultControllerArray
                 ] as MIDIController[];
-                savedControllers[channel][midiControllers.portamentoControl] =
-                    event.data[0];
+                // Only track if the portamento is on (even if time is 0)
+                if (
+                    savedControllers[channel][
+                        midiControllers.portamentoOnOff
+                    ] >= 8192
+                )
+                    savedControllers[channel][
+                        midiControllers.portamentoControl
+                    ] = event.data[0];
+
                 break;
             }
 
