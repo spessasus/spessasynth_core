@@ -8,7 +8,7 @@ import type {
     InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../effects/types";
-import { channelToSyx } from "../../../utils/sysex_detector";
+import { SysEx } from "../../../utils/sysex";
 
 function sendAddress(
     s: SpessaSynthProcessor,
@@ -18,25 +18,7 @@ function sendAddress(
     data: number[],
     offset = 0
 ) {
-    // Calculate checksum
-    // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
-    const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
-    const checksum = (128 - (sum % 128)) & 0x7f;
-    s.systemExclusive(
-        [
-            0x41, // Roland
-            0x10, // Device ID (defaults to 16 on roland)
-            0x42, // GS
-            0x12, // Command ID (DT1) (whatever that means...)
-            a1,
-            a2,
-            a3,
-            ...data,
-            checksum,
-            0xf7 // End of exclusive
-        ],
-        offset
-    );
+    s.systemExclusive(SysEx.gsData(a1, a2, a3, data), offset);
 }
 
 /**
@@ -159,9 +141,13 @@ export class SynthesizerSnapshot {
         }
 
         for (let channel = 0; channel < is.channels.length; channel++) {
-            sendAddress(processor, 0x40, 0x40 | channelToSyx(channel), 0x22, [
-                is.channels[channel] ? 1 : 0
-            ]);
+            sendAddress(
+                processor,
+                0x40,
+                0x40 | SysEx.channelToSyx(channel),
+                0x22,
+                [is.channels[channel] ? 1 : 0]
+            );
         }
 
         // Restore master parameters last

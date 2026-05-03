@@ -113,10 +113,10 @@ export function handleGM(
                 this.resetAllControllers("gm2");
             } else {
                 SpessaSynthInfo(
-                    "%cGM system off, defaulting to GS",
+                    "%cGM system off, switching to GS",
                     consoleColors.info
                 );
-                this.setMasterParameter("midiSystem", "gs");
+                this.resetAllControllers("gs");
             }
             break;
         }

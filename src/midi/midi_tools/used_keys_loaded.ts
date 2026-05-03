@@ -4,25 +4,14 @@ import {
     SpessaSynthInfo,
     SpessaSynthWarn
 } from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
+import { arrayToHexString, consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import {
-    isGM2On,
-    isGMOn,
-    isGSDrumsOn,
-    isGSOn,
-    isXGOn,
-    syxToChannel
-} from "../../utils/sysex_detector";
+import { SysEx } from "../../utils/sysex";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import type { SynthSystem } from "../../synthesizer/types";
-import {
-    type MIDIController,
-    midiControllers,
-    midiMessageTypes
-} from "../enums";
+import { midiControllers, midiMessageTypes } from "../enums";
 import type { SoundBankManager } from "../../synthesizer/audio_engine/engine_components/sound_bank_manager";
 
 interface InternalChannelType {
@@ -49,14 +38,14 @@ export function getUsedProgramsAndKeys(
     // Find every used preset and every key:velocity for each.
     // Make sure to care about ports and drums.
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
-    const channelPresets: InternalChannelType[] = [];
+    const channels: InternalChannelType[] = [];
 
     // Check for xg
     let system: SynthSystem = "gs";
 
     for (let i = 0; i < channelsAmount; i++) {
         const isDrum = i % 16 === DEFAULT_PERCUSSION;
-        channelPresets.push({
+        channels.push({
             preset: soundBank.getPreset(
                 {
                     bankLSB: 0,
@@ -80,15 +69,16 @@ export function getUsedProgramsAndKeys(
 
     const ports = mid.tracks.map((t) => t.port);
 
-    mid.iterate((event, trackNum) => {
+    const offsetMap = mid.portChannelOffsetMap;
+    mid.iterate((e, trackNum) => {
         // Do not assign ports to empty tracks
         // Testcase Cueshe - Bakit 1.mid
         if (
-            event.statusByte === midiMessageTypes.midiPort &&
+            e.statusByte === midiMessageTypes.midiPort &&
             mid.tracks[trackNum].channels.size > 0
         ) {
-            let port = event.data[0];
-            if (mid.portChannelOffsetMap[port] === undefined) {
+            let port = e.data[0];
+            if (offsetMap[port] === undefined) {
                 SpessaSynthWarn(
                     `Invalid port ${port} on track ${trackNum}. (No offset found in the MIDI map.`
                 );
@@ -97,7 +87,7 @@ export function getUsedProgramsAndKeys(
             ports[trackNum] = port;
             return;
         }
-        const status = event.statusByte & 0xf0;
+        const status = e.statusByte & 0xf0;
         if (
             status !== midiMessageTypes.noteOn &&
             status !== midiMessageTypes.controllerChange &&
@@ -106,54 +96,44 @@ export function getUsedProgramsAndKeys(
         ) {
             return;
         }
-        const channel =
-            (event.statusByte & 0xf) +
-                mid.portChannelOffsetMap[ports[trackNum]] || 0;
-        let ch = channelPresets[channel];
+
         switch (status) {
             case midiMessageTypes.programChange: {
+                const channel =
+                    (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
+                const ch = channels[channel];
                 ch.preset = soundBank.getPreset(
                     {
                         bankMSB: ch.bankMSB,
                         bankLSB: ch.bankLSB,
-                        program: event.data[0],
+                        program: e.data[0],
                         isGMGSDrum: ch.isDrum
                     },
                     system
                 );
-                break;
+                return;
             }
 
             case midiMessageTypes.controllerChange: {
-                {
-                    switch (event.data[0] as MIDIController) {
-                        default: {
-                            return;
-                        }
-
-                        case midiControllers.bankSelectLSB: {
-                            ch.bankLSB = event.data[1];
-                            break;
-                        }
-
-                        case midiControllers.bankSelect: {
-                            ch.bankMSB = event.data[1];
-                        }
-                    }
-                }
-                break;
+                const channel =
+                    (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
+                const ch = channels[channel];
+                if (e.data[0] === midiControllers.bankSelectLSB)
+                    ch.bankLSB = e.data[1];
+                else if (e.data[0] === midiControllers.bankSelect)
+                    ch.bankLSB = e.data[1];
+                return;
             }
 
             case midiMessageTypes.noteOn: {
-                if (event.data[1] === 0) {
-                    // That's a note off
-                    return;
-                }
+                const channel =
+                    (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
+                const ch = channels[channel];
+                // That's a note off
+                if (e.data[1] === 0) return;
 
                 // If there's no preset, ignore
-                if (!ch.preset) {
-                    return;
-                }
+                if (!ch.preset) return;
 
                 let combos = usedProgramsAndKeys.get(ch.preset);
                 if (!combos) {
@@ -161,50 +141,94 @@ export function getUsedProgramsAndKeys(
                     usedProgramsAndKeys.set(ch.preset, combos);
                 }
 
-                combos.add(`${event.data[0]}-${event.data[1]}`);
-                break;
+                combos.add(`${e.data[0]}-${e.data[1]}`);
+                return;
             }
 
             case midiMessageTypes.systemExclusive: {
                 // Check for drum sysex
                 {
-                    if (!isGSDrumsOn(event)) {
+                    const syx = SysEx.analyze(e);
+                    switch (syx.type) {
+                        default: {
+                            return;
+                        }
+
                         // Check for XG
-                        if (isXGOn(event)) {
+                        case "XG Reset": {
                             system = "xg";
                             SpessaSynthInfo(
                                 "%cXG on detected!",
                                 consoleColors.recognized
                             );
-                        } else if (isGM2On(event)) {
+                            return;
+                        }
+
+                        case "GM2 On": {
                             system = "gm2";
                             SpessaSynthInfo(
                                 "%cGM2 on detected!",
                                 consoleColors.recognized
                             );
-                        } else if (isGMOn(event)) {
+                            return;
+                        }
+
+                        case "GM On": {
                             system = "gm";
                             SpessaSynthInfo(
                                 "%cGM on detected!",
                                 consoleColors.recognized
                             );
-                        } else if (isGSOn(event)) {
+                            return;
+                        }
+
+                        case "GS Reset": {
                             system = "gs";
                             SpessaSynthInfo(
                                 "%cGS on detected!",
                                 consoleColors.recognized
                             );
+                            return;
                         }
-                        return;
+
+                        case "Drums On": {
+                            const sysexChannel =
+                                syx.channel + offsetMap[ports[trackNum]];
+                            console.log(syx.channel, arrayToHexString(e.data));
+                            channels[sysexChannel].isDrum = syx.isDrum;
+                            return;
+                        }
+
+                        case "Program Change": {
+                            const sysexChannel =
+                                syx.channel + offsetMap[ports[trackNum]];
+                            const ch = channels[sysexChannel];
+                            ch.preset = soundBank.getPreset(
+                                {
+                                    bankMSB: ch.bankMSB,
+                                    bankLSB: ch.bankLSB,
+                                    program: syx.value,
+                                    isGMGSDrum: ch.isDrum
+                                },
+                                system
+                            );
+                            return;
+                        }
+
+                        case "Controller Change": {
+                            const sysexChannel =
+                                syx.channel + offsetMap[ports[trackNum]];
+                            if (
+                                syx.controller === midiControllers.bankSelectLSB
+                            )
+                                channels[sysexChannel].bankLSB = syx.value;
+                            else if (
+                                syx.controller === midiControllers.bankSelect
+                            )
+                                channels[sysexChannel].bankLSB = syx.value;
+                        }
                     }
-                    const sysexChannel =
-                        syxToChannel(event.data[5] & 0x0f) +
-                        mid.portChannelOffsetMap[ports[trackNum]];
-                    const isDrum = !!(event.data[7] > 0 && event.data[5] >> 4);
-                    ch = channelPresets[sysexChannel];
-                    ch.isDrum = isDrum;
                 }
-                break;
             }
         }
     });

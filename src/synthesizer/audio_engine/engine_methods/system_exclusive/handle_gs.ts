@@ -11,7 +11,7 @@ import { NON_CC_INDEX_OFFSET } from "../../engine_components/controller_tables";
 import { modulatorSources } from "../../../../soundbank/enums";
 import { readBinaryString } from "../../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../../synthesizer_core";
-import { syxToChannel } from "../../../../utils/sysex_detector";
+import { SysEx } from "../../../../utils/sysex";
 import { EFX_SENDS_GAIN_CORRECTION } from "../../engine_components/synth_constants";
 
 const coolInfo = (what: string, value: string | number | boolean) => {
@@ -44,19 +44,14 @@ export function handleGS(
             case 0x42: {
                 {
                     // This is a GS sysex
-                    const addr1 = syx[4];
-                    const addr2 = syx[5];
-                    const addr3 = syx[6];
+                    const a1 = syx[4];
+                    const a2 = syx[5];
+                    const a3 = syx[6];
 
                     // Sanity check
                     const data = Math.min(syx[7], 127);
                     // SYSTEM MODE SET
-                    if (
-                        addr1 === 0 &&
-                        addr2 === 0 &&
-                        addr3 === 0x7f &&
-                        data === 0x00
-                    ) {
+                    if (a1 === 0 && a2 === 0 && a3 === 0x7f && data === 0x00) {
                         // This is a GS reset
                         SpessaSynthInfo(
                             "%cGS Reset received!",
@@ -67,10 +62,10 @@ export function handleGS(
                     }
 
                     // Patch Parameter
-                    if (addr1 === 0x40) {
+                    if (a1 === 0x40) {
                         // System Parameter
-                        if (addr2 === 0x00) {
-                            switch (addr3) {
+                        if (a2 === 0x00) {
+                            switch (a3) {
                                 case 0x00: {
                                     // Roland GS master tune
                                     const tune =
@@ -138,10 +133,10 @@ export function handleGS(
                         }
 
                         // Part Parameter, Patch Common (Effects)
-                        if (addr2 === 0x01) {
-                            const isReverb = addr3 >= 0x30 && addr3 <= 0x37;
-                            const isChorus = addr3 >= 0x38 && addr3 <= 0x40;
-                            const isDelay = addr3 >= 0x50 && addr3 <= 0x5a;
+                        if (a2 === 0x01) {
+                            const isReverb = a3 >= 0x30 && a3 <= 0x37;
+                            const isChorus = a3 >= 0x38 && a3 <= 0x40;
+                            const isDelay = a3 >= 0x50 && a3 <= 0x5a;
                             // Disable effect editing if locked
                             if (isReverb && this.masterParameters.reverbLock)
                                 return;
@@ -153,12 +148,12 @@ export function handleGS(
                             0x40 - chorus to delay
                             enable delay that way
                              */
-                            this.delayActive ||= addr3 === 0x40 || isDelay;
+                            this.delayActive ||= a3 === 0x40 || isDelay;
 
-                            switch (addr3) {
+                            switch (a3) {
                                 default: {
                                     SpessaSynthInfo(
-                                        `%cUnsupported Patch Common parameter: %c${addr3.toString(16)}`,
+                                        `%cUnsupported Patch Common parameter: %c${a3.toString(16)}`,
                                         consoleColors.warn,
                                         consoleColors.unrecognized
                                     );
@@ -174,7 +169,7 @@ export function handleGS(
                                         7
                                     );
                                     coolInfo(
-                                        `Patch Name for ${addr3 & 0x0f}`,
+                                        `Patch Name for ${a3 & 0x0f}`,
                                         patchName
                                     );
                                     break;
@@ -492,28 +487,25 @@ export function handleGS(
                         }
 
                         // EFX Parameter
-                        if (addr2 === 0x03) {
+                        if (a2 === 0x03) {
                             if (this.masterParameters.insertionEffectLock)
                                 return;
 
                             // Write parameters
-                            if (addr3 >= 0x03 && addr3 <= 0x19)
-                                this.insertionParams[addr3 - 3] = data;
+                            if (a3 >= 0x03 && a3 <= 0x19)
+                                this.insertionParams[a3 - 3] = data;
 
-                            if (addr3 >= 0x03 && addr3 <= 0x16) {
-                                this.insertionProcessor.setParameter(
-                                    addr3,
-                                    data
-                                );
-                                coolInfo(`EFX Parameter ${addr3 - 2}`, data);
+                            if (a3 >= 0x03 && a3 <= 0x16) {
+                                this.insertionProcessor.setParameter(a3, data);
+                                coolInfo(`EFX Parameter ${a3 - 2}`, data);
                                 this.callEvent("effectChange", {
                                     effect: "insertion",
-                                    parameter: addr3,
+                                    parameter: a3,
                                     value: data
                                 });
                                 return;
                             }
-                            switch (addr3) {
+                            switch (a3) {
                                 default: {
                                     sysExNotRecognized(syx, "Roland GS EFX");
                                     return;
@@ -557,7 +549,7 @@ export function handleGS(
                                     coolInfo("EFX Send Level to Reverb", data);
                                     this.callEvent("effectChange", {
                                         effect: "insertion",
-                                        parameter: addr3,
+                                        parameter: a3,
                                         value: data
                                     });
                                     return;
@@ -572,7 +564,7 @@ export function handleGS(
                                     coolInfo("EFX Send Level to Chorus", data);
                                     this.callEvent("effectChange", {
                                         effect: "insertion",
-                                        parameter: addr3,
+                                        parameter: a3,
                                         value: data
                                     });
                                     return;
@@ -588,7 +580,7 @@ export function handleGS(
                                     coolInfo("EFX Send Level to Delay", data);
                                     this.callEvent("effectChange", {
                                         effect: "insertion",
-                                        parameter: addr3,
+                                        parameter: a3,
                                         value: data
                                     });
                                     return;
@@ -597,16 +589,16 @@ export function handleGS(
                         }
 
                         // Patch Parameters
-                        if (addr2 >> 4 === 1) {
+                        if (a2 >> 4 === 1) {
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-88Pro manual page 196
                             const channel =
-                                syxToChannel(addr2 & 0x0f) + channelOffset;
+                                SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const channelObject = this.midiChannels[channel];
-                            switch (addr3) {
+                            switch (a3) {
                                 default: {
                                     // This is some other GS sysex...
                                     sysExNotRecognized(syx, "Roland GS");
@@ -858,17 +850,17 @@ export function handleGS(
                         }
 
                         // Patch Parameter controllers
-                        if (addr2 >> 4 === 2) {
+                        if (a2 >> 4 === 2) {
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-88Pro manual page 196
                             const channel =
-                                syxToChannel(addr2 & 0x0f) + channelOffset;
+                                SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
                             // SC88 manual page 198
-                            switch (addr3 & 0xf0) {
+                            switch (a3 & 0xf0) {
                                 default: {
                                     // This is some other GS sysex...
                                     sysExNotRecognized(
@@ -880,7 +872,7 @@ export function handleGS(
 
                                 case 0x00: {
                                     // Modulation wheel
-                                    if ((addr3 & 0x0f) === 0x04) {
+                                    if ((a3 & 0x0f) === 0x04) {
                                         // LFO1 Pitch depth
                                         // Special case:
                                         // If the source is a mod wheel, it's a strange way of setting the modulation depth
@@ -898,7 +890,7 @@ export function handleGS(
                                         break;
                                     }
                                     ch.sysExModulators.setupReceiver(
-                                        addr3,
+                                        a3,
                                         data,
                                         midiControllers.modulationWheel,
                                         "mod wheel"
@@ -908,7 +900,7 @@ export function handleGS(
 
                                 case 0x10: {
                                     // Pitch wheel
-                                    if ((addr3 & 0x0f) === 0x00) {
+                                    if ((a3 & 0x0f) === 0x00) {
                                         // See https://github.com/spessasus/SpessaSynth/issues/154
                                         // Pitch control
                                         // Special case:
@@ -928,7 +920,7 @@ export function handleGS(
                                         break;
                                     }
                                     ch.sysExModulators.setupReceiver(
-                                        addr3,
+                                        a3,
                                         data,
                                         NON_CC_INDEX_OFFSET +
                                             modulatorSources.pitchWheel,
@@ -941,7 +933,7 @@ export function handleGS(
                                 case 0x20: {
                                     // Channel pressure
                                     ch.sysExModulators.setupReceiver(
-                                        addr3,
+                                        a3,
                                         data,
                                         NON_CC_INDEX_OFFSET +
                                             modulatorSources.channelPressure,
@@ -953,7 +945,7 @@ export function handleGS(
                                 case 0x30: {
                                     // Poly pressure
                                     ch.sysExModulators.setupReceiver(
-                                        addr3,
+                                        a3,
                                         data,
                                         NON_CC_INDEX_OFFSET +
                                             modulatorSources.polyPressure,
@@ -965,7 +957,7 @@ export function handleGS(
                                 case 0x40: {
                                     // CC1
                                     ch.sysExModulators.setupReceiver(
-                                        addr3,
+                                        a3,
                                         data,
                                         ch.cc1,
                                         "CC1"
@@ -976,7 +968,7 @@ export function handleGS(
                                 case 0x50: {
                                     // CC2
                                     ch.sysExModulators.setupReceiver(
-                                        addr3,
+                                        a3,
                                         data,
                                         ch.cc2,
                                         "CC2"
@@ -987,17 +979,17 @@ export function handleGS(
                         }
 
                         // Patch Parameter Tone Map
-                        if (addr2 >> 4 === 4) {
+                        if (a2 >> 4 === 4) {
                             // This is an individual part (channel) parameter
                             // Determine the channel
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-88Pro manual page 196
                             const channel =
-                                syxToChannel(addr2 & 0x0f) + channelOffset;
+                                SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const channelObject = this.midiChannels[channel];
 
-                            switch (addr3) {
+                            switch (a3) {
                                 default: {
                                     // This is some other GS sysex...
                                     sysExNotRecognized(
@@ -1009,7 +1001,7 @@ export function handleGS(
 
                                 case 0x00:
                                 case 0x01: {
-                                    // Tone map number (cc32)
+                                    // Tone map number (cc#32)
                                     channelObject.controllerChange(
                                         midiControllers.bankSelectLSB,
                                         data
@@ -1044,11 +1036,11 @@ export function handleGS(
                         return;
                     }
                     // Drum setup
-                    if (addr1 === 0x41) {
+                    if (a1 === 0x41) {
                         if (this.masterParameters.drumLock) return;
-                        const map = (addr2 >> 4) + 1;
-                        const drumKey = addr3;
-                        const param = addr2 & 0xf;
+                        const map = (a2 >> 4) + 1;
+                        const drumKey = a3;
+                        const param = a2 & 0xf;
                         switch (param) {
                             default: {
                                 sysExNotRecognized(syx, "Roland GS Drum Setup");
@@ -1203,7 +1195,7 @@ export function handleGS(
             case 0x45: {
                 // 0x45: GS Display Data
                 // Check for embedded copyright
-                // (roland SC display sysex) http://www.bandtrax.com.au/sysex.htm
+                // (Roland SC display sysex) http://www.bandtrax.com.au/sysex.htm
 
                 if (
                     syx[4] === 0x10 // Sound Canvas Display

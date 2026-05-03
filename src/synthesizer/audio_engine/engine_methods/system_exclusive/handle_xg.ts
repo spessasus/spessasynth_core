@@ -29,13 +29,13 @@ export function handleXG(
 ) {
     // XG sysex
     if (syx[2] === 0x4c) {
-        const addr1 = syx[3]; // Address 1
-        const addr2 = syx[4]; // Address 2
-        const addr3 = syx[5]; // Address 3
+        const a1 = syx[3]; // Address 1
+        const a2 = syx[4]; // Address 2
+        const a3 = syx[5]; // Address 3
         const data = syx[6];
         // XG system parameter
-        if (addr1 === 0x00 && addr2 === 0x00) {
-            switch (addr3) {
+        if (a1 === 0x00 && a2 === 0x00) {
+            switch (a3) {
                 // Master tune
                 case 0x00: {
                     {
@@ -85,11 +85,11 @@ export function handleXG(
             }
             return;
         }
-        if (addr1 === 0x02 && addr2 === 0x01) {
+        if (a1 === 0x02 && a2 === 0x01) {
             let effectType: string;
-            const effect = addr3;
+            const effect = a3;
             if (effect <= 0x15) effectType = "Reverb";
-            else if (effect <= 35) effectType = "Chorus";
+            else if (effect <= 0x35) effectType = "Chorus";
             else effectType = "Variation";
 
             SpessaSynthInfo(
@@ -100,18 +100,18 @@ export function handleXG(
             return;
         }
 
-        if (addr1 === 0x08 /* A2 is the channel number*/) {
+        if (a1 === 0x08 /* A2 is the channel number*/) {
             // XG part parameter
             if (!BankSelectHacks.isSystemXG(this.masterParameters.midiSystem)) {
                 return;
             }
-            const channel = addr2 + channelOffset;
+            const channel = a2 + channelOffset;
             if (channel >= this.midiChannels.length) {
                 // Invalid channel
                 return;
             }
             const channelObject = this.midiChannels[channel];
-            switch (addr3) {
+            switch (a3) {
                 // Bank-select MSB
                 case 0x01: {
                     channelObject.controllerChange(
@@ -307,13 +307,13 @@ export function handleXG(
             return;
         }
 
-        if (addr1 >> 4 === 3) {
+        if (a1 >> 4 === 3) {
             // Drum part setup
             if (this.masterParameters.drumLock) return;
-            const drumKey = addr2;
-            switch (addr3) {
+            const drumKey = a2;
+            switch (a3) {
                 default: {
-                    sysExNotRecognized([addr3], "Yamaha XG Drum Setup");
+                    sysExNotRecognized([a3], "Yamaha XG Drum Setup");
                     return;
                 }
 
@@ -413,8 +413,8 @@ export function handleXG(
         }
 
         if (
-            addr1 === 0x06 || // Display letters
-            addr1 === 0x07 // Display bitmap
+            a1 === 0x06 || // Display letters
+            a1 === 0x07 // Display bitmap
         ) {
             // Displayed letters
             this.callEvent("synthDisplay", [...syx]);
