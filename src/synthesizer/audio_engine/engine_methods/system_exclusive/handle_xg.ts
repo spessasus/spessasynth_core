@@ -101,198 +101,18 @@ export function handleXG(
         }
 
         if (a1 === 0x08 /* A2 is the channel number*/) {
-            // XG part parameter
-            if (!BankSelectHacks.isSystemXG(this.masterParameters.midiSystem)) {
-                return;
-            }
             const channel = a2 + channelOffset;
             if (channel >= this.midiChannels.length) {
                 // Invalid channel
+                SpessaSynthInfo(
+                    `%cIgnoring invalid part number:%c ${channel}`,
+                    consoleColors.warn,
+                    consoleColors.unrecognized
+                );
                 return;
             }
-            const channelObject = this.midiChannels[channel];
+            const ch = this.midiChannels[channel];
             switch (a3) {
-                // Bank-select MSB
-                case 0x01: {
-                    channelObject.controllerChange(
-                        midiControllers.bankSelect,
-                        data
-                    );
-                    break;
-                }
-
-                // Bank-select LSB
-                case 0x02: {
-                    channelObject.controllerChange(
-                        midiControllers.bankSelectLSB,
-                        data
-                    );
-                    break;
-                }
-
-                // Program change
-                case 0x03: {
-                    channelObject.programChange(data);
-                    break;
-                }
-
-                // Rev. channel
-                case 0x04: {
-                    channelObject.rxChannel = data + channelOffset;
-                    this.customChannelNumbers ||=
-                        channelObject.rxChannel !== channelObject.channel;
-                    coolInfo(
-                        `Rev. Channel on ${channel}`,
-                        channelObject.rxChannel
-                    );
-                    break;
-                }
-
-                // Poly/mono
-                case 0x05: {
-                    channelObject.polyMode = data === 1;
-                    coolInfo(
-                        `Mono/poly on ${channel}`,
-                        channelObject.polyMode ? "POLY" : "MONO"
-                    );
-                    break;
-                }
-
-                // Part mode
-                case 0x07: {
-                    channelObject.setDrums(data !== 0);
-                    break;
-                }
-
-                // Note shift
-                case 0x08: {
-                    if (channelObject.drumChannel) {
-                        break;
-                    }
-                    const keyShift = data - 64;
-                    channelObject.setCustomController(
-                        customControllers.channelKeyShift,
-                        keyShift
-                    );
-                    coolInfo(`Key shift on ${channel}`, keyShift);
-                    break;
-                }
-
-                // Volume
-                case 0x0b: {
-                    channelObject.controllerChange(
-                        midiControllers.mainVolume,
-                        data
-                    );
-                    break;
-                }
-
-                // Pan position
-                case 0x0e: {
-                    const pan = data;
-                    if (pan === 0) {
-                        // 0 means random
-                        channelObject.randomPan = true;
-                        coolInfo(`Random Pan for ${channel}`, "ON");
-                    } else {
-                        channelObject.controllerChange(
-                            midiControllers.pan,
-                            pan
-                        );
-                    }
-                    break;
-                }
-
-                // Chorus
-                case 0x12: {
-                    channelObject.controllerChange(
-                        midiControllers.chorusDepth,
-                        data
-                    );
-                    break;
-                }
-
-                // Reverb
-                case 0x13: {
-                    channelObject.controllerChange(
-                        midiControllers.reverbDepth,
-                        data
-                    );
-                    break;
-                }
-
-                // Vibrato rate
-                case 0x15: {
-                    channelObject.controllerChange(
-                        midiControllers.vibratoRate,
-                        data
-                    );
-                    break;
-                }
-
-                // Vibrato depth
-                case 0x16: {
-                    channelObject.controllerChange(
-                        midiControllers.vibratoDepth,
-                        data
-                    );
-                    break;
-                }
-
-                // Vibrato delay
-                case 0x17: {
-                    channelObject.controllerChange(
-                        midiControllers.vibratoDelay,
-                        data
-                    );
-                    break;
-                }
-
-                // Filter cutoff
-                case 0x18: {
-                    channelObject.controllerChange(
-                        midiControllers.brightness,
-                        data
-                    );
-                    break;
-                }
-
-                // Filter resonance
-                case 0x19: {
-                    channelObject.controllerChange(
-                        midiControllers.filterResonance,
-                        data
-                    );
-                    break;
-                }
-
-                // Attack time
-                case 0x1a: {
-                    channelObject.controllerChange(
-                        midiControllers.attackTime,
-                        data
-                    );
-                    break;
-                }
-
-                // Decay time
-                case 0x1b: {
-                    channelObject.controllerChange(
-                        midiControllers.decayTime,
-                        data
-                    );
-                    break;
-                }
-
-                // Release time
-                case 0x1c: {
-                    channelObject.controllerChange(
-                        midiControllers.releaseTime,
-                        data
-                    );
-                    break;
-                }
-
                 default: {
                     SpessaSynthInfo(
                         `%cUnsupported Yamaha XG Part Setup: %c${syx[5]
@@ -302,6 +122,148 @@ export function handleXG(
                         consoleColors.unrecognized,
                         consoleColors.warn
                     );
+                    break;
+                }
+
+                // Bank-select MSB
+                case 0x01: {
+                    ch.controllerChange(midiControllers.bankSelect, data);
+                    break;
+                }
+
+                // Bank-select LSB
+                case 0x02: {
+                    ch.controllerChange(midiControllers.bankSelectLSB, data);
+                    break;
+                }
+
+                // Program change
+                case 0x03: {
+                    ch.programChange(data);
+                    break;
+                }
+
+                // Rev. channel
+                case 0x04: {
+                    ch.rxChannel = data + channelOffset;
+                    this.customChannelNumbers ||= ch.rxChannel !== ch.channel;
+                    coolInfo(`Rev. Channel on ${channel}`, ch.rxChannel);
+                    break;
+                }
+
+                // Poly/mono
+                case 0x05: {
+                    ch.polyMode = data === 1;
+                    coolInfo(
+                        `Mono/poly on ${channel}`,
+                        ch.polyMode ? "POLY" : "MONO"
+                    );
+                    break;
+                }
+
+                // Part mode
+                case 0x07: {
+                    ch.setDrums(data !== 0);
+                    break;
+                }
+
+                // Note shift
+                case 0x08: {
+                    if (ch.drumChannel) {
+                        break;
+                    }
+                    const keyShift = data - 64;
+                    ch.setCustomController(
+                        customControllers.channelKeyShift,
+                        keyShift
+                    );
+                    coolInfo(`Key shift on ${channel}`, keyShift);
+                    break;
+                }
+
+                // Volume
+                case 0x0b: {
+                    ch.controllerChange(midiControllers.mainVolume, data);
+                    break;
+                }
+
+                // Pan position
+                case 0x0e: {
+                    const pan = data;
+                    if (pan === 0) {
+                        // 0 means random
+                        ch.randomPan = true;
+                        coolInfo(`Random Pan for ${channel}`, "ON");
+                    } else {
+                        ch.controllerChange(midiControllers.pan, pan);
+                    }
+                    break;
+                }
+
+                // Chorus
+                case 0x12: {
+                    ch.controllerChange(midiControllers.chorusDepth, data);
+                    break;
+                }
+
+                // Reverb
+                case 0x13: {
+                    ch.controllerChange(midiControllers.reverbDepth, data);
+                    break;
+                }
+
+                // Vibrato rate
+                case 0x15: {
+                    ch.controllerChange(midiControllers.vibratoRate, data);
+                    break;
+                }
+
+                // Vibrato depth
+                case 0x16: {
+                    ch.controllerChange(midiControllers.vibratoDepth, data);
+                    break;
+                }
+
+                // Vibrato delay
+                case 0x17: {
+                    ch.controllerChange(midiControllers.vibratoDelay, data);
+                    break;
+                }
+
+                // Filter cutoff
+                case 0x18: {
+                    ch.controllerChange(midiControllers.brightness, data);
+                    break;
+                }
+
+                // Filter resonance
+                case 0x19: {
+                    ch.controllerChange(midiControllers.filterResonance, data);
+                    break;
+                }
+
+                // Attack time
+                case 0x1a: {
+                    ch.controllerChange(midiControllers.attackTime, data);
+                    break;
+                }
+
+                // Decay time
+                case 0x1b: {
+                    ch.controllerChange(midiControllers.decayTime, data);
+                    break;
+                }
+
+                // Release time
+                case 0x1c: {
+                    ch.controllerChange(midiControllers.releaseTime, data);
+                    break;
+                }
+
+                case 0x23: {
+                    // Bend pitch control (pitch wheel range)
+                    const centeredValue = data - 64;
+                    ch.setPitchWheelRange(centeredValue * 128);
                 }
             }
             return;

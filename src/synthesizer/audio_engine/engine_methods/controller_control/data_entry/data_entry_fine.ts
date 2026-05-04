@@ -49,21 +49,12 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                         break;
                     }
                     // 14-bit value, so upper 7 are coarse and lower 7 are fine!
-                    this.midiControllers[
-                        NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
-                    ] |= dataValue;
-                    const actualTune =
-                        (this.midiControllers[
+                    const current =
+                        this.midiControllers[
                             NON_CC_INDEX_OFFSET +
                                 modulatorSources.pitchWheelRange
-                        ] >>
-                            7) +
-                        dataValue / 128;
-                    SpessaSynthInfo(
-                        `%cChannel ${this.channel} pitch wheel range. Semitones: %c${actualTune}`,
-                        consoleColors.info,
-                        consoleColors.value
-                    );
+                        ];
+                    this.setPitchWheelRange(current | dataValue);
                     break;
                 }
 

@@ -552,6 +552,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | 1A           | Attack Time            | Same as CC#73 (attack time).                                                                                                                                                                    |
 | 1B           | Decay Time             | Same as CC#75 (decay time).                                                                                                                                                                     |
 | 1C           | Release Time           | Same as CC#72 (release time).                                                                                                                                                                   |
+| 23           | Bend Pitch Control     | Treated as pitch wheel range.                                                                                                                                                                   |
 
 #### XG Drum Setup
 

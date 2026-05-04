@@ -35,10 +35,20 @@ export function handleGM(
     channelOffset = 0
 ) {
     switch (syx[2]) {
+        // Device control
         case 0x04: {
-            let cents;
-            // Device control
             switch (syx[3]) {
+                default: {
+                    SpessaSynthInfo(
+                        `%cUnrecognized %cMIDI Device Control%c real-time message: %c${arrayToHexString(syx)}`,
+                        consoleColors.warn,
+                        consoleColors.recognized,
+                        consoleColors.warn,
+                        consoleColors.unrecognized
+                    );
+                    break;
+                }
+
                 case 0x01: {
                     // Main volume
                     const vol = (syx[5] << 7) | syx[4];
@@ -68,7 +78,7 @@ export function handleGM(
                 case 0x03: {
                     // Fine-tuning
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
-                    cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
+                    const cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
                     this.setMasterTuning(cents);
                     SpessaSynthInfo(
                         `%cMaster Fine Tuning. Cents: %c${cents}`,
@@ -82,7 +92,7 @@ export function handleGM(
                     // Coarse tuning
                     // Lsb is ignored
                     const semitones = syx[5] - 64;
-                    cents = semitones * 100;
+                    const cents = semitones * 100;
                     this.setMasterTuning(cents);
                     SpessaSynthInfo(
                         `%cMaster Coarse Tuning. Cents: %c${cents}`,
@@ -91,32 +101,44 @@ export function handleGM(
                     );
                     break;
                 }
-
-                default: {
-                    SpessaSynthInfo(
-                        `%cUnrecognized MIDI Device Control Real-time message: %c${arrayToHexString(syx)}`,
-                        consoleColors.warn,
-                        consoleColors.unrecognized
-                    );
-                }
             }
             break;
         }
 
+        // General MIDI
         case 0x09: {
-            // Gm system related
-            if (syx[3] === 0x01) {
-                SpessaSynthInfo("%cGM1 system on", consoleColors.info);
-                this.resetAllControllers("gm");
-            } else if (syx[3] === 0x03) {
-                SpessaSynthInfo("%cGM2 system on", consoleColors.info);
-                this.resetAllControllers("gm2");
-            } else {
-                SpessaSynthInfo(
-                    "%cGM system off, switching to GS",
-                    consoleColors.info
-                );
-                this.resetAllControllers("gs");
+            switch (syx[3]) {
+                default: {
+                    SpessaSynthInfo(
+                        `%cUnrecognized %cGeneral MIDI%c message: %c${arrayToHexString(syx)}`,
+                        consoleColors.warn,
+                        consoleColors.recognized,
+                        consoleColors.warn,
+                        consoleColors.unrecognized
+                    );
+                    break;
+                }
+
+                case 0x01: {
+                    SpessaSynthInfo("%cGM1 system on", consoleColors.info);
+                    this.resetAllControllers("gm");
+                    break;
+                }
+
+                case 0x02: {
+                    SpessaSynthInfo(
+                        "%cGM system off, switching to GS",
+                        consoleColors.info
+                    );
+                    this.resetAllControllers("gs");
+                    break;
+                }
+
+                case 0x03: {
+                    SpessaSynthInfo("%cGM2 system on", consoleColors.info);
+                    this.resetAllControllers("gm2");
+                    break;
+                }
             }
             break;
         }

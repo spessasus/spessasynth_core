@@ -575,6 +575,21 @@ export class MIDIChannel {
     }
 
     /**
+     * Sets the pitch wheel range for this channel.
+     * @param range the 14-bit range in 1/128th of a semitone. For example 2 << 7 is 2 semitones.
+     */
+    public setPitchWheelRange(range: number) {
+        SpessaSynthInfo(
+            `%cChannel ${this.channel} pitch wheel range. Semitones: %c${range / 128}`,
+            consoleColors.info,
+            consoleColors.value
+        );
+        this.midiControllers[
+            NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
+        ] = range;
+    }
+
+    /**
      * Changes the preset to, or from drums.
      * Note that this executes a program change.
      * @param isDrum If the channel should be a drum preset or not.

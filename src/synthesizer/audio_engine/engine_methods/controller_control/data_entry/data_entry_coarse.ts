@@ -2,8 +2,6 @@ import { SpessaSynthInfo } from "../../../../../utils/loggin";
 import { consoleColors } from "../../../../../utils/other";
 import type { MIDIChannel } from "../../../engine_components/midi_channel";
 import type { GeneratorType } from "../../../../../soundbank/basic_soundbank/generator_types";
-import { NON_CC_INDEX_OFFSET } from "../../../engine_components/controller_tables";
-import { modulatorSources } from "../../../../../soundbank/enums";
 import { customControllers, dataEntryStates } from "../../../../enums";
 import { midiControllers } from "../../../../../midi/enums";
 
@@ -446,15 +444,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                 // Pitch wheel range
                 case registeredParameterTypes.pitchWheelRange: {
-                    this.midiControllers[
-                        NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
-                    ] = dataCoarse << 7;
-                    coolInfo(
-                        this.channel,
-                        "Pitch wheel range",
-                        dataCoarse.toString(),
-                        "semitones"
-                    );
+                    this.setPitchWheelRange(dataCoarse << 7);
                     break;
                 }
 

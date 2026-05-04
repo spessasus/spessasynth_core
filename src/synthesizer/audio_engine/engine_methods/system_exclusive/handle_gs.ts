@@ -906,15 +906,8 @@ export function handleGS(
                                         // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
                                         // Testcase: th07_03.mid
                                         const centeredValue = data - 64;
-                                        ch.midiControllers[
-                                            NON_CC_INDEX_OFFSET +
-                                                modulatorSources.pitchWheelRange
-                                        ] = centeredValue << 7;
-                                        sysExLogging(
-                                            ch.channel,
-                                            centeredValue,
-                                            "pitch wheel range",
-                                            "semitones"
+                                        ch.setPitchWheelRange(
+                                            centeredValue * 128
                                         );
                                         break;
                                     }
