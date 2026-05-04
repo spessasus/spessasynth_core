@@ -801,7 +801,10 @@ export class MIDIChannel {
             p.exclusiveClass = 0;
             p.pan = 64;
             p.reverbGain = drumReverbResetArray[i] / 127;
-            p.chorusGain = 0; // No drums have chorus
+            p.chorusGain =
+                this.synthCore.masterParameters.midiSystem === "xg"
+                    ? drumReverbResetArray[i] / 127
+                    : 0; // Mirror reverb on XG only, GS has no chorus by default
             p.delayGain = 0; // No drums have delay
             p.rxNoteOn = true;
             p.rxNoteOff = false;

@@ -296,8 +296,11 @@ export function handleXG(
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].pitch += pitch;
+                        coolInfo(
+                            `Drum Pitch Fine, key ${drumKey}`,
+                            ch.drumParams[drumKey].pitch
+                        );
                     }
-                    coolInfo(`Drum Pitch Fine, key ${drumKey}`, pitch);
                     break;
                 }
 
