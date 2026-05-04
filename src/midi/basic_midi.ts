@@ -28,7 +28,8 @@ import type {
     NoteTime,
     RMIDInfoData,
     RMIDIWriteOptions,
-    TempoChange
+    TempoChange,
+    TimelineEvent
 } from "./types";
 import {
     applySnapshotInternal,
@@ -56,6 +57,16 @@ export class BasicMIDI {
      * The tracks in the sequence.
      */
     public tracks: MIDITrack[] = [];
+
+    /**
+     * A flattened, time‑sorted list of all events in the MIDI sequence.
+     * The order between the tracks is preserved.
+     * Each entry points to the event's track number and its index within that track.
+     * This is the recommended way of iterating over the MIDI sequence's events.
+     *
+     * Do not change this array.
+     */
+    public readonly timeline: readonly Readonly<TimelineEvent>[] = [];
 
     /**
      * The time division of the sequence, representing the number of MIDI ticks per beat.
@@ -227,6 +238,9 @@ export class BasicMIDI {
 
         this.embeddedSoundBank = mid?.embeddedSoundBank?.slice(0) ?? undefined; // Deep copy
         this.tracks = mid.tracks.map((track) => MIDITrack.copyFrom(track)); // Deep copy of each track array
+
+        // @ts-expect-error special case, otherwise readonly
+        this.timeline = mid.timeline.map((t) => ({ ...t }));
     }
 
     /**
@@ -571,6 +585,8 @@ export class BasicMIDI {
 
     /**
      * Iterates over the MIDI file, ordered by the time the events happen.
+     * You probably should use the `timeline` property
+     * if you're not mutating the MIDI in the iteration loop.
      * @param callback The callback function to process each event.
      */
     public iterate(
@@ -585,29 +601,25 @@ export class BasicMIDI {
          */
         const eventIndexes = new Array<number>(this.tracks.length).fill(0);
         let remainingTracks = this.tracks.length;
-        const findFirstEventIndex = () => {
-            let index = 0;
+        while (remainingTracks > 0) {
+            let trackNum = 0;
             let ticks = Infinity;
-            for (const [i, { events: track }] of this.tracks.entries()) {
-                if (eventIndexes[i] >= track.length) {
-                    continue;
-                }
+            for (let i = 0; i < this.tracks.length; i++) {
+                const track = this.tracks[i].events;
+                if (eventIndexes[i] >= track.length) continue;
                 if (track[eventIndexes[i]].ticks < ticks) {
-                    index = i;
+                    trackNum = i;
                     ticks = track[eventIndexes[i]].ticks;
                 }
             }
-            return index;
-        };
-        while (remainingTracks > 0) {
-            const trackNum = findFirstEventIndex();
+
             const track = this.tracks[trackNum].events;
             if (eventIndexes[trackNum] >= track.length) {
                 remainingTracks--;
                 continue;
             }
-            const event: MIDIMessage = track[eventIndexes[trackNum]];
-            callback(event, trackNum, eventIndexes);
+            const idx = eventIndexes[trackNum];
+            callback(track[idx], trackNum, eventIndexes);
             eventIndexes[trackNum]++;
         }
     }
@@ -1074,7 +1086,8 @@ export class BasicMIDI {
             if (!b) {
                 b = new Uint8Array(0).buffer;
             }
-            track.events.unshift(
+            track.addEvents(
+                0,
                 new MIDIMessage(
                     0,
                     midiMessageTypes.trackName,
@@ -1083,6 +1096,15 @@ export class BasicMIDI {
             );
         }
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
+
+        // Get sorted events
+        (this.timeline as TimelineEvent[]).length = 0;
+        this.iterate((_, tr, eventIndexes) => {
+            // Hack to write into the readonly array (we can write to it)
+            (this.timeline as TimelineEvent[]).push(
+                Object.freeze({ ev: eventIndexes[tr], tr })
+            );
+        });
 
         // Invalidate raw name if empty
         if (this.binaryName?.length === 0) {

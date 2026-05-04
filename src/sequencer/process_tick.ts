@@ -11,42 +11,38 @@ export function processTick(this: SpessaSynthSequencer) {
     const currentTime = this.currentTime;
     while (this.playedTime < currentTime) {
         // Find the next event and process it
-        const trackIndex = this.findFirstEventIndex();
-        const track = this._midiData.tracks[trackIndex];
-        const event = track.events[this.eventIndexes[trackIndex]++];
-        this.processEvent(event, trackIndex);
+        const { timeline, tracks, lastVoiceEventTick, loop } = this._midiData;
+        const e = timeline[this.index++];
+        const event = tracks[e.tr].events[e.ev];
+        this.processEvent(event, e.tr);
 
-        // Find the next event
-        const nextTrackIndex = this.findFirstEventIndex();
-        const nextTrack = this._midiData.tracks[nextTrackIndex];
         // Check for loop
-        if (this.loopCount > 0 && this._midiData.loop.end <= event.ticks) {
+        if (this.loopCount > 0 && loop.end <= event.ticks) {
             if (this.loopCount !== Infinity) {
                 this.loopCount--;
                 this.callEvent("loopCountChange", {
                     newCount: this.loopCount
                 });
             }
-            if (this._midiData.loop.type === "soft") {
-                this.jumpToTick(this._midiData.loop.start);
-            } else {
-                this.setTimeTicks(this._midiData.loop.start);
-            }
+            if (loop.type === "soft") this.jumpToTick(loop.start);
+            else this.setTimeTicks(loop.start);
+
             return;
         }
         // Check for end of track
         if (
-            nextTrack.events.length <= this.eventIndexes[nextTrackIndex] ||
+            this.index >= timeline.length ||
             // https://github.com/spessasus/spessasynth_core/issues/21
-            event.ticks >= this._midiData.lastVoiceEventTick
+            event.ticks >= lastVoiceEventTick
         ) {
             // Stop the playback
             this.songIsFinished();
             return;
         }
 
-        const eventNext = nextTrack.events[this.eventIndexes[nextTrackIndex]];
+        const nE = timeline[this.index];
+        const nextEvent = tracks[nE.tr].events[nE.ev];
         this.playedTime +=
-            this.oneTickToSeconds * (eventNext.ticks - event.ticks);
+            this.oneTickToSeconds * (nextEvent.ticks - event.ticks);
     }
 }

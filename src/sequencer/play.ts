@@ -7,7 +7,6 @@ import {
     midiMessageTypes
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
-import type { MIDITrack } from "../midi/midi_track";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 
 // An array with preset default values
@@ -50,7 +49,7 @@ export function setTimeToInternal(
 
     this.sendMIDIReset();
     this.playedTime = 0;
-    this.eventIndexes = new Array<number>(this._midiData.tracks.length).fill(0);
+    this.index = 0;
 
     // We save the pitch wheels, programs and controllers here
     // To only send them once after going through the events
@@ -93,20 +92,18 @@ export function setTimeToInternal(
         }
     }
 
+    const { timeline, tracks } = this._midiData;
+
     while (true) {
         // Find the next event
-        let trackIndex = this.findFirstEventIndex();
-        // Type assertion is required here because tsc is drunk...
-        const track: MIDITrack = this._midiData.tracks[trackIndex];
-        const event = track.events[this.eventIndexes[trackIndex]];
+        const e = timeline[this.index];
+        const trackIndex = e.tr;
+        const track = tracks[trackIndex];
+        const event = track.events[e.ev];
         if (ticks === undefined) {
-            if (this.playedTime >= time) {
-                break;
-            }
+            if (this.playedTime >= time) break;
         } else {
-            if (event.ticks >= ticks) {
-                break;
-            }
+            if (event.ticks >= ticks) break;
         }
 
         // Skip note ons
@@ -189,14 +186,9 @@ export function setTimeToInternal(
             }
         }
 
-        this.eventIndexes[trackIndex]++;
         // Find the next event
-        trackIndex = this.findFirstEventIndex();
-
-        const nextEvent =
-            this._midiData.tracks[trackIndex].events[
-                this.eventIndexes[trackIndex]
-            ];
+        const nE = timeline[++this.index];
+        const nextEvent = tracks[nE.tr].events[nE.ev];
         if (nextEvent === undefined) {
             this.stop();
             return false;

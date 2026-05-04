@@ -21,6 +21,25 @@ const parsedMIDI = BasicMIDI.fromArrayBuffer(arrayBuffer, (altName = ""));
 
 The tracks in the sequence, represented as an array of [MIDI tracks](midi-track.md)
 
+### timeline
+
+A flattened, time‑sorted list of all events in the MIDI sequence.
+The order between the tracks is preserved.
+Each entry points to the event's track number and its index within that track.
+
+This is an array of objects:
+
+- `tr` - `number` - The track number of this event.
+- `ev` - `number` - The index of this event within the track.
+
+!!! Tip
+
+    This is the recommended way of iterating over the MIDI sequence's events.
+
+!!! Warning
+
+    Do not change this array. If you need to edit the file while iterating over it, consider using [`iterate`](#iterate)
+
 ### timeDivision
 
 The time division of the midi file. MIDI ticks per quarter note.
@@ -295,7 +314,7 @@ midi.flush();
 
 !!! Warning
 
-    Not calling `flush` after making significant changes to the track may result in unexpected behavior.
+    Not calling `flush` after making any changes to the track may result in unexpected behavior.
 
 ### getNoteTimes
 
@@ -432,3 +451,14 @@ midi.iterate(callback);
     - event - the `MIDIMessage`.
     - trackNumber - the track number of this event.
     - eventIndexes - the current event indexes for each track. If your function deletes or adds new events, make sure to update the indexes accordingly!
+
+This method allows for deletion or insertion of events in the callback, as long as the track index in `eventIndexes` gets properly updated
+(incremented for event addition and decremented for event deletion for the corresponding track).
+
+!!! Tip
+
+    Consider iterating over the [`timeline`](#timeline) property
+    if you are not editing the MIDI file in your loop.
+    It is usually a faster solution and allows custom loops.
+
+    If you are editing the file, remember to [`flush`](#flush) it after editing!

@@ -4,7 +4,7 @@ import {
     SpessaSynthInfo,
     SpessaSynthWarn
 } from "../../utils/loggin";
-import { arrayToHexString, consoleColors } from "../../utils/other";
+import { consoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
 import { SysEx } from "../../utils/sysex";
 import type { BasicMIDI } from "../basic_midi";
@@ -70,7 +70,11 @@ export function getUsedProgramsAndKeys(
     const ports = mid.tracks.map((t) => t.port);
 
     const offsetMap = mid.portChannelOffsetMap;
-    mid.iterate((e, trackNum) => {
+    const { timeline, tracks } = mid;
+    for (const t of timeline) {
+        const trackNum = t.tr;
+        const e = tracks[trackNum].events[t.ev];
+
         // Do not assign ports to empty tracks
         // Testcase Cueshe - Bakit 1.mid
         if (
@@ -85,7 +89,7 @@ export function getUsedProgramsAndKeys(
                 port = 0;
             }
             ports[trackNum] = port;
-            return;
+            continue;
         }
         const status = e.statusByte & 0xf0;
         if (
@@ -94,7 +98,7 @@ export function getUsedProgramsAndKeys(
             status !== midiMessageTypes.programChange &&
             status !== midiMessageTypes.systemExclusive
         ) {
-            return;
+            continue;
         }
 
         switch (status) {
@@ -111,7 +115,7 @@ export function getUsedProgramsAndKeys(
                     },
                     system
                 );
-                return;
+                break;
             }
 
             case midiMessageTypes.controllerChange: {
@@ -122,7 +126,7 @@ export function getUsedProgramsAndKeys(
                     ch.bankLSB = e.data[1];
                 else if (e.data[0] === midiControllers.bankSelect)
                     ch.bankLSB = e.data[1];
-                return;
+                break;
             }
 
             case midiMessageTypes.noteOn: {
@@ -130,10 +134,10 @@ export function getUsedProgramsAndKeys(
                     (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
                 const ch = channels[channel];
                 // That's a note off
-                if (e.data[1] === 0) return;
+                if (e.data[1] === 0) continue;
 
                 // If there's no preset, ignore
-                if (!ch.preset) return;
+                if (!ch.preset) continue;
 
                 let combos = usedProgramsAndKeys.get(ch.preset);
                 if (!combos) {
@@ -142,7 +146,7 @@ export function getUsedProgramsAndKeys(
                 }
 
                 combos.add(`${e.data[0]}-${e.data[1]}`);
-                return;
+                break;
             }
 
             case midiMessageTypes.systemExclusive: {
@@ -151,7 +155,7 @@ export function getUsedProgramsAndKeys(
                     const syx = SysEx.analyze(e.data);
                     switch (syx.type) {
                         default: {
-                            return;
+                            break;
                         }
 
                         // Check for XG
@@ -161,7 +165,7 @@ export function getUsedProgramsAndKeys(
                                 "%cXG on detected!",
                                 consoleColors.recognized
                             );
-                            return;
+                            break;
                         }
 
                         case "GM2 On": {
@@ -170,7 +174,7 @@ export function getUsedProgramsAndKeys(
                                 "%cGM2 on detected!",
                                 consoleColors.recognized
                             );
-                            return;
+                            break;
                         }
 
                         case "GM Off":
@@ -180,7 +184,7 @@ export function getUsedProgramsAndKeys(
                                 "%cGM on detected!",
                                 consoleColors.recognized
                             );
-                            return;
+                            break;
                         }
 
                         case "GS Reset": {
@@ -189,15 +193,14 @@ export function getUsedProgramsAndKeys(
                                 "%cGS on detected!",
                                 consoleColors.recognized
                             );
-                            return;
+                            break;
                         }
 
                         case "Drums On": {
                             const sysexChannel =
                                 syx.channel + offsetMap[ports[trackNum]];
-                            console.log(syx.channel, arrayToHexString(e.data));
                             channels[sysexChannel].isDrum = syx.isDrum;
-                            return;
+                            break;
                         }
 
                         case "Program Change": {
@@ -213,7 +216,7 @@ export function getUsedProgramsAndKeys(
                                 },
                                 system
                             );
-                            return;
+                            break;
                         }
 
                         case "Controller Change": {
@@ -232,7 +235,7 @@ export function getUsedProgramsAndKeys(
                 }
             }
         }
-    });
+    }
 
     for (const [preset, combos] of usedProgramsAndKeys.entries()) {
         if (combos.size === 0) {

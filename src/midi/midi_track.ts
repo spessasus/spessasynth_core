@@ -17,7 +17,10 @@ export class MIDITrack {
     /**
      * All the MIDI messages of this track.
      */
-    public events: Omit<MIDIMessage[], "push" | "splice"> = [];
+    public events: Omit<
+        MIDIMessage[],
+        "push" | "splice" | "shift" | "unshift"
+    > = [];
 
     public static copyFrom(track: MIDITrack) {
         const t = new MIDITrack();

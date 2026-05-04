@@ -63,7 +63,7 @@ function correctBankOffsetInternal(
         });
     }
 
-    mid.iterate((e, trackNum) => {
+    mid.iterate((e, trackNum, eventIndexes) => {
         const portOffset = mid.portChannelOffsetMap[ports[trackNum]];
         if (e.statusByte === midiMessageTypes.midiPort) {
             ports[trackNum] = e.data[0];
@@ -122,14 +122,13 @@ function correctBankOffsetInternal(
                 case "Controller Change": {
                     // Replace the system exclusive with a regular controller change
                     const t = mid.tracks[trackNum];
-                    const index = t.events.indexOf(e);
                     const newEvent = new MIDIMessage(
                         e.ticks,
                         (midiMessageTypes.controllerChange |
                             syx.channel) as MIDIMessageType,
                         new Uint8Array([syx.controller, syx.value])
                     );
-                    t.events[index] = newEvent;
+                    t.events[eventIndexes[trackNum]] = newEvent;
                     e = newEvent;
                     SpessaSynthInfo(
                         "%cReplaced a system exclusive with controller change!",
@@ -142,14 +141,13 @@ function correctBankOffsetInternal(
                 case "Program Change": {
                     // Replace the system exclusive with a regular program
                     const t = mid.tracks[trackNum];
-                    const index = t.events.indexOf(e);
                     const newEvent = new MIDIMessage(
                         e.ticks,
                         (midiMessageTypes.programChange |
                             syx.channel) as MIDIMessageType,
                         new Uint8Array([syx.value])
                     );
-                    t.events[index] = newEvent;
+                    t.events[eventIndexes[trackNum]] = newEvent;
                     e = newEvent;
                     SpessaSynthInfo(
                         "%cReplaced a system exclusive with program change!",
@@ -323,6 +321,7 @@ function correctBankOffsetInternal(
         }
         mid.tracks[0].addEvents(index, SysEx.gsReset(0));
     }
+    mid.flush();
 }
 
 export const DEFAULT_RMIDI_WRITE_OPTIONS: RMIDIWriteOptions = {

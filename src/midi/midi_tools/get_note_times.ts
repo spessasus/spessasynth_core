@@ -32,16 +32,13 @@ export function getNoteTimesInternal(
      */
     const noteTimes: NoteTime[][] = [];
     // Flatten and sort by ticks
-    const trackData = midi.tracks.map((t) => t.events);
-    const events = trackData.flat();
-    events.sort((e1, e2) => e1.ticks - e2.ticks);
 
     for (let i = 0; i < 16; i++) {
         noteTimes.push([]);
     }
     let elapsedTime = 0;
     let oneTickToSeconds = 60 / (120 * midi.timeDivision);
-    let eventIndex = 0;
+    let i = 0;
     let unfinished = 0;
     const unfinishedNotes: NoteTime[][] = [];
     for (let i = 0; i < 16; i++) {
@@ -63,8 +60,10 @@ export function getNoteTimesInternal(
         }
         unfinished--;
     };
-    while (eventIndex < events.length) {
-        const event = events[eventIndex];
+    const { timeline, tracks } = midi;
+    while (i < timeline.length) {
+        const e = timeline[i];
+        const event = tracks[e.tr].events[e.ev];
 
         const status = event.statusByte >> 4;
         const channel = event.statusByte & 0x0f;
@@ -97,12 +96,13 @@ export function getNoteTimesInternal(
             oneTickToSeconds = 60 / (getTempo(event) * midi.timeDivision);
         }
 
-        if (++eventIndex >= events.length) {
+        if (++i >= timeline.length) {
             break;
         }
 
         elapsedTime +=
-            oneTickToSeconds * (events[eventIndex].ticks - event.ticks);
+            oneTickToSeconds *
+            (tracks[timeline[i].tr].events[timeline[i].ev].ticks - event.ticks);
     }
 
     // Finish the unfinished notes

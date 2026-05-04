@@ -89,11 +89,13 @@ export class SpessaSynthSequencer {
      * How long a single MIDI tick currently lasts in seconds.
      */
     protected oneTickToSeconds = 0;
+
     /**
-     * The current event index for each track.
-     * This is used to track which event is currently being processed for each track.
+     * The current event index in the sorted event list.
+     * This is used to track which event is currently being processed.
+     * @protected
      */
-    protected eventIndexes: number[] = [];
+    protected index = 0;
     /**
      * The time that has already been played in the current song.
      */
@@ -395,27 +397,6 @@ export class SpessaSynthSequencer {
     }
 
     /**
-     * @returns The track number of the next closest event, based on eventIndexes.
-     */
-    protected findFirstEventIndex() {
-        let index = 0;
-        let ticks = Infinity;
-        const tLen = this._midiData!.tracks.length;
-        for (let i = 0; i < tLen; i++) {
-            const track = this._midiData!.tracks[i];
-            if (this.eventIndexes[i] >= track.events.length) {
-                continue;
-            }
-            const event = track.events[this.eventIndexes[i]];
-            if (event.ticks < ticks) {
-                index = i;
-                ticks = event.ticks;
-            }
-        }
-        return index;
-    }
-
-    /**
      * Adds a new port (16 channels) to the synth.
      */
     protected addNewMIDIPort() {
@@ -522,26 +503,23 @@ export class SpessaSynthSequencer {
             return;
         }
         this.sendMIDIAllOff();
-        const seconds = this._midiData.midiTicksToSeconds(targetTicks);
+        const m = this._midiData;
+        const seconds = m.midiTicksToSeconds(targetTicks);
         this.callEvent("timeChange", { newTime: seconds });
 
         // Recalculate time and reset indexes
         this.recalculateStartTime(seconds);
         this.playedTime = seconds;
-        this.eventIndexes.length = 0;
-        for (const track of this._midiData.tracks) {
-            const idx = track.events.findIndex((e) => e.ticks >= targetTicks);
-            // Not length - 1 since we want to mark the track as finished
-            this.eventIndexes.push(idx === -1 ? track.events.length : idx);
-        }
+        const idx = m.timeline.findIndex(
+            (e) => m.tracks[e.tr].events[e.ev].ticks >= targetTicks
+        );
+        // Not length - 1 since we want to mark the track as finished
+        this.index = idx === -1 ? m.timeline.length : idx;
 
         // Correct tempo
         // Some softy-looped files (example: th06_06.mid) have slightly mismatched tempos
-        const targetTempo = this._midiData.tempoChanges.find(
-            (t) => t.ticks <= targetTicks
-        )!;
-        this.oneTickToSeconds =
-            60 / (targetTempo.tempo * this._midiData.timeDivision);
+        const targetTempo = m.tempoChanges.find((t) => t.ticks <= targetTicks)!;
+        this.oneTickToSeconds = 60 / (targetTempo.tempo * m.timeDivision);
     }
 
     /*

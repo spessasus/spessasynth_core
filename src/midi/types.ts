@@ -225,3 +225,14 @@ export type RMIDInfoFourCC =
     | "MENC"
     // Bank offset
     | "DBNK";
+
+export interface TimelineEvent {
+    /**
+     * The track number of this event.
+     */
+    tr: number;
+    /**
+     * The index of this event within the track.
+     */
+    ev: number;
+}
