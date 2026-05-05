@@ -22,10 +22,7 @@ export class SoundFontPreset extends BasicPreset {
      */
     public constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
         super(sf2);
-        this.name = readBinaryStringIndexed(presetChunk.data, 20).replace(
-            /\d{3}:\d{3}/,
-            ""
-        ); // Remove those pesky "000:001"
+        this.name = readBinaryStringIndexed(presetChunk.data, 20);
 
         this.program = readLittleEndianIndexed(presetChunk.data, 2);
         const wBank = readLittleEndianIndexed(presetChunk.data, 2);
