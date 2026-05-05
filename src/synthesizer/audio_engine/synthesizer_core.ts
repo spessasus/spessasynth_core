@@ -545,7 +545,6 @@ export class SynthesizerCore {
         this.midiChannels.push(channel);
         if (sendEvent) {
             this.callEvent("newChannel", undefined);
-            channel.sendChannelProperty();
             channel.setDrums(true);
         }
     }
@@ -819,11 +818,6 @@ export class SynthesizerCore {
                 startIndex,
                 sampleCount
             );
-        }
-
-        // Update voice count
-        for (const c of this.midiChannels) {
-            c.updateVoiceCount();
         }
 
         // Advance the time appropriately

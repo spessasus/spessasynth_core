@@ -263,7 +263,7 @@ export function handleXG(
                 case 0x23: {
                     // Bend pitch control (pitch wheel range)
                     const centeredValue = data - 64;
-                    ch.setPitchWheelRange(centeredValue * 128);
+                    ch.pitchWheelRange(centeredValue * 128);
                 }
             }
             return;

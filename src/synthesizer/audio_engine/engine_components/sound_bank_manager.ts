@@ -172,7 +172,7 @@ export class SoundBankManager {
                 program: p.program,
                 isGMGSDrum: p.isGMGSDrum,
                 name: p.name,
-                isAnyDrums: p.isAnyDrums
+                isDrum: p.isDrum
             };
         });
         this.presetListChangeCallback();

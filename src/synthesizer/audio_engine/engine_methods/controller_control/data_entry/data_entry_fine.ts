@@ -54,7 +54,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                             NON_CC_INDEX_OFFSET +
                                 modulatorSources.pitchWheelRange
                         ];
-                    this.setPitchWheelRange(current | dataValue);
+                    this.pitchWheelRange(current | dataValue);
                     break;
                 }
 

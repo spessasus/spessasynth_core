@@ -444,7 +444,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                 // Pitch wheel range
                 case registeredParameterTypes.pitchWheelRange: {
-                    this.setPitchWheelRange(dataCoarse << 7);
+                    this.pitchWheelRange(dataCoarse << 7);
                     break;
                 }
 

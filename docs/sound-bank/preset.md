@@ -28,7 +28,7 @@ The zones of this preset, an array of `BasicPresetZone`s.
 
 A boolean indicating if this preset is an XG drum preset.
 
-### isAnyDrums
+### isDrum
 
 A boolean indicating if this preset is a drum preset.
 

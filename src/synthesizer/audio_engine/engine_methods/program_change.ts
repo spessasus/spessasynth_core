@@ -28,8 +28,8 @@ export function programChange(this: MIDIChannel, program: number) {
 
     // Drums first
     // SC resets drum params on program change
-    if (preset.isAnyDrums !== this.drumChannel) {
-        this.setDrumFlag(preset.isAnyDrums);
+    if (preset.isDrum !== this.drumChannel) {
+        this.setDrumFlag(preset.isDrum);
     }
     this.resetDrumParams();
     // Do not spread the preset as we don't want to copy it entirely.
@@ -38,7 +38,8 @@ export function programChange(this: MIDIChannel, program: number) {
         bankLSB: this.preset.bankLSB,
         bankMSB: this.preset.bankMSB,
         program: this.preset.program,
-        isGMGSDrum: this.preset.isGMGSDrum
+        name: this.preset.name,
+        isGMGSDrum: this.preset.isGMGSDrum,
+        isDrum: this.preset.isDrum
     });
-    this.sendChannelProperty();
 }

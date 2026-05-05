@@ -360,7 +360,6 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         ); //  -500 to 500
     }
     this.voiceCount += voices.length;
-    this.sendChannelProperty();
     this.synthCore.callEvent("noteOn", {
         midiNote: midiNote,
         channel: this.channel,

@@ -29,7 +29,7 @@ import {
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import type { ChannelProperty, SynthSystem } from "../../types";
+import type { SynthSystem } from "../../types";
 import {
     type CustomController,
     customControllers,
@@ -188,7 +188,7 @@ export class MIDIChannel {
      */
     public polyMode = true;
     /**
-     * Channel's current voice count
+     * Channel's current voice count.
      */
     public voiceCount = 0;
     /**
@@ -204,7 +204,7 @@ export class MIDIChannel {
     /**
      * Core synthesis engine.
      */
-    public synthCore: SynthesizerCore;
+    public readonly synthCore: SynthesizerCore;
     // MIDI messages
     /**
      * Sends a "MIDI Note on" message and starts a note.
@@ -292,11 +292,6 @@ export class MIDIChannel {
     protected generatorOverridesEnabled = false;
     protected readonly computeModulator = computeModulator.bind(this);
     protected readonly computeModulators = computeModulators.bind(this);
-    /**
-     * For tracking voice count changes
-     * @private
-     */
-    private previousVoiceCount = 0;
 
     /**
      * Constructs a new MIDI channel.
@@ -339,14 +334,7 @@ export class MIDIChannel {
     }
 
     public clearVoiceCount() {
-        this.previousVoiceCount = this.voiceCount;
         this.voiceCount = 0;
-    }
-
-    public updateVoiceCount() {
-        if (this.voiceCount !== this.previousVoiceCount) {
-            this.sendChannelProperty();
-        }
     }
 
     /**
@@ -376,7 +364,6 @@ export class MIDIChannel {
             customControllers.channelTransposeFine,
             (semitones - keyShift) * 100
         );
-        this.sendChannelProperty();
     }
 
     /**
@@ -461,7 +448,6 @@ export class MIDIChannel {
                 NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
             ] = pitch;
             this.computeModulatorsAll(0, modulatorSources.pitchWheel);
-            this.sendChannelProperty();
         } else {
             if (!this.perNotePitch) {
                 // Enable the per-note pitch (fill the pitches with the current CC value)
@@ -578,7 +564,7 @@ export class MIDIChannel {
      * Sets the pitch wheel range for this channel.
      * @param range the 14-bit range in 1/128th of a semitone. For example 2 << 7 is 2 semitones.
      */
-    public setPitchWheelRange(range: number) {
+    public pitchWheelRange(range: number) {
         SpessaSynthInfo(
             `%cChannel ${this.channel} pitch wheel range. Semitones: %c${range / 128}`,
             consoleColors.info,
@@ -587,6 +573,10 @@ export class MIDIChannel {
         this.midiControllers[
             NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
         ] = range;
+        this.synthCore.callEvent("pitchWheelRange", {
+            channel: this.channel,
+            range: range / 128
+        });
     }
 
     /**
@@ -726,7 +716,6 @@ export class MIDIChannel {
                     }
                 }
             this.clearVoiceCount();
-            this.updateVoiceCount();
         } else {
             // Gracefully stop
             let vc = 0;
@@ -753,41 +742,9 @@ export class MIDIChannel {
             this.stopAllNotes(true);
         }
         this._isMuted = isMuted;
-        this.sendChannelProperty();
         this.synthCore.callEvent("muteChannel", {
             channel: this.channel,
             isMuted: isMuted
-        });
-    }
-
-    /**
-     * Sends this channel's property
-     */
-    public sendChannelProperty() {
-        if (!this.synthCore.enableEventSystem) {
-            return;
-        }
-        const data: ChannelProperty = {
-            voiceCount: this.voiceCount,
-            pitchWheel:
-                this.midiControllers[
-                    NON_CC_INDEX_OFFSET + modulatorSources.pitchWheel
-                ],
-            pitchWheelRange:
-                this.midiControllers[
-                    NON_CC_INDEX_OFFSET + modulatorSources.pitchWheelRange
-                ] / 128,
-            isMuted: this.isMuted,
-            transposition:
-                this.keyShift +
-                this.customControllers[customControllers.channelTransposeFine] /
-                    100,
-            isDrum: this.drumChannel,
-            isEFX: this.insertionEnabled
-        };
-        this.synthCore.callEvent("channelPropertyChange", {
-            channel: this.channel,
-            property: data
         });
     }
 
@@ -863,9 +820,5 @@ export class MIDIChannel {
         } else {
             this.drumChannel = false;
         }
-        this.synthCore.callEvent("drumChange", {
-            channel: this.channel,
-            isDrumChannel: this.drumChannel
-        });
     }
 }

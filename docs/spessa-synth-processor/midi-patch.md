@@ -38,7 +38,7 @@ This allows XG and GS drums to coexist in a single sound bank and can be thought
 !!! Warning
 
     The `isGMGSDrum` flag being set does *not* necessarily mean that this patch is a drum patch!
-    The preset list change event provides an additional property `isAnyDrums` which correctly identifies drums across all MIDI systems.
+    The preset list change event provides an additional property `isDrum` which correctly identifies drums across all MIDI systems.
 
 ## XG Validity Test
 

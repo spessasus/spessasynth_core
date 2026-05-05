@@ -18,7 +18,7 @@ function getAnyDrums<T extends BasicPreset>(
     }
     // Return any drum preset
     return (
-        presets.find((p) => p.isAnyDrums) ?? // ...no?
+        presets.find((p) => p.isDrum) ?? // ...no?
         // Then just return any preset
         presets[0]
     );
@@ -85,7 +85,7 @@ export function selectPreset<T extends BasicPreset>(
         }
 
         // No match, pick any matching drum
-        p = presets.find((p) => p.isAnyDrums && p.program === program);
+        p = presets.find((p) => p.isDrum && p.program === program);
         if (p) {
             returnReplacement(p);
             return p;
@@ -105,7 +105,7 @@ export function selectPreset<T extends BasicPreset>(
         }
 
         // No match, pick any matching drum
-        p = presets.find((p) => p.isAnyDrums && p.program === program);
+        p = presets.find((p) => p.isDrum && p.program === program);
         if (p) {
             returnReplacement(p);
             return p;
@@ -118,7 +118,7 @@ export function selectPreset<T extends BasicPreset>(
     }
     // Melodic preset
     const matchingPrograms = presets.filter(
-        (p) => p.program === program && !p.isAnyDrums
+        (p) => p.program === program && !p.isDrum
     );
     if (matchingPrograms.length === 0) {
         // The first preset

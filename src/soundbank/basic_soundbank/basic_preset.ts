@@ -95,7 +95,7 @@ export class BasicPreset implements MIDIPatchNamed {
     /**
      * Checks if this preset is a drum preset
      */
-    public get isAnyDrums(): boolean {
+    public get isDrum(): boolean {
         const xg = this.parentSoundBank.isXGBank;
 
         return (

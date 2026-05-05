@@ -906,9 +906,7 @@ export function handleGS(
                                         // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
                                         // Testcase: th07_03.mid
                                         const centeredValue = data - 64;
-                                        ch.setPitchWheelRange(
-                                            centeredValue * 128
-                                        );
+                                        ch.pitchWheelRange(centeredValue * 128);
                                         break;
                                     }
                                     ch.sysExModulators.setupReceiver(

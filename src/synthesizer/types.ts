@@ -1,8 +1,5 @@
 import type { InterpolationType } from "./enums";
-import type {
-    MIDIPatch,
-    MIDIPatchNamed
-} from "../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatchNamed } from "../soundbank/basic_soundbank/midi_patch";
 import type { CachedVoice } from "./audio_engine/engine_components/voice_cache";
 import type { MIDIController } from "../midi/enums";
 
@@ -33,15 +30,7 @@ export interface NoteOffCallback {
     channel: number;
 }
 
-export interface DrumChangeCallback {
-    /** The MIDI channel number. */
-    channel: number;
-
-    /** Indicates if the channel is a drum channel. */
-    isDrumChannel: boolean;
-}
-
-export interface ProgramChangeCallback extends MIDIPatch {
+export interface ProgramChangeCallback extends PresetListEntry {
     /** The MIDI channel number. */
     channel: number;
 }
@@ -69,7 +58,7 @@ export interface PresetListEntry extends MIDIPatchNamed {
     /**
      * Indicates if this preset is any kind of drum preset.
      */
-    isAnyDrums: boolean;
+    isDrum: boolean;
 }
 
 /**
@@ -95,6 +84,17 @@ export interface PitchWheelCallback {
      * If the pitch wheel was note-specific, this is the MIDI note number that was altered. Set to -1 otherwise.
      */
     midiNote: number;
+}
+
+export interface PitchWheelRangeCallback {
+    /**
+     * The channel number of the new property.
+     */
+    channel: number;
+    /**
+     * The range in semitones. Note that it may be a floating point number.
+     */
+    range: number;
 }
 
 export interface ChannelPressureCallback {
@@ -145,17 +145,6 @@ export type MasterParameterChangeCallback = {
         value: MasterParameterType[P];
     };
 }[keyof MasterParameterType];
-
-export interface ChannelPropertyChangeCallback {
-    /**
-     * The channel number of the new property.
-     */
-    channel: number;
-    /**
-     * The updated property.
-     */
-    property: ChannelProperty;
-}
 
 type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
 
@@ -244,6 +233,10 @@ export interface SynthProcessorEventData {
      */
     pitchWheel: PitchWheelCallback;
     /**
+     * This event fires when a pitch wheel range is changed.
+     */
+    pitchWheelRange: PitchWheelRangeCallback;
+    /**
      * This event fires when a controller is changed.
      */
     controllerChange: ControllerChangeCallback;
@@ -259,10 +252,6 @@ export interface SynthProcessorEventData {
      * This event fires when a polyphonic pressure is changed.
      */
     polyPressure: PolyPressureCallback;
-    /**
-     * This event fires when a drum channel is changed.
-     */
-    drumChange: DrumChangeCallback;
     /**
      * This event fires when all notes on a channel are stopped.
      */
@@ -295,10 +284,6 @@ export interface SynthProcessorEventData {
      * This event fires when a master parameter changes.
      */
     masterParameterChange: MasterParameterChangeCallback;
-    /**
-     * This event fires when a channel property changes.
-     */
-    channelPropertyChange: ChannelPropertyChangeCallback;
 
     /**
      * This event fires when an effect processor is modified.
@@ -333,39 +318,6 @@ export type SampleLoopingMode = 0 | 1 | 2 | 3;
  * A list of voices for a given key:velocity.
  */
 export type CachedVoiceList = CachedVoice[];
-
-export interface ChannelProperty {
-    /**
-     * The channel's current amount of voices.
-     */
-    voiceCount: number;
-    /**
-     * The channel's current pitch wheel 0 - 16383.
-     */
-    pitchWheel: number;
-    /**
-     * The pitch wheel's range, in semitones.
-     */
-    pitchWheelRange: number;
-    /**
-     * Indicates whether the channel is muted.
-     */
-    isMuted: boolean;
-    /**
-     * Indicates whether the channel is a drum channel.
-     */
-    isDrum: boolean;
-
-    /**
-     * Indicates whether the channel uses an insertion effect.
-     * This means that there will be no separate dry output for processSplit().
-     */
-    isEFX: boolean;
-    /**
-     * The channel's transposition, in semitones.
-     */
-    transposition: number;
-}
 
 export interface SynthProcessorOptions {
     /**
