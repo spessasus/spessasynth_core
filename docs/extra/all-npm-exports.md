@@ -35,7 +35,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - BasicSample - represents a sample. (be it DLS or SF2)
 - EmptySample - a class that simplifies the process of creating a new sample.
 - BasicZone - represents a generic zone (only generators, modulators and ranges).
-- BasicGlobalZone - represents a global zone. Extends BasicZone but doesn't add properties.
 - BasicInstrumentZone - represents an instrument zone in a sound bank. Extends BasicZone with a `sample` property.
 - BasicInstrument - represents an instrument (layer two) in a sound bank.
 - BasicPreset - represents a preset (top layer) in a sound bank.

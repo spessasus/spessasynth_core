@@ -1,4 +1,3 @@
-import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicInstrumentZone } from "./basic_instrument_zone";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
 import { type BasicPreset } from "./basic_preset";
@@ -13,6 +12,7 @@ import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import { consoleColors } from "../../utils/other";
+import { BasicZone } from "./basic_zone";
 
 export const INST_BYTE_SIZE = 22;
 
@@ -59,7 +59,7 @@ export class BasicInstrument {
     /**
      * Instrument's global zone
      */
-    public readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
+    public readonly globalZone = new BasicZone();
     /**
      * Instrument's linked presets (the presets that use it)
      * note that duplicates are allowed since one preset can use the same instrument multiple times.

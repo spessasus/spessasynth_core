@@ -1,7 +1,6 @@
 import { Modulator } from "./modulator";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 
-import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicPresetZone } from "./basic_preset_zone";
 import type { BasicSoundBank } from "./basic_soundbank";
 import { Generator } from "./generator";
@@ -26,6 +25,7 @@ import {
     writeDword,
     writeWord
 } from "../../utils/byte_functions/little_endian";
+import { BasicZone } from "./basic_zone";
 
 export const PHDR_BYTE_SIZE = 38;
 
@@ -57,7 +57,7 @@ export class BasicPreset implements MIDIPatchNamed {
     /**
      * Preset's global zone
      */
-    public readonly globalZone: BasicGlobalZone;
+    public readonly globalZone: BasicZone;
 
     /**
      * Unused metadata
@@ -79,7 +79,7 @@ export class BasicPreset implements MIDIPatchNamed {
      */
     public constructor(
         parentSoundBank: BasicSoundBank,
-        globalZone = new BasicGlobalZone()
+        globalZone = new BasicZone()
     ) {
         this.parentSoundBank = parentSoundBank;
         this.globalZone = globalZone;
