@@ -1,4 +1,4 @@
-import { getChannel, MIDIMessage } from "./midi_message";
+import { MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { ConsoleColors } from "../utils/other";
 import { SpessaSynthLog } from "../utils/loggin";
@@ -9,7 +9,7 @@ import {
     readBinaryStringIndexed
 } from "../utils/byte_functions/string";
 import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType } from "./enums";
+import { type MIDIMessageType, MIDIMessageTypes } from "./enums";
 import { BasicMIDI } from "./basic_midi";
 import { loadXMF } from "./xmf_loader";
 import type { MIDIFormat, RMIDInfoFourCC } from "./types";
@@ -304,13 +304,13 @@ export function loadMIDIFromArrayBufferInternal(
                     outputMIDI.tracks[i - 1].events.length - 1
                 ].ticks;
         }
+        const trackData = trackChunk.data;
         // Loop until we reach the end of track
-        while (trackChunk.data.currentIndex < trackChunk.size) {
-            totalTicks += readVariableLengthQuantity(trackChunk.data);
+        while (trackData.currentIndex < trackChunk.size) {
+            totalTicks += readVariableLengthQuantity(trackData);
 
             // Check if the status byte is valid (IE. larger than 127)
-            const statusByteCheck =
-                trackChunk.data[trackChunk.data.currentIndex];
+            const statusByteCheck = trackData[trackData.currentIndex];
 
             let statusByte: MIDIMessageType;
             // If we have a running byte and the status byte isn't valid
@@ -325,69 +325,54 @@ export function loadMIDIFromArrayBufferInternal(
                     );
                 } else {
                     // If the status byte is valid, use that
-                    statusByte = trackChunk.data[
-                        trackChunk.data.currentIndex++
-                    ] as MIDIMessageType;
+                    statusByte = statusByteCheck as MIDIMessageType;
+                    trackData.currentIndex++;
                 }
             }
-            const statusByteChannel = getChannel(statusByte);
 
-            let eventDataLength;
+            let dataSize;
 
-            // Determine the message's length;
-            switch (statusByteChannel) {
-                case -1: {
-                    // System common/realtime (no length)
-                    eventDataLength = 0;
-                    break;
-                }
-
-                case -2: {
-                    // Meta (the next is the actual status byte)
-                    statusByte = trackChunk.data[
-                        trackChunk.data.currentIndex++
-                    ] as MIDIMessageType;
-                    eventDataLength = readVariableLengthQuantity(
-                        trackChunk.data
-                    );
-                    break;
-                }
-
-                case -3: {
-                    // Sysex
-                    eventDataLength = readVariableLengthQuantity(
-                        trackChunk.data
-                    );
-                    break;
-                }
-
-                default: {
-                    // Voice message
-                    // Gets the midi message length
-                    eventDataLength =
-                        DataBytesAmount[
-                            (statusByte >> 4) as keyof typeof DataBytesAmount
-                        ];
-                    // Save the status byte
-                    runningByte = statusByte;
-                    break;
-                }
+            // Determine the message's length
+            if (
+                // First note off (note off on channel 0)
+                statusByte >= MIDIMessageTypes.noteOff &&
+                // Lower than sysex (pitch wheel on channel 15)
+                statusByte < MIDIMessageTypes.systemExclusive
+            ) {
+                // Voice message
+                // Gets the midi message length
+                dataSize =
+                    DataBytesAmount[
+                        (statusByte >> 4) as keyof typeof DataBytesAmount
+                    ];
+                // Save the status byte
+                runningByte = statusByte;
+            } else if (statusByte === MIDIMessageTypes.systemExclusive) {
+                // Sysex
+                dataSize = readVariableLengthQuantity(trackData);
+            } else if (statusByte === 0xff) {
+                // Meta message (the next is the actual status byte)
+                statusByte = trackData[
+                    trackData.currentIndex++
+                ] as MIDIMessageType;
+                dataSize = readVariableLengthQuantity(trackData);
+            } else {
+                // System common/realtime (no length)
+                dataSize = 0;
             }
 
             // Put the event data into the array
-            const eventData = new IndexedByteArray(eventDataLength);
+            const eventData = new IndexedByteArray(dataSize);
             eventData.set(
-                trackChunk.data.slice(
-                    trackChunk.data.currentIndex,
-                    trackChunk.data.currentIndex + eventDataLength
-                ),
-                0
+                trackData.slice(
+                    trackData.currentIndex,
+                    trackData.currentIndex + dataSize
+                )
             );
-            const event = new MIDIMessage(totalTicks, statusByte, eventData);
-            track.pushEvent(event);
+            track.pushEvent(new MIDIMessage(totalTicks, statusByte, eventData));
 
             // Advance the track chunk
-            trackChunk.data.currentIndex += eventDataLength;
+            trackData.currentIndex += dataSize;
         }
         outputMIDI.tracks.push(track);
 

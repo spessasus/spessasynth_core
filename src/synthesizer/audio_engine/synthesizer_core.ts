@@ -23,7 +23,6 @@ import {
     EFX_SENDS_GAIN_CORRECTION
 } from "./synth_constants";
 import { systemExclusiveInternal } from "./system_exclusive/system_exclusive";
-import { getEvent } from "../../midi/midi_message";
 import {
     type MIDIController,
     type MIDIMessageType,
@@ -1248,35 +1247,44 @@ export class SynthesizerCore {
         message: Uint8Array | number[],
         channelOffset: number
     ) {
-        const statusByteData = getEvent(message[0] as MIDIMessageType);
+        const byte = message[0] as MIDIMessageType;
+        let status: MIDIMessageType;
+        let channel = 0;
+        if (byte >= 0x80 && byte < 0xf0) {
+            // Voice message
+            status = (byte & 0xf0) as MIDIMessageType;
+            channel = byte & 0x0f;
+        } else {
+            status = byte;
+        }
 
-        const channelNumber = statusByteData.channel + channelOffset;
+        channel += channelOffset;
         // Process the event
-        switch (statusByteData.status as MIDIMessageType) {
+        switch (status) {
             case MIDIMessageTypes.noteOn: {
                 const velocity = message[2];
                 if (velocity > 0) {
-                    this.noteOn(channelNumber, message[1], velocity);
+                    this.noteOn(channel, message[1], velocity);
                 } else {
-                    this.noteOff(channelNumber, message[1]);
+                    this.noteOff(channel, message[1]);
                 }
                 break;
             }
 
             case MIDIMessageTypes.noteOff: {
-                this.noteOff(channelNumber, message[1]);
+                this.noteOff(channel, message[1]);
                 break;
             }
 
             case MIDIMessageTypes.pitchWheel: {
                 // LSB | (MSB << 7)
-                this.pitchWheel(channelNumber, (message[2] << 7) | message[1]);
+                this.pitchWheel(channel, (message[2] << 7) | message[1]);
                 break;
             }
 
             case MIDIMessageTypes.controllerChange: {
                 this.controllerChange(
-                    channelNumber,
+                    channel,
                     message[1] as MIDIController,
                     message[2]
                 );
@@ -1284,17 +1292,17 @@ export class SynthesizerCore {
             }
 
             case MIDIMessageTypes.programChange: {
-                this.programChange(channelNumber, message[1]);
+                this.programChange(channel, message[1]);
                 break;
             }
 
             case MIDIMessageTypes.polyPressure: {
-                this.polyPressure(channelNumber, message[1], message[2]);
+                this.polyPressure(channel, message[1], message[2]);
                 break;
             }
 
             case MIDIMessageTypes.channelPressure: {
-                this.channelPressure(channelNumber, message[1]);
+                this.channelPressure(channel, message[1]);
                 break;
             }
 

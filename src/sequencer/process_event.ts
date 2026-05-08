@@ -1,9 +1,13 @@
-import { getEvent, MIDIMessage } from "../midi/midi_message";
+import { MIDIMessage } from "../midi/midi_message";
 import { ConsoleColors } from "../utils/other";
 import { SpessaSynthLog } from "../utils/loggin";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import type { SpessaSynthSequencer } from "./sequencer";
-import { type MIDIController, MIDIMessageTypes } from "../midi/enums";
+import {
+    type MIDIController,
+    type MIDIMessageType,
+    MIDIMessageTypes
+} from "../midi/enums";
 
 /**
  * Processes a MIDI event.
@@ -23,36 +27,38 @@ export function processEventInternal(
         return;
     }
     const track = this._midiData!.tracks[trackIndex];
-    const statusByteData = getEvent(event.statusByte);
+    let status: MIDIMessageType;
+    let channel = 0;
+    if (event.statusByte >= 0x80 && event.statusByte < 0xf0) {
+        // Voice message
+        status = (event.statusByte & 0xf0) as MIDIMessageType;
+        channel = event.statusByte & 0x0f;
+    } else {
+        status = event.statusByte;
+    }
     const offset =
         this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
-    statusByteData.channel += offset;
+    channel += offset;
     /*
      Process the event
      Note: We do not use the .sendMessage on the synth here
      as it does not allow us to use more than 16 channels,
      which we need since the sequencer handles multi-port stuff, not the synth!
     */
-    switch (statusByteData.status) {
+    switch (status) {
         case MIDIMessageTypes.noteOn: {
             const velocity = event.data[1];
             if (velocity > 0) {
-                this.synth.noteOn(
-                    statusByteData.channel,
-                    event.data[0],
-                    velocity
-                );
+                this.synth.noteOn(channel, event.data[0], velocity);
                 this.playingNotes.push({
                     midiNote: event.data[0],
-                    channel: statusByteData.channel,
+                    channel: channel,
                     velocity: velocity
                 });
             } else {
-                this.synth.noteOff(statusByteData.channel, event.data[0]);
+                this.synth.noteOff(channel, event.data[0]);
                 const toDelete = this.playingNotes.findIndex(
-                    (n) =>
-                        n.midiNote === event.data[0] &&
-                        n.channel === statusByteData.channel
+                    (n) => n.midiNote === event.data[0] && n.channel === channel
                 );
                 if (toDelete !== -1) {
                     this.playingNotes.splice(toDelete, 1);
@@ -62,11 +68,9 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.noteOff: {
-            this.synth.noteOff(statusByteData.channel, event.data[0]);
+            this.synth.noteOff(channel, event.data[0]);
             const toDelete = this.playingNotes.findIndex(
-                (n) =>
-                    n.midiNote === event.data[0] &&
-                    n.channel === statusByteData.channel
+                (n) => n.midiNote === event.data[0] && n.channel === channel
             );
             if (toDelete !== -1) {
                 this.playingNotes.splice(toDelete, 1);
@@ -76,7 +80,7 @@ export function processEventInternal(
 
         case MIDIMessageTypes.pitchWheel: {
             this.synth.pitchWheel(
-                statusByteData.channel,
+                channel,
                 (event.data[1] << 7) | event.data[0]
             );
             break;
@@ -88,7 +92,7 @@ export function processEventInternal(
                 return;
             }
             this.synth.controllerChange(
-                statusByteData.channel,
+                channel,
                 event.data[0] as MIDIController,
                 event.data[1]
             );
@@ -100,21 +104,17 @@ export function processEventInternal(
             if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
             }
-            this.synth.programChange(statusByteData.channel, event.data[0]);
+            this.synth.programChange(channel, event.data[0]);
             break;
         }
 
         case MIDIMessageTypes.polyPressure: {
-            this.synth.polyPressure(
-                statusByteData.channel,
-                event.data[0],
-                event.data[1]
-            );
+            this.synth.polyPressure(channel, event.data[0], event.data[1]);
             break;
         }
 
         case MIDIMessageTypes.channelPressure: {
-            this.synth.channelPressure(statusByteData.channel, event.data[0]);
+            this.synth.channelPressure(channel, event.data[0]);
             break;
         }
 
@@ -173,7 +173,7 @@ export function processEventInternal(
                 ).find(
                     (k) =>
                         MIDIMessageTypes[k as keyof typeof MIDIMessageTypes] ===
-                        statusByteData.status
+                        status
                 )}`,
                 ConsoleColors.warn,
                 ConsoleColors.unrecognized,
@@ -183,7 +183,7 @@ export function processEventInternal(
             break;
         }
     }
-    if (statusByteData.status >= 0 && statusByteData.status < 0x80) {
+    if (status >= 0 && status < 0x80) {
         this.callEvent("metaEvent", {
             event,
             trackIndex

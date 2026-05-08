@@ -1,9 +1,10 @@
-import { getEvent, MIDIMessage } from "../midi/midi_message";
+import { MIDIMessage } from "../midi/midi_message";
 import { DEFAULT_MIDI_CONTROLLERS } from "../synthesizer/audio_engine/channel/controller_tables";
 import { RP_15_RESET_CC_NUMS } from "../synthesizer/audio_engine/channel/reset_controllers";
 import {
     type MIDIController,
     MIDIControllers,
+    type MIDIMessageType,
     MIDIMessageTypes
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
@@ -101,11 +102,20 @@ export function setTimeToInternal(
         } else if (event.ticks >= ticks) break;
 
         // Skip note ons
-        const info = getEvent(event.statusByte);
+        let status: MIDIMessageType;
+        let statusChannel = 0;
+        if (event.statusByte >= 0x80 && event.statusByte < 0xf0) {
+            // Voice message
+            status = (event.statusByte & 0xf0) as MIDIMessageType;
+            statusChannel = event.statusByte & 0x0f;
+        } else {
+            status = event.statusByte;
+        }
+
         // Keep in mind midi ports to determine the channel!
         const channel =
-            info.channel + (this.midiPortChannelOffsets[track.port] || 0);
-        switch (info.status) {
+            statusChannel + (this.midiPortChannelOffsets[track.port] || 0);
+        switch (status) {
             // Skip note messages
             case MIDIMessageTypes.noteOn: {
                 // Track portamento control as last note
