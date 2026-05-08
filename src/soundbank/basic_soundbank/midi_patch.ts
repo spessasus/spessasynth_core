@@ -134,18 +134,17 @@ export class MIDIPatchTools {
      * ordering the patches in ascending order.
      */
     public static compare(a: MIDIPatch, b: MIDIPatch): number {
-        if (a.program !== b.program) {
-            return a.program - b.program;
-        }
-
         // Force drum presets to be last
         if (a.isGMGSDrum && !b.isGMGSDrum) return 1;
         if (!a.isGMGSDrum && b.isGMGSDrum) return -1;
 
-        if (a.bankMSB !== b.bankMSB) {
-            return a.bankMSB - b.bankMSB;
-        }
+        // First, sort by program
+        if (a.program !== b.program) return a.program - b.program;
 
+        // Next, sort by bankMSB
+        if (a.bankMSB !== b.bankMSB) return a.bankMSB - b.bankMSB;
+
+        // Finally, sort by bankLSB
         return a.bankLSB - b.bankLSB;
     }
 
