@@ -72,7 +72,3 @@ const speaker = new Speaker({
     float: true
 });
 audioStream.pipe(speaker);
-
-setTimeout(() => {
-    synth.setMasterParameter("pitchOffset", 0.9);
-}, 100);
