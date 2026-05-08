@@ -6,10 +6,11 @@ export const CONTROLLER_TABLE_SIZE = 128;
  * An array with the default MIDI controller values.
  * Note that these are 14-bit, requiring a 7-bit shift to the right for 7-bit values!
  */
-export const DEFAULT_MIDI_CONTROLLERS = new Int16Array(
+export const DEFAULT_MIDI_CONTROLLERS: Readonly<Int16Array> = new Int16Array(
     CONTROLLER_TABLE_SIZE
 ).fill(0);
 const setResetValue = (i: MIDIController, v: number) =>
+    // @ts-expect-error Only set here!
     (DEFAULT_MIDI_CONTROLLERS[i] = v << 7);
 
 // Values come from Falcosoft MidiPlayer 6
@@ -17,10 +18,6 @@ setResetValue(MIDIControllers.mainVolume, 100);
 setResetValue(MIDIControllers.balance, 64);
 setResetValue(MIDIControllers.expressionController, 127);
 setResetValue(MIDIControllers.pan, 64);
-
-// Portamento is on by default, but time is set to 0 so it's effectively off
-setResetValue(MIDIControllers.portamentoOnOff, 127);
-// For control, see reset_controllers.ts
 
 setResetValue(MIDIControllers.filterResonance, 64);
 setResetValue(MIDIControllers.releaseTime, 64);

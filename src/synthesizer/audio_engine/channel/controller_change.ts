@@ -184,6 +184,14 @@ export function controllerChange(
                 break;
             }
 
+            case MIDIControllers.portamentoControl: {
+                // Force portamento (MIDI 1.0 specification, page 16)
+                // Even if portamento on/off (cc#65) is off
+                this.lastNote = value;
+                this.portamentoForce = true;
+                break;
+            }
+
             // Default: just compute modulators
             default: {
                 this.computeModulatorsAll(1, controller);

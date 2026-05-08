@@ -73,32 +73,37 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     );
 
     // Portamento
-    let portamentoFromKey = -1;
-    let portamentoDuration = 0;
-    // Note: the 14-bit value needs to go down to 7-bit
+    const previousNote = this.lastNote;
+    const portamentoEnabled =
+        this.portamentoForce ||
+        this.midiControllers[MIDIControllers.portamentoOnOff] >= 8192;
+
+    // 14-bit MIDI CC -> 7-bit value
     const portamentoTime =
         this.midiControllers[MIDIControllers.portamentoTime] >> 7;
-    const portaControl =
-        this.midiControllers[MIDIControllers.portamentoControl] >> 7;
-    if (
-        !this.drumChannel && // No portamento on drum channel
-        portaControl !== midiNote && // If the same note, there's no portamento
-        this.midiControllers[MIDIControllers.portamentoOnOff] >= 8192 // (64 << 7)
-    ) {
-        if (
-            portamentoTime > 0 && // 0 duration means no portamento
-            portaControl > 0
-        ) {
-            // Key 0 means initial portamento (no portamento)
-            const diff = Math.abs(midiNote - portaControl);
-            portamentoDuration = portamentoTimeToSeconds(portamentoTime, diff);
-            portamentoFromKey = portaControl;
-        }
-        // Set portamento control to previous value
-        // Note: track even when porta time is 0, see
-        // https://github.com/spessasus/spessasynth_core/issues/77
-        this.controllerChange(MIDIControllers.portamentoControl, midiNote);
+
+    const canApplyPortamento =
+        portamentoEnabled && // Enabled?
+        !this.drumChannel && // Not a drum channel?
+        previousNote >= 0 && // Valid note?
+        previousNote !== midiNote && // Not the same note?
+        portamentoTime > 0; // Non-instant time?
+
+    let portaFromKey = -1;
+    let portaTime = 0;
+
+    if (canApplyPortamento) {
+        const keyDistance = Math.abs(midiNote - previousNote);
+
+        portaFromKey = previousNote;
+        portaTime = portamentoTimeToSeconds(portamentoTime, keyDistance);
+
+        this.portamentoForce = false;
     }
+
+    // Always track the last note, even if portamento isn't applied.
+    // See: https://github.com/spessasus/spessasynth_core/issues/77
+    this.lastNote = midiNote;
 
     // Mono mode
     if (!this._midiParameters.polyMode) {
@@ -330,8 +335,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             voice.loopingMode === 1 || voice.loopingMode === 3;
 
         // Apply portamento
-        voice.portamentoFromKey = portamentoFromKey;
-        voice.portamentoDuration = portamentoDuration;
+        voice.portamentoFromKey = portaFromKey;
+        voice.portamentoDuration = portaTime;
 
         // Apply special params
         voice.overridePan = panOverride;

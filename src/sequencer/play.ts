@@ -1,5 +1,8 @@
 import { MIDIMessage } from "../midi/midi_message";
-import { DEFAULT_MIDI_CONTROLLERS } from "../synthesizer/audio_engine/channel/controller_tables";
+import {
+    CONTROLLER_TABLE_SIZE,
+    DEFAULT_MIDI_CONTROLLERS
+} from "../synthesizer/audio_engine/channel/controller_tables";
 import { RP_15_RESET_CC_NUMS } from "../synthesizer/audio_engine/channel/reset_controllers";
 import {
     type MIDIController,
@@ -9,9 +12,6 @@ import {
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-
-// An array with preset default values
-const defaultControllerArray = DEFAULT_MIDI_CONTROLLERS.slice(0, 128);
 
 const nonSkippableCCs = new Set<MIDIController>([
     MIDIControllers.dataDecrement,
@@ -28,8 +28,6 @@ const nonSkippableCCs = new Set<MIDIController>([
     MIDIControllers.monoModeOn,
     MIDIControllers.polyModeOn
 ] as const);
-
-const isCCNonSkippable = (cc: MIDIController) => nonSkippableCCs.has(cc);
 
 /**
  * Plays the MIDI file to a specific time or ticks.
@@ -66,8 +64,15 @@ export function setTimeToInternal(
      */
     const savedControllers: number[][] = [];
     for (let i = 0; i < channelsToSave; i++) {
-        savedControllers.push([...defaultControllerArray] as MIDIController[]);
+        savedControllers.push([
+            ...DEFAULT_MIDI_CONTROLLERS
+        ] as MIDIController[]);
     }
+
+    /**
+     * Save portamento notes here and send them only after (-1 means no portamento note)
+     */
+    const portamentoNotes = new Array<number>(channelsToSave).fill(-1);
 
     // Save tempo changes
     // Testcase:
@@ -86,7 +91,7 @@ export function setTimeToInternal(
         if (savedControllers?.[chan] === undefined) return;
 
         for (const resetCC of RP_15_RESET_CC_NUMS)
-            savedControllers[chan][resetCC] = defaultControllerArray[resetCC];
+            savedControllers[chan][resetCC] = DEFAULT_MIDI_CONTROLLERS[resetCC];
     }
 
     const { timeline, tracks } = this._midiData;
@@ -115,22 +120,21 @@ export function setTimeToInternal(
         // Keep in mind midi ports to determine the channel!
         const channel =
             statusChannel + (this.midiPortChannelOffsets[track.port] || 0);
+
+        savedControllers[channel] ??= [
+            ...DEFAULT_MIDI_CONTROLLERS
+        ] as MIDIController[];
+
+        const cc = savedControllers[channel];
+
         switch (status) {
             // Skip note messages
             case MIDIMessageTypes.noteOn: {
                 // Track portamento control as last note
-                savedControllers[channel] ??= [
-                    ...defaultControllerArray
-                ] as MIDIController[];
                 // Only track if the portamento is on (even if time is 0)
-                if (
-                    savedControllers[channel][
-                        MIDIControllers.portamentoOnOff
-                    ] >= 8192
-                )
-                    savedControllers[channel][
-                        MIDIControllers.portamentoControl
-                    ] = event.data[0];
+                if (cc[MIDIControllers.portamentoOnOff] >= 8192) {
+                    portamentoNotes[channel] = event.data[0];
+                }
 
                 break;
             }
@@ -151,20 +155,15 @@ export function setTimeToInternal(
                     break;
 
                 // Do not skip data entries
-                const controllerNumber = event.data[0] as MIDIController;
-                if (isCCNonSkippable(controllerNumber)) {
+                const controller = event.data[0] as MIDIController;
+                if (nonSkippableCCs.has(controller)) {
                     const ccV = event.data[1];
-                    if (
-                        controllerNumber === MIDIControllers.resetAllControllers
-                    )
+                    if (controller === MIDIControllers.resetAllControllers)
                         resetAllControllers(channel);
 
-                    this.sendMIDICC(channel, controllerNumber, ccV);
+                    this.sendMIDICC(channel, controller, ccV);
                 } else {
-                    savedControllers[channel] ??= [
-                        ...defaultControllerArray
-                    ] as MIDIController[];
-                    savedControllers[channel][controllerNumber] = event.data[1];
+                    cc[controller] = event.data[1] << 7;
                 }
                 break;
             }
@@ -201,21 +200,32 @@ export function setTimeToInternal(
             this.oneTickToSeconds * (nextEvent.ticks - event.ticks);
     }
 
-    // Restoring saved controllers
     // For all synth channels
     for (let channel = 0; channel < channelsToSave; channel++) {
-        // Restore pitch wheels
+        // Restoring pitch wheels
         if (pitchWheels[channel] !== undefined)
             this.sendMIDIPitchWheel(channel, pitchWheels[channel]);
 
+        // Restoring portamento
+        // Note: we do it before controllers as portamento control may want to override it
+        if (portamentoNotes[channel] >= 0) {
+            this.sendMIDICC(
+                channel,
+                MIDIControllers.portamentoControl,
+                portamentoNotes[channel]
+            );
+        }
+
+        // Restoring saved controllers
         if (savedControllers[channel] !== undefined) {
             // Every controller that has changed
-            for (const [index, value] of savedControllers[channel].entries()) {
+            for (let i = 0; i < CONTROLLER_TABLE_SIZE; i++) {
+                const value = savedControllers[channel][i] >> 7;
                 if (
-                    value !== defaultControllerArray[index] &&
-                    !isCCNonSkippable(index as MIDIController)
+                    value !== DEFAULT_MIDI_CONTROLLERS[i] &&
+                    !nonSkippableCCs.has(i as MIDIController)
                 ) {
-                    this.sendMIDICC(channel, index as MIDIController, value);
+                    this.sendMIDICC(channel, i as MIDIController, value);
                 }
             }
         }

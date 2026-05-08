@@ -306,6 +306,19 @@ export class MIDIChannel {
      * @protected
      */
     protected currentGain = 0;
+
+    /**
+     * The last pressed note on this channel.
+     * -1 means none.
+     * @protected
+     */
+    protected lastNote = -1;
+    /**
+     * If the portamento should be executed once regardless of Portamento on/off.
+     * Adhering to the MIDI spec, CC#84 ignores on/off.
+     * @protected
+     */
+    protected portamentoForce = false;
     protected readonly generators: ChannelGenerators = {
         offsets: new Int16Array(GENERATORS_AMOUNT),
         offsetsEnabled: false,

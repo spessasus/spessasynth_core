@@ -7,16 +7,11 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { MIDIChannel } from "./midi_channel";
 
-export function resetPortamento(this: MIDIChannel, sendCC: boolean) {
-    if (this.lockedControllers[MIDIControllers.portamentoControl]) return;
+export function resetPortamento(this: MIDIChannel) {
     // Portamento has a quirk:
     // For XG, control is set to 60
     // For others, it's set to nothing (no portamento on first note-on)
-    if (this.channelSystem === "xg") {
-        this.controllerChange(MIDIControllers.portamentoControl, 60, sendCC);
-    } else {
-        this.controllerChange(MIDIControllers.portamentoControl, 0, sendCC);
-    }
+    this.lastNote = this.channelSystem === "xg" ? 60 : -1;
 }
 
 /**
@@ -84,7 +79,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
 
     // Reset various other things
     this.octaveTuning.fill(0);
-    resetPortamento.call(this, sendCCEvents);
+    resetPortamento.call(this);
     this.resetDrumParams();
     this.resetVibratoParams();
     this.resetParameters();

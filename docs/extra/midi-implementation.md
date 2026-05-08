@@ -69,7 +69,7 @@ Below is the list of controllers supported by default.
 | 33 - 64 excluding 38 | Controller LSB values               | The lower nibble of the value (0 - 127)                                                                  | Allows precise control of values such as volume, expression, pan. Extends the precision from 0 - 127 to 0 - 16384 (!)                                                  | 0             |
 | 38                   | Data Entry LSB                      | Data entry value (0 - 127)                                                                               | This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values. | none          |
 | 64                   | Sustain Pedal                       | 0 - 63 is off, 64 - 127 is on                                                                            | Holds the noteOff messages until the pedal is off, then stops them all at once.                                                                                        | OFF           |
-| 65                   | Portamento On/Off                   | 0 - 63 is off, 64 - 127 is on                                                                            | Controls if the portamento is enabled or not.                                                                                                                          | ON            |
+| 65                   | Portamento On/Off                   | 0 - 63 is off, 64 - 127 is on                                                                            | Controls if the portamento is enabled or not.                                                                                                                          | OFF           |
 | 67                   | Soft Pedal                          | 0 - 63 is off, 64 - 127 is on                                                                            | Attenuates the channel and applies a low-pass filter.                                                                                                                  | OFF           |
 | 71                   | Filter Resonance                    | The resonance (0 - 127) 0 is 25 dB less, 64 is unchanged, 127 is 25 dB more ⚠️NON-STANDARD!⚠️            | Controls the filter resonance of the given patch.                                                                                                                      | 64            |
 | 72                   | Attack Time                         | The attack time (0- 127) 64 is normal, 0 is the fastest, 127 is the slowest ⚠️NON-STANDARD!⚠️            | Controls the attack time for the given patch.                                                                                                                          | 64            |
@@ -625,13 +625,12 @@ SpessaSynth attempts to recreate the old Sound Canvas/Yamaha XG portamento behav
 That is:
 
 - Portamento Time is only 7-bit. (only CC#5 is processed)
-- Portamento Control gets overridden with the last portamento key.
+- Portamento Control, if set, overrides the current from key and forces portamento once, regardless of CC#65 (Portamento On/Off).
 - For XG, the initial key to glide from is 60, for other systems there's no initial glide.
 - Portamento Time depends on the distance of the keys.
   The final calculation is `portamentoSeconds = portaTimeToRate(cc5) * keyDistance`
-- The details of the `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/engine_methods/portamento_time.ts)
+- The details of the `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/channel/portamento_time.ts)
 - If you know a more accurate algorithm, please let me know!
-- Portamento is **experimental,** although I found it to be accurate to the S-YXG50 and Sound Canvas VA VSTi instruments.
 
 ## Effects
 
