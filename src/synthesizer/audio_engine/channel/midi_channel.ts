@@ -30,7 +30,6 @@ import {
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import type { MIDISystem } from "../../types";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import type { SynthesizerCore } from "../synthesizer_core";
@@ -57,6 +56,7 @@ import {
     DEFAULT_CHANNEL_MASTER_PARAMETERS,
     setMasterParameter
 } from "./master_parameters";
+import type { MIDISystem } from "../../../soundbank/types";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.

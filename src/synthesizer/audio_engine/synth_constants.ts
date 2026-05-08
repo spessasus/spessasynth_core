@@ -1,4 +1,5 @@
-import type { MIDISystem, SynthMethodOptions } from "../types";
+import type { SynthMethodOptions } from "../types";
+import type { MIDISystem } from "../../soundbank/types";
 
 /**
  * Synthesizer's default voice cap.

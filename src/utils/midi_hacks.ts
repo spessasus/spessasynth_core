@@ -1,4 +1,4 @@
-import type { MIDISystem } from "../synthesizer/types";
+import type { MIDISystem } from "../soundbank/types";
 
 export const XG_SFX_VOICE = 64;
 
@@ -33,7 +33,7 @@ export class BankSelectHacks {
     /**
      * Checks if this bank number is XG drums.
      */
-    public static isXGDrums(bankMSB: number) {
+    public static isXGDrum(bankMSB: number) {
         /*
         Note: we omit 126 (XG SFX Drums) here, as they are unwanted most of the time.
         If they are really wanted, the direct match will match them anyway.
@@ -47,7 +47,7 @@ export class BankSelectHacks {
      */
     public static isValidXGMSB(bankMSB: number) {
         return (
-            this.isXGDrums(bankMSB) ||
+            this.isXGDrum(bankMSB) ||
             bankMSB === XG_SFX_VOICE ||
             bankMSB === GM2_DEFAULT_BANK
         );
@@ -60,22 +60,22 @@ export class BankSelectHacks {
     public static addBankOffset(
         bankMSB: number,
         bankOffset: number,
-        xgDrums = true
+        isXG: boolean
     ) {
-        if (this.isXGDrums(bankMSB) && xgDrums) {
-            return bankMSB;
-        }
+        // Do not change XG drums (120, 126 or 127)
+        if (this.isXGDrum(bankMSB) && isXG) return bankMSB;
+
         return Math.min(bankMSB + bankOffset, 127);
     }
 
     public static subtractBankOffset(
         bankMSB: number,
         bankOffset: number,
-        xgDrums = true
+        isXG: boolean
     ) {
-        if (this.isXGDrums(bankMSB) && xgDrums) {
-            return bankMSB;
-        }
+        // Do not change XG drums (120, 126 or 127)
+        if (this.isXGDrum(bankMSB) && isXG) return bankMSB;
+
         return Math.max(0, bankMSB - bankOffset);
     }
 }

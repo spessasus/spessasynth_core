@@ -197,7 +197,7 @@ export class DownloadableSounds extends DLSVerifier {
             }
             // Read the drum alias
             const drumInstrument = dls.instruments.find(
-                (i) => BankSelectHacks.isXGDrums(i.bankMSB) || i.isGMGSDrum
+                (i) => BankSelectHacks.isXGDrum(i.bankMSB) || i.isGMGSDrum
             );
             if (!drumInstrument) {
                 SpessaSynthLog.warn(

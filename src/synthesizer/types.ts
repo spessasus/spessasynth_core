@@ -1,4 +1,4 @@
-import type { MIDIPatchNamed } from "../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
 import type { CachedVoice } from "./audio_engine/voice/voice_cache";
 
 import type {
@@ -17,20 +17,6 @@ import type {
     StopAllCallback
 } from "./audio_engine/channel/types";
 import type { MIDIGlobalParameter } from "./audio_engine/midi_parameters";
-
-export type MIDISystem = "gm" | "gm2" | "gs" | "xg";
-
-export interface PresetListEntry extends MIDIPatchNamed {
-    /**
-     * Indicates if this preset is any kind of drum preset.
-     */
-    isDrum: boolean;
-}
-
-/**
- * A list of preset changes, each with a name, bank, and program number.
- */
-export type PresetList = PresetListEntry[];
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
@@ -160,7 +146,7 @@ export interface SynthProcessorEventData {
     /**
      * This event fires when the preset list is changed.
      */
-    presetListChange: PresetList;
+    presetListChange: MIDIPatchFull[];
     /**
      * This event fires when all controllers on all channels are reset. There is no data for this event.
      */

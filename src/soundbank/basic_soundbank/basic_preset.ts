@@ -8,7 +8,7 @@ import type { GenericRange, VoiceParameters } from "../types";
 import { BasicInstrument } from "./basic_instrument";
 import {
     type MIDIPatch,
-    type MIDIPatchNamed,
+    type MIDIPatchFull,
     MIDIPatchTools
 } from "./midi_patch";
 import {
@@ -35,7 +35,7 @@ for (let i = 0; i < defaultGeneratorValues.length; i++) {
         defaultGeneratorValues[i] = GeneratorLimits[i as GeneratorType].def;
 }
 
-export class BasicPreset implements MIDIPatchNamed {
+export class BasicPreset implements MIDIPatchFull {
     /**
      * The parent soundbank instance
      * Currently used for determining default modulators and XG status
@@ -91,13 +91,7 @@ export class BasicPreset implements MIDIPatchNamed {
         this.globalZone = globalZone;
     }
 
-    public get isXGDrums() {
-        return (
-            this.parentSoundBank.isXGBank &&
-            BankSelectHacks.isXGDrums(this.bankMSB)
-        );
-    }
-
+    // Note: a getter and not a constant value for editing purposes.
     /**
      * Checks if this preset is a drum preset
      */
@@ -105,7 +99,7 @@ export class BasicPreset implements MIDIPatchNamed {
         const xg = this.parentSoundBank.isXGBank;
 
         return (
-            this.isGMGSDrum || (xg && BankSelectHacks.isXGDrums(this.bankMSB))
+            this.isGMGSDrum || (xg && BankSelectHacks.isXGDrum(this.bankMSB))
         );
     }
 
@@ -334,7 +328,7 @@ export class BasicPreset implements MIDIPatchNamed {
     }
 
     public toString() {
-        return MIDIPatchTools.toNamedMIDIString(this);
+        return MIDIPatchTools.toFullMIDIString(this);
     }
 
     /**

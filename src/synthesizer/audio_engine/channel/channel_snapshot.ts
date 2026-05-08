@@ -1,5 +1,4 @@
-import type { MIDISystem } from "../../types";
-import type { MIDIPatchNamed } from "../../../soundbank/basic_soundbank/midi_patch";
+import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
 import { DrumParameters } from "./drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./data_entry/awe32";
@@ -8,9 +7,10 @@ import type { ChannelMasterParameter } from "./master_parameters";
 import type { MIDIChannelParameter } from "./midi_parameters";
 import { CONTROLLER_TABLE_SIZE } from "./controller_tables";
 import type { MIDIController } from "../../../midi/enums";
+import type { MIDISystem } from "../../../soundbank/types";
 
 export interface ChannelSnapshot {
-    patch: MIDIPatchNamed;
+    patch?: MIDIPatchFull;
     lockedSystem: MIDISystem;
 
     midiControllers: Int16Array;
@@ -32,7 +32,13 @@ export interface ChannelSnapshot {
 
 export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
     return {
-        patch: { ...this.patch, name: this.preset?.name ?? "undefined" },
+        patch: this.preset
+            ? {
+                  ...this.patch,
+                  name: this.preset.name,
+                  isDrum: this.preset.isDrum
+              }
+            : undefined,
         lockedSystem: this.lockedSystem,
 
         midiControllers: this.midiControllers.slice(),
@@ -82,7 +88,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         snapshot.drumParams[i].copyInto(this.drumParams[i]);
 
     this.setMasterParameter("presetLock", false); // Restored in master params
-    this.setPatch(snapshot.patch);
+    if (snapshot.patch) this.setPatch(snapshot.patch);
     this.lockedSystem = snapshot.lockedSystem;
 
     // Restore MIDI parameters

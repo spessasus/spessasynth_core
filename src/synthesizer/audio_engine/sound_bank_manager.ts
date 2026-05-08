@@ -1,10 +1,12 @@
-import type { SoundBankManagerListEntry } from "../../soundbank/types";
+import type {
+    MIDISystem,
+    SoundBankManagerListEntry
+} from "../../soundbank/types";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
-import type { MIDISystem, PresetListEntry } from "../types";
-import { selectPreset } from "../../soundbank/basic_soundbank/preset_selector";
 import {
     type MIDIPatch,
+    type MIDIPatchFull,
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../utils/midi_hacks";
@@ -13,11 +15,7 @@ import { SpessaSynthLog } from "../../utils/loggin";
 class SoundBankManagerPreset extends BasicPreset {
     public constructor(p: BasicPreset, offset: number) {
         super(p.parentSoundBank, p.globalZone);
-        this.bankMSB = BankSelectHacks.addBankOffset(
-            p.bankMSB,
-            offset,
-            p.isXGDrums
-        );
+        this.bankMSB = BankSelectHacks.addBankOffset(p.bankMSB, offset, true);
 
         this.name = p.name;
         this.bankLSB = p.bankLSB;
@@ -48,7 +46,7 @@ export class SoundBankManager {
         this.presetListChangeCallback = presetListChangeCallback;
     }
 
-    private _presetList: PresetListEntry[] = [];
+    private _presetList: MIDIPatchFull[] = [];
 
     /**
      * The list of all presets in the sound bank stack.
@@ -133,7 +131,11 @@ export class SoundBankManager {
             return undefined;
         }
 
-        return selectPreset(this.selectablePresetList, patch, system);
+        return MIDIPatchTools.selectPatch(
+            this.selectablePresetList,
+            patch,
+            system
+        );
     }
 
     // Clears the sound bank list and destroys all sound banks.
@@ -162,7 +164,7 @@ export class SoundBankManager {
                 }
             }
         }
-        presetList.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
+        presetList.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
         this.selectablePresetList = presetList;
         this._presetList = presetList.map((p) => {
             return {

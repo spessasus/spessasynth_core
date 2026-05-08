@@ -49,7 +49,7 @@ console.info("---");
 console.group("--- Used Programs ---");
 for (const [preset, keys] of used)
     console.info(
-        MIDIPatchTools.toNamedMIDIString(preset).padEnd(30, " "),
+        MIDIPatchTools.toFullMIDIString(preset).padEnd(30, " "),
         `-> ${keys.size} key combinations detected.`
     );
 console.groupEnd();

@@ -14,7 +14,6 @@ import {
 } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
 import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/synthesizer_snapshot";
-import type { MIDISystem } from "../../synthesizer/types";
 import {
     type MIDIPatch,
     MIDIPatchTools
@@ -27,6 +26,7 @@ import type {
 } from "../../synthesizer/audio_engine/effects/types";
 import { SysEx } from "../../utils/sysex";
 import { CONTROLLER_TABLE_SIZE } from "../../synthesizer/audio_engine/channel/controller_tables";
+import type { MIDISystem } from "../../soundbank/types";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -842,7 +842,7 @@ export function applySnapshotInternal(
                 pitchOffset: transposeFloat
             });
         }
-        if (channel.masterParameters.presetLock) {
+        if (channel.masterParameters.presetLock && channel.patch) {
             programChanges.push({
                 channel: channelNumber,
                 ...channel.patch

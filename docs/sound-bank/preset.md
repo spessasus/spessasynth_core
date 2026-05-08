@@ -24,10 +24,6 @@ The global zone for this preset, a `BasicZone`.
 
 The zones of this preset, an array of `BasicPresetZone`s.
 
-### isXGDrums
-
-A boolean indicating if this preset is an XG drum preset.
-
 ### isDrum
 
 A boolean indicating if this preset is a drum preset.

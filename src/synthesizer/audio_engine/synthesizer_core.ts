@@ -1,6 +1,5 @@
 import type {
     CachedVoiceList,
-    MIDISystem,
     SynthMethodOptions,
     SynthProcessorEventData,
     SynthProcessorOptions
@@ -52,6 +51,7 @@ import {
     resetMIDIParametersInternal,
     setMIDIParameterInternal
 } from "./midi_parameters";
+import type { MIDISystem } from "../../soundbank/types";
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;

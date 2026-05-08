@@ -13,6 +13,7 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 
 import type {
     DLSWriteOptions,
+    MIDISystem,
     PresetsWithKeyCombinations,
     SetSampleFormatOptions,
     SF2VersionTag,
@@ -20,8 +21,6 @@ import type {
     SoundFont2WriteOptions
 } from "../types";
 import { GeneratorTypes } from "./generator_types";
-import type { MIDISystem } from "../../synthesizer/types";
-import { selectPreset } from "./preset_selector";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
 import {
     DEFAULT_DLS_OPTIONS,
@@ -405,7 +404,7 @@ export class BasicSoundBank {
      * Updates internal values.
      */
     public flush() {
-        this.presets.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
+        this.presets.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
         this.parseInternal();
     }
 
@@ -601,7 +600,7 @@ export class BasicSoundBank {
      * Get the appropriate preset.
      */
     public getPreset(patch: MIDIPatch, system: MIDISystem): BasicPreset {
-        return selectPreset(this.presets, patch, system);
+        return MIDIPatchTools.selectPatch(this.presets, patch, system);
     }
 
     public destroySoundBank() {
@@ -632,7 +631,7 @@ export class BasicSoundBank {
             31, 32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
         ]);
         for (const preset of this.presets) {
-            if (BankSelectHacks.isXGDrums(preset.bankMSB)) {
+            if (BankSelectHacks.isXGDrum(preset.bankMSB)) {
                 this._isXGBank = true;
                 if (!allowedPrograms.has(preset.program)) {
                     // Not valid!

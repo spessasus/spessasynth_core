@@ -1,6 +1,5 @@
 import { DownloadableSoundsArticulation } from "./articulation";
 import { DownloadableSoundsRegion } from "./region";
-import { type MIDIPatchNamed } from "../basic_soundbank/midi_patch";
 import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     getStringBytes,
@@ -23,6 +22,7 @@ import {
     BasicSoundBank,
     GeneratorLimits,
     GeneratorTypes,
+    type MIDIPatch,
     Modulator
 } from "../exports";
 import {
@@ -36,7 +36,7 @@ import {
  */
 export class DownloadableSoundsInstrument
     extends DLSVerifier
-    implements MIDIPatchNamed
+    implements MIDIPatch
 {
     public readonly articulation = new DownloadableSoundsArticulation();
     public readonly regions = new Array<DownloadableSoundsRegion>();

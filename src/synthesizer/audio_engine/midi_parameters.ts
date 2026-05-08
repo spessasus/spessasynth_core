@@ -1,6 +1,7 @@
-import type { MIDIGlobalParameterChangeCallback, MIDISystem } from "../types";
+import type { MIDIGlobalParameterChangeCallback } from "../types";
 import { DEFAULT_SYNTH_MODE } from "./synth_constants";
 import type { SynthesizerCore } from "./synthesizer_core";
+import type { MIDISystem } from "../../soundbank/types";
 
 export interface MIDIGlobalParameter {
     /**

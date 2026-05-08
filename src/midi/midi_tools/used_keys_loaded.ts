@@ -5,7 +5,6 @@ import { SysEx } from "../../utils/sysex";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
-import type { MIDISystem } from "../../synthesizer/types";
 import {
     type MIDIController,
     MIDIControllers,
@@ -14,6 +13,7 @@ import {
 import type { SoundBankManager } from "../../synthesizer/audio_engine/sound_bank_manager";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { RegisteredParameterTypes } from "../../synthesizer/audio_engine/channel/data_entry/data_entry_coarse";
+import type { MIDISystem } from "../../soundbank/types";
 
 interface InternalChannelType {
     preset?: BasicPreset;

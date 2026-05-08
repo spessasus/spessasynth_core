@@ -1,6 +1,6 @@
-import type { PresetListEntry } from "../../types";
 import type { MIDIController } from "../../../midi/enums";
 import type { MIDIChannelParameter } from "./midi_parameters";
+import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
 
 export interface NoteOnCallback {
     /** The MIDI note number. */
@@ -21,7 +21,7 @@ export interface NoteOffCallback {
     channel: number;
 }
 
-export interface ProgramChangeCallback extends PresetListEntry {
+export interface ProgramChangeCallback extends MIDIPatchFull {
     /** The MIDI channel number. */
     channel: number;
 }

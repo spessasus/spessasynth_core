@@ -14,26 +14,30 @@ import {
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
-import type { MIDISystem } from "../../synthesizer/types";
 import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
 import { SysEx } from "../../utils/sysex";
 import { SpessaSynthLog } from "../../utils/loggin";
+import type { MIDISystem } from "../../soundbank/types";
 
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
+/**
+ * Add the offset to the bank.
+ * See https://github.com/spessasus/sf2-rmidi-specification#readme
+ * Also fix presets that don't exist
+ * Since midi player6 doesn't seem to default to 0 when non-existent...
+ */
 function correctBankOffsetInternal(
     mid: BasicMIDI,
     bankOffset: number,
     soundBank: BasicSoundBank
 ) {
-    // Add the offset to the bank.
-    // See https://github.com/spessasus/sf2-rmidi-specification#readme
-    // Also fix presets that don't exist
-    // Since midi player6 doesn't seem to default to 0 when non-existent...
-    let system: MIDISystem = "gm";
+    // Start with GM, that way we add GS if there's either GS on or no reset
+    // Cast is necessary here as TSC thinks we don't change it ever
+    let system = "gm" as MIDISystem;
     /**
      * The unwanted system messages such as gm on
      */
@@ -166,7 +170,8 @@ function correctBankOffsetInternal(
                 // Make sure to take bank offset into account
                 bankMSB: BankSelectHacks.subtractBankOffset(
                     channel.lastBank?.data?.[1] ?? 0,
-                    mid.bankOffset
+                    mid.bankOffset,
+                    system === "xg"
                 ),
                 isGMGSDrum: channel.drums
             };
@@ -194,7 +199,7 @@ function correctBankOffsetInternal(
             channel.lastBank.data[1] = BankSelectHacks.addBankOffset(
                 targetPreset.bankMSB,
                 bankOffset,
-                targetPreset.isXGDrums
+                system === "xg"
             );
             if (channel.lastBankLSB === undefined) {
                 return;
@@ -292,7 +297,7 @@ function correctBankOffsetInternal(
         const targetBank = BankSelectHacks.addBankOffset(
             targetPreset.bankMSB,
             bankOffset,
-            targetPreset.isXGDrums
+            system === "xg"
         );
         track.addEvents(
             indexToAdd,

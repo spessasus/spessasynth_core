@@ -13,7 +13,6 @@ import {
     type SynthesizerSnapshot
 } from "./audio_engine/synthesizer_snapshot";
 import type {
-    MIDISystem,
     SynthMethodOptions,
     SynthProcessorEvent,
     SynthProcessorEventData,
@@ -31,6 +30,7 @@ import {
 import type { GlobalMasterParameter } from "./audio_engine/master_parameters";
 import type { MIDIChannel } from "./audio_engine/channel/midi_channel";
 import type { MIDIGlobalParameter } from "./audio_engine/midi_parameters";
+import type { MIDISystem } from "../soundbank/types";
 
 /**
  * Processor.ts
