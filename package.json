@@ -11,9 +11,10 @@
         "lint": "eslint .",
         "build:fast": "rimraf -rf dist && tsdown src/index.ts --platform neutral --sourcemap",
         "build": "npm run test:types && npm run build:fast",
+        "format": "prettier . --write",
         "test:types": "npm run lint && tsc -b ",
         "prepack": "npm run build:fast && rimraf -rf *.tgz",
-        "prepublishOnly": "npm run build",
+        "prepublishOnly": "npm run format && npm run build",
         "prepare": "husky install"
     },
     "repository": {
