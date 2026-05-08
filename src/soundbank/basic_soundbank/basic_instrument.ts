@@ -254,10 +254,10 @@ export class BasicInstrument {
         }
 
         // Globalize only modulators that exist in all zones
-        const firstZone = this.zones[0];
-        const modulators = firstZone.modulators.map((m) =>
-            Modulator.copyFrom(m)
-        );
+        const modulators =
+            this.zones.length === 0
+                ? []
+                : this.zones[0].modulators.map((m) => Modulator.copyFrom(m));
         for (const checkedModulator of modulators) {
             let existsForAllZones = true;
             for (const zone of this.zones) {

@@ -499,7 +499,8 @@ export class BasicPreset implements MIDIPatchNamed {
                         g.type !== GeneratorTypes.velRange &&
                         g.type !== GeneratorTypes.endOper &&
                         g.type !== GeneratorTypes.instrument &&
-                        g.value !== GeneratorLimits[g.type].def
+                        (!(g.type in GeneratorLimits) ||
+                            g.value !== GeneratorLimits[g.type].def)
                 );
 
                 // Create the zone and copy over values
