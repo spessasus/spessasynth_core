@@ -98,22 +98,24 @@ Below is the list of controllers supported by default.
 
 Below are all the controller values which are not zero when the controllers are reset.
 
-| CC Number | Name                         | Reset Value |
-| --------- | ---------------------------- | ----------- |
-| 7         | Main Volume                  | 100         |
-| 8         | Balance                      | 64          |
-| 11        | Expression Controller        | 127         |
-| 10        | Pan                          | 64          |
-| 71        | Timbre Harmonic Content      | 64          |
-| 72        | Release Time                 | 64          |
-| 73        | Attack Time                  | 64          |
-| 74        | Brightness                   | 64          |
-| 75        | Sound Controller 6           | 64          |
-| 76        | Sound Controller 7           | 64          |
-| 77        | Sound Controller 8           | 64          |
-| 78        | Sound Controller 9           | 64          |
-| 81        | General Purpose Controller 6 | 64          |
-| 83        | General Purpose Controller 8 | 64          |
+| CC Number | Name                            | Reset Value |
+| --------- | ------------------------------- | ----------- |
+| 7         | Main Volume                     | 100         |
+| 8         | Balance                         | 64          |
+| 11        | Expression Controller           | 127         |
+| 10        | Pan                             | 64          |
+| 71        | Timbre Harmonic Content         | 64          |
+| 72        | Release Time                    | 64          |
+| 73        | Attack Time                     | 64          |
+| 74        | Brightness                      | 64          |
+| 75        | Sound Controller 6              | 64          |
+| 76        | Sound Controller 7              | 64          |
+| 77        | Sound Controller 8              | 64          |
+| 78        | Sound Controller 9              | 64          |
+| 81        | General Purpose Controller 6    | 64          |
+| 83        | General Purpose Controller 8    | 64          |
+| 100       | Registered Parameter Number LSB | 127         |
+| 101       | Registered Parameter Number MSB | 127         |
 
 !!! Note
 

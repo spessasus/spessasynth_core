@@ -1,6 +1,12 @@
 import { readBigEndian } from "./byte_functions/big_endian";
-import { readLittleEndianIndexed } from "./byte_functions/little_endian";
-import { readBinaryStringIndexed } from "./byte_functions/string";
+import {
+    readLittleEndian,
+    readLittleEndianIndexed
+} from "./byte_functions/little_endian";
+import {
+    readBinaryString,
+    readBinaryStringIndexed
+} from "./byte_functions/string";
 import { readVariableLengthQuantity } from "./byte_functions/variable_length_quantity";
 import { ConsoleColors } from "./other";
 import { inflateSync } from "../externals/fflate/fflate_wrapper";
@@ -9,11 +15,11 @@ import { inflateSync } from "../externals/fflate/fflate_wrapper";
 // noinspection JSUnusedGlobalSymbols
 export const SpessaSynthCoreUtils = {
     ConsoleColors,
-    // noinspection JSUnusedGlobalSymbols
     readBigEndian,
+    readLittleEndian,
     readLittleEndianIndexed,
+    readBinaryString,
     readBinaryStringIndexed,
-    // noinspection JSUnusedGlobalSymbols
     readVariableLengthQuantity,
     inflateSync
 };
