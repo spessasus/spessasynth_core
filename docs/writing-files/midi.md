@@ -27,8 +27,8 @@ All parameters are optional.
 midi.modify({
     programChanges,
     controllerChanges,
-    channelsToClear,
-    channelsToTranspose,
+    clearedChannels,
+    pitchOffsets,
     clearDrumParams,
     reverbParams,
     chorusParams,
@@ -60,26 +60,26 @@ interface DesiredControllerChange {
     /**
      * The MIDI controller number.
      */
-    controllerNumber: number;
+    controller: number;
 
     /**
      * The new controller value.
      */
-    controllerValue: number;
+    value: number;
 }
 ```
 
-- channelsToClear - an array of numbers, indicating the channel number to effectively mute.
+- clearedChannels - an array of numbers, indicating the channel number to effectively mute.
 
 !!! Warning
 
     Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the
     original midi file is lost.
 
-- channelsToTranspose - an array of objects, defined as follows:
+- pitchOffsets - an array of objects, defined as follows:
 
 ```ts
-interface DesiredChannelTranspose {
+interface ModifiedChannelTranspose {
     /**
      * The channel number.
      */
@@ -89,7 +89,7 @@ interface DesiredChannelTranspose {
      * The number of semitones to transpose.
      * This can use floating point numbers, which will be used to fine-tune the pitch in cents using RPN.
      */
-    keyShift: number;
+    pitchOffset: number;
 }
 ```
 

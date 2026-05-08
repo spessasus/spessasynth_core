@@ -1,7 +1,7 @@
 import { writeVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
 import { writeBigEndian } from "../../utils/byte_functions/big_endian";
 import type { BasicMIDI } from "../basic_midi";
-import { midiMessageTypes } from "../enums";
+import { MIDIMessageTypes } from "../enums";
 
 const writeText = (text: string, arr: number[]) => {
     for (let i = 0; i < text.length; i++) {
@@ -26,13 +26,13 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
             // Ticks stored in MIDI are absolute, but SMF wants relative. Convert them here.
             const deltaTicks = Math.max(0, event.ticks - currentTick);
             // EndOfTrack is written automatically.
-            if (event.statusByte === midiMessageTypes.endOfTrack) {
+            if (event.statusByte === MIDIMessageTypes.endOfTrack) {
                 currentTick += deltaTicks;
                 continue;
             }
             let messageData: number[];
             // Determine the message
-            if (event.statusByte <= midiMessageTypes.sequenceSpecific) {
+            if (event.statusByte <= MIDIMessageTypes.sequenceSpecific) {
                 // This is a meta-message
                 // Syntax is FF<type><length><data>
                 messageData = [
@@ -44,7 +44,7 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
                 // RP-001:
                 // Sysex events and meta-events cancel any running status which was in effect.
                 runningByte = undefined;
-            } else if (event.statusByte === midiMessageTypes.systemExclusive) {
+            } else if (event.statusByte === MIDIMessageTypes.systemExclusive) {
                 // This is a system exclusive message
                 // Syntax is F0<length><data>
                 messageData = [
@@ -75,7 +75,7 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
             currentTick += deltaTicks;
         }
         // Write endOfTrack
-        binaryTrack.push(0, 0xff, midiMessageTypes.endOfTrack, 0);
+        binaryTrack.push(0, 0xff, MIDIMessageTypes.endOfTrack, 0);
         binaryTrackData.push(binaryTrack);
     }
 

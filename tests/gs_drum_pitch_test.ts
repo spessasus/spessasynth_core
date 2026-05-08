@@ -1,10 +1,10 @@
 import {
     IndexedByteArray,
     MIDIBuilder,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 const builder = new MIDIBuilder({
     name: "GS Drum Pitch Test"
@@ -13,7 +13,7 @@ const builder = new MIDIBuilder({
 builder.addEvent(
     0,
     0,
-    midiMessageTypes.systemExclusive,
+    MIDIMessageTypes.systemExclusive,
     new IndexedByteArray([
         0x41, // Roland
         0x10, // Device ID (defaults to 16 on roland)
@@ -38,7 +38,7 @@ function sendAddress(a1: number, a2: number, a3: number, data: number) {
     builder.addEvent(
         ticks,
         0,
-        midiMessageTypes.systemExclusive,
+        MIDIMessageTypes.systemExclusive,
         new IndexedByteArray([
             0x41, // Roland
             0x10, // Device ID (defaults to 16 on roland)
@@ -54,9 +54,9 @@ function sendAddress(a1: number, a2: number, a3: number, data: number) {
     );
 }
 
-builder.addControllerChange(ticks, 0, 9, midiControllers.reverbDepth, 0);
+builder.addControllerChange(ticks, 0, 9, MIDIControllers.reverbDepth, 0);
 // SC-55 MAP standard
-builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 1);
+builder.addControllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 1);
 builder.addProgramChange(ticks, 0, 9, 0);
 
 let pitch = 40;
@@ -73,7 +73,7 @@ while (pitch <= 70) {
 ticks += 480;
 
 // SC-88 MAP ROOM
-builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 3);
+builder.addControllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 3);
 builder.addProgramChange(ticks, 0, 9, 8);
 
 ticks += 480;

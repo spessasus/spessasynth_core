@@ -1,6 +1,6 @@
-import { BasicMIDI, midiMessageTypes } from "../src";
-import * as fs from "fs/promises";
-import * as path from "node:path";
+import { BasicMIDI, MIDIMessageTypes } from "../src";
+import * as fs from "node:fs/promises";
+import path from "node:path";
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -30,18 +30,12 @@ async function walk(dir: string) {
         const ext = path.extname(fullPath);
         if (ext !== ".mid" && ext !== ".midi") continue;
         try {
-            if (
-                checkMid(
-                    BasicMIDI.fromArrayBuffer(
-                        (await fs.readFile(fullPath)).buffer
-                    ),
-                    fullPath
-                )
-            ) {
+            const file = await fs.readFile(fullPath);
+            if (checkMid(BasicMIDI.fromArrayBuffer(file.buffer), fullPath)) {
                 void fs.copyFile(fullPath, path.join(outPath, entry.name));
             }
             checkedFiles++;
-        } catch (e) {
+        } catch {
             // Pass
         }
     }
@@ -50,7 +44,7 @@ async function walk(dir: string) {
 function checkMid(mid: BasicMIDI, path: string) {
     for (const track of mid.tracks) {
         for (const event of track.events) {
-            if (event.statusByte !== midiMessageTypes.systemExclusive) continue;
+            if (event.statusByte !== MIDIMessageTypes.systemExclusive) continue;
 
             const syx = event.data;
 

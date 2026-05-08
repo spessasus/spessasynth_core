@@ -5,22 +5,16 @@ import {
     loadNewSequenceInternal
 } from "./song_control";
 import { setTimeToInternal } from "./play";
-
-import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import {
     type MIDIController,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthWarn
-} from "../utils/loggin";
-import { arrayToHexString, consoleColors } from "../utils/other";
+import { arrayToHexString, ConsoleColors } from "../utils/other";
+import { SpessaSynthLog } from "../utils/loggin";
 
 export class SpessaSynthSequencer {
     /**
@@ -294,7 +288,7 @@ export class SpessaSynthSequencer {
      */
     public play() {
         if (!this._midiData) {
-            SpessaSynthWarn(
+            SpessaSynthLog.warn(
                 "No songs loaded in the sequencer. Ignoring the play call."
             );
             return;
@@ -343,13 +337,16 @@ export class SpessaSynthSequencer {
         this.callEvent("songListChange", { newSongList: [...this.songs] });
         // Preload all songs (without embedded sound banks)
         if (this.preload) {
-            SpessaSynthGroup("%cPreloading all songs...", consoleColors.info);
+            SpessaSynthLog.group(
+                "%cPreloading all songs...",
+                ConsoleColors.info
+            );
             for (const song of this.songs) {
                 if (song.embeddedSoundBank === undefined) {
                     song.preloadSynth(this.synth);
                 }
             }
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
         }
 
         this.loadCurrentSong();
@@ -407,7 +404,7 @@ export class SpessaSynthSequencer {
 
     protected sendMIDIMessage(message: number[]) {
         if (!this.externalMIDIPlayback) {
-            SpessaSynthWarn(
+            SpessaSynthLog.warn(
                 `Attempting to send ${arrayToHexString(message)} to the synthesizer via sendMIDIMessage. This shouldn't happen!`
             );
             return;
@@ -421,7 +418,7 @@ export class SpessaSynthSequencer {
     protected sendMIDIAllOff() {
         // Disable sustain
         for (let i = 0; i < 16; i++) {
-            this.sendMIDICC(i, midiControllers.sustainPedal, 0);
+            this.sendMIDICC(i, MIDIControllers.sustainPedal, 0);
         }
         if (!this.externalMIDIPlayback) {
             this.synth.stopAllChannels();
@@ -433,9 +430,9 @@ export class SpessaSynthSequencer {
             this.sendMIDINoteOff(note.channel, note.midiNote);
         }
         // Send off controllers
-        for (let c = 0; c < MIDI_CHANNEL_COUNT; c++) {
-            this.sendMIDICC(c, midiControllers.allNotesOff, 0);
-            this.sendMIDICC(c, midiControllers.allSoundOff, 0);
+        for (let c = 0; c < 16; c++) {
+            this.sendMIDICC(c, MIDIControllers.allNotesOff, 0);
+            this.sendMIDICC(c, MIDIControllers.allSoundOff, 0);
         }
     }
 
@@ -445,7 +442,7 @@ export class SpessaSynthSequencer {
             this.synth.resetAllControllers();
             return;
         }
-        this.sendMIDIMessage([midiMessageTypes.reset]);
+        this.sendMIDIMessage([MIDIMessageTypes.reset]);
     }
 
     protected loadCurrentSong() {
@@ -537,7 +534,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.noteOn | channel,
+            MIDIMessageTypes.noteOn | channel,
             midiNote,
             velocity
         ]);
@@ -550,7 +547,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.noteOff | channel,
+            MIDIMessageTypes.noteOff | channel,
             midiNote,
             64 // Make sure to send velocity as well
         ]);
@@ -563,7 +560,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.controllerChange | channel,
+            MIDIMessageTypes.controllerChange | channel,
             type,
             value
         ]);
@@ -581,7 +578,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.pitchWheel | channel,
+            MIDIMessageTypes.pitchWheel | channel,
             pitch & 0x7f,
             pitch >> 7
         ]);

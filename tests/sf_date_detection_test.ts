@@ -1,6 +1,6 @@
-import * as fs from "fs/promises";
-import * as path from "node:path";
-import { SoundBankLoader, SpessaSynthLogging } from "../src";
+import * as fs from "node:fs/promises";
+import path from "node:path";
+import { SoundBankLoader, SpessaSynthLog } from "../src";
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -10,7 +10,7 @@ if (args.length !== 1) {
 }
 const midPath = args[0];
 
-SpessaSynthLogging(false, false, false);
+SpessaSynthLog.setLogLevel(false, false, false);
 
 const entries = await fs.readdir(midPath, { recursive: true });
 
@@ -22,7 +22,7 @@ for (const entry of entries) {
     const ext = path.extname(fullPath).toLowerCase();
     if (
         stat.isFile() &&
-        stat.size < 2147483648 &&
+        stat.size < 2_147_483_648 &&
         (ext === ".sf2" ||
             ext === ".sf3" ||
             ext === ".dls" ||

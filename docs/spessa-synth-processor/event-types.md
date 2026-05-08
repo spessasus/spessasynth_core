@@ -8,24 +8,23 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
 
     If there's more than one property, the returned value is an object with the properties as keys.
 
-| Name                    | Description                                      |
-| ----------------------- | ------------------------------------------------ |
-| `noteOff`               | Key has been released.                           |
-| `noteOn`                | Key has been pressed.                            |
-| `pitchWheel`            | Pitch wheel has been altered.                    |
-| `pitchWheelRange`       | Pitch wheel's range has been changed.            |
-| `controllerChange`      | Controller has been changed.                     |
-| `programChange`         | Program has been changed.                        |
-| `channelPressure`       | Channel's pressure has been changed.             |
-| `polyPressure`          | Note's pressure has been changed.                |
-| `stopAll`               | All voices were stopped.                         |
-| `newChannel`            | A new channel was added to the synth.            |
-| `muteChannel`           | A channel has been muted/unmuted.                |
-| `presetListChange`      | The preset list has been changed/initialized.    |
-| `allControllerReset`    | All controllers have been reset. (and programs!) |
-| `soundBankError`        | The loaded sound bank was invalid.               |
-| `synthDisplay`          | A SysEx to display some text has been received.  |
-| `masterParameterChange` | A master parameter has been changed              |
+| Name                 | Description                                              |
+| -------------------- | -------------------------------------------------------- |
+| `noteOff`            | Key has been released.                                   |
+| `noteOn`             | Key has been pressed.                                    |
+| `controllerChange`   | Controller has been changed.                             |
+| `programChange`      | Program has been changed.                                |
+| `channelPressure`    | Channel's pressure has been changed.                     |
+| `polyPressure`       | Note's pressure has been changed.                        |
+| `stopAll`            | All voices were stopped.                                 |
+| `newChannel`         | A new channel was added to the synth.                    |
+| `muteChannel`        | A channel has been muted/unmuted.                        |
+| `presetListChange`   | The preset list has been changed/initialized.            |
+| `allControllerReset` | All controllers have been reset. (and programs!)         |
+| `soundBankError`     | The loaded sound bank was invalid.                       |
+| `synthDisplay`       | A SysEx to display some text has been received.          |
+| `globalParamChange`  | A master parameter has been changed.                     |
+| `perNotePitchWheel`  | Pitch wheel has been altered for a specific note number. |
 
 !!! Note
 
@@ -76,12 +75,12 @@ This event is triggered when a controller is changed on any channel.
 
 - `channel`: `number` - the channel that CC was changed on. Usually it ranges from 0 to 16, but it depends on the
   channel count.
-- `controllerNumber`: `number` - the number of the MIDI controller list. Ranges from 0 to 127.
-- `controllerValue`: `number` - the new value of the controller. Ranges from 0 to 127.
+- `controller`: `number` - the number of the MIDI controller list. Ranges from 0 to 127.
+- `value`: `number` - the new value of the controller. Ranges from 0 to 127.
 
 Note that this event is also called after `allControllerReset` if there were any locked controllers.
 For example, if CC#1 was locked to 64,
-after `allControllerReset` a `controllerChange` event will be called with `controllerNumber` 1 and `controllerValue` 64.
+after `allControllerReset` a `controllerChange` event will be called with `controller` 1 and `value` 64.
 
 ### `programChange`
 
@@ -196,7 +195,7 @@ The data is a number array of the entire system exclusive, excluding the `F0` st
 
 This event is triggered when a master parameter changes.
 
-- `parameter`: `MasterParameterType` - the master parameter type.
+- `parameter`: `GlobalMasterParameter` - the master parameter type.
 - `value`: varies - the new value of this parameter.
 
 Note that this event usually triggers from the MIDI system change or user's change.

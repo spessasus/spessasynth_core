@@ -2,12 +2,12 @@ import {
     IndexedByteArray,
     MIDIBuilder,
     type MIDIController,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../src";
-import fs from "fs/promises";
-import { channelToSyx } from "../src/utils/sysex";
-import * as path from "node:path";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { SysEx } from "../src/utils/sysex";
 
 class EFXTest {
     private readonly builder;
@@ -23,7 +23,12 @@ class EFXTest {
         // Type
         this.builder.sendAddress(0x40, 0x03, 0x00, [msb, lsb]);
         // EFX to channel
-        this.builder.sendAddress(0x40, 0x40 | channelToSyx(channel), 0x22, [1]);
+        this.builder.sendAddress(
+            0x40,
+            0x40 | SysEx.channelToSyx(channel),
+            0x22,
+            [1]
+        );
         // No reverb
         this.builder.sendAddress(0x40, 0x03, 0x17, [0]);
     }
@@ -73,7 +78,7 @@ export class MIDITestMaker extends MIDIBuilder {
         this.addEvent(
             0,
             0,
-            midiMessageTypes.systemExclusive,
+            MIDIMessageTypes.systemExclusive,
             new IndexedByteArray([
                 0x41, // Roland
                 0x10, // Device ID (defaults to 16 on roland)
@@ -93,16 +98,13 @@ export class MIDITestMaker extends MIDIBuilder {
         return new EFXTest(this, this.channel, typeMSB, typeLSB);
     }
 
-    public addControllerChange(
-        controllerNumber: number,
-        controllerValue: number
-    ) {
+    public addControllerChange(controller: MIDIController, value: number) {
         super.addControllerChange(
             this.ticks,
             0,
             this.channel,
-            controllerNumber,
-            controllerValue
+            controller,
+            value
         );
     }
 
@@ -141,12 +143,12 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public addProgramChange(msb: number, lsb: number, program: number) {
-        this.addControllerChange(midiControllers.bankSelectLSB, lsb);
-        this.addControllerChange(midiControllers.bankSelect, msb);
+        this.addControllerChange(MIDIControllers.bankSelectLSB, lsb);
+        this.addControllerChange(MIDIControllers.bankSelect, msb);
         super.addProgramChange(this.ticks, 0, this.channel, program);
     }
 
-    public addNoteOff(midiNote: number, velocity: number = 64) {
+    public addNoteOff(midiNote: number, velocity = 64) {
         super.addNoteOff(this.ticks, 0, this.channel, midiNote, velocity);
     }
 
@@ -162,7 +164,7 @@ export class MIDITestMaker extends MIDIBuilder {
         this.addEvent(
             this.ticks,
             0,
-            midiMessageTypes.systemExclusive,
+            MIDIMessageTypes.systemExclusive,
             new IndexedByteArray([
                 0x41, // Roland
                 0x10, // Device ID (defaults to 16 on roland)
@@ -184,15 +186,19 @@ export class MIDITestMaker extends MIDIBuilder {
         const outPath = `files/${dirname}`;
         const resolve = path.resolve(import.meta.dirname, outPath);
 
-        fs.mkdir(resolve, { recursive: true }).then(() =>
-            fs
-                .writeFile(
-                    path.resolve(resolve, `${this.name}.mid`),
-                    new Uint8Array(this.writeMIDI())
-                )
-                .then(() =>
-                    console.info(`File written to ${resolve}/${this.name}.mid`)
-                )
-        );
+        void fs
+            .mkdir(resolve, { recursive: true })
+            .then(() =>
+                fs
+                    .writeFile(
+                        path.resolve(resolve, `${this.name}.mid`),
+                        new Uint8Array(this.writeMIDI())
+                    )
+                    .then(() =>
+                        console.info(
+                            `File written to ${resolve}/${this.name}.mid`
+                        )
+                    )
+            );
     }
 }

@@ -1,7 +1,7 @@
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import { audioToWav, SoundBankLoader } from "../src";
 
-// process arguments
+// Process arguments
 const args = process.argv.slice(2);
 if (args.length !== 2) {
     console.info("Usage: tsx index.ts <soundbank path> <wav output path>");

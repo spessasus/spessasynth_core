@@ -1,7 +1,7 @@
 import { Session } from "node:inspector/promises";
 import { writeFile } from "node:fs/promises";
 import { runPerformanceTest } from "./performance_test";
-import * as path from "node:path";
+import path from "node:path";
 
 // Profiled performance test created by @Danielku15 on GitHub
 // Modified slightly by spessasus
@@ -15,7 +15,7 @@ session.connect();
 
 await session.post("Profiler.enable");
 await session.post("Profiler.setSamplingInterval", {
-    interval: 50 // microseconds
+    interval: 50 // Microseconds
 });
 await session.post("Profiler.start");
 

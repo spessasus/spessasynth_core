@@ -1,7 +1,7 @@
 import { BasicMIDI } from "../basic_midi";
 import { MIDIMessage } from "../midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { type MIDIMessageType, midiMessageTypes } from "../enums";
+import { type MIDIMessageType, MIDIMessageTypes } from "../enums";
 import { MIDITrack } from "../midi_track";
 import type { MIDIFormat } from "../types";
 import { fillWithDefaults } from "../../utils/fill_with_defaults";
@@ -82,7 +82,7 @@ export class MIDIBuilder extends BasicMIDI {
         array[1] = (tempo >> 8) & 0xff;
         array[2] = tempo & 0xff;
 
-        this.addEvent(ticks, 0, midiMessageTypes.setTempo, array);
+        this.addEvent(ticks, 0, MIDIMessageTypes.setTempo, array);
     }
 
     /**
@@ -103,10 +103,10 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             0,
             this.tracks.length - 1,
-            midiMessageTypes.trackName,
+            MIDIMessageTypes.trackName,
             this.encoder.encode(name)
         );
-        this.addEvent(0, this.tracks.length - 1, midiMessageTypes.midiPort, [
+        this.addEvent(0, this.tracks.length - 1, MIDIMessageTypes.midiPort, [
             port
         ]);
     }
@@ -130,7 +130,7 @@ export class MIDIBuilder extends BasicMIDI {
             );
         }
         if (
-            event >= midiMessageTypes.noteOff && // Voice event
+            event >= MIDIMessageTypes.noteOff && // Voice event
             this.format === 1 &&
             track === 0
         ) {
@@ -165,7 +165,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.noteOn | channel) as MIDIMessageType,
+            (MIDIMessageTypes.noteOn | channel) as MIDIMessageType,
             [midiNote, velocity]
         );
     }
@@ -191,7 +191,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.noteOff | channel) as MIDIMessageType,
+            (MIDIMessageTypes.noteOff | channel) as MIDIMessageType,
             [midiNote, velocity]
         );
     }
@@ -215,7 +215,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.programChange | channel) as MIDIMessageType,
+            (MIDIMessageTypes.programChange | channel) as MIDIMessageType,
             [programNumber]
         );
     }
@@ -226,24 +226,24 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick time of the event.
      * @param track the track number to use.
      * @param channel the channel to use.
-     * @param controllerNumber the MIDI CC to use.
-     * @param controllerValue the new CC value.
+     * @param controller the MIDI CC to use.
+     * @param value the new CC value.
      */
     public addControllerChange(
         ticks: number,
         track: number,
         channel: number,
-        controllerNumber: number,
-        controllerValue: number
+        controller: number,
+        value: number
     ) {
         channel %= 16;
-        controllerNumber %= 128;
-        controllerValue %= 128;
+        controller %= 128;
+        value %= 128;
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.controllerChange | channel) as MIDIMessageType,
-            [controllerNumber, controllerValue]
+            (MIDIMessageTypes.controllerChange | channel) as MIDIMessageType,
+            [controller, value]
         );
     }
 
@@ -266,7 +266,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.pitchWheel | channel) as MIDIMessageType,
+            (MIDIMessageTypes.pitchWheel | channel) as MIDIMessageType,
             [pitch & 0x7f, (pitch >> 7) & 0x7f]
         );
     }

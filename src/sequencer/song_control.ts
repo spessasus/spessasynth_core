@@ -1,5 +1,5 @@
-import { consoleColors, formatTime } from "../utils/other";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../utils/loggin";
+import { ConsoleColors, formatTime } from "../utils/other";
+import { SpessaSynthLog } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthSequencer } from "./sequencer";
 
@@ -49,7 +49,9 @@ export function loadNewSequenceInternal(
 
     if (parsedMidi.duration === 0) {
         // https://github.com/spessasus/SpessaSynth/issues/106
-        SpessaSynthWarn("This MIDI file has a duration of exactly 0 seconds.");
+        SpessaSynthLog.warn(
+            "This MIDI file has a duration of exactly 0 seconds."
+        );
         this.pausedTime = 0;
         this.isFinished = true;
         return;
@@ -60,13 +62,13 @@ export function loadNewSequenceInternal(
     this.isFinished = false;
 
     // Clear old embedded bank if exists
-    this.synth.clearEmbeddedBank();
+    this.synth.clearEmbeddedSoundBank();
 
     // Check for embedded soundfont
     if (this._midiData.embeddedSoundBank !== undefined) {
-        SpessaSynthInfo(
+        SpessaSynthLog.info(
             "%cEmbedded soundbank detected! Using it.",
-            consoleColors.recognized
+            ConsoleColors.recognized
         );
         this.synth.setEmbeddedSoundBank(
             this._midiData.embeddedSoundBank,
@@ -92,16 +94,16 @@ export function loadNewSequenceInternal(
     this.firstNoteTime = this._midiData.midiTicksToSeconds(
         this._midiData.firstNoteOn
     );
-    SpessaSynthInfo(
+    SpessaSynthLog.info(
         `%cTotal song time: ${formatTime(Math.ceil(this._midiData.duration)).time}`,
-        consoleColors.recognized
+        ConsoleColors.recognized
     );
     this.callEvent("songChange", { songIndex: this._songIndex });
 
     if (this._midiData.duration <= 0.2) {
-        SpessaSynthWarn(
+        SpessaSynthLog.warn(
             `%cVery short song: (${formatTime(Math.round(this._midiData.duration)).time}). Disabling loop!`,
-            consoleColors.warn
+            ConsoleColors.warn
         );
         this.loopCount = 0;
     }

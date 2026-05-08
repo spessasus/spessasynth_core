@@ -1,9 +1,9 @@
-import type { SynthSystem } from "../../synthesizer/types";
+import type { MIDISystem } from "../../synthesizer/types";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import type { BasicPreset } from "./basic_preset";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
-import { SpessaSynthInfo } from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
+import { SpessaSynthLog } from "../../utils/loggin";
+import { ConsoleColors } from "../../utils/other";
 
 function getAnyDrums<T extends BasicPreset>(
     presets: T[],
@@ -33,7 +33,7 @@ function getAnyDrums<T extends BasicPreset>(
 export function selectPreset<T extends BasicPreset>(
     presets: T[],
     patch: MIDIPatch,
-    system: SynthSystem
+    system: MIDISystem
 ): T {
     if (presets.length === 0) {
         throw new Error("No presets!");
@@ -66,12 +66,12 @@ export function selectPreset<T extends BasicPreset>(
 
     // Helper to log failed exact matches
     const returnReplacement = (pres: T) => {
-        SpessaSynthInfo(
+        SpessaSynthLog.info(
             `%cPreset %c${MIDIPatchTools.toMIDIString(patch)}%c not found. (${system}) Replaced with %c${pres.toString()}`,
-            consoleColors.warn,
-            consoleColors.unrecognized,
-            consoleColors.warn,
-            consoleColors.value
+            ConsoleColors.warn,
+            ConsoleColors.unrecognized,
+            ConsoleColors.warn,
+            ConsoleColors.value
         );
     };
 

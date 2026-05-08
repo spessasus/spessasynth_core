@@ -121,23 +121,17 @@ mid.addProgramChange(ticks, track, channel, programNumber);
 Adds a new "controller change" message.
 
 ```ts
-mid.addControllerChange(
-    ticks,
-    track,
-    channel,
-    controllerNumber,
-    controllerValue
-);
+mid.addControllerChange(ticks, track, channel, controller, value);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
 - `track` - `number` - the track to use.
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
-- `controllerNumber` - `number` -
+- `controller` - `number` -
   the [MIDI Controller Number](../extra/midi-implementation.md#default-supported-controllers)
   to
   change.
-- `controllerValue` - `number` - the new value of the controller. 0 to 127.
+- `value` - `number` - the new value of the controller. 0 to 127.
 
 ### addPitchWheel
 

@@ -1,5 +1,5 @@
 import { MIDITestMaker } from "./test_maker";
-import { midiControllers } from "../src";
+import { MIDIControllers } from "../src";
 
 const test = new MIDITestMaker("Insertion FX Effect Sends");
 
@@ -7,13 +7,13 @@ const test = new MIDITestMaker("Insertion FX Effect Sends");
 test.addProgramChange(8, 1, 80);
 
 // No vibrato nor filter
-test.addControllerChange(midiControllers.vibratoDepth, 0);
-test.addControllerChange(midiControllers.brightness, 127);
-test.addControllerChange(midiControllers.reverbDepth, 0);
+test.addControllerChange(MIDIControllers.vibratoDepth, 0);
+test.addControllerChange(MIDIControllers.brightness, 127);
+test.addControllerChange(MIDIControllers.reverbDepth, 0);
 
 // First test: delay raw
 
-test.addControllerChange(midiControllers.variationDepth, 127);
+test.addControllerChange(MIDIControllers.variationDepth, 127);
 
 // Play short note
 test.ticks += 60;
@@ -38,5 +38,5 @@ test.addNoteOff(60);
 test.ticks += 960;
 
 // Mark end
-test.addControllerChange(midiControllers.variationDepth, 0);
+test.addControllerChange(MIDIControllers.variationDepth, 0);
 test.make();

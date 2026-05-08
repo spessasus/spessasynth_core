@@ -1,9 +1,5 @@
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
+import { SpessaSynthLog } from "../../utils/loggin";
+import { ConsoleColors } from "../../utils/other";
 import {
     DEFAULT_SF2_WRITE_OPTIONS,
     writeSF2Internal
@@ -23,8 +19,8 @@ import type {
     SoundBankInfoData,
     SoundFont2WriteOptions
 } from "../types";
-import { generatorTypes } from "./generator_types";
-import type { SynthSystem } from "../../synthesizer/types";
+import { GeneratorTypes } from "./generator_types";
+import type { MIDISystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
 import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
 import {
@@ -145,14 +141,14 @@ export class BasicSoundBank {
         const inst = new BasicInstrument();
         inst.name = "Saw Wave";
         inst.globalZone.addGenerators(
-            new Generator(generatorTypes.initialAttenuation, 375),
-            new Generator(generatorTypes.releaseVolEnv, -1000),
-            new Generator(generatorTypes.sampleModes, 1)
+            new Generator(GeneratorTypes.initialAttenuation, 375),
+            new Generator(GeneratorTypes.releaseVolEnv, -1000),
+            new Generator(GeneratorTypes.sampleModes, 1)
         );
 
         inst.createZone(sample);
         const zone2 = inst.createZone(sample);
-        zone2.setGenerator(generatorTypes.fineTune, -9);
+        zone2.setGenerator(GeneratorTypes.fineTune, -9);
 
         font.addInstruments(inst);
 
@@ -239,17 +235,17 @@ export class BasicSoundBank {
             writtenCount++;
             progressFunc?.(writtenCount / this.samples.length);
 
-            SpessaSynthInfo(
+            SpessaSynthLog.info(
                 `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
-                consoleColors.info,
-                consoleColors.recognized,
-                consoleColors.info,
-                consoleColors.recognized,
-                consoleColors.info,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info,
                 s.isCompressed
-                    ? consoleColors.recognized
-                    : consoleColors.unrecognized,
-                consoleColors.info
+                    ? ConsoleColors.recognized
+                    : ConsoleColors.unrecognized,
+                ConsoleColors.info
             );
         }
         // Change format
@@ -446,20 +442,20 @@ export class BasicSoundBank {
                     }
                 }
                 if (!isIZoneUsed && iZone.sample) {
-                    SpessaSynthInfo(
+                    SpessaSynthLog.info(
                         `%c${iZone.sample.name}%c removed from %c${instrument.name}%c.`,
-                        consoleColors.recognized,
-                        consoleColors.info,
-                        consoleColors.recognized,
-                        consoleColors.info
+                        ConsoleColors.recognized,
+                        ConsoleColors.info,
+                        ConsoleColors.recognized,
+                        ConsoleColors.info
                     );
                     if (instrument.deleteZone(iZoneIndex)) {
                         trimmedIZones++;
                         iZoneIndex--;
-                        SpessaSynthInfo(
+                        SpessaSynthLog.info(
                             `%c${iZone.sample.name}%c deleted`,
-                            consoleColors.recognized,
-                            consoleColors.info
+                            ConsoleColors.recognized,
+                            ConsoleColors.info
                         );
                     }
                     if (iZone.sample.useCount < 1) {
@@ -470,12 +466,12 @@ export class BasicSoundBank {
             return trimmedIZones;
         };
 
-        SpessaSynthGroupCollapsed(
+        SpessaSynthLog.groupCollapsed(
             "%cTrimming sound bank...",
-            consoleColors.info
+            ConsoleColors.info
         );
 
-        SpessaSynthInfo("Combinations to trim for:", presetData);
+        SpessaSynthLog.info("Combinations to trim for:", presetData);
         // Modify the sound bank to only include programs and samples that are used
         for (
             let presetIndex = 0;
@@ -485,11 +481,11 @@ export class BasicSoundBank {
             const p = this.presets[presetIndex];
             const used = presetData.get(p);
             if (used === undefined) {
-                SpessaSynthInfo(
+                SpessaSynthLog.info(
                     `%cDeleting preset %c${p.name}%c and its zones`,
-                    consoleColors.info,
-                    consoleColors.recognized,
-                    consoleColors.info
+                    ConsoleColors.info,
+                    ConsoleColors.recognized,
+                    ConsoleColors.info
                 );
                 this.deletePreset(p);
                 presetIndex--;
@@ -501,12 +497,12 @@ export class BasicSoundBank {
                         velocity: Number.parseInt(split[1])
                     };
                 });
-                SpessaSynthGroupCollapsed(
+                SpessaSynthLog.groupCollapsed(
                     `%cTrimming %c${p.name}`,
-                    consoleColors.info,
-                    consoleColors.recognized
+                    ConsoleColors.info,
+                    ConsoleColors.recognized
                 );
-                SpessaSynthInfo(`Keys for ${p.name}:`, combos);
+                SpessaSynthLog.info(`Keys for ${p.name}:`, combos);
                 let trimmedZones = 0;
                 // Clean the preset to only use zones that are used
                 for (
@@ -533,12 +529,12 @@ export class BasicSoundBank {
                                 zone.instrument,
                                 combos
                             );
-                            SpessaSynthInfo(
+                            SpessaSynthLog.info(
                                 `%cTrimmed off %c${trimmedIZones}%c zones from %c${zone.instrument.name}`,
-                                consoleColors.info,
-                                consoleColors.recognized,
-                                consoleColors.info,
-                                consoleColors.recognized
+                                ConsoleColors.info,
+                                ConsoleColors.recognized,
+                                ConsoleColors.info,
+                                ConsoleColors.recognized
                             );
                             break;
                         }
@@ -552,20 +548,20 @@ export class BasicSoundBank {
                         zoneIndex--;
                     }
                 }
-                SpessaSynthInfo(
+                SpessaSynthLog.info(
                     `%cTrimmed off %c${trimmedZones}%c zones from %c${p.name}`,
-                    consoleColors.info,
-                    consoleColors.recognized,
-                    consoleColors.info,
-                    consoleColors.recognized
+                    ConsoleColors.info,
+                    ConsoleColors.recognized,
+                    ConsoleColors.info,
+                    ConsoleColors.recognized
                 );
-                SpessaSynthGroupEnd();
+                SpessaSynthLog.groupEnd();
             }
         }
         this.removeUnusedElements();
 
-        SpessaSynthInfo("%cSound bank modified!", consoleColors.recognized);
-        SpessaSynthGroupEnd();
+        SpessaSynthLog.info("%cSound bank modified!", ConsoleColors.recognized);
+        SpessaSynthLog.groupEnd();
     }
 
     public removeUnusedElements() {
@@ -604,7 +600,7 @@ export class BasicSoundBank {
     /**
      * Get the appropriate preset.
      */
-    public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
+    public getPreset(patch: MIDIPatch, system: MIDISystem): BasicPreset {
         return selectPreset(this.presets, patch, system);
     }
 
@@ -641,11 +637,11 @@ export class BasicSoundBank {
                 if (!allowedPrograms.has(preset.program)) {
                     // Not valid!
                     this._isXGBank = false;
-                    SpessaSynthInfo(
+                    SpessaSynthLog.info(
                         `%cThis bank is not valid XG. Preset %c${preset.toString()}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
-                        consoleColors.info,
-                        consoleColors.value,
-                        consoleColors.info
+                        ConsoleColors.info,
+                        ConsoleColors.value,
+                        ConsoleColors.info
                     );
                     break;
                 }
@@ -657,16 +653,16 @@ export class BasicSoundBank {
         for (const [info, value] of Object.entries(this.soundBankInfo)) {
             if (typeof value === "object" && "major" in value) {
                 const v = value as SF2VersionTag;
-                SpessaSynthInfo(
+                SpessaSynthLog.info(
                     `%c${info}: %c"${v.major}.${v.minor}"`,
-                    consoleColors.info,
-                    consoleColors.recognized
+                    ConsoleColors.info,
+                    ConsoleColors.recognized
                 );
             } else
-                SpessaSynthInfo(
+                SpessaSynthLog.info(
                     `%c${info}: %c${(value as string | Date).toLocaleString()}`,
-                    consoleColors.info,
-                    consoleColors.recognized
+                    ConsoleColors.info,
+                    ConsoleColors.recognized
                 );
         }
     }

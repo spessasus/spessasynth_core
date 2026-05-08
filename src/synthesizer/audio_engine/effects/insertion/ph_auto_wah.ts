@@ -1,7 +1,7 @@
 import type { InsertionProcessor } from "../types";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
-import { panTableLeft, panTableRight } from "./utils";
+import { PAN_TABLE_LEFT, PAN_TABLE_RIGHT } from "./utils";
 
 /*
 This connects a Phaser effect and an Auto-wah effect in
@@ -122,11 +122,11 @@ export class PhAutoWahFx implements InsertionProcessor {
         );
 
         const phPan = this.phPan | 0;
-        const phL = panTableLeft[phPan];
-        const phR = panTableRight[phPan];
+        const phL = PAN_TABLE_LEFT[phPan];
+        const phR = PAN_TABLE_RIGHT[phPan];
         const awPan = this.awPan | 0;
-        const awL = panTableLeft[awPan];
-        const awR = panTableRight[awPan];
+        const awL = PAN_TABLE_LEFT[awPan];
+        const awR = PAN_TABLE_RIGHT[awPan];
 
         for (let i = 0; i < sampleCount; i++) {
             // Divide by 2 since processor mixes both left and right into it

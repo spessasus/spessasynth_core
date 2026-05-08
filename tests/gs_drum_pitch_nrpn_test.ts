@@ -1,10 +1,10 @@
 import {
     IndexedByteArray,
     MIDIBuilder,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 const builder = new MIDIBuilder({
     name: "GS Drum Pitch NRPN Test"
@@ -13,7 +13,7 @@ const builder = new MIDIBuilder({
 builder.addEvent(
     0,
     0,
-    midiMessageTypes.systemExclusive,
+    MIDIMessageTypes.systemExclusive,
     new IndexedByteArray([
         0x41, // Roland
         0x10, // Device ID (defaults to 16 on roland)
@@ -32,9 +32,9 @@ let ticks = 780;
 
 let MIDI_NOTE = 50;
 
-builder.addControllerChange(ticks, 0, 9, midiControllers.reverbDepth, 0);
+builder.addControllerChange(ticks, 0, 9, MIDIControllers.reverbDepth, 0);
 // SC-88Pro MAP STANDARD
-builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 3);
+builder.addControllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 3);
 builder.addProgramChange(ticks, 0, 9, 0);
 
 let pitch = 50;
@@ -44,21 +44,21 @@ while (pitch <= 70) {
         ticks,
         0,
         9,
-        midiControllers.nonRegisteredParameterMSB,
+        MIDIControllers.nonRegisteredParameterMSB,
         0x18
     );
     builder.addControllerChange(
         ticks,
         0,
         9,
-        midiControllers.nonRegisteredParameterLSB,
+        MIDIControllers.nonRegisteredParameterLSB,
         MIDI_NOTE
     );
     builder.addControllerChange(
         ticks,
         0,
         9,
-        midiControllers.dataEntryMSB,
+        MIDIControllers.dataEntryMSB,
         pitch
     );
     ticks += 240;
@@ -72,7 +72,7 @@ ticks += 480;
 
 MIDI_NOTE = 48; // The same tom pitch compared to 88Pro
 // SC-55 MAP STANDARD
-builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 1);
+builder.addControllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 1);
 builder.addProgramChange(ticks, 0, 9, 0);
 
 ticks += 480;
@@ -84,21 +84,21 @@ while (pitch <= 70) {
         ticks,
         0,
         9,
-        midiControllers.nonRegisteredParameterMSB,
+        MIDIControllers.nonRegisteredParameterMSB,
         0x18
     );
     builder.addControllerChange(
         ticks,
         0,
         9,
-        midiControllers.nonRegisteredParameterLSB,
+        MIDIControllers.nonRegisteredParameterLSB,
         MIDI_NOTE
     );
     builder.addControllerChange(
         ticks,
         0,
         9,
-        midiControllers.dataEntryMSB,
+        MIDIControllers.dataEntryMSB,
         pitch
     );
     ticks += 240;

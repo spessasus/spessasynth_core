@@ -1,4 +1,4 @@
-import { midiControllers } from "../../src";
+import { MIDIControllers } from "../../src";
 import { MIDITestMaker } from "../test_maker";
 
 const test = new MIDITestMaker("Phaser Manual Param");
@@ -7,9 +7,9 @@ const test = new MIDITestMaker("Phaser Manual Param");
 test.addProgramChange(16, 3, 80);
 
 // No vibrato nor filter
-test.addControllerChange(midiControllers.vibratoDepth, 0);
-test.addControllerChange(midiControllers.brightness, 127);
-test.addControllerChange(midiControllers.reverbDepth, 0);
+test.addControllerChange(MIDIControllers.vibratoDepth, 0);
+test.addControllerChange(MIDIControllers.brightness, 127);
+test.addControllerChange(MIDIControllers.reverbDepth, 0);
 
 const NOTE = 24;
 test.ticks += 80;

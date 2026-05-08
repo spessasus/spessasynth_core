@@ -3,9 +3,9 @@ import {
     MIDIPatchTools,
     type RMIDInfoData,
     SoundBankLoader,
-    SpessaSynthLogging
+    SpessaSynthLog
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {
@@ -16,13 +16,13 @@ if (args.length !== 2) {
 const sbkPath: string = args[0];
 const midPath: string = args[1];
 console.time("Parsed sound bank in");
-const sbk = SoundBankLoader.fromArrayBuffer(
-    (await fs.readFile(sbkPath)).buffer
-);
+const sbkFile = await fs.readFile(sbkPath);
+const sbk = SoundBankLoader.fromArrayBuffer(sbkFile.buffer);
 console.timeEnd("Parsed sound bank in");
-SpessaSynthLogging(true, true, true);
+SpessaSynthLog.setLogLevel(true, true, true);
 console.time("Parsed MIDI file in");
-const mid = BasicMIDI.fromArrayBuffer((await fs.readFile(midPath)).buffer);
+const midFile = await fs.readFile(midPath);
+const mid = BasicMIDI.fromArrayBuffer(midFile.buffer);
 console.timeEnd("Parsed MIDI file in");
 
 const used = mid.getUsedProgramsAndKeys(sbk);

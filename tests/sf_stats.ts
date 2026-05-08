@@ -1,4 +1,4 @@
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import { SoundBankLoader } from "../src";
 
 // Process arguments
@@ -17,23 +17,23 @@ let instrumentMods = 0;
 for (const instrument of bank.instruments) {
     instrumentGens += instrument.globalZone.generators.length;
     instrumentMods += instrument.globalZone.modulators.length;
-    instrument.zones.forEach((z) => {
+    for (const z of instrument.zones) {
         instrumentGens += z.generators.length;
         instrumentMods += z.modulators.length;
-    });
+    }
 }
 let presetGens = 0;
 let presetMods = 0;
 for (const preset of bank.presets) {
     presetGens += preset.globalZone.generators.length;
     presetMods += preset.globalZone.modulators.length;
-    preset.zones.forEach((z) => {
+    for (const z of preset.zones) {
         presetMods += z.modulators.length;
         presetGens += z.generators.length;
-    });
+    }
 }
 
-console.info("Instrument Generator count: ", instrumentGens);
-console.info("Instrument Modulator count: ", instrumentMods);
-console.info("Preset Generator count: ", presetGens);
-console.info("Preset Modulator count: ", presetMods);
+console.info("Instrument Generator count:", instrumentGens);
+console.info("Instrument Modulator count:", instrumentMods);
+console.info("Preset Generator count:", presetGens);
+console.info("Preset Modulator count:", presetMods);

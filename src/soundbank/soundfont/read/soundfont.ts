@@ -7,12 +7,8 @@ import { readPresets } from "./presets";
 import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
 import { RIFFChunk } from "../../../utils/riff_chunk";
-import { consoleColors } from "../../../utils/other";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo
-} from "../../../utils/loggin";
+import { ConsoleColors } from "../../../utils/other";
+import { SpessaSynthLog } from "../../../utils/loggin";
 import {
     readBinaryString,
     readBinaryStringIndexed
@@ -45,9 +41,12 @@ export class SoundFont2 extends BasicSoundBank {
             );
         }
         const mainFileArray = new IndexedByteArray(arrayBuffer);
-        SpessaSynthGroup("%cParsing a SoundFont2 file...", consoleColors.info);
+        SpessaSynthLog.group(
+            "%cParsing a SoundFont2 file...",
+            ConsoleColors.info
+        );
         if (!mainFileArray) {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             this.parsingError("No data provided!");
         }
 
@@ -57,7 +56,7 @@ export class SoundFont2 extends BasicSoundBank {
 
         const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
         if (type !== "sfbk" && type !== "sfpk") {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             throw new SyntaxError(
                 `Invalid soundFont! Expected "sfbk" or "sfpk" got "${type}"`
             );
@@ -74,7 +73,7 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyHeader(infoChunk, "list");
         const infoString = readBinaryStringIndexed(infoChunk.data, 4);
         if (infoString !== "INFO") {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             throw new SyntaxError(
                 `Invalid soundFont! Expected "INFO" got "${infoString}"`
             );
@@ -118,9 +117,9 @@ export class SoundFont2 extends BasicSoundBank {
                     // Possible xdta
                     const listType = readBinaryStringIndexed(chunk.data, 4);
                     if (listType === "xdta") {
-                        SpessaSynthInfo(
+                        SpessaSynthLog.info(
                             "%cExtended SF2 found!",
-                            consoleColors.recognized
+                            ConsoleColors.recognized
                         );
                         xdtaChunk = chunk;
                     }
@@ -206,15 +205,15 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyText(readBinaryStringIndexed(mainFileArray, 4), "sdta");
 
         // Smpl
-        SpessaSynthInfo("%cVerifying smpl chunk...", consoleColors.warn);
+        SpessaSynthLog.info("%cVerifying smpl chunk...", ConsoleColors.warn);
         const sampleDataChunk = RIFFChunk.read(mainFileArray, false);
         this.verifyHeader(sampleDataChunk, "smpl");
         let sampleData: IndexedByteArray | Float32Array;
         // SF2Pack: the entire data is compressed
         if (isSF2Pack) {
-            SpessaSynthInfo(
+            SpessaSynthLog.info(
                 "%cSF2Pack detected, attempting to decode the smpl chunk...",
-                consoleColors.info
+                ConsoleColors.info
             );
             try {
                 sampleData = stbvorbis.decode(
@@ -224,31 +223,34 @@ export class SoundFont2 extends BasicSoundBank {
                     )
                 ).data[0];
             } catch (error) {
-                SpessaSynthGroupEnd();
+                SpessaSynthLog.groupEnd();
                 throw new Error(
                     `SF2Pack Ogg Vorbis decode error: ${error as Error}`,
                     { cause: error }
                 );
             }
-            SpessaSynthInfo(
+            SpessaSynthLog.info(
                 `%cDecoded the smpl chunk! Length: %c${sampleData.length}`,
-                consoleColors.info,
-                consoleColors.value
+                ConsoleColors.info,
+                ConsoleColors.value
             );
         } else {
             sampleData = mainFileArray;
             this.sampleDataStartIndex = mainFileArray.currentIndex;
         }
 
-        SpessaSynthInfo(
+        SpessaSynthLog.info(
             `%cSkipping sample chunk, length: %c${sdtaChunk.size - 12}`,
-            consoleColors.info,
-            consoleColors.value
+            ConsoleColors.info,
+            ConsoleColors.value
         );
         mainFileArray.currentIndex += sdtaChunk.size - 12;
 
         // PDTA
-        SpessaSynthInfo("%cLoading preset data chunk...", consoleColors.warn);
+        SpessaSynthLog.info(
+            "%cLoading preset data chunk...",
+            ConsoleColors.warn
+        );
         const presetChunk = RIFFChunk.read(mainFileArray);
         this.verifyHeader(presetChunk, "list");
         readBinaryStringIndexed(presetChunk.data, 4);
@@ -281,7 +283,7 @@ export class SoundFont2 extends BasicSoundBank {
         const shdrChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(shdrChunk, "shdr");
 
-        SpessaSynthInfo("%cParsing samples...", consoleColors.info);
+        SpessaSynthLog.info("%cParsing samples...", ConsoleColors.info);
 
         /**
          * Read all the samples
@@ -413,25 +415,25 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         this.flush();
-        SpessaSynthInfo(
+        SpessaSynthLog.info(
             `%cParsing finished! %c"${this.soundBankInfo.name}"%c has %c${this.presets.length}%c presets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info
         );
-        SpessaSynthGroupEnd();
+        SpessaSynthLog.groupEnd();
     }
 
     protected verifyHeader(chunk: RIFFChunk, expected: string) {
         if (chunk.header.toLowerCase() !== expected.toLowerCase()) {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             this.parsingError(
                 `Invalid chunk header! Expected "${expected.toLowerCase()}" got "${chunk.header.toLowerCase()}"`
             );
@@ -440,7 +442,7 @@ export class SoundFont2 extends BasicSoundBank {
 
     protected verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             this.parsingError(
                 `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"\``
             );

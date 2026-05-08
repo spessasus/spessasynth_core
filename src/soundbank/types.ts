@@ -2,9 +2,10 @@ import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
-import type { DLSLoopType, ModulatorSourceEnum } from "./enums";
+import type { ModulatorControllerSource } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
 import type { BasicPreset } from "./basic_soundbank/basic_preset";
+import type { DLSLoopType } from "./downloadable_sounds/enums";
 
 export interface SoundBankManagerListEntry {
     /**
@@ -19,6 +20,33 @@ export interface SoundBankManagerListEntry {
      * The bank MSB offset for this sound bank.
      */
     bankOffset: number;
+}
+
+export interface SF2Channel {
+    /**
+     * All MIDI controller values for modulation.
+     */
+    midiControllers: Int16Array;
+
+    /**
+     * Other MIDI parameters.
+     */
+    midiParameters: {
+        /**
+         * Channel Pressure.
+         */
+        pressure: number;
+
+        /**
+         * 0-16,383
+         */
+        pitchWheel: number;
+
+        /**
+         * Semitones, can be a floating point number.
+         */
+        pitchWheelRange: number;
+    };
 }
 
 export interface SF2VersionTag {
@@ -128,6 +156,10 @@ export interface SoundBankInfoData {
      */
     comment?: string;
     /**
+     * Software used to edit the file.
+     */
+    software?: string;
+    /**
      * Subject.
      */
     subject?: string;
@@ -135,10 +167,6 @@ export interface SoundBankInfoData {
      * ROM information.
      */
     romInfo?: string;
-    /**
-     * Software used to edit the file.
-     */
-    software?: string;
     /**
      * A tag that only applies to SF2 and will usually be undefined.
      */
@@ -158,7 +186,7 @@ export type SampleEncodingFunction = (
     sampleRate: number
 ) => Promise<Uint8Array>;
 
-export type ModulatorSourceIndex = ModulatorSourceEnum | MIDIController;
+export type ModulatorSourceIndex = ModulatorControllerSource | MIDIController;
 
 /**
  * A function to track progress during writing.

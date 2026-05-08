@@ -1,12 +1,7 @@
-import { dataBytesAmount, getChannel, MIDIMessage } from "./midi_message";
+import { getChannel, MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
-import { consoleColors } from "../utils/other";
-import {
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "../utils/loggin";
+import { ConsoleColors } from "../utils/other";
+import { SpessaSynthLog } from "../utils/loggin";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import {
@@ -34,6 +29,16 @@ interface MIDIChunk {
     data: IndexedByteArray;
 }
 
+const DataBytesAmount = {
+    0x8: 2, // Note off
+    0x9: 2, // Note on
+    0xa: 2, // Note at
+    0xb: 2, // Cc change
+    0xc: 1, // Pg change
+    0xd: 1, // Channel after touch
+    0xe: 2 // Pitch wheel
+} as const;
+
 /**
  * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
  * @param outputMIDI The BasicMIDI instance to populate with the parsed MIDI data.
@@ -53,7 +58,7 @@ export function loadMIDIFromArrayBufferInternal(
     arrayBuffer: ArrayBuffer,
     fileName?: string
 ) {
-    SpessaSynthGroupCollapsed(`%cParsing MIDI File...`, consoleColors.info);
+    SpessaSynthLog.groupCollapsed(`%cParsing MIDI File...`, ConsoleColors.info);
     outputMIDI.fileName = fileName;
     const binaryData = new IndexedByteArray(arrayBuffer);
     let smfFileBinary;
@@ -85,14 +90,14 @@ export function loadMIDIFromArrayBufferInternal(
         binaryData.currentIndex += 8;
         const rmid = readBinaryStringIndexed(binaryData, 4);
         if (rmid !== "RMID") {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             throw new SyntaxError(
                 `Invalid RMIDI Header! Expected "RMID", got "${rmid}"`
             );
         }
         const riff = RIFFChunk.read(binaryData);
         if (riff.header !== "data") {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             throw new SyntaxError(
                 `Invalid RMIDI Chunk header! Expected "data", got "${riff.header}"`
             );
@@ -112,16 +117,16 @@ export function loadMIDIFromArrayBufferInternal(
                     4
                 ).toLowerCase();
                 if (type === "sfbk" || type === "sfpk" || type === "dls ") {
-                    SpessaSynthInfo(
+                    SpessaSynthLog.info(
                         "%cFound embedded soundbank!",
-                        consoleColors.recognized
+                        ConsoleColors.recognized
                     );
                     outputMIDI.embeddedSoundBank = binaryData.slice(
                         startIndex,
                         startIndex + currentChunk.size
                     ).buffer;
                 } else {
-                    SpessaSynthWarn(`Unknown RIFF chunk: "${type}"`);
+                    SpessaSynthLog.warn(`Unknown RIFF chunk: "${type}"`);
                 }
                 if (type === "dls ") {
                     // Assume bank offset of 0 by default. If we find any bank selects, then the offset is 1.
@@ -132,9 +137,9 @@ export function loadMIDIFromArrayBufferInternal(
             } else if (currentChunk.header === "LIST") {
                 const type = readBinaryStringIndexed(currentChunk.data, 4);
                 if (type === "INFO") {
-                    SpessaSynthInfo(
+                    SpessaSynthLog.info(
                         "%cFound RMIDI INFO chunk!",
-                        consoleColors.recognized
+                        ConsoleColors.recognized
                     );
                     while (currentChunk.data.currentIndex < currentChunk.size) {
                         const infoChunk = RIFFChunk.read(
@@ -145,7 +150,7 @@ export function loadMIDIFromArrayBufferInternal(
                         const infoData = infoChunk.data;
                         switch (headerTyped) {
                             default: {
-                                SpessaSynthWarn(
+                                SpessaSynthLog.warn(
                                     `Unknown RMIDI Info: ${headerTyped as string}`
                                 );
                                 break;
@@ -255,14 +260,14 @@ export function loadMIDIFromArrayBufferInternal(
     }
     const headerChunk = readMIDIChunk(smfFileBinary);
     if (headerChunk.type !== "MThd") {
-        SpessaSynthGroupEnd();
+        SpessaSynthLog.groupEnd();
         throw new SyntaxError(
             `Invalid MIDI Header! Expected "MThd", got "${headerChunk.type}"`
         );
     }
 
     if (headerChunk.size !== 6) {
-        SpessaSynthGroupEnd();
+        SpessaSynthLog.groupEnd();
         throw new RangeError(
             `Invalid MIDI header chunk size! Expected 6, got ${headerChunk.size}`
         );
@@ -280,7 +285,7 @@ export function loadMIDIFromArrayBufferInternal(
         const trackChunk = readMIDIChunk(smfFileBinary);
 
         if (trackChunk.type !== "MTrk") {
-            SpessaSynthGroupEnd();
+            SpessaSynthLog.groupEnd();
             throw new SyntaxError(
                 `Invalid track header! Expected "MTrk" got "${trackChunk.type}"`
             );
@@ -314,7 +319,7 @@ export function loadMIDIFromArrayBufferInternal(
             } else {
                 if (statusByteCheck < 0x80) {
                     // If we don't have a running byte and the status byte isn't valid, it's an error.
-                    SpessaSynthGroupEnd();
+                    SpessaSynthLog.groupEnd();
                     throw new SyntaxError(
                         `Unexpected byte with no running byte. (${statusByteCheck})`
                     );
@@ -360,8 +365,8 @@ export function loadMIDIFromArrayBufferInternal(
                     // Voice message
                     // Gets the midi message length
                     eventDataLength =
-                        dataBytesAmount[
-                            (statusByte >> 4) as keyof typeof dataBytesAmount
+                        DataBytesAmount[
+                            (statusByte >> 4) as keyof typeof DataBytesAmount
                         ];
                     // Save the status byte
                     runningByte = statusByte;
@@ -386,17 +391,20 @@ export function loadMIDIFromArrayBufferInternal(
         }
         outputMIDI.tracks.push(track);
 
-        SpessaSynthInfo(
+        SpessaSynthLog.info(
             `%cParsed %c${outputMIDI.tracks.length}%c / %c${outputMIDI.tracks.length}`,
-            consoleColors.info,
-            consoleColors.value,
-            consoleColors.info,
-            consoleColors.value
+            ConsoleColors.info,
+            ConsoleColors.value,
+            ConsoleColors.info,
+            ConsoleColors.value
         );
     }
 
-    SpessaSynthInfo(`%cAll tracks parsed correctly!`, consoleColors.recognized);
+    SpessaSynthLog.info(
+        `%cAll tracks parsed correctly!`,
+        ConsoleColors.recognized
+    );
     // Parse the events (no need to sort as they are already sorted by the SMF specification)
     outputMIDI.flush(false);
-    SpessaSynthGroupEnd();
+    SpessaSynthLog.groupEnd();
 }

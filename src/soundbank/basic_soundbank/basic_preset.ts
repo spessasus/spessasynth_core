@@ -12,14 +12,14 @@ import {
     MIDIPatchTools
 } from "./midi_patch";
 import {
-    defaultGeneratorValues,
-    generatorLimits,
+    GeneratorLimits,
     GENERATORS_AMOUNT,
-    generatorTypes
+    type GeneratorType,
+    GeneratorTypes
 } from "./generator_types";
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
-import { SpessaSynthInfo } from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
+import { SpessaSynthLog } from "../../utils/loggin";
+import { ConsoleColors } from "../../utils/other";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import {
     writeDword,
@@ -28,6 +28,12 @@ import {
 import { BasicZone } from "./basic_zone";
 
 export const PHDR_BYTE_SIZE = 38;
+
+const defaultGeneratorValues = new Int16Array(GENERATORS_AMOUNT);
+for (let i = 0; i < defaultGeneratorValues.length; i++) {
+    if (GeneratorLimits[i as GeneratorType])
+        defaultGeneratorValues[i] = GeneratorLimits[i as GeneratorType].def;
+}
 
 export class BasicPreset implements MIDIPatchNamed {
     /**
@@ -216,13 +222,11 @@ export class BasicPreset implements MIDIPatchNamed {
             const presetGenerators = new Int16Array(GENERATORS_AMOUNT);
             // Firstly set global generators
             for (const generator of this.globalZone.generators) {
-                presetGenerators[generator.generatorType] =
-                    generator.generatorValue;
+                presetGenerators[generator.type] = generator.value;
             }
             // Then local, which will override them!
             for (const generator of presetZone.generators) {
-                presetGenerators[generator.generatorType] =
-                    generator.generatorValue;
+                presetGenerators[generator.type] = generator.value;
             }
 
             // Preset modulators (add global to local)
@@ -287,13 +291,11 @@ export class BasicPreset implements MIDIPatchNamed {
                 const generators = new Int16Array(defaultGeneratorValues);
                 // Overridden by global generators
                 for (const generator of instrument.globalZone.generators) {
-                    generators[generator.generatorType] =
-                        generator.generatorValue;
+                    generators[generator.type] = generator.value;
                 }
                 // Overridden by local generators!
                 for (const generator of instZone.generators) {
-                    generators[generator.generatorType] =
-                        generator.generatorValue;
+                    generators[generator.type] = generator.value;
                 }
 
                 // Sum the generators
@@ -310,8 +312,8 @@ export class BasicPreset implements MIDIPatchNamed {
 
                 // EMU initial attenuation correction, multiply initial attenuation by 0.4!
                 // All EMU sound cards have this quirk, and all sf2 editors and players emulate it too
-                generators[generatorTypes.initialAttenuation] = Math.floor(
-                    generators[generatorTypes.initialAttenuation] * 0.4
+                generators[GeneratorTypes.initialAttenuation] = Math.floor(
+                    generators[GeneratorTypes.initialAttenuation] * 0.4
                 );
 
                 voiceParameters.push({
@@ -343,10 +345,7 @@ export class BasicPreset implements MIDIPatchNamed {
     public toFlattenedInstrument(): BasicInstrument {
         const addUnique = (main: Generator[], adder: Generator[]) => {
             main.push(
-                ...adder.filter(
-                    (g) =>
-                        !main.some((mg) => mg.generatorType === g.generatorType)
-                )
+                ...adder.filter((g) => !main.some((mg) => mg.type === g.type))
             );
         };
 
@@ -385,7 +384,7 @@ export class BasicPreset implements MIDIPatchNamed {
             }
             // Add unique generators and modulators from the global zone
             const presetGenerators = presetZone.generators.map(
-                (g) => new Generator(g.generatorType, g.generatorValue)
+                (g) => new Generator(g.type, g.value)
             );
             addUnique(presetGenerators, globalPresetGenerators);
             const presetModulators = [...presetZone.modulators];
@@ -434,7 +433,7 @@ export class BasicPreset implements MIDIPatchNamed {
 
                 // Add unique generators and modulators from the global zone
                 const instGenerators = instZone.generators.map(
-                    (g) => new Generator(g.generatorType, g.generatorValue)
+                    (g) => new Generator(g.type, g.value)
                 );
                 addUnique(instGenerators, globalInstGenerators);
                 const instModulators = [...instZone.modulators];
@@ -461,36 +460,32 @@ export class BasicPreset implements MIDIPatchNamed {
 
                 // Clone the generators as the values are modified during DLS conversion (keyNumToSomething)
                 let finalGenList = instGenerators.map(
-                    (g) => new Generator(g.generatorType, g.generatorValue)
+                    (g) => new Generator(g.type, g.value)
                 );
                 for (const gen of presetGenerators) {
                     if (
-                        gen.generatorType === generatorTypes.velRange ||
-                        gen.generatorType === generatorTypes.keyRange ||
-                        gen.generatorType === generatorTypes.instrument ||
-                        gen.generatorType === generatorTypes.endOper ||
-                        gen.generatorType === generatorTypes.sampleModes
+                        gen.type === GeneratorTypes.velRange ||
+                        gen.type === GeneratorTypes.keyRange ||
+                        gen.type === GeneratorTypes.instrument ||
+                        gen.type === GeneratorTypes.endOper ||
+                        gen.type === GeneratorTypes.sampleModes
                     ) {
                         continue;
                     }
                     const identicalInstGen = instGenerators.findIndex(
-                        (g) => g.generatorType === gen.generatorType
+                        (g) => g.type === gen.type
                     );
                     if (identicalInstGen === -1) {
                         // If not, sum to the default generator
                         const newAmount =
-                            generatorLimits[gen.generatorType].def +
-                            gen.generatorValue;
-                        finalGenList.push(
-                            new Generator(gen.generatorType, newAmount)
-                        );
+                            GeneratorLimits[gen.type].def + gen.value;
+                        finalGenList.push(new Generator(gen.type, newAmount));
                     } else {
                         // If exists, sum to that generator
                         const newAmount =
-                            finalGenList[identicalInstGen].generatorValue +
-                            gen.generatorValue;
+                            finalGenList[identicalInstGen].value + gen.value;
                         finalGenList[identicalInstGen] = new Generator(
-                            gen.generatorType,
+                            gen.type,
                             newAmount
                         );
                     }
@@ -499,13 +494,12 @@ export class BasicPreset implements MIDIPatchNamed {
                 // Remove unwanted
                 finalGenList = finalGenList.filter(
                     (g) =>
-                        g.generatorType !== generatorTypes.sampleID &&
-                        g.generatorType !== generatorTypes.keyRange &&
-                        g.generatorType !== generatorTypes.velRange &&
-                        g.generatorType !== generatorTypes.endOper &&
-                        g.generatorType !== generatorTypes.instrument &&
-                        g.generatorValue !==
-                            generatorLimits[g.generatorType].def
+                        g.type !== GeneratorTypes.sampleID &&
+                        g.type !== GeneratorTypes.keyRange &&
+                        g.type !== GeneratorTypes.velRange &&
+                        g.type !== GeneratorTypes.endOper &&
+                        g.type !== GeneratorTypes.instrument &&
+                        g.value !== GeneratorLimits[g.type].def
                 );
 
                 // Create the zone and copy over values
@@ -532,7 +526,7 @@ export class BasicPreset implements MIDIPatchNamed {
      * @param index
      */
     public write(phdrData: ExtendedSF2Chunks, index: number) {
-        SpessaSynthInfo(`%cWriting ${this.name}...`, consoleColors.info);
+        SpessaSynthLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(phdrData.pdta, this.name.slice(0, 20), 20);
         writeBinaryStringIndexed(phdrData.xdta, this.name.slice(20), 20);

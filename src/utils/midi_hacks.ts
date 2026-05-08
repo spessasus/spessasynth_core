@@ -1,4 +1,4 @@
-import type { SynthSystem } from "../synthesizer/types";
+import type { MIDISystem } from "../synthesizer/types";
 
 export const XG_SFX_VOICE = 64;
 
@@ -11,11 +11,11 @@ export class BankSelectHacks {
     /**
      * GM2 has a different default bank number
      */
-    public static getDefaultBank(sys: SynthSystem) {
+    public static getDefaultBank(sys: MIDISystem) {
         return sys === "gm2" ? GM2_DEFAULT_BANK : 0;
     }
 
-    public static getDrumBank(sys: SynthSystem) {
+    public static getDrumBank(sys: MIDISystem) {
         switch (sys) {
             default: {
                 throw new Error(`${sys} doesn't have a bank MSB for drums.`);
@@ -53,7 +53,7 @@ export class BankSelectHacks {
         );
     }
 
-    public static isSystemXG(system: SynthSystem) {
+    public static isSystemXG(system: MIDISystem) {
         return system === "gm2" || system === "xg";
     }
 

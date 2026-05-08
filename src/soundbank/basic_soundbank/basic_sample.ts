@@ -1,9 +1,9 @@
-import { SpessaSynthWarn } from "../../utils/loggin";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
-import { type SampleType, sampleTypes } from "../enums";
+import { type SampleType, SampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
 import type { SampleEncodingFunction } from "../types";
+import { SpessaSynthLog } from "../../utils/loggin";
 
 // Should be reasonable for most cases
 const RESAMPLE_RATE = 48_000;
@@ -106,9 +106,9 @@ export class BasicSample {
      */
     public get isLinked(): boolean {
         return (
-            this.sampleType === sampleTypes.rightSample ||
-            this.sampleType === sampleTypes.leftSample ||
-            this.sampleType === sampleTypes.linkedSample
+            this.sampleType === SampleTypes.rightSample ||
+            this.sampleType === SampleTypes.leftSample ||
+            this.sampleType === SampleTypes.linkedSample
         );
     }
 
@@ -171,7 +171,7 @@ export class BasicSample {
             const compressed = await encodeVorbis(audioData, this.sampleRate);
             this.setCompressedData(compressed);
         } catch (error) {
-            SpessaSynthWarn(
+            SpessaSynthLog.warn(
                 `Failed to compress ${this.name}. Leaving as uncompressed!`,
                 error
             );
@@ -204,7 +204,7 @@ export class BasicSample {
      * Unlinks the sample from its stereo link if it has any.
      */
     public unlinkSample() {
-        this.setSampleType(sampleTypes.monoSample);
+        this.setSampleType(SampleTypes.monoSample);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -223,21 +223,21 @@ export class BasicSample {
         this.linkedSample = sample;
         sample.linkedSample = this;
         switch (type) {
-            case sampleTypes.leftSample: {
-                this.setSampleType(sampleTypes.leftSample);
-                sample.setSampleType(sampleTypes.rightSample);
+            case SampleTypes.leftSample: {
+                this.setSampleType(SampleTypes.leftSample);
+                sample.setSampleType(SampleTypes.rightSample);
 
                 break;
             }
-            case sampleTypes.rightSample: {
-                this.setSampleType(sampleTypes.rightSample);
-                sample.setSampleType(sampleTypes.leftSample);
+            case SampleTypes.rightSample: {
+                this.setSampleType(SampleTypes.rightSample);
+                sample.setSampleType(SampleTypes.leftSample);
 
                 break;
             }
-            case sampleTypes.linkedSample: {
-                this.setSampleType(sampleTypes.linkedSample);
-                sample.setSampleType(sampleTypes.linkedSample);
+            case SampleTypes.linkedSample: {
+                this.setSampleType(SampleTypes.linkedSample);
+                sample.setSampleType(SampleTypes.linkedSample);
 
                 break;
             }
@@ -262,7 +262,7 @@ export class BasicSample {
     public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);
         if (index === -1) {
-            SpessaSynthWarn(
+            SpessaSynthLog.warn(
                 `Cannot unlink ${instrument.name} from ${this.name}: not linked.`
             );
             return;
@@ -347,7 +347,7 @@ export class BasicSample {
             const vorbis = stbvorbis.decode(this.compressedData);
             const decoded = vorbis.data[0];
             if (decoded === undefined) {
-                SpessaSynthWarn(
+                SpessaSynthLog.warn(
                     `Error decoding sample ${this.name}: Vorbis decode returned undefined.`
                 );
                 return new Float32Array(0);
@@ -364,7 +364,7 @@ export class BasicSample {
             return decoded;
         } catch (error) {
             // Do not error out, fill with silence
-            SpessaSynthWarn(
+            SpessaSynthLog.warn(
                 `Error decoding sample ${this.name}: ${error as Error}`
             );
             return new Float32Array(this.loopEnd + 1);
@@ -377,6 +377,6 @@ export class EmptySample extends BasicSample {
      * A simplified class for creating samples.
      */
     public constructor() {
-        super("", 44_100, 60, 0, sampleTypes.monoSample, 0, 0);
+        super("", 44_100, 60, 0, SampleTypes.monoSample, 0, 0);
     }
 }

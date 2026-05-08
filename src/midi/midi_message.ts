@@ -126,13 +126,3 @@ export function getEvent(statusByte: MIDIMessageType): {
         channel: eventChannel
     };
 }
-
-export const dataBytesAmount = {
-    0x8: 2, // Note off
-    0x9: 2, // Note on
-    0xa: 2, // Note at
-    0xb: 2, // Cc change
-    0xc: 1, // Pg change
-    0xd: 1, // Channel after touch
-    0xe: 2 // Pitch wheel
-} as const;

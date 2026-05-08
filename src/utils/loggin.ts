@@ -1,49 +1,55 @@
-let ENABLE_INFO = false;
-let ENABLE_WARN = true;
-let ENABLE_GROUP = false;
-
 /**
- * Enables or disables logging.
- * @param enableInfo enables info.
- * @param enableWarn enables warning.
- * @param enableGroup enables groups.
+ * Manage the log level of `spessasynth_core`.
  */
-export function SpessaSynthLogging(
-    enableInfo: boolean,
-    enableWarn: boolean,
-    enableGroup: boolean
-) {
-    ENABLE_INFO = enableInfo;
-    ENABLE_WARN = enableWarn;
-    ENABLE_GROUP = enableGroup;
-}
+export class SpessaSynthLog {
+    /**
+     * The most verbose log level, prints out a lot of small details.
+     */
+    public static infoEnabled = false;
 
-export function SpessaSynthInfo(...message: unknown[]) {
-    if (ENABLE_INFO) {
-        console.info(...message);
+    /**
+     * The default log level, prints out warnings for unexpected and erroneous behavior.
+     */
+    public static warnEnabled = true;
+
+    /**
+     * If grouping of the log messages is allowed. Recommended for the `info` verbosity level.
+     */
+    public static groupEnabled = false;
+
+    /**
+     * Enables or disables logging.
+     * @param enableInfo enables info.
+     * @param enableWarn enables warning.
+     * @param enableGroup enables groups.
+     */
+    public static setLogLevel(
+        enableInfo: boolean,
+        enableWarn: boolean,
+        enableGroup: boolean
+    ) {
+        this.infoEnabled = enableInfo;
+        this.warnEnabled = enableWarn;
+        this.groupEnabled = enableGroup;
     }
-}
 
-export function SpessaSynthWarn(...message: unknown[]) {
-    if (ENABLE_WARN) {
-        console.warn(...message);
+    public static info(...message: unknown[]) {
+        if (this.infoEnabled) console.info(...message);
     }
-}
 
-export function SpessaSynthGroup(...message: unknown[]) {
-    if (ENABLE_GROUP) {
-        console.group(...message);
+    public static warn(...message: unknown[]) {
+        if (this.warnEnabled) console.warn(...message);
     }
-}
 
-export function SpessaSynthGroupCollapsed(...message: unknown[]) {
-    if (ENABLE_GROUP) {
-        console.groupCollapsed(...message);
+    public static group(...message: unknown[]) {
+        if (this.groupEnabled) console.group(...message);
     }
-}
 
-export function SpessaSynthGroupEnd() {
-    if (ENABLE_GROUP) {
-        console.groupEnd();
+    public static groupCollapsed(...message: unknown[]) {
+        if (this.groupEnabled) console.groupCollapsed(...message);
+    }
+
+    public static groupEnd() {
+        if (this.groupEnabled) console.groupEnd();
     }
 }

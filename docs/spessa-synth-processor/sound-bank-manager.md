@@ -40,7 +40,7 @@ function addSoundBank(soundBank: BasicSoundBank, id: string, bankOffset = 0) {}
 This method gets a given preset from the sound bank stack.
 
 ```ts
-function getPreset(patch: MIDIPatch, system: SynthSystem) {}
+function getPreset(patch: MIDIPatch, system: MIDISystem) {}
 ```
 
 - patch - the MIDI patch to search for.

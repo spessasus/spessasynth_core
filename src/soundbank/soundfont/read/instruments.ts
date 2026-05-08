@@ -6,7 +6,7 @@ import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
 import { BasicInstrumentZone } from "../../basic_soundbank/basic_instrument_zone";
-import { generatorTypes } from "../../basic_soundbank/generator_types";
+import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 /**
  * Instrument.ts
@@ -33,17 +33,17 @@ export class SoundFontInstrument extends BasicInstrument {
         samples: BasicSample[]
     ) {
         const sampleID = generators.find(
-            (g) => g.generatorType === generatorTypes.sampleID
+            (g) => g.type === GeneratorTypes.sampleID
         );
         let sample;
         if (sampleID) {
-            sample = samples[sampleID.generatorValue];
+            sample = samples[sampleID.value];
         } else {
             throw new Error("No sample ID found in instrument zone.");
         }
         if (!sample) {
             throw new Error(
-                `Invalid sample ID: ${sampleID.generatorValue}, available samples: ${samples.length}`
+                `Invalid sample ID: ${sampleID.value}, available samples: ${samples.length}`
             );
         }
         const z = new BasicInstrumentZone(this, sample);

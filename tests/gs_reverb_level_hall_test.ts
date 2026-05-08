@@ -1,10 +1,10 @@
 import {
     IndexedByteArray,
     MIDIBuilder,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 const builder = new MIDIBuilder({
     name: "GS Reverb Delay Time test"
@@ -13,7 +13,7 @@ const builder = new MIDIBuilder({
 builder.addEvent(
     0,
     0,
-    midiMessageTypes.systemExclusive,
+    MIDIMessageTypes.systemExclusive,
     new IndexedByteArray([
         0x41, // Roland
         0x10, // Device ID (defaults to 16 on roland)
@@ -38,7 +38,7 @@ function sendAddress(a1: number, a2: number, a3: number, data: number) {
     builder.addEvent(
         ticks,
         0,
-        midiMessageTypes.systemExclusive,
+        MIDIMessageTypes.systemExclusive,
         new IndexedByteArray([
             0x41, // Roland
             0x10, // Device ID (defaults to 16 on roland)
@@ -62,9 +62,9 @@ sendAddress(0x40, 0x01, 0x34, 16);
 // Predelay
 sendAddress(0x40, 0x01, 0x37, 92);
 
-builder.addControllerChange(ticks, 0, 0, midiControllers.bankSelect, 8);
+builder.addControllerChange(ticks, 0, 0, MIDIControllers.bankSelect, 8);
 builder.addProgramChange(ticks, 0, 0, 80);
-builder.addControllerChange(ticks, 0, 0, midiControllers.reverbDepth, 127);
+builder.addControllerChange(ticks, 0, 0, MIDIControllers.reverbDepth, 127);
 
 let level = 0;
 while (level <= 128) {

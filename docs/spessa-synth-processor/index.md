@@ -192,16 +192,16 @@ synth.systemExclusive(messageData, (channelOffset = 0));
 Set a given MIDI controller to a given value.
 
 ```ts
-synth.controllerChange(channel, controllerNumber, controllerValue);
+synth.controllerChange(channel, controller, value);
 ```
 
 - channel - the MIDI channel to use. It usually ranges from 0 to 15, but it depends on the channel count.
-- controllerNumber - the MIDI CC number of the controller to change.
+- controller - the MIDI CC number of the controller to change.
   Refer
   to [this table](../extra/midi-implementation.md#default-supported-controllers)
   for the list of controllers
   supported by default.
-- controllerValue - the value to set the given controller to. Ranges from 0 to 127.
+- value - the value to set the given controller to. Ranges from 0 to 127.
 
 !!! Note
 
@@ -273,24 +273,18 @@ synth.getMasterParameter(type);
 
 Returns the value of the master parameter.
 
-### getAllMasterParameters
-
-Get all master parameters of the synthesizer.
-
-This returns all the master parameters as a type: value object.
-
 ### killVoices
 
 !!! WARNING
 
     This method is deprecated and does nothing! Voice killing is done automatically.
 
-### applySynthesizerSnapshot
+### applySnapshot
 
 Apply a [SynthesizerSnapshot](synthesizer-snapshot.md) to this synthesizer.
 
 ```ts
-synth.applySynthesizerSnapshot(snapshot);
+synth.applySnapshot(snapshot);
 ```
 
 - snapshot - the snapshot to apply.
@@ -428,7 +422,7 @@ It may be useful for allowing the synthesizer to work without any sound banks.
 Parameters the function gets called with:
 
 - patch - `MIDIPatch` - the MIDI patch that was requested.
-- system - `SynthSystem` (`gs`, `xg`, `gm` or `gm2`) - the MIDI System for the request.
+- system - `MIDISystem` (`gs`, `xg`, `gm` or `gm2`) - the MIDI System for the request.
 
 If a `BasicPreset` instance is returned by the function, it will be used by the channel.
 

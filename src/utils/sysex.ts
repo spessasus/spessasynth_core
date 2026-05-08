@@ -1,10 +1,10 @@
 import { MIDIMessage } from "../midi/midi_message";
 import {
     type MIDIController,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../midi/enums";
-import type { SysExAcceptedArray } from "../synthesizer/audio_engine/engine_methods/system_exclusive/helpers";
+import type { SysExAcceptedArray } from "../synthesizer/audio_engine/system_exclusive/helpers";
 
 export type AnalyzedSystemExclusive =
     | { type: "Other" }
@@ -26,7 +26,9 @@ export type AnalyzedSystemExclusive =
           controller: MIDIController;
           value: number;
           channel: number;
-      };
+      }
+    | { type: "Master Key Shift"; value: number }
+    | { type: "Key Shift"; value: number; channel: number };
 
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedSystemExclusive;
 
@@ -130,7 +132,7 @@ export class SysEx {
     ) {
         return new MIDIMessage(
             ticks,
-            midiMessageTypes.systemExclusive,
+            MIDIMessageTypes.systemExclusive,
             new Uint8Array(this.gsData(a1, a2, a3, data))
         );
     }
@@ -155,7 +157,20 @@ export class SysEx {
     }
 
     private static analyzeGM(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
-        if (syx.length < 4 || syx[2] !== 0x09) return OTHER;
+        if (syx.length < 4) return OTHER;
+
+        if (
+            // Device control
+            syx[2] === 0x04 &&
+            // Master Coarse Tuning
+            syx[3] === 0x04
+        )
+            return {
+                type: "Master Key Shift",
+                value: syx[5] - 64
+            };
+
+        if (syx[2] !== 0x09) return OTHER;
         switch (syx[3]) {
             default: {
                 return OTHER;
@@ -182,28 +197,44 @@ export class SysEx {
         const a2 = syx[4]; // Address 2
         const a3 = syx[5]; // Address 3
         const data = syx[6];
-        if (
-            a1 === 0x00 && // XG SYSTEM
-            a2 === 0x00 && // PARAMETER
-            (a3 === 0x7f || // XG RESET
-                a3 === 0x7e) // XG SYSTEM ON
-        )
-            return { type: "XG Reset" };
 
-        // Effects
+        if (a1 === 0x00 && a2 === 0x00) {
+            // XG SYSTEM
+            switch (a3) {
+                default: {
+                    return OTHER;
+                }
+
+                case 0x06: {
+                    // TRANSPOSE
+                    return { type: "Master Key Shift", value: data - 64 };
+                }
+
+                // XG SYSTEM ON
+                case 0x7e:
+                // ALL PARAMETER RESET
+                case 0x7f: {
+                    return { type: "XG Reset" };
+                }
+            }
+        }
+
+        // XG EFFECT 1
         if (a1 === 0x02 && a2 === 0x01) {
             if (a3 <= 0x15) return { type: "Reverb Param" };
             if (a3 <= 0x35) return { type: "Chorus Param" };
             return { type: "Variation Param" };
         }
 
-        // Part setup
+        // XG EFFECT 2
+        if (a1 === 0x03 && a2 === 0x00) return { type: "Variation Param" };
+
+        // XG MULTI PART
         if (a1 === 0x08 /* A2 is the channel number*/) {
             const channel = a2;
             // Avoid invalid channels
-            if (channel >= 16) {
-                return OTHER;
-            }
+            if (channel >= 16) return OTHER;
+
             switch (a3) {
                 default: {
                     return OTHER;
@@ -214,7 +245,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.bankSelect,
+                        controller: MIDIControllers.bankSelect,
                         value: data
                     };
                 }
@@ -224,7 +255,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.bankSelectLSB,
+                        controller: MIDIControllers.bankSelectLSB,
                         value: data
                     };
                 }
@@ -245,8 +276,8 @@ export class SysEx {
                         channel,
                         controller:
                             data === 1
-                                ? midiControllers.polyModeOn
-                                : midiControllers.monoModeOn,
+                                ? MIDIControllers.polyModeOn
+                                : MIDIControllers.monoModeOn,
                         value: 0
                     };
                 }
@@ -260,12 +291,17 @@ export class SysEx {
                     };
                 }
 
+                case 0x08: {
+                    // Note shift
+                    return { type: "Key Shift", channel, value: data - 64 };
+                }
+
                 case 0x0b: {
                     // Volume
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.mainVolume,
+                        controller: MIDIControllers.mainVolume,
                         value: data
                     };
                 }
@@ -275,7 +311,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.pan,
+                        controller: MIDIControllers.pan,
                         value: data
                     };
                 }
@@ -285,7 +321,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.chorusDepth,
+                        controller: MIDIControllers.chorusDepth,
                         value: data
                     };
                 }
@@ -295,7 +331,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.reverbDepth,
+                        controller: MIDIControllers.reverbDepth,
                         value: data
                     };
                 }
@@ -305,7 +341,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.vibratoRate,
+                        controller: MIDIControllers.vibratoRate,
                         value: data
                     };
                 }
@@ -315,7 +351,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.vibratoDepth,
+                        controller: MIDIControllers.vibratoDepth,
                         value: data
                     };
                 }
@@ -325,7 +361,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.vibratoDelay,
+                        controller: MIDIControllers.vibratoDelay,
                         value: data
                     };
                 }
@@ -335,7 +371,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.brightness,
+                        controller: MIDIControllers.brightness,
                         value: data
                     };
                 }
@@ -345,7 +381,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.filterResonance,
+                        controller: MIDIControllers.filterResonance,
                         value: data
                     };
                 }
@@ -355,7 +391,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.attackTime,
+                        controller: MIDIControllers.attackTime,
                         value: data
                     };
                 }
@@ -365,7 +401,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.decayTime,
+                        controller: MIDIControllers.decayTime,
                         value: data
                     };
                 }
@@ -375,7 +411,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.releaseTime,
+                        controller: MIDIControllers.releaseTime,
                         value: data
                     };
                 }
@@ -427,6 +463,9 @@ export class SysEx {
         if (a1 === 0x41) return { type: "Drum Setup" };
         if (a1 !== 0x40) return OTHER;
 
+        if (a2 === 0x00 && a3 === 0x05)
+            return { type: "Master Key Shift", value: data - 64 };
+
         // Effects
         if (a2 === 0x01) {
             if (a3 >= 0x30 && a3 <= 0x37) return { type: "Reverb Param" };
@@ -462,8 +501,8 @@ export class SysEx {
                         channel,
                         controller:
                             data === 1
-                                ? midiControllers.polyModeOn
-                                : midiControllers.monoModeOn,
+                                ? MIDIControllers.polyModeOn
+                                : MIDIControllers.monoModeOn,
                         value: 0
                     };
                 }
@@ -476,12 +515,20 @@ export class SysEx {
                     };
                 }
 
+                case 0x16: {
+                    return {
+                        type: "Key Shift",
+                        channel,
+                        value: data - 64
+                    };
+                }
+
                 case 0x19: {
                     // Part level (cc#7)
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.mainVolume,
+                        controller: MIDIControllers.mainVolume,
                         value: data
                     };
                 }
@@ -491,7 +538,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.pan,
+                        controller: MIDIControllers.pan,
                         value: data
                     };
                 }
@@ -501,7 +548,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.chorusDepth,
+                        controller: MIDIControllers.chorusDepth,
                         value: data
                     };
                 }
@@ -511,7 +558,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.reverbDepth,
+                        controller: MIDIControllers.reverbDepth,
                         value: data
                     };
                 }
@@ -521,7 +568,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.variationDepth,
+                        controller: MIDIControllers.variationDepth,
                         value: data
                     };
                 }
@@ -531,7 +578,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.vibratoRate,
+                        controller: MIDIControllers.vibratoRate,
                         value: data
                     };
                 }
@@ -541,7 +588,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.vibratoDepth,
+                        controller: MIDIControllers.vibratoDepth,
                         value: data
                     };
                 }
@@ -551,7 +598,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.brightness,
+                        controller: MIDIControllers.brightness,
                         value: data
                     };
                 }
@@ -561,7 +608,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.filterResonance,
+                        controller: MIDIControllers.filterResonance,
                         value: data
                     };
                 }
@@ -571,7 +618,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.attackTime,
+                        controller: MIDIControllers.attackTime,
                         value: data
                     };
                 }
@@ -581,7 +628,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.decayTime,
+                        controller: MIDIControllers.decayTime,
                         value: data
                     };
                 }
@@ -591,7 +638,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.releaseTime,
+                        controller: MIDIControllers.releaseTime,
                         value: data
                     };
                 }
@@ -601,7 +648,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.vibratoDelay,
+                        controller: MIDIControllers.vibratoDelay,
                         value: data
                     };
                 }
@@ -622,7 +669,7 @@ export class SysEx {
                     return {
                         type: "Controller Change",
                         channel,
-                        controller: midiControllers.bankSelectLSB,
+                        controller: MIDIControllers.bankSelectLSB,
                         value: data
                     };
                 }

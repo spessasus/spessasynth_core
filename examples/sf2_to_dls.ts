@@ -1,5 +1,5 @@
 // Process arguments
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import { BasicSoundBank, SoundBankLoader } from "../src";
 
 const args = process.argv.slice(2);

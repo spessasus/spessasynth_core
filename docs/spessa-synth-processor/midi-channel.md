@@ -26,7 +26,7 @@ However, they can allow to manipulate the synth extensively.
 
 Resets the preset to the default value.
 
-### resetControllersRP15Compliant
+### resetRP15
 
 Resets controllers according to [RP-15 Recommended Practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)
 
@@ -73,7 +73,7 @@ Parameters:
 
     Cent tunings are relative.
 
-### setModulationDepth
+### modulationDepth
 
 Sets the modulation depth for the channel.
 
@@ -91,7 +91,7 @@ Parameters:
     which, for a preset with a depth of 50,
     will create a total modulation depth of 100 cents.
 
-### setTuning
+### fineTune
 
 Sets the channel's tuning.
 
@@ -99,17 +99,6 @@ Parameters:
 
 - cents - The tuning in cents to set.
 - log - If true, logs the change to the console.
-
-### setCustomController
-
-Sets a custom controller.
-
-Parameters:
-
-- type - the custom controller to set
-- value - the new value of this controller.
-
-The custom controllers enum is called `customControllers` in the exports.
 
 ### setPresetLock
 

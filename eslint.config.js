@@ -5,8 +5,9 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
 import eslint from "@eslint/js";
 
 export default tseslint.config(
-    { ignores: ["dist", "examples", "tests"] },
+    { ignores: ["dist"] },
     {
+        files: ["**/*.{ts,tsx}"],
         extends: [
             eslint.configs.recommended,
             tseslint.configs.recommendedTypeChecked,
@@ -14,9 +15,8 @@ export default tseslint.config(
             eslintPluginUnicorn.configs.recommended,
             eslintConfigPrettier
         ],
-        files: ["**/*.{ts,tsx}"],
         languageOptions: {
-            ecmaVersion: "latest",
+            ecmaVersion: 2022,
             globals: globals.builtin,
             parserOptions: {
                 projectService: true,
@@ -78,6 +78,20 @@ export default tseslint.config(
 
             // Doesn't work with typed arrays
             "unicorn/prefer-spread": "off"
+        }
+    },
+    {
+        files: ["examples/**/*.ts", "tests/**/*.ts"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            globals: globals.builtin,
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname
+            }
+        },
+        rules: {
+            "unicorn/no-process-exit": "off"
         }
     }
 );

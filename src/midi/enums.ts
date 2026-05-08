@@ -1,5 +1,5 @@
 // All the midi statuses dictionary
-export const midiMessageTypes = {
+export const MIDIMessageTypes = {
     noteOff: 0x80,
     noteOn: 0x90,
     polyPressure: 0xa0,
@@ -38,10 +38,10 @@ export const midiMessageTypes = {
 } as const;
 
 export type MIDIMessageType =
-    (typeof midiMessageTypes)[keyof typeof midiMessageTypes];
+    (typeof MIDIMessageTypes)[keyof typeof MIDIMessageTypes];
 
 // All midi controllers dictionary
-export const midiControllers = {
+export const MIDIControllers = {
     bankSelect: 0,
     modulationWheel: 1,
     breathController: 2,
@@ -173,4 +173,4 @@ export const midiControllers = {
 } as const;
 
 export type MIDIController =
-    (typeof midiControllers)[keyof typeof midiControllers];
+    (typeof MIDIControllers)[keyof typeof MIDIControllers];

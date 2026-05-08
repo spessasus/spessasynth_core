@@ -1,5 +1,5 @@
-import { SpessaSynthInfo } from "../../../utils/loggin";
-import { consoleColors } from "../../../utils/other";
+import { SpessaSynthLog } from "../../../utils/loggin";
+import { ConsoleColors } from "../../../utils/other";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { ProgressFunction } from "../../types";
 import { RIFFChunk } from "../../../utils/riff_chunk";
@@ -30,12 +30,12 @@ export function getSDTA(
         const r = s.getRawData(true);
         writtenCount++;
         progressFunction?.(writtenCount / bank.samples.length);
-        SpessaSynthInfo(
+        SpessaSynthLog.info(
             `%cWrote sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}.`,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info,
-            consoleColors.recognized
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.recognized
         );
 
         /* 6.1 Sample Data Format in the smpl Sub-chunk

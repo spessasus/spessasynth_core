@@ -1,8 +1,8 @@
-import type { ModulatorSourceIndex } from "../types";
+import type { ModulatorSourceIndex, SF2Channel } from "../types";
 import {
+    ModulatorControllerSources,
     type ModulatorCurveType,
-    modulatorCurveTypes,
-    modulatorSources
+    ModulatorCurveTypes
 } from "../enums";
 import {
     bitMaskToBool,
@@ -13,10 +13,9 @@ import {
     MOD_CURVE_TYPES_AMOUNT,
     MOD_SOURCE_TRANSFORM_POSSIBILITIES,
     MODULATOR_RESOLUTION
-} from "../../synthesizer/audio_engine/engine_components/modulator_curves";
-import type { Voice } from "../../synthesizer/audio_engine/engine_components/voice";
-import { NON_CC_INDEX_OFFSET } from "../../synthesizer/audio_engine/engine_components/controller_tables";
-import { midiControllers } from "../../midi/enums";
+} from "./modulator_curves";
+import type { Voice } from "../../synthesizer/audio_engine/voice/voice";
+import { MIDIControllers } from "../../midi/enums";
 
 export class ModulatorSource {
     /**
@@ -51,9 +50,17 @@ export class ModulatorSource {
      */
     public curveType: ModulatorCurveType;
 
+    /**
+     * @internal
+     * @param index
+     * @param curveType
+     * @param isCC
+     * @param isBipolar
+     * @param isNegative
+     */
     public constructor(
-        index: ModulatorSourceIndex = modulatorSources.noController,
-        curveType: ModulatorCurveType = modulatorCurveTypes.linear,
+        index: ModulatorSourceIndex = ModulatorControllerSources.noController,
+        curveType: ModulatorCurveType = ModulatorCurveTypes.linear,
         isCC = false,
         isBipolar = false,
         isNegative = false
@@ -67,24 +74,25 @@ export class ModulatorSource {
 
     private get sourceName() {
         return this.isCC
-            ? (Object.keys(midiControllers).find(
+            ? (Object.keys(MIDIControllers).find(
                   (k) =>
-                      midiControllers[k as keyof typeof midiControllers] ===
+                      MIDIControllers[k as keyof typeof MIDIControllers] ===
                       this.index
               ) ?? this.index.toString())
-            : (Object.keys(modulatorSources).find(
+            : (Object.keys(ModulatorControllerSources).find(
                   (k) =>
-                      modulatorSources[k as keyof typeof modulatorSources] ===
-                      this.index
+                      ModulatorControllerSources[
+                          k as keyof typeof ModulatorControllerSources
+                      ] === this.index
               ) ?? this.index.toString());
     }
 
     private get curveTypeName() {
         return (
-            Object.keys(modulatorCurveTypes).find(
+            Object.keys(ModulatorCurveTypes).find(
                 (k) =>
-                    modulatorCurveTypes[
-                        k as keyof typeof modulatorCurveTypes
+                    ModulatorCurveTypes[
+                        k as keyof typeof ModulatorCurveTypes
                     ] === this.curveType
             ) ?? this.curveType.toString()
         );
@@ -146,50 +154,51 @@ export class ModulatorSource {
 
     /**
      * Gets the current value from this source.
-     * @param midiControllers The MIDI controller + modulator source array.
+     * @param channel the MIDI channel to compute for.
      * @param pitchWheel the pitch wheel value, as channel determines if it's a per-note or a global value.
      * @param voice The voice to get the data for.
      */
-    public getValue(
-        midiControllers: Int16Array,
-        pitchWheel: number,
-        voice: Voice
-    ) {
+    public getValue(channel: SF2Channel, pitchWheel: number, voice: Voice) {
         // The raw 14-bit value (0 - 16,383)
         let rawValue;
         if (this.isCC) {
-            rawValue = midiControllers[this.index];
+            rawValue = channel.midiControllers[this.index];
         } else {
             switch (this.index) {
-                case modulatorSources.noController: {
+                default:
+                case ModulatorControllerSources.noController: {
                     rawValue = 16_383; // Equals to 1
                     break;
                 }
 
-                case modulatorSources.noteOnKeyNum: {
-                    rawValue = voice.midiNote << 7;
-                    break;
-                }
-
-                case modulatorSources.noteOnVelocity: {
+                case ModulatorControllerSources.noteOnVelocity: {
                     rawValue = voice.velocity << 7;
                     break;
                 }
 
-                case modulatorSources.polyPressure: {
+                case ModulatorControllerSources.noteOnKeyNum: {
+                    rawValue = voice.midiNote << 7;
+                    break;
+                }
+
+                case ModulatorControllerSources.polyPressure: {
                     rawValue = voice.pressure << 7;
                     break;
                 }
 
-                case modulatorSources.pitchWheel: {
+                case ModulatorControllerSources.channelPressure: {
+                    rawValue = channel.midiParameters.pressure << 7;
+                    break;
+                }
+
+                case ModulatorControllerSources.pitchWheel: {
                     rawValue = pitchWheel;
                     break;
                 }
 
-                default: {
-                    rawValue =
-                        midiControllers[this.index + NON_CC_INDEX_OFFSET]; // Pitch wheel and range are stored in the cc table
-                    break;
+                case ModulatorControllerSources.pitchWheelRange: {
+                    // Pitch wheel range may be a floating point number!
+                    rawValue = channel.midiParameters.pitchWheelRange * 128;
                 }
             }
         }
@@ -199,7 +208,7 @@ export class ModulatorSource {
         const transformType =
             (this.isBipolar ? 0b10 : 0b00) | (this.isNegative ? 1 : 0);
 
-        return precomputedModulatorTransforms[
+        return MODULATOR_TRANSFORMS[
             MODULATOR_RESOLUTION *
                 (this.curveType * MOD_CURVE_TYPES_AMOUNT + transformType) +
                 rawValue
@@ -211,7 +220,7 @@ export class ModulatorSource {
  * To get the value, you do
  * MODULATOR_RESOLUTION * (MOD_CURVE_TYPES_AMOUNT * curveType + transformType) + your raw value as 14-bit number (0 - 16,383)
  */
-export const precomputedModulatorTransforms = new Float32Array(
+const MODULATOR_TRANSFORMS = new Float32Array(
     MODULATOR_RESOLUTION *
         MOD_SOURCE_TRANSFORM_POSSIBILITIES *
         MOD_CURVE_TYPES_AMOUNT
@@ -227,12 +236,11 @@ for (let curveType = 0; curveType < MOD_CURVE_TYPES_AMOUNT; curveType++) {
             MODULATOR_RESOLUTION *
             (curveType * MOD_CURVE_TYPES_AMOUNT + transformType);
         for (let value = 0; value < MODULATOR_RESOLUTION; value++) {
-            precomputedModulatorTransforms[tableIndex + value] =
-                getModulatorCurveValue(
-                    transformType,
-                    curveType as ModulatorCurveType,
-                    value / MODULATOR_RESOLUTION
-                );
+            MODULATOR_TRANSFORMS[tableIndex + value] = getModulatorCurveValue(
+                transformType,
+                curveType as ModulatorCurveType,
+                value / MODULATOR_RESOLUTION
+            );
         }
     }
 }

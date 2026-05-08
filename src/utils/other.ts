@@ -37,7 +37,7 @@ export function arrayToHexString(arr: Iterable<number>): string {
     return hexString;
 }
 
-export const consoleColors = {
+export const ConsoleColors = {
     warn: "color: orange;",
     unrecognized: "color: red;",
     info: "color: aqua;",

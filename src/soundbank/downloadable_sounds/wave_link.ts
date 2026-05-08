@@ -7,7 +7,7 @@ import {
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { BasicSample } from "../basic_soundbank/basic_sample";
 import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
-import { sampleTypes } from "../enums";
+import { SampleTypes } from "../enums";
 
 export class WaveLink {
     /**
@@ -76,14 +76,14 @@ export class WaveLink {
         const waveLink = new WaveLink(index);
         switch (zone.sample.sampleType) {
             default:
-            case sampleTypes.leftSample:
-            case sampleTypes.monoSample: {
+            case SampleTypes.leftSample:
+            case SampleTypes.monoSample: {
                 // Left (or mono)
                 waveLink.channel = Math.trunc(1);
                 break;
             }
 
-            case sampleTypes.rightSample: {
+            case SampleTypes.rightSample: {
                 // Right channel
                 waveLink.channel = 1 << 1;
             }

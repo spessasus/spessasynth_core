@@ -1,5 +1,5 @@
 import { MIDITestMaker } from "../test_maker";
-import { midiControllers } from "../../src";
+import { MIDIControllers } from "../../src";
 
 const test = new MIDITestMaker("Auto Wah");
 
@@ -7,9 +7,9 @@ const test = new MIDITestMaker("Auto Wah");
 test.addProgramChange(16, 3, 80);
 
 // No vibrato nor filter
-test.addControllerChange(midiControllers.vibratoDepth, 0);
-test.addControllerChange(midiControllers.brightness, 127);
-test.addControllerChange(midiControllers.reverbDepth, 0);
+test.addControllerChange(MIDIControllers.vibratoDepth, 0);
+test.addControllerChange(MIDIControllers.brightness, 127);
+test.addControllerChange(MIDIControllers.reverbDepth, 0);
 
 test.ticks += 80;
 // Short raw play
@@ -41,9 +41,9 @@ efx.sweepParam(4, 0, 127, 60);
 // Sens volume test
 // Set peak to max to see better
 efx.setParam(6, 127);
-test.sweepCC(midiControllers.mainVolume, 1, 127, 120);
+test.sweepCC(MIDIControllers.mainVolume, 1, 127, 120);
 
-test.addControllerChange(midiControllers.mainVolume, 100);
+test.addControllerChange(MIDIControllers.mainVolume, 100);
 
 // Reset params
 efx.setParam(4, 0);

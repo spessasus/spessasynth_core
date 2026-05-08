@@ -1,9 +1,9 @@
 import { getEvent, MIDIMessage } from "../midi/midi_message";
-import { consoleColors } from "../utils/other";
-import { SpessaSynthInfo } from "../utils/loggin";
+import { ConsoleColors } from "../utils/other";
+import { SpessaSynthLog } from "../utils/loggin";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import type { SpessaSynthSequencer } from "./sequencer";
-import { type MIDIController, midiMessageTypes } from "../midi/enums";
+import { type MIDIController, MIDIMessageTypes } from "../midi/enums";
 
 /**
  * Processes a MIDI event.
@@ -34,7 +34,7 @@ export function processEventInternal(
      which we need since the sequencer handles multi-port stuff, not the synth!
     */
     switch (statusByteData.status) {
-        case midiMessageTypes.noteOn: {
+        case MIDIMessageTypes.noteOn: {
             const velocity = event.data[1];
             if (velocity > 0) {
                 this.synth.noteOn(
@@ -61,7 +61,7 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.noteOff: {
+        case MIDIMessageTypes.noteOff: {
             this.synth.noteOff(statusByteData.channel, event.data[0]);
             const toDelete = this.playingNotes.findIndex(
                 (n) =>
@@ -74,7 +74,7 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.pitchWheel: {
+        case MIDIMessageTypes.pitchWheel: {
             this.synth.pitchWheel(
                 statusByteData.channel,
                 (event.data[1] << 7) | event.data[0]
@@ -82,7 +82,7 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.controllerChange: {
+        case MIDIMessageTypes.controllerChange: {
             // Empty tracks cannot cc change
             if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
@@ -95,7 +95,7 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.programChange: {
+        case MIDIMessageTypes.programChange: {
             // Empty tracks cannot program change
             if (this._midiData!.isMultiPort && track.channels.size === 0) {
                 return;
@@ -104,7 +104,7 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.polyPressure: {
+        case MIDIMessageTypes.polyPressure: {
             this.synth.polyPressure(
                 statusByteData.channel,
                 event.data[0],
@@ -113,72 +113,72 @@ export function processEventInternal(
             break;
         }
 
-        case midiMessageTypes.channelPressure: {
+        case MIDIMessageTypes.channelPressure: {
             this.synth.channelPressure(statusByteData.channel, event.data[0]);
             break;
         }
 
-        case midiMessageTypes.systemExclusive: {
+        case MIDIMessageTypes.systemExclusive: {
             this.synth.systemExclusive(event.data, offset);
             break;
         }
 
-        case midiMessageTypes.setTempo: {
+        case MIDIMessageTypes.setTempo: {
             const tempoBPM = 60_000_000 / readBigEndian(event.data, 3);
             this.oneTickToSeconds =
                 60 / (tempoBPM * this._midiData!.timeDivision);
             if (this.oneTickToSeconds === 0) {
                 this.oneTickToSeconds =
                     60 / (120 * this._midiData!.timeDivision);
-                SpessaSynthInfo("invalid tempo! falling back to 120 BPM");
+                SpessaSynthLog.info("invalid tempo! falling back to 120 BPM");
             }
             break;
         }
 
         // Recognized but ignored
-        case midiMessageTypes.timeSignature:
-        case midiMessageTypes.endOfTrack:
-        case midiMessageTypes.midiChannelPrefix:
-        case midiMessageTypes.songPosition:
-        case midiMessageTypes.activeSensing:
-        case midiMessageTypes.keySignature:
-        case midiMessageTypes.sequenceNumber:
-        case midiMessageTypes.sequenceSpecific:
-        case midiMessageTypes.text:
-        case midiMessageTypes.lyric:
-        case midiMessageTypes.copyright:
-        case midiMessageTypes.trackName:
-        case midiMessageTypes.marker:
-        case midiMessageTypes.cuePoint:
-        case midiMessageTypes.instrumentName:
-        case midiMessageTypes.programName: {
+        case MIDIMessageTypes.timeSignature:
+        case MIDIMessageTypes.endOfTrack:
+        case MIDIMessageTypes.midiChannelPrefix:
+        case MIDIMessageTypes.songPosition:
+        case MIDIMessageTypes.activeSensing:
+        case MIDIMessageTypes.keySignature:
+        case MIDIMessageTypes.sequenceNumber:
+        case MIDIMessageTypes.sequenceSpecific:
+        case MIDIMessageTypes.text:
+        case MIDIMessageTypes.lyric:
+        case MIDIMessageTypes.copyright:
+        case MIDIMessageTypes.trackName:
+        case MIDIMessageTypes.marker:
+        case MIDIMessageTypes.cuePoint:
+        case MIDIMessageTypes.instrumentName:
+        case MIDIMessageTypes.programName: {
             break;
         }
 
-        case midiMessageTypes.midiPort: {
+        case MIDIMessageTypes.midiPort: {
             this.assignMIDIPort(trackIndex, event.data[0]);
             break;
         }
 
-        case midiMessageTypes.reset: {
+        case MIDIMessageTypes.reset: {
             this.synth.stopAllChannels();
             this.synth.resetAllControllers();
             break;
         }
 
         default: {
-            SpessaSynthInfo(
+            SpessaSynthLog.info(
                 `%cUnrecognized Event: %c${event.statusByte}%c status byte: %c${Object.keys(
-                    midiMessageTypes
+                    MIDIMessageTypes
                 ).find(
                     (k) =>
-                        midiMessageTypes[k as keyof typeof midiMessageTypes] ===
+                        MIDIMessageTypes[k as keyof typeof MIDIMessageTypes] ===
                         statusByteData.status
                 )}`,
-                consoleColors.warn,
-                consoleColors.unrecognized,
-                consoleColors.warn,
-                consoleColors.value
+                ConsoleColors.warn,
+                ConsoleColors.unrecognized,
+                ConsoleColors.warn,
+                ConsoleColors.value
             );
             break;
         }

@@ -4,9 +4,9 @@ import {
     type BiquadCoeffs,
     type BiquadState,
     computeShelfCoeffs,
-    zeroCoeffs,
+    ZERO_COEFFS,
     zeroState,
-    zeroStateC
+    ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
 
@@ -84,15 +84,15 @@ export class TremoloFX implements InsertionProcessor {
     private currentGain = 1;
 
     // Biquad shelving coefficients and states (per channel)
-    private readonly lsCoeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly hsCoeffs: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly lsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly hsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
 
     // Low shelf
-    private lsStateR: BiquadState = { ...zeroStateC };
-    private lsStateL: BiquadState = { ...zeroStateC };
+    private lsStateR: BiquadState = { ...ZeroStateC };
+    private lsStateL: BiquadState = { ...ZeroStateC };
     // High shelf
-    private hsStateR: BiquadState = { ...zeroStateC };
-    private hsStateL: BiquadState = { ...zeroStateC };
+    private hsStateR: BiquadState = { ...ZeroStateC };
+    private hsStateL: BiquadState = { ...ZeroStateC };
     private readonly sampleRate;
 
     public constructor(sampleRate: number) {

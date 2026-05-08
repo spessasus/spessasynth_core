@@ -1,6 +1,6 @@
-import * as fs from "fs/promises";
-import * as path from "node:path";
-import { BasicMIDI, SpessaSynthLogging } from "../src";
+import * as fs from "node:fs/promises";
+import path from "node:path";
+import { BasicMIDI, SpessaSynthLog } from "../src";
 import { toISODateString } from "../src/utils/date";
 
 // Process arguments
@@ -11,7 +11,7 @@ if (args.length !== 1) {
 }
 const midPath = args[0];
 
-SpessaSynthLogging(false, false, false);
+SpessaSynthLog.setLogLevel(false, false, false);
 
 const entries = await fs.readdir(midPath, { recursive: true });
 
@@ -27,7 +27,7 @@ for (const entry of entries) {
         if (!rmid.rmidiInfo.creationDate) continue;
         console.info(
             dec.decode(rmid.rmidiInfo.creationDate),
-            " decoded as date -> ",
+            "decoded as date ->",
             toISODateString(rmid.getRMIDInfo("creationDate")!)
         );
     }

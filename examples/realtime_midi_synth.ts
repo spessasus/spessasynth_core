@@ -1,29 +1,25 @@
 import midi from "midi";
 import Speaker from "speaker";
-import {
-    SoundBankLoader,
-    SpessaSynthLogging,
-    SpessaSynthProcessor
-} from "../src";
+import { SoundBankLoader, SpessaSynthLog, SpessaSynthProcessor } from "../src";
 import * as fs from "node:fs/promises";
 
 // Process arguments
 const args = process.argv.slice(2);
-if (args.length < 1) {
+if (args.length === 0) {
     console.info("Usage: tsx index.ts <soundbank path>");
     process.exit();
 }
 // Initialize the synthesizer
-const sampleRate = 44100;
+const sampleRate = 44_100;
 console.info("Initializing synthesizer...");
 const sfPath = args[0];
 const sf = await fs.readFile(sfPath);
-SpessaSynthLogging(true, true, true);
+SpessaSynthLog.setLogLevel(true, true, true);
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEventSystem: false
+    eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(
-    SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),
+    SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
 await synth.processorInitialized;
@@ -52,7 +48,7 @@ const blockSize = 4;
 const left = new Float32Array(quantum * blockSize);
 const right = new Float32Array(quantum * blockSize);
 
-let startTime = performance.now();
+const startTime = performance.now();
 setInterval(() => {
     const t = (performance.now() - startTime) / 1000;
     if (synth.currentTime - t > 0.5) {

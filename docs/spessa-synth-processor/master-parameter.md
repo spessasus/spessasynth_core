@@ -4,13 +4,13 @@ Master parameters can be used to set parameters that affect the entire synthesiz
 
 They are described below.
 
-### masterGain
+### gain
 
 `number`
 
 The master gain, from 0 to any number. 1 is 100% volume.
 
-### masterPan
+### pan
 
 `number`
 
@@ -52,7 +52,7 @@ The interpolation types defined are:
 
 !!! Tip
 
-    You can also use the `interpolationTypes` enum.
+    You can also use the `InterpolationTypes` enum.
 
 ### midiSystem
 
@@ -141,7 +141,7 @@ the recommended use case would be setting
 the custom vibrato then locking it to prevent changes by MIDI files.
 To disable it, make sure that it's unlocked, reset the synthesizer then lock it.
 
-### nprnParamLock
+### nrpnParamLock
 
 `boolean`
 
@@ -154,11 +154,11 @@ This includes the custom vibrato parameters.
 
 Forces note killing instead of releasing. Improves performance in black MIDIs.
 
-### transposition
+### pitchOffset
 
 `number`
 
-The global transposition in semitones. It can be decimal to provide microtonal tuning.
+The global pitchOffset in semitones. It can be decimal to provide microtonal tuning.
 
 ### deviceID
 
