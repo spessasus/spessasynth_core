@@ -1,8 +1,9 @@
-import { type SysExAcceptedArray, sysExNotRecognized } from "./helpers";
+import { sysExNotRecognized } from "./helpers";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { arrayToHexString, ConsoleColors } from "../../../utils/other";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../synthesizer_core";
+import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
  * Calculates frequency for MIDI Tuning Standard.

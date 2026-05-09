@@ -174,3 +174,43 @@ export const MIDIControllers = {
 
 export type MIDIController =
     (typeof MIDIControllers)[keyof typeof MIDIControllers];
+
+export const RegisteredParameterTypes = {
+    pitchWheelRange: 0x00_00,
+    fineTuning: 0x00_01,
+    coarseTuning: 0x00_02,
+    modulationDepth: 0x00_05,
+    resetParameters: 0x3f_ff
+} as const;
+
+export const NonRegisteredMSB = {
+    partParameter: 0x01,
+    drumPitch: 0x18,
+    drumPitchFine: 0x19,
+    drumLevel: 0x1a,
+    drumPan: 0x1c,
+    drumReverb: 0x1d,
+    drumChorus: 0x1e,
+    drumDelay: 0x1f,
+
+    awe32: 0x7f,
+    SF2: 120
+} as const;
+
+/**
+ * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
+ * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ * These also seem to match XG
+ */
+export const NonRegisteredLSB = {
+    vibratoRate: 0x08,
+    vibratoDepth: 0x09,
+    vibratoDelay: 0x0a,
+
+    tvfCutoffFrequency: 0x20,
+    tvfResonance: 0x21,
+
+    envelopeAttackTime: 0x63,
+    envelopeDecayTime: 0x64,
+    envelopeReleaseTime: 0x66
+} as const;

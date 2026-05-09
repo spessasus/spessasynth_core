@@ -1,12 +1,12 @@
 import { ConsoleColors } from "../../../../utils/other";
 import { SpessaSynthLog } from "../../../../utils/loggin";
-import {
-    NonRegisteredMSB,
-    RegisteredParameterTypes
-} from "./data_entry_coarse";
 import { handleAWE32NRPN } from "./awe32";
 import type { MIDIChannel } from "../midi_channel";
-import { MIDIControllers } from "../../../../midi/enums";
+import {
+    MIDIControllers,
+    NonRegisteredMSB,
+    RegisteredParameterTypes
+} from "../../../../midi/enums";
 
 /**
  * Executes a data entry fine (LSB) change for the current channel.
@@ -52,7 +52,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                 const coarse =
                     this.midiControllers[MIDIControllers.dataEntryMSB] >> 7;
                 const finalTuning = ((coarse << 7) | dataValue) - 8192;
-                this.fineTune(finalTuning * 0.012_207_031_25); // Multiply by 8192 / 100 (cent increments)
+                this.fineTune(finalTuning / 81.92); // (cent increments)
                 break;
             }
 

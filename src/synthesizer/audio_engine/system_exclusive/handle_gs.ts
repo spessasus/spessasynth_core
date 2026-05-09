@@ -1,16 +1,13 @@
-import {
-    type SysExAcceptedArray,
-    sysExLogging,
-    sysExNotRecognized
-} from "./helpers";
+import { sysExLogging, sysExNotRecognized } from "./helpers";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../synthesizer_core";
-import { SysEx } from "../../../utils/sysex";
+import { MIDIProtocol } from "../../../midi/midi_tools/midi_protocol";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
+import type { SysExAcceptedArray } from "../../../midi/types";
 
 const coolInfo = (what: string, value: string | number | boolean) => {
     SpessaSynthLog.info(
@@ -596,7 +593,8 @@ export function handleGS(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-8850 manual, page 237
                             const channel =
-                                SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
+                                MIDIProtocol.syxToChannel(a2 & 0x0f) +
+                                channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
                             switch (a3) {
@@ -858,7 +856,8 @@ export function handleGS(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-8850 manual, page 237
                             const channel =
-                                SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
+                                MIDIProtocol.syxToChannel(a2 & 0x0f) +
+                                channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
                             switch (a3 & 0xf0) {
@@ -978,7 +977,8 @@ export function handleGS(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-8850 manual, page 237
                             const channel =
-                                SysEx.syxToChannel(a2 & 0x0f) + channelOffset;
+                                MIDIProtocol.syxToChannel(a2 & 0x0f) +
+                                channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
 

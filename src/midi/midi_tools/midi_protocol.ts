@@ -1,12 +1,16 @@
-import { MIDIMessage } from "../midi/midi_message";
+import { MIDIMessage } from "../midi_message";
 import {
     type MIDIController,
     MIDIControllers,
-    MIDIMessageTypes
-} from "../midi/enums";
-import type { SysExAcceptedArray } from "../synthesizer/audio_engine/system_exclusive/helpers";
+    MIDIMessageTypes,
+    NonRegisteredLSB,
+    NonRegisteredMSB,
+    RegisteredParameterTypes
+} from "../enums";
 
-export type AnalyzedSystemExclusive =
+import type { SysExAcceptedArray } from "../types";
+
+export type AnalyzedMIDIMessage =
     | { type: "Other" }
     | { type: "XG Reset" }
     | { type: "GM On" }
@@ -28,21 +32,24 @@ export type AnalyzedSystemExclusive =
           channel: number;
       }
     | { type: "Master Key Shift"; value: number }
-    | { type: "Key Shift"; value: number; channel: number };
+    | { type: "Key Shift"; value: number; channel: number }
+    // Value in cents
+    | { type: "Master Fine Tune"; value: number }
+    // Value in cents
+    | { type: "Fine Tune"; value: number; channel: number };
 
-const OTHER = Object.freeze({ type: "Other" }) as AnalyzedSystemExclusive;
+const OTHER = Object.freeze({ type: "Other" }) as AnalyzedMIDIMessage;
 
 /**
- * A set of handy functions for working with System Exclusive messages.
- * @internal
+ * A general purpose class for handling MIDI messages.
  */
-export class SysEx {
+export class MIDIProtocol {
     /**
      * Analyzes a MIDI System Exclusive message
      * and returns an identification and data for it.
      * @param syx the System Exclusive message, WITHOUT the first 0xF0 System Exclusive byte!
      */
-    public static analyze(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
+    public static analyzeSysEx(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
         // At least Manufacturer ID, Device ID and XG/GS model ID
         if (syx.length < 3) return OTHER;
         switch (syx[0]) {
@@ -70,8 +77,129 @@ export class SysEx {
     }
 
     /**
-     * GS/XG "part number" to channel number.
-     * @param part
+     * Analyzes a MIDI Registered Parameter Number
+     * and returns an identification and data for it.
+     * @param channel The MIDI channel number.
+     * @param rpn The 14-bit RPN number.
+     * @param value The 14-bit value for that number.
+     */
+    public static analyzeRPN(
+        channel: number,
+        rpn: number,
+        value: number
+    ): AnalyzedMIDIMessage {
+        switch (rpn) {
+            default: {
+                return OTHER;
+            }
+
+            case RegisteredParameterTypes.fineTuning: {
+                return {
+                    type: "Fine Tune",
+                    channel,
+                    value: (value - 8192) / 81.92
+                };
+            }
+
+            case RegisteredParameterTypes.coarseTuning: {
+                return {
+                    type: "Key Shift",
+                    channel,
+                    value: (value >> 7) - 64
+                };
+            }
+        }
+    }
+
+    /**
+     * Analyzes a MIDI Non-Registered Parameter Number
+     * and returns an identification and data for it.
+     * @param channel The MIDI channel number.
+     * @param nrpn The 14-bit NRPN number.
+     * @param value The 14-bit value for that number.
+     */
+    public static analyzeNRPN(
+        channel: number,
+        nrpn: number,
+        value: number
+    ): AnalyzedMIDIMessage {
+        const msb = nrpn >> 7;
+        const lsb = nrpn & 0x7f;
+        switch (msb) {
+            default: {
+                return OTHER;
+            }
+
+            case NonRegisteredMSB.partParameter: {
+                switch (lsb) {
+                    default: {
+                        return OTHER;
+                    }
+
+                    case NonRegisteredLSB.tvfCutoffFrequency: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.brightness,
+                            value: value >> 7
+                        };
+                    }
+
+                    case NonRegisteredLSB.tvfResonance: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.filterResonance,
+                            value: value >> 7
+                        };
+                    }
+
+                    case NonRegisteredLSB.envelopeAttackTime: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.attackTime,
+                            value: value >> 7
+                        };
+                    }
+
+                    case NonRegisteredLSB.envelopeDecayTime: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.decayTime,
+                            value: value >> 7
+                        };
+                    }
+
+                    case NonRegisteredLSB.envelopeReleaseTime: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.releaseTime,
+                            value: value >> 7
+                        };
+                    }
+                }
+            }
+
+            case NonRegisteredMSB.drumPitch:
+            case NonRegisteredMSB.drumPitchFine:
+            case NonRegisteredMSB.drumLevel:
+            case NonRegisteredMSB.drumPan:
+            case NonRegisteredMSB.drumReverb:
+            case NonRegisteredMSB.drumChorus:
+            case NonRegisteredMSB.drumDelay: {
+                return {
+                    type: "Drum Setup"
+                };
+            }
+        }
+    }
+
+    /**
+     * Converts GS/XG "part number" to MIDI channel number.
+     * @param part The part number.
      */
     public static syxToChannel(part: number) {
         return [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
@@ -80,8 +208,8 @@ export class SysEx {
     }
 
     /**
-     * Channel number to GS/XG "part number"
-     * @param channel
+     * Converts MIDI channel number to GS/XG "part number".
+     * @param channel The MIDI channel number.
      */
     public static channelToSyx(channel: number) {
         return [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][
@@ -90,7 +218,7 @@ export class SysEx {
     }
 
     /**
-     * Gets raw GS System Exclusive message, without the 0xF0 status byte.
+     * Gets raw GS System Exclusive message bytes, without the 0xF0 status byte.
      * @param a1 Address 1
      * @param a2 Address 2
      * @param a3 Address 3
@@ -103,7 +231,7 @@ export class SysEx {
         const checksum = (128 - (sum % 128)) & 0x7f;
         return [
             0x41, // Roland
-            0x10, // Device ID (defaults to 16 on roland)
+            0x10, // Device ID (defaults to 16 on Roland)
             0x42, // GS
             0x12, // Command ID (DT1)
             a1,
@@ -116,12 +244,12 @@ export class SysEx {
     }
 
     /**
-     * Sends a GS System Exclusive address
-     * @param ticks
+     * Gets a GS System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
      * @param a1 Address 1
      * @param a2 Address 2
      * @param a3 Address 3
-     * @param data Data, can be multiple bytes
+     * @param data Data, can be multiple bytes.
      */
     public static gsMessage(
         ticks: number,
@@ -137,14 +265,25 @@ export class SysEx {
         );
     }
 
-    public static gsDrumChange(channel: number, ticks: number): MIDIMessage {
+    /**
+     * Gets a GS reset message System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
+     * @param channel The MIDI channel number.
+     * @param drumMap The drum map to use. 0 turns the channel into a melodic channel,
+     * while other values turn it into a drum channel.
+     */
+    public static gsDrumChange(
+        ticks: number,
+        channel: number,
+        drumMap: 0 | 1 | 2
+    ): MIDIMessage {
         const chanAddress = 0x10 | this.channelToSyx(channel);
-        return this.gsMessage(ticks, 40, chanAddress, 0x15, [0x01]);
+        return this.gsMessage(ticks, 40, chanAddress, 0x15, [drumMap]);
     }
 
     /**
-     * Gets a GS reset message System Exclusive
-     * @param ticks
+     * Gets a GS reset message System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
      */
     public static gsReset(ticks: number): MIDIMessage {
         return this.gsMessage(
@@ -156,19 +295,36 @@ export class SysEx {
         );
     }
 
-    private static analyzeGM(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
+    private static analyzeGM(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
         if (syx.length < 4) return OTHER;
 
         if (
             // Device control
-            syx[2] === 0x04 &&
-            // Master Coarse Tuning
-            syx[3] === 0x04
+            syx[2] === 0x04
         )
-            return {
-                type: "Master Key Shift",
-                value: syx[5] - 64
-            };
+            switch (syx[3]) {
+                default: {
+                    return OTHER;
+                }
+
+                case 0x03: {
+                    // Master Fine-Tuning
+                    const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
+                    const cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
+                    return {
+                        type: "Master Fine Tune",
+                        value: cents
+                    };
+                }
+
+                case 0x04: {
+                    // Master Coarse Tuning
+                    return {
+                        type: "Master Key Shift",
+                        value: syx[5] - 64
+                    };
+                }
+            }
 
         if (syx[2] !== 0x09) return OTHER;
         switch (syx[3]) {
@@ -190,7 +346,7 @@ export class SysEx {
         }
     }
 
-    private static analyzeXG(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
+    private static analyzeXG(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
         // Ensure XG
         if (syx[2] !== 0x4c || syx.length < 7) return OTHER;
         const a1 = syx[3]; // Address 1
@@ -203,6 +359,20 @@ export class SysEx {
             switch (a3) {
                 default: {
                     return OTHER;
+                }
+
+                case 0x00: {
+                    // MASTER TUNE
+                    const tune =
+                        ((syx[6] & 15) << 12) |
+                        ((syx[7] & 15) << 8) |
+                        ((syx[8] & 15) << 4) |
+                        (syx[9] & 15);
+                    const cents = (tune - 1024) / 10;
+                    return {
+                        type: "Master Fine Tune",
+                        value: cents
+                    };
                 }
 
                 case 0x06: {
@@ -424,7 +594,7 @@ export class SysEx {
         return OTHER;
     }
 
-    private static analyzeGS(syx: SysExAcceptedArray): AnalyzedSystemExclusive {
+    private static analyzeGS(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
         if (
             syx.length < 10 ||
             // Model ID (GS)
@@ -444,18 +614,31 @@ export class SysEx {
         if (
             // Address 1 is 0x00 for SC-88 SYSTEM MODE SET and 0x40 for SC-55 MODE SET
             (a1 === 0x00 || a1 === 0x40) &&
-            a2 === 0x00 && // MODE
-            a3 === 0x7f // SET
+            a2 === 0x00 // System Parameter
         ) {
-            switch (data) {
-                case 0x00: {
-                    // GS Reset/Mode-1
-                    return { type: "GS Reset" };
+            switch (a3) {
+                // MODE SET
+                case 0x7f: {
+                    switch (data) {
+                        case 0x00: {
+                            // GS Reset/Mode-1
+                            return { type: "GS Reset" };
+                        }
+
+                        case 0x7f: {
+                            // GS Off, default to gm
+                            return { type: "GM On" };
+                        }
+                    }
+                    return OTHER;
                 }
 
-                case 0x7f: {
-                    // GS Off, default to gm
-                    return { type: "GM On" };
+                // Master Tune
+                case 0x00: {
+                    const tune =
+                        (data << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
+                    const cents = (tune - 1024) / 10;
+                    return { type: "Master Fine Tune", value: cents };
                 }
             }
         }
@@ -479,7 +662,7 @@ export class SysEx {
 
         // Patch parameter
         if (a2 >> 4 === 1) {
-            const channel = SysEx.syxToChannel(a2 & 0x0f);
+            const channel = MIDIProtocol.syxToChannel(a2 & 0x0f);
             switch (a3) {
                 default: {
                     return OTHER;
@@ -560,6 +743,18 @@ export class SysEx {
                         channel,
                         controller: MIDIControllers.reverbDepth,
                         value: data
+                    };
+                }
+
+                case 0x2a: {
+                    // Fine tune
+                    // 0-16384
+                    const tune = (data << 7) | syx[8];
+                    const tuneCents = (tune - 8192) / 81.92;
+                    return {
+                        type: "Fine Tune",
+                        channel,
+                        value: tuneCents
                     };
                 }
 
@@ -657,7 +852,7 @@ export class SysEx {
 
         // Patch Parameter Tone Map
         if (a2 >> 4 === 4) {
-            const channel = SysEx.syxToChannel(a2 & 0x0f);
+            const channel = MIDIProtocol.syxToChannel(a2 & 0x0f);
             switch (a3) {
                 default: {
                     return OTHER;

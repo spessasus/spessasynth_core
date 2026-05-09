@@ -575,7 +575,6 @@ export class MIDIChannel {
      */
     public fineTune(cents: number, log = true) {
         cents = Math.round(cents);
-        if (this._midiParameters.fineTune === cents) return;
         this.setMIDIParameter("fineTune", cents);
         if (!log) return;
 

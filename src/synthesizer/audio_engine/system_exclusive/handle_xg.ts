@@ -1,8 +1,9 @@
-import { type SysExAcceptedArray, sysExNotRecognized } from "./helpers";
+import { sysExNotRecognized } from "./helpers";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import { MIDIControllers } from "../../../midi/enums";
 import type { SynthesizerCore } from "../synthesizer_core";
+import type { SysExAcceptedArray } from "../../../midi/types";
 
 const coolInfo = (what: string, value: string | number | boolean) => {
     SpessaSynthLog.info(

@@ -11,7 +11,7 @@ import {
     DEFAULT_RMIDI_WRITE_OPTIONS,
     writeRMIDIInternal
 } from "./midi_tools/rmidi_writer";
-import { getUsedProgramsAndKeys } from "./midi_tools/used_keys_loaded";
+import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
@@ -422,28 +422,8 @@ export class BasicMIDI {
      * Allows easy editing of the file by removing channels, changing programs,
      * changing controllers and transposing channels. Note that this modifies the MIDI *in-place*.
      */
-    public modify({
-        programChanges = [],
-        controllerChanges = [],
-        clearedChannels = new Set<number>(),
-        pitchOffsets = [],
-        clearDrumParams = false,
-        reverbParams,
-        chorusParams,
-        delayParams,
-        insertionParams
-    }: ModifyMIDIOptions) {
-        modifyMIDIInternal(this, {
-            programChanges,
-            controllerChanges,
-            clearedChannels,
-            pitchOffsets,
-            clearDrumParams,
-            reverbParams,
-            chorusParams,
-            delayParams,
-            insertionParams
-        });
+    public modify(opts: Partial<ModifyMIDIOptions>) {
+        modifyMIDIInternal(this, opts);
     }
 
     // noinspection JSUnusedGlobalSymbols

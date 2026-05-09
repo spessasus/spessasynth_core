@@ -22,7 +22,6 @@ import { type MIDIController } from "../midi/enums";
 import { SynthesizerCore } from "./audio_engine/synthesizer_core";
 import { SoundBankLoader } from "../soundbank/sound_bank_loader";
 import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
-import type { SysExAcceptedArray } from "./audio_engine/system_exclusive/helpers";
 import {
     type MIDIPatch,
     MIDIPatchTools
@@ -31,6 +30,7 @@ import type { GlobalMasterParameter } from "./audio_engine/master_parameters";
 import type { MIDIChannel } from "./audio_engine/channel/midi_channel";
 import type { MIDIGlobalParameter } from "./audio_engine/midi_parameters";
 import type { MIDISystem } from "../soundbank/types";
+import type { SysExAcceptedArray } from "../midi/types";
 
 /**
  * Processor.ts

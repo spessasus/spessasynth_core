@@ -3,11 +3,11 @@ import {
     MIDIBuilder,
     type MIDIController,
     MIDIControllers,
-    MIDIMessageTypes
+    MIDIMessageTypes,
+    MIDIProtocol
 } from "../src";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { SysEx } from "../src/utils/sysex";
 
 class EFXTest {
     private readonly builder;
@@ -25,7 +25,7 @@ class EFXTest {
         // EFX to channel
         this.builder.sendAddress(
             0x40,
-            0x40 | SysEx.channelToSyx(channel),
+            0x40 | MIDIProtocol.channelToSyx(channel),
             0x22,
             [1]
         );

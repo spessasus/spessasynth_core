@@ -1,7 +1,7 @@
 import { SpessaSynthLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
-import { SysEx } from "../../utils/sysex";
+import { MIDIProtocol } from "./midi_protocol";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
@@ -12,15 +12,14 @@ import {
 } from "../enums";
 import type { SoundBankManager } from "../../synthesizer/audio_engine/sound_bank_manager";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import { RegisteredParameterTypes } from "../../synthesizer/audio_engine/channel/data_entry/data_entry_coarse";
 import type { MIDISystem } from "../../soundbank/types";
+import { ParameterTracker } from "./parameter_tracker";
 
 interface InternalChannelType {
     preset?: BasicPreset;
     bankMSB: number;
     bankLSB: number;
-    rpn: number;
-    isRPN: boolean;
+    param: ParameterTracker;
     isDrum: boolean;
     keyShift: number;
 }
@@ -56,8 +55,7 @@ export function getUsedProgramsAndKeys(
             ch.bankMSB = BankSelectHacks.getDefaultBank(sys);
             ch.bankLSB = 0;
             ch.keyShift = 0;
-            ch.isRPN = false;
-            ch.rpn = RegisteredParameterTypes.resetParameters;
+            ch.param.reset();
         }
     };
 
@@ -75,8 +73,7 @@ export function getUsedProgramsAndKeys(
             ),
             bankMSB: 0,
             bankLSB: 0,
-            rpn: RegisteredParameterTypes.resetParameters,
-            isRPN: false,
+            param: new ParameterTracker(i),
             isDrum,
             keyShift: 0
         });
@@ -94,7 +91,8 @@ export function getUsedProgramsAndKeys(
     const { timeline, tracks } = mid;
     for (const t of timeline) {
         const trackNum = t.tr;
-        const e = tracks[trackNum].events[t.ev];
+        const event = t.ev;
+        const e = tracks[trackNum].events[event];
 
         // Do not assign ports to empty tracks
         // Testcase Cueshe - Bakit 1.mid
@@ -122,10 +120,10 @@ export function getUsedProgramsAndKeys(
             continue;
         }
 
+        const channelOffset = offsetMap[ports[trackNum]] || 0;
         switch (status) {
             case MIDIMessageTypes.programChange: {
-                const channel =
-                    (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
+                const channel = (e.statusByte & 0xf) + channelOffset;
                 const ch = channels[channel];
                 ch.preset = soundBank.getPreset(
                     {
@@ -140,38 +138,37 @@ export function getUsedProgramsAndKeys(
             }
 
             case MIDIMessageTypes.controllerChange: {
-                const channel =
-                    (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
+                const channel = (e.statusByte & 0xf) + channelOffset;
                 const ch = channels[channel];
 
+                const cc = e.data[0] as MIDIController;
                 const value = e.data[1];
-                switch (e.data[0] as MIDIController) {
+                switch (cc) {
                     // Registered param tracking
-                    case MIDIControllers.registeredParameterMSB: {
-                        ch.rpn = (value << 7) | (ch.rpn & 0x7f);
-                        ch.isRPN = true;
-                        break;
-                    }
-
-                    case MIDIControllers.registeredParameterLSB: {
-                        ch.rpn = (ch.rpn & ~0x7f) | value;
-                        ch.isRPN = true;
-                        break;
-                    }
-
+                    case MIDIControllers.registeredParameterMSB:
+                    case MIDIControllers.registeredParameterLSB:
                     case MIDIControllers.nonRegisteredParameterLSB:
                     case MIDIControllers.nonRegisteredParameterMSB: {
-                        ch.isRPN = false;
+                        ch.param.controllerChange(cc, value, trackNum, event);
                         break;
                     }
 
-                    case MIDIControllers.dataEntryMSB: {
+                    case MIDIControllers.dataEntryMSB:
+                    case MIDIControllers.dataEntryLSB: {
+                        const analyzed = ch.param.controllerChange(
+                            cc,
+                            value,
+                            trackNum,
+                            event
+                        );
                         // RPN#02 Coarse Tune is key-shift according to GM2 section 3.4.3
-                        if (
-                            ch.isRPN &&
-                            ch.rpn === RegisteredParameterTypes.coarseTuning
-                        )
-                            ch.keyShift = value - 64;
+                        if (analyzed?.type === "Key Shift")
+                            ch.keyShift = analyzed.value;
+                        break;
+                    }
+
+                    case MIDIControllers.resetAllControllers: {
+                        ch.param.reset();
                         break;
                     }
 
@@ -189,8 +186,7 @@ export function getUsedProgramsAndKeys(
             }
 
             case MIDIMessageTypes.noteOn: {
-                const channel =
-                    (e.statusByte & 0xf) + offsetMap[ports[trackNum]] || 0;
+                const channel = (e.statusByte & 0xf) + channelOffset;
                 const ch = channels[channel];
                 // That's a note off
                 if (e.data[1] === 0) continue;
@@ -213,7 +209,7 @@ export function getUsedProgramsAndKeys(
             case MIDIMessageTypes.systemExclusive: {
                 // Check for drum sysex
                 {
-                    const syx = SysEx.analyze(e.data);
+                    const syx = MIDIProtocol.analyzeSysEx(e.data);
                     switch (syx.type) {
                         default: {
                             break;
@@ -268,15 +264,13 @@ export function getUsedProgramsAndKeys(
                         }
 
                         case "Drums On": {
-                            const sysexChannel =
-                                syx.channel + offsetMap[ports[trackNum]];
+                            const sysexChannel = syx.channel + channelOffset;
                             channels[sysexChannel].isDrum = syx.isDrum;
                             break;
                         }
 
                         case "Program Change": {
-                            const sysexChannel =
-                                syx.channel + offsetMap[ports[trackNum]];
+                            const sysexChannel = syx.channel + channelOffset;
                             const ch = channels[sysexChannel];
                             ch.preset = soundBank.getPreset(
                                 {
@@ -291,8 +285,7 @@ export function getUsedProgramsAndKeys(
                         }
 
                         case "Controller Change": {
-                            const sysexChannel =
-                                syx.channel + offsetMap[ports[trackNum]];
+                            const sysexChannel = syx.channel + channelOffset;
                             if (
                                 syx.controller === MIDIControllers.bankSelectLSB
                             )
@@ -300,7 +293,7 @@ export function getUsedProgramsAndKeys(
                             else if (
                                 syx.controller === MIDIControllers.bankSelect
                             )
-                                channels[sysexChannel].bankLSB = syx.value;
+                                channels[sysexChannel].bankMSB = syx.value;
                         }
                     }
                 }

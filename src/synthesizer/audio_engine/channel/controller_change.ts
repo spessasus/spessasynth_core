@@ -1,6 +1,9 @@
-import { NonRegisteredMSB } from "./data_entry/data_entry_coarse";
 import type { MIDIChannel } from "./midi_channel";
-import { type MIDIController, MIDIControllers } from "../../../midi/enums";
+import {
+    type MIDIController,
+    MIDIControllers,
+    NonRegisteredMSB
+} from "../../../midi/enums";
 import { DEFAULT_PERCUSSION } from "../synth_constants";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
 

@@ -1,49 +1,13 @@
 import { ConsoleColors } from "../../../../utils/other";
 import type { MIDIChannel } from "../midi_channel";
 import type { GeneratorType } from "../../../../soundbank/basic_soundbank/generator_types";
-import { MIDIControllers } from "../../../../midi/enums";
+import {
+    MIDIControllers,
+    NonRegisteredLSB,
+    NonRegisteredMSB,
+    RegisteredParameterTypes
+} from "../../../../midi/enums";
 import { SpessaSynthLog } from "../../../../utils/loggin";
-
-export const RegisteredParameterTypes = {
-    pitchWheelRange: 0x00_00,
-    fineTuning: 0x00_01,
-    coarseTuning: 0x00_02,
-    modulationDepth: 0x00_05,
-    resetParameters: 0x3f_ff
-} as const;
-
-export const NonRegisteredMSB = {
-    partParameter: 0x01,
-    drumPitch: 0x18,
-    drumPitchFine: 0x19,
-    drumLevel: 0x1a,
-    drumPan: 0x1c,
-    drumReverb: 0x1d,
-    drumChorus: 0x1e,
-    drumDelay: 0x1f,
-
-    awe32: 0x7f,
-    SF2: 120
-} as const;
-
-/**
- * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
- * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
- * These also seem to match XG
- * @enum {number}
- */
-const NonRegisteredLSB = {
-    vibratoRate: 0x08,
-    vibratoDepth: 0x09,
-    vibratoDelay: 0x0a,
-
-    TVFFilterCutoff: 0x20,
-    TVFFilterResonance: 0x21,
-
-    EGAttackTime: 0x63,
-    EGDecayTime: 0x64,
-    EGReleaseTime: 0x66
-} as const;
 
 // A helper function to log info in a nice way
 const coolInfo = (
@@ -241,7 +205,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 // Filter cutoff
-                case NonRegisteredLSB.TVFFilterCutoff: {
+                case NonRegisteredLSB.tvfCutoffFrequency: {
                     if (paramLock) return;
                     // Affect the "brightness" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -257,7 +221,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     break;
                 }
 
-                case NonRegisteredLSB.TVFFilterResonance: {
+                case NonRegisteredLSB.tvfResonance: {
                     if (paramLock) return;
                     // Affect the "resonance" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -274,7 +238,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 // Attack time
-                case NonRegisteredLSB.EGAttackTime: {
+                case NonRegisteredLSB.envelopeAttackTime: {
                     if (paramLock) return;
                     // Affect the "attack time" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -291,7 +255,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 // Decay time
-                case NonRegisteredLSB.EGDecayTime: {
+                case NonRegisteredLSB.envelopeDecayTime: {
                     if (paramLock) return;
                     // Affect the "decay time" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -308,7 +272,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 }
 
                 // Release time
-                case NonRegisteredLSB.EGReleaseTime: {
+                case NonRegisteredLSB.envelopeReleaseTime: {
                     if (paramLock) return;
                     // Affect the "release time" controller as we have a default modulator that controls it
                     this.controllerChange(

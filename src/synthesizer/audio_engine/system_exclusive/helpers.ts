@@ -1,19 +1,7 @@
-import type { IndexedByteArray } from "../../../utils/indexed_array";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { arrayToHexString, ConsoleColors } from "../../../utils/other";
+import type { SysExAcceptedArray } from "../../../midi/types";
 
-export type SysExAcceptedArray =
-    | number[]
-    | IndexedByteArray
-    | Uint8Array
-    | Int8Array
-    | Uint16Array
-    | Int16Array
-    | Uint32Array
-    | Int32Array
-    | Uint8ClampedArray
-    | Float32Array
-    | Float64Array;
 // A helper function to log nicely
 export function sysExLogging(
     channel: number,

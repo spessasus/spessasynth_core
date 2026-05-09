@@ -1,10 +1,10 @@
 import { arrayToHexString, ConsoleColors } from "../../../utils/other";
 import { SpessaSynthLog } from "../../../utils/loggin";
-import { type SysExAcceptedArray } from "./helpers";
 import { handleGM } from "./handle_gm";
 import { handleGS } from "./handle_gs";
 import { handleXG } from "./handle_xg";
 import type { SynthesizerCore } from "../synthesizer_core";
+import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
  * Executes a system exclusive message for the synthesizer.

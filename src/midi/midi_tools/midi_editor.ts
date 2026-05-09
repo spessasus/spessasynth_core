@@ -24,9 +24,11 @@ import type {
     InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
-import { SysEx } from "../../utils/sysex";
+import { MIDIProtocol } from "./midi_protocol";
 import { CONTROLLER_TABLE_SIZE } from "../../synthesizer/audio_engine/channel/controller_tables";
 import type { MIDISystem } from "../../soundbank/types";
+import { ParameterTracker } from "./parameter_tracker";
+import { fillWithDefaults } from "../../utils/fill_with_defaults";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -171,6 +173,28 @@ export interface ModifyMIDIOptions {
     insertionParams?: InsertionProcessorSnapshot;
 }
 
+interface ChannelStatus {
+    // Tracks if the channel already had its first note on
+    isFirstNoteOn: boolean;
+    // Target MIDI key shift
+    keyShift: number;
+    // Target RPN fine-tuning
+    fineTune: number;
+    // RPN/NRPN tracking
+    param: ParameterTracker;
+    // If the parameters (MSB, LSB and the first data) were cleared.
+    // Then we see the second data and only clean it.
+    clearedParams: boolean;
+}
+
+const DEFAULT_MODIFY_MIDI_OPTIONS: ModifyMIDIOptions = {
+    pitchOffsets: [],
+    clearDrumParams: false,
+    clearedChannels: new Set<number>(),
+    controllerChanges: [],
+    programChanges: []
+};
+
 /**
  * Allows easy editing of the file by removing channels, changing programs,
  * changing controllers and transposing channels. Note that this modifies the MIDI in-place.
@@ -178,22 +202,23 @@ export interface ModifyMIDIOptions {
  */
 export function modifyMIDIInternal(
     midi: BasicMIDI,
-    {
-        programChanges,
-        controllerChanges,
-        clearedChannels,
-        pitchOffsets,
-        clearDrumParams = false,
-        reverbParams,
-        chorusParams,
-        delayParams,
-        insertionParams
-    }: ModifyMIDIOptions
+    opts: Partial<ModifyMIDIOptions>
 ) {
     SpessaSynthLog.groupCollapsed(
         "%cApplying changes to the MIDI file...",
         ConsoleColors.info
     );
+    const {
+        programChanges,
+        controllerChanges,
+        clearedChannels,
+        clearDrumParams,
+        pitchOffsets,
+        reverbParams,
+        chorusParams,
+        delayParams,
+        insertionParams
+    } = fillWithDefaults(opts, DEFAULT_MODIFY_MIDI_OPTIONS);
 
     SpessaSynthLog.info("Desired program changes:", programChanges);
     SpessaSynthLog.info("Desired CC changes:", controllerChanges);
@@ -248,25 +273,20 @@ export function modifyMIDIInternal(
         assignMIDIPort(i, track.port);
 
     const channelsAmount = midiPortChannelOffset;
-    // Tracks if the channel already had its first note on
-    const isFirstNoteOn = new Array<boolean>(channelsAmount).fill(true);
-    // MIDI key shift
-    const coarseTranspose = new Array<number>(channelsAmount).fill(0);
-    // RPN fine-tuning
-    const fineTranspose = new Array<number>(channelsAmount).fill(0);
-    for (const transpose of pitchOffsets) {
-        const coarse = Math.trunc(transpose.pitchOffset);
-        const fine = transpose.pitchOffset - coarse;
-        coarseTranspose[transpose.channel] = coarse;
-        fineTranspose[transpose.channel] = fine;
+    const channels: ChannelStatus[] = [];
+    for (let i = 0; i < channelsAmount; i++) {
+        const pitchOffset =
+            pitchOffsets.find((o) => o.channel === i)?.pitchOffset ?? 0;
+        const keyShift = Math.trunc(pitchOffset);
+        const fineTune = pitchOffset - keyShift;
+        channels.push({
+            isFirstNoteOn: true,
+            keyShift,
+            fineTune,
+            param: new ParameterTracker(i),
+            clearedParams: false
+        });
     }
-
-    // NRPN tracking (index)
-    let lastNrpnMsb = -1;
-    let lastNrpnMsbTrack = 0;
-    let lastNrpnLsb = -1;
-    let lastNrpnLsbTrack = 0;
-    let isNrpnMode = false;
 
     midi.iterate((e, trackNum, eventIndexes) => {
         const track = midi.tracks[trackNum];
@@ -275,6 +295,32 @@ export function modifyMIDIInternal(
         const deleteThisEvent = () => {
             track.deleteEvent(index);
             eventIndexes[trackNum]--;
+        };
+
+        const deleteParameter = (channel: number) => {
+            const ch = channels[channel];
+            if (ch.clearedParams) {
+                // Just this (probably data LSB)
+                // But it could also be MSB...
+                // Why isn't RPN just a single message?
+                // Broadcast System Exclusives were made just for this.
+                deleteThisEvent();
+                ch.clearedParams = false;
+            } else {
+                // Delete param + data
+                // We don't wait for lsb as it's not required to arrive :-(
+                // Why, MIDI, why are you like this?
+                // Now I have to handle this complex mess that has to work for either single or double data...
+                // At least both params are guaranteed be sent.
+                deleteThisEvent();
+
+                const p = ch.param;
+                midi.tracks[p.paramMSB.track].deleteEvent(p.paramMSB.event);
+                eventIndexes[p.paramMSB.track]--;
+                midi.tracks[p.paramLSB.track].deleteEvent(p.paramLSB.event);
+                eventIndexes[p.paramLSB.track]--;
+                ch.clearedParams = true;
+            }
         };
 
         const addEventBefore = (e: MIDIMessage, offset = 0) => {
@@ -305,11 +351,12 @@ export function modifyMIDIInternal(
             deleteThisEvent();
             return;
         }
+        const ch = channels[channel];
         switch (status) {
             case MIDIMessageTypes.noteOn: {
                 // Is it first?
-                if (isFirstNoteOn[channel]) {
-                    isFirstNoteOn[channel] = false;
+                if (ch.isFirstNoteOn) {
+                    ch.isFirstNoteOn = false;
                     // All right, so this is the first note on
                     // First: controllers
                     // Because FSMP does not like program changes after cc changes in embedded midis
@@ -327,12 +374,12 @@ export function modifyMIDIInternal(
                         );
                         addEventBefore(ccChange);
                     }
-                    const fineTune = fineTranspose[channel];
+                    const fineTune = ch.fineTune;
 
                     if (fineTune !== 0) {
                         // Add rpn
                         // 64 is the center, 96 = 50 cents up
-                        const centsCoarse = fineTune * 64 + 64;
+                        const data = Math.floor(fineTune * 8192) + 8192;
                         const rpnCoarse = getControllerChange(
                             midiChannel,
                             MIDIControllers.registeredParameterMSB,
@@ -348,13 +395,13 @@ export function modifyMIDIInternal(
                         const dataEntryCoarse = getControllerChange(
                             channel,
                             MIDIControllers.dataEntryMSB,
-                            centsCoarse,
+                            data >> 7,
                             e.ticks
                         );
                         const dataEntryFine = getControllerChange(
                             midiChannel,
                             MIDIControllers.dataEntryLSB,
-                            0,
+                            data & 0x7f,
                             e.ticks
                         );
                         addEventBefore(dataEntryFine);
@@ -438,18 +485,22 @@ export function modifyMIDIInternal(
                                 ConsoleColors.value
                             );
                             addEventBefore(
-                                SysEx.gsDrumChange(midiChannel, e.ticks)
+                                MIDIProtocol.gsDrumChange(
+                                    e.ticks,
+                                    midiChannel,
+                                    1
+                                )
                             );
                         }
                     }
                 }
                 // Transpose key (for zero it won't change anyway)
-                e.data[0] += coarseTranspose[channel];
+                e.data[0] += ch.keyShift;
                 break;
             }
 
             case MIDIMessageTypes.noteOff: {
-                e.data[0] += coarseTranspose[channel];
+                e.data[0] += ch.keyShift;
                 break;
             }
 
@@ -466,6 +517,7 @@ export function modifyMIDIInternal(
             case MIDIMessageTypes.controllerChange: {
                 {
                     const ccNum = e.data[0] as MIDIController;
+                    const value = e.data[1];
                     const changes = controllerChanges.find(
                         (c) => c.channel === channel && ccNum === c.controller
                     );
@@ -485,51 +537,83 @@ export function modifyMIDIInternal(
                         }
 
                         case MIDIControllers.registeredParameterLSB:
-                        case MIDIControllers.registeredParameterMSB: {
-                            isNrpnMode = false;
-                            return;
-                        }
-
-                        case MIDIControllers.nonRegisteredParameterMSB: {
-                            lastNrpnMsb = eventIndexes[trackNum];
-                            lastNrpnMsbTrack = trackNum;
-                            isNrpnMode = true;
-                            return;
-                        }
-
+                        case MIDIControllers.registeredParameterMSB:
+                        case MIDIControllers.nonRegisteredParameterMSB:
                         case MIDIControllers.nonRegisteredParameterLSB: {
-                            lastNrpnLsb = eventIndexes[trackNum];
-                            lastNrpnLsbTrack = trackNum;
-                            isNrpnMode = true;
+                            ch.clearedParams = false;
+                            ch.param.controllerChange(
+                                ccNum,
+                                value,
+                                trackNum,
+                                index
+                            );
                             return;
                         }
 
-                        // NRPN we care about only uses MSB
-                        case MIDIControllers.dataEntryMSB: {
-                            if (
-                                lastNrpnLsb &&
-                                lastNrpnMsb &&
-                                isNrpnMode &&
-                                clearDrumParams
-                            ) {
-                                const msb =
-                                    midi.tracks[lastNrpnMsbTrack].events[
-                                        lastNrpnMsb
-                                    ].data[1];
-                                // LSB is drum number here
-                                if (msb >= 0x18 && msb <= 0x1f) {
-                                    // Drum param, BEGONE!
-                                    deleteThisEvent();
+                        case MIDIControllers.dataEntryMSB:
+                        case MIDIControllers.dataEntryLSB: {
+                            const data = ch.param.controllerChange(
+                                ccNum,
+                                value,
+                                trackNum,
+                                index
+                            );
 
-                                    // NRPN, BEGONE!
-                                    const lsbTrack =
-                                        midi.tracks[lastNrpnLsbTrack];
-                                    const msbTrack =
-                                        midi.tracks[lastNrpnMsbTrack];
-                                    lsbTrack.deleteEvent(lastNrpnLsb);
-                                    eventIndexes[lastNrpnLsbTrack]--;
-                                    msbTrack.deleteEvent(lastNrpnMsb);
-                                    eventIndexes[lastNrpnMsbTrack]--;
+                            if (!data) return;
+                            switch (data.type) {
+                                case "Drum Setup": {
+                                    if (clearDrumParams) {
+                                        // Drum param, BEGONE!
+                                        deleteParameter(channel);
+                                    }
+                                    return;
+                                }
+
+                                case "Controller Change": {
+                                    // NRPN can change controllers too!
+                                    const ccNum = data.controller;
+                                    const channel = data.channel;
+                                    const changes = controllerChanges.find(
+                                        (c) =>
+                                            c.channel === channel &&
+                                            ccNum === c.controller
+                                    );
+                                    if (changes !== undefined) {
+                                        // This controller is locked, BEGONE CHANGE!
+                                        deleteParameter(channel);
+                                        return;
+                                    }
+                                    if (
+                                        (ccNum === MIDIControllers.bankSelect ||
+                                            ccNum ===
+                                                MIDIControllers.bankSelectLSB) &&
+                                        channelsToChangeProgram.has(channel)
+                                    ) {
+                                        // BEGONE!
+                                        deleteParameter(channel);
+                                    }
+                                    break;
+                                }
+
+                                case "Fine Tune": {
+                                    if (ch.fineTune !== 0) {
+                                        if (ch.isFirstNoteOn) {
+                                            // No note-on yet. Then use it as relative!
+                                            const newTune =
+                                                ch.fineTune + data.value / 100;
+                                            ch.keyShift += Math.trunc(newTune);
+                                            ch.fineTune =
+                                                newTune - Math.trunc(newTune);
+                                            SpessaSynthLog.info(
+                                                `%cRelative fine tuning, offset: %c${data.value}`,
+                                                ConsoleColors.info,
+                                                ConsoleColors.recognized
+                                            );
+                                        }
+                                        // We're tuning it ourselves, BEGONE!
+                                        deleteParameter(channel);
+                                    }
+                                    return;
                                 }
                             }
                             return;
@@ -543,7 +627,7 @@ export function modifyMIDIInternal(
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const syx = SysEx.analyze(e.data);
+                const syx = MIDIProtocol.analyzeSysEx(e.data);
                 switch (syx.type) {
                     default: {
                         return;
@@ -638,6 +722,22 @@ export function modifyMIDIInternal(
                         return;
                     }
 
+                    case "Fine Tune": {
+                        if (ch.isFirstNoteOn) {
+                            // No note-on yet. Then use it as relative!
+                            const newTune = ch.fineTune + syx.value / 100;
+                            ch.keyShift += Math.trunc(newTune);
+                            ch.fineTune = newTune - Math.trunc(newTune);
+                            SpessaSynthLog.info(
+                                `%cRelative fine tuning, offset: %c${syx.value}`,
+                                ConsoleColors.info,
+                                ConsoleColors.recognized
+                            );
+                            deleteThisEvent();
+                        }
+                        break;
+                    }
+
                     case "Controller Change": {
                         // SysEx can change controllers too!
                         const ccNum = syx.controller;
@@ -678,18 +778,18 @@ export function modifyMIDIInternal(
         const p = reverbParams;
         targetTrack.addEvents(
             targetIndex,
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
                 p.preLowpass
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.character, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.character, [
                 p.character
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.time, [p.time]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.delayFeedback, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.time, [p.time]),
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.delayFeedback, [
                 p.delayFeedback
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preDelayTime, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preDelayTime, [
                 p.preDelayTime
             ])
         );
@@ -699,20 +799,30 @@ export function modifyMIDIInternal(
         const p = chorusParams;
         targetTrack.addEvents(
             targetIndex,
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
                 p.preLowpass
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
-                p.sendLevelToReverb
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
+                p.feedback
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToDelay, [
-                p.sendLevelToDelay
-            ])
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
+            MIDIProtocol.gsMessage(
+                targetTicks,
+                0x40,
+                0x01,
+                m.sendLevelToReverb,
+                [p.sendLevelToReverb]
+            ),
+            MIDIProtocol.gsMessage(
+                targetTicks,
+                0x40,
+                0x01,
+                m.sendLevelToDelay,
+                [p.sendLevelToDelay]
+            )
         );
     }
     if (delayParams) {
@@ -720,33 +830,39 @@ export function modifyMIDIInternal(
         const p = delayParams;
         targetTrack.addEvents(
             targetIndex,
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
                 p.preLowpass
             ]),
 
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.timeCenter, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.timeCenter, [
                 p.timeCenter
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
                 p.timeRatioLeft
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioRight, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioRight, [
                 p.timeRatioRight
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.levelCenter, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.levelCenter, [
                 p.levelCenter
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.levelLeft, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.levelLeft, [
                 p.levelLeft
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.levelRight, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.levelRight, [
                 p.levelRight
             ]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [p.feedback]),
-            SysEx.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
-                p.sendLevelToReverb
-            ])
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
+                p.feedback
+            ]),
+            MIDIProtocol.gsMessage(
+                targetTicks,
+                0x40,
+                0x01,
+                m.sendLevelToReverb,
+                [p.sendLevelToReverb]
+            )
         );
     }
 
@@ -757,10 +873,10 @@ export function modifyMIDIInternal(
             if (p.channels[channel]) {
                 targetTrack.addEvents(
                     targetTicks,
-                    SysEx.gsMessage(
+                    MIDIProtocol.gsMessage(
                         targetTicks,
                         0x40,
-                        0x40 | SysEx.channelToSyx(channel),
+                        0x40 | MIDIProtocol.channelToSyx(channel),
                         0x22,
                         [1]
                     )
@@ -774,7 +890,9 @@ export function modifyMIDIInternal(
             if (value === 255) continue;
             targetTrack.addEvents(
                 targetIndex,
-                SysEx.gsMessage(targetTicks, 0x40, 0x03, param + 3, [value])
+                MIDIProtocol.gsMessage(targetTicks, 0x40, 0x03, param + 3, [
+                    value
+                ])
             );
         }
 
@@ -784,7 +902,7 @@ export function modifyMIDIInternal(
         // Channels
         targetTrack.addEvents(
             targetIndex,
-            SysEx.gsMessage(targetTicks, 0x40, 0x03, 0x00, [
+            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x03, 0x00, [
                 p.type >> 8,
                 p.type & 0x7f
             ])
@@ -800,7 +918,7 @@ export function modifyMIDIInternal(
         ) {
             index++;
         }
-        midi.tracks[0].addEvents(index, SysEx.gsReset(0));
+        midi.tracks[0].addEvents(index, MIDIProtocol.gsReset(0));
         SpessaSynthLog.info(
             "%cGS on not detected. Adding it.",
             ConsoleColors.info
