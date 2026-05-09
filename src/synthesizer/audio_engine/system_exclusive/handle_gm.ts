@@ -92,11 +92,10 @@ export function handleGM(
                 case 0x04: {
                     // Coarse tuning
                     // Lsb is ignored
-                    const semitones = syx[5] - 64;
-                    const cents = semitones * 100;
-                    this.setMIDIParameter("masterKeyShift", cents);
+                    const keyShift = syx[5] - 64;
+                    this.setMIDIParameter("masterKeyShift", keyShift);
                     SpessaSynthLog.info(
-                        `%cMaster Coarse Tuning. Cents: %c${cents}`,
+                        `%cMaster Coarse Tuning. Key shift: %c${keyShift}`,
                         ConsoleColors.info,
                         ConsoleColors.value
                     );

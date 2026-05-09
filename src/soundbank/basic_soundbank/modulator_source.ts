@@ -198,7 +198,12 @@ export class ModulatorSource {
 
                 case ModulatorControllerSources.pitchWheelRange: {
                     // Pitch wheel range may be a floating point number!
-                    rawValue = channel.midiParameters.pitchWheelRange * 128;
+                    // Therefore, something like "0.5 << 7" won't work,
+                    // So we multiply it by 128 which is essentially the same here
+                    // But it allows for fractional pitch wheel range!
+                    rawValue = Math.floor(
+                        channel.midiParameters.pitchWheelRange * 128
+                    );
                 }
             }
         }
