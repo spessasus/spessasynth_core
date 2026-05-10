@@ -1,7 +1,6 @@
 import { VOICE_CAP } from "./synth_constants";
 import { type InterpolationType, InterpolationTypes } from "../enums";
 import type { SynthesizerCore } from "./synthesizer_core";
-import { Voice } from "./voice/voice";
 import { SpessaLog } from "../../utils/loggin";
 
 export interface GlobalMasterParameter {
@@ -178,9 +177,7 @@ export function setMasterParameter<P extends keyof GlobalMasterParameter>(
                 SpessaLog.warn(
                     `Allocating ${cap - this.voices.length} new voices!`
                 );
-                for (let i = this.voices.length; i < cap; i++) {
-                    this.voices.push(new Voice(this.sampleRate));
-                }
+                this.allocateNewVoices(cap - this.voices.length);
             }
             break;
         }

@@ -241,8 +241,8 @@ export class Voice {
     public modLfoPhase = 0;
     public modLfoStartTime = 0;
 
-    public constructor(sampleRate: number) {
-        this.volEnv = new VolumeEnvelope(sampleRate);
+    public constructor(sampleRate: number, bufferSize: number) {
+        this.volEnv = new VolumeEnvelope(sampleRate, bufferSize);
         this.filter = new LowpassFilter(sampleRate);
     }
 

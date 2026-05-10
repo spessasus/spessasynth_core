@@ -30,10 +30,6 @@ type VolumeEnvelopeState = 0 | 1 | 2 | 3 | 4;
 
 export class VolumeEnvelope {
     /**
-     * The sample rate in Hz.
-     */
-    public readonly sampleRate: number;
-    /**
      * The target gain for the current rendering block.
      */
     public outputGain = 0;
@@ -45,6 +41,17 @@ export class VolumeEnvelope {
      * The current stage of the volume envelope.
      */
     public state: VolumeEnvelopeState = 0;
+    /**
+     * The sample rate in Hz.
+     */
+    private readonly sampleRate: number;
+
+    /**
+     * The sample count between updates of the volume envelope.
+     * Since the volume envelope calculation runs once per rendering quantum,
+     * this effectively the buffer size.
+     */
+    private readonly updateInterval: number;
     /**
      * The envelope's current time in samples.
      */
@@ -105,9 +112,11 @@ export class VolumeEnvelope {
 
     /**
      * @param sampleRate Hz
+     * @param bufferSize samples
      */
-    public constructor(sampleRate: number) {
+    public constructor(sampleRate: number, bufferSize: number) {
         this.sampleRate = sampleRate;
+        this.updateInterval = bufferSize;
     }
 
     /**
@@ -268,7 +277,7 @@ export class VolumeEnvelope {
         this.decayEnd = this.decayDuration + this.holdEnd;
 
         // If the voice has no attack or delay time, set current db to peak
-        if (this.attackEnd === 0) {
+        if (this.attackEnd <= this.updateInterval) {
             // This.attenuationCb = this.attenuationTarget;
             this.state = 2;
         }

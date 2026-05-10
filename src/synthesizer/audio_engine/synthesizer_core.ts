@@ -313,9 +313,7 @@ export class SynthesizerCore {
 
         // Initialize voices
         this.voices = [];
-        for (let i = 0; i < this.masterParameters.voiceCap; i++) {
-            this.voices.push(new Voice(this.sampleRate));
-        }
+        this.allocateNewVoices(this.masterParameters.voiceCap);
     }
 
     public controllerChange(
@@ -425,7 +423,8 @@ export class SynthesizerCore {
         // No match, assign priorities
         if (this.masterParameters.autoAllocateVoices) {
             // Allocate a new voice and return it
-            const v = new Voice(this.sampleRate);
+            this.allocateNewVoices(1);
+            const v = this.voices[this.voices.length - 1];
             this.voices.push(v);
             this.masterParameters.voiceCap++;
             SpessaLog.info("%cAllocating a new voice!", ConsoleColors.info);
@@ -1231,6 +1230,16 @@ export class SynthesizerCore {
             this.getCachedVoiceIndex(patch, midiNote, velocity),
             voices
         );
+    }
+
+    /**
+     * Allocates new voices.
+     * @param count
+     * @protected
+     */
+    protected allocateNewVoices(count: number) {
+        for (let i = 0; i < count; i++)
+            this.voices.push(new Voice(this.sampleRate, this.maxBufferSize));
     }
 
     private registerInsertionProcessor(proc: InsertionProcessorConstructor) {
