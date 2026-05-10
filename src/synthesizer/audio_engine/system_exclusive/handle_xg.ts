@@ -1,18 +1,7 @@
 import { SpessaLog } from "../../../utils/loggin";
-import { ConsoleColors } from "../../../utils/other";
 import { MIDIControllers } from "../../../midi/enums";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
-
-const coolInfo = (what: string, value: string | number | boolean) => {
-    SpessaLog.info(
-        `%cYamaha XG ${what}%c for is now set to %c${value}%c.`,
-        ConsoleColors.recognized,
-        ConsoleColors.info,
-        ConsoleColors.value,
-        ConsoleColors.info
-    );
-};
 
 /**
  * Handles a XG system exclusive
@@ -53,7 +42,6 @@ export function handleXG(
                 case 0x04: {
                     this.setMIDIParameter("masterVolume", data / 127);
                     SpessaLog.xgInfo("Master Volume", data);
-                    coolInfo("Master Volume", data);
                     break;
                 }
 
