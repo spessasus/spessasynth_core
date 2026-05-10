@@ -144,27 +144,22 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         if (!p.rxNoteOn) {
             return;
         }
-        const drumPan = p.pan;
+        const drumPan = p.pan - 64;
         // If pan is different from default then it's overridden
-        if (drumPan !== 64) {
-            const targetPan =
-                Math.max(
+        if (drumPan !== 0) {
+            if (drumPan === -64) {
+                // Random pan
+                panOverride = Math.round(Math.random() * 1000 - 500);
+            } else {
+                const channelPan =
+                    (this.midiControllers[MIDIControllers.pan] >> 7) - 64;
+                const targetPan = Math.max(
                     -63,
-                    Math.min(
-                        drumPan -
-                            64 +
-                            ((this.midiControllers[MIDIControllers.pan] >> 7) -
-                                64),
-                        63
-                    )
-                ) || 1; // Prevent 0 to not be flagged as disabled
-
-            panOverride =
-                drumPan === 0
-                    ? // 0 is random pan
-                      Math.round(Math.random() * 1000 - 500)
-                    : // 1 is set pan
-                      (targetPan / 63) * 500;
+                    Math.min(drumPan + channelPan, 63)
+                );
+                // Ensure that override is applied, even for zero
+                panOverride = (targetPan / 63) * 500 || 1;
+            }
         }
 
         pitchOffset = p.pitch;
@@ -173,9 +168,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         chorusSend = p.chorusGain;
         delaySend = p.delayGain;
         // 1 is no override
-        if (voiceGain === 1) {
-            voiceGain = p.gain;
-        }
+        if (voiceGain === 1) voiceGain = p.gain;
     }
 
     // Add voices
