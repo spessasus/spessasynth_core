@@ -310,12 +310,16 @@ export class MIDIChannel {
     /**
      * The last pressed note on this channel.
      * -1 means none.
+     * This is not a `MIDIChannelParameter` and is strictly internal,
+     * mostly because we don't want to send events for every note on message.
+     * It can be set with Portamento Control CC anyway.
      * @protected
      */
     protected lastNote = -1;
     /**
      * If the portamento should be executed once regardless of Portamento on/off.
      * Adhering to the MIDI spec, CC#84 ignores on/off.
+     * This is also not a `MIDIChannelParameter` for the same reason as `lastNote`
      * @protected
      */
     protected portamentoForce = false;
