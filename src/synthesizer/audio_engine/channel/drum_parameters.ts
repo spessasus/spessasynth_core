@@ -44,15 +44,16 @@ export class DrumParameters {
      */
     public rxNoteOff = false;
 
-    public copyInto(p: DrumParameters) {
-        this.pitch = p.pitch;
-        this.chorusGain = p.chorusGain;
-        this.reverbGain = p.reverbGain;
-        this.exclusiveClass = p.exclusiveClass;
-        this.gain = p.gain;
-        this.pan = p.pan;
-        this.rxNoteOff = p.rxNoteOff;
-        this.rxNoteOn = p.rxNoteOn;
-        return this;
+    public static copyFrom(p: DrumParameters) {
+        const d = new DrumParameters();
+        d.pitch = p.pitch;
+        d.chorusGain = p.chorusGain;
+        d.reverbGain = p.reverbGain;
+        d.exclusiveClass = p.exclusiveClass;
+        d.gain = p.gain;
+        d.pan = p.pan;
+        d.rxNoteOff = p.rxNoteOff;
+        d.rxNoteOn = p.rxNoteOn;
+        return d;
     }
 }
