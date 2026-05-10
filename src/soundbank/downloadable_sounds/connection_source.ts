@@ -76,7 +76,7 @@ export class ConnectionSource {
                     break;
                 }
 
-                case MIDIControllers.expressionController: {
+                case MIDIControllers.expression: {
                     sourceEnum = DLSSources.expression;
                     break;
                 }
@@ -195,7 +195,7 @@ export class ConnectionSource {
                 break;
             }
             case DLSSources.expression: {
-                sourceEnum = MIDIControllers.expressionController;
+                sourceEnum = MIDIControllers.expression;
                 isCC = true;
                 break;
             }

@@ -99,7 +99,7 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
 
 export const RP_15_RESET_CC_NUMS: MIDIController[] = [
     MIDIControllers.modulationWheel,
-    MIDIControllers.expressionController,
+    MIDIControllers.expression,
     MIDIControllers.sustainPedal,
     MIDIControllers.portamentoOnOff,
     MIDIControllers.sostenutoPedal,

@@ -93,7 +93,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
             }
 
             case RegisteredParameterTypes.resetParameters: {
-                this.resetParameters();
+                // Ignore
                 break;
             }
         }

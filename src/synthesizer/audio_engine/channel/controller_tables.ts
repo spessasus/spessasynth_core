@@ -16,7 +16,7 @@ const setResetValue = (i: MIDIController, v: number) =>
 // Values come from Falcosoft MidiPlayer 6
 setResetValue(MIDIControllers.mainVolume, 100);
 setResetValue(MIDIControllers.balance, 64);
-setResetValue(MIDIControllers.expressionController, 127);
+setResetValue(MIDIControllers.expression, 127);
 setResetValue(MIDIControllers.pan, 64);
 
 setResetValue(MIDIControllers.filterResonance, 64);

@@ -67,7 +67,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
             }
 
             case RegisteredParameterTypes.resetParameters: {
-                this.resetParameters();
+                // Ignore;
                 break;
             }
         }

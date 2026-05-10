@@ -250,7 +250,7 @@ const defaultSoundFont2Modulators = [
             false,
             true,
             true,
-            MIDIControllers.expressionController
+            MIDIControllers.expression
         ),
         0x0,
         GeneratorTypes.initialAttenuation,
