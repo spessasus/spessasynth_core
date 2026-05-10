@@ -240,11 +240,11 @@ export function modifyMIDIInternal(
 
     // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     /**
-     * Midi port number for the corresponding track
+     * MIDI port number for the corresponding track
      */
     const midiPorts = midi.tracks.map((t) => t.port);
     /**
-     * Midi port: channel offset
+     * MIDI port: channel offset
      */
     const midiPortChannelOffsets: Record<number, number> = {};
     let midiPortChannelOffset = 0;

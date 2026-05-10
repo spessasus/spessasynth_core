@@ -37,17 +37,17 @@ export function assignMIDIPortInternal(
 
 /**
  * Loads a new sequence internally.
- * @param parsedMidi The parsed MIDI data to load.
+ * @param parsedMIDI The parsed MIDI data to load.
  */
 export function loadNewSequenceInternal(
     this: SpessaSynthSequencer,
-    parsedMidi: BasicMIDI
+    parsedMIDI: BasicMIDI
 ) {
-    if (!parsedMidi.tracks) {
+    if (!parsedMIDI.tracks) {
         throw new Error("This MIDI has no tracks!");
     }
 
-    if (parsedMidi.duration === 0) {
+    if (parsedMIDI.duration === 0) {
         // https://github.com/spessasus/SpessaSynth/issues/106
         SpessaLog.warn("This MIDI file has a duration of exactly 0 seconds.");
         this.pausedTime = 0;
@@ -55,8 +55,8 @@ export function loadNewSequenceInternal(
         return;
     }
 
-    this.oneTickToSeconds = 60 / (120 * parsedMidi.timeDivision);
-    this._midiData = parsedMidi;
+    this.oneTickToSeconds = 60 / (120 * parsedMIDI.timeDivision);
+    this._midiData = parsedMIDI;
     this.isFinished = false;
 
     // Clear old embedded bank if exists

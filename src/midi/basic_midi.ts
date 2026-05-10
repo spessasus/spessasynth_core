@@ -965,7 +965,7 @@ export class BasicMIDI {
         );
 
         // Fix midi ports:
-        // Midi tracks without ports will have a value of -1
+        // MIDI tracks without ports will have a value of -1
         // If all ports have a value of -1, set it to 0,
         // Otherwise take the first midi port and replace all -1 with it,
         // Why would we do this?
@@ -1001,7 +1001,7 @@ export class BasicMIDI {
             SpessaLog.info(`%cMIDI Ports detected!`, ConsoleColors.recognized);
         }
 
-        // Midi name
+        // MIDI name
         if (!nameDetected) {
             if (this.tracks.length > 1) {
                 // If more than 1 track and the first track has no notes,

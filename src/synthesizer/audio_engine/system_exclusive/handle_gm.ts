@@ -52,7 +52,8 @@ export function handleGM(
 
                 case 0x02: {
                     // Master balance
-                    // Midi spec page 62
+                    // Complete MIDI 1.0 Detailed Specification page 57
+                    // This is not specified in GM2 spec for some reason
                     const balance = (syx[5] << 7) | syx[4];
                     const pan = (balance - 8192) / 8192;
                     this.setMIDIParameter("masterPan", pan);

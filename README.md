@@ -135,7 +135,7 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 - **Automatic bank shifting and validation:** Every sound bank _just works!_
 - **Metadata support:** Add title, artist, album name and cover and more! And of course, read them too! _(In any
   encoding!)_
-- **Compatible with [Falcosoft Midi Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
+- **Compatible with [Falcosoft MIDI Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
 - **Easy saving:**
   _[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writermidi)_
 

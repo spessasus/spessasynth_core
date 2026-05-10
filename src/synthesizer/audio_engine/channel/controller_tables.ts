@@ -13,7 +13,7 @@ const setResetValue = (i: MIDIController, v: number) =>
     // @ts-expect-error Only set here!
     (DEFAULT_MIDI_CONTROLLERS[i] = v << 7);
 
-// Values come from Falcosoft MidiPlayer 6
+// Values come from Falcosoft MIDI Player
 setResetValue(MIDIControllers.mainVolume, 100);
 setResetValue(MIDIControllers.balance, 64);
 setResetValue(MIDIControllers.expression, 127);

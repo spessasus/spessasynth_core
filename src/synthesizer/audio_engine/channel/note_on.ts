@@ -41,14 +41,14 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     // Shift note by key shift
     midiNote += this.currentKeyShift;
     // Note which we should grab presets from
-    let internalMidiNote = midiNote;
+    let soundBankNote = midiNote;
 
     // Sanity check
     if (midiNote > 127 || midiNote < 0) return;
 
     const program = this.preset.program;
     const tune = this.synthCore.tunings[program * 128 + midiNote];
-    if (tune >= 0) internalMidiNote = Math.trunc(tune);
+    if (tune >= 0) soundBankNote = Math.trunc(tune);
 
     // Monophonic retrigger
     if (
@@ -121,7 +121,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     // Get voices
     const voices = this.synthCore.getVoices(
         this.channel,
-        internalMidiNote,
+        soundBankNote,
         velocity
     );
 
