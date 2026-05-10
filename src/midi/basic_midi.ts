@@ -4,7 +4,7 @@ import {
 } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { SpessaSynthLog } from "../utils/loggin";
+import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors, formatTime } from "../utils/other";
 import { writeMIDIInternal } from "./midi_tools/midi_writer";
 import {
@@ -347,14 +347,11 @@ export class BasicMIDI {
      * @param synth
      */
     public preloadSynth(synth: SpessaSynthProcessor) {
-        SpessaSynthLog.groupCollapsed(
-            `%cPreloading samples...`,
-            ConsoleColors.info
-        );
+        SpessaLog.groupCollapsed(`%cPreloading samples...`, ConsoleColors.info);
         // Smart preloading: load only samples used in the midi!
         const used = this.getUsedProgramsAndKeys(synth.soundBankManager);
         for (const [preset, combos] of used.entries()) {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cPreloading used samples on %c${preset.name}%c...`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
@@ -365,7 +362,7 @@ export class BasicMIDI {
                 synth.getVoicesForPreset(preset, midiNote, velocity);
             }
         }
-        SpessaSynthLog.groupEnd();
+        SpessaLog.groupEnd();
     }
 
     /**
@@ -458,7 +455,7 @@ export class BasicMIDI {
                 // MIDI file with that name: th07_10.mid
                 rawName = decoder.decode(this.binaryName).trim();
             } catch (error) {
-                SpessaSynthLog.warn(
+                SpessaLog.warn(
                     `Failed to decode MIDI name: ${error as string}`
                 );
             }
@@ -542,7 +539,7 @@ export class BasicMIDI {
             }
             return decoder.decode(infoBuffer.buffer).trim() as RMIDInfoData[K];
         } catch (error) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Failed to decode ${infoType} name: ${error as string}`
             );
             return undefined;
@@ -643,10 +640,7 @@ export class BasicMIDI {
      * Parses internal MIDI values
      */
     protected parseInternal() {
-        SpessaSynthLog.group(
-            "%cInterpreting MIDI events...",
-            ConsoleColors.info
-        );
+        SpessaLog.group("%cInterpreting MIDI events...", ConsoleColors.info);
         /**
          * For karaoke files, text events starting with @T are considered titles,
          * usually the first one is the title, and the latter is things such as "sequenced by" etc.
@@ -731,7 +725,7 @@ export class BasicMIDI {
                                         e.data[1] !== 0 &&
                                         e.data[1] !== 127
                                     ) {
-                                        SpessaSynthLog.info(
+                                        SpessaLog.info(
                                             "%cDLS RMIDI with offset 1 detected!",
                                             ConsoleColors.recognized
                                         );
@@ -765,9 +759,7 @@ export class BasicMIDI {
                         if (i !== track.events.length - 1) {
                             track.deleteEvent(i);
                             i--;
-                            SpessaSynthLog.warn(
-                                "Unexpected EndOfTrack. Removing!"
-                            );
+                            SpessaLog.warn("Unexpected EndOfTrack. Removing!");
                         }
                         break;
                     }
@@ -819,7 +811,7 @@ export class BasicMIDI {
                             eventText.trim().startsWith("@KMIDI KARAOKE FILE")
                         ) {
                             this.isKaraokeFile = true;
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 "%cKaraoke MIDI detected!",
                                 ConsoleColors.recognized
                             );
@@ -844,7 +836,7 @@ export class BasicMIDI {
                         if (checkedText.startsWith("@KMIDI KARAOKE FILE")) {
                             this.isKaraokeFile = true;
 
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 "%cKaraoke MIDI detected!",
                                 ConsoleColors.recognized
                             );
@@ -899,7 +891,7 @@ export class BasicMIDI {
         // Reverse the tempo changes
         this.tempoChanges.reverse();
 
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cCorrecting loops, ports and detecting notes...`,
             ConsoleColors.info
         );
@@ -915,7 +907,7 @@ export class BasicMIDI {
         }
         this.firstNoteOn = Math.min(...firstNoteOns);
 
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cFirst note-on detected at: %c${this.firstNoteOn}%c ticks!`,
             ConsoleColors.info,
             ConsoleColors.recognized,
@@ -938,7 +930,7 @@ export class BasicMIDI {
             this.loop.end
         );
 
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cLoop points: start: %c${this.loop.start}%c end: %c${this.loop.end}`,
             ConsoleColors.info,
             ConsoleColors.recognized,
@@ -1000,16 +992,13 @@ export class BasicMIDI {
             this.portChannelOffsetMap = [0];
         }
         if (this.portChannelOffsetMap.length < 2) {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cNo additional MIDI Ports detected.`,
                 ConsoleColors.info
             );
         } else {
             this.isMultiPort = true;
-            SpessaSynthLog.info(
-                `%cMIDI Ports detected!`,
-                ConsoleColors.recognized
-            );
+            SpessaLog.info(`%cMIDI Ports detected!`, ConsoleColors.recognized);
         }
 
         // Midi name
@@ -1085,13 +1074,13 @@ export class BasicMIDI {
             this.binaryName = undefined;
         }
 
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cMIDI file parsed. Total tick time: %c${this.lastVoiceEventTick}%c, total seconds time: %c${formatTime(Math.ceil(this.duration)).time}`,
             ConsoleColors.info,
             ConsoleColors.recognized,
             ConsoleColors.info,
             ConsoleColors.recognized
         );
-        SpessaSynthLog.groupEnd();
+        SpessaLog.groupEnd();
     }
 }

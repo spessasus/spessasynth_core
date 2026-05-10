@@ -3,7 +3,7 @@ import {
     readLittleEndianIndexed,
     signedInt8
 } from "../../../utils/byte_functions/little_endian";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
 import { ConsoleColors } from "../../../utils/other";
@@ -134,7 +134,7 @@ export class SoundFontSample extends BasicSample {
         if (linked) {
             // Check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
             if (linked.linkedSample) {
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cInvalid linked sample for ${this.name}: ${linked.name} is already linked to ${linked.linkedSample.name}`,
                     ConsoleColors.warn
                 );
@@ -144,7 +144,7 @@ export class SoundFontSample extends BasicSample {
             }
         } else {
             // Log as info because it's common and not really dangerous
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cInvalid linked sample for ${this.name}. Setting to mono.`,
                 ConsoleColors.warn
             );
@@ -173,7 +173,7 @@ export class SoundFontSample extends BasicSample {
         // Start loading data if it is not loaded
         const byteLength = this.endByteOffset - this.startByteOffset;
         if (byteLength < 1) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Invalid sample ${this.name}! Invalid length: ${byteLength}`
             );
             return new Float32Array(1);

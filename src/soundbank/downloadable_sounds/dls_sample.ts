@@ -3,7 +3,7 @@ import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endia
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { RIFFChunk } from "../../utils/riff_chunk";
 import { SampleTypes } from "../enums";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 
 const W_FORMAT_TAG = {
     PCM: 0x01,
@@ -143,7 +143,7 @@ export class DLSSample extends BasicSample {
             let sampleData;
             switch (this.wFormatTag) {
                 default: {
-                    SpessaSynthLog.warn(
+                    SpessaLog.warn(
                         `Failed to decode sample. Unknown wFormatTag: ${this.wFormatTag}`
                     );
                     sampleData = new Float32Array(

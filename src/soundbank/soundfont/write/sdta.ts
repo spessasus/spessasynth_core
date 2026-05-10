@@ -1,4 +1,4 @@
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { ProgressFunction } from "../../types";
@@ -30,7 +30,7 @@ export function getSDTA(
         const r = s.getRawData(true);
         writtenCount++;
         progressFunction?.(writtenCount / bank.samples.length);
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cWrote sample %c${writtenCount}. ${s.name}%c of %c${bank.samples.length}.`,
             ConsoleColors.info,
             ConsoleColors.recognized,

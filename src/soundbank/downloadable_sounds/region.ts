@@ -17,7 +17,7 @@ import {
     GeneratorLimits,
     GeneratorTypes
 } from "../basic_soundbank/generator_types";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 
 export class DownloadableSoundsRegion extends DLSVerifier {
     public readonly articulation = new DownloadableSoundsArticulation();
@@ -94,7 +94,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         const waveLinkChunk = regionChunks.find((c) => c.header === "wlnk");
         if (!waveLinkChunk) {
             // No wave link means no sample. What? Why is it even here then?
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 "Invalid DLS region: missing 'wlnk' chunk! Discarding..."
             );
             return;
@@ -104,7 +104,7 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         // Region header
         const regionHeader = regionChunks.find((c) => c.header === "rgnh");
         if (!regionHeader) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 "Invalid DLS region: missing 'rgnh' chunk! Discarding..."
             );
             return;

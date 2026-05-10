@@ -1,4 +1,4 @@
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
 import { MIDIProtocol } from "./midi_protocol";
@@ -34,7 +34,7 @@ export function getUsedProgramsAndKeys(
     mid: BasicMIDI,
     soundBank: BasicSoundBank | SoundBankManager
 ) {
-    SpessaSynthLog.groupCollapsed(
+    SpessaLog.groupCollapsed(
         "%cSearching for all used programs and keys...",
         ConsoleColors.info
     );
@@ -102,7 +102,7 @@ export function getUsedProgramsAndKeys(
         ) {
             let port = e.data[0];
             if (offsetMap[port] === undefined) {
-                SpessaSynthLog.warn(
+                SpessaLog.warn(
                     `Invalid port ${port} on track ${trackNum}. (No offset found in the MIDI map.`
                 );
                 port = 0;
@@ -218,7 +218,7 @@ export function getUsedProgramsAndKeys(
                         // Check for XG
                         case "XG Reset": {
                             reset("xg");
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 "%cXG on detected!",
                                 ConsoleColors.recognized
                             );
@@ -227,7 +227,7 @@ export function getUsedProgramsAndKeys(
 
                         case "GM2 On": {
                             reset("gm2");
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 "%cGM2 on detected!",
                                 ConsoleColors.recognized
                             );
@@ -236,7 +236,7 @@ export function getUsedProgramsAndKeys(
 
                         case "GM On": {
                             reset("gm");
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 "%cGM on detected!",
                                 ConsoleColors.recognized
                             );
@@ -246,7 +246,7 @@ export function getUsedProgramsAndKeys(
                         case "GM Off":
                         case "GS Reset": {
                             reset("gs");
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 "%cGS on detected!",
                                 ConsoleColors.recognized
                             );
@@ -303,7 +303,7 @@ export function getUsedProgramsAndKeys(
 
     for (const [preset, combos] of usedProgramsAndKeys.entries()) {
         if (combos.size === 0) {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cDetected change but no keys for %c${preset.name}`,
                 ConsoleColors.info,
                 ConsoleColors.value
@@ -312,6 +312,6 @@ export function getUsedProgramsAndKeys(
         }
     }
 
-    SpessaSynthLog.groupEnd();
+    SpessaLog.groupEnd();
     return usedProgramsAndKeys;
 }

@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import path from "node:path";
-import { SoundBankLoader, SpessaSynthLog } from "../src";
+import { SoundBankLoader, SpessaLog } from "../src";
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -10,7 +10,7 @@ if (args.length !== 1) {
 }
 const midPath = args[0];
 
-SpessaSynthLog.setLogLevel(false, false, false);
+SpessaLog.setLogLevel(false, false, false);
 
 const entries = await fs.readdir(midPath, { recursive: true });
 

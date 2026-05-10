@@ -1,4 +1,4 @@
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
@@ -36,7 +36,7 @@ export function handleGS(
                     // SYSTEM MODE SET
                     if (a1 === 0 && a2 === 0 && a3 === 0x7f && data === 0x00) {
                         // This is a GS reset
-                        SpessaSynthLog.coolInfo("MIDI System", "Roland GS");
+                        SpessaLog.coolInfo("MIDI System", "Roland GS");
                         this.resetAllControllers("gs");
                         return;
                     }
@@ -55,7 +55,7 @@ export function handleGS(
                                         syx[10];
                                     const cents = (tune - 1024) / 10;
                                     this.setMIDIParameter("masterTune", cents);
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Master Tune",
                                         cents,
                                         "cents"
@@ -65,17 +65,14 @@ export function handleGS(
 
                                 case 0x04: {
                                     // Roland GS master volume
-                                    SpessaSynthLog.gsInfo(
-                                        "Master Volume",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Master Volume", data);
                                     break;
                                 }
 
                                 case 0x05: {
                                     // Roland master key shift
                                     const transpose = data - 64;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Master Key-Shift",
                                         transpose,
                                         "keys"
@@ -89,7 +86,7 @@ export function handleGS(
 
                                 case 0x06: {
                                     // Roland master pan
-                                    SpessaSynthLog.gsInfo("Master Pan", data);
+                                    SpessaLog.gsInfo("Master Pan", data);
                                     this.setMIDIParameter(
                                         "masterPan",
                                         (data - 64) / 64
@@ -102,14 +99,14 @@ export function handleGS(
                                     // GS mode set
                                     if (data === 0x00) {
                                         // This is a GS reset
-                                        SpessaSynthLog.coolInfo(
+                                        SpessaLog.coolInfo(
                                             "MIDI System",
                                             "Roland GS"
                                         );
                                         this.resetAllControllers("gs");
                                     } else if (data === 0x7f) {
                                         // GS mode off
-                                        SpessaSynthLog.coolInfo(
+                                        SpessaLog.coolInfo(
                                             "MIDI System",
                                             "General MIDI 1"
                                         );
@@ -119,10 +116,7 @@ export function handleGS(
                                 }
 
                                 default: {
-                                    SpessaSynthLog.gsFail(
-                                        "System Parameter",
-                                        syx
-                                    );
+                                    SpessaLog.gsFail("System Parameter", syx);
                                     break;
                                 }
                             }
@@ -149,10 +143,9 @@ export function handleGS(
 
                             switch (a3) {
                                 default: {
-                                    SpessaSynthLog.gsFail(
-                                        "Patch Common Parameter",
-                                        [a3]
-                                    );
+                                    SpessaLog.gsFail("Patch Common Parameter", [
+                                        a3
+                                    ]);
                                     break;
                                 }
 
@@ -164,27 +157,21 @@ export function handleGS(
                                         16,
                                         7
                                     );
-                                    SpessaSynthLog.gsInfo(
-                                        "Patch name",
-                                        patchName
-                                    );
+                                    SpessaLog.gsInfo("Patch name", patchName);
                                     break;
                                 }
                                 // Reverb
                                 case 0x30: {
                                     // Reverb macro
                                     this.setReverbMacro(data);
-                                    SpessaSynthLog.gsInfo("Reverb Macro", data);
+                                    SpessaLog.gsInfo("Reverb Macro", data);
                                     // Event called in setMacro
                                     break;
                                 }
                                 case 0x31: {
                                     // Reverb character
                                     this.reverbProcessor.character = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Reverb Character",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Reverb Character", data);
                                     this.callEvent("effectChange", {
                                         effect: "reverb",
                                         parameter: "character",
@@ -195,10 +182,7 @@ export function handleGS(
                                 case 0x32: {
                                     // Reverb pre-PLF
                                     this.reverbProcessor.preLowpass = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Reverb Pre-LPF",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Reverb Pre-LPF", data);
                                     this.callEvent("effectChange", {
                                         effect: "reverb",
                                         parameter: "preLowpass",
@@ -209,7 +193,7 @@ export function handleGS(
                                 case 0x33: {
                                     // Reverb level
                                     this.reverbProcessor.level = data;
-                                    SpessaSynthLog.gsInfo("Reverb Level", data);
+                                    SpessaLog.gsInfo("Reverb Level", data);
                                     this.callEvent("effectChange", {
                                         effect: "reverb",
                                         parameter: "level",
@@ -220,7 +204,7 @@ export function handleGS(
                                 case 0x34: {
                                     // Reverb time
                                     this.reverbProcessor.time = data;
-                                    SpessaSynthLog.gsInfo("Reverb Time", data);
+                                    SpessaLog.gsInfo("Reverb Time", data);
                                     this.callEvent("effectChange", {
                                         effect: "reverb",
                                         parameter: "time",
@@ -231,7 +215,7 @@ export function handleGS(
                                 case 0x35: {
                                     // Reverb delay feedback
                                     this.reverbProcessor.delayFeedback = data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Reverb Delay Feedback",
                                         data
                                     );
@@ -251,7 +235,7 @@ export function handleGS(
                                 case 0x37: {
                                     // Reverb predelay time
                                     this.reverbProcessor.preDelayTime = data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Reverb Predelay Time",
                                         data
                                     );
@@ -267,17 +251,14 @@ export function handleGS(
                                 case 0x38: {
                                     // Chorus macro
                                     this.setChorusMacro(data);
-                                    SpessaSynthLog.gsInfo("Chorus Macro", data);
+                                    SpessaLog.gsInfo("Chorus Macro", data);
                                     // Event called in setMacro
                                     break;
                                 }
                                 case 0x39: {
                                     // Chorus pre-LPF
                                     this.chorusProcessor.preLowpass = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Chorus Pre-LPF",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Chorus Pre-LPF", data);
                                     this.callEvent("effectChange", {
                                         effect: "chorus",
                                         parameter: "preLowpass",
@@ -288,7 +269,7 @@ export function handleGS(
                                 case 0x3a: {
                                     // Chorus level
                                     this.chorusProcessor.level = data;
-                                    SpessaSynthLog.gsInfo("Chorus Level", data);
+                                    SpessaLog.gsInfo("Chorus Level", data);
                                     this.callEvent("effectChange", {
                                         effect: "chorus",
                                         parameter: "level",
@@ -299,10 +280,7 @@ export function handleGS(
                                 case 0x3b: {
                                     // Chorus feedback
                                     this.chorusProcessor.feedback = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Chorus Feedback",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Chorus Feedback", data);
                                     this.callEvent("effectChange", {
                                         effect: "chorus",
                                         parameter: "feedback",
@@ -313,7 +291,7 @@ export function handleGS(
                                 case 0x3c: {
                                     // Chorus delay
                                     this.chorusProcessor.delay = data;
-                                    SpessaSynthLog.gsInfo("Chorus Delay", data);
+                                    SpessaLog.gsInfo("Chorus Delay", data);
                                     this.callEvent("effectChange", {
                                         effect: "chorus",
                                         parameter: "delay",
@@ -324,7 +302,7 @@ export function handleGS(
                                 case 0x3d: {
                                     // Chorus rate
                                     this.chorusProcessor.rate = data;
-                                    SpessaSynthLog.gsInfo("Chorus Rate", data);
+                                    SpessaLog.gsInfo("Chorus Rate", data);
                                     this.callEvent("effectChange", {
                                         effect: "chorus",
                                         parameter: "rate",
@@ -335,7 +313,7 @@ export function handleGS(
                                 case 0x3e: {
                                     // Chorus depth
                                     this.chorusProcessor.depth = data;
-                                    SpessaSynthLog.gsInfo("Chorus Depth", data);
+                                    SpessaLog.gsInfo("Chorus Depth", data);
                                     this.callEvent("effectChange", {
                                         effect: "chorus",
                                         parameter: "depth",
@@ -347,7 +325,7 @@ export function handleGS(
                                     // Chorus send level to reverb
                                     this.chorusProcessor.sendLevelToReverb =
                                         data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Chorus Send Level To Reverb",
                                         data
                                     );
@@ -362,7 +340,7 @@ export function handleGS(
                                     // Chorus send level to delay
                                     this.chorusProcessor.sendLevelToDelay =
                                         data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Chorus Send Level To Delay",
                                         data
                                     );
@@ -378,17 +356,14 @@ export function handleGS(
                                 case 0x50: {
                                     // Delay macro
                                     this.setDelayMacro(data);
-                                    SpessaSynthLog.gsInfo("Delay Macro", data);
+                                    SpessaLog.gsInfo("Delay Macro", data);
                                     // Event called in setMacro
                                     break;
                                 }
                                 case 0x51: {
                                     // Delay pre-PLF
                                     this.delayProcessor.preLowpass = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Delay Pre-LPF",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Delay Pre-LPF", data);
                                     this.callEvent("effectChange", {
                                         effect: "delay",
                                         parameter: "preLowpass",
@@ -399,10 +374,7 @@ export function handleGS(
                                 case 0x52: {
                                     // Delay time center
                                     this.delayProcessor.timeCenter = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Delay Time Center",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Delay Time Center", data);
                                     this.callEvent("effectChange", {
                                         effect: "delay",
                                         parameter: "timeCenter",
@@ -413,7 +385,7 @@ export function handleGS(
                                 case 0x53: {
                                     // Delay time ratio left
                                     this.delayProcessor.timeRatioLeft = data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Delay Time Ratio Left",
                                         data
                                     );
@@ -427,7 +399,7 @@ export function handleGS(
                                 case 0x54: {
                                     // Delay time ratio right
                                     this.delayProcessor.timeRatioRight = data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Delay Time Ratio Right",
                                         data
                                     );
@@ -441,7 +413,7 @@ export function handleGS(
                                 case 0x55: {
                                     // Delay level center
                                     this.delayProcessor.levelCenter = data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Delay Level Center",
                                         data
                                     );
@@ -455,10 +427,7 @@ export function handleGS(
                                 case 0x56: {
                                     // Delay level left
                                     this.delayProcessor.levelLeft = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Delay Level Left",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Delay Level Left", data);
                                     this.callEvent("effectChange", {
                                         effect: "delay",
                                         parameter: "levelLeft",
@@ -469,10 +438,7 @@ export function handleGS(
                                 case 0x57: {
                                     // Delay level right
                                     this.delayProcessor.levelRight = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Delay Level Right",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Delay Level Right", data);
                                     this.callEvent("effectChange", {
                                         effect: "delay",
                                         parameter: "levelRight",
@@ -483,7 +449,7 @@ export function handleGS(
                                 case 0x58: {
                                     // Delay level
                                     this.delayProcessor.level = data;
-                                    SpessaSynthLog.gsInfo("Delay Level", data);
+                                    SpessaLog.gsInfo("Delay Level", data);
                                     this.callEvent("effectChange", {
                                         effect: "delay",
                                         parameter: "level",
@@ -494,10 +460,7 @@ export function handleGS(
                                 case 0x59: {
                                     // Delay feedback
                                     this.delayProcessor.feedback = data;
-                                    SpessaSynthLog.gsInfo(
-                                        "Delay Feedback",
-                                        data
-                                    );
+                                    SpessaLog.gsInfo("Delay Feedback", data);
                                     this.callEvent("effectChange", {
                                         effect: "delay",
                                         parameter: "feedback",
@@ -509,7 +472,7 @@ export function handleGS(
                                     // Delay send level to reverb
                                     this.delayProcessor.sendLevelToReverb =
                                         data;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "Delay Send Level To Reverb",
                                         data
                                     );
@@ -535,7 +498,7 @@ export function handleGS(
 
                             if (a3 >= 0x03 && a3 <= 0x16) {
                                 this.insertionProcessor.setParameter(a3, data);
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `EFX Parameter ${a3 - 2}`,
                                     data
                                 );
@@ -548,9 +511,7 @@ export function handleGS(
                             }
                             switch (a3) {
                                 default: {
-                                    SpessaSynthLog.gsFail("Insertion Effect", [
-                                        a3
-                                    ]);
+                                    SpessaLog.gsFail("Insertion Effect", [a3]);
                                     return;
                                 }
 
@@ -560,7 +521,7 @@ export function handleGS(
                                     const proc =
                                         this.insertionEffects.get(type);
                                     if (proc) {
-                                        SpessaSynthLog.gsInfo(
+                                        SpessaLog.gsInfo(
                                             "EFX Type",
                                             type.toString(16)
                                         );
@@ -568,7 +529,7 @@ export function handleGS(
                                     } else {
                                         this.insertionProcessor =
                                             this.insertionFallback;
-                                        SpessaSynthLog.gsFail(
+                                        SpessaLog.gsFail(
                                             "EFX Processor",
                                             [type],
                                             "Using Thru."
@@ -591,7 +552,7 @@ export function handleGS(
                                     this.insertionProcessor.sendLevelToReverb =
                                         (data / 127) *
                                         EFX_SENDS_GAIN_CORRECTION;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "EFX Send Level to Reverb",
                                         data
                                     );
@@ -609,7 +570,7 @@ export function handleGS(
                                     this.insertionProcessor.sendLevelToChorus =
                                         (data / 127) *
                                         EFX_SENDS_GAIN_CORRECTION;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "EFX Send Level to Chorus",
                                         data
                                     );
@@ -628,7 +589,7 @@ export function handleGS(
                                         (data / 127) *
                                         EFX_SENDS_GAIN_CORRECTION;
                                     this.delayActive = true;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "EFX Send Level to Delay",
                                         data
                                     );
@@ -656,7 +617,7 @@ export function handleGS(
                             switch (a3) {
                                 default: {
                                     // This is some other GS sysex...
-                                    SpessaSynthLog.gsFail(
+                                    SpessaLog.gsFail(
                                         `Patch Part Parameter for ${channel}`,
                                         [a3]
                                     );
@@ -682,7 +643,7 @@ export function handleGS(
                                     ch.setMIDIParameter("rxChannel", rxChannel);
                                     this.customChannelNumbers ||=
                                         rxChannel !== ch.channel;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         `Rx. Channel on ${channel}`,
                                         rxChannel
                                     );
@@ -692,7 +653,7 @@ export function handleGS(
                                 case 0x13: {
                                     // Mono/poly
                                     ch.setMIDIParameter("polyMode", data === 1);
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         `Mono/poly on ${channel}`,
                                         ch.midiParameters.polyMode
                                             ? "POLY"
@@ -703,7 +664,7 @@ export function handleGS(
 
                                 case 0x14: {
                                     ch.setMIDIParameter("assignMode", data);
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         `Assign mode on ${channel}`,
                                         data
                                     );
@@ -715,7 +676,7 @@ export function handleGS(
                                     ch.setMIDIParameter("drumMap", data);
                                     const isDrums = data > 0; // If set to other than 0, is a drum channel
                                     ch.setGSDrums(isDrums);
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         `Drums on ${channel}`,
                                         isDrums.toString()
                                     );
@@ -747,7 +708,7 @@ export function handleGS(
                                     const randomPan = panPosition === 0;
                                     ch.setMIDIParameter("randomPan", randomPan);
                                     if (randomPan)
-                                        SpessaSynthLog.gsInfo(
+                                        SpessaLog.gsInfo(
                                             `Random pan on ${channel}`,
                                             "ON"
                                         );
@@ -766,7 +727,7 @@ export function handleGS(
                                         "cc1",
                                         data as MIDIController
                                     );
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "CC1 Controller Number",
                                         data
                                     );
@@ -779,7 +740,7 @@ export function handleGS(
                                         "cc2",
                                         data as MIDIController
                                     );
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         "CC2 Controller Number",
                                         data
                                     );
@@ -905,7 +866,7 @@ export function handleGS(
                                         newTuning[i] = syx[i + 7] - 64;
                                     }
                                     ch.setOctaveTuning(newTuning);
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         `Octave Scale Tuning on ${channel}`,
                                         newTuning.join(", ")
                                     );
@@ -929,7 +890,7 @@ export function handleGS(
                             switch (a3 & 0xf0) {
                                 default: {
                                     // This is some other GS sysex...
-                                    SpessaSynthLog.gsFail(
+                                    SpessaLog.gsFail(
                                         `Patch Parameter Controller for ${channel}`,
                                         [a3 & 0xf0]
                                     );
@@ -1045,10 +1006,9 @@ export function handleGS(
                             switch (a3) {
                                 default: {
                                     // This is some other GS sysex...
-                                    SpessaSynthLog.gsFail(
-                                        "Patch Part Parameter",
-                                        [a3]
-                                    );
+                                    SpessaLog.gsFail("Patch Part Parameter", [
+                                        a3
+                                    ]);
                                     break;
                                 }
 
@@ -1072,7 +1032,7 @@ export function handleGS(
                                     const efx = data === 1;
                                     ch.setMIDIParameter("efxAssign", efx);
                                     this.insertionActive ||= efx;
-                                    SpessaSynthLog.gsInfo(
+                                    SpessaLog.gsInfo(
                                         `EFX assign for ${channel}`,
                                         efx ? "EFX" : "BYPASS"
                                     );
@@ -1080,7 +1040,7 @@ export function handleGS(
                             }
                             return;
                         }
-                        SpessaSynthLog.gsFail("Patch Parameter", syx);
+                        SpessaLog.gsFail("Patch Parameter", syx);
                         return;
                     }
                     // Drum setup
@@ -1091,7 +1051,7 @@ export function handleGS(
                         const param = a2 & 0xf;
                         switch (param) {
                             default: {
-                                SpessaSynthLog.gsFail("Drum Setup", [param]);
+                                SpessaLog.gsFail("Drum Setup", [param]);
                                 return;
                             }
 
@@ -1099,7 +1059,7 @@ export function handleGS(
                                 // Drum map name. cool!
                                 // Not sure what to do with it, but let's log it!
                                 const patchName = readBinaryString(syx, 12, 7);
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Patch Name for MAP${map}`,
                                     patchName
                                 );
@@ -1118,7 +1078,7 @@ export function handleGS(
                                         pitch *
                                         (ch.patch.bankLSB === 1 ? 100 : 50);
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Pitch for MAP${map}, key ${drumKey}`,
                                     pitch
                                 );
@@ -1132,7 +1092,7 @@ export function handleGS(
                                         continue;
                                     ch.drumParams[drumKey].gain = data / 120;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Level for MAP${map}, key ${drumKey}`,
                                     data
                                 );
@@ -1147,7 +1107,7 @@ export function handleGS(
                                     ch.drumParams[drumKey].exclusiveClass =
                                         data;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Assign Group for MAP${map}, key ${drumKey}`,
                                     data
                                 );
@@ -1161,7 +1121,7 @@ export function handleGS(
                                         continue;
                                     ch.drumParams[drumKey].pan = data;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Pan for MAP${map}, key ${drumKey}`,
                                     data
                                 );
@@ -1176,7 +1136,7 @@ export function handleGS(
                                     ch.drumParams[drumKey].reverbGain =
                                         data / 127;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Reverb for MAP${map}, key ${drumKey}`,
                                     data
                                 );
@@ -1191,7 +1151,7 @@ export function handleGS(
                                     ch.drumParams[drumKey].chorusGain =
                                         data / 127;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Chorus for MAP${map}, key ${drumKey}`,
                                     data
                                 );
@@ -1206,7 +1166,7 @@ export function handleGS(
                                     ch.drumParams[drumKey].rxNoteOff =
                                         data === 1;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Note Off for MAP${map}, key ${drumKey}`,
                                     data === 1 ? "ON" : "OFF"
                                 );
@@ -1221,7 +1181,7 @@ export function handleGS(
                                     ch.drumParams[drumKey].rxNoteOn =
                                         data === 1;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Note On for MAP${map}, key ${drumKey}`,
                                     data === 1 ? "ON" : "OFF"
                                 );
@@ -1236,7 +1196,7 @@ export function handleGS(
                                     ch.drumParams[drumKey].delayGain =
                                         data / 127;
                                 }
-                                SpessaSynthLog.gsInfo(
+                                SpessaLog.gsInfo(
                                     `Drum Delay for MAP${map}, key ${drumKey}`,
                                     data
                                 );
@@ -1246,7 +1206,7 @@ export function handleGS(
                         return;
                     }
                     // This is some other GS sysex...
-                    SpessaSynthLog.gsFail("System Exclusive", syx);
+                    SpessaLog.gsFail("System Exclusive", syx);
                     return;
                 }
             }
@@ -1268,7 +1228,7 @@ export function handleGS(
                         this.callEvent("synthDisplay", [...syx]);
                     } else {
                         // This is some other GS sysex...
-                        SpessaSynthLog.gsFail("Display Data", syx);
+                        SpessaLog.gsFail("Display Data", syx);
                     }
                 }
                 return;
@@ -1279,19 +1239,16 @@ export function handleGS(
                 if (syx[4] === 0x10) {
                     // This is a roland master volume message
                     this.setMIDIParameter("masterVolume", syx[7] / 100);
-                    SpessaSynthLog.coolInfo(
-                        "Roland Master Volume Control",
-                        syx[7]
-                    );
+                    SpessaLog.coolInfo("Roland Master Volume Control", syx[7]);
                     return;
                 } else {
-                    SpessaSynthLog.unsupported("Roland", syx);
+                    SpessaLog.unsupported("Roland", syx);
                 }
             }
         }
     } else {
         // This is something else...
-        SpessaSynthLog.unsupported("Roland", syx);
+        SpessaLog.unsupported("Roland", syx);
         return;
     }
 }

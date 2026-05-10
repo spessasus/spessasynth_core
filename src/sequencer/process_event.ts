@@ -1,6 +1,6 @@
 import { MIDIMessage } from "../midi/midi_message";
 import { ConsoleColors } from "../utils/other";
-import { SpessaSynthLog } from "../utils/loggin";
+import { SpessaLog } from "../utils/loggin";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import type { SpessaSynthSequencer } from "./sequencer";
 import {
@@ -130,7 +130,7 @@ export function processEventInternal(
             if (this.oneTickToSeconds === 0) {
                 this.oneTickToSeconds =
                     60 / (120 * this._midiData!.timeDivision);
-                SpessaSynthLog.info("invalid tempo! falling back to 120 BPM");
+                SpessaLog.info("invalid tempo! falling back to 120 BPM");
             }
             break;
         }
@@ -167,7 +167,7 @@ export function processEventInternal(
         }
 
         default: {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cUnrecognized Event: %c${event.statusByte}%c status byte: %c${Object.keys(
                     MIDIMessageTypes
                 ).find(

@@ -8,7 +8,7 @@ import {
 import { MIDIControllers } from "../../../midi/enums";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { timecentsToSeconds } from "../voice/unit_converter";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 
 const clamp = (num: number, min: number, max: number) =>
     Math.max(min, Math.min(max, num));
@@ -222,7 +222,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         }
 
         if (voice.modulators.length > voice.modulatorValues.length) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `${voice.modulators.length} modulators! Increasing modulatorValues table.`
             );
             voice.modulatorValues = new Int16Array(voice.modulators.length);

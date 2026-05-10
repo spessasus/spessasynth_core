@@ -12,7 +12,7 @@ import {
     type GeneratorType,
     GeneratorTypes
 } from "../basic_soundbank/generator_types";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { BasicZone } from "../basic_soundbank/basic_zone";
 import { ConsoleColors } from "../../utils/other";
 import { ModulatorSource } from "../basic_soundbank/modulator_source";
@@ -178,7 +178,7 @@ export class ConnectionBlock {
         articulation: DownloadableSoundsArticulation
     ) {
         const failed = (msg: string) => {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Failed converting SF modulator into DLS:\n ${m.toString()} \n(${msg})`
             );
         };
@@ -273,7 +273,7 @@ export class ConnectionBlock {
         }
 
         const failed = (msg: string) => {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Failed converting SF2 generator into DLS:\n ${generator.toString()} \n(${msg})`
             );
         };
@@ -561,7 +561,7 @@ export class ConnectionBlock {
 
         switch (destination) {
             default: {
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cFailed converting DLS articulator into SF generator: %c${this.toString()}%c\n(invalid destination)`,
                     ConsoleColors.warn,
                     ConsoleColors.value,
@@ -827,7 +827,7 @@ export class ConnectionBlock {
     }
 
     private failedConversion(msg: string) {
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cFailed converting DLS articulator into SF2:\n %c${this.toString()}%c\n(${msg})`,
             ConsoleColors.warn,
             ConsoleColors.value,

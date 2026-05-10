@@ -11,7 +11,7 @@ import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator
 import { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
 import { MIDIControllers } from "../../../midi/enums";
 import { VoiceModulator } from "../voice/voice_modulator";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 
 const INITIAL_MODULATORS: VoiceModulator[] = [
     // Vibrato rate to that one GS rate (in bare Hz) map for special cases such as J-Cycle.mid
@@ -85,7 +85,7 @@ export class DynamicModulatorSystem {
                     centeredValue * 100,
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} pitch control`,
                     centeredValue,
                     "semitones"
@@ -102,7 +102,7 @@ export class DynamicModulatorSystem {
                     centeredNormalized * 9600,
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} filter control`,
                     centeredNormalized * 9600,
                     "cents"
@@ -119,7 +119,7 @@ export class DynamicModulatorSystem {
                     centeredNormalized * 1000, // Generator is 1/10%
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} amplitude control`,
                     centeredNormalized * 100,
                     "%"
@@ -136,7 +136,7 @@ export class DynamicModulatorSystem {
                     centeredNormalized * 1000, // Generator is 1/100Hz
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 rate control`,
                     centeredNormalized * 10,
                     "Hz"
@@ -153,7 +153,7 @@ export class DynamicModulatorSystem {
                     normalizedNotCentered * 600,
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 pitch depth control`,
                     normalizedNotCentered * 600,
                     "cents"
@@ -170,7 +170,7 @@ export class DynamicModulatorSystem {
                     normalizedNotCentered * 2400,
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 filter depth control`,
                     normalizedNotCentered * 2400,
                     "cents"
@@ -187,7 +187,7 @@ export class DynamicModulatorSystem {
                     normalizedNotCentered * 1000, // Generator is 1/10%
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 amplitude depth control`,
                     normalizedNotCentered * 100,
                     "%"
@@ -204,7 +204,7 @@ export class DynamicModulatorSystem {
                     centeredNormalized * 1000, // Generator is 1/100Hz
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 rate control`,
                     centeredNormalized * 10,
                     "Hz"
@@ -221,7 +221,7 @@ export class DynamicModulatorSystem {
                     normalizedNotCentered * 600,
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 pitch depth control`,
                     normalizedNotCentered * 600,
                     "cents"
@@ -238,7 +238,7 @@ export class DynamicModulatorSystem {
                     normalizedNotCentered * 2400,
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 filter depth control`,
                     normalizedNotCentered * 2400,
                     "cents"
@@ -255,7 +255,7 @@ export class DynamicModulatorSystem {
                     normalizedNotCentered * 1000, // Generator is 1/10%
                     bipolar
                 );
-                SpessaSynthLog.coolInfo(
+                SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 amplitude depth control`,
                     normalizedNotCentered * 100,
                     "%"

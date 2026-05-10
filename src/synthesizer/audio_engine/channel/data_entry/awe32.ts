@@ -4,7 +4,7 @@ import {
     GeneratorTypes
 } from "../../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "../midi_channel";
-import { SpessaSynthLog } from "../../../../utils/loggin";
+import { SpessaLog } from "../../../../utils/loggin";
 
 export interface ChannelGenerators {
     /**
@@ -101,7 +101,7 @@ export function handleAWE32NRPN(
     dataValue -= 8192;
     const generator = AWE_NRPN_GENERATOR_MAPPINGS[aweGen];
     if (!generator) {
-        SpessaSynthLog.warn(
+        SpessaLog.warn(
             `Invalid AWE32 LSB: %c${aweGen}`,
             ConsoleColors.unrecognized
         );

@@ -1,4 +1,4 @@
-import { SpessaSynthLog } from "../utils/loggin";
+import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
 import {
     DEFAULT_SYNTH_MODE,
@@ -243,10 +243,7 @@ export class SpessaSynthProcessor {
             this.synthCore.createMIDIChannel(false);
         }
         void this.processorInitialized.then(() => {
-            SpessaSynthLog.info(
-                "%cSpessaSynth is ready!",
-                ConsoleColors.recognized
-            );
+            SpessaLog.info("%cSpessaSynth is ready!", ConsoleColors.recognized);
         });
     }
 
@@ -426,7 +423,7 @@ export class SpessaSynthProcessor {
         patch: MIDIPatch,
         system: MIDISystem
     ): BasicPreset | undefined => {
-        SpessaSynthLog.warn(
+        SpessaLog.warn(
             `No preset found for ${MIDIPatchTools.toMIDIString(patch)}! Did you forget to add a sound bank?`
         );
         // Make tsc happy!
@@ -498,7 +495,7 @@ export class SpessaSynthProcessor {
         if (this.savedSnapshot !== undefined) {
             this.applySnapshot(this.savedSnapshot);
         }
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cEmbedded sound bank set at offset %c${offset}`,
             ConsoleColors.recognized,
             ConsoleColors.value
@@ -552,7 +549,7 @@ export class SpessaSynthProcessor {
      * @deprecated
      */
     public killVoices(amount: number) {
-        SpessaSynthLog.warn(
+        SpessaLog.warn(
             `killVoices is deprecated, don't use it! Amount requested: ${amount}`
         );
     }

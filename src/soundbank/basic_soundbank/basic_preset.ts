@@ -18,7 +18,7 @@ import {
     GeneratorTypes
 } from "./generator_types";
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import {
@@ -521,7 +521,7 @@ export class BasicPreset implements MIDIPatchFull {
      * @param index
      */
     public write(phdrData: ExtendedSF2Chunks, index: number) {
-        SpessaSynthLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
+        SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(phdrData.pdta, this.name.slice(0, 20), 20);
         writeBinaryStringIndexed(phdrData.xdta, this.name.slice(20), 20);

@@ -10,7 +10,7 @@ import { BasicZone } from "../basic_soundbank/basic_zone";
 import { BasicInstrumentZone } from "../exports";
 import { ConnectionBlock } from "./connection_block";
 import { type DLSDestination, DLSDestinations, DLSSources } from "./enums";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 
 type KeyToEnv =
     | typeof GeneratorTypes.keyNumToModEnvDecay
@@ -114,7 +114,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 const artData = chunk.data;
                 const cbSize = readLittleEndianIndexed(artData, 4);
                 if (cbSize !== 8) {
-                    SpessaSynthLog.warn(
+                    SpessaLog.warn(
                         `CbSize in articulation mismatch. Expected 8, got ${cbSize}`
                     );
                 }
@@ -137,7 +137,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
                 const artData = chunk.data;
                 const cbSize = readLittleEndianIndexed(artData, 4);
                 if (cbSize !== 8) {
-                    SpessaSynthLog.warn(
+                    SpessaLog.warn(
                         `CbSize in articulation mismatch. Expected 8, got ${cbSize}`
                     );
                 }

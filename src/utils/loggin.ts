@@ -4,7 +4,7 @@ import { arrayToHexString, ConsoleColors } from "./other";
 /**
  * Manage the log level of `spessasynth_core`.
  */
-export class SpessaSynthLog {
+export class SpessaLog {
     /**
      * The most verbose log level, prints out a lot of small details.
      */
@@ -126,14 +126,14 @@ export class SpessaSynthLog {
     public static coolInfo(what: string, value: number | string, unit = "") {
         if (!this.infoEnabled) return;
         if (unit)
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%c${what} is now set to %c${value}%c ${unit}.`,
                 ConsoleColors.info,
                 ConsoleColors.value,
                 ConsoleColors.info
             );
         else
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%c${what} is now set to %c${value}%c.`,
                 ConsoleColors.info,
                 ConsoleColors.value,

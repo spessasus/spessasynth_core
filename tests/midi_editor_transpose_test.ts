@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { BasicMIDI, SpessaSynthLog } from "../src";
+import { BasicMIDI, SpessaLog } from "../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {
@@ -10,7 +10,7 @@ if (args.length !== 2) {
 const mid = await fs.readFile(args[0]);
 const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 
-SpessaSynthLog.setLogLevel(true, true, true);
+SpessaLog.setLogLevel(true, true, true);
 
 const p = [];
 for (let i = 0; i < 16; i++) {

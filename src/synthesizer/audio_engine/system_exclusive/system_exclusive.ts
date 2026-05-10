@@ -1,5 +1,5 @@
 import { ConsoleColors } from "../../../utils/other";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import { handleGM } from "./handle_gm";
 import { handleGS } from "./handle_gs";
 import { handleXG } from "./handle_xg";
@@ -34,7 +34,7 @@ export function systemExclusiveInternal(
 
     switch (manufacturer) {
         default: {
-            SpessaSynthLog.unsupported(
+            SpessaLog.unsupported(
                 "System Exclusive",
                 syx,
                 `Unknown manufacturer: ${manufacturer}`
@@ -69,7 +69,7 @@ export function systemExclusiveInternal(
             this.portSelectChannelOffset = (syx[1] - 1) * 16;
             // Create new port if needed
             while (this.midiChannels.length <= this.portSelectChannelOffset) {
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cPort select, channel offset %c${this.portSelectChannelOffset}%c. Creating a new port!`,
                     ConsoleColors.info,
                     ConsoleColors.value,

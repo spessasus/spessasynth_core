@@ -8,7 +8,7 @@ import {
     writeLittleEndianIndexed,
     writeWord
 } from "../../../utils/byte_functions/little_endian";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import {
     MOD_BYTE_SIZE,
     Modulator,
@@ -41,8 +41,8 @@ export function writeSF2Internal(
         writeOptions,
         DEFAULT_SF2_WRITE_OPTIONS
     );
-    SpessaSynthLog.groupCollapsed("%cSaving soundbank...", ConsoleColors.info);
-    SpessaSynthLog.group("%cWriting INFO...", ConsoleColors.info);
+    SpessaLog.groupCollapsed("%cSaving soundbank...", ConsoleColors.info);
+    SpessaLog.group("%cWriting INFO...", ConsoleColors.info);
     /**
      * Write INFO
      */
@@ -101,7 +101,7 @@ export function writeSF2Internal(
 
     if (unchangedDefaultModulators && options?.writeDefaultModulators) {
         const mods = bank.defaultModulators;
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cWriting %c${mods.length}%c default modulators...`,
             ConsoleColors.info,
             ConsoleColors.recognized,
@@ -119,30 +119,30 @@ export function writeSF2Internal(
         infoArrays.push(...RIFFChunk.getParts("DMOD", [dmodData]));
     }
 
-    SpessaSynthLog.groupEnd();
-    SpessaSynthLog.info("%cWriting SDTA...", ConsoleColors.info);
+    SpessaLog.groupEnd();
+    SpessaLog.info("%cWriting SDTA...", ConsoleColors.info);
     // Write sdta
     const smplStartOffsets: number[] = [];
     const smplEndOffsets: number[] = [];
     const sdtaChunk = getSDTA(bank, smplStartOffsets, smplEndOffsets);
 
-    SpessaSynthLog.info("%cWriting PDTA...", ConsoleColors.info);
+    SpessaLog.info("%cWriting PDTA...", ConsoleColors.info);
     // Write pdta
     // Go in reverse so the indexes are correct
     // Instruments
-    SpessaSynthLog.info("%cWriting SHDR...", ConsoleColors.info);
+    SpessaLog.info("%cWriting SHDR...", ConsoleColors.info);
     const shdrChunk = getSHDR(bank, smplStartOffsets, smplEndOffsets);
 
     // Note:
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
 
-    SpessaSynthLog.group("%cWriting instruments...", ConsoleColors.info);
+    SpessaLog.group("%cWriting instruments...", ConsoleColors.info);
     const instData = writeSF2Elements(bank, false);
-    SpessaSynthLog.groupEnd();
+    SpessaLog.groupEnd();
 
-    SpessaSynthLog.group("%cWriting presets...", ConsoleColors.info);
+    SpessaLog.group("%cWriting presets...", ConsoleColors.info);
     const presData = writeSF2Elements(bank, true);
-    SpessaSynthLog.groupEnd();
+    SpessaLog.groupEnd();
 
     const chunks: ExtendedSF2Chunks[] = [
         presData.hdr,
@@ -171,7 +171,7 @@ export function writeSF2Internal(
             bank.samples.some((s) => s.name.length > 20));
 
     if (writeXdta) {
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cWriting the xdta chunk as writeExtendedLimits is enabled and at least one condition was met.`,
             ConsoleColors.info,
             ConsoleColors.value
@@ -187,7 +187,7 @@ export function writeSF2Internal(
     }
 
     const infoChunk = RIFFChunk.getParts("INFO", infoArrays, true);
-    SpessaSynthLog.info("%cWriting the output file...", ConsoleColors.info);
+    SpessaLog.info("%cWriting the output file...", ConsoleColors.info);
     // Finally, combine everything
     const main = RIFFChunk.writeParts("RIFF", [
         getStringBytes("sfbk"),
@@ -195,11 +195,11 @@ export function writeSF2Internal(
         ...sdtaChunk,
         ...pdtaChunk
     ]);
-    SpessaSynthLog.info(
+    SpessaLog.info(
         `%cSaved successfully! Final file size: %c${main.length}`,
         ConsoleColors.info,
         ConsoleColors.recognized
     );
-    SpessaSynthLog.groupEnd();
+    SpessaLog.groupEnd();
     return main.buffer;
 }

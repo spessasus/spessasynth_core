@@ -30,7 +30,7 @@ import {
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import type { SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
@@ -545,7 +545,7 @@ export class MIDIChannel {
         cents = Math.round(cents);
         this.setMIDIParameter("modulationDepth", cents / 50);
         if (!log) return;
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cChannel ${this.channel} modulation depth. Cents: %c${cents}`,
             ConsoleColors.info,
             ConsoleColors.value
@@ -562,7 +562,7 @@ export class MIDIChannel {
         if (this._midiParameters.keyShift === shift) return;
         this.setMIDIParameter("keyShift", shift);
         if (!log) return;
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cKey shift for %c${this.channel}%c is now set to %c${shift}.`,
             ConsoleColors.info,
             ConsoleColors.recognized,
@@ -582,7 +582,7 @@ export class MIDIChannel {
         this.setMIDIParameter("fineTune", cents);
         if (!log) return;
 
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cFine tuning for %c${this.channel}%c is now set to %c${cents}%c cents.`,
             ConsoleColors.info,
             ConsoleColors.recognized,
@@ -665,7 +665,7 @@ export class MIDIChannel {
     public pitchWheelRange(range: number, log = true) {
         this.setMIDIParameter("pitchWheelRange", range);
         if (!log) return;
-        SpessaSynthLog.coolInfo(
+        SpessaLog.coolInfo(
             `Pitch Wheel Range for ${this.channel}`,
             range,
             "semitones"

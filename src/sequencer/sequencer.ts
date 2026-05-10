@@ -14,7 +14,7 @@ import {
 } from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
 import { arrayToHexString, ConsoleColors } from "../utils/other";
-import { SpessaSynthLog } from "../utils/loggin";
+import { SpessaLog } from "../utils/loggin";
 
 export class SpessaSynthSequencer {
     /**
@@ -288,7 +288,7 @@ export class SpessaSynthSequencer {
      */
     public play() {
         if (!this._midiData) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 "No songs loaded in the sequencer. Ignoring the play call."
             );
             return;
@@ -337,16 +337,13 @@ export class SpessaSynthSequencer {
         this.callEvent("songListChange", { newSongList: [...this.songs] });
         // Preload all songs (without embedded sound banks)
         if (this.preload) {
-            SpessaSynthLog.group(
-                "%cPreloading all songs...",
-                ConsoleColors.info
-            );
+            SpessaLog.group("%cPreloading all songs...", ConsoleColors.info);
             for (const song of this.songs) {
                 if (song.embeddedSoundBank === undefined) {
                     song.preloadSynth(this.synth);
                 }
             }
-            SpessaSynthLog.groupEnd();
+            SpessaLog.groupEnd();
         }
 
         this.loadCurrentSong();
@@ -404,7 +401,7 @@ export class SpessaSynthSequencer {
 
     protected sendMIDIMessage(message: number[]) {
         if (!this.externalMIDIPlayback) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Attempting to send ${arrayToHexString(message)} to the synthesizer via sendMIDIMessage. This shouldn't happen!`
             );
             return;

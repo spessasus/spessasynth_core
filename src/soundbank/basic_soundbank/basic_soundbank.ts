@@ -1,4 +1,4 @@
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import {
     DEFAULT_SF2_WRITE_OPTIONS,
@@ -234,7 +234,7 @@ export class BasicSoundBank {
             writtenCount++;
             progressFunc?.(writtenCount / this.samples.length);
 
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cEncoded sample %c${writtenCount}. ${s.name}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
@@ -441,7 +441,7 @@ export class BasicSoundBank {
                     }
                 }
                 if (!isIZoneUsed && iZone.sample) {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         `%c${iZone.sample.name}%c removed from %c${instrument.name}%c.`,
                         ConsoleColors.recognized,
                         ConsoleColors.info,
@@ -451,7 +451,7 @@ export class BasicSoundBank {
                     if (instrument.deleteZone(iZoneIndex)) {
                         trimmedIZones++;
                         iZoneIndex--;
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             `%c${iZone.sample.name}%c deleted`,
                             ConsoleColors.recognized,
                             ConsoleColors.info
@@ -465,12 +465,12 @@ export class BasicSoundBank {
             return trimmedIZones;
         };
 
-        SpessaSynthLog.groupCollapsed(
+        SpessaLog.groupCollapsed(
             "%cTrimming sound bank...",
             ConsoleColors.info
         );
 
-        SpessaSynthLog.info("Combinations to trim for:", presetData);
+        SpessaLog.info("Combinations to trim for:", presetData);
         // Modify the sound bank to only include programs and samples that are used
         for (
             let presetIndex = 0;
@@ -480,7 +480,7 @@ export class BasicSoundBank {
             const p = this.presets[presetIndex];
             const used = presetData.get(p);
             if (used === undefined) {
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cDeleting preset %c${p.name}%c and its zones`,
                     ConsoleColors.info,
                     ConsoleColors.recognized,
@@ -496,12 +496,12 @@ export class BasicSoundBank {
                         velocity: Number.parseInt(split[1])
                     };
                 });
-                SpessaSynthLog.groupCollapsed(
+                SpessaLog.groupCollapsed(
                     `%cTrimming %c${p.name}`,
                     ConsoleColors.info,
                     ConsoleColors.recognized
                 );
-                SpessaSynthLog.info(`Keys for ${p.name}:`, combos);
+                SpessaLog.info(`Keys for ${p.name}:`, combos);
                 let trimmedZones = 0;
                 // Clean the preset to only use zones that are used
                 for (
@@ -528,7 +528,7 @@ export class BasicSoundBank {
                                 zone.instrument,
                                 combos
                             );
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 `%cTrimmed off %c${trimmedIZones}%c zones from %c${zone.instrument.name}`,
                                 ConsoleColors.info,
                                 ConsoleColors.recognized,
@@ -547,20 +547,20 @@ export class BasicSoundBank {
                         zoneIndex--;
                     }
                 }
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cTrimmed off %c${trimmedZones}%c zones from %c${p.name}`,
                     ConsoleColors.info,
                     ConsoleColors.recognized,
                     ConsoleColors.info,
                     ConsoleColors.recognized
                 );
-                SpessaSynthLog.groupEnd();
+                SpessaLog.groupEnd();
             }
         }
         this.removeUnusedElements();
 
-        SpessaSynthLog.info("%cSound bank modified!", ConsoleColors.recognized);
-        SpessaSynthLog.groupEnd();
+        SpessaLog.info("%cSound bank modified!", ConsoleColors.recognized);
+        SpessaLog.groupEnd();
     }
 
     public removeUnusedElements() {
@@ -636,7 +636,7 @@ export class BasicSoundBank {
                 if (!allowedPrograms.has(preset.program)) {
                     // Not valid!
                     this._isXGBank = false;
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         `%cThis bank is not valid XG. Preset %c${preset.toString()}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
                         ConsoleColors.info,
                         ConsoleColors.value,
@@ -652,13 +652,13 @@ export class BasicSoundBank {
         for (const [info, value] of Object.entries(this.soundBankInfo)) {
             if (typeof value === "object" && "major" in value) {
                 const v = value as SF2VersionTag;
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%c${info}: %c"${v.major}.${v.minor}"`,
                     ConsoleColors.info,
                     ConsoleColors.recognized
                 );
             } else
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%c${info}: %c${(value as string | Date).toLocaleString()}`,
                     ConsoleColors.info,
                     ConsoleColors.recognized

@@ -19,7 +19,7 @@ import {
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
 import { MIDIProtocol } from "./midi_protocol";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import type { MIDISystem } from "../../soundbank/types";
 
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
@@ -130,7 +130,7 @@ function correctBankOffsetInternal(
                     );
                     t.events[eventIndexes[trackNum]] = newEvent;
                     e = newEvent;
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         "%cReplaced a system exclusive with controller change!",
                         ConsoleColors.info
                     );
@@ -149,7 +149,7 @@ function correctBankOffsetInternal(
                     );
                     t.events[eventIndexes[trackNum]] = newEvent;
                     e = newEvent;
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         "%cReplaced a system exclusive with program change!",
                         ConsoleColors.info
                     );
@@ -176,7 +176,7 @@ function correctBankOffsetInternal(
                 isGMGSDrum: channel.drums
             };
             const targetPreset = soundBank.getPreset(patch, system);
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cInput patch: %c${MIDIPatchTools.toMIDIString(patch)}%c. Channel %c${chNum}%c. Changing patch to ${targetPreset.toString()}.`,
                 ConsoleColors.info,
                 ConsoleColors.unrecognized,
@@ -279,7 +279,7 @@ function correctBankOffsetInternal(
             );
             indexToAdd = programIndex;
         }
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cAdding bank select for %c${ch}`,
             ConsoleColors.info,
             ConsoleColors.recognized
@@ -345,9 +345,9 @@ export function writeRMIDIInternal(
     options: RMIDIWriteOptions
 ): ArrayBuffer {
     const metadata = options.metadata;
-    SpessaSynthLog.group("%cWriting the RMIDI File...", ConsoleColors.info);
-    SpessaSynthLog.info("metadata", metadata);
-    SpessaSynthLog.info("Initial bank offset", mid.bankOffset);
+    SpessaLog.group("%cWriting the RMIDI File...", ConsoleColors.info);
+    SpessaLog.info("metadata", metadata);
+    SpessaLog.info("Initial bank offset", mid.bankOffset);
     if (options.correctBankOffset) {
         if (!options.soundBank) {
             throw new Error(
@@ -462,8 +462,8 @@ export function writeRMIDIInternal(
     infoContent.push(RIFFChunk.write("DBNK", DBNK));
 
     // Combine and write out
-    SpessaSynthLog.info("%cFinished!", ConsoleColors.info);
-    SpessaSynthLog.groupEnd();
+    SpessaLog.info("%cFinished!", ConsoleColors.info);
+    SpessaLog.groupEnd();
     return RIFFChunk.writeParts("RIFF", [
         getStringBytes("RMID"),
         RIFFChunk.write("data", newMid),

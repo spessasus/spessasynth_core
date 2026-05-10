@@ -1,6 +1,6 @@
 import type { MIDISystem } from "../types";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 
 export interface MIDIPatch {
@@ -199,7 +199,7 @@ export class MIDIPatchTools {
 
         // Helper to log failed exact matches
         const returnReplacement = (pres: T) => {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cPreset %c${MIDIPatchTools.toMIDIString(patch)}%c not found. (${system}) Replaced with %c${this.toFullMIDIString(pres)}`,
                 ConsoleColors.warn,
                 ConsoleColors.unrecognized,

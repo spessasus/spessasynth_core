@@ -3,7 +3,7 @@ import {
     audioToWav,
     BasicMIDI,
     SoundBankLoader,
-    SpessaSynthLog,
+    SpessaLog,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
@@ -31,7 +31,7 @@ const synth = new SpessaSynthProcessor(sampleRate, {
 synth.soundBankManager.addSoundBank(soundBank, "main");
 await synth.processorInitialized;
 // Enable verbose information during render
-SpessaSynthLog.setLogLevel(true, true, true);
+SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count
 synth.setMasterParameter("autoAllocateVoices", true);
 

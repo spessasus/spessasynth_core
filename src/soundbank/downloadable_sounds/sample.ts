@@ -11,7 +11,7 @@ import {
     readBinaryStringIndexed
 } from "../../utils/byte_functions/string";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { DLSSample } from "./dls_sample";
 import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
@@ -156,7 +156,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
 
         const inam = RIFFChunk.write("INAM", getStringBytes(this.name, true));
         const info = RIFFChunk.write("INFO", inam, false, true);
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cSaved %c${this.name}%c successfully!`,
             ConsoleColors.recognized,
             ConsoleColors.value,

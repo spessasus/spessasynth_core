@@ -2,7 +2,7 @@ import {
     getStringBytes,
     readBinaryStringIndexed
 } from "../utils/byte_functions/string";
-import { SpessaSynthLog } from "../utils/loggin";
+import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
 import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
@@ -146,7 +146,7 @@ class XMFNode {
                                 ] === fieldSpecifier
                         ) ?? "";
                 } else {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         `Unknown field specifier: ${fieldSpecifier}`
                     );
                     key = `unknown_${fieldSpecifier}`;
@@ -178,9 +178,7 @@ class XMFNode {
             } else {
                 // Throw new Error ("International content is not supported.");
                 // Skip the number of versions
-                SpessaSynthLog.info(
-                    `International content: ${numberOfVersions}`
-                );
+                SpessaLog.info(`International content: ${numberOfVersions}`);
                 // Length in bytes
                 // Skip the whole thing!
                 metadataChunk.currentIndex +=
@@ -204,14 +202,14 @@ class XMFNode {
                 switch (unpacker.id) {
                     case unpackerIDs.nonRegistered:
                     case unpackerIDs.registered: {
-                        SpessaSynthLog.groupEnd();
+                        SpessaLog.groupEnd();
                         throw new Error(
                             `Unsupported unpacker ID: ${unpacker.id}`
                         );
                     }
 
                     default: {
-                        SpessaSynthLog.groupEnd();
+                        SpessaLog.groupEnd();
                         throw new Error(
                             `Unknown unpacker ID: ${unpacker.id as unknown as string}`
                         );
@@ -269,14 +267,14 @@ class XMFNode {
             case referenceTypeIds.XMFFileURIandNodeID:
             case referenceTypeIds.externalFile:
             case referenceTypeIds.inFileResource: {
-                SpessaSynthLog.groupEnd();
+                SpessaLog.groupEnd();
                 throw new Error(
                     `Unsupported reference type: ${this.referenceTypeID}`
                 );
             }
 
             default: {
-                SpessaSynthLog.groupEnd();
+                SpessaLog.groupEnd();
                 throw new Error(
                     `Unknown reference type: ${this.referenceTypeID as string}`
                 );
@@ -287,7 +285,7 @@ class XMFNode {
         if (this.isFile) {
             if (this.packedContent) {
                 const compressed = this.nodeData.slice(2);
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cPacked content. Attempting to deflate. Target size: %c${this.nodeUnpackers[0].decodedSize}`,
                     ConsoleColors.warn,
                     ConsoleColors.value
@@ -297,7 +295,7 @@ class XMFNode {
                         inflateSync(compressed).buffer
                     );
                 } catch (error: unknown) {
-                    SpessaSynthLog.groupEnd();
+                    SpessaLog.groupEnd();
                     if (error instanceof Error) {
                         throw new Error(
                             `Error unpacking XMF file contents: ${error.message}.`,
@@ -311,11 +309,11 @@ class XMFNode {
              */
             const resourceFormat = this.metadata.resourceFormat as number[];
             if (resourceFormat === undefined) {
-                SpessaSynthLog.warn("No resource format for this file node!");
+                SpessaLog.warn("No resource format for this file node!");
             } else {
                 const formatTypeID = resourceFormat[0];
                 if (formatTypeID !== formatTypeIDs.standard) {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         `Non-standard formatTypeID: ${resourceFormat.toString()}`
                     );
                     this.resourceFormat =
@@ -332,7 +330,7 @@ class XMFNode {
                             ] === resourceFormatID
                     ) as resourceFormatStrings;
                 } else {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         `Unrecognized resource format: ${resourceFormatID}`
                     );
                 }
@@ -373,15 +371,15 @@ export function loadXMF(
     // https://wiki.multimedia.cx/index.php?title=Extensible_Music_Format_(XMF)
     const sanityCheck = readBinaryStringIndexed(binaryData, 4);
     if (sanityCheck !== "XMF_") {
-        SpessaSynthLog.groupEnd();
+        SpessaLog.groupEnd();
         throw new SyntaxError(
             `Invalid XMF Header! Expected "_XMF", got "${sanityCheck}"`
         );
     }
 
-    SpessaSynthLog.group("%cParsing XMF file...", ConsoleColors.info);
+    SpessaLog.group("%cParsing XMF file...", ConsoleColors.info);
     const version = readBinaryStringIndexed(binaryData, 4);
-    SpessaSynthLog.info(
+    SpessaLog.info(
         `%cXMF version: %c${version}`,
         ConsoleColors.info,
         ConsoleColors.recognized
@@ -391,7 +389,7 @@ export function loadXMF(
     if (version === "2.00") {
         const fileTypeId = readBigEndianIndexed(binaryData, 4);
         const fileTypeRevisionId = readBigEndianIndexed(binaryData, 4);
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cFile Type ID: %c${fileTypeId}%c, File Type Revision ID: %c${fileTypeRevisionId}`,
             ConsoleColors.info,
             ConsoleColors.recognized,
@@ -440,7 +438,7 @@ export function loadXMF(
                 case "DLS2":
                 case "DLS22":
                 case "mobileDLS": {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         "%cFound embedded DLS!",
                         ConsoleColors.recognized
                     );
@@ -450,7 +448,7 @@ export function loadXMF(
 
                 case "StandardMIDIFile":
                 case "StandardMIDIFileType1": {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         "%cFound embedded MIDI!",
                         ConsoleColors.recognized
                     );
@@ -465,7 +463,7 @@ export function loadXMF(
         }
     };
     searchNode(rootNode);
-    SpessaSynthLog.groupEnd();
+    SpessaLog.groupEnd();
     if (!midiArray) {
         throw new Error("No MIDI data in the XMF file!");
     }

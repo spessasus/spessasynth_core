@@ -7,7 +7,7 @@ import {
     NonRegisteredMSB,
     RegisteredParameterTypes
 } from "../../../../midi/enums";
-import { SpessaSynthLog } from "../../../../utils/loggin";
+import { SpessaLog } from "../../../../utils/loggin";
 
 // A helper function to log info in a nice way
 const coolInfo = (
@@ -19,7 +19,7 @@ const coolInfo = (
     if (type.length > 0) {
         type = " " + type;
     }
-    SpessaSynthLog.info(
+    SpessaLog.info(
         `%c${what} for %c${chanNum}%c is now set to %c${value}%c${type}.`,
         ConsoleColors.info,
         ConsoleColors.recognized,
@@ -52,7 +52,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
             (this.midiControllers[MIDIControllers.registeredParameterLSB] >> 7);
         switch (rpnValue) {
             default: {
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cUnrecognized RPN for %c${this.channel}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataCoarse}`,
                     ConsoleColors.warn,
                     ConsoleColors.recognized,
@@ -115,7 +115,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
         return;
     switch (paramCoarse) {
         default: {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse
                     .toString(16)
                     .toUpperCase()} 0x${paramFine
@@ -138,7 +138,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 this.synthCore.masterParameters.customVibratoLock || paramLock;
             switch (paramFine) {
                 default: {
-                    SpessaSynthLog.info(
+                    SpessaLog.info(
                         `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse.toString(16)} 0x${paramFine.toString(
                             16
                         )})%c data value: %c${dataCoarse}`,

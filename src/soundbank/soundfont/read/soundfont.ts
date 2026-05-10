@@ -8,7 +8,7 @@ import { readInstruments } from "./instruments";
 import { readModulators } from "./modulators";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { ConsoleColors } from "../../../utils/other";
-import { SpessaSynthLog } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import {
     readBinaryString,
     readBinaryStringIndexed
@@ -41,12 +41,9 @@ export class SoundFont2 extends BasicSoundBank {
             );
         }
         const mainFileArray = new IndexedByteArray(arrayBuffer);
-        SpessaSynthLog.group(
-            "%cParsing a SoundFont2 file...",
-            ConsoleColors.info
-        );
+        SpessaLog.group("%cParsing a SoundFont2 file...", ConsoleColors.info);
         if (!mainFileArray) {
-            SpessaSynthLog.groupEnd();
+            SpessaLog.groupEnd();
             this.parsingError("No data provided!");
         }
 
@@ -56,7 +53,7 @@ export class SoundFont2 extends BasicSoundBank {
 
         const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
         if (type !== "sfbk" && type !== "sfpk") {
-            SpessaSynthLog.groupEnd();
+            SpessaLog.groupEnd();
             throw new SyntaxError(
                 `Invalid soundFont! Expected "sfbk" or "sfpk" got "${type}"`
             );
@@ -73,7 +70,7 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyHeader(infoChunk, "list");
         const infoString = readBinaryStringIndexed(infoChunk.data, 4);
         if (infoString !== "INFO") {
-            SpessaSynthLog.groupEnd();
+            SpessaLog.groupEnd();
             throw new SyntaxError(
                 `Invalid soundFont! Expected "INFO" got "${infoString}"`
             );
@@ -117,7 +114,7 @@ export class SoundFont2 extends BasicSoundBank {
                     // Possible xdta
                     const listType = readBinaryStringIndexed(chunk.data, 4);
                     if (listType === "xdta") {
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             "%cExtended SF2 found!",
                             ConsoleColors.recognized
                         );
@@ -205,13 +202,13 @@ export class SoundFont2 extends BasicSoundBank {
         this.verifyText(readBinaryStringIndexed(mainFileArray, 4), "sdta");
 
         // Smpl
-        SpessaSynthLog.info("%cVerifying smpl chunk...", ConsoleColors.warn);
+        SpessaLog.info("%cVerifying smpl chunk...", ConsoleColors.warn);
         const sampleDataChunk = RIFFChunk.read(mainFileArray, false);
         this.verifyHeader(sampleDataChunk, "smpl");
         let sampleData: IndexedByteArray | Float32Array;
         // SF2Pack: the entire data is compressed
         if (isSF2Pack) {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 "%cSF2Pack detected, attempting to decode the smpl chunk...",
                 ConsoleColors.info
             );
@@ -223,13 +220,13 @@ export class SoundFont2 extends BasicSoundBank {
                     )
                 ).data[0];
             } catch (error) {
-                SpessaSynthLog.groupEnd();
+                SpessaLog.groupEnd();
                 throw new Error(
                     `SF2Pack Ogg Vorbis decode error: ${error as Error}`,
                     { cause: error }
                 );
             }
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cDecoded the smpl chunk! Length: %c${sampleData.length}`,
                 ConsoleColors.info,
                 ConsoleColors.value
@@ -239,7 +236,7 @@ export class SoundFont2 extends BasicSoundBank {
             this.sampleDataStartIndex = mainFileArray.currentIndex;
         }
 
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cSkipping sample chunk, length: %c${sdtaChunk.size - 12}`,
             ConsoleColors.info,
             ConsoleColors.value
@@ -247,10 +244,7 @@ export class SoundFont2 extends BasicSoundBank {
         mainFileArray.currentIndex += sdtaChunk.size - 12;
 
         // PDTA
-        SpessaSynthLog.info(
-            "%cLoading preset data chunk...",
-            ConsoleColors.warn
-        );
+        SpessaLog.info("%cLoading preset data chunk...", ConsoleColors.warn);
         const presetChunk = RIFFChunk.read(mainFileArray);
         this.verifyHeader(presetChunk, "list");
         readBinaryStringIndexed(presetChunk.data, 4);
@@ -283,7 +277,7 @@ export class SoundFont2 extends BasicSoundBank {
         const shdrChunk = RIFFChunk.read(presetChunk.data);
         this.verifyHeader(shdrChunk, "shdr");
 
-        SpessaSynthLog.info("%cParsing samples...", ConsoleColors.info);
+        SpessaLog.info("%cParsing samples...", ConsoleColors.info);
 
         /**
          * Read all the samples
@@ -415,7 +409,7 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         this.flush();
-        SpessaSynthLog.info(
+        SpessaLog.info(
             `%cParsing finished! %c"${this.soundBankInfo.name}"%c has %c${this.presets.length}%c presets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,
             ConsoleColors.info,
@@ -428,12 +422,12 @@ export class SoundFont2 extends BasicSoundBank {
             ConsoleColors.recognized,
             ConsoleColors.info
         );
-        SpessaSynthLog.groupEnd();
+        SpessaLog.groupEnd();
     }
 
     protected verifyHeader(chunk: RIFFChunk, expected: string) {
         if (chunk.header.toLowerCase() !== expected.toLowerCase()) {
-            SpessaSynthLog.groupEnd();
+            SpessaLog.groupEnd();
             this.parsingError(
                 `Invalid chunk header! Expected "${expected.toLowerCase()}" got "${chunk.header.toLowerCase()}"`
             );
@@ -442,7 +436,7 @@ export class SoundFont2 extends BasicSoundBank {
 
     protected verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
-            SpessaSynthLog.groupEnd();
+            SpessaLog.groupEnd();
             this.parsingError(
                 `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"\``
             );

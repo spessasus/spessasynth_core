@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import path from "node:path";
-import { BasicMIDI, SpessaSynthLog } from "../src";
+import { BasicMIDI, SpessaLog } from "../src";
 import { toISODateString } from "../src/utils/date";
 
 // Process arguments
@@ -11,7 +11,7 @@ if (args.length !== 1) {
 }
 const midPath = args[0];
 
-SpessaSynthLog.setLogLevel(false, false, false);
+SpessaLog.setLogLevel(false, false, false);
 
 const entries = await fs.readdir(midPath, { recursive: true });
 

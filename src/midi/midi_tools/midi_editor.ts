@@ -1,6 +1,6 @@
 import { MIDIMessage } from "../midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
@@ -204,7 +204,7 @@ export function modifyMIDIInternal(
     midi: BasicMIDI,
     opts: Partial<ModifyMIDIOptions>
 ) {
-    SpessaSynthLog.groupCollapsed(
+    SpessaLog.groupCollapsed(
         "%cApplying changes to the MIDI file...",
         ConsoleColors.info
     );
@@ -220,14 +220,14 @@ export function modifyMIDIInternal(
         insertionParams
     } = fillWithDefaults(opts, DEFAULT_MODIFY_MIDI_OPTIONS);
 
-    SpessaSynthLog.info("Desired program changes:", programChanges);
-    SpessaSynthLog.info("Desired CC changes:", controllerChanges);
-    SpessaSynthLog.info("Desired channels to clear:", clearedChannels);
-    SpessaSynthLog.info("Desired channels to transpose:", pitchOffsets);
-    SpessaSynthLog.info("Desired reverb parameters", reverbParams);
-    SpessaSynthLog.info("Desired chorus parameters", chorusParams);
-    SpessaSynthLog.info("Desired delay parameters", delayParams);
-    SpessaSynthLog.info("Desired insertion parameters", insertionParams);
+    SpessaLog.info("Desired program changes:", programChanges);
+    SpessaLog.info("Desired CC changes:", controllerChanges);
+    SpessaLog.info("Desired channels to clear:", clearedChannels);
+    SpessaLog.info("Desired channels to transpose:", pitchOffsets);
+    SpessaLog.info("Desired reverb parameters", reverbParams);
+    SpessaLog.info("Desired chorus parameters", chorusParams);
+    SpessaLog.info("Desired delay parameters", delayParams);
+    SpessaLog.info("Desired insertion parameters", insertionParams);
 
     const channelsToChangeProgram = new Set<number>();
     for (const c of programChanges) {
@@ -417,7 +417,7 @@ export function modifyMIDIInternal(
                         if (!change) {
                             return;
                         }
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             `%cSetting %c${change.channel}%c to %c${MIDIPatchTools.toMIDIString(change)}%c. Track num: %c${trackNum}`,
                             ConsoleColors.info,
                             ConsoleColors.recognized,
@@ -459,7 +459,7 @@ export function modifyMIDIInternal(
                             change.isGMGSDrum
                         ) {
                             // Best I can do is XG drums
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 `%cAdding XG Drum change on track %c${trackNum}`,
                                 ConsoleColors.recognized,
                                 ConsoleColors.value
@@ -479,7 +479,7 @@ export function modifyMIDIInternal(
                             midiChannel !== DEFAULT_PERCUSSION
                         ) {
                             // Add gs drum change
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 `%cAdding GS Drum change on track %c${trackNum}`,
                                 ConsoleColors.recognized,
                                 ConsoleColors.value
@@ -604,7 +604,7 @@ export function modifyMIDIInternal(
                                             ch.keyShift += Math.trunc(newTune);
                                             ch.fineTune =
                                                 newTune - Math.trunc(newTune);
-                                            SpessaSynthLog.info(
+                                            SpessaLog.info(
                                                 `%cRelative fine tuning, offset: %c${data.value}`,
                                                 ConsoleColors.info,
                                                 ConsoleColors.recognized
@@ -634,7 +634,7 @@ export function modifyMIDIInternal(
                     }
 
                     case "XG Reset": {
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             "%cXG system on detected",
                             ConsoleColors.info
                         );
@@ -644,7 +644,7 @@ export function modifyMIDIInternal(
                     }
 
                     case "GM2 On": {
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             "%cGM2 system on detected",
                             ConsoleColors.info
                         );
@@ -657,7 +657,7 @@ export function modifyMIDIInternal(
                         // Check for GS on
                         // That's a GS on, we're done here
                         addedGs = true;
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             "%cGS on detected!",
                             ConsoleColors.recognized
                         );
@@ -668,7 +668,7 @@ export function modifyMIDIInternal(
                     case "GM On": {
                         // Check for GM on
                         // That's a GM1 system change, remove it!
-                        SpessaSynthLog.info(
+                        SpessaLog.info(
                             "%cGM on detected, removing!",
                             ConsoleColors.info
                         );
@@ -728,7 +728,7 @@ export function modifyMIDIInternal(
                             const newTune = ch.fineTune + syx.value / 100;
                             ch.keyShift += Math.trunc(newTune);
                             ch.fineTune = newTune - Math.trunc(newTune);
-                            SpessaSynthLog.info(
+                            SpessaLog.info(
                                 `%cRelative fine tuning, offset: %c${syx.value}`,
                                 ConsoleColors.info,
                                 ConsoleColors.recognized
@@ -919,13 +919,10 @@ export function modifyMIDIInternal(
             index++;
         }
         midi.tracks[0].addEvents(index, MIDIProtocol.gsReset(0));
-        SpessaSynthLog.info(
-            "%cGS on not detected. Adding it.",
-            ConsoleColors.info
-        );
+        SpessaLog.info("%cGS on not detected. Adding it.", ConsoleColors.info);
     }
     midi.flush();
-    SpessaSynthLog.groupEnd();
+    SpessaLog.groupEnd();
 }
 
 /**

@@ -10,7 +10,7 @@ import {
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 
 class SoundBankManagerPreset extends BasicPreset {
     public constructor(p: BasicPreset, offset: number) {
@@ -80,7 +80,7 @@ export class SoundBankManager {
      */
     public deleteSoundBank(id: string) {
         if (this.soundBankList.length === 0) {
-            SpessaSynthLog.warn("1 soundbank left. Aborting!");
+            SpessaLog.warn("1 soundbank left. Aborting!");
             return;
         }
         const index = this.soundBankList.findIndex((s) => s.id === id);

@@ -3,7 +3,7 @@ import {
     MIDIPatchTools,
     type RMIDInfoData,
     SoundBankLoader,
-    SpessaSynthLog
+    SpessaLog
 } from "../src";
 import fs from "node:fs/promises";
 
@@ -19,7 +19,7 @@ console.time("Parsed sound bank in");
 const sbkFile = await fs.readFile(sbkPath);
 const sbk = SoundBankLoader.fromArrayBuffer(sbkFile.buffer);
 console.timeEnd("Parsed sound bank in");
-SpessaSynthLog.setLogLevel(true, true, true);
+SpessaLog.setLogLevel(true, true, true);
 console.time("Parsed MIDI file in");
 const midFile = await fs.readFile(midPath);
 const mid = BasicMIDI.fromArrayBuffer(midFile.buffer);

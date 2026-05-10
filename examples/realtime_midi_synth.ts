@@ -1,6 +1,6 @@
 import midi from "midi";
 import Speaker from "speaker";
-import { SoundBankLoader, SpessaSynthLog, SpessaSynthProcessor } from "../src";
+import { SoundBankLoader, SpessaLog, SpessaSynthProcessor } from "../src";
 import * as fs from "node:fs/promises";
 
 // Process arguments
@@ -14,7 +14,7 @@ const sampleRate = 44_100;
 console.info("Initializing synthesizer...");
 const sfPath = args[0];
 const sf = await fs.readFile(sfPath);
-SpessaSynthLog.setLogLevel(true, true, true);
+SpessaLog.setLogLevel(true, true, true);
 const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false
 });

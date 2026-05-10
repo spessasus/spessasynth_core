@@ -1,5 +1,5 @@
 import { ConsoleColors, formatTime } from "../utils/other";
-import { SpessaSynthLog } from "../utils/loggin";
+import { SpessaLog } from "../utils/loggin";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthSequencer } from "./sequencer";
 
@@ -49,9 +49,7 @@ export function loadNewSequenceInternal(
 
     if (parsedMidi.duration === 0) {
         // https://github.com/spessasus/SpessaSynth/issues/106
-        SpessaSynthLog.warn(
-            "This MIDI file has a duration of exactly 0 seconds."
-        );
+        SpessaLog.warn("This MIDI file has a duration of exactly 0 seconds.");
         this.pausedTime = 0;
         this.isFinished = true;
         return;
@@ -66,7 +64,7 @@ export function loadNewSequenceInternal(
 
     // Check for embedded soundfont
     if (this._midiData.embeddedSoundBank !== undefined) {
-        SpessaSynthLog.info(
+        SpessaLog.info(
             "%cEmbedded soundbank detected! Using it.",
             ConsoleColors.recognized
         );
@@ -94,14 +92,14 @@ export function loadNewSequenceInternal(
     this.firstNoteTime = this._midiData.midiTicksToSeconds(
         this._midiData.firstNoteOn
     );
-    SpessaSynthLog.info(
+    SpessaLog.info(
         `%cTotal song time: ${formatTime(Math.ceil(this._midiData.duration)).time}`,
         ConsoleColors.recognized
     );
     this.callEvent("songChange", { songIndex: this._songIndex });
 
     if (this._midiData.duration <= 0.2) {
-        SpessaSynthLog.warn(
+        SpessaLog.warn(
             `%cVery short song: (${formatTime(Math.round(this._midiData.duration)).time}). Disabling loop!`,
             ConsoleColors.warn
         );

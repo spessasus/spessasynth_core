@@ -1,7 +1,7 @@
 import {
     BasicMIDI,
     SoundBankLoader,
-    SpessaSynthLog,
+    SpessaLog,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
@@ -22,7 +22,7 @@ const sf = await fs.readFile(sfPath);
 const mid = await fs.readFile(midPath);
 
 const sampleRate = 44_100;
-SpessaSynthLog.setLogLevel(true, true, true);
+SpessaLog.setLogLevel(true, true, true);
 console.info("Initializing synthesizer...");
 const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false

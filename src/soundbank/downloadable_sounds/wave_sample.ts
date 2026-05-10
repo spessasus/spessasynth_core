@@ -14,7 +14,7 @@ import { type BasicSample } from "../basic_soundbank/basic_sample";
 import type { SampleLoopingMode } from "../../synthesizer/types";
 import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
 import { type DLSLoopType, DLSLoopTypes } from "./enums";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 
 const WSMP_SIZE = 20;
 const WSMP_LOOP_SIZE = 16;
@@ -68,7 +68,7 @@ export class WaveSample extends DLSVerifier {
         // CbSize
         const cbSize = readLittleEndianIndexed(chunk.data, 4);
         if (cbSize !== WSMP_SIZE) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Wsmp cbSize mismatch: got ${cbSize}, expected ${WSMP_SIZE}.`
             );
         }
@@ -90,7 +90,7 @@ export class WaveSample extends DLSVerifier {
         } else {
             const cbSize = readLittleEndianIndexed(chunk.data, 4);
             if (cbSize !== WSMP_LOOP_SIZE) {
-                SpessaSynthLog.warn(
+                SpessaLog.warn(
                     `CbSize for loop in wsmp mismatch. Expected ${WSMP_LOOP_SIZE}, got ${cbSize}.`
                 );
             }

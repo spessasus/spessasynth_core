@@ -1,6 +1,6 @@
 import { type FourCC, RIFFChunk } from "../../utils/riff_chunk";
 import type { DLSChunkFourCC } from "../types";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 
 export abstract class DLSVerifier {
@@ -40,7 +40,7 @@ export abstract class DLSVerifier {
      * @throws error if the check doesn't pass
      */
     protected static parsingError(error: string) {
-        SpessaSynthLog.groupEnd();
+        SpessaLog.groupEnd();
         throw new Error(`DLS parse error: ${error} The file may be corrupted.`);
     }
 

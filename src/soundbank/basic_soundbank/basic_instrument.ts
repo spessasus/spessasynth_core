@@ -1,5 +1,5 @@
 import { BasicInstrumentZone } from "./basic_instrument_zone";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { type BasicPreset } from "./basic_preset";
 import type { BasicSample } from "./basic_sample";
 import {
@@ -99,7 +99,7 @@ export class BasicInstrument {
     public unlinkFrom(preset: BasicPreset) {
         const index = this.linkedTo.indexOf(preset);
         if (index === -1) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Cannot unlink ${preset.name} from ${this.name}: not linked.`
             );
             return;
@@ -302,7 +302,7 @@ export class BasicInstrument {
     }
 
     public write(instData: ExtendedSF2Chunks, index: number) {
-        SpessaSynthLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
+        SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(instData.pdta, this.name.slice(0, 20), 20);
         writeBinaryStringIndexed(instData.xdta, this.name.slice(20), 20);

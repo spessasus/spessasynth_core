@@ -3,7 +3,7 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { type SampleType, SampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
 import type { SampleEncodingFunction } from "../types";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 
 // Should be reasonable for most cases
 const RESAMPLE_RATE = 48_000;
@@ -171,7 +171,7 @@ export class BasicSample {
             const compressed = await encodeVorbis(audioData, this.sampleRate);
             this.setCompressedData(compressed);
         } catch (error) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Failed to compress ${this.name}. Leaving as uncompressed!`,
                 error
             );
@@ -262,7 +262,7 @@ export class BasicSample {
     public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);
         if (index === -1) {
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Cannot unlink ${instrument.name} from ${this.name}: not linked.`
             );
             return;
@@ -347,7 +347,7 @@ export class BasicSample {
             const vorbis = stbvorbis.decode(this.compressedData);
             const decoded = vorbis.data[0];
             if (decoded === undefined) {
-                SpessaSynthLog.warn(
+                SpessaLog.warn(
                     `Error decoding sample ${this.name}: Vorbis decode returned undefined.`
                 );
                 return new Float32Array(0);
@@ -364,7 +364,7 @@ export class BasicSample {
             return decoded;
         } catch (error) {
             // Do not error out, fill with silence
-            SpessaSynthLog.warn(
+            SpessaLog.warn(
                 `Error decoding sample ${this.name}: ${error as Error}`
             );
             return new Float32Array(this.loopEnd + 1);

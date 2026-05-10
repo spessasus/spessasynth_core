@@ -69,5 +69,5 @@ export interface WaveMetadata {
 
 export { IndexedByteArray } from "./indexed_array";
 export { audioToWav } from "./write_wav";
-export { SpessaSynthLog } from "./loggin";
+export { SpessaLog } from "./loggin";
 export { type FourCC } from "./riff_chunk";

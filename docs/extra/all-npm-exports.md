@@ -69,6 +69,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 - `IndexedByteArray` - an Uint8Array with an internal counter called `currentIndex`. Extensively used in the library.
 - `audioToWav` - a function that converts PCM audio data to a WAV file.
-- `SpessaSynthLog` - the log manager for `spessasynth_core`.
+- `SpessaLog` - the log manager for `spessasynth_core`.
 - `SpessaSynthCoreUtils` - some utilities and byte functions of the library, used by `spessasynth_lib` and might be useful
   for your project too!

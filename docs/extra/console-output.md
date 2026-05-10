@@ -3,7 +3,7 @@
 SpessaSynth can print out additional info to the console or print nothing at all.
 Here's how you can set it:
 
-## SpessaSynthLog
+## SpessaLog
 
 A class for managing the console output.
 
@@ -15,7 +15,7 @@ A class for managing the console output.
 ### setLogLevel
 
 ```ts
-SpessaSynthLog.setLogLevel(enableInfo, enableWarning, enableGroup);
+SpessaLog.setLogLevel(enableInfo, enableWarning, enableGroup);
 ```
 
 All the input variables are booleans corresponding to the things SpessaSynth logs.

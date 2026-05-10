@@ -1,5 +1,5 @@
 import { ConsoleColors } from "../../../../utils/other";
-import { SpessaSynthLog } from "../../../../utils/loggin";
+import { SpessaLog } from "../../../../utils/loggin";
 import { handleAWE32NRPN } from "./awe32";
 import type { MIDIChannel } from "../midi_channel";
 import {
@@ -22,7 +22,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
             (this.midiControllers[MIDIControllers.registeredParameterLSB] >> 7);
         switch (rpnValue) {
             default: {
-                SpessaSynthLog.info(
+                SpessaLog.info(
                     `%cUnrecognized RPN for %c${this.channel}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
                     ConsoleColors.warn,
                     ConsoleColors.recognized,
@@ -91,7 +91,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
     }
     switch (paramCoarse) {
         default: {
-            SpessaSynthLog.info(
+            SpessaLog.info(
                 `%cUnrecognized NRPN LSB for %c${this.channel}%c: %c(0x${paramCoarse
                     .toString(16)
                     .toUpperCase()} 0x${paramFine

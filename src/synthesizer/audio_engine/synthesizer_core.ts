@@ -13,7 +13,7 @@ import {
 import { Voice } from "./voice/voice";
 import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { CachedVoice } from "./voice/voice_cache";
-import { SpessaSynthLog } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { MIDIChannel } from "./channel/midi_channel";
 import { SoundBankManager } from "./sound_bank_manager";
 import { KeyModifierManager } from "./key_modifier_manager";
@@ -428,10 +428,7 @@ export class SynthesizerCore {
             const v = new Voice(this.sampleRate);
             this.voices.push(v);
             this.masterParameters.voiceCap++;
-            SpessaSynthLog.info(
-                "%cAllocating a new voice!",
-                ConsoleColors.info
-            );
+            SpessaLog.info("%cAllocating a new voice!", ConsoleColors.info);
             return v;
         }
         this.assignVoicePriorities();
@@ -449,7 +446,7 @@ export class SynthesizerCore {
      * @param force if true, all notes are stopped immediately, otherwise they are stopped gracefully.
      */
     public stopAllChannels(force: boolean) {
-        SpessaSynthLog.info("%cStop all received!", ConsoleColors.info);
+        SpessaLog.info("%cStop all received!", ConsoleColors.info);
         for (const channel of this.midiChannels) {
             channel.stopAllNotes(force);
         }
@@ -778,9 +775,7 @@ export class SynthesizerCore {
         )) {
             const sample = voiceParams.sample;
             if (voiceParams.sample.getAudioData() === undefined) {
-                SpessaSynthLog.warn(
-                    `Discarding invalid sample: ${sample.name}`
-                );
+                SpessaLog.warn(`Discarding invalid sample: ${sample.name}`);
                 continue;
             }
             voices.push(
@@ -940,7 +935,7 @@ export class SynthesizerCore {
             default: {
                 // Check for invalid macros
                 // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
-                SpessaSynthLog.warn(`Invalid reverb macro: ${macro}`);
+                SpessaLog.warn(`Invalid reverb macro: ${macro}`);
                 return;
             }
         }
@@ -1053,7 +1048,7 @@ export class SynthesizerCore {
             default: {
                 // Check for invalid macros
                 // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
-                SpessaSynthLog.warn(`Invalid chorus macro: ${macro}`);
+                SpessaLog.warn(`Invalid chorus macro: ${macro}`);
                 return;
             }
         }
@@ -1205,7 +1200,7 @@ export class SynthesizerCore {
             default: {
                 // Check for invalid macros
                 // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
-                SpessaSynthLog.warn(`Invalid delay macro: ${macro}`);
+                SpessaLog.warn(`Invalid delay macro: ${macro}`);
                 return;
             }
         }
@@ -1334,7 +1329,7 @@ export class SynthesizerCore {
      */
     private assignVoicePriorities() {
         if (this.lastPriorityAssignmentTime === this.currentTime) return;
-        SpessaSynthLog.info(
+        SpessaLog.info(
             "%cPolyphony exceeded, stealing voices",
             ConsoleColors.warn
         );
