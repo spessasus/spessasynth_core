@@ -4,7 +4,7 @@ import {
     assignMIDIPortInternal,
     loadNewSequenceInternal
 } from "./song_control";
-import { setTimeToInternal } from "./play";
+import { setTimeToInternal } from "./set_time_to";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import {
