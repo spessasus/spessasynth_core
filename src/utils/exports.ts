@@ -9,7 +9,7 @@ import {
 } from "./byte_functions/string";
 import { readVariableLengthQuantity } from "./byte_functions/variable_length_quantity";
 import { ConsoleColors } from "./other";
-import { inflateSync } from "../externals/fflate/fflate_wrapper";
+import { inflateSync } from "../externals/fflate/fflate_wrapper"; // You shouldn't use these...
 
 // You shouldn't use these...
 // noinspection JSUnusedGlobalSymbols

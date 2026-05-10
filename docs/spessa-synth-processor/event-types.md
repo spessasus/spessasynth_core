@@ -71,7 +71,8 @@ This event is triggered when the pitch wheel's range is changed on any channel.
 
 ### `controllerChange`
 
-This event is triggered when a controller is changed on any channel.
+This event is triggered when a controller is changed on any channel (usually MIDI program change,
+though [Some system exclusives can change it too](../extra/midi-implementation.md)).
 
 - `channel`: `number` - the channel that CC was changed on. Usually it ranges from 0 to 16, but it depends on the
   channel count.
@@ -85,7 +86,7 @@ after `allControllerReset` a `controllerChange` event will be called with `contr
 ### `programChange`
 
 This event is triggered when a program is changed on any channel (usually MIDI program change,
-though [Some SysExes can change it too](../extra/midi-implementation.md#xg-part-setup)).
+though [Some system exclusives can change it too](../extra/midi-implementation.md)).
 It is also called when receiving a system reset message.
 
 - `channel`: `number` - the channel that had its program changed. Usually it ranges from 0 to 16, but it depends on the

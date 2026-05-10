@@ -1,4 +1,4 @@
-import { arrayToHexString, ConsoleColors } from "../../../utils/other";
+import { ConsoleColors } from "../../../utils/other";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { handleGM } from "./handle_gm";
 import { handleGS } from "./handle_gs";
@@ -34,10 +34,10 @@ export function systemExclusiveInternal(
 
     switch (manufacturer) {
         default: {
-            SpessaSynthLog.info(
-                `%cUnknown manufacturer: %c${arrayToHexString(syx)}`,
-                ConsoleColors.warn,
-                ConsoleColors.unrecognized
+            SpessaSynthLog.unsupported(
+                "System Exclusive",
+                syx,
+                `Unknown manufacturer: ${manufacturer}`
             );
             break;
         }

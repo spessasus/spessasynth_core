@@ -25,13 +25,13 @@ export function formatTime(totalSeconds: number): {
 /**
  * Does what it says
  */
-export function arrayToHexString(arr: Iterable<number>): string {
+export function arrayToHexString(arr: ArrayLike<number>): string {
     let hexString = "";
 
-    for (const i of arr) {
-        const hex = i.toString(16).padStart(2, "0").toUpperCase();
+    for (let i = 0; i < arr.length; i++) {
+        const hex = arr[i].toString(16).padStart(2, "0").toUpperCase();
         hexString += hex;
-        hexString += " ";
+        if (i < arr.length - 1) hexString += " ";
     }
 
     return hexString;

@@ -114,7 +114,8 @@ export class SpessaSynthChorus implements ChorusProcessor {
 
     public set feedback(value: number) {
         this._feedback = value;
-        this.feedbackGain = value / 128;
+        // GM2 section 4.5.4
+        this.feedbackGain = value * 0.007_63;
     }
 
     private _rate = 0;
@@ -127,7 +128,8 @@ export class SpessaSynthChorus implements ChorusProcessor {
         this._rate = value;
         // GS Advanced Editor actually specifies the rate!
         // 127 - 15.50Hz, 1 - 0.12 Hz
-        const rate = 15.5 * (value / 127);
+        // And GM2 section 4.5.2 actually specifies the equation!
+        const rate = value * 0.122;
         this.rateInc = rate / this.sampleRate;
     }
 

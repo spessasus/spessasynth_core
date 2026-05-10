@@ -1,6 +1,4 @@
-import { sysExNotRecognized } from "./helpers";
 import { SpessaSynthLog } from "../../../utils/loggin";
-import { arrayToHexString, ConsoleColors } from "../../../utils/other";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
@@ -40,39 +38,25 @@ export function handleGM(
         case 0x04: {
             switch (syx[3]) {
                 default: {
-                    SpessaSynthLog.info(
-                        `%cUnrecognized %cMIDI Device Control%c real-time message: %c${arrayToHexString(syx)}`,
-                        ConsoleColors.warn,
-                        ConsoleColors.recognized,
-                        ConsoleColors.warn,
-                        ConsoleColors.unrecognized
-                    );
+                    SpessaSynthLog.gmFail("Device Control", syx);
                     break;
                 }
 
                 case 0x01: {
-                    // Main volume
+                    // Master volume
                     const vol = (syx[5] << 7) | syx[4];
                     this.setMIDIParameter("masterVolume", vol / 16_384);
-                    SpessaSynthLog.info(
-                        `%cMaster Volume. Volume: %c${vol}`,
-                        ConsoleColors.info,
-                        ConsoleColors.value
-                    );
+                    SpessaSynthLog.gmInfo("Master Volume", vol);
                     break;
                 }
 
                 case 0x02: {
-                    // Main balance
+                    // Master balance
                     // Midi spec page 62
                     const balance = (syx[5] << 7) | syx[4];
                     const pan = (balance - 8192) / 8192;
                     this.setMIDIParameter("masterPan", pan);
-                    SpessaSynthLog.info(
-                        `%cMaster Balance. Pan: %c${pan}`,
-                        ConsoleColors.info,
-                        ConsoleColors.value
-                    );
+                    SpessaSynthLog.gmInfo("Master Balance", pan);
                     break;
                 }
 
@@ -81,11 +65,7 @@ export function handleGM(
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
                     const cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
                     this.setMIDIParameter("masterTune", cents);
-                    SpessaSynthLog.info(
-                        `%cMaster Fine Tuning. Cents: %c${cents}`,
-                        ConsoleColors.info,
-                        ConsoleColors.value
-                    );
+                    SpessaSynthLog.gmInfo("Master Fine Tuning", cents, "cents");
                     break;
                 }
 
@@ -94,12 +74,132 @@ export function handleGM(
                     // Lsb is ignored
                     const keyShift = syx[5] - 64;
                     this.setMIDIParameter("masterKeyShift", keyShift);
-                    SpessaSynthLog.info(
-                        `%cMaster Coarse Tuning. Key shift: %c${keyShift}`,
-                        ConsoleColors.info,
-                        ConsoleColors.value
+                    SpessaSynthLog.gmInfo(
+                        "Master Coarse Tuning",
+                        keyShift,
+                        "keys"
                     );
                     break;
+                }
+
+                case 0x05: {
+                    // Global Parameter control
+                    if (
+                        syx[4] !== 0x01 || // Slot Path Length
+                        syx[5] !== 0x01 || // Parameter ID Width
+                        syx[6] !== 0x01 || // Value Width
+                        syx[7] !== 0x01 // Slot Path MSB
+                    ) {
+                        SpessaSynthLog.gmFail("Global Parameter Control", syx);
+                        break;
+                    }
+                    // Slot Path LSB
+                    switch (syx[8]) {
+                        default: {
+                            SpessaSynthLog.gmFail(
+                                "Global Parameter Control",
+                                syx
+                            );
+                            break;
+                        }
+
+                        case 0x01: {
+                            // Reverb
+                            const value = syx[10];
+                            // Parameter
+                            switch (syx[9]) {
+                                default: {
+                                    SpessaSynthLog.gmFail(
+                                        "Reverb Parameter Control",
+                                        syx
+                                    );
+                                    break;
+                                }
+
+                                case 0x00: {
+                                    // Reverb type
+                                    // Match 8850 manual, page 231
+                                    // All match except for plate which is 8 in GM and 5 in GS
+                                    const macro = value === 0x08 ? 0x05 : value;
+                                    this.setReverbMacro(macro);
+                                    SpessaSynthLog.gmInfo("Reverb Type", macro);
+                                    break;
+                                }
+
+                                case 0x01: {
+                                    // Reverb time
+                                    this.reverbProcessor.time = value;
+                                    SpessaSynthLog.gmInfo("Reverb Time", value);
+                                }
+                            }
+                            break;
+                        }
+
+                        case 0x02: {
+                            // Chorus
+                            const value = syx[10];
+                            // Parameter
+                            switch (syx[9]) {
+                                default: {
+                                    SpessaSynthLog.gmFail(
+                                        "Chorus Parameter Control",
+                                        syx
+                                    );
+                                    break;
+                                }
+
+                                case 0x00: {
+                                    // Chorus type
+                                    // Match 8850 manual, page 231
+                                    // All match
+                                    this.setChorusMacro(value);
+                                    SpessaSynthLog.gmInfo("Chorus Type", value);
+                                    break;
+                                }
+
+                                case 0x01: {
+                                    // Mod rate
+                                    this.chorusProcessor.rate = value;
+                                    SpessaSynthLog.gmInfo(
+                                        "Chorus Mod Rate",
+                                        value
+                                    );
+                                    break;
+                                }
+
+                                case 0x02: {
+                                    // Mod depth
+                                    this.chorusProcessor.depth = value;
+                                    SpessaSynthLog.gmInfo(
+                                        "Chorus Mod Depth",
+                                        value
+                                    );
+                                    break;
+                                }
+
+                                case 0x03: {
+                                    // Mod feedback
+                                    this.chorusProcessor.feedback = value;
+                                    SpessaSynthLog.gmInfo(
+                                        "Chorus Mod Feedback",
+                                        value
+                                    );
+                                    break;
+                                }
+
+                                case 0x04: {
+                                    // Mod send to reverb
+                                    this.chorusProcessor.sendLevelToReverb =
+                                        value;
+                                    SpessaSynthLog.gmInfo(
+                                        "Chorus Send to Reverb",
+                                        value
+                                    );
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -109,33 +209,24 @@ export function handleGM(
         case 0x09: {
             switch (syx[3]) {
                 default: {
-                    SpessaSynthLog.info(
-                        `%cUnrecognized %cGeneral MIDI%c message: %c${arrayToHexString(syx)}`,
-                        ConsoleColors.warn,
-                        ConsoleColors.recognized,
-                        ConsoleColors.warn,
-                        ConsoleColors.unrecognized
-                    );
+                    SpessaSynthLog.gmFail("System Exclusive", syx);
                     break;
                 }
 
                 case 0x01: {
-                    SpessaSynthLog.info("%cGM1 system on", ConsoleColors.info);
+                    SpessaSynthLog.coolInfo("MIDI System", "General MIDI 1");
                     this.resetAllControllers("gm");
                     break;
                 }
 
                 case 0x02: {
-                    SpessaSynthLog.info(
-                        "%cGM system off, switching to GS",
-                        ConsoleColors.info
-                    );
+                    SpessaSynthLog.coolInfo("MIDI System", "Roland GS");
                     this.resetAllControllers("gs");
                     break;
                 }
 
                 case 0x03: {
-                    SpessaSynthLog.info("%cGM2 system on", ConsoleColors.info);
+                    SpessaSynthLog.coolInfo("MIDI System", "General MIDI 2");
                     this.resetAllControllers("gm2");
                     break;
                 }
@@ -173,12 +264,9 @@ export function handleGM(
                             syx[currentMessageIndex++]
                         );
                     }
-                    SpessaSynthLog.info(
-                        `%cBulk Tuning Dump %c${tuningName}%c Program: %c${program}`,
-                        ConsoleColors.info,
-                        ConsoleColors.value,
-                        ConsoleColors.info,
-                        ConsoleColors.recognized
+                    SpessaSynthLog.gmInfo(
+                        "Bulk Tuning Dump",
+                        `${tuningName}, program ${program}`
                     );
                     break;
                 }
@@ -204,12 +292,9 @@ export function handleGM(
                                 syx[currentMessageIndex++]
                             );
                     }
-                    SpessaSynthLog.info(
-                        `%cSingle Note Tuning. Program: %c${tuningProgram}%c Keys affected: %c${numberOfChanges}`,
-                        ConsoleColors.info,
-                        ConsoleColors.recognized,
-                        ConsoleColors.info,
-                        ConsoleColors.recognized
+                    SpessaSynthLog.gmInfo(
+                        "Single Note Tuning",
+                        `program: ${tuningProgram}. Keys affected: ${numberOfChanges}`
                     );
                     break;
                 }
@@ -267,18 +352,15 @@ export function handleGM(
                         }
                     }
 
-                    SpessaSynthLog.info(
-                        `%cMIDI Octave Scale ${
-                            syx[3] === 0x08 ? "(1 byte)" : "(2 bytes)"
-                        } tuning via Tuning: %c${newOctaveTuning.join(" ")}`,
-                        ConsoleColors.info,
-                        ConsoleColors.value
+                    SpessaSynthLog.gmInfo(
+                        "Octave Scale Tuning",
+                        newOctaveTuning.join(" ")
                     );
                     break;
                 }
 
                 default: {
-                    sysExNotRecognized(syx, "MIDI Tuning Standard");
+                    SpessaSynthLog.gmFail("MIDI Tuning Standard", syx);
                     break;
                 }
             }
@@ -286,7 +368,7 @@ export function handleGM(
         }
 
         default: {
-            sysExNotRecognized(syx, "General MIDI");
+            SpessaSynthLog.gmFail("Universal System Exclusive", syx);
         }
     }
 }

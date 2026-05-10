@@ -7,7 +7,7 @@ import {
 } from "../src";
 import * as fs from "node:fs/promises";
 import { Readable } from "node:stream";
-import Speaker from "speaker";
+import Speaker from "speaker"; // Process arguments
 
 // Process arguments
 const args = process.argv.slice(2);

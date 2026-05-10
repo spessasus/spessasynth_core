@@ -19,7 +19,7 @@ This describes what messages SpessaSynth can receive.
 | Program Change    | ✔️         | GM, GM2, GS, XG                                                                                                      |
 | Channel Pressure  | ✔️         | 50 cents of vibrato (Per SF2 specification)                                                                          |
 | Pitch Wheel       | ✔️         | Controlled by Pitch Wheel Range (both semitones and cents) See [per-note pitch wheel](#per-note-pitch-wheel)         |
-| System exclusive  | ✔️         | [See below](#supported-system-exclusives)                                                                            |
+| System exclusive  | ✔️         | [See below](#system-exclusives)                                                                                      |
 | Time Code         | ❌         | Not Applicable                                                                                                       |
 | Song Position     | ❌         | Not Applicable                                                                                                       |
 | Song Select       | ❌         | Not Applicable                                                                                                       |
@@ -57,7 +57,7 @@ Below is the list of controllers supported by default.
 
 | CC                   | Controller name                     | Value                                                                                                    | Explanation                                                                                                                                                            | Default value |
 | -------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| 0                    | Bank Select                         | The bank number (0 - 127)                                                                                | Changes the bank number that is used in programChange. Note that it doesn't change the preset on its own. [See this for more info](#supported-bank-systems)            | 0             |
+| 0                    | Bank Select                         | The bank number (0 - 127)                                                                                | Changes the bank number that is used in programChange. Note that it doesn't change the preset on its own. [See this for more info](#supported-bank-selection-systems)  | 0             |
 | 1                    | Modulation Wheel                    | The modulation depth (0 - 127) mapped to max 50 cents of detune                                          | Controls the vibrato for the given patch.                                                                                                                              | 0             |
 | 5                    | Portamento Time                     | The portamento time (0 - 127)                                                                            | Controls the portamento time. [See portamento implementation](#portamento-implementation) A value of 0 effectively disables portamento.                                | 0             |
 | 6                    | Data Entry MSB                      | Data entry value (0 - 127)                                                                               | This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values. | none          |
@@ -65,7 +65,7 @@ Below is the list of controllers supported by default.
 | 7                    | Main Volume                         | The volume (0 - 127) 0 is silent, 127 is normal volume                                                   | Changes the channel's volume.                                                                                                                                          | 100           |
 | 10                   | Pan                                 | 0 is left, 64 is middle, 127 is right                                                                    | Controls the channel's stereo pan.                                                                                                                                     | 64            |
 | 11                   | Expression controller               | The expression (0 - 127) 0 is silent, 127 is normal volume                                               | Works exactly like Main Volume, but it's independent.                                                                                                                  | 127           |
-| 32                   | Bank Select LSB                     | The bank number (0 - 127)                                                                                | Changes the bank number that is used in programChange. Note that it doesn't change the preset on its own. [See this for more info](#supported-bank-systems)            | 0             |
+| 32                   | Bank Select LSB                     | The bank number (0 - 127)                                                                                | Changes the bank number that is used in programChange. Note that it doesn't change the preset on its own. [See this for more info](#supported-bank-selection-systems)  | 0             |
 | 33 - 64 excluding 38 | Controller LSB values               | The lower nibble of the value (0 - 127)                                                                  | Allows precise control of values such as volume, expression, pan. Extends the precision from 0 - 127 to 0 - 16384 (!)                                                  | 0             |
 | 38                   | Data Entry LSB                      | Data entry value (0 - 127)                                                                               | This sets the selected RP or NRP to the given value. Note that the RPN and NRPN controllers only select the parameter, while this controller actually sets the values. | none          |
 | 64                   | Sustain Pedal                       | 0 - 63 is off, 64 - 127 is on                                                                            | Holds the noteOff messages until the pedal is off, then stops them all at once.                                                                                        | OFF           |
@@ -213,54 +213,33 @@ There are a few differences from FluidSynth's implementation:
 - Effect generators get overridden directly rather than passing through the modulator.
 - Filter cutoff and Q have been tuned slightly differently.
 
-## System Exclusives
-
-### Supported System Exclusives
-
-Below is the list of currently implemented System Exclusive messages.
-
-| Name                   | Description                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| GM on                  | Turns the GM mode on. Ignores all the Bank Select controllers.                    |
-| GM off                 | Turns the GM mode off. Defaults to GS                                             |
-| GM2 on                 | Turns the GM2 mode on.                                                            |
-| Roland Master Volume   | Controls the overall synth's volume.                                              |
-| Roland GS              | See [this for more info](#roland-gs)                                              |
-| MIDI Master Volume     | Controls the overall synth's volume.                                              |
-| MIDI Master Balance    | Controls the overall synth's stereo panning.                                      |
-| Roland SC Display Text | The text that SC-88 MIDIs display on the device. `synthdisplay` will be called.   |
-| Roland SC Dot Matrix   | A dot matrix display for the Sound Canvas devices. `synthdisplay` will be called. |
-| XG Display Letters     | The text that XG MIDIs display on the device. `synthdisplay` will be called.      |
-| XG Display Bitmap      | The dot matrix display for XG devices. `synthdisplay` will be called.             |
-| Yamaha XG              | See [this for more info](#xg-part-setup)                                          |
-| MIDI Tuning Standard   | See [this for more info](#midi-tuning-standard)                                   |
-
-### Supported Bank systems
+## Supported Bank Selection Systems
 
 See the [MIDI Patch system](../spessa-synth-processor/midi-patch.md) for more information.
 
-#### GM
+### `GM`
 
 General MIDI (Level 1).
 
 Ignores all bank select messages.
 
-#### GS
+### `GS`
 
 Roland GS, default.
 
-Bank MSB processed directly, LSB is ignored.
+Bank MSB processed directly, LSB is ignored, unless a direct match is found.
 SysEx can be used to turn a channel into a drum channel.
 
-#### GM2
+### `GM2`
 
 General MIDI Level 2.
 
 Bank LSB and MSB are processed.
+Default bank MSB is 121 instead of 0.
 MSB can be used to turn a channel into a drum channel.
 Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
 
-#### XG
+### `XG`
 
 Yamaha XG.
 
@@ -268,9 +247,31 @@ Bank LSB and MSB are processed.
 MSB can be used to turn a channel into a drum channel.
 Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
 
+## System Exclusives
+
+Below is the list of currently implemented System Exclusive messages.
+
+Jump to the links:
+
+- [Roland GS](#roland-gs)
+- [Yamaha XG](#yamaha-xg)
+- [Universal MIDI System Exclusive](#universal-midi-system-exclusive)
+
 ### Roland GS
 
 Below are the supported Roland GS messages.
+
+#### Display Data
+
+##### Displayed Letter
+
+The text that Sound Canvas MIDIs display on the device.
+A `synthdisplay` event will be emitted with the system exclusive data.
+
+##### Displayed Dot Data
+
+A dot matrix display data for the Sound Canvas devices.
+A `synthdisplay` event will be emitted with the system exclusive data.
 
 #### System Parameters, Patch Common Parameters
 
@@ -278,19 +279,19 @@ These are global parameters, affecting the entire synthesizer.
 
 ##### System Mode Set (SC-88+ Reset)
 
-Treated like a GS reset.
+Resets the synthesizer and switches it to GS mode. (GS reset)
 
 ##### Master Tune
 
-Precise synth tuning in cents.
+Master fine tune of the synthesizer.
 
 ##### Master Volume
 
-Master gain of the synthesizer, treated like GM volume message.
+Master gain of the synthesizer.
 
 ##### Master Key-Shift
 
-Master transposition of the synthesizer.
+Master key shift of the synthesizer.
 
 ##### Master Pan
 
@@ -529,9 +530,13 @@ The XG mode disables the delay effect.
 Reverb, chorus, and variation parameter addresses are _not supported (yet)_.
 They are recognized only for logging; parameters are not applied to the effect engines.
 
-#### XG Part Setup
+#### Part Setup
 
 Part (channel) parameters set a specific parameter for a specific channel.
+
+!!! Warning
+
+    Parts above the current channel number are discarded. To avoid this, add more channels to the synthesizer.
 
 | Number (hex) | Name                   | Description                                                                                                                                                                                     |
 | ------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -556,7 +561,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | 1C           | Release Time           | Same as CC#72 (release time).                                                                                                                                                                   |
 | 23           | Bend Pitch Control     | Treated as pitch wheel range.                                                                                                                                                                   |
 
-#### XG Drum Setup
+#### Drum Setup
 
 The following messages allow to tune drum instruments.
 A drum instrument is defined as a single MIDI key in the drum preset.
@@ -599,19 +604,86 @@ forces the drum instrument to immediately terminate when it receives a Note Off.
 
 This allows to disable a specific drum instrument from receiving Note On events.
 
-### MIDI Tuning Standard
+#### Display Data
+
+##### Display Letter
+
+The text that XG MIDIs display on the device.
+A `synthdisplay` event will be emitted with the system exclusive data.
+
+##### Display Bitmap
+
+A dot matrix display data for the XG devices.
+A `synthdisplay` event will be emitted with the system exclusive data.
+
+### Universal MIDI System Exclusive
+
+#### Device Control
+
+##### Master Volume
+
+Master gain of the synthesizer.
+
+##### Master Balance
+
+Master stereo pan position of the synthesizer.
+
+##### Master Fine-Tuning
+
+Master fine tune of the synthesizer.
+
+##### Master Coarse Tuning
+
+Master key shift of the synthesizer.
+
+##### Global Parameter Control
+
+Effect parameter tuning:
+
+- Reverb
+    - Type (macro)
+    - Time
+- Chorus
+    - Type (macro)
+    - Rate
+    - Depth
+    - Feedback
+    - Send to Reverb
+
+#### General MIDI
+
+##### General MIDI On
+
+Resets the synthesizer and switches it to GM mode.
+
+##### General MIDI Off
+
+Resets the synthesizer and switches it to GS mode.
+
+##### General MIDI 2 On
+
+Resets the synthesizer and switches it to GM2 mode.
+
+#### MIDI Tuning Standard
 
 Below are the supported messages for the MTS.
 RT means realtime and NRT means non-realtime (both are treated as realtime).
 
-| Name                                   | Description                                     |
-| -------------------------------------- | ----------------------------------------------- |
-| Bulk Tuning Dump                       | Tuning dump for all 128 notes                   |
-| Scale Octave Tuning (1 byte) (RT/NRT)  | Tuning a single octave, applies to all of them. |
-| Scale Octave Tuning (2 bytes) (RT/NRT) | Same as above.                                  |
-| Single Note Tuning change (RT/NRT)     | Tunes a single note.                            |
+##### Bulk Tuning Dump
 
-### Poly/Mono implementation
+Tuning dump for all 128 notes.
+
+##### Scale Octave Tuning (1/2 bytes)
+
+Tuning a single octave, repeated across the entire MIDI range.
+
+##### Single Note Tuning Change
+
+Tuning a single note. Note that this can theoretically be used as per-note Pitch Wheel.
+
+## Implementation Details
+
+### Poly/Mono Implementation
 
 SpessaSynth's poly/mono mode implementation works like GS implementation:
 
@@ -658,15 +730,15 @@ Input is fed to all three.
 
 Disabled in XG mode as CC#94 (used as delay send level) is used for Variation which is not implemented.
 
-## Insertion Effects
+### Insertion
 
-Spessasynth has an architecture to support SC-88Pro+ insertion effects.
+Spessasynth has an architecture in place to support SC-88Pro+ insertion effects.
 
-### Currently implemented insertion effects
+#### Currently implemented insertion effects
 
 - Stereo-EQ
 - Phaser
 - Auto Pan
-- Auto Wah
+- Auto Wah (needs improvements)
 - Tremolo
 - PH / Auto Wah

@@ -324,6 +324,59 @@ export class MIDIProtocol {
                         value: syx[5] - 64
                     };
                 }
+
+                case 0x05: {
+                    // Global Parameter control
+                    if (
+                        syx[4] !== 0x01 || // Slot Path Length
+                        syx[5] !== 0x01 || // Parameter ID Width
+                        syx[6] !== 0x01 || // Value Width
+                        syx[7] !== 0x01 // Slot Path MSB
+                    ) {
+                        return OTHER;
+                    }
+
+                    // Slot Path LSB
+                    switch (syx[8]) {
+                        default: {
+                            return OTHER;
+                        }
+
+                        case 0x01: {
+                            // Reverb
+                            // Parameter
+                            switch (syx[9]) {
+                                default: {
+                                    return OTHER;
+                                }
+
+                                case 0x01:
+                                case 0x02: {
+                                    return {
+                                        type: "Reverb Param"
+                                    };
+                                }
+                            }
+                        }
+
+                        case 0x02: {
+                            // Chorus
+                            // Parameter
+                            switch (syx[9]) {
+                                default: {
+                                    return OTHER;
+                                }
+
+                                case 0x01:
+                                case 0x02:
+                                case 0x03:
+                                case 0x04: {
+                                    return { type: "Chorus Param" };
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
         if (syx[2] !== 0x09) return OTHER;

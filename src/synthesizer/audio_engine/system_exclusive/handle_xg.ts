@@ -1,4 +1,3 @@
-import { sysExNotRecognized } from "./helpers";
 import { SpessaSynthLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
 import { MIDIControllers } from "../../../midi/enums";
@@ -45,7 +44,7 @@ export function handleXG(
                             (syx[9] & 15);
                         const cents = (tune - 1024) / 10;
                         this.setMIDIParameter("masterTune", cents);
-                        coolInfo("Master Tune", cents);
+                        SpessaSynthLog.xgInfo("Master Tune", cents, "cents");
                     }
                     break;
                 }
@@ -53,6 +52,7 @@ export function handleXG(
                 // Master volume
                 case 0x04: {
                     this.setMIDIParameter("masterVolume", data / 127);
+                    SpessaSynthLog.xgInfo("Master Volume", data);
                     coolInfo("Master Volume", data);
                     break;
                 }
@@ -61,7 +61,7 @@ export function handleXG(
                 case 0x05: {
                     const vol = 127 - data;
                     this.setMIDIParameter("masterVolume", vol / 127);
-                    coolInfo("Master Attenuation", data);
+                    SpessaSynthLog.xgInfo("Master Attenuation", data);
                     break;
                 }
 
@@ -69,7 +69,7 @@ export function handleXG(
                 case 0x06: {
                     const transpose = data - 64;
                     this.setMIDIParameter("masterKeyShift", transpose);
-                    coolInfo("Master Transpose", transpose);
+                    SpessaSynthLog.xgInfo("Master Transpose", data);
                     break;
                 }
 
@@ -77,7 +77,7 @@ export function handleXG(
                 // XG on
                 case 0x7f:
                 case 0x7e: {
-                    SpessaSynthLog.info("%cXG system on", ConsoleColors.info);
+                    SpessaSynthLog.coolInfo("MIDI System", "Yamaha XG");
                     this.resetAllControllers("xg");
                     break;
                 }
@@ -91,11 +91,7 @@ export function handleXG(
             else if (effect <= 0x35) effectType = "Chorus";
             else effectType = "Variation";
 
-            SpessaSynthLog.info(
-                `%cUnsupported XG ${effectType} Parameter: %c${effect.toString(16)}`,
-                ConsoleColors.warn,
-                ConsoleColors.unrecognized
-            );
+            SpessaSynthLog.xgFail(`${effectType} parameter`, [effect]);
             return;
         }
 
@@ -103,24 +99,17 @@ export function handleXG(
             const channel = a2 + channelOffset;
             if (channel >= this.midiChannels.length) {
                 // Invalid channel
-                SpessaSynthLog.info(
-                    `%cDiscarding XG SysEx with invalid part number:%c ${channel}`,
-                    ConsoleColors.warn,
-                    ConsoleColors.unrecognized
+                SpessaSynthLog.xgFail(
+                    "Part Setup",
+                    syx,
+                    `Invalid part number: ${channel}`
                 );
                 return;
             }
             const ch = this.midiChannels[channel];
             switch (a3) {
                 default: {
-                    SpessaSynthLog.info(
-                        `%cUnsupported Yamaha XG Part Setup: %c${syx[5]
-                            .toString(16)
-                            .toUpperCase()}%c for channel ${channel}`,
-                        ConsoleColors.warn,
-                        ConsoleColors.unrecognized,
-                        ConsoleColors.warn
-                    );
+                    SpessaSynthLog.xgFail("Part Setup", [syx[5]]);
                     break;
                 }
 
@@ -147,7 +136,10 @@ export function handleXG(
                     const rxChannel = data + channelOffset;
                     ch.setMIDIParameter("rxChannel", rxChannel);
                     this.customChannelNumbers ||= rxChannel !== ch.channel;
-                    coolInfo(`Rev. Channel on ${channel}`, rxChannel);
+                    SpessaSynthLog.xgInfo(
+                        `Rev. Channel on ${channel}`,
+                        rxChannel
+                    );
                     break;
                 }
 
@@ -155,13 +147,21 @@ export function handleXG(
                 case 0x05: {
                     const poly = data === 1;
                     ch.setMIDIParameter("polyMode", poly);
-                    coolInfo(`Mono/poly on ${channel}`, poly ? "POLY" : "MONO");
+                    SpessaSynthLog.xgInfo(
+                        `Mono/poly on ${channel}`,
+                        poly ? "POLY" : "MONO"
+                    );
                     break;
                 }
 
                 // Part mode
                 case 0x07: {
-                    ch.setDrums(data !== 0);
+                    const drums = data !== 0;
+                    ch.setDrums(drums);
+                    SpessaSynthLog.xgInfo(
+                        `Part Mode on ${channel}`,
+                        drums ? "DRUM" : "MELODIC"
+                    );
                     break;
                 }
 
@@ -170,7 +170,11 @@ export function handleXG(
                     if (ch.drumChannel) break;
                     const keyShift = data - 64;
                     ch.setMIDIParameter("keyShift", keyShift);
-                    coolInfo(`Key shift on ${channel}`, keyShift);
+                    SpessaSynthLog.xgInfo(
+                        `Key Shift on ${channel}`,
+                        keyShift,
+                        "keys"
+                    );
                     break;
                 }
 
@@ -187,7 +191,10 @@ export function handleXG(
                     ch.setMIDIParameter("randomPan", randomPan);
                     if (randomPan)
                         // 0 means random
-                        coolInfo(`Random Pan for ${channel}`, "ON");
+                        SpessaSynthLog.xgInfo(
+                            `Random Pan for ${channel}`,
+                            "ON"
+                        );
                     else ch.controllerChange(MIDIControllers.pan, pan);
 
                     break;
@@ -268,7 +275,7 @@ export function handleXG(
             const drumKey = a2;
             switch (a3) {
                 default: {
-                    sysExNotRecognized([a3], "Yamaha XG Drum Setup");
+                    SpessaSynthLog.xgFail("Drum Setup", [a3]);
                     return;
                 }
 
@@ -279,7 +286,11 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].pitch = pitch;
                     }
-                    coolInfo(`Drum Pitch, key ${drumKey}`, pitch);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Pitch for key ${drumKey}`,
+                        pitch,
+                        "semitones"
+                    );
                     break;
                 }
 
@@ -289,9 +300,10 @@ export function handleXG(
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].pitch += pitch;
-                        coolInfo(
-                            `Drum Pitch Fine, key ${drumKey}`,
-                            ch.drumParams[drumKey].pitch
+                        SpessaSynthLog.xgInfo(
+                            `Drum Pitch for key ${drumKey}`,
+                            ch.drumParams[drumKey].pitch,
+                            "semitones"
                         );
                     }
                     break;
@@ -303,7 +315,10 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].gain = data / 120;
                     }
-                    coolInfo(`Drum Level, key ${drumKey}`, data);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Level for key ${drumKey}`,
+                        data
+                    );
                     break;
                 }
 
@@ -313,7 +328,10 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].exclusiveClass = data;
                     }
-                    coolInfo(`Drum Alternate Group, key ${drumKey}`, data);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Alternate Group for key ${drumKey}`,
+                        data
+                    );
                     break;
                 }
 
@@ -323,7 +341,7 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].pan = data;
                     }
-                    coolInfo(`Drum Pan, key ${drumKey}`, data);
+                    SpessaSynthLog.xgInfo(`Drum Pan for key ${drumKey}`, data);
                     break;
                 }
 
@@ -333,7 +351,10 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].reverbGain = data / 127;
                     }
-                    coolInfo(`Drum Reverb, key ${drumKey}`, data);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Reverb for key ${drumKey}`,
+                        data
+                    );
                     break;
                 }
 
@@ -343,7 +364,10 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].chorusGain = data / 127;
                     }
-                    coolInfo(`Drum Chorus, key ${drumKey}`, data);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Chorus for key ${drumKey}`,
+                        data
+                    );
                     break;
                 }
 
@@ -353,7 +377,10 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].rxNoteOff = data === 1;
                     }
-                    coolInfo(`Drum Note Off, key ${drumKey}`, data === 1);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Note Off for key ${drumKey}`,
+                        data === 1 ? "ON" : "OFF"
+                    );
                     break;
                 }
 
@@ -363,7 +390,10 @@ export function handleXG(
                         if (!ch.drumChannel) continue;
                         ch.drumParams[drumKey].rxNoteOn = data === 1;
                     }
-                    coolInfo(`Drum Note On, key ${drumKey}`, data === 1);
+                    SpessaSynthLog.xgInfo(
+                        `Drum Note On for key ${drumKey}`,
+                        data === 1 ? "ON" : "OFF"
+                    );
                     break;
                 }
             }
@@ -376,10 +406,11 @@ export function handleXG(
         ) {
             // Displayed letters
             this.callEvent("synthDisplay", [...syx]);
-        } else {
-            sysExNotRecognized(syx, "Yamaha XG");
+            return;
         }
+
+        SpessaSynthLog.xgFail("System Exclusive", syx, "Unknown address");
     } else {
-        sysExNotRecognized(syx, "Yamaha");
+        SpessaSynthLog.xgFail("System Exclusive", syx);
     }
 }

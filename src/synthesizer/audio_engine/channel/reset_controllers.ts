@@ -63,11 +63,11 @@ export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
         this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0
     );
     this.pitchWheel(8192);
-    this.pitchWheelRange(2);
+    this.pitchWheelRange(2, false);
     this.keyShift(0, false);
     this.fineTune(0, false);
     this.setMIDIParameter("pressure", 0);
-    this.modulationDepth(50);
+    this.modulationDepth(50, false);
     // Do not reset user transpose!
 
     // Reset poly/mono mode

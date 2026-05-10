@@ -665,13 +665,10 @@ export class MIDIChannel {
     public pitchWheelRange(range: number, log = true) {
         this.setMIDIParameter("pitchWheelRange", range);
         if (!log) return;
-        SpessaSynthLog.info(
-            `%cPitch wheel range for %c${this.channel}%c is now set to %c${range}%c semitones.`,
-            ConsoleColors.info,
-            ConsoleColors.recognized,
-            ConsoleColors.info,
-            ConsoleColors.value,
-            ConsoleColors.info
+        SpessaSynthLog.coolInfo(
+            `Pitch Wheel Range for ${this.channel}`,
+            range,
+            "semitones"
         );
     }
 

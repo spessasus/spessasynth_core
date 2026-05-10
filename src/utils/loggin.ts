@@ -1,3 +1,6 @@
+import type { SysExAcceptedArray } from "../midi/types";
+import { arrayToHexString, ConsoleColors } from "./other";
+
 /**
  * Manage the log level of `spessasynth_core`.
  */
@@ -51,5 +54,90 @@ export class SpessaSynthLog {
 
     public static groupEnd() {
         if (this.groupEnabled) console.groupEnd();
+    }
+
+    /**
+     * @internal
+     */
+    public static unsupported(
+        what: string,
+        syx: SysExAcceptedArray,
+        reason = ""
+    ) {
+        if (this.infoEnabled)
+            this.info(
+                `%cUnsupported %c${what}%c message: %c${arrayToHexString(syx)}%c. ${reason}`,
+                ConsoleColors.warn,
+                ConsoleColors.recognized,
+                ConsoleColors.warn,
+                ConsoleColors.unrecognized,
+                ConsoleColors.warn
+            );
+    }
+
+    /**
+     * @internal
+     */
+    public static gmInfo(what: string, value: number | string, unit = "") {
+        if (this.infoEnabled)
+            this.coolInfo(`General MIDI ${what}`, value, unit);
+    }
+
+    /**
+     * @internal
+     */
+    public static gmFail(what: string, syx: SysExAcceptedArray) {
+        if (this.infoEnabled) this.unsupported(`General MIDI ${what}`, syx);
+    }
+
+    /**
+     * @internal
+     */
+    public static gsInfo(what: string, value: number | string, unit = "") {
+        if (this.infoEnabled) this.coolInfo(`Roland GS ${what}`, value, unit);
+    }
+
+    /**
+     * @internal
+     */
+    public static gsFail(what: string, syx: SysExAcceptedArray, reason = "") {
+        if (this.infoEnabled)
+            this.unsupported(`Roland GS ${what}`, syx, reason);
+    }
+
+    /**
+     * @internal
+     */
+    public static xgInfo(what: string, value: number | string, unit = "") {
+        if (this.infoEnabled) this.coolInfo(`Yamaha XG ${what}`, value, unit);
+    }
+
+    /**
+     * @internal
+     */
+    public static xgFail(what: string, syx: SysExAcceptedArray, reason = "") {
+        if (this.infoEnabled)
+            this.unsupported(`Yamaha XG ${what}`, syx, reason);
+    }
+
+    /**
+     * @internal
+     */
+    public static coolInfo(what: string, value: number | string, unit = "") {
+        if (!this.infoEnabled) return;
+        if (unit)
+            SpessaSynthLog.info(
+                `%c${what} is now set to %c${value}%c ${unit}.`,
+                ConsoleColors.info,
+                ConsoleColors.value,
+                ConsoleColors.info
+            );
+        else
+            SpessaSynthLog.info(
+                `%c${what} is now set to %c${value}%c.`,
+                ConsoleColors.info,
+                ConsoleColors.value,
+                ConsoleColors.info
+            );
     }
 }
