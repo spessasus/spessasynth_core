@@ -24,6 +24,14 @@ import type { MIDISystem } from "../../soundbank/types";
 
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
+interface ChannelStatus {
+    program: number;
+    isDrum: boolean;
+    lastBank?: MIDIMessage;
+    lastBankLSB?: MIDIMessage;
+    hasBankSelect: boolean;
+}
+
 /**
  * Add the offset to the bank.
  * See https://github.com/spessasus/sf2-rmidi-specification#readme
@@ -46,17 +54,11 @@ function correctBankOffsetInternal(
     // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     const ports = new Array<number>(mid.tracks.length).fill(0);
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
-    const channelsInfo: {
-        program: number;
-        drums: boolean;
-        lastBank?: MIDIMessage;
-        lastBankLSB?: MIDIMessage;
-        hasBankSelect: boolean;
-    }[] = [];
+    const channels: ChannelStatus[] = [];
     for (let i = 0; i < channelsAmount; i++) {
-        channelsInfo.push({
+        channels.push({
             program: 0,
-            drums: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
+            isDrum: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
             lastBank: undefined,
             lastBankLSB: undefined,
             hasBankSelect: false
@@ -74,9 +76,8 @@ function correctBankOffsetInternal(
             status !== MIDIMessageTypes.controllerChange &&
             status !== MIDIMessageTypes.programChange &&
             status !== MIDIMessageTypes.systemExclusive
-        ) {
+        )
             return;
-        }
 
         if (status === MIDIMessageTypes.systemExclusive) {
             const syx = MIDIProtocol.analyzeSysEx(e.data);
@@ -88,7 +89,7 @@ function correctBankOffsetInternal(
                 // Check for drum sysex
                 case "Drums On": {
                     const sysexChannel = syx.channel + portOffset;
-                    channelsInfo[sysexChannel].drums = syx.isDrum;
+                    channels[sysexChannel].isDrum = syx.isDrum;
                     return;
                 }
 
@@ -161,19 +162,19 @@ function correctBankOffsetInternal(
 
         // Program change
         const chNum = (e.statusByte & 0xf) + portOffset;
-        const channel = channelsInfo[chNum];
+        const ch = channels[chNum];
         if (status === MIDIMessageTypes.programChange) {
             const sentProgram = e.data[0];
             const patch: MIDIPatch = {
                 program: sentProgram,
-                bankLSB: channel.lastBankLSB?.data?.[1] ?? 0,
+                bankLSB: ch.lastBankLSB?.data?.[1] ?? 0,
                 // Make sure to take bank offset into account
                 bankMSB: BankSelectHacks.subtractBankOffset(
-                    channel.lastBank?.data?.[1] ?? 0,
+                    ch.lastBank?.data?.[1] ?? 0,
                     mid.bankOffset,
                     system === "xg"
                 ),
-                isGMGSDrum: channel.drums
+                isGMGSDrum: ch.isDrum
             };
             const targetPreset = soundBank.getPreset(patch, system);
             SpessaLog.info(
@@ -187,62 +188,55 @@ function correctBankOffsetInternal(
             // Set the program number
             e.data[0] = targetPreset.program;
 
-            if (targetPreset.isGMGSDrum && BankSelectHacks.isSystemXG(system)) {
+            if (targetPreset.isGMGSDrum && BankSelectHacks.isSystemXG(system))
                 // GM/GS drums returned, leave as is
                 // (drums are already set since we got GMGS, just the sound bank doesn't have any XG.)
                 return;
-            }
 
-            if (channel.lastBank === undefined) {
-                return;
-            }
-            channel.lastBank.data[1] = BankSelectHacks.addBankOffset(
+            if (ch.lastBank === undefined) return;
+
+            ch.lastBank.data[1] = BankSelectHacks.addBankOffset(
                 targetPreset.bankMSB,
                 bankOffset,
                 system === "xg"
             );
-            if (channel.lastBankLSB === undefined) {
-                return;
-            }
-            channel.lastBankLSB.data[1] = targetPreset.bankLSB;
+            if (ch.lastBankLSB === undefined) return;
+
+            ch.lastBankLSB.data[1] = targetPreset.bankLSB;
             return;
         }
 
         // Controller change
         // We only care about bank-selects
         const isLSB = e.data[0] === MIDIControllers.bankSelectLSB;
-        if (e.data[0] !== MIDIControllers.bankSelect && !isLSB) {
-            return;
-        }
+        if (e.data[0] !== MIDIControllers.bankSelect && !isLSB) return;
+
         // Bank select
-        channel.hasBankSelect = true;
+        ch.hasBankSelect = true;
         // Interpret
-        if (isLSB) {
-            channel.lastBankLSB = e;
-        } else {
-            channel.lastBank = e;
-        }
+        if (isLSB) ch.lastBankLSB = e;
+        else ch.lastBank = e;
     });
 
     // Add missing bank selects
     // Add all bank selects that are missing for this track
-    for (const [ch, has] of channelsInfo.entries()) {
-        if (has.hasBankSelect) {
-            continue;
-        }
+    for (let chNum = 0; chNum < channels.length; chNum++) {
+        const ch = channels[chNum];
+        if (ch.hasBankSelect) continue;
+
         // Find the first program change (for the given channel)
-        const midiChannel = ch % 16;
+        const midiChannel = chNum % 16;
         const status = MIDIMessageTypes.programChange | midiChannel;
         // Find track with this channel being used
-        const portOffset = Math.floor(ch / 16) * 16;
+        const portOffset = Math.floor(chNum / 16) * 16;
         const port = mid.portChannelOffsetMap.indexOf(portOffset);
         const track = mid.tracks.find(
             (t) => t.port === port && t.channels.has(midiChannel)
         );
-        if (track === undefined) {
+        if (track === undefined)
             // This channel is not used at all
             continue;
-        }
+
         let indexToAdd = track.events.findIndex((e) => e.statusByte === status);
         if (indexToAdd === -1) {
             // No program change...
@@ -254,10 +248,10 @@ function correctBankOffsetInternal(
                     e.statusByte < 0xf0 &&
                     (e.statusByte & 0xf) === midiChannel
             );
-            if (programIndex === -1) {
+            if (programIndex === -1)
                 // No voices??? skip
                 continue;
-            }
+
             const programTicks = track.events[programIndex].ticks;
             const targetProgram = soundBank.getPreset(
                 {
@@ -280,7 +274,7 @@ function correctBankOffsetInternal(
             indexToAdd = programIndex;
         }
         SpessaLog.info(
-            `%cAdding bank select for %c${ch}`,
+            `%cAdding bank select for %c${chNum}`,
             ConsoleColors.info,
             ConsoleColors.recognized
         );
@@ -289,8 +283,8 @@ function correctBankOffsetInternal(
             {
                 bankLSB: 0,
                 bankMSB: 0,
-                program: has.program,
-                isGMGSDrum: has.drums
+                program: ch.program,
+                isGMGSDrum: ch.isDrum
             },
             system
         );
@@ -317,9 +311,10 @@ function correctBankOffsetInternal(
             track.deleteEvent(track.events.indexOf(m.e));
         }
         let index = 0;
-        if (mid.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName) {
+        // First event is track name for detection, don't break that
+        if (mid.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName)
             index++;
-        }
+
         mid.tracks[0].addEvents(index, MIDIProtocol.gsReset(0));
     }
     mid.flush();
