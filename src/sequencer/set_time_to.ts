@@ -232,6 +232,7 @@ export function setTimeToInternal(
                     case MIDIControllers.nonRegisteredParameterMSB: {
                         // Track and event indexes are irrelevant here
                         ch.param.controllerChange(controller, value, 0, 0);
+                        // Always send regardless
                         this.sendMIDICC(channel, controller, value);
                         break;
                     }
@@ -244,11 +245,12 @@ export function setTimeToInternal(
                             0,
                             0
                         )!;
+                        // Always send regardless
+                        this.sendMIDICC(channel, controller, value);
 
                         // NRPN may change controllers
                         switch (analyzed.type) {
                             default: {
-                                this.sendMIDICC(channel, controller, value);
                                 break;
                             }
 
