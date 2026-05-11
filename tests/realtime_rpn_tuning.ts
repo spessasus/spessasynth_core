@@ -18,13 +18,17 @@ test.noteOff(60);
 
 test.ticks += 480;
 
+// Piano 1
+test.programChange(0, 0, 0);
+
 // Coarse-tune
 // Should be treated as non-realtime (key shift)
 test.noteOn(60, 127);
 pitch = 64;
 while (pitch < 88) {
-    test.noteOff(60);
+    // Send note-off after RPN. This works in SCVA so it should work in spessasynth too
     test.rpn(2, pitch << 7);
+    test.noteOff(60);
     test.noteOn(60, 127);
     pitch++;
     test.ticks += 480;

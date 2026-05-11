@@ -50,6 +50,18 @@ This event is triggered when a note is pressed on any channel.
   channel count.
 - `velocity`: `number` - the velocity of the note (usually more means louder). Ranges from 0 to 127.
 
+!!! Note
+
+    The note events report the direct MIDI note number requested. For the internal note, you can apply the key shift:
+    ```ts
+    const actualNote =
+        event.midiNote +
+        Math.trunc(this.synth.masterParameters.pitchOffset) +
+        this.synth.midiParameters.masterKeyShift +
+        this.synth.midiChannels[event.channel].masterParameters.pitchOffset +
+        this.synth.midiChannels[event.channel].midiParameters.keyShift;
+    ```
+
 ### `controllerChange`
 
 This event is triggered when a controller is changed on any channel (usually MIDI program change,

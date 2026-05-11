@@ -38,17 +38,17 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         return;
     }
 
-    // Shift note by key shift
-    midiNote += this.currentKeyShift;
-    // Note which we should grab presets from
-    let soundBankNote = midiNote;
-
+    // Note which we should grab presets from (strictly internal)
+    let soundBankNote = midiNote + this.currentKeyShift;
     // Sanity check
     if (midiNote > 127 || midiNote < 0) return;
 
+    // MIDI Tuning Standard
     const program = this.preset.program;
     const tune = this.synthCore.tunings[program * 128 + midiNote];
-    if (tune >= 0) soundBankNote = Math.trunc(tune);
+    if (tune >= 0)
+        // Overwrite the note with MIDI tuning standard!
+        soundBankNote = Math.trunc(tune);
 
     // Monophonic retrigger
     if (

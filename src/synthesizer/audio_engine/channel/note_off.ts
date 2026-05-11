@@ -8,9 +8,7 @@ import { MIDIControllers } from "../../../midi/enums";
  * @param midiNote The MIDI note number to release (0-127).
  */
 export function noteOff(this: MIDIChannel, midiNote: number) {
-    // Adjust the midi note with the channel transpose key shift
-    const actualNote = midiNote + this.currentKeyShift;
-    if (actualNote > 127 || actualNote < 0) return;
+    if (midiNote > 127 || midiNote < 0) return;
 
     if (
         // If high performance mode, kill notes instead of stopping them
@@ -18,12 +16,12 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
             // If the channel is percussion channel, do not kill the notes
             !this.drumChannel) ||
         // If "receive note off" is enabled, kill the note (force quick release)
-        (this.drumChannel && this.drumParams[actualNote].rxNoteOff)
+        (this.drumChannel && this.drumParams[midiNote].rxNoteOff)
     ) {
-        // Requested midi note, not shifted
-        this.killNote(actualNote);
+        // Instantly kill the note
+        this.killNote(midiNote);
         this.synthCore.callEvent("noteOff", {
-            midiNote: actualNote,
+            midiNote,
             channel: this.channel
         });
         return;
@@ -36,7 +34,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
             if (
                 v.channel === this.channel &&
                 v.isActive &&
-                v.midiNote === actualNote &&
+                v.midiNote === midiNote &&
                 !v.isInRelease
             ) {
                 if (sustain) v.isHeld = true;
@@ -46,7 +44,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
             }
         }
     this.synthCore.callEvent("noteOff", {
-        midiNote: actualNote,
+        midiNote,
         channel: this.channel
     });
 }
