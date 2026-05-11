@@ -4,22 +4,22 @@ import { MIDIControllers } from "../../src";
 const test = new MIDITestMaker("Tremolo");
 
 // SC-55 sine
-test.addProgramChange(8, 1, 80);
+test.programChange(8, 1, 80);
 
 // No vibrato nor filter
-test.addControllerChange(MIDIControllers.vibratoDepth, 0);
-test.addControllerChange(MIDIControllers.brightness, 127);
-test.addControllerChange(MIDIControllers.reverbDepth, 0);
+test.cc(MIDIControllers.vibratoDepth, 0);
+test.cc(MIDIControllers.brightness, 127);
+test.cc(MIDIControllers.reverbDepth, 0);
 
 test.ticks += 80;
 // Short raw play
-test.addNoteOn(60, 120);
+test.noteOn(60, 120);
 test.ticks += 480;
-test.addNoteOff(60);
+test.noteOff(60);
 
 const efx = test.testEFX(0x01, 0x25);
 test.ticks += 480;
-test.addNoteOn(60, 120);
+test.noteOn(60, 120);
 
 // Default test
 test.ticks += 2560;
@@ -39,6 +39,6 @@ efx.sweepParam(5, 0, 127, 240, 8);
 // Play at highest for a bit
 test.ticks += 960;
 
-test.addNoteOff(60);
+test.noteOff(60);
 
 test.make("efx");

@@ -4,22 +4,22 @@ import { MIDIControllers } from "../../src";
 const test = new MIDITestMaker("Auto Wah");
 
 // P5 Square
-test.addProgramChange(16, 3, 80);
+test.programChange(16, 3, 80);
 
 // No vibrato nor filter
-test.addControllerChange(MIDIControllers.vibratoDepth, 0);
-test.addControllerChange(MIDIControllers.brightness, 127);
-test.addControllerChange(MIDIControllers.reverbDepth, 0);
+test.cc(MIDIControllers.vibratoDepth, 0);
+test.cc(MIDIControllers.brightness, 127);
+test.cc(MIDIControllers.reverbDepth, 0);
 
 test.ticks += 80;
 // Short raw play
-test.addNoteOn(24, 127);
+test.noteOn(24, 127);
 test.ticks += 480;
-test.addNoteOff(24);
+test.noteOff(24);
 
 const efx = test.testEFX(0x01, 0x21);
 test.ticks += 480;
-test.addNoteOn(24, 120);
+test.noteOn(24, 120);
 
 // Default test
 test.ticks += 2560;
@@ -43,7 +43,7 @@ efx.sweepParam(4, 0, 127, 60);
 efx.setParam(6, 127);
 test.sweepCC(MIDIControllers.mainVolume, 1, 127, 120);
 
-test.addControllerChange(MIDIControllers.mainVolume, 100);
+test.cc(MIDIControllers.mainVolume, 100);
 
 // Reset params
 efx.setParam(4, 0);
@@ -82,6 +82,6 @@ test.ticks += 960;
 // Pan
 efx.sweepParam(0x15, 0, 127, 30);
 
-test.addNoteOff(24);
+test.noteOff(24);
 
 test.make("efx");

@@ -61,18 +61,18 @@ sendAddress(0x40, 0x01, 0x33, 127);
 // Delay feedback
 sendAddress(0x40, 0x01, 0x35, 0);
 
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.bankSelect, 8);
-builder.addProgramChange(ticks, 0, 0, 80);
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.reverbDepth, 127);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.bankSelect, 8);
+builder.programChange(ticks, 0, 0, 80);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.reverbDepth, 127);
 
 let time = 0;
 while (time <= 128) {
     // Time
     sendAddress(0x40, 0x01, 0x34, Math.min(127, time));
     ticks += 480;
-    builder.addNoteOn(ticks, 0, 0, 60, 120);
+    builder.noteOn(ticks, 0, 0, 60, 120);
     ticks += 40;
-    builder.addNoteOff(ticks, 0, 0, 60);
+    builder.noteOff(ticks, 0, 0, 60);
     ticks += 960;
     time += 16;
 }

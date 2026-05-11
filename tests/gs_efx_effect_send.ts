@@ -4,22 +4,22 @@ import { MIDIControllers } from "../src";
 const test = new MIDITestMaker("Insertion FX Effect Sends");
 
 // SC-55 sine
-test.addProgramChange(8, 1, 80);
+test.programChange(8, 1, 80);
 
 // No vibrato nor filter
-test.addControllerChange(MIDIControllers.vibratoDepth, 0);
-test.addControllerChange(MIDIControllers.brightness, 127);
-test.addControllerChange(MIDIControllers.reverbDepth, 0);
+test.cc(MIDIControllers.vibratoDepth, 0);
+test.cc(MIDIControllers.brightness, 127);
+test.cc(MIDIControllers.reverbDepth, 0);
 
 // First test: delay raw
 
-test.addControllerChange(MIDIControllers.variationDepth, 127);
+test.cc(MIDIControllers.variationDepth, 127);
 
 // Play short note
 test.ticks += 60;
-test.addNoteOn(60, 127);
+test.noteOn(60, 127);
 test.ticks += 60;
-test.addNoteOff(60);
+test.noteOff(60);
 
 // Listen to delay
 test.ticks += 960;
@@ -30,13 +30,13 @@ fx.setParam(0x19, 127);
 
 // Play short note
 test.ticks += 60;
-test.addNoteOn(60, 127);
+test.noteOn(60, 127);
 test.ticks += 60;
-test.addNoteOff(60);
+test.noteOff(60);
 
 // Listen to delay
 test.ticks += 960;
 
 // Mark end
-test.addControllerChange(MIDIControllers.variationDepth, 0);
+test.cc(MIDIControllers.variationDepth, 0);
 test.make();

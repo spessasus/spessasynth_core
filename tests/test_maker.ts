@@ -1,9 +1,7 @@
 import {
-    IndexedByteArray,
     MIDIBuilder,
     type MIDIController,
     MIDIControllers,
-    MIDIMessageTypes,
     MIDIProtocol
 } from "../src";
 import fs from "node:fs/promises";
@@ -21,16 +19,16 @@ class EFXTest {
         this.builder = builder;
 
         // Type
-        this.builder.sendAddress(0x40, 0x03, 0x00, [msb, lsb]);
+        this.builder.gs(0x40, 0x03, 0x00, [msb, lsb]);
         // EFX to channel
-        this.builder.sendAddress(
+        this.builder.gs(
             0x40,
             0x40 | MIDIProtocol.channelToSyx(channel),
             0x22,
             [1]
         );
         // No reverb
-        this.builder.sendAddress(0x40, 0x03, 0x17, [0]);
+        this.builder.gs(0x40, 0x03, 0x17, [0]);
     }
 
     public testEqAndLevel() {
@@ -49,18 +47,10 @@ class EFXTest {
         tickStep = 480,
         dataStep = 1
     ) {
-        this.builder.sweepAddress(
-            0x40,
-            0x03,
-            param,
-            from,
-            to,
-            tickStep,
-            dataStep
-        );
+        this.builder.sweepGS(0x40, 0x03, param, from, to, tickStep, dataStep);
     }
     public setParam(param: number, value: number) {
-        this.builder.sendAddress(0x40, 0x03, param, [value]);
+        this.builder.gs(0x40, 0x03, param, [value]);
     }
 }
 
@@ -75,40 +65,19 @@ export class MIDITestMaker extends MIDIBuilder {
         });
         this.channel = channel;
         this.name = name.replaceAll(" ", "_").toLowerCase();
-        this.addEvent(
-            0,
-            0,
-            MIDIMessageTypes.systemExclusive,
-            new IndexedByteArray([
-                0x41, // Roland
-                0x10, // Device ID (defaults to 16 on roland)
-                0x42, // GS
-                0x12, // Command ID (DT1) (whatever that means...)
-                0x40, // System parameter - Address
-                0x00, // Global parameter -  Address
-                0x7f, // GS Change - Address
-                0x00, // Turn on - Data
-                0x41, // Checksum
-                0xf7 // End of exclusive
-            ])
-        );
+        this.tracks[0].addEvents(0, MIDIProtocol.gsReset(0));
     }
 
     public testEFX(typeMSB: number, typeLSB: number) {
         return new EFXTest(this, this.channel, typeMSB, typeLSB);
     }
 
-    public addControllerChange(controller: MIDIController, value: number) {
-        super.addControllerChange(
-            this.ticks,
-            0,
-            this.channel,
-            controller,
-            value
-        );
+    // Can't be named controllerChange because then base calls it and this executes!!!
+    public cc(controller: MIDIController, value: number) {
+        super.controllerChange(this.ticks, 0, this.channel, controller, value);
     }
 
-    public sweepAddress(
+    public sweepGS(
         a1: number,
         a2: number,
         a3: number,
@@ -119,11 +88,11 @@ export class MIDITestMaker extends MIDIBuilder {
     ) {
         let data = from;
         while (data <= to) {
-            this.sendAddress(a1, a2, a3, [Math.min(data, to)]);
+            this.gs(a1, a2, a3, [Math.min(data, to)]);
             this.ticks += tickStep;
             data += dataStep;
         }
-        this.sendAddress(a1, a2, a3, [Math.min(data, to)]);
+        this.gs(a1, a2, a3, [Math.min(data, to)]);
     }
 
     public sweepCC(
@@ -135,49 +104,37 @@ export class MIDITestMaker extends MIDIBuilder {
     ) {
         let data = from;
         while (data <= to) {
-            this.addControllerChange(cc, Math.min(data, to));
+            this.cc(cc, Math.min(data, to));
             this.ticks += tickStep;
             data += dataStep;
         }
-        this.addControllerChange(cc, Math.min(data, to));
+        this.cc(cc, Math.min(data, to));
     }
 
-    public addProgramChange(msb: number, lsb: number, program: number) {
-        this.addControllerChange(MIDIControllers.bankSelectLSB, lsb);
-        this.addControllerChange(MIDIControllers.bankSelect, msb);
-        super.addProgramChange(this.ticks, 0, this.channel, program);
+    public programChange(msb: number, lsb: number, program: number) {
+        this.cc(MIDIControllers.bankSelectLSB, lsb);
+        this.cc(MIDIControllers.bankSelect, msb);
+        super.programChange(this.ticks, 0, this.channel, program);
     }
 
-    public addNoteOff(midiNote: number, velocity = 64) {
-        super.addNoteOff(this.ticks, 0, this.channel, midiNote, velocity);
+    public noteOff(midiNote: number, velocity = 64) {
+        super.noteOff(this.ticks, 0, this.channel, midiNote, velocity);
     }
 
-    public addNoteOn(midiNote: number, velocity: number) {
-        super.addNoteOn(this.ticks, 0, this.channel, midiNote, velocity);
+    public noteOn(midiNote: number, velocity: number) {
+        super.noteOn(this.ticks, 0, this.channel, midiNote, velocity);
     }
 
-    public sendAddress(a1: number, a2: number, a3: number, data: number[]) {
-        // Calculate checksum
-        // https://cdn.roland.com/assets/media/pdf/F-20_MIDI_Imple_e01_W.pdf section 4
-        const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
-        const checksum = (128 - (sum % 128)) & 0x7f;
-        this.addEvent(
+    public gs(a1: number, a2: number, a3: number, data: number[]) {
+        this.systemExclusive(
             this.ticks,
             0,
-            MIDIMessageTypes.systemExclusive,
-            new IndexedByteArray([
-                0x41, // Roland
-                0x10, // Device ID (defaults to 16 on roland)
-                0x42, // GS
-                0x12, // Command ID (DT1) (whatever that means...)
-                a1,
-                a2,
-                a3,
-                ...data,
-                checksum,
-                0xf7 // End of exclusive
-            ])
+            MIDIProtocol.gsData(a1, a2, a3, data)
         );
+    }
+
+    public rpn(rpn: number, val: number) {
+        this.registeredParameter(this.ticks, 0, this.channel, rpn, val);
     }
 
     public make(dirname = "") {

@@ -19,8 +19,8 @@ let ticks = 0;
 // A simple helper function to add drum notes
 const addNote = (midiNote: number) => {
     // Channel 9 is by default the drum channel
-    builder.addNoteOn(ticks, 0, 9, midiNote, 120);
-    builder.addNoteOff(ticks, 0, 9, midiNote); // Drum notes can be released immediately
+    builder.noteOn(ticks, 0, 9, midiNote, 120);
+    builder.noteOff(ticks, 0, 9, midiNote); // Drum notes can be released immediately
 };
 
 // Side stick intro

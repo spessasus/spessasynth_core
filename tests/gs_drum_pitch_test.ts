@@ -54,27 +54,27 @@ function sendAddress(a1: number, a2: number, a3: number, data: number) {
     );
 }
 
-builder.addControllerChange(ticks, 0, 9, MIDIControllers.reverbDepth, 0);
+builder.controllerChange(ticks, 0, 9, MIDIControllers.reverbDepth, 0);
 // SC-55 MAP standard
-builder.addControllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 1);
-builder.addProgramChange(ticks, 0, 9, 0);
+builder.controllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 1);
+builder.programChange(ticks, 0, 9, 0);
 
 let pitch = 40;
 while (pitch <= 70) {
     // Rate
     sendAddress(0x41, 0x01, 38, Math.min(127, pitch));
     ticks += 240;
-    builder.addNoteOn(ticks, 0, 9, 38, 120);
+    builder.noteOn(ticks, 0, 9, 38, 120);
     ticks += 80;
-    builder.addNoteOff(ticks, 0, 9, 38);
+    builder.noteOff(ticks, 0, 9, 38);
     pitch += 1;
 }
 
 ticks += 480;
 
 // SC-88 MAP ROOM
-builder.addControllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 3);
-builder.addProgramChange(ticks, 0, 9, 8);
+builder.controllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 3);
+builder.programChange(ticks, 0, 9, 8);
 
 ticks += 480;
 
@@ -83,9 +83,9 @@ while (pitch <= 70) {
     // Rate
     sendAddress(0x41, 0x01, 38, Math.min(127, pitch));
     ticks += 240;
-    builder.addNoteOn(ticks, 0, 9, 38, 120);
+    builder.noteOn(ticks, 0, 9, 38, 120);
     ticks += 80;
-    builder.addNoteOff(ticks, 0, 9, 38);
+    builder.noteOff(ticks, 0, 9, 38);
     pitch += 1;
 }
 

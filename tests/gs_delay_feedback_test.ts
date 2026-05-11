@@ -59,23 +59,23 @@ sendAddress(0x40, 0x01, 0x50, 0);
 // Delay time center
 sendAddress(0x40, 0x01, 0x52, 0x49);
 
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.reverbDepth, 0);
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.chorusDepth, 0);
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.variationDepth, 127);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.reverbDepth, 0);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.chorusDepth, 0);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.variationDepth, 127);
 
 // SC-55 MAP sine wave
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.bankSelectLSB, 1);
-builder.addControllerChange(ticks, 0, 0, MIDIControllers.bankSelect, 8);
-builder.addProgramChange(ticks, 0, 0, 80);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.bankSelectLSB, 1);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.bankSelect, 8);
+builder.programChange(ticks, 0, 0, 80);
 
 let feedback = 1;
 while (feedback <= 126) {
     // Feedback
     sendAddress(0x40, 0x01, 0x59, Math.min(127, feedback));
     ticks += 80;
-    builder.addNoteOn(ticks, 0, 0, 60, 120);
+    builder.noteOn(ticks, 0, 0, 60, 120);
     ticks += 10;
-    builder.addNoteOff(ticks, 0, 0, 60);
+    builder.noteOff(ticks, 0, 0, 60);
     ticks += 1960;
     feedback += 1;
 }

@@ -4,22 +4,22 @@ import { MIDITestMaker } from "../test_maker";
 const test = new MIDITestMaker("Phaser");
 
 // P5 Square
-test.addProgramChange(16, 3, 80);
+test.programChange(16, 3, 80);
 
 // No vibrato nor filter
-test.addControllerChange(MIDIControllers.vibratoDepth, 0);
-test.addControllerChange(MIDIControllers.brightness, 127);
-test.addControllerChange(MIDIControllers.reverbDepth, 0);
+test.cc(MIDIControllers.vibratoDepth, 0);
+test.cc(MIDIControllers.brightness, 127);
+test.cc(MIDIControllers.reverbDepth, 0);
 
 test.ticks += 80;
 // Short raw play
-test.addNoteOn(60, 120);
+test.noteOn(60, 120);
 test.ticks += 480;
-test.addNoteOff(60);
+test.noteOff(60);
 
 const efx = test.testEFX(0x01, 0x20);
 test.ticks += 480;
-test.addNoteOn(60, 120);
+test.noteOn(60, 120);
 
 // Default test
 test.ticks += 2560;
@@ -51,6 +51,6 @@ efx.sweepParam(7, 0, 127, 480, 16);
 
 efx.testEqAndLevel();
 
-test.addNoteOff(60);
+test.noteOff(60);
 
 test.make("efx");

@@ -1,5 +1,4 @@
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
-import type { IndexedByteArray } from "../utils/indexed_array";
 
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.
@@ -192,7 +191,6 @@ export interface TimelineEvent {
 }
 export type SysExAcceptedArray =
     | number[]
-    | IndexedByteArray
     | Uint8Array
     | Int8Array
     | Uint16Array
