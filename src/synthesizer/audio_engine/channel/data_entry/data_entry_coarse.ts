@@ -9,26 +9,6 @@ import {
 } from "../../../../midi/enums";
 import { SpessaLog } from "../../../../utils/loggin";
 
-// A helper function to log info in a nice way
-const coolInfo = (
-    chanNum: number,
-    what: string,
-    value: string | number,
-    type: string
-) => {
-    if (type.length > 0) {
-        type = " " + type;
-    }
-    SpessaLog.info(
-        `%c${what} for %c${chanNum}%c is now set to %c${value}%c${type}.`,
-        ConsoleColors.info,
-        ConsoleColors.recognized,
-        ConsoleColors.info,
-        ConsoleColors.value,
-        ConsoleColors.info
-    );
-};
-
 /**
  * Executes a data entry coarse (MSB) change for the current channel.
  * @param dataCoarse The value to set for the data entry coarse controller (0-127).
@@ -165,9 +145,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                     this.addDefaultVibrato();
                     this.vibrato.rate = (dataCoarse / 64) * 8;
-                    coolInfo(
-                        this.channel,
-                        "Vibrato rate",
+                    SpessaLog.coolInfo(
+                        `Vibrato rate for ${this.channel}`,
                         `${dataCoarse} = ${this.vibrato.rate}`,
                         "Hz"
                     );
@@ -180,9 +159,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                     this.addDefaultVibrato();
                     this.vibrato.depth = dataCoarse / 2;
-                    coolInfo(
-                        this.channel,
-                        "Vibrato depth",
+                    SpessaLog.coolInfo(
+                        `Vibrato depth for ${this.channel}`,
                         `${dataCoarse} = ${this.vibrato.depth}`,
                         "cents of detune"
                     );
@@ -195,9 +173,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
                     this.addDefaultVibrato();
                     this.vibrato.delay = dataCoarse / 64 / 3;
-                    coolInfo(
-                        this.channel,
-                        "Vibrato delay",
+                    SpessaLog.coolInfo(
+                        `Vibrato delay for ${this.channel}`,
                         `${dataCoarse} = ${this.vibrato.delay}`,
                         "seconds"
                     );
@@ -212,9 +189,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         MIDIControllers.brightness,
                         dataCoarse
                     );
-                    coolInfo(
-                        this.channel,
-                        "Filter cutoff",
+                    SpessaLog.coolInfo(
+                        `Filter cutoff for ${this.channel}`,
                         dataCoarse.toString(),
                         ""
                     );
@@ -228,9 +204,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         MIDIControllers.filterResonance,
                         dataCoarse
                     );
-                    coolInfo(
-                        this.channel,
-                        "Filter resonance",
+                    SpessaLog.coolInfo(
+                        `Filter resonance for ${this.channel}`,
                         dataCoarse.toString(),
                         ""
                     );
@@ -245,9 +220,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         MIDIControllers.attackTime,
                         dataCoarse
                     );
-                    coolInfo(
-                        this.channel,
-                        "EG attack time",
+                    SpessaLog.coolInfo(
+                        `EG attack time for ${this.channel}`,
                         dataCoarse.toString(),
                         ""
                     );
@@ -262,9 +236,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         MIDIControllers.decayTime,
                         dataCoarse
                     );
-                    coolInfo(
-                        this.channel,
-                        "EG decay time",
+                    SpessaLog.coolInfo(
+                        `EG decay time for ${this.channel}`,
                         dataCoarse.toString(),
                         ""
                     );
@@ -279,9 +252,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                         MIDIControllers.releaseTime,
                         dataCoarse
                     );
-                    coolInfo(
-                        this.channel,
-                        "EG release time",
+                    SpessaLog.coolInfo(
+                        `EG release time for ${this.channel}`,
                         dataCoarse.toString(),
                         ""
                     );
@@ -302,16 +274,19 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     ? (dataCoarse - 64) * 100
                     : (dataCoarse - 64) * 50;
             this.drumParams[paramFine].pitch = pitch;
-            coolInfo(this.channel, `Drum ${paramFine} pitch`, pitch, "cents");
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} pitch for ${this.channel}`,
+                pitch,
+                "cents"
+            );
             break;
         }
 
         case NonRegisteredMSB.drumPitchFine: {
             const pitch = dataCoarse - 64;
             this.drumParams[paramFine].pitch += pitch;
-            coolInfo(
-                this.channel,
-                `Drum ${paramFine} pitch fine`,
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} pitch fine for ${this.channel}`,
                 this.drumParams[paramFine].pitch,
                 "cents"
             );
@@ -320,21 +295,28 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
         case NonRegisteredMSB.drumLevel: {
             this.drumParams[paramFine].gain = dataCoarse / 120;
-            coolInfo(this.channel, `Drum ${paramFine} level`, dataCoarse, "");
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} level for ${this.channel}`,
+                dataCoarse,
+                ""
+            );
             break;
         }
 
         case NonRegisteredMSB.drumPan: {
             this.drumParams[paramFine].pan = dataCoarse;
-            coolInfo(this.channel, `Drum ${paramFine} pan`, dataCoarse, "");
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} pan for ${this.channel}`,
+                dataCoarse,
+                ""
+            );
             break;
         }
 
         case NonRegisteredMSB.drumReverb: {
             this.drumParams[paramFine].reverbGain = dataCoarse / 127;
-            coolInfo(
-                this.channel,
-                `Drum ${paramFine} reverb level`,
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} reverb level for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -343,9 +325,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
         case NonRegisteredMSB.drumChorus: {
             this.drumParams[paramFine].chorusGain = dataCoarse / 127;
-            coolInfo(
-                this.channel,
-                `Drum ${paramFine} chorus level`,
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} chorus level for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -354,9 +335,8 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
         case NonRegisteredMSB.drumDelay: {
             this.drumParams[paramFine].delayGain = dataCoarse / 127;
-            coolInfo(
-                this.channel,
-                `Drum ${paramFine} delay level`,
+            SpessaLog.coolInfo(
+                `Drum ${paramFine} delay level for ${this.channel}`,
                 dataCoarse,
                 ""
             );
