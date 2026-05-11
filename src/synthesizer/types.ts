@@ -11,7 +11,6 @@ import type {
     MIDIChannelParameterChangeCallback,
     NoteOffCallback,
     NoteOnCallback,
-    PitchWheelCallback,
     PolyPressureCallback,
     ProgramChangeCallback,
     StopAllCallback
@@ -118,11 +117,6 @@ export interface SynthProcessorEventData {
      * This event fires when a note is released.
      */
     noteOff: NoteOffCallback;
-    /**
-     * This event fires when a pitch wheel is changed.
-     * Note that this only fires for per-note pitch wheel!
-     */
-    perNotePitchWheel: PitchWheelCallback;
     /**
      * This event fires when a controller is changed.
      */

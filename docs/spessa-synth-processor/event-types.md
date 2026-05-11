@@ -8,23 +8,22 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
 
     If there's more than one property, the returned value is an object with the properties as keys.
 
-| Name                 | Description                                              |
-| -------------------- | -------------------------------------------------------- |
-| `noteOff`            | Key has been released.                                   |
-| `noteOn`             | Key has been pressed.                                    |
-| `controllerChange`   | Controller has been changed.                             |
-| `programChange`      | Program has been changed.                                |
-| `channelPressure`    | Channel's pressure has been changed.                     |
-| `polyPressure`       | Note's pressure has been changed.                        |
-| `stopAll`            | All voices were stopped.                                 |
-| `newChannel`         | A new channel was added to the synth.                    |
-| `muteChannel`        | A channel has been muted/unmuted.                        |
-| `presetListChange`   | The preset list has been changed/initialized.            |
-| `allControllerReset` | All controllers have been reset. (and programs!)         |
-| `soundBankError`     | The loaded sound bank was invalid.                       |
-| `synthDisplay`       | A SysEx to display some text has been received.          |
-| `globalParamChange`  | A master parameter has been changed.                     |
-| `perNotePitchWheel`  | Pitch wheel has been altered for a specific note number. |
+| Name                 | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| `noteOff`            | Key has been released.                           |
+| `noteOn`             | Key has been pressed.                            |
+| `controllerChange`   | Controller has been changed.                     |
+| `programChange`      | Program has been changed.                        |
+| `channelPressure`    | Channel's pressure has been changed.             |
+| `polyPressure`       | Note's pressure has been changed.                |
+| `stopAll`            | All voices were stopped.                         |
+| `newChannel`         | A new channel was added to the synth.            |
+| `muteChannel`        | A channel has been muted/unmuted.                |
+| `presetListChange`   | The preset list has been changed/initialized.    |
+| `allControllerReset` | All controllers have been reset. (and programs!) |
+| `soundBankError`     | The loaded sound bank was invalid.               |
+| `synthDisplay`       | A SysEx to display some text has been received.  |
+| `globalParamChange`  | A master parameter has been changed.             |
 
 !!! Note
 
@@ -50,24 +49,6 @@ This event is triggered when a note is pressed on any channel.
 - `channel`: `number` - the channel that the note was played on. Usually it ranges from 0 to 16, but it depends on the
   channel count.
 - `velocity`: `number` - the velocity of the note (usually more means louder). Ranges from 0 to 127.
-
-### `pitchWheel`
-
-This event is triggered when the pitch wheel is altered on any channel.
-
-- `channel`: `number` - the channel that was pitch bent. Usually it ranges from 0 to 16, but it depends on the channel
-  count.
-- `pitch`: `number` - The unsigned 14-bit value of the pitch: 0 - 16,383.
-- `midiNote`: `number` - If the pitch wheel was note-specific, this is the MIDI note number that was altered. Set to -1 otherwise.
-
-Note that the pitch wheel depends on the pitch wheel range, usually two semitones up and down.
-
-### `pitchWheelRange`
-
-This event is triggered when the pitch wheel's range is changed on any channel.
-
-- `channel`: `number` - the channel number that received the change.
-- `range`: `number` - the range in semitones. Note that it may be a floating point number.
 
 ### `controllerChange`
 

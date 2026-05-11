@@ -37,21 +37,6 @@ export interface ControllerChangeCallback {
     value: number;
 }
 
-export interface PitchWheelCallback {
-    /** The MIDI channel number. */
-    channel: number;
-
-    /**
-     * The unsigned 14-bit value of the pitch: 0 - 16383.
-     */
-    pitch: number;
-
-    /**
-     * The MIDI note number that was altered.
-     */
-    midiNote: number;
-}
-
 export interface PolyPressureCallback {
     /** The MIDI channel number. */
     channel: number;

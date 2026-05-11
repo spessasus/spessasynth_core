@@ -614,11 +614,6 @@ export class MIDIChannel {
 
             // Recompute only specific modulators
             this.computeModulatorsAll(0, ModulatorControllerSources.pitchWheel);
-            this.synthCore.callEvent("perNotePitchWheel", {
-                channel: this.channel,
-                pitch,
-                midiNote
-            });
         }
     }
 
