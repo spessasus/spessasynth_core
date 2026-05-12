@@ -773,6 +773,16 @@ export class MIDIChannel {
     }
 
     /**
+     * Strictly internal, used by the sequencer for
+     * very accurate portamento recreation.
+     * @internal
+     * @param midiNote
+     */
+    public setLastNote(midiNote: number) {
+        this.lastNote = midiNote;
+    }
+
+    /**
      * @internal
      */
     public destroy() {

@@ -146,12 +146,9 @@ export function setTimeToInternal(
         switch (status) {
             // Skip note messages
             case MIDIMessageTypes.noteOn: {
-                // Track portamento control as last note
-                // Only track if the portamento is on (even if time is 0)
-                if (ch.controllers[MIDIControllers.portamentoOnOff] >= 8192) {
-                    ch.portamentoNote = event.data[0];
-                }
-
+                // Always track the last note, even if portamento isn't applied.
+                // See: https://github.com/spessasus/spessasynth_core/issues/77
+                ch.portamentoNote = event.data[0];
                 break;
             }
 
@@ -311,14 +308,18 @@ export function setTimeToInternal(
         // Restoring pitch wheels
         this.sendMIDIPitchWheel(channel, ch.pitchWheel);
 
-        // Restoring portamento
+        // Restoring portamento (only if currently active)
         // Note: we do it before controllers as portamento control may want to override it
         if (ch.portamentoNote >= 0) {
-            this.sendMIDICC(
-                channel,
-                MIDIControllers.portamentoControl,
-                ch.portamentoNote
-            );
+            if (this.externalMIDIPlayback) {
+                this.sendMIDICC(
+                    channel,
+                    MIDIControllers.portamentoControl,
+                    ch.portamentoNote
+                );
+            } else {
+                this.synth.midiChannels[channel].setLastNote(ch.portamentoNote);
+            }
         }
 
         // Restoring saved controllers
