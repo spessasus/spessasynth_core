@@ -1,5 +1,5 @@
 import type { MIDIController } from "../../../midi/enums";
-import type { ChannelMIDIParameter } from "./midi_parameters";
+import type { ChannelMIDIParameter } from "./parameters/midi";
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
 
 export interface NoteOnCallback {

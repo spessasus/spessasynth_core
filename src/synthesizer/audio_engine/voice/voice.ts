@@ -15,7 +15,7 @@ import {
     WavetableOscillator
 } from "./wavetable_oscillator";
 import { type InterpolationType } from "../../enums";
-import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../system_parameters";
+import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../parameters/system";
 import type { VoiceModulator } from "./voice_modulator";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;

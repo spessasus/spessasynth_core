@@ -8,8 +8,8 @@ import type {
 } from "./effects/types";
 import { MIDIProtocol } from "../../midi/midi_tools/midi_protocol";
 import type { SynthesizerCore } from "./synthesizer_core";
-import type { GlobalMIDIParameter } from "./midi_parameters";
-import type { GlobalSystemParameter } from "./system_parameters";
+import type { GlobalMIDIParameter } from "./parameters/midi";
+import type { GlobalSystemParameter } from "./parameters/system";
 
 export interface SynthesizerSnapshot {
     midiChannels: ChannelSnapshot[];

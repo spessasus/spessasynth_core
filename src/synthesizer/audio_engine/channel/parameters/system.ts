@@ -1,5 +1,5 @@
-import type { MIDIChannel } from "./midi_channel";
-import type { InterpolationType } from "../../enums";
+import type { MIDIChannel } from "../midi_channel";
+import type { InterpolationType } from "../../../enums";
 
 /**
  * The system parameters of the channel.

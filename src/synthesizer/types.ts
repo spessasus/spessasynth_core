@@ -15,7 +15,7 @@ import type {
     ProgramChangeCallback,
     StopAllCallback
 } from "./audio_engine/channel/types";
-import type { GlobalMIDIParameter } from "./audio_engine/midi_parameters";
+import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!

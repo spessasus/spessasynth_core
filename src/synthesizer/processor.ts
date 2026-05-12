@@ -26,9 +26,9 @@ import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../soundbank/basic_soundbank/midi_patch";
-import type { GlobalSystemParameter } from "./audio_engine/system_parameters";
+import type { GlobalSystemParameter } from "./audio_engine/parameters/system";
 import type { MIDIChannel } from "./audio_engine/channel/midi_channel";
-import type { GlobalMIDIParameter } from "./audio_engine/midi_parameters";
+import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type { MIDISystem } from "../soundbank/types";
 import type { SysExAcceptedArray } from "../midi/types";
 

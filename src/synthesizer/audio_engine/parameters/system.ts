@@ -1,7 +1,7 @@
-import { VOICE_CAP } from "./synth_constants";
-import { type InterpolationType, InterpolationTypes } from "../enums";
-import type { SynthesizerCore } from "./synthesizer_core";
-import { SpessaLog } from "../../utils/loggin";
+import { VOICE_CAP } from "../synth_constants";
+import { type InterpolationType, InterpolationTypes } from "../../enums";
+import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaLog } from "../../../utils/loggin";
 
 /**
  * The global parameters of the synthesizer.

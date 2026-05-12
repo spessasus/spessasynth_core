@@ -9,7 +9,7 @@ import {
     DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
     type GlobalSystemParameter,
     setSystemParameterInternal
-} from "./system_parameters";
+} from "./parameters/system";
 import { Voice } from "./voice/voice";
 import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { CachedVoice } from "./voice/voice_cache";
@@ -49,7 +49,7 @@ import {
     type GlobalMIDIParameter,
     resetMIDIParametersInternal,
     setMIDIParameterInternal
-} from "./midi_parameters";
+} from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE

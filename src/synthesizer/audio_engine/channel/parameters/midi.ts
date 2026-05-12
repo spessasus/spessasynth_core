@@ -1,4 +1,4 @@
-import type { MIDIController } from "../../../midi/enums";
+import type { MIDIController } from "../../../../midi/enums";
 
 export interface ChannelMIDIParameter {
     /**

@@ -39,13 +39,13 @@ import type { ChannelGenerators } from "./data_entry/awe32";
 import {
     type ChannelMIDIParameter,
     DEFAULT_MIDI_CHANNEL_PARAMETERS
-} from "./midi_parameters";
+} from "./parameters/midi";
 import type { ChannelMIDIParameterChange, CustomChannelVibrato } from "./types";
 import {
     type ChannelSystemParameter,
     DEFAULT_CHANNEL_SYSTEM_PARAMETERS,
     setSystemParameterInternal
-} from "./system_parameters";
+} from "./parameters/system";
 import type { MIDISystem } from "../../../soundbank/types";
 
 /**
