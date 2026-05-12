@@ -204,9 +204,12 @@ export function renderVoice(
     volumeExcursionCentibels -= voice.resonanceOffset;
 
     // Finally, calculate the playback rate
-    const centsTotal = (cents + semitones * 100) | 0;
-    if (centsTotal !== voice.tuningCents) {
-        voice.tuningCents = centsTotal;
+    const centsTotal = cents + semitones * 100;
+    const centsRounded = centsTotal | 0;
+    // Round for testing if equal,
+    // But let's allow sub-microtonal tunings, because why not? :-)
+    if (centsRounded !== voice.tuningCents) {
+        voice.tuningCents = centsRounded;
         voice.tuningRatio = Math.pow(2, centsTotal / 1200);
     }
 

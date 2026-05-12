@@ -64,7 +64,7 @@ export function universalSystemExclusive(
                 case 0x03: {
                     // Fine-tuning
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
-                    const cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
+                    const cents = tuningValue / 81.92; // [-100;+99] cents range
                     this.setMIDIParameter("fineTune", cents);
                     SpessaLog.gmInfo("Master Fine Tuning", cents, "cents");
                     break;

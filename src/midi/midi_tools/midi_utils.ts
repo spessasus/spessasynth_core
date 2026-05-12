@@ -310,7 +310,7 @@ export class MIDIUtils {
                 case 0x03: {
                     // Master Fine-Tuning
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
-                    const cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
+                    const cents = tuningValue / 81.92; // [-100;+99] cents range
                     return {
                         type: "Master Fine Tune",
                         value: cents
