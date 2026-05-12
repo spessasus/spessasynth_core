@@ -54,7 +54,7 @@ export function handleGS(
                                         (syx[9] << 4) |
                                         syx[10];
                                     const cents = (tune - 1024) / 10;
-                                    this.setMIDIParameter("masterTune", cents);
+                                    this.setMIDIParameter("fineTune", cents);
                                     SpessaLog.gsInfo(
                                         "Master Tune",
                                         cents,
@@ -78,7 +78,7 @@ export function handleGS(
                                         "keys"
                                     );
                                     this.setMIDIParameter(
-                                        "masterKeyShift",
+                                        "keyShift",
                                         transpose
                                     );
                                     break;

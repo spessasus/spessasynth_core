@@ -60,7 +60,7 @@ The interpolation types defined are:
 
 The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG, in lowercase)
 
-### monophonicRetriggerMode
+### monophonicRetrigger
 
 `boolean`
 

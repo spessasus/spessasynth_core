@@ -116,12 +116,16 @@ interface ChannelPitchOffset {
     channel: number;
 
     /**
-     * Pitch offset of the channel.
-     * This can use floating point numbers,
-     * which will be used to fine-tune the pitch in cents using RPN messages.
-     * For example a value of 1.5 shifts the key numbers up by 1 and tunes them up by 50 cents.
+     * The channel key shift in semitones.
+     * Note on/off numbers are shifted.
      */
-    pitchOffset: number;
+    keyShift: number;
+
+    /**
+     * The channel tuning in cents.
+     * Tuned using RPN Fine Tune.
+     */
+    fineTune: number;
 }
 
 export interface ModifyMIDIOptions {
@@ -275,14 +279,11 @@ export function modifyMIDIInternal(
     const channelsAmount = midiPortChannelOffset;
     const channels: ChannelStatus[] = [];
     for (let i = 0; i < channelsAmount; i++) {
-        const pitchOffset =
-            pitchOffsets.find((o) => o.channel === i)?.pitchOffset ?? 0;
-        const keyShift = Math.trunc(pitchOffset);
-        const fineTune = pitchOffset - keyShift;
+        const pitchOffset = pitchOffsets.find((o) => o.channel === i);
         channels.push({
             isFirstNoteOn: true,
-            keyShift,
-            fineTune,
+            keyShift: pitchOffset?.keyShift ?? 0,
+            fineTune: pitchOffset?.fineTune ?? 0,
             param: new ParameterTracker(i),
             clearedParams: false
         });
@@ -937,7 +938,8 @@ export function applySnapshotInternal(
     const channelsToClear = new Set<number>();
     const programChanges: ChannelProgram[] = [];
     const controllerChanges: ChannelController[] = [];
-    const globalTranspose = snapshot.masterParameters.pitchOffset;
+    const globalKeyShift = snapshot.masterParameters.keyShift;
+    const globalFineTune = snapshot.masterParameters.fineTune;
     for (
         let channelNumber = 0;
         channelNumber < snapshot.midiChannels.length;
@@ -948,13 +950,17 @@ export function applySnapshotInternal(
             channelsToClear.add(channelNumber);
             continue;
         }
-        const transposeFloat =
-            channel.masterParameters.pitchOffset +
-            (channel.drumChannel ? 0 : globalTranspose);
-        if (transposeFloat !== 0) {
+        const keyShift =
+            channel.masterParameters.keyShift +
+            (channel.drumChannel ? 0 : globalKeyShift);
+        const fineTune =
+            channel.masterParameters.fineTune +
+            (channel.drumChannel ? 0 : globalFineTune);
+        if (keyShift !== 0 && fineTune !== 0) {
             pitchOffsets.push({
                 channel: channelNumber,
-                pitchOffset: transposeFloat
+                keyShift,
+                fineTune
             });
         }
         if (channel.masterParameters.presetLock && channel.patch) {

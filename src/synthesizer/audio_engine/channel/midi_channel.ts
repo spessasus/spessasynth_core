@@ -285,25 +285,25 @@ export class MIDIChannel {
     protected perNotePitch = false;
     /**
      * Current pan in range [-500;500]
-     * Will be updated every time something pan-related gets changed.
+     * Updated on master/MIDI parameter change.
      * This is used to avoid a big addition for every voice rendering call.
      */
     protected currentPan = 0;
     /**
      * Current tuning in cents.
-     * Will be updated every time something tuning-related gets changed.
+     * Updated on master/MIDI parameter change.
      * This is used to avoid a big addition for every voice rendering call.
      */
     protected currentTuning = 0;
     /**
      * Current key-shift.
-     * Will be updated every time something key-shift-related gets changed.
+     * Updated on master/MIDI parameter change.
      */
     protected currentKeyShift = 0;
     /**
      * Current gain.
-     * Will be updated every time something gain-related gets changed.
-     * @protected
+     * Updated on master parameter change.
+     * This is used to avoid a big multiplication for every voice rendering call.
      */
     protected currentGain = 0;
 
@@ -424,6 +424,12 @@ export class MIDIChannel {
         this.programChange(this.patch.program);
     }
 
+    /*
+    =================
+    END OF PUBLIC API
+    =================
+     */
+
     /**
      * Stops all notes on the channel.
      * @param force If true, stops all notes immediately, otherwise applies release time.
@@ -456,12 +462,6 @@ export class MIDIChannel {
             force
         });
     }
-
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-     */
 
     /**
      * Sets a MIDI channel parameter of the synthesizer.
@@ -671,58 +671,57 @@ export class MIDIChannel {
      * @internal
      */
     public updateInternalParams() {
-        const globalTranspose = this.synthCore.masterParameters.pitchOffset;
-        const globalKeyShift = Math.trunc(globalTranspose);
-        const globalTune = (globalTranspose - globalKeyShift) * 100;
-        const channelTranspose = this._masterParameters.pitchOffset;
-        const channelKeyShift = Math.trunc(channelTranspose);
-        const channelTune = (channelTranspose - channelKeyShift) * 100;
-
+        const globalMaster = this.synthCore.masterParameters;
+        const channelMaster = this._masterParameters;
+        const globalMIDI = this.synthCore.midiParameters;
+        const channelMIDI = this._midiParameters;
         // Note:
         // - Master -> Master Parameter
         // - MIDI -> MIDI Parameter
         //
         this.currentTuning =
-            // Global Master
-            (this.drumChannel ? 0 : globalTune) +
-            // Global MIDI
-            this.synthCore.midiParameters.masterTune +
+            // Global Master (disabled for drums)
+            (this.drumChannel ? 0 : globalMaster.fineTune) +
+            // Global MIDI (disabled for drums)
+            (this.drumChannel ? 0 : globalMIDI.fineTune) +
             // Channel Master
-            channelTune +
+            channelMaster.fineTune +
             // Channel MIDI
-            this._midiParameters.fineTune;
+            channelMIDI.fineTune;
 
         // [-1;1] normalized
         const currentPanNormalized =
             // Global Master
-            this.synthCore.masterParameters.pan +
+            globalMaster.pan +
             // Global MIDI
-            this.synthCore.midiParameters.masterPan +
+            globalMIDI.masterPan +
             // Channel Master
-            this._masterParameters.pan;
+            channelMaster.pan;
         // Channel MIDI is the pan controller
 
         // For faster renderVoice calculation
         this.currentPan = currentPanNormalized * 500;
 
-        this.currentKeyShift =
+        this.currentKeyShift = Math.floor(
             // Global Master (disabled for drums)
-            (this.drumChannel ? 0 : globalKeyShift) +
-            // Global MIDI
-            this.synthCore.midiParameters.masterKeyShift +
-            // Channel Master
-            channelKeyShift +
-            // Channel MIDI
-            this._midiParameters.keyShift;
+            (this.drumChannel ? 0 : globalMaster.keyShift) +
+                // Global MIDI (disabled for drums)
+                (this.drumChannel ? 0 : globalMIDI.keyShift) +
+                // Channel Master
+                channelMaster.keyShift +
+                // Channel MIDI
+                channelMIDI.keyShift
+        );
 
         this.currentGain =
+            // Global forced
             SPESSASYNTH_GAIN_FACTOR *
             // Global Master
-            this.synthCore.masterParameters.gain *
+            globalMaster.gain *
             // Global MIDI
-            this.synthCore.midiParameters.masterVolume *
+            globalMIDI.masterVolume *
             // Channel Master
-            this._masterParameters.gain;
+            channelMaster.gain;
         // Channel MIDI are the volume/expression controllers
     }
 
@@ -868,7 +867,11 @@ export class MIDIChannel {
     }
 
     protected resetVibratoParams() {
-        if (this.synthCore.masterParameters.customVibratoLock) return;
+        if (
+            this._masterParameters.customVibratoLock ??
+            this.synthCore.masterParameters.customVibratoLock
+        )
+            return;
         this.vibrato.rate = 0;
         this.vibrato.depth = 0;
         this.vibrato.delay = 0;

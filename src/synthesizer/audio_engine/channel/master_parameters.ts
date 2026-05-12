@@ -1,39 +1,94 @@
 import type { MIDIChannel } from "./midi_channel";
+import type { InterpolationType } from "../../enums";
 
 /**
  * The master parameters of the channel.
+ * These can only be changed via the API.
  */
 export interface ChannelMasterParameter {
+    // Channel exclusive
     /**
-     * The master gain, from 0 to any number. 1 is 100% volume.
+     * If the preset is locked, preventing any program changes from being sent.
      */
-    gain: number;
-    /**
-     * The master pan, from -1 (left) to 1 (right). 0 is center.
-     */
-    pan: number;
+    presetLock: boolean;
 
     /**
      * If the channel is muted.
      */
     isMuted: boolean;
+
+    // Shared with synth
     /**
-     * The global pitch offset in semitones. It can be decimal to provide microtonal tuning.
+     * The gain for the channel.
+     * From 0 to any number. 1 is 100% volume.
      */
-    pitchOffset: number;
+    gain: number;
+    /**
+     * The panning of the channel.
+     * -1 (left) to 1 (right). 0 is center.
+     */
+    pan: number;
 
     /**
-     * If the preset is locked, preventing any program changes from being sent.
+     * The channel key shift in semitones.
      */
-    presetLock: boolean;
+    keyShift: number;
+
+    /**
+     * The channel tuning in cents.
+     */
+    fineTune: number;
+
+    /**
+     * The interpolation type used for sample playback.
+     *
+     * Overrides the global parameter if set.
+     */
+    interpolationType: InterpolationType | null;
+
+    /**
+     * If the channel should prevent applying the custom vibrato.
+     * This effect is modified using NRPN, so
+     * the recommended use case would be setting
+     * the custom vibrato then locking it to prevent changes by MIDI files.
+     *
+     * Overrides the global parameter if set.
+     */
+    customVibratoLock: boolean | null;
+
+    /**
+     * If the channel should prevent changing any parameters via NRPN.
+     * This includes the custom vibrato parameters.
+     *
+     * Overrides the global parameter if set.
+     */
+    nrpnParamLock: boolean | null;
+
+    /**
+     * Indicates whether the channel is in monophonic retrigger mode.
+     * This emulates the behavior of Microsoft GS Wavetable Synth,
+     * Where a new note will kill the previous one if it is still playing.
+     *
+     * Overrides the global parameter if set.
+     */
+    monophonicRetrigger: boolean | null;
 }
 
 export const DEFAULT_CHANNEL_MASTER_PARAMETERS: ChannelMasterParameter = {
+    // Channel exclusive
+    presetLock: false,
+    isMuted: false,
+
+    // Shared with synth
     gain: 1,
     pan: 0,
-    pitchOffset: 0,
-    isMuted: false,
-    presetLock: false
+    keyShift: 0,
+    fineTune: 0,
+
+    interpolationType: null,
+    customVibratoLock: null,
+    nrpnParamLock: null,
+    monophonicRetrigger: null
 };
 
 /**
@@ -68,13 +123,9 @@ export function setMasterParameter<P extends keyof ChannelMasterParameter>(
             break;
         }
 
-        case "pitchOffset": {
-            const t = value as number;
-            if (!this.drumChannel) {
-                const keyShift = Math.trunc(t);
-                if (Math.trunc(prev as number) !== keyShift)
-                    this.stopAllNotes(true);
-            }
+        case "keyShift": {
+            if (!this.drumChannel && (prev as number) !== (value as number))
+                this.stopAllNotes(true);
         }
     }
 }

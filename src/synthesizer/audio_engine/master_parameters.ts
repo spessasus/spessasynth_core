@@ -3,7 +3,12 @@ import { type InterpolationType, InterpolationTypes } from "../enums";
 import type { SynthesizerCore } from "./synthesizer_core";
 import { SpessaLog } from "../../utils/loggin";
 
+/**
+ * The global parameters of the synthesizer.
+ * These can only be changed via the API.
+ */
 export interface GlobalMasterParameter {
+    // Synth exclusive
     /**
      * If the synthesizer processes the audio effects.
      */
@@ -13,44 +18,28 @@ export interface GlobalMasterParameter {
      * If the event system is enabled.
      */
     eventsEnabled: boolean;
-    /**
-     * The master gain, from 0 to any number. 1 is 100% volume.
-     */
-    gain: number;
-    /**
-     * The master pan, from -1 (left) to 1 (right). 0 is center.
-     */
-    pan: number;
+
     /**
      * The maximum number of voices that can be played at once.
      *
-     * @remarks
      * Increasing this value causes memory allocation for more voices.
      * It is recommended to set it at the beginning, before rendering audio to avoid GC.
      * Decreasing it does not cause memory usage change, so it's fine to use.
      */
     voiceCap: number;
+
     /**
      * Enabling this parameter will cause a new voice allocation when the voice cap is hit, rather than stealing existing voices.
      *
-     * @remarks
      * This is not recommended in real-time environments.
      */
     autoAllocateVoices: boolean;
-    /**
-     * The interpolation type used for sample playback.
-     */
-    interpolationType: InterpolationType;
-    /**
-     * Indicates whether the synthesizer is in monophonic retrigger mode.
-     * This emulates the behavior of Microsoft GS Wavetable Synth,
-     * Where a new note will kill the previous one if it is still playing.
-     */
-    monophonicRetriggerMode: boolean;
+
     /**
      * The reverb gain, from 0 to any number. 1 is 100% reverb.
      */
     reverbGain: number;
+
     /**
      * If the synthesizer should prevent editing of the reverb parameters.
      * This effect is modified using MIDI system exclusive messages, so
@@ -58,10 +47,12 @@ export interface GlobalMasterParameter {
      * the reverb parameters then locking it to prevent changes by MIDI files.
      */
     reverbLock: boolean;
+
     /**
      * The chorus gain, from 0 to any number. 1 is 100% chorus.
      */
     chorusGain: number;
+
     /**
      * If the synthesizer should prevent editing of the chorus parameters.
      * This effect is modified using MIDI system exclusive messages, so
@@ -69,10 +60,12 @@ export interface GlobalMasterParameter {
      * the chorus parameters then locking it to prevent changes by MIDI files.
      */
     chorusLock: boolean;
+
     /**
      * The delay gain, from 0 to any number. 1 is 100% delay.
      */
     delayGain: number;
+
     /**
      * If the synthesizer should prevent editing of the delay parameters.
      * This effect is modified using MIDI system exclusive messages, so
@@ -88,6 +81,7 @@ export interface GlobalMasterParameter {
      * the insertion effect type and parameters then locking it to prevent changes by MIDI files.
      */
     insertionEffectLock: boolean;
+
     /**
      * If the synthesizer should prevent editing of the drum parameters.
      * These params are modified using MIDI system exclusive messages or NRPN, so
@@ -95,6 +89,45 @@ export interface GlobalMasterParameter {
      * the drum parameters then locking it to prevent changes by MIDI files.
      */
     drumLock: boolean;
+
+    /**
+     * Forces note killing instead of releasing. Improves performance in black MIDIs.
+     */
+    blackMIDIMode: boolean;
+
+    /**
+     * Synthesizer's device ID for system exclusive messages. Set to -1 to accept all.
+     */
+    deviceID: number;
+
+    // Shared with channel
+    /**
+     * The master gain, from 0 to any number. 1 is 100% volume.
+     */
+    gain: number;
+
+    /**
+     * The master pan, from -1 (left) to 1 (right). 0 is center.
+     */
+    pan: number;
+
+    /**
+     * The global key shift in semitones.
+     * Drum channels ignore this value.
+     */
+    keyShift: number;
+
+    /**
+     * The global tuning in cents.
+     * Drum channels ignore this value.
+     */
+    fineTune: number;
+
+    /**
+     * The interpolation type used for sample playback.
+     */
+    interpolationType: InterpolationType;
+
     /**
      * If the synthesizer should prevent applying the custom vibrato.
      * This effect is modified using NRPN, so
@@ -102,47 +135,53 @@ export interface GlobalMasterParameter {
      * the custom vibrato then locking it to prevent changes by MIDI files.
      */
     customVibratoLock: boolean;
+
     /**
      * If the synthesizer should prevent changing any parameters via NRPN.
      * This includes the custom vibrato parameters.
      */
     nrpnParamLock: boolean;
+
     /**
-     * Forces note killing instead of releasing. Improves performance in black MIDIs.
+     * Indicates whether the synthesizer is in monophonic retrigger mode.
+     * This emulates the behavior of Microsoft GS Wavetable Synth,
+     * Where a new note will kill the previous one if it is still playing.
      */
-    blackMIDIMode: boolean;
-    /**
-     * The global pitchOffset in semitones. It can be decimal to provide microtonal tuning.
-     */
-    pitchOffset: number;
-    /**
-     * Synthesizer's device ID for system exclusive messages. Set to -1 to accept all.
-     */
-    deviceID: number;
+    monophonicRetrigger: boolean;
 }
 
 export const DEFAULT_GLOBAL_MASTER_PARAMETERS: GlobalMasterParameter = {
-    gain: 1,
-    pan: 0,
-    voiceCap: VOICE_CAP,
-    interpolationType: InterpolationTypes.hermite,
-    monophonicRetriggerMode: false,
-    reverbGain: 1,
-    chorusGain: 1,
-    delayGain: 1,
-    reverbLock: false,
-    chorusLock: false,
-    delayLock: false,
-    drumLock: false,
+    // Synth exclusive
     effectsEnabled: true,
     eventsEnabled: true,
+    voiceCap: VOICE_CAP,
+    autoAllocateVoices: false,
+
+    reverbGain: 1,
+    reverbLock: false,
+
+    chorusGain: 1,
+    chorusLock: false,
+
+    delayGain: 1,
+    delayLock: false,
+
+    insertionEffectLock: false,
+    drumLock: false,
+
+    blackMIDIMode: false,
+    deviceID: -1,
+
+    // Shared with channel
+    gain: 1,
+    pan: 0,
+    keyShift: 0,
+    fineTune: 0,
+
+    interpolationType: InterpolationTypes.hermite,
     customVibratoLock: false,
     nrpnParamLock: false,
-    insertionEffectLock: false,
-    blackMIDIMode: false,
-    autoAllocateVoices: false,
-    pitchOffset: 0,
-    deviceID: -1
+    monophonicRetrigger: false
 };
 
 /**
@@ -182,10 +221,8 @@ export function setMasterParameter<P extends keyof GlobalMasterParameter>(
             break;
         }
 
-        case "pitchOffset": {
-            const t = value as number;
-            const keyShift = Math.trunc(t);
-            if (Math.trunc(prev as number) !== keyShift)
+        case "keyShift": {
+            if ((prev as number) !== (value as number))
                 this.stopAllChannels(true);
         }
     }

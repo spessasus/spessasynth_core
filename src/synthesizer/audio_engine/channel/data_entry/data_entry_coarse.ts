@@ -113,9 +113,13 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
         // Part parameters
         case NonRegisteredMSB.partParameter: {
-            const paramLock = this.synthCore.masterParameters.nrpnParamLock;
+            const paramLock =
+                this._masterParameters.nrpnParamLock ??
+                this.synthCore.masterParameters.nrpnParamLock;
             const vibratoLock =
-                this.synthCore.masterParameters.customVibratoLock || paramLock;
+                (this._masterParameters.customVibratoLock ??
+                    this.synthCore.masterParameters.customVibratoLock) ||
+                paramLock;
             switch (paramFine) {
                 default: {
                     SpessaLog.info(

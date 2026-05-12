@@ -23,7 +23,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         this.noteOff(midiNote);
         return;
     }
-    velocity = Math.min(127, velocity);
+    velocity = clamp(velocity, 0, 127);
 
     const black = this.synthCore.masterParameters.blackMIDIMode;
     if (
@@ -52,7 +52,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Monophonic retrigger
     if (
-        this.synthCore.masterParameters.monophonicRetriggerMode ||
+        (this._masterParameters.monophonicRetrigger ??
+            this.synthCore.masterParameters.monophonicRetrigger) ||
         this._midiParameters.assignMode === 0
     )
         this.killNote(midiNote);
@@ -178,9 +179,11 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.setup(now, this.channel, midiNote, velocity);
 
         // Select the correct oscillator
+        // Channel takes precedence
         voice.wavetable =
             voice.oscillators[
-                this.synthCore.masterParameters.interpolationType
+                this._masterParameters.interpolationType ??
+                    this.synthCore.masterParameters.interpolationType
             ];
 
         // Set cached data

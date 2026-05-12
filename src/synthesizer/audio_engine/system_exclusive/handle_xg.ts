@@ -32,7 +32,7 @@ export function handleXG(
                             ((syx[8] & 15) << 4) |
                             (syx[9] & 15);
                         const cents = (tune - 1024) / 10;
-                        this.setMIDIParameter("masterTune", cents);
+                        this.setMIDIParameter("fineTune", cents);
                         SpessaLog.xgInfo("Master Tune", cents, "cents");
                     }
                     break;
@@ -56,7 +56,7 @@ export function handleXG(
                 // Master transpose
                 case 0x06: {
                     const transpose = data - 64;
-                    this.setMIDIParameter("masterKeyShift", transpose);
+                    this.setMIDIParameter("keyShift", transpose);
                     SpessaLog.xgInfo("Master Transpose", data);
                     break;
                 }

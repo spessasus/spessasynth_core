@@ -65,7 +65,7 @@ export function handleGM(
                     // Fine-tuning
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
                     const cents = Math.floor(tuningValue / 81.92); // [-100;+99] cents range
-                    this.setMIDIParameter("masterTune", cents);
+                    this.setMIDIParameter("fineTune", cents);
                     SpessaLog.gmInfo("Master Fine Tuning", cents, "cents");
                     break;
                 }
@@ -74,7 +74,7 @@ export function handleGM(
                     // Coarse tuning
                     // Lsb is ignored
                     const keyShift = syx[5] - 64;
-                    this.setMIDIParameter("masterKeyShift", keyShift);
+                    this.setMIDIParameter("keyShift", keyShift);
                     SpessaLog.gmInfo("Master Coarse Tuning", keyShift, "keys");
                     break;
                 }

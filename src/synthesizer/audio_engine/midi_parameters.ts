@@ -11,14 +11,16 @@ export interface MIDIGlobalParameter {
     system: MIDISystem;
     /**
      * The global key shift in semitones.
+     * Drum channels ignore this value.
      * Set by MIDI SysEx.
      */
-    masterKeyShift: number;
+    keyShift: number;
     /**
      * The global tuning in cents.
+     * Drum channels ignore this value.
      * Set by MIDI SysEx.
      */
-    masterTune: number;
+    fineTune: number;
 
     /**
      * The global volume gain.
@@ -39,8 +41,8 @@ export interface MIDIGlobalParameter {
 export const DEFAULT_MIDI_GLOBAL_PARAMETERS: MIDIGlobalParameter = {
     masterVolume: 1,
     masterPan: 0,
-    masterKeyShift: 0,
-    masterTune: 0,
+    keyShift: 0,
+    fineTune: 0,
     system: DEFAULT_SYNTH_MODE
 };
 
@@ -74,7 +76,7 @@ export function resetMIDIParametersInternal(
 ) {
     this.setMIDIParameter("masterVolume", 1);
     this.setMIDIParameter("masterPan", 0);
-    this.setMIDIParameter("masterKeyShift", 0);
-    this.setMIDIParameter("masterTune", 0);
+    this.setMIDIParameter("keyShift", 0);
+    this.setMIDIParameter("fineTune", 0);
     this.setMIDIParameter("system", system);
 }
