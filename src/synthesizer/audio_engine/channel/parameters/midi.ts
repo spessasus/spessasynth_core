@@ -94,7 +94,7 @@ export interface ChannelMIDIParameter {
     drumMap: number;
 }
 
-export const DEFAULT_MIDI_CHANNEL_PARAMETERS: ChannelMIDIParameter = {
+export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     pitchWheel: 8192,
     pitchWheelRange: 2,
     pressure: 0,

@@ -8,7 +8,7 @@ export { KeyModifier } from "./audio_engine/key_modifier_manager";
 export { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "./audio_engine/parameters/system";
 export { DEFAULT_GLOBAL_MIDI_PARAMETERS } from "./audio_engine/parameters/midi";
 export { DEFAULT_CHANNEL_SYSTEM_PARAMETERS } from "./audio_engine/channel/parameters/system";
-export { DEFAULT_MIDI_CHANNEL_PARAMETERS } from "./audio_engine/channel/parameters/midi";
+export { DEFAULT_CHANNEL_MIDI_PARAMETERS } from "./audio_engine/channel/parameters/midi";
 export {
     DEFAULT_PERCUSSION,
     DEFAULT_SYNTH_MODE,

@@ -25,7 +25,7 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - `SPESSA_BUFSIZE` - the default buffer size. Currently, 128.
 - `DEFAULT_CHANNEL_SYSTEM_PARAMETERS` - default values for channel system parameters.
 - `DEFAULT_GLOBAL_SYSTEM_PARAMETERS` - default values for global system parameters.
-- `DEFAULT_MIDI_CHANNEL_PARAMETERS` - default values for channel MIDI parameters.
+- `DEFAULT_CHANNEL_MIDI_PARAMETERS` - default values for channel MIDI parameters.
 - `DEFAULT_GLOBAL_MIDI_PARAMETERS` - default values for global MIDI parameters.
 
 ## Sound banks

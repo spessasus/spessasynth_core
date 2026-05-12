@@ -37,7 +37,7 @@ import {
 import type { ChannelGenerators } from "./awe32";
 import {
     type ChannelMIDIParameter,
-    DEFAULT_MIDI_CHANNEL_PARAMETERS
+    DEFAULT_CHANNEL_MIDI_PARAMETERS
 } from "./parameters/midi";
 import type { ChannelMIDIParameterChange, CustomChannelVibrato } from "./types";
 import {
@@ -244,7 +244,7 @@ export class MIDIChannel {
      */
     protected readonly dataEntry = dataEntry.bind(this);
     protected readonly _midiParameters: Readonly<ChannelMIDIParameter> = {
-        ...DEFAULT_MIDI_CHANNEL_PARAMETERS
+        ...DEFAULT_CHANNEL_MIDI_PARAMETERS
     };
     /**
      * All system parameters of this channel.
