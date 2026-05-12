@@ -5,9 +5,9 @@ import type { ChannelGenerators } from "./data_entry/awe32";
 import type { CustomChannelVibrato } from "./types";
 import type { ChannelMasterParameter } from "./master_parameters";
 import type { MIDIChannelParameter } from "./midi_parameters";
-import { CONTROLLER_TABLE_SIZE } from "./controller_tables";
 import type { MIDIController } from "../../../midi/enums";
 import type { MIDISystem } from "../../../soundbank/types";
+import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
 
 export interface DrumParameterSnapshot {
     pitch: number;

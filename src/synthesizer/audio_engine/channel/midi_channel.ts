@@ -1,12 +1,4 @@
-import {
-    CONTROLLER_TABLE_SIZE,
-    DEFAULT_DRUM_REVERB
-} from "./controller_tables";
-import {
-    resetControllers,
-    resetParameters,
-    resetRP15
-} from "./reset_controllers";
+import { DEFAULT_DRUM_REVERB, reset, resetRP15 } from "./reset_controllers";
 import { renderVoice } from "./render_voice";
 import { dataEntryFine } from "./data_entry/data_entry_fine";
 import { controllerChange, lockController } from "./controller_change";
@@ -15,6 +7,7 @@ import { noteOn } from "./note_on";
 import { noteOff } from "./note_off";
 import { programChange } from "./program_change";
 import {
+    CONTROLLER_TABLE_SIZE,
     DEFAULT_PERCUSSION,
     GENERATOR_OVERRIDE_NO_CHANGE_VALUE,
     SPESSASYNTH_GAIN_FACTOR
@@ -218,12 +211,11 @@ export class MIDIChannel {
      */
     public readonly controllerChange = controllerChange.bind(this);
     /**
-     * Reset all controllers for channel.
-     * This will reset all controllers to their default values,
-     * except for the locked controllers.
+     * Reset this channel to its default state.
+     * Except for the locked controllers.
      * @internal
      */
-    public readonly resetControllers = resetControllers.bind(this);
+    public readonly reset = reset.bind(this);
     // Voice rendering methods
     /**
      * Renders a voice to the stereo output buffer
@@ -248,13 +240,6 @@ export class MIDIChannel {
      * @internal
      */
     protected readonly dataEntryFine = dataEntryFine.bind(this);
-    /**
-     * Reset all parameters to their default values.
-     * This includes NRPN and RPN controllers, data entry state,
-     * and generator overrides and offsets.
-     * @internal
-     */
-    protected readonly resetParameters = resetParameters.bind(this);
     /**
      * Executes a data entry coarse (MSB) change for the current channel.
      * @param dataValue The value to set for the data entry coarse controller (0-127).

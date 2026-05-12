@@ -37,7 +37,7 @@ export function handleGS(
                     if (a1 === 0 && a2 === 0 && a3 === 0x7f && data === 0x00) {
                         // This is a GS reset
                         SpessaLog.coolInfo("MIDI System", "Roland GS");
-                        this.resetAllControllers("gs");
+                        this.reset("gs");
                         return;
                     }
 
@@ -103,14 +103,14 @@ export function handleGS(
                                             "MIDI System",
                                             "Roland GS"
                                         );
-                                        this.resetAllControllers("gs");
+                                        this.reset("gs");
                                     } else if (data === 0x7f) {
                                         // GS mode off
                                         SpessaLog.coolInfo(
                                             "MIDI System",
                                             "General MIDI 1"
                                         );
-                                        this.resetAllControllers("gm");
+                                        this.reset("gm");
                                     }
                                     break;
                                 }

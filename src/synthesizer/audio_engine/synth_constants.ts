@@ -52,3 +52,8 @@ export const SPESSA_BUFSIZE = 128;
  * This reverses it.
  */
 export const EFX_SENDS_GAIN_CORRECTION = 1 / Math.cos(Math.PI / 4) ** 2;
+
+/**
+ * The amount of MIDI controllers (127)
+ */
+export const CONTROLLER_TABLE_SIZE = 128;

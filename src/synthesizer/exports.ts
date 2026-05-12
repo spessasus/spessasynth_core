@@ -1,6 +1,5 @@
 export * from "./types";
 export * from "./enums";
-export * from "./audio_engine/channel/controller_tables";
 export * from "./audio_engine/effects/types";
 
 export { SpessaSynthProcessor } from "./processor";
@@ -15,12 +14,16 @@ export {
     DEFAULT_SYNTH_MODE,
     VOICE_CAP,
     SPESSASYNTH_GAIN_FACTOR,
-    SPESSA_BUFSIZE
+    SPESSA_BUFSIZE,
+    CONTROLLER_TABLE_SIZE
 } from "./audio_engine/synth_constants";
-export { DEFAULT_MIDI_CONTROLLERS } from "./audio_engine/channel/controller_tables";
 export * from "./audio_engine/channel/types";
 export type { MIDIGlobalParameter } from "./audio_engine/midi_parameters";
 export type { GlobalMasterParameter } from "./audio_engine/master_parameters";
 export type { ChannelMasterParameter } from "./audio_engine/channel/master_parameters";
 export type { MIDIChannelParameter } from "./audio_engine/channel/midi_parameters";
 export type { SynthesizerSnapshot } from "./audio_engine/synthesizer_snapshot";
+export {
+    DEFAULT_DRUM_REVERB,
+    DEFAULT_MIDI_CONTROLLERS
+} from "./audio_engine/channel/reset_controllers";

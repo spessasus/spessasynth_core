@@ -3,7 +3,10 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 
-import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
+import {
+    CONTROLLER_TABLE_SIZE,
+    DEFAULT_PERCUSSION
+} from "../../synthesizer/audio_engine/synth_constants";
 
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
@@ -25,7 +28,6 @@ import type {
     ReverbProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
 import { MIDIProtocol } from "./midi_protocol";
-import { CONTROLLER_TABLE_SIZE } from "../../synthesizer/audio_engine/channel/controller_tables";
 import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
 import { fillWithDefaults } from "../../utils/fill_with_defaults";

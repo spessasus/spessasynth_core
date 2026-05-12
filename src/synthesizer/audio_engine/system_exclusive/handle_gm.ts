@@ -203,19 +203,19 @@ export function handleGM(
 
                 case 0x01: {
                     SpessaLog.coolInfo("MIDI System", "General MIDI 1");
-                    this.resetAllControllers("gm");
+                    this.reset("gm");
                     break;
                 }
 
                 case 0x02: {
                     SpessaLog.coolInfo("MIDI System", "Roland GS");
-                    this.resetAllControllers("gs");
+                    this.reset("gs");
                     break;
                 }
 
                 case 0x03: {
                     SpessaLog.coolInfo("MIDI System", "General MIDI 2");
-                    this.resetAllControllers("gm2");
+                    this.reset("gm2");
                     break;
                 }
             }

@@ -66,7 +66,7 @@ export function handleXG(
                 case 0x7f:
                 case 0x7e: {
                     SpessaLog.coolInfo("MIDI System", "Yamaha XG");
-                    this.resetAllControllers("xg");
+                    this.reset("xg");
                     break;
                 }
             }

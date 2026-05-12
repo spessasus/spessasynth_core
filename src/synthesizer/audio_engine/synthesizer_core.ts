@@ -533,11 +533,11 @@ export class SynthesizerCore {
     }
 
     /**
-     * Executes a full system reset of all controllers.
+     * Executes a full system reset of the synthesizer.
      * This will reset all controllers to their default values,
      * except for the locked controllers.
      */
-    public resetAllControllers(system: MIDISystem = DEFAULT_SYNTH_MODE) {
+    public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
         // Call here because there are returns in this function.
         this.callEvent("allControllerReset", undefined);
         this.resetMIDIParameters(system);
@@ -559,7 +559,7 @@ export class SynthesizerCore {
 
         // Reset channels
         // Do not send CC changes as we call allControllerReset
-        for (const ch of this.midiChannels) ch.resetControllers(false);
+        for (const ch of this.midiChannels) ch.reset(false);
     }
 
     public process(
@@ -1321,7 +1321,7 @@ export class SynthesizerCore {
             case MIDIMessageTypes.reset: {
                 // Do not **force** stop channels (breaks seamless loops, for example th06)
                 this.stopAllChannels(false);
-                this.resetAllControllers();
+                this.reset();
                 break;
             }
 
@@ -1380,7 +1380,7 @@ export class SynthesizerCore {
             // Restore
             c.setMasterParameter("presetLock", lock);
         }
-        this.resetAllControllers();
+        this.reset();
     }
 
     private getDefaultPresets() {

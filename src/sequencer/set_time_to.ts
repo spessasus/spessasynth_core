@@ -1,9 +1,8 @@
 import { MIDIMessage } from "../midi/midi_message";
 import {
-    CONTROLLER_TABLE_SIZE,
-    DEFAULT_MIDI_CONTROLLERS
-} from "../synthesizer/audio_engine/channel/controller_tables";
-import { RP_15_RESET_CC_NUMS } from "../synthesizer/audio_engine/channel/reset_controllers";
+    DEFAULT_MIDI_CONTROLLERS,
+    RP_15_RESET_CC_NUMS
+} from "../synthesizer/audio_engine/channel/reset_controllers";
 import {
     type MIDIController,
     MIDIControllers,
@@ -14,6 +13,7 @@ import type { SpessaSynthSequencer } from "./sequencer";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { MIDIProtocol } from "../midi/exports";
 import { ParameterTracker } from "../midi/midi_tools/parameter_tracker";
+import { CONTROLLER_TABLE_SIZE } from "../synthesizer/audio_engine/synth_constants";
 
 const nonSkippableCCs = new Set<MIDIController>([
     MIDIControllers.dataDecrement,

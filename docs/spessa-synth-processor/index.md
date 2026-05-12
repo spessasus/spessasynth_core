@@ -207,14 +207,14 @@ synth.controllerChange(channel, controller, value);
 
     Theoretically all controllers are supported as it depends on the SoundFont's modulators.
 
-### resetAllControllers
+### reset
 
 Reset all controllers and all programs to their default values. Essentially a system reset.
 This will reset all controllers to their default values,
 except for the locked controllers.
 
 ```ts
-synth.resetAllControllers();
+synth.reset();
 ```
 
 ### channelPressure

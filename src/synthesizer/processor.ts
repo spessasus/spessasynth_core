@@ -449,7 +449,7 @@ export class SpessaSynthProcessor {
      * except for the locked controllers.
      */
     public resetAllControllers(system: MIDISystem = DEFAULT_SYNTH_MODE) {
-        this.synthCore.resetAllControllers(system);
+        this.synthCore.reset(system);
     }
 
     /**
