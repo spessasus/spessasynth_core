@@ -6,7 +6,7 @@ import type {
     InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "./effects/types";
-import { MIDIProtocol } from "../../midi/midi_tools/midi_protocol";
+import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
 import type { SynthesizerCore } from "./synthesizer_core";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
@@ -57,21 +57,21 @@ export function applySnapshot(
     // Restore insertion
     const is = snapshot.insertionProcessor;
     this.systemExclusive(
-        MIDIProtocol.gsData(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
+        MIDIUtils.gsData(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
     );
 
     for (let i = 0; i < is.params.length; i++) {
         if (is.params[i] !== 255)
             this.systemExclusive(
-                MIDIProtocol.gsData(0x40, 0x03, 3 + i, [is.params[i]])
+                MIDIUtils.gsData(0x40, 0x03, 3 + i, [is.params[i]])
             );
     }
 
     for (let channel = 0; channel < is.channels.length; channel++) {
         this.systemExclusive(
-            MIDIProtocol.gsData(
+            MIDIUtils.gsData(
                 0x40,
-                0x40 | MIDIProtocol.channelToSyx(channel),
+                0x40 | MIDIUtils.channelToSyx(channel),
                 0x22,
                 [is.channels[channel] ? 1 : 0]
             )

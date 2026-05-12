@@ -1,7 +1,7 @@
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
-import { MIDIProtocol } from "./midi_protocol";
+import { MIDIUtils } from "./midi_utils";
 import type { BasicMIDI } from "../basic_midi";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
@@ -209,7 +209,7 @@ export function getUsedProgramsAndKeys(
             case MIDIMessageTypes.systemExclusive: {
                 // Check for drum sysex
                 {
-                    const syx = MIDIProtocol.analyzeSysEx(e.data);
+                    const syx = MIDIUtils.analyzeSysEx(e.data);
                     switch (syx.type) {
                         default: {
                             break;

@@ -27,7 +27,7 @@ import type {
     InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
-import { MIDIProtocol } from "./midi_protocol";
+import { MIDIUtils } from "./midi_utils";
 import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
 import { fillWithDefaults } from "../../utils/fill_with_defaults";
@@ -488,11 +488,7 @@ export function modifyMIDIInternal(
                                 ConsoleColors.value
                             );
                             addEventBefore(
-                                MIDIProtocol.gsDrumChange(
-                                    e.ticks,
-                                    midiChannel,
-                                    1
-                                )
+                                MIDIUtils.gsDrumChange(e.ticks, midiChannel, 1)
                             );
                         }
                     }
@@ -630,7 +626,7 @@ export function modifyMIDIInternal(
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const syx = MIDIProtocol.analyzeSysEx(e.data);
+                const syx = MIDIUtils.analyzeSysEx(e.data);
                 switch (syx.type) {
                     default: {
                         return;
@@ -781,18 +777,18 @@ export function modifyMIDIInternal(
         const p = reverbParams;
         targetTrack.addEvents(
             targetIndex,
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
                 p.preLowpass
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.character, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.character, [
                 p.character
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.time, [p.time]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.delayFeedback, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.time, [p.time]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.delayFeedback, [
                 p.delayFeedback
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preDelayTime, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preDelayTime, [
                 p.preDelayTime
             ])
         );
@@ -802,30 +798,22 @@ export function modifyMIDIInternal(
         const p = chorusParams;
         targetTrack.addEvents(
             targetIndex,
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
                 p.preLowpass
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
                 p.feedback
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
-            MIDIProtocol.gsMessage(
-                targetTicks,
-                0x40,
-                0x01,
-                m.sendLevelToReverb,
-                [p.sendLevelToReverb]
-            ),
-            MIDIProtocol.gsMessage(
-                targetTicks,
-                0x40,
-                0x01,
-                m.sendLevelToDelay,
-                [p.sendLevelToDelay]
-            )
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.delay, [p.delay]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.depth, [p.depth]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
+                p.sendLevelToReverb
+            ]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToDelay, [
+                p.sendLevelToDelay
+            ])
         );
     }
     if (delayParams) {
@@ -833,39 +821,35 @@ export function modifyMIDIInternal(
         const p = delayParams;
         targetTrack.addEvents(
             targetIndex,
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.level, [p.level]),
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
                 p.preLowpass
             ]),
 
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.timeCenter, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.timeCenter, [
                 p.timeCenter
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
                 p.timeRatioLeft
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioRight, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioRight, [
                 p.timeRatioRight
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.levelCenter, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.levelCenter, [
                 p.levelCenter
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.levelLeft, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.levelLeft, [
                 p.levelLeft
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.levelRight, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.levelRight, [
                 p.levelRight
             ]),
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
                 p.feedback
             ]),
-            MIDIProtocol.gsMessage(
-                targetTicks,
-                0x40,
-                0x01,
-                m.sendLevelToReverb,
-                [p.sendLevelToReverb]
-            )
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.sendLevelToReverb, [
+                p.sendLevelToReverb
+            ])
         );
     }
 
@@ -876,10 +860,10 @@ export function modifyMIDIInternal(
             if (p.channels[channel]) {
                 targetTrack.addEvents(
                     targetTicks,
-                    MIDIProtocol.gsMessage(
+                    MIDIUtils.gsMessage(
                         targetTicks,
                         0x40,
-                        0x40 | MIDIProtocol.channelToSyx(channel),
+                        0x40 | MIDIUtils.channelToSyx(channel),
                         0x22,
                         [1]
                     )
@@ -893,9 +877,7 @@ export function modifyMIDIInternal(
             if (value === 255) continue;
             targetTrack.addEvents(
                 targetIndex,
-                MIDIProtocol.gsMessage(targetTicks, 0x40, 0x03, param + 3, [
-                    value
-                ])
+                MIDIUtils.gsMessage(targetTicks, 0x40, 0x03, param + 3, [value])
             );
         }
 
@@ -905,7 +887,7 @@ export function modifyMIDIInternal(
         // Channels
         targetTrack.addEvents(
             targetIndex,
-            MIDIProtocol.gsMessage(targetTicks, 0x40, 0x03, 0x00, [
+            MIDIUtils.gsMessage(targetTicks, 0x40, 0x03, 0x00, [
                 p.type >> 8,
                 p.type & 0x7f
             ])
@@ -921,7 +903,7 @@ export function modifyMIDIInternal(
         ) {
             index++;
         }
-        midi.tracks[0].addEvents(index, MIDIProtocol.gsReset(0));
+        midi.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
         SpessaLog.info("%cGS on not detected. Adding it.", ConsoleColors.info);
     }
     midi.flush();

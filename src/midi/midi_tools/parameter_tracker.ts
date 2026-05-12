@@ -1,5 +1,5 @@
 import { type MIDIController, MIDIControllers } from "../enums";
-import { MIDIProtocol } from "./midi_protocol";
+import { MIDIUtils } from "./midi_utils";
 
 interface ParameterController {
     /**
@@ -146,12 +146,12 @@ export class ParameterTracker {
     private analyze() {
         const v = (this.dataMSB.v << 7) | this.dataLSB.v;
         return this.isRegistered
-            ? MIDIProtocol.analyzeRPN(
+            ? MIDIUtils.analyzeRPN(
                   this.channel,
                   (this.rpnMSB.v << 7) | this.rpnLSB.v,
                   v
               )
-            : MIDIProtocol.analyzeNRPN(
+            : MIDIUtils.analyzeNRPN(
                   this.channel,
                   (this.nrpnMSB.v << 7) | this.nrpnLSB.v,
                   v

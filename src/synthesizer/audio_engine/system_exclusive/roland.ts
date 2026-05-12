@@ -3,7 +3,7 @@ import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SynthesizerCore } from "../synthesizer_core";
-import { MIDIProtocol } from "../../../midi/midi_tools/midi_protocol";
+import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
@@ -610,7 +610,7 @@ export function rolandSystemExclusive(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-8850 manual, page 237
                             const channel =
-                                MIDIProtocol.syxToChannel(a2 & 0x0f) +
+                                MIDIUtils.syxToChannel(a2 & 0x0f) +
                                 channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
@@ -883,7 +883,7 @@ export function rolandSystemExclusive(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-8850 manual, page 237
                             const channel =
-                                MIDIProtocol.syxToChannel(a2 & 0x0f) +
+                                MIDIUtils.syxToChannel(a2 & 0x0f) +
                                 channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
@@ -998,7 +998,7 @@ export function rolandSystemExclusive(
                             // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                             // SC-8850 manual, page 237
                             const channel =
-                                MIDIProtocol.syxToChannel(a2 & 0x0f) +
+                                MIDIUtils.syxToChannel(a2 & 0x0f) +
                                 channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];

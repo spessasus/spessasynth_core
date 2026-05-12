@@ -2,7 +2,7 @@ import {
     MIDIBuilder,
     type MIDIController,
     MIDIControllers,
-    MIDIProtocol
+    MIDIUtils
 } from "../src";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -23,7 +23,7 @@ class EFXTest {
         // EFX to channel
         this.builder.gs(
             0x40,
-            0x40 | MIDIProtocol.channelToSyx(channel),
+            0x40 | MIDIUtils.channelToSyx(channel),
             0x22,
             [1]
         );
@@ -65,7 +65,7 @@ export class MIDITestMaker extends MIDIBuilder {
         });
         this.channel = channel;
         this.name = name.replaceAll(" ", "_").toLowerCase();
-        this.tracks[0].addEvents(0, MIDIProtocol.gsReset(0));
+        this.tracks[0].addEvents(0, MIDIUtils.gsReset(0));
     }
 
     public testEFX(typeMSB: number, typeLSB: number) {
@@ -126,11 +126,7 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public gs(a1: number, a2: number, a3: number, data: number[]) {
-        this.systemExclusive(
-            this.ticks,
-            0,
-            MIDIProtocol.gsData(a1, a2, a3, data)
-        );
+        this.systemExclusive(this.ticks, 0, MIDIUtils.gsData(a1, a2, a3, data));
     }
 
     public rpn(rpn: number, val: number) {

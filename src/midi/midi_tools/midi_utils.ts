@@ -43,7 +43,7 @@ const OTHER = Object.freeze({ type: "Other" }) as AnalyzedMIDIMessage;
 /**
  * A general purpose class for handling MIDI messages.
  */
-export class MIDIProtocol {
+export class MIDIUtils {
     /**
      * Analyzes a MIDI System Exclusive message
      * and returns an identification and data for it.
@@ -715,7 +715,7 @@ export class MIDIProtocol {
 
         // Patch parameter
         if (a2 >> 4 === 1) {
-            const channel = MIDIProtocol.syxToChannel(a2 & 0x0f);
+            const channel = MIDIUtils.syxToChannel(a2 & 0x0f);
             switch (a3) {
                 default: {
                     return OTHER;
@@ -905,7 +905,7 @@ export class MIDIProtocol {
 
         // Patch Parameter Tone Map
         if (a2 >> 4 === 4) {
-            const channel = MIDIProtocol.syxToChannel(a2 & 0x0f);
+            const channel = MIDIUtils.syxToChannel(a2 & 0x0f);
             switch (a3) {
                 default: {
                     return OTHER;

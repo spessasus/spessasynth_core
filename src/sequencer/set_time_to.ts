@@ -11,7 +11,7 @@ import {
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { MIDIProtocol } from "../midi/exports";
+import { MIDIUtils } from "../midi/exports";
 import { ParameterTracker } from "../midi/midi_tools/parameter_tracker";
 import { CONTROLLER_TABLE_SIZE } from "../synthesizer/audio_engine/synth_constants";
 
@@ -163,7 +163,7 @@ export function setTimeToInternal(
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const analyzed = MIDIProtocol.analyzeSysEx(event.data);
+                const analyzed = MIDIUtils.analyzeSysEx(event.data);
                 // Sysex may change controllers
                 switch (analyzed.type) {
                     default: {

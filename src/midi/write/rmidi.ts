@@ -18,7 +18,7 @@ import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
-import { MIDIProtocol } from "../midi_tools/midi_protocol";
+import { MIDIUtils } from "../midi_tools/midi_utils";
 import { SpessaLog } from "../../utils/loggin";
 import type { MIDISystem } from "../../soundbank/types";
 
@@ -80,7 +80,7 @@ function correctBankOffsetInternal(
             return;
 
         if (status === MIDIMessageTypes.systemExclusive) {
-            const syx = MIDIProtocol.analyzeSysEx(e.data);
+            const syx = MIDIUtils.analyzeSysEx(e.data);
             switch (syx.type) {
                 default: {
                     return;
@@ -315,7 +315,7 @@ function correctBankOffsetInternal(
         if (mid.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName)
             index++;
 
-        mid.tracks[0].addEvents(index, MIDIProtocol.gsReset(0));
+        mid.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
     }
     mid.flush();
 }
