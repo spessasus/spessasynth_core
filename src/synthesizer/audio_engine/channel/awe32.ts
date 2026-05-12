@@ -1,10 +1,10 @@
-import { ConsoleColors } from "../../../../utils/other";
+import { ConsoleColors } from "../../../utils/other";
 import {
     type GeneratorType,
     GeneratorTypes
-} from "../../../../soundbank/basic_soundbank/generator_types";
-import type { MIDIChannel } from "../midi_channel";
-import { SpessaLog } from "../../../../utils/loggin";
+} from "../../../soundbank/basic_soundbank/generator_types";
+import type { MIDIChannel } from "./midi_channel";
+import { SpessaLog } from "../../../utils/loggin";
 
 export interface ChannelGenerators {
     /**

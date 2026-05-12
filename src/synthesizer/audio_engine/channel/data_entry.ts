@@ -1,13 +1,13 @@
-import { ConsoleColors } from "../../../../utils/other";
-import type { MIDIChannel } from "../midi_channel";
-import type { GeneratorType } from "../../../../soundbank/basic_soundbank/generator_types";
+import { ConsoleColors } from "../../../utils/other";
+import type { MIDIChannel } from "./midi_channel";
+import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import {
     MIDIControllers,
     NonRegisteredLSB,
     NonRegisteredMSB,
     RegisteredParameterTypes
-} from "../../../../midi/enums";
-import { SpessaLog } from "../../../../utils/loggin";
+} from "../../../midi/enums";
+import { SpessaLog } from "../../../utils/loggin";
 import { handleAWE32NRPN } from "./awe32";
 
 /**

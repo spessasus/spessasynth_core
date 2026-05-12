@@ -1,7 +1,7 @@
 import { DEFAULT_DRUM_REVERB, resetChannelInternal, resetRP15 } from "./reset";
 import { renderVoice } from "./render_voice";
 import { controllerChange, lockController } from "./controller_change";
-import { dataEntry } from "./data_entry/data_entry_coarse";
+import { dataEntry } from "./data_entry";
 import { noteOn } from "./note_on";
 import { noteOff } from "./note_off";
 import { programChange } from "./program_change";
@@ -34,7 +34,7 @@ import {
     type ChannelSnapshot,
     getChannelSnapshot
 } from "./channel_snapshot";
-import type { ChannelGenerators } from "./data_entry/awe32";
+import type { ChannelGenerators } from "./awe32";
 import {
     type ChannelMIDIParameter,
     DEFAULT_MIDI_CHANNEL_PARAMETERS
