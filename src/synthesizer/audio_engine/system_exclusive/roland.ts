@@ -8,13 +8,13 @@ import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
- * Handles a GS system exclusive
+ * Handles a Roland GS system exclusive
  * http://www.bandtrax.com.au/sysex.htm
  * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
  * @param syx
  * @param channelOffset
  */
-export function handleGS(
+export function rolandSystemExclusive(
     this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0

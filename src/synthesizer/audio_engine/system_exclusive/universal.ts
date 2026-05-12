@@ -24,11 +24,11 @@ function getTuning(byte1: number, byte2: number, byte3: number): number {
 }
 
 /**
- * Handles a GM system exclusive (realtime/non-realtime)
+ * Handles a Universal system exclusive (realtime/non-realtime)
  * @param syx
  * @param channelOffset
  */
-export function handleGM(
+export function universalSystemExclusive(
     this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0

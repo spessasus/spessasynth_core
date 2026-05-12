@@ -4,12 +4,12 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
- * Handles a XG system exclusive
+ * Handles a Yamaha XG system exclusive
  * http://www.studio4all.de/htmle/main91.html
  * @param syx
  * @param channelOffset
  */
-export function handleXG(
+export function yamahaSystemExclusive(
     this: SynthesizerCore,
     syx: SysExAcceptedArray,
     channelOffset = 0

@@ -1,8 +1,8 @@
 import { ConsoleColors } from "../../../utils/other";
 import { SpessaLog } from "../../../utils/loggin";
-import { handleGM } from "./handle_gm";
-import { handleGS } from "./handle_gs";
-import { handleXG } from "./handle_xg";
+import { universalSystemExclusive } from "./universal";
+import { rolandSystemExclusive } from "./roland";
+import { yamahaSystemExclusive } from "./yamaha";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
@@ -46,19 +46,19 @@ export function systemExclusiveInternal(
         case 0x7e:
         // Realtime GM
         case 0x7f: {
-            handleGM.call(this, syx, channelOffset);
+            universalSystemExclusive.call(this, syx, channelOffset);
             break;
         }
 
         // Roland
         case 0x41: {
-            handleGS.call(this, syx, channelOffset);
+            rolandSystemExclusive.call(this, syx, channelOffset);
             break;
         }
 
         // Yamaha
         case 0x43: {
-            handleXG.call(this, syx, channelOffset);
+            yamahaSystemExclusive.call(this, syx, channelOffset);
             break;
         }
 
