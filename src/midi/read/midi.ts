@@ -1,20 +1,20 @@
-import { MIDIMessage } from "./midi_message";
-import { IndexedByteArray } from "../utils/indexed_array";
-import { ConsoleColors } from "../utils/other";
-import { SpessaLog } from "../utils/loggin";
-import { readVariableLengthQuantity } from "../utils/byte_functions/variable_length_quantity";
-import { readBigEndianIndexed } from "../utils/byte_functions/big_endian";
+import { MIDIMessage } from "../midi_message";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { ConsoleColors } from "../../utils/other";
+import { SpessaLog } from "../../utils/loggin";
+import { readVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
+import { readBigEndianIndexed } from "../../utils/byte_functions/big_endian";
 import {
     readBinaryString,
     readBinaryStringIndexed
-} from "../utils/byte_functions/string";
-import { readLittleEndian } from "../utils/byte_functions/little_endian";
-import { type MIDIMessageType, MIDIMessageTypes } from "./enums";
-import { BasicMIDI } from "./basic_midi";
-import { loadXMF } from "./xmf_loader";
-import type { MIDIFormat, RMIDInfoFourCC } from "./types";
-import { MIDITrack } from "./midi_track";
-import { RIFFChunk } from "../utils/riff_chunk";
+} from "../../utils/byte_functions/string";
+import { readLittleEndian } from "../../utils/byte_functions/little_endian";
+import { type MIDIMessageType, MIDIMessageTypes } from "../enums";
+import { BasicMIDI } from "../basic_midi";
+import { loadXMF } from "./xmf";
+import type { MIDIFormat, RMIDInfoFourCC } from "../types";
+import { MIDITrack } from "../midi_track";
+import { RIFFChunk } from "../../utils/riff_chunk";
 
 /**
  * Midi_loader.ts

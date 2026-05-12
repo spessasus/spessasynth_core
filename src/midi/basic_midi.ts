@@ -6,11 +6,8 @@ import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors, formatTime } from "../utils/other";
-import { writeMIDIInternal } from "./midi_tools/midi_writer";
-import {
-    DEFAULT_RMIDI_WRITE_OPTIONS,
-    writeRMIDIInternal
-} from "./midi_tools/rmidi_writer";
+import { writeMIDIInternal } from "./write/midi";
+import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
@@ -29,9 +26,9 @@ import {
     applySnapshotInternal,
     modifyMIDIInternal,
     type ModifyMIDIOptions
-} from "./midi_tools/midi_editor";
+} from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
-import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
+import { loadMIDIFromArrayBufferInternal } from "./read/midi";
 import { MIDIMessageTypes } from "./enums";
 import type {
     GenericRange,

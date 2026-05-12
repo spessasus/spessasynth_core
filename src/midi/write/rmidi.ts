@@ -18,7 +18,7 @@ import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
-import { MIDIProtocol } from "./midi_protocol";
+import { MIDIProtocol } from "../midi_tools/midi_protocol";
 import { SpessaLog } from "../../utils/loggin";
 import type { MIDISystem } from "../../soundbank/types";
 
