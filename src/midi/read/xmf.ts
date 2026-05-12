@@ -10,6 +10,7 @@ import { inflateSync } from "../../externals/fflate/fflate_wrapper";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { BasicMIDI } from "../basic_midi";
 import type { RMIDInfoData } from "../types";
+import { parseSMFInternal } from "./midi";
 
 const metadataTypes = {
     XMFFileType: 0,
@@ -358,14 +359,15 @@ class XMFNode {
 
 /**
  * Parses an XMF file
- * @param midi {BasicMIDI}
- * @param binaryData {IndexedByteArray}
- * @returns {IndexedByteArray} the file byte array
+ * @param midi
+ * @param binaryData
+ * @param fileName
  */
 export function loadXMF(
     midi: BasicMIDI,
-    binaryData: IndexedByteArray
-): IndexedByteArray {
+    binaryData: IndexedByteArray,
+    fileName: string
+) {
     midi.bankOffset = 0;
     // https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/xmf-v1a.pdf
     // https://wiki.multimedia.cx/index.php?title=Extensible_Music_Format_(XMF)
@@ -467,5 +469,6 @@ export function loadXMF(
     if (!midiArray) {
         throw new Error("No MIDI data in the XMF file!");
     }
-    return midiArray;
+    // Send the extracted SMF to the parser
+    parseSMFInternal(midi, midiArray, fileName);
 }

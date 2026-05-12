@@ -28,7 +28,7 @@ import {
     type ModifyMIDIOptions
 } from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
-import { loadMIDIFromArrayBufferInternal } from "./read/midi";
+import { parseSMFInternal } from "./read/midi";
 import { MIDIMessageTypes } from "./enums";
 import type {
     GenericRange,
@@ -39,6 +39,8 @@ import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString, toISODateString } from "../utils/date";
 import type { SoundBankManager } from "../synthesizer/audio_engine/sound_bank_manager";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
+import { parseRMIDIInternal } from "./read/rmidi";
+import { loadXMF } from "./read/xmf";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -185,13 +187,41 @@ export class BasicMIDI {
      * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
      * @param arrayBuffer The ArrayBuffer containing the binary file data.
      * @param fileName The optional name of the file, will be used if the MIDI file does not have a name.
+     * @remarks
+     * This function reads the MIDI file format, extracts the header and track chunks,
+     * and populates the BasicMIDI instance with the parsed data.
+     * It supports Standard MIDI Files (SMF), RIFF MIDI (RMIDI), and Extensible Music Format (XMF).
+     * It also handles embedded soundbanks in RMIDI files.
+     * If the file is an RMIDI file, it will extract the embedded soundbank and store
+     * it in the `embeddedSoundFont` property of the BasicMIDI instance.
+     * If the file is an XMF file, it will parse the XMF structure and extract the MIDI data.
      */
     public static fromArrayBuffer(
         arrayBuffer: ArrayBuffer,
         fileName = ""
     ): BasicMIDI {
         const mid = new BasicMIDI();
-        loadMIDIFromArrayBufferInternal(mid, arrayBuffer, fileName);
+        const binaryData = new IndexedByteArray(arrayBuffer);
+        const initialString = readBinaryString(binaryData, 4);
+        switch (initialString) {
+            case "RIFF": {
+                // Possibly an RMID file (https://github.com/spessasus/sf2-rmidi-specification#readme)
+                parseRMIDIInternal(mid, binaryData, fileName);
+                break;
+            }
+
+            case "XMF_": {
+                // Extensible Music Format
+                loadXMF(mid, binaryData, fileName);
+                break;
+            }
+
+            default: {
+                // Assume Standard MIDI File
+                parseSMFInternal(mid, binaryData, fileName);
+                break;
+            }
+        }
         return mid;
     }
 
@@ -200,13 +230,8 @@ export class BasicMIDI {
      * @param file The file to load.
      */
     public static async fromFile(file: File) {
-        const mid = new BasicMIDI();
-        loadMIDIFromArrayBufferInternal(
-            mid,
-            await file.arrayBuffer(),
-            file.name
-        );
-        return mid;
+        // An alias for now...
+        return this.fromArrayBuffer(await file.arrayBuffer(), file.name);
     }
 
     /**
