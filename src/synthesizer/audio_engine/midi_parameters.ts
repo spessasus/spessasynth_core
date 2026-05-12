@@ -1,9 +1,9 @@
-import type { MIDIGlobalParameterChangeCallback } from "../types";
+import type { GlobalMIDIParameterChangeCallback } from "../types";
 import { DEFAULT_SYNTH_MODE } from "./synth_constants";
 import type { SynthesizerCore } from "./synthesizer_core";
 import type { MIDISystem } from "../../soundbank/types";
 
-export interface MIDIGlobalParameter {
+export interface GlobalMIDIParameter {
     /**
      * The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG)
      * Set by MIDI SysEx.
@@ -26,7 +26,7 @@ export interface MIDIGlobalParameter {
      * The global volume gain.
      * Set by MIDI SysEx.
      */
-    masterVolume: number;
+    gain: number;
 
     /**
      * The global panning.
@@ -35,12 +35,12 @@ export interface MIDIGlobalParameter {
      * - 1 - hard right
      * Set by MIDI SysEx.
      */
-    masterPan: number;
+    pan: number;
 }
 
-export const DEFAULT_MIDI_GLOBAL_PARAMETERS: MIDIGlobalParameter = {
-    masterVolume: 1,
-    masterPan: 0,
+export const DEFAULT_GLOBAL_MIDI_PARAMETERS: GlobalMIDIParameter = {
+    gain: 1,
+    pan: 0,
     keyShift: 0,
     fineTune: 0,
     system: DEFAULT_SYNTH_MODE
@@ -51,19 +51,19 @@ export const DEFAULT_MIDI_GLOBAL_PARAMETERS: MIDIGlobalParameter = {
  * @param parameter The type of the global MIDI parameter to set.
  * @param value The value to set for the global MIDI parameter.
  */
-export function setMIDIParameterInternal<P extends keyof MIDIGlobalParameter>(
+export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
     this: SynthesizerCore,
     parameter: P,
-    value: MIDIGlobalParameter[P]
+    value: GlobalMIDIParameter[P]
 ) {
     this.midiParameters[parameter] = value;
 
     for (const ch of this.midiChannels) ch.updateInternalParams();
 
-    this.callEvent("midiGlobalChange", {
+    this.callEvent("globalMIDIParamChange", {
         parameter,
         value
-    } as MIDIGlobalParameterChangeCallback);
+    } as GlobalMIDIParameterChangeCallback);
 }
 
 /**
@@ -74,8 +74,8 @@ export function resetMIDIParametersInternal(
     this: SynthesizerCore,
     system: MIDISystem
 ) {
-    this.setMIDIParameter("masterVolume", 1);
-    this.setMIDIParameter("masterPan", 0);
+    this.setMIDIParameter("gain", 1);
+    this.setMIDIParameter("pan", 0);
     this.setMIDIParameter("keyShift", 0);
     this.setMIDIParameter("fineTune", 0);
     this.setMIDIParameter("system", system);

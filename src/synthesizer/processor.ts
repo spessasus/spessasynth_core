@@ -26,9 +26,9 @@ import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../soundbank/basic_soundbank/midi_patch";
-import type { GlobalMasterParameter } from "./audio_engine/master_parameters";
+import type { GlobalSystemParameter } from "./audio_engine/system_parameters";
 import type { MIDIChannel } from "./audio_engine/channel/midi_channel";
-import type { MIDIGlobalParameter } from "./audio_engine/midi_parameters";
+import type { GlobalMIDIParameter } from "./audio_engine/midi_parameters";
 import type { MIDISystem } from "../soundbank/types";
 import type { SysExAcceptedArray } from "../midi/types";
 
@@ -260,17 +260,17 @@ export class SpessaSynthProcessor {
      * The global MIDI parameters of the synthesizer.
      * These are only editable via MIDI messages.
      */
-    public get midiParameters(): Readonly<MIDIGlobalParameter> {
+    public get midiParameters(): Readonly<GlobalMIDIParameter> {
         return this.synthCore.midiParameters;
     }
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * The global master parameters of the synthesizer.
+     * The global system parameters of the synthesizer.
      * These are only editable via the API.
      */
-    public get masterParameters(): Readonly<GlobalMasterParameter> {
-        return this.synthCore.masterParameters;
+    public get systemParameters(): Readonly<GlobalSystemParameter> {
+        return this.synthCore.systemParameters;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -432,15 +432,15 @@ export class SpessaSynthProcessor {
     };
 
     /**
-     * Sets a master parameter of the synthesizer.
-     * @param type The type of the master parameter to set.
-     * @param value The value to set for the master parameter.
+     * Sets a system parameter of the synthesizer.
+     * @param type The type of the system parameter to set.
+     * @param value The value to set for the system parameter.
      */
-    public setMasterParameter<P extends keyof GlobalMasterParameter>(
+    public setSystemParameter<P extends keyof GlobalSystemParameter>(
         type: P,
-        value: GlobalMasterParameter[P]
+        value: GlobalSystemParameter[P]
     ) {
-        this.synthCore.setMasterParameter(type, value);
+        this.synthCore.setSystemParameter(type, value);
     }
 
     /**

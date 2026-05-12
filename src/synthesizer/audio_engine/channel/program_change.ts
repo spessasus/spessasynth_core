@@ -5,7 +5,7 @@ import type { MIDIChannel } from "./midi_channel";
  * @param program The program number (0-127) to change to.
  */
 export function programChange(this: MIDIChannel, program: number) {
-    if (this._masterParameters.presetLock) {
+    if (this._systemParameters.presetLock) {
         return;
     }
 

@@ -2,10 +2,10 @@ import type { MIDIChannel } from "./midi_channel";
 import type { InterpolationType } from "../../enums";
 
 /**
- * The master parameters of the channel.
+ * The system parameters of the channel.
  * These can only be changed via the API.
  */
-export interface ChannelMasterParameter {
+export interface ChannelSystemParameter {
     // Channel exclusive
     /**
      * If the preset is locked, preventing any program changes from being sent.
@@ -74,7 +74,7 @@ export interface ChannelMasterParameter {
     monophonicRetrigger: boolean | null;
 }
 
-export const DEFAULT_CHANNEL_MASTER_PARAMETERS: ChannelMasterParameter = {
+export const DEFAULT_CHANNEL_SYSTEM_PARAMETERS: ChannelSystemParameter = {
     // Channel exclusive
     presetLock: false,
     isMuted: false,
@@ -92,19 +92,17 @@ export const DEFAULT_CHANNEL_MASTER_PARAMETERS: ChannelMasterParameter = {
 };
 
 /**
- * Sets a master parameter of the channel
- * @param parameter The type of the master parameter to set.
- * @param value The value to set for the master parameter.
+ * Sets a system parameter of the channel
+ * @param parameter The type of the system parameter to set.
+ * @param value The value to set for the system parameter.
  */
-export function setMasterParameter<P extends keyof ChannelMasterParameter>(
-    this: MIDIChannel,
-    parameter: P,
-    value: ChannelMasterParameter[P]
-) {
-    if (this._masterParameters[parameter] === value) return;
-    const prev = this._masterParameters[parameter];
+export function setSystemParameterInternal<
+    P extends keyof ChannelSystemParameter
+>(this: MIDIChannel, parameter: P, value: ChannelSystemParameter[P]) {
+    if (this._systemParameters[parameter] === value) return;
+    const prev = this._systemParameters[parameter];
     // @ts-expect-error We only set it here.
-    this._masterParameters[parameter] = value;
+    this._systemParameters[parameter] = value;
     this.updateInternalParams();
     // Additional handling for specific parameters
     switch (parameter) {

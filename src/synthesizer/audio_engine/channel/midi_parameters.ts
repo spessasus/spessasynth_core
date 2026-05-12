@@ -1,6 +1,6 @@
 import type { MIDIController } from "../../../midi/enums";
 
-export interface MIDIChannelParameter {
+export interface ChannelMIDIParameter {
     /**
      * The current pressure (aftertouch) of this channel.
      */
@@ -94,7 +94,7 @@ export interface MIDIChannelParameter {
     drumMap: number;
 }
 
-export const DEFAULT_MIDI_CHANNEL_PARAMETERS: MIDIChannelParameter = {
+export const DEFAULT_MIDI_CHANNEL_PARAMETERS: ChannelMIDIParameter = {
     pitchWheel: 8192,
     pitchWheelRange: 2,
     pressure: 0,

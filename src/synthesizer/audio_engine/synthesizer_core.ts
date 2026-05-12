@@ -6,10 +6,10 @@ import type {
 } from "../types";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import {
-    DEFAULT_GLOBAL_MASTER_PARAMETERS,
-    type GlobalMasterParameter,
-    setMasterParameter
-} from "./master_parameters";
+    DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
+    type GlobalSystemParameter,
+    setSystemParameterInternal
+} from "./system_parameters";
 import { Voice } from "./voice/voice";
 import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { CachedVoice } from "./voice/voice_cache";
@@ -45,8 +45,8 @@ import { SpessaSynthReverb } from "./effects/reverb/reverb";
 import { SpessaSynthChorus } from "./effects/chorus/chorus";
 import { SpessaSynthDelay } from "./effects/delay/delay";
 import {
-    DEFAULT_MIDI_GLOBAL_PARAMETERS,
-    type MIDIGlobalParameter,
+    DEFAULT_GLOBAL_MIDI_PARAMETERS,
+    type GlobalMIDIParameter,
     resetMIDIParametersInternal,
     setMIDIParameterInternal
 } from "./midi_parameters";
@@ -124,15 +124,15 @@ export class SynthesizerCore {
     /**
      * The global MIDI parameters of the synthesizer.
      */
-    public readonly midiParameters: MIDIGlobalParameter = {
-        ...DEFAULT_MIDI_GLOBAL_PARAMETERS
+    public readonly midiParameters: GlobalMIDIParameter = {
+        ...DEFAULT_GLOBAL_MIDI_PARAMETERS
     }; // Copy, not set!
 
     /**
-     * The master parameters of the synthesizer.
+     * The system parameters of the synthesizer.
      */
-    public readonly masterParameters: GlobalMasterParameter = {
-        ...DEFAULT_GLOBAL_MASTER_PARAMETERS
+    public readonly systemParameters: GlobalSystemParameter = {
+        ...DEFAULT_GLOBAL_SYSTEM_PARAMETERS
     }; // Copy, not set!
 
     /**
@@ -174,12 +174,12 @@ export class SynthesizerCore {
      */
     public readonly cachedVoices = new Map<number, CachedVoiceList>();
     /**
-     * Sets a master parameter of the synthesizer.
-     * @param type The type of the master parameter to set.
-     * @param value The value to set for the master parameter.
+     * Sets a system parameter of the synthesizer.
+     * @param type The type of the system parameter to set.
+     * @param value The value to set for the system parameter.
      */
-    public readonly setMasterParameter: typeof setMasterParameter =
-        setMasterParameter.bind(this);
+    public readonly setSystemParameter: typeof setSystemParameterInternal =
+        setSystemParameterInternal.bind(this);
     public readonly systemExclusive: typeof systemExclusiveInternal =
         systemExclusiveInternal.bind(this);
     /**
@@ -276,8 +276,8 @@ export class SynthesizerCore {
         this.sampleRate = sampleRate;
         this.sampleTime = 1 / sampleRate;
         this.currentTime = options.initialTime;
-        this.setMasterParameter("effectsEnabled", options.effectsEnabled);
-        this.setMasterParameter("eventsEnabled", options.eventsEnabled);
+        this.setSystemParameter("effectsEnabled", options.effectsEnabled);
+        this.setSystemParameter("eventsEnabled", options.eventsEnabled);
         this.maxBufferSize = options.maxBufferSize;
         // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
         // Volume  smoothing factor
@@ -313,7 +313,7 @@ export class SynthesizerCore {
 
         // Initialize voices
         this.voices = [];
-        this.allocateNewVoices(this.masterParameters.voiceCap);
+        this.allocateNewVoices(this.systemParameters.voiceCap);
     }
 
     public controllerChange(
@@ -412,7 +412,7 @@ export class SynthesizerCore {
      * If none available, will assign priorities.
      */
     public assignVoice() {
-        for (let i = 0; i < this.masterParameters.voiceCap; i++) {
+        for (let i = 0; i < this.systemParameters.voiceCap; i++) {
             const v = this.voices[i];
             if (!v.isActive) {
                 // Prevent this voice from being stolen
@@ -421,18 +421,18 @@ export class SynthesizerCore {
             }
         }
         // No match, assign priorities
-        if (this.masterParameters.autoAllocateVoices) {
+        if (this.systemParameters.autoAllocateVoices) {
             // Allocate a new voice and return it
             this.allocateNewVoices(1);
             const v = this.voices[this.voices.length - 1];
             this.voices.push(v);
-            this.masterParameters.voiceCap++;
+            this.systemParameters.voiceCap++;
             SpessaLog.info("%cAllocating a new voice!", ConsoleColors.info);
             return v;
         }
         this.assignVoicePriorities();
         let lowest = this.voices[0];
-        for (let i = 0; i < this.masterParameters.voiceCap; i++) {
+        for (let i = 0; i < this.systemParameters.voiceCap; i++) {
             const v = this.voices[i];
             if (v.priority < lowest.priority) lowest = v;
         }
@@ -551,7 +551,7 @@ export class SynthesizerCore {
         this.setChorusMacro(2);
         // Delay1 default
         this.setDelayMacro(0);
-        if (!this.masterParameters.delayLock) this.delayActive = false;
+        if (!this.systemParameters.delayLock) this.delayActive = false;
         this.resetInsertion();
 
         // Avoid crashing
@@ -664,7 +664,7 @@ export class SynthesizerCore {
         this.voiceCount = 0;
 
         // Process voices
-        const cap = this.masterParameters.voiceCap;
+        const cap = this.systemParameters.voiceCap;
         const outputCount = outputs.length;
         for (let i = 0; i < cap; i++) {
             const v = this.voices[i];
@@ -688,7 +688,7 @@ export class SynthesizerCore {
         }
 
         // Process effects
-        if (this.masterParameters.effectsEnabled) {
+        if (this.systemParameters.effectsEnabled) {
             const {
                 chorusInput,
                 delayInput,
@@ -822,7 +822,7 @@ export class SynthesizerCore {
     }
 
     protected resetInsertion() {
-        if (this.masterParameters.insertionEffectLock) return;
+        if (this.systemParameters.insertionEffectLock) return;
         this.insertionActive = false;
         this.insertionProcessor = this.insertionFallback;
         this.insertionProcessor.reset();
@@ -839,7 +839,7 @@ export class SynthesizerCore {
     }
 
     protected setReverbMacro(macro: number) {
-        if (this.masterParameters.reverbLock) return;
+        if (this.systemParameters.reverbLock) return;
         // SC-8850 manual page 81
         const rev = this.reverbProcessor;
         rev.level = 64;
@@ -946,7 +946,7 @@ export class SynthesizerCore {
     }
 
     protected setChorusMacro(macro: number) {
-        if (this.masterParameters.chorusLock) return;
+        if (this.systemParameters.chorusLock) return;
         // SC-8850 manual page 83
         const chr = this.chorusProcessor;
         chr.level = 64;
@@ -1059,7 +1059,7 @@ export class SynthesizerCore {
     }
 
     protected setDelayMacro(macro: number) {
-        if (this.masterParameters.delayLock) return;
+        if (this.systemParameters.delayLock) return;
         // SC-8850 manual page 85
         const dly = this.delayProcessor;
         dly.level = 64;
@@ -1343,7 +1343,7 @@ export class SynthesizerCore {
             ConsoleColors.warn
         );
         this.lastPriorityAssignmentTime = this.currentTime;
-        const cap = this.masterParameters.voiceCap;
+        const cap = this.systemParameters.voiceCap;
         for (let i = 0; i < cap; i++) {
             const voice = this.voices[i];
             voice.priority = 0;
@@ -1373,12 +1373,12 @@ export class SynthesizerCore {
         this.getDefaultPresets();
         // Update presets
         for (const c of this.midiChannels) {
-            const lock = c.masterParameters.presetLock;
+            const lock = c.systemParameters.presetLock;
             // Unlock and set
-            c.setMasterParameter("presetLock", false);
+            c.setSystemParameter("presetLock", false);
             c.programChange(c.patch.program);
             // Restore
-            c.setMasterParameter("presetLock", lock);
+            c.setSystemParameter("presetLock", lock);
         }
         this.reset();
     }

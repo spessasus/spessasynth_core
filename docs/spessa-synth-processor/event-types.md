@@ -56,9 +56,9 @@ This event is triggered when a note is pressed on any channel.
     ```ts
     const actualNote =
         event.midiNote +
-        Math.trunc(this.synth.masterParameters.pitchOffset) +
+        Math.trunc(this.synth.systemParameters.pitchOffset) +
         this.synth.midiParameters.masterKeyShift +
-        this.synth.midiChannels[event.channel].masterParameters.pitchOffset +
+        this.synth.midiChannels[event.channel].systemParameters.pitchOffset +
         this.synth.midiChannels[event.channel].midiParameters.keyShift;
     ```
 
@@ -189,7 +189,7 @@ The data is a number array of the entire system exclusive, excluding the `F0` st
 
 This event is triggered when a master parameter changes.
 
-- `parameter`: `GlobalMasterParameter` - the master parameter type.
+- `parameter`: `GlobalSystemParameter` - the master parameter type.
 - `value`: varies - the new value of this parameter.
 
 Note that this event usually triggers from the MIDI system change or user's change.

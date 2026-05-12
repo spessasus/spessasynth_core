@@ -88,7 +88,7 @@ export function handleGS(
                                     // Roland master pan
                                     SpessaLog.gsInfo("Master Pan", data);
                                     this.setMIDIParameter(
-                                        "masterPan",
+                                        "pan",
                                         (data - 64) / 64
                                     );
                                     break;
@@ -129,11 +129,11 @@ export function handleGS(
                             const isChorus = a3 >= 0x38 && a3 <= 0x40;
                             const isDelay = a3 >= 0x50 && a3 <= 0x5a;
                             // Disable effect editing if locked
-                            if (isReverb && this.masterParameters.reverbLock)
+                            if (isReverb && this.systemParameters.reverbLock)
                                 return;
-                            if (isChorus && this.masterParameters.chorusLock)
+                            if (isChorus && this.systemParameters.chorusLock)
                                 return;
-                            if (isDelay && this.masterParameters.delayLock)
+                            if (isDelay && this.systemParameters.delayLock)
                                 return;
                             /*
                             0x40 - chorus to delay
@@ -489,7 +489,7 @@ export function handleGS(
 
                         // EFX Parameter
                         if (a2 === 0x03) {
-                            if (this.masterParameters.insertionEffectLock)
+                            if (this.systemParameters.insertionEffectLock)
                                 return;
 
                             // Write parameters
@@ -1024,7 +1024,7 @@ export function handleGS(
 
                                 case 0x22: {
                                     if (
-                                        this.masterParameters
+                                        this.systemParameters
                                             .insertionEffectLock
                                     )
                                         return;
@@ -1045,7 +1045,7 @@ export function handleGS(
                     }
                     // Drum setup
                     if (a1 === 0x41) {
-                        if (this.masterParameters.drumLock) return;
+                        if (this.systemParameters.drumLock) return;
                         const map = (a2 >> 4) + 1;
                         const drumKey = a3;
                         const param = a2 & 0xf;
@@ -1238,7 +1238,7 @@ export function handleGS(
             case 0x16: {
                 if (syx[4] === 0x10) {
                     // This is a roland master volume message
-                    this.setMIDIParameter("masterVolume", syx[7] / 100);
+                    this.setMIDIParameter("gain", syx[7] / 100);
                     SpessaLog.coolInfo("Roland Master Volume Control", syx[7]);
                     return;
                 } else {

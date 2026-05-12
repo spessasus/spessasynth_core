@@ -25,13 +25,13 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
     velocity = clamp(velocity, 0, 127);
 
-    const black = this.synthCore.masterParameters.blackMIDIMode;
+    const black = this.synthCore.systemParameters.blackMIDIMode;
     if (
         // If black MIDI conditions are met...
         (black && this.synthCore.voiceCount > 200 && velocity < 40) ||
         (black && velocity < 10) ||
         // Or channel is muted...
-        this._masterParameters.isMuted ||
+        this._systemParameters.isMuted ||
         // Or channel has no preset...
         !this.preset
     ) {
@@ -52,8 +52,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Monophonic retrigger
     if (
-        (this._masterParameters.monophonicRetrigger ??
-            this.synthCore.masterParameters.monophonicRetrigger) ||
+        (this._systemParameters.monophonicRetrigger ??
+            this.synthCore.systemParameters.monophonicRetrigger) ||
         this._midiParameters.assignMode === 0
     )
         this.killNote(midiNote);
@@ -182,8 +182,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         // Channel takes precedence
         voice.wavetable =
             voice.oscillators[
-                this._masterParameters.interpolationType ??
-                    this.synthCore.masterParameters.interpolationType
+                this._systemParameters.interpolationType ??
+                    this.synthCore.systemParameters.interpolationType
             ];
 
         // Set cached data

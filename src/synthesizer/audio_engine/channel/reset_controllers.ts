@@ -85,7 +85,7 @@ export function reset(this: MIDIChannel, sendCCEvents = true) {
         }
     }
     // Reset insertion
-    if (!this.synthCore.masterParameters.insertionEffectLock)
+    if (!this.synthCore.systemParameters.insertionEffectLock)
         this.setMIDIParameter("efxAssign", false);
 
     // Reset property parameters

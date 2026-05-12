@@ -332,7 +332,7 @@ export function renderVoice(
         pan = voice.currentPan;
     }
 
-    const { masterParameters } = core;
+    const { systemParameters } = core;
 
     const outputGain = this.currentGain * voiceGain;
     const index =
@@ -360,7 +360,7 @@ export function renderVoice(
         outputL[idx] += gainLeft * s;
         outputR[idx] += gainRight * s;
     }
-    if (!masterParameters.effectsEnabled) {
+    if (!systemParameters.effectsEnabled) {
         return;
     }
 
@@ -369,7 +369,7 @@ export function renderVoice(
         modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbSend;
     if (reverbSend > 0) {
         const reverbGain =
-            masterParameters.reverbGain * outputGain * (reverbSend / 1000);
+            systemParameters.reverbGain * outputGain * (reverbSend / 1000);
 
         const reverb = core.reverbInput;
         for (let i = 0; i < sampleCount; i++) {
@@ -381,7 +381,7 @@ export function renderVoice(
         modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusSend;
     if (chorusSend > 0) {
         const chorusGain =
-            masterParameters.chorusGain * (chorusSend / 1000) * outputGain;
+            systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
         const chorus = core.chorusInput;
         for (let i = 0; i < sampleCount; i++) {
             chorus[i] += chorusGain * buffer[i];
@@ -395,7 +395,7 @@ export function renderVoice(
         if (delaySend > 0) {
             const delayGain =
                 outputGain *
-                masterParameters.delayGain *
+                systemParameters.delayGain *
                 ((delaySend >> 7) / 127);
             const delay = core.delayInput;
             for (let i = 0; i < sampleCount; i++) {

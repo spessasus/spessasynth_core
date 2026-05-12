@@ -33,7 +33,7 @@ await synth.processorInitialized;
 // Enable verbose information during render
 SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count
-synth.setMasterParameter("autoAllocateVoices", true);
+synth.setSystemParameter("autoAllocateVoices", true);
 
 // Initialize the sequencer
 const seq = new SpessaSynthSequencer(synth);

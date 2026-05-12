@@ -1,5 +1,5 @@
 import type { MIDIController } from "../../../midi/enums";
-import type { MIDIChannelParameter } from "./midi_parameters";
+import type { ChannelMIDIParameter } from "./midi_parameters";
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
 
 export interface NoteOnCallback {
@@ -60,8 +60,8 @@ export interface StopAllCallback {
     force: boolean;
 }
 
-export type MIDIChannelParameterChangeCallback = {
-    [P in keyof MIDIChannelParameter]: {
+export type ChannelMIDIParameterChange = {
+    [P in keyof ChannelMIDIParameter]: {
         /**
          * The channel that was affected.
          */
@@ -73,9 +73,9 @@ export type MIDIChannelParameterChangeCallback = {
         /**
          * The new value of this parameter.
          */
-        value: MIDIChannelParameter[P];
+        value: ChannelMIDIParameter[P];
     };
-}[keyof MIDIChannelParameter];
+}[keyof ChannelMIDIParameter];
 
 export interface CustomChannelVibrato {
     /**

@@ -65,6 +65,6 @@ Stored as:
 const mapping = snapshot.keyMappings[channelNumber][midiNote];
 ```
 
-### masterParameters
+### systemParameters
 
 All [master parameters](master-parameter.md) stored as a type: value pair.

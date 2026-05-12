@@ -45,7 +45,7 @@ export function handleGM(
                 case 0x01: {
                     // Master volume
                     const vol = (syx[5] << 7) | syx[4];
-                    this.setMIDIParameter("masterVolume", vol / 16_384);
+                    this.setMIDIParameter("gain", vol / 16_384);
                     SpessaLog.gmInfo("Master Volume", vol);
                     break;
                 }
@@ -56,7 +56,7 @@ export function handleGM(
                     // This is not specified in GM2 spec for some reason
                     const balance = (syx[5] << 7) | syx[4];
                     const pan = (balance - 8192) / 8192;
-                    this.setMIDIParameter("masterPan", pan);
+                    this.setMIDIParameter("pan", pan);
                     SpessaLog.gmInfo("Master Balance", pan);
                     break;
                 }

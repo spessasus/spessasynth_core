@@ -12,7 +12,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
 
     if (
         // If high performance mode, kill notes instead of stopping them
-        (this.synthCore.masterParameters.blackMIDIMode &&
+        (this.synthCore.systemParameters.blackMIDIMode &&
             // If the channel is percussion channel, do not kill the notes
             !this.drumChannel) ||
         // If "receive note off" is enabled, kill the note (force quick release)

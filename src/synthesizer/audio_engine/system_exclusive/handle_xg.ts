@@ -40,7 +40,7 @@ export function handleXG(
 
                 // Master volume
                 case 0x04: {
-                    this.setMIDIParameter("masterVolume", data / 127);
+                    this.setMIDIParameter("gain", data / 127);
                     SpessaLog.xgInfo("Master Volume", data);
                     break;
                 }
@@ -48,7 +48,7 @@ export function handleXG(
                 // Master attenuation
                 case 0x05: {
                     const vol = 127 - data;
-                    this.setMIDIParameter("masterVolume", vol / 127);
+                    this.setMIDIParameter("gain", vol / 127);
                     SpessaLog.xgInfo("Master Attenuation", data);
                     break;
                 }
@@ -253,7 +253,7 @@ export function handleXG(
 
         if (a1 >> 4 === 3) {
             // Drum part setup
-            if (this.masterParameters.drumLock) return;
+            if (this.systemParameters.drumLock) return;
             const drumKey = a2;
             switch (a3) {
                 default: {

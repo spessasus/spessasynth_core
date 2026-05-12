@@ -7,7 +7,7 @@ import { SpessaLog } from "../../utils/loggin";
  * The global parameters of the synthesizer.
  * These can only be changed via the API.
  */
-export interface GlobalMasterParameter {
+export interface GlobalSystemParameter {
     // Synth exclusive
     /**
      * If the synthesizer processes the audio effects.
@@ -150,7 +150,7 @@ export interface GlobalMasterParameter {
     monophonicRetrigger: boolean;
 }
 
-export const DEFAULT_GLOBAL_MASTER_PARAMETERS: GlobalMasterParameter = {
+export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
     // Synth exclusive
     effectsEnabled: true,
     eventsEnabled: true,
@@ -185,18 +185,16 @@ export const DEFAULT_GLOBAL_MASTER_PARAMETERS: GlobalMasterParameter = {
 };
 
 /**
- * Sets a master parameter of the synthesizer.
- * @param parameter The type of the master parameter to set.
- * @param value The value to set for the master parameter.
+ * Sets a system parameter of the synthesizer.
+ * @param parameter The type of the system parameter to set.
+ * @param value The value to set for the system parameter.
  */
-export function setMasterParameter<P extends keyof GlobalMasterParameter>(
-    this: SynthesizerCore,
-    parameter: P,
-    value: GlobalMasterParameter[P]
-) {
-    if (this.masterParameters[parameter] === value) return;
-    const prev = this.masterParameters[parameter];
-    this.masterParameters[parameter] = value;
+export function setSystemParameterInternal<
+    P extends keyof GlobalSystemParameter
+>(this: SynthesizerCore, parameter: P, value: GlobalSystemParameter[P]) {
+    if (this.systemParameters[parameter] === value) return;
+    const prev = this.systemParameters[parameter];
+    this.systemParameters[parameter] = value;
     for (const ch of this.midiChannels) ch.updateInternalParams();
     // Additional handling for specific parameters
     switch (parameter) {
@@ -207,7 +205,7 @@ export function setMasterParameter<P extends keyof GlobalMasterParameter>(
         case "voiceCap": {
             // Infinity is not allowed
             const cap = Math.min(value as number, 1_000_000);
-            this.masterParameters.voiceCap = cap;
+            this.systemParameters.voiceCap = cap;
             // Disable all voices after cap
             for (let i = cap; i < this.voices.length; i++) {
                 this.voices[i].isActive = false;

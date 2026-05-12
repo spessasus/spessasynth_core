@@ -940,23 +940,23 @@ export function applySnapshotInternal(
     const channelsToClear = new Set<number>();
     const programChanges: ChannelProgram[] = [];
     const controllerChanges: ChannelController[] = [];
-    const globalKeyShift = snapshot.masterParameters.keyShift;
-    const globalFineTune = snapshot.masterParameters.fineTune;
+    const globalKeyShift = snapshot.systemParameters.keyShift;
+    const globalFineTune = snapshot.systemParameters.fineTune;
     for (
         let channelNumber = 0;
         channelNumber < snapshot.midiChannels.length;
         channelNumber++
     ) {
         const channel = snapshot.midiChannels[channelNumber];
-        if (channel.masterParameters.isMuted) {
+        if (channel.systemParameters.isMuted) {
             channelsToClear.add(channelNumber);
             continue;
         }
         const keyShift =
-            channel.masterParameters.keyShift +
+            channel.systemParameters.keyShift +
             (channel.drumChannel ? 0 : globalKeyShift);
         const fineTune =
-            channel.masterParameters.fineTune +
+            channel.systemParameters.fineTune +
             (channel.drumChannel ? 0 : globalFineTune);
         if (keyShift !== 0 && fineTune !== 0) {
             pitchOffsets.push({
@@ -965,7 +965,7 @@ export function applySnapshotInternal(
                 fineTune
             });
         }
-        if (channel.masterParameters.presetLock && channel.patch) {
+        if (channel.systemParameters.presetLock && channel.patch) {
             programChanges.push({
                 channel: channelNumber,
                 ...channel.patch
@@ -992,17 +992,17 @@ export function applySnapshotInternal(
         controllerChanges,
         clearedChannels: channelsToClear,
         pitchOffsets: pitchOffsets,
-        clearDrumParams: snapshot.masterParameters.drumLock,
-        reverbParams: snapshot.masterParameters.reverbLock
+        clearDrumParams: snapshot.systemParameters.drumLock,
+        reverbParams: snapshot.systemParameters.reverbLock
             ? snapshot.reverbProcessor
             : undefined,
-        chorusParams: snapshot.masterParameters.chorusLock
+        chorusParams: snapshot.systemParameters.chorusLock
             ? snapshot.chorusProcessor
             : undefined,
-        delayParams: snapshot.masterParameters.delayLock
+        delayParams: snapshot.systemParameters.delayLock
             ? snapshot.delayProcessor
             : undefined,
-        insertionParams: snapshot.masterParameters.insertionEffectLock
+        insertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor
             : undefined
     });

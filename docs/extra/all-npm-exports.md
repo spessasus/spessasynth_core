@@ -21,12 +21,12 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - `DEFAULT_PERCUSSION` - the default drum channel, i.e. channel 9.
 - `VOICE_CAP` - the default voice cap of the synthesizer. Currently, 350.
 - `DEFAULT_SYNTH_MODE` - the default synthesizer sysEx and bank select mode. Currently, `gs`.
-- `SPESSASYNTH_GAIN_FACTOR` - this factor adjusts the volume of the synthesizer permanently. It can be nullified via the `gain` global master parameter.
+- `SPESSASYNTH_GAIN_FACTOR` - this factor adjusts the volume of the synthesizer permanently. It can be nullified via the `gain` global system parameter.
 - `SPESSA_BUFSIZE` - the default buffer size. Currently, 128.
-- `DEFAULT_CHANNEL_MASTER_PARAMETERS` - default values for channel master parameters.
-- `DEFAULT_GLOBAL_MASTER_PARAMETERS` - default values for global master parameters.
-- `DEFAULT_MIDI_CHANNEL_PARAMETERS` - default values for MIDI channel parameters.
-- `DEFAULT_MIDI_GLOBAL_PARAMETERS` - default values for MIDI global parameters.
+- `DEFAULT_CHANNEL_SYSTEM_PARAMETERS` - default values for channel system parameters.
+- `DEFAULT_GLOBAL_SYSTEM_PARAMETERS` - default values for global system parameters.
+- `DEFAULT_MIDI_CHANNEL_PARAMETERS` - default values for channel MIDI parameters.
+- `DEFAULT_GLOBAL_MIDI_PARAMETERS` - default values for global MIDI parameters.
 
 ## Sound banks
 

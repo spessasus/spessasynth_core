@@ -7,15 +7,15 @@ import type {
     ReverbProcessor
 } from "./audio_engine/effects/types";
 import type {
+    ChannelMIDIParameterChange,
     ControllerChangeCallback,
-    MIDIChannelParameterChangeCallback,
     NoteOffCallback,
     NoteOnCallback,
     PolyPressureCallback,
     ProgramChangeCallback,
     StopAllCallback
 } from "./audio_engine/channel/types";
-import type { MIDIGlobalParameter } from "./audio_engine/midi_parameters";
+import type { GlobalMIDIParameter } from "./audio_engine/midi_parameters";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
@@ -27,8 +27,8 @@ type SynthDisplayCallback = number[];
  */
 export type SoundBankErrorCallback = Error;
 
-export type MIDIGlobalParameterChangeCallback = {
-    [P in keyof MIDIGlobalParameter]: {
+export type GlobalMIDIParameterChangeCallback = {
+    [P in keyof GlobalMIDIParameter]: {
         /**
          * The parameter that was changed.
          */
@@ -36,9 +36,9 @@ export type MIDIGlobalParameterChangeCallback = {
         /**
          * The new value of this parameter.
          */
-        value: MIDIGlobalParameter[P];
+        value: GlobalMIDIParameter[P];
     };
-}[keyof MIDIGlobalParameter];
+}[keyof GlobalMIDIParameter];
 
 type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
 
@@ -155,14 +155,14 @@ export interface SynthProcessorEventData {
     synthDisplay: SynthDisplayCallback;
 
     /**
-     * This event fires when a MIDI global parameter changes.
+     * This event fires when a global MIDI parameter changes.
      */
-    midiGlobalChange: MIDIGlobalParameterChangeCallback;
+    globalMIDIParamChange: GlobalMIDIParameterChangeCallback;
 
     /**
-     * This event fires when a MIDI channel parameter changes.
+     * This event fires when a channel MIDI parameter changes.
      */
-    midiChannelChange: MIDIChannelParameterChangeCallback;
+    channelMIDIParamChange: ChannelMIDIParameterChange;
 
     /**
      * This event fires when an effect processor is modified.

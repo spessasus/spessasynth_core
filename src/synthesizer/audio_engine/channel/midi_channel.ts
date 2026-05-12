@@ -37,18 +37,15 @@ import {
 } from "./channel_snapshot";
 import type { ChannelGenerators } from "./data_entry/awe32";
 import {
-    DEFAULT_MIDI_CHANNEL_PARAMETERS,
-    type MIDIChannelParameter
+    type ChannelMIDIParameter,
+    DEFAULT_MIDI_CHANNEL_PARAMETERS
 } from "./midi_parameters";
-import type {
-    CustomChannelVibrato,
-    MIDIChannelParameterChangeCallback
-} from "./types";
+import type { ChannelMIDIParameterChange, CustomChannelVibrato } from "./types";
 import {
-    type ChannelMasterParameter,
-    DEFAULT_CHANNEL_MASTER_PARAMETERS,
-    setMasterParameter
-} from "./master_parameters";
+    type ChannelSystemParameter,
+    DEFAULT_CHANNEL_SYSTEM_PARAMETERS,
+    setSystemParameterInternal
+} from "./system_parameters";
 import type { MIDISystem } from "../../../soundbank/types";
 
 /**
@@ -56,6 +53,7 @@ import type { MIDISystem } from "../../../soundbank/types";
  */
 export class MIDIChannel {
     /**
+     * @internal
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
      * such as volume, pan, modulation, etc.
@@ -69,12 +67,14 @@ export class MIDIChannel {
 
     /**
      * An array for the MIDI 2.0 Per-note pitch wheels.
+     * @internal
      */
     public readonly pitchWheels = new Int16Array(128).fill(8192);
     /**
      * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
      * (i.e., not allowed changing).
      * A locked controller cannot be modified.
+     * @internal
      */
     public readonly lockedControllers: readonly boolean[] = new Array(
         CONTROLLER_TABLE_SIZE
@@ -83,15 +83,18 @@ export class MIDIChannel {
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
      * Note: Repeated every 12 notes.
+     * @internal
      */
     public readonly octaveTuning: Int8Array = new Int8Array(128);
 
     /**
      * Parameters for each drum instrument.
+     * @internal
      */
     public readonly drumParams: DrumParameters[] = [];
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
+     * @internal
      */
     public readonly sysExModulators;
     /**
@@ -116,7 +119,6 @@ export class MIDIChannel {
     /**
      * The preset currently assigned to the channel.
      * Note that this may be undefined in some cases.
-     * https://github.com/spessasus/spessasynth_core/issues/48
      */
     public preset?: BasicPreset;
     /**
@@ -152,12 +154,12 @@ export class MIDIChannel {
     ==========
      */
     /**
-     * Sets a master parameter of the channel.
-     * @param parameter The type of the master parameter to set.
-     * @param value The value to set for the master parameter.
+     * Sets a system parameter of the channel.
+     * @param parameter The type of the system parameter to set.
+     * @param value The value to set for the system parameter.
      */
-    public readonly setMasterParameter: typeof setMasterParameter =
-        setMasterParameter.bind(this);
+    public readonly setSystemParameter: typeof setSystemParameterInternal =
+        setSystemParameterInternal.bind(this);
     // noinspection JSUnusedGlobalSymbols
     /**
      * Locks or unlocks a given controller.
@@ -246,15 +248,15 @@ export class MIDIChannel {
      * @internal
      */
     protected readonly dataEntryCoarse = dataEntryCoarse.bind(this);
-    protected readonly _midiParameters: Readonly<MIDIChannelParameter> = {
+    protected readonly _midiParameters: Readonly<ChannelMIDIParameter> = {
         ...DEFAULT_MIDI_CHANNEL_PARAMETERS
     };
     /**
-     * All master parameters of this channel.
+     * All system parameters of this channel.
      * @internal
      */
-    protected readonly _masterParameters: Readonly<ChannelMasterParameter> = {
-        ...DEFAULT_CHANNEL_MASTER_PARAMETERS
+    protected readonly _systemParameters: Readonly<ChannelSystemParameter> = {
+        ...DEFAULT_CHANNEL_SYSTEM_PARAMETERS
     }; // Copy, not set!
 
     /**
@@ -270,24 +272,24 @@ export class MIDIChannel {
     protected perNotePitch = false;
     /**
      * Current pan in range [-500;500]
-     * Updated on master/MIDI parameter change.
+     * Updated in `updateInternalParams`.
      * This is used to avoid a big addition for every voice rendering call.
      */
     protected currentPan = 0;
     /**
      * Current tuning in cents.
-     * Updated on master/MIDI parameter change.
+     * Updated in `updateInternalParams`.
      * This is used to avoid a big addition for every voice rendering call.
      */
     protected currentTuning = 0;
     /**
      * Current key-shift.
-     * Updated on master/MIDI parameter change.
+     * Updated in `updateInternalParams`.
      */
     protected currentKeyShift = 0;
     /**
      * Current gain.
-     * Updated on master parameter change.
+     * Updated in `updateInternalParams`.
      * This is used to avoid a big multiplication for every voice rendering call.
      */
     protected currentGain = 0;
@@ -295,7 +297,7 @@ export class MIDIChannel {
     /**
      * The last pressed note on this channel.
      * -1 means none.
-     * This is not a `MIDIChannelParameter` and is strictly internal,
+     * This is not a `ChannelMIDIParameter` and is strictly internal,
      * mostly because we don't want to send events for every note on message.
      * It can be set with Portamento Control CC anyway.
      * @protected
@@ -304,7 +306,7 @@ export class MIDIChannel {
     /**
      * If the portamento should be executed once regardless of Portamento on/off.
      * Adhering to the MIDI spec, CC#84 ignores on/off.
-     * This is also not a `MIDIChannelParameter` for the same reason as `lastNote`
+     * This is also not a `ChannelMIDIParameter` for the same reason as `lastNote`
      * @protected
      */
     protected portamentoForce = false;
@@ -348,18 +350,18 @@ export class MIDIChannel {
      */
     // noinspection JSUnusedGlobalSymbols
     /**
-     * The channel master parameters of this channel.
+     * The channel system parameters of this channel.
      * These are only editable via the API.
      */
-    public get masterParameters(): Readonly<ChannelMasterParameter> {
-        return this._masterParameters;
+    public get systemParameters(): Readonly<ChannelSystemParameter> {
+        return this._systemParameters;
     }
 
     /**
      * The channel MIDI parameters of this channel.
      * These are only editable via MIDI messages.
      */
-    public get midiParameters(): Readonly<MIDIChannelParameter> {
+    public get midiParameters(): Readonly<ChannelMIDIParameter> {
         return this._midiParameters;
     }
 
@@ -370,7 +372,7 @@ export class MIDIChannel {
     */
 
     protected get channelSystem(): MIDISystem {
-        return this._masterParameters.presetLock
+        return this._systemParameters.presetLock
             ? this.lockedSystem
             : this.synthCore.midiParameters.system;
     }
@@ -449,15 +451,15 @@ export class MIDIChannel {
     }
 
     /**
-     * Sets a MIDI channel parameter of the synthesizer.
-     * @param parameter The type of the MIDI channel parameter to set.
-     * @param value The value to set for the MIDI channel parameter.
+     * Sets a channel MIDI parameter of the synthesizer.
+     * @param parameter The type of the channel MIDI parameter to set.
+     * @param value The value to set for the channel MIDI parameter.
      * @internal
      */
-    public setMIDIParameter<P extends keyof MIDIChannelParameter>(
+    public setMIDIParameter<P extends keyof ChannelMIDIParameter>(
         this: MIDIChannel,
         parameter: P,
-        value: MIDIChannelParameter[P]
+        value: ChannelMIDIParameter[P]
     ) {
         // @ts-expect-error This is the only place where we set them
         this._midiParameters[parameter] = value;
@@ -482,11 +484,11 @@ export class MIDIChannel {
 
         this.updateInternalParams();
 
-        this.synthCore.callEvent("midiChannelChange", {
+        this.synthCore.callEvent("channelMIDIParamChange", {
             channel: this.channel,
             parameter,
             value
-        } as MIDIChannelParameterChangeCallback);
+        } as ChannelMIDIParameterChange);
     }
 
     /**
@@ -656,44 +658,44 @@ export class MIDIChannel {
      * @internal
      */
     public updateInternalParams() {
-        const globalMaster = this.synthCore.masterParameters;
-        const channelMaster = this._masterParameters;
+        const globalSystem = this.synthCore.systemParameters;
+        const channelSystem = this._systemParameters;
         const globalMIDI = this.synthCore.midiParameters;
         const channelMIDI = this._midiParameters;
         // Note:
-        // - Master -> Master Parameter
+        // - System -> System Parameter
         // - MIDI -> MIDI Parameter
         //
         this.currentTuning =
-            // Global Master (disabled for drums)
-            (this.drumChannel ? 0 : globalMaster.fineTune) +
+            // Global System (disabled for drums)
+            (this.drumChannel ? 0 : globalSystem.fineTune) +
             // Global MIDI (disabled for drums)
             (this.drumChannel ? 0 : globalMIDI.fineTune) +
-            // Channel Master
-            channelMaster.fineTune +
+            // Channel System
+            channelSystem.fineTune +
             // Channel MIDI
             channelMIDI.fineTune;
 
         // [-1;1] normalized
         const currentPanNormalized =
-            // Global Master
-            globalMaster.pan +
+            // Global System
+            globalSystem.pan +
             // Global MIDI
-            globalMIDI.masterPan +
-            // Channel Master
-            channelMaster.pan;
+            globalMIDI.pan +
+            // Channel System
+            channelSystem.pan;
         // Channel MIDI is the pan controller
 
         // For faster renderVoice calculation
         this.currentPan = currentPanNormalized * 500;
 
         this.currentKeyShift = Math.floor(
-            // Global Master (disabled for drums)
-            (this.drumChannel ? 0 : globalMaster.keyShift) +
+            // Global System (disabled for drums)
+            (this.drumChannel ? 0 : globalSystem.keyShift) +
                 // Global MIDI (disabled for drums)
                 (this.drumChannel ? 0 : globalMIDI.keyShift) +
-                // Channel Master
-                channelMaster.keyShift +
+                // Channel System
+                channelSystem.keyShift +
                 // Channel MIDI
                 channelMIDI.keyShift
         );
@@ -701,12 +703,12 @@ export class MIDIChannel {
         this.currentGain =
             // Global forced
             SPESSASYNTH_GAIN_FACTOR *
-            // Global Master
-            globalMaster.gain *
+            // Global System
+            globalSystem.gain *
             // Global MIDI
-            globalMIDI.masterVolume *
-            // Channel Master
-            channelMaster.gain;
+            globalMIDI.gain *
+            // Channel System
+            channelSystem.gain;
         // Channel MIDI are the volume/expression controllers
     }
 
@@ -783,7 +785,7 @@ export class MIDIChannel {
         // @ts-expect-error destruction
         this.lockedControllers = undefined;
         // @ts-expect-error destruction
-        this._masterParameters = undefined;
+        this._systemParameters = undefined;
         // @ts-expect-error destruction
         this.midiControllers = undefined;
         // @ts-expect-error destruction
@@ -834,7 +836,7 @@ export class MIDIChannel {
     }
 
     protected resetDrumParams() {
-        if (this.synthCore.masterParameters.drumLock || !this.drumChannel)
+        if (this.synthCore.systemParameters.drumLock || !this.drumChannel)
             return;
         for (let i = 0; i < 128; i++) {
             const p = this.drumParams[i];
@@ -853,8 +855,8 @@ export class MIDIChannel {
 
     protected resetVibratoParams() {
         if (
-            this._masterParameters.customVibratoLock ??
-            this.synthCore.masterParameters.customVibratoLock
+            this._systemParameters.customVibratoLock ??
+            this.synthCore.systemParameters.customVibratoLock
         )
             return;
         this.vibrato.rate = 0;
@@ -877,12 +879,12 @@ export class MIDIChannel {
     }
 
     protected setBankMSB(bankMSB: number) {
-        if (this._masterParameters.presetLock) return;
+        if (this._systemParameters.presetLock) return;
         this.patch.bankMSB = bankMSB;
     }
 
     protected setBankLSB(bankLSB: number) {
-        if (this._masterParameters.presetLock) return;
+        if (this._systemParameters.presetLock) return;
         this.patch.bankLSB = bankLSB;
     }
 
@@ -891,7 +893,7 @@ export class MIDIChannel {
      */
     protected setDrumFlag(isDrum: boolean) {
         if (
-            this._masterParameters.presetLock ||
+            this._systemParameters.presetLock ||
             !this.preset ||
             this.drumChannel === isDrum
         )

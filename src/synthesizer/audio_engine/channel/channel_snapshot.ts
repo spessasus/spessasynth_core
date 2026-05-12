@@ -3,8 +3,8 @@ import { DrumParameters } from "./drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./data_entry/awe32";
 import type { CustomChannelVibrato } from "./types";
-import type { ChannelMasterParameter } from "./master_parameters";
-import type { MIDIChannelParameter } from "./midi_parameters";
+import type { ChannelSystemParameter } from "./system_parameters";
+import type { ChannelMIDIParameter } from "./midi_parameters";
 import type { MIDIController } from "../../../midi/enums";
 import type { MIDISystem } from "../../../soundbank/types";
 import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
@@ -30,8 +30,8 @@ export interface ChannelSnapshot {
     pitchWheels: Int16Array;
     generators: ChannelGenerators;
 
-    midiParameters: MIDIChannelParameter;
-    masterParameters: ChannelMasterParameter;
+    midiParameters: ChannelMIDIParameter;
+    systemParameters: ChannelSystemParameter;
     channelVibrato: CustomChannelVibrato;
     octaveTuning: Int8Array;
 
@@ -66,7 +66,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         midiParameters: {
             ...this._midiParameters
         },
-        masterParameters: { ...this._masterParameters },
+        systemParameters: { ...this._systemParameters },
         octaveTuning: this.octaveTuning.slice(),
         perNotePitch: this.perNotePitch,
 
@@ -97,29 +97,31 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     for (let i = 0; i < 128; i++)
         this.drumParams[i] = DrumParameters.copyFrom(snapshot.drumParams[i]);
 
-    this.setMasterParameter("presetLock", false); // Restored in master params
+    // Disable to set patch
+    // Restored in system params
+    this.setSystemParameter("presetLock", false);
     if (snapshot.patch) this.setPatch(snapshot.patch);
     this.lockedSystem = snapshot.lockedSystem;
 
     // Restore MIDI parameters
-    type MIDIParameterPair<K extends keyof MIDIChannelParameter> = [
+    type MIDIParameterPair<K extends keyof ChannelMIDIParameter> = [
         K,
-        MIDIChannelParameter[K]
+        ChannelMIDIParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
         this._midiParameters
-    ) as MIDIParameterPair<keyof MIDIChannelParameter>[]) {
+    ) as MIDIParameterPair<keyof ChannelMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
 
-    // Restore master parameters last
-    type MasterParameterPair<K extends keyof ChannelMasterParameter> = [
+    // Restore system parameters last
+    type SystemParameterPair<K extends keyof ChannelSystemParameter> = [
         K,
-        ChannelMasterParameter[K]
+        ChannelSystemParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
-        this._masterParameters
-    ) as MasterParameterPair<keyof ChannelMasterParameter>[]) {
-        this.setMasterParameter(parameter, value);
+        this._systemParameters
+    ) as SystemParameterPair<keyof ChannelSystemParameter>[]) {
+        this.setSystemParameter(parameter, value);
     }
 }

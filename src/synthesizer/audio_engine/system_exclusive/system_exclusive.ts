@@ -24,9 +24,9 @@ export function systemExclusiveInternal(
     // Ensure that the device ID matches
     if (
         // The device ID can be set to "all" which it is by default
-        this.masterParameters.deviceID !== -1 &&
+        this.systemParameters.deviceID !== -1 &&
         syx[1] !== 0x7f && // 0x7f means broadcast, i.e. all MIDI devices
-        this.masterParameters.deviceID !== syx[1]
+        this.systemParameters.deviceID !== syx[1]
     ) {
         // Not our device ID
         return;

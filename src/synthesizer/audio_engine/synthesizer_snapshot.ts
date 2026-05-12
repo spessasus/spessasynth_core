@@ -8,8 +8,8 @@ import type {
 } from "./effects/types";
 import { MIDIProtocol } from "../../midi/midi_tools/midi_protocol";
 import type { SynthesizerCore } from "./synthesizer_core";
-import type { MIDIGlobalParameter } from "./midi_parameters";
-import type { GlobalMasterParameter } from "./master_parameters";
+import type { GlobalMIDIParameter } from "./midi_parameters";
+import type { GlobalSystemParameter } from "./system_parameters";
 
 export interface SynthesizerSnapshot {
     midiChannels: ChannelSnapshot[];
@@ -19,8 +19,8 @@ export interface SynthesizerSnapshot {
      */
     keyMappings: (KeyModifier | undefined)[][];
 
-    masterParameters: GlobalMasterParameter;
-    midiParameters: MIDIGlobalParameter;
+    systemParameters: GlobalSystemParameter;
+    midiParameters: GlobalMIDIParameter;
 
     reverbProcessor: ReverbProcessorSnapshot;
     chorusProcessor: ChorusProcessorSnapshot;
@@ -79,25 +79,25 @@ export function applySnapshot(
     }
 
     // Restore MIDI parameters
-    type MIDIParameterPair<K extends keyof MIDIGlobalParameter> = [
+    type MIDIParameterPair<K extends keyof GlobalMIDIParameter> = [
         K,
-        MIDIGlobalParameter[K]
+        GlobalMIDIParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
         this.midiParameters
-    ) as MIDIParameterPair<keyof MIDIGlobalParameter>[]) {
+    ) as MIDIParameterPair<keyof GlobalMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
 
-    // Restore master parameters last
-    type MasterParameterPair<K extends keyof GlobalMasterParameter> = [
+    // Restore system parameters last
+    type SystemParameterPair<K extends keyof GlobalSystemParameter> = [
         K,
-        GlobalMasterParameter[K]
+        GlobalSystemParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
-        this.masterParameters
-    ) as MasterParameterPair<keyof GlobalMasterParameter>[]) {
-        this.setMasterParameter(parameter, value);
+        this.systemParameters
+    ) as SystemParameterPair<keyof GlobalSystemParameter>[]) {
+        this.setSystemParameter(parameter, value);
     }
 }
 
@@ -106,7 +106,7 @@ export function getSynthesizerSnapshot(
 ): SynthesizerSnapshot {
     return {
         midiParameters: { ...this.midiParameters },
-        masterParameters: { ...this.masterParameters },
+        systemParameters: { ...this.systemParameters },
         midiChannels: this.midiChannels.map((c) => c.getSnapshot()),
         keyMappings: this.keyModifierManager.getMappings(),
         reverbProcessor: this.reverbProcessor.getSnapshot(),

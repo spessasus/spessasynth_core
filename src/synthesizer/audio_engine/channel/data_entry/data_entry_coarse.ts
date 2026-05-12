@@ -88,7 +88,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
     const dataFine = this.midiControllers[MIDIControllers.dataEntryLSB] >> 7;
     // Skip drums early
     if (
-        this.synthCore.masterParameters.drumLock &&
+        this.synthCore.systemParameters.drumLock &&
         paramCoarse >= NonRegisteredMSB.drumPitch &&
         paramCoarse <= NonRegisteredMSB.drumDelay
     )
@@ -114,11 +114,11 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
         // Part parameters
         case NonRegisteredMSB.partParameter: {
             const paramLock =
-                this._masterParameters.nrpnParamLock ??
-                this.synthCore.masterParameters.nrpnParamLock;
+                this._systemParameters.nrpnParamLock ??
+                this.synthCore.systemParameters.nrpnParamLock;
             const vibratoLock =
-                (this._masterParameters.customVibratoLock ??
-                    this.synthCore.masterParameters.customVibratoLock) ||
+                (this._systemParameters.customVibratoLock ??
+                    this.synthCore.systemParameters.customVibratoLock) ||
                 paramLock;
             switch (paramFine) {
                 default: {

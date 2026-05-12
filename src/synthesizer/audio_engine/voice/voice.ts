@@ -15,7 +15,7 @@ import {
     WavetableOscillator
 } from "./wavetable_oscillator";
 import { type InterpolationType } from "../../enums";
-import { DEFAULT_GLOBAL_MASTER_PARAMETERS } from "../master_parameters";
+import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../system_parameters";
 import type { VoiceModulator } from "./voice_modulator";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
@@ -48,7 +48,7 @@ export class Voice {
      * The oscillator currently used by this voice.
      */
     public wavetable: WavetableOscillator =
-        this.oscillators[DEFAULT_GLOBAL_MASTER_PARAMETERS.interpolationType];
+        this.oscillators[DEFAULT_GLOBAL_SYSTEM_PARAMETERS.interpolationType];
 
     /**
      * Lowpass filter applied to the voice.

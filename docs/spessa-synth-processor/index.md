@@ -250,12 +250,12 @@ synth.stopAllChannels((force = false));
 
 - force - if true, the voices will be cut instead of releasing smoothly.
 
-### setMasterParameter
+### setSystemParameter
 
 Set a [master parameter value.](master-parameter.md)
 
 ```ts
-synth.setMasterParameter(type, value);
+synth.setSystemParameter(type, value);
 ```
 
 - type - the type of the parameter to set, a string of the parameter type.
