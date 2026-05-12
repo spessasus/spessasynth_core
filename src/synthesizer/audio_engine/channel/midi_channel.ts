@@ -1,4 +1,4 @@
-import { DEFAULT_DRUM_REVERB, reset, resetRP15 } from "./reset_controllers";
+import { DEFAULT_DRUM_REVERB, resetChannelInternal, resetRP15 } from "./reset";
 import { renderVoice } from "./render_voice";
 import { dataEntryFine } from "./data_entry/data_entry_fine";
 import { controllerChange, lockController } from "./controller_change";
@@ -217,7 +217,7 @@ export class MIDIChannel {
      * Except for the locked controllers.
      * @internal
      */
-    public readonly reset = reset.bind(this);
+    public readonly reset = resetChannelInternal.bind(this);
     // Voice rendering methods
     /**
      * Renders a voice to the stereo output buffer

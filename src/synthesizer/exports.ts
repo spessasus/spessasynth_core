@@ -26,4 +26,4 @@ export type { SynthesizerSnapshot } from "./audio_engine/synthesizer_snapshot";
 export {
     DEFAULT_DRUM_REVERB,
     DEFAULT_MIDI_CONTROLLERS
-} from "./audio_engine/channel/reset_controllers";
+} from "./audio_engine/channel/reset";

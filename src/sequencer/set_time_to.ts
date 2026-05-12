@@ -2,7 +2,7 @@ import { MIDIMessage } from "../midi/midi_message";
 import {
     DEFAULT_MIDI_CONTROLLERS,
     RP_15_RESET_CC_NUMS
-} from "../synthesizer/audio_engine/channel/reset_controllers";
+} from "../synthesizer/audio_engine/channel/reset";
 import {
     type MIDIController,
     MIDIControllers,

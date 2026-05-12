@@ -55,7 +55,7 @@ DEFAULT_DRUM_REVERB[36] = 0;
  * This will reset all controllers to their default values,
  * except for the locked controllers.
  */
-export function reset(this: MIDIChannel, sendCCEvents = true) {
+export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     // Reset MIDI controllers
     for (let cc = 0; cc < CONTROLLER_TABLE_SIZE; cc++) {
         if (this.lockedControllers[cc]) {
