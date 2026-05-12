@@ -11,7 +11,6 @@ import { DLSVerifier } from "./dls_verifier";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { BasicZone } from "../basic_soundbank/basic_zone";
 import { type BasicSample } from "../basic_soundbank/basic_sample";
-import type { SampleLoopingMode } from "../../synthesizer/types";
 import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
 import { type DLSLoopType, DLSLoopTypes } from "./enums";
 import { SpessaLog } from "../../utils/loggin";
@@ -153,10 +152,7 @@ export class WaveSample extends DLSVerifier {
             zone.getGenerator(GeneratorTypes.initialAttenuation, 0) * 0.4;
         // Gain is stored as a 32-bit value, shift here
         waveSample.gain = -attenuationCb << 16;
-        const loopingMode = zone.getGenerator(
-            GeneratorTypes.sampleModes,
-            0
-        ) as SampleLoopingMode;
+        const loopingMode = zone.getGenerator(GeneratorTypes.sampleModes, 0);
         // Don't add loops unless needed
         if (loopingMode !== 0) {
             // Make sure to get offsets
@@ -198,7 +194,7 @@ export class WaveSample extends DLSVerifier {
      * Converts the wsmp data into an SF zone.
      */
     public toSFZone(zone: BasicZone, sample: BasicSample) {
-        let loopingMode: SampleLoopingMode = 0;
+        let loopingMode = 0;
         const loop = this.loops[0];
         if (loop) {
             loopingMode = loop.loopType === DLSLoopTypes.loopAndRelease ? 3 : 1;
