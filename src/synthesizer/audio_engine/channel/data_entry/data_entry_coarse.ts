@@ -8,23 +8,15 @@ import {
     RegisteredParameterTypes
 } from "../../../../midi/enums";
 import { SpessaLog } from "../../../../utils/loggin";
+import { handleAWE32NRPN } from "./awe32";
 
 /**
- * Executes a data entry coarse (MSB) change for the current channel.
- * @param dataCoarse The value to set for the data entry coarse controller (0-127).
+ * Executes a data entry  change for the current channel.
  */
-export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
-    // Store in cc table
-    this.midiControllers[MIDIControllers.dataEntryMSB] = dataCoarse << 7;
-    /*
-    A note on this vibrato.
-    This is a completely custom vibrato, with its own oscillator and parameters.
-    It is disabled by default,
-    only being enabled when one of the NRPN messages changing it is received
-    and stays on until the next system-reset.
-    It was implemented very early in SpessaSynth's development,
-    because I wanted support for Touhou MIDIs :-)
-     */
+export function dataEntry(this: MIDIChannel) {
+    // Stored in cc tabled as 14-bit
+    const dataValue = this.midiControllers[MIDIControllers.dataEntryMSB];
+
     // RPN Handling
     if (this.lastParameterIsRegistered) {
         const rpnValue =
@@ -33,7 +25,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
         switch (rpnValue) {
             default: {
                 SpessaLog.info(
-                    `%cUnrecognized RPN for %c${this.channel}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataCoarse}`,
+                    `%cUnrecognized RPN for %c${this.channel}%c: %c(0x${rpnValue.toString(16)})%c data value: %c${dataValue}`,
                     ConsoleColors.warn,
                     ConsoleColors.recognized,
                     ConsoleColors.warn,
@@ -46,29 +38,34 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
 
             // Pitch wheel range
             case RegisteredParameterTypes.pitchWheelRange: {
-                this.pitchWheelRange(dataCoarse);
+                // Pitch wheel range may be a floating point number!
+                // Therefore, something like "64" won't work,
+                // So we divide it by 128 which is essentially the same here
+                // But it allows for fractional pitch wheel range!
+                this.pitchWheelRange(dataValue / 128);
                 break;
             }
 
             // Coarse tuning
             case RegisteredParameterTypes.coarseTuning: {
-                // Semitones
-                const semitones = dataCoarse - 64;
+                // Semitones, discard LSB
+                const semitones = (dataValue >> 7) - 64;
                 this.keyShift(semitones);
                 break;
             }
 
             // Fine-tuning
             case RegisteredParameterTypes.fineTuning: {
-                // Note: this will not work properly unless the lsb is sent!
-                // Here we store the raw value to then adjust in fine
-                this.fineTune(dataCoarse - 64, false);
+                const finalTuning = dataValue - 8192;
+                // Resolution is 100/8192 cents
+                this.fineTune(finalTuning / 81.92);
                 break;
             }
 
             // Modulation depth
             case RegisteredParameterTypes.modulationDepth: {
-                this.modulationDepth(dataCoarse * 100);
+                // Cents, so data / 128 * 100 is data / 1.28
+                this.modulationDepth(dataValue / 1.28);
                 break;
             }
 
@@ -85,7 +82,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
         this.midiControllers[MIDIControllers.nonRegisteredParameterMSB] >> 7;
     const paramFine =
         this.midiControllers[MIDIControllers.nonRegisteredParameterLSB] >> 7;
-    const dataFine = this.midiControllers[MIDIControllers.dataEntryLSB] >> 7;
+    const dataCoarse = dataValue >> 7;
     // Skip drums early
     if (
         this.synthCore.systemParameters.drumLock &&
@@ -121,6 +118,15 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                     this.synthCore.systemParameters.customVibratoLock) ||
                 paramLock;
             switch (paramFine) {
+                /*
+                A note on this vibrato.
+                This is a completely custom vibrato, with its own oscillator and parameters.
+                It is disabled by default,
+                only being enabled when one of the NRPN messages changing it is received
+                and stays on until the next system-reset.
+                It was implemented very early in SpessaSynth's development,
+                because I wanted support for Touhou MIDIs :-)
+                 */
                 default: {
                     SpessaLog.info(
                         `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse.toString(16)} 0x${paramFine.toString(
@@ -341,13 +347,14 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
             this.drumParams[paramFine].delayGain = dataCoarse / 127;
             SpessaLog.coolInfo(
                 `Drum ${paramFine} delay level for ${this.channel}`,
-                dataCoarse,
+                dataValue,
                 ""
             );
             break;
         }
 
         case NonRegisteredMSB.awe32: {
+            handleAWE32NRPN.call(this, paramFine, dataValue);
             break;
         }
 
@@ -360,7 +367,7 @@ export function dataEntryCoarse(this: MIDIChannel, dataCoarse: number) {
                 break;
             }
             const gen = this.sf2NRPNGeneratorLSB as GeneratorType;
-            const offset = ((dataCoarse << 7) | dataFine) - 8192;
+            const offset = dataValue - 8192;
             this.setGeneratorOffset(gen, offset);
             break;
         }

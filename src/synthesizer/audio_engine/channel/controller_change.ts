@@ -29,11 +29,10 @@ export function controllerChange(
         throw new Error("Invalid MIDI Controller.");
 
     // Lsb controller values: append them as the lower nibble of the 14-bit value
-    // Excluding bank select and data entry as it's handled separately
+    // Excluding bank select as it's handled separately
     if (
         controller >= MIDIControllers.modulationWheelLSB &&
-        controller <= MIDIControllers.effectControl2LSB &&
-        controller !== MIDIControllers.dataEntryLSB
+        controller <= MIDIControllers.effectControl2LSB
     ) {
         const actualCCNum = controller - 32;
         if (this.lockedControllers[actualCCNum]) return;
@@ -46,8 +45,11 @@ export function controllerChange(
     }
     if (this.lockedControllers[controller]) return;
 
-    // Apply the cc to the table
-    this.midiControllers[controller] = value << 7;
+    // Apply the cc to the table (top 7 bits only, to not override LSB)
+    // For consistency we also technically apply this to the LSB controllers directly,
+    // But they are unused (except Parameter Numbers)
+    this.midiControllers[controller] =
+        (value << 7) | (this.midiControllers[controller] & 0x7f);
 
     // Interpret special CCs
     {
@@ -153,13 +155,9 @@ export function controllerChange(
                 break;
             }
 
-            case MIDIControllers.dataEntryMSB: {
-                this.dataEntryCoarse(value);
-                break;
-            }
-
+            case MIDIControllers.dataEntryMSB:
             case MIDIControllers.dataEntryLSB: {
-                this.dataEntryFine(value);
+                this.dataEntry();
                 break;
             }
 

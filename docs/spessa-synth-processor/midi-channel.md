@@ -44,7 +44,7 @@ Parameters:
 
 - dataValue - The value to set for the data entry fine controller (0-127).
 
-### dataEntryCoarse
+### dataEntry
 
 Executes a data entry coarse (MSB) change for the current channel.
 

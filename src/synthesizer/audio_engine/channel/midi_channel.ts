@@ -1,8 +1,7 @@
 import { DEFAULT_DRUM_REVERB, resetChannelInternal, resetRP15 } from "./reset";
 import { renderVoice } from "./render_voice";
-import { dataEntryFine } from "./data_entry/data_entry_fine";
 import { controllerChange, lockController } from "./controller_change";
-import { dataEntryCoarse } from "./data_entry/data_entry_coarse";
+import { dataEntry } from "./data_entry/data_entry_coarse";
 import { noteOn } from "./note_on";
 import { noteOff } from "./note_off";
 import { programChange } from "./program_change";
@@ -60,6 +59,8 @@ export class MIDIChannel {
      * @remarks
      * A bit of an explanation:
      * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
+     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
+     * Data entries do store it!
      */
     public readonly midiControllers: Int16Array = new Int16Array(
         CONTROLLER_TABLE_SIZE
@@ -237,17 +238,11 @@ export class MIDIChannel {
      */
     protected readonly resetRP15 = resetRP15.bind(this);
     /**
-     * Executes a data entry fine (LSB) change for the current channel.
-     * @param dataValue The value to set for the data entry fine controller (0-127).
-     * @internal
-     */
-    protected readonly dataEntryFine = dataEntryFine.bind(this);
-    /**
      * Executes a data entry coarse (MSB) change for the current channel.
      * @param dataValue The value to set for the data entry coarse controller (0-127).
      * @internal
      */
-    protected readonly dataEntryCoarse = dataEntryCoarse.bind(this);
+    protected readonly dataEntry = dataEntry.bind(this);
     protected readonly _midiParameters: Readonly<ChannelMIDIParameter> = {
         ...DEFAULT_MIDI_CHANNEL_PARAMETERS
     };

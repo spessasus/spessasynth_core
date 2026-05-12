@@ -88,21 +88,22 @@ const hzToCents = (hz: number) => 6900 + 1200 * Math.log2(hz / 440);
  *
  * The excellent test files are available here, also collected and converted by mrbumpy409:
  * https://github.com/mrbumpy409/AWE32-midi-conversions
+ * @param paramLSB NRPN LSB
+ * @param dataValue 14-bit
  */
 export function handleAWE32NRPN(
     this: MIDIChannel,
-    aweGen: number,
-    dataLSB: number,
-    dataMSB: number
+    paramLSB: number,
+    dataValue: number
 ) {
-    let dataValue = (dataMSB << 7) | dataLSB;
     // Center the value
     // Though ranges reported as 0 to 127 only use LSB
+    const dataLSB = dataValue & 0x7f;
     dataValue -= 8192;
-    const generator = AWE_NRPN_GENERATOR_MAPPINGS[aweGen];
+    const generator = AWE_NRPN_GENERATOR_MAPPINGS[paramLSB];
     if (!generator) {
         SpessaLog.warn(
-            `Invalid AWE32 LSB: %c${aweGen}`,
+            `Invalid AWE32 LSB: %c${paramLSB}%`,
             ConsoleColors.unrecognized
         );
     }
