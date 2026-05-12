@@ -36,7 +36,7 @@ const INITIAL_MODULATORS: VoiceModulator[] = [
  * A class for dynamic modulators
  * that are assigned for more complex system exclusive messages
  */
-export class DynamicModulatorSystem {
+export class DynamicModulatorManager {
     /**
      * The current dynamic modulator list.
      */

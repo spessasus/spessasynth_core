@@ -12,7 +12,7 @@ import {
     GENERATOR_OVERRIDE_NO_CHANGE_VALUE,
     SPESSASYNTH_GAIN_FACTOR
 } from "../synth_constants";
-import { DynamicModulatorSystem } from "./dynamic_modulator_system";
+import { DynamicModulatorManager } from "./dynamic_modulator_system";
 import {
     computeModulator,
     computeModulators
@@ -96,7 +96,7 @@ export class MIDIChannel {
      * A system for dynamic modulator assignment for advanced system exclusives.
      * @internal
      */
-    public readonly sysExModulators;
+    public readonly dynamicModulators;
     /**
      * Indicates whether this channel is a drum channel.
      */
@@ -333,7 +333,7 @@ export class MIDIChannel {
         this.channel = channelNumber;
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
-        this.sysExModulators = new DynamicModulatorSystem(channelNumber);
+        this.dynamicModulators = new DynamicModulatorManager(channelNumber);
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
         for (let i = 0; i < 128; i++) {

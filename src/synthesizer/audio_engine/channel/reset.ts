@@ -120,7 +120,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.resetVibratoParams();
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
-    this.sysExModulators.resetModulators();
+    this.dynamicModulators.resetModulators();
     this.sf2NRPNGeneratorLSB = 0;
 
     // Reset Parameters (do not emit controller change)

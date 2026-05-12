@@ -196,11 +196,11 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         voice.targetKey = cached.targetKey;
 
         // Set modulators
-        if (this.sysExModulators.active) {
+        if (this.dynamicModulators.active) {
             // We have to copy them...
             voice.modulators = [...cached.modulators];
             // Dynamic modulators
-            for (const m of this.sysExModulators.modulatorList) {
+            for (const m of this.dynamicModulators.modulatorList) {
                 const existingModIndex = voice.modulators.findIndex(
                     (voiceMod) => Modulator.isIdentical(voiceMod, m.mod)
                 );
