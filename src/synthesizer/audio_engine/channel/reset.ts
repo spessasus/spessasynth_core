@@ -124,11 +124,14 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.sf2NRPNGeneratorLSB = 0;
 
     // Reset Parameters (do not emit controller change)
+    // We reset them here since in the loop, the data entries would come before params
     this.lastParameterIsRegistered = true;
     this.midiControllers[MIDIControllers.nonRegisteredParameterLSB] = 127 << 7;
     this.midiControllers[MIDIControllers.nonRegisteredParameterMSB] = 127 << 7;
     this.midiControllers[MIDIControllers.registeredParameterLSB] = 127 << 7;
     this.midiControllers[MIDIControllers.registeredParameterMSB] = 127 << 7;
+    this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
+    this.midiControllers[MIDIControllers.dataEntryLSB] = 0;
 
     // Reset program
     this.setBankMSB(BankSelectHacks.getDefaultBank(this.channelSystem));

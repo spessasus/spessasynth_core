@@ -107,6 +107,11 @@ export function controllerChange(
 
             case MIDIControllers.registeredParameterLSB:
             case MIDIControllers.registeredParameterMSB: {
+                // Clear and set state.
+                // This is technically not a MIDI behavior,
+                // But some only send MSB matters:
+                // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
+                this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = true;
                 break;
             }
@@ -114,6 +119,12 @@ export function controllerChange(
             case MIDIControllers.nonRegisteredParameterMSB: {
                 // Sf spec section 9.6.2
                 this.sf2NRPNGeneratorLSB = 0;
+
+                // Clear and set state.
+                // This is technically not a MIDI behavior,
+                // But some only send MSB matters:
+                // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
+                this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = false;
                 break;
             }
@@ -151,6 +162,12 @@ export function controllerChange(
                         }
                     }
                 }
+
+                // Clear and set state.
+                // This is technically not a MIDI behavior,
+                // But some only send MSB matters:
+                // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
+                this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = false;
                 break;
             }
