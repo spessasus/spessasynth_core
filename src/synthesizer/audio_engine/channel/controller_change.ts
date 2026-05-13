@@ -109,7 +109,7 @@ export function controllerChange(
             case MIDIControllers.registeredParameterMSB: {
                 // Clear and set state.
                 // This is technically not a MIDI behavior,
-                // But some MIDI only send MSB data:
+                // But some MIDI files only send MSB data:
                 // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
                 this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = true;
@@ -122,7 +122,7 @@ export function controllerChange(
 
                 // Clear and set state.
                 // This is technically not a MIDI behavior,
-                // But some MIDI only send MSB data:
+                // But some MIDI files only send MSB data:
                 // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
                 this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = false;
@@ -165,7 +165,7 @@ export function controllerChange(
 
                 // Clear and set state.
                 // This is technically not a MIDI behavior,
-                // But some MIDI only send MSB data:
+                // But some MIDI files only send MSB data:
                 // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
                 this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = false;
