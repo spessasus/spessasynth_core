@@ -12,16 +12,15 @@ const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 
 SpessaLog.setLogLevel(true, true, true);
 
-const p = [];
+const p = new Map<number, { fineTune: number }>();
 for (let i = 0; i < 16; i++) {
-    p.push({
-        channel: i,
-        pitchOffset: 0.5
+    p.set(i, {
+        fineTune: 50
     });
 }
 
 midi.modify({
-    pitchOffsets: p
+    channels: p
 });
 
 await fs.writeFile(args[1], new Uint8Array(midi.writeMIDI()));
