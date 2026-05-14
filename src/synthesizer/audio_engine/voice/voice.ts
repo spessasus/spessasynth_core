@@ -125,24 +125,33 @@ export class Voice {
     public channel = 0;
 
     /**
-     * Velocity of the note.
-     */
-    public velocity = 0;
-
-    /**
-     * MIDI note number.
+     * MIDI note number of the voice.
+     * Direct number from the Note On message and is
+     * used for Note Off and external parameters:
+     * MTS and Per note Pitch Wheel.
      */
     public midiNote = 0;
+
+    /**
+     * Target key of the voice.
+     * This is the effective MIDI note number,
+     * used to calculate scale tuning and envelope times,
+     * and can be overridden by generators.
+     * It is also used
+     */
+    public targetKey = 0;
+
+    /**
+     * MIDI Velocity of the voice.
+     * This can be overridden by generators and is the effective velocity.
+     * MIDI Note On velocity is only used for zone filtering.
+     */
+    public velocity = 0;
 
     /**
      * The root key of the voice.
      */
     public rootKey = 0;
-
-    /**
-     * Target key for the note.
-     */
-    public targetKey = 0;
 
     /**
      * The pressure of the voice
@@ -271,28 +280,25 @@ export class Voice {
         }
     }
 
-    public setup(
-        currentTime: number,
-        channel: number,
-        midiNote: number,
-        velocity: number
-    ) {
+    public setup(currentTime: number, channel: number, midiNote: number) {
         // Remember to add new values here!!!
-        this.startTime = currentTime;
+        // Clear state
         this.isActive = true;
         this.isInRelease = false;
         this.hasRendered = false;
         this.isHeld = false;
         this.releaseStartTime = Infinity;
         this.pressure = 0;
-        this.channel = channel;
-        this.midiNote = midiNote;
-        this.velocity = velocity;
         this.overrideReleaseVolEnv = 0;
         this.portamentoDuration = 0;
         this.portamentoFromKey = -1;
         // Important, these start at 1/4 way there!
         this.vibLfoPhase = 0.25;
         this.modLfoPhase = 0.25;
+
+        // Set parameters
+        this.startTime = currentTime;
+        this.channel = channel;
+        this.midiNote = midiNote;
     }
 }

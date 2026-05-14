@@ -73,19 +73,20 @@ export function renderVoice(
     let cents =
         voice.pitchOffset + // Voice pitch offset
         modulated[GeneratorTypes.fineTune] + // Soundfont fine tune
-        this.octaveTuning[voice.midiNote] + // MTS octave tuning
+        this.octaveTuning[targetKey] + // MTS octave tuning
         this.currentTuning; // Channel tuning
     let semitones = modulated[GeneratorTypes.coarseTune]; // Soundfont coarse tuning
 
-    // MIDI tuning standard
+    // MIDI Tuning Standard
+    // Use `midiNote` here since it was used for selecting the preset if tuning was active
     const tuning = core.tunings[this.preset!.program * 128 + voice.midiNote];
     if (tuning !== -1) {
         // Tuning is encoded as float
-        // For example: 60.56 means key 60 and 56 cents
+        // For example: 60.56 means key 60 and 56 cents (or 0.56 semitones)
         // Override key
         targetKey = Math.trunc(tuning);
         // Add microtonal tuning
-        cents += (tuning - targetKey) * 100;
+        semitones += tuning - targetKey;
     }
 
     // Portamento

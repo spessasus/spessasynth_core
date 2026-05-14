@@ -177,7 +177,7 @@ export class ModulatorSource {
                 }
 
                 case ModulatorControllerSources.noteOnKeyNum: {
-                    rawValue = voice.midiNote << 7;
+                    rawValue = voice.targetKey << 7;
                     break;
                 }
 

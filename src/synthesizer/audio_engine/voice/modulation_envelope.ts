@@ -157,7 +157,7 @@ export class ModulationEnvelope {
         );
 
         const decayKeyExcursionCents =
-            (60 - voice.midiNote) *
+            (60 - voice.targetKey) *
             voice.modulatedGenerators[GeneratorTypes.keyNumToModEnvDecay];
         const decayTime = this.tc2Sec(
             voice.modulatedGenerators[GeneratorTypes.decayModEnv] +
@@ -169,7 +169,7 @@ export class ModulationEnvelope {
         this.decayDuration = decayTime * (1 - this.sustainLevel);
 
         const holdKeyExcursionCents =
-            (60 - voice.midiNote) *
+            (60 - voice.targetKey) *
             voice.modulatedGenerators[GeneratorTypes.keyNumToModEnvHold];
         this.holdDuration = this.tc2Sec(
             holdKeyExcursionCents +

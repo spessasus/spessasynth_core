@@ -176,7 +176,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     for (const cached of voices) {
         const voice = this.synthCore.assignVoice();
         const now = this.synthCore.currentTime;
-        voice.setup(now, this.channel, midiNote, velocity);
+        voice.setup(now, this.channel, midiNote);
 
         // Select the correct oscillator
         // Channel takes precedence
@@ -187,13 +187,14 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             ];
 
         // Set cached data
+        voice.targetKey = cached.targetKey;
+        voice.velocity = cached.velocity;
         voice.generators.set(cached.generators);
         voice.exclusiveClass = exclusiveOverride || cached.exclusiveClass;
         voice.rootKey = cached.rootKey;
         voice.loopingMode = cached.loopingMode;
         voice.wavetable.sampleData = cached.sampleData;
         voice.wavetable.playbackStep = cached.playbackStep;
-        voice.targetKey = cached.targetKey;
 
         // Set modulators
         if (this.dynamicModulators.active) {
