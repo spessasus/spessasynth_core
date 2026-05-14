@@ -34,7 +34,7 @@ import {
     type ChannelSnapshot,
     getChannelSnapshot
 } from "./channel_snapshot";
-import type { ChannelGenerators } from "./awe32";
+import type { ChannelGenerators } from "./awe32_nrpn";
 import {
     type ChannelMIDIParameter,
     DEFAULT_CHANNEL_MIDI_PARAMETERS

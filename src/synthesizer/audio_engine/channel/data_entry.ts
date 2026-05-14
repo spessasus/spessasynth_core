@@ -8,7 +8,7 @@ import {
     RegisteredParameterTypes
 } from "../../../midi/enums";
 import { SpessaLog } from "../../../utils/loggin";
-import { handleAWE32NRPN } from "./awe32";
+import { handleAWE32NRPN } from "./awe32_nrpn";
 
 /**
  * Executes a data entry  change for the current channel.

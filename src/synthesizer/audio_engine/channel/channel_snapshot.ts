@@ -1,7 +1,7 @@
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
 import { DrumParameters } from "./drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
-import type { ChannelGenerators } from "./awe32";
+import type { ChannelGenerators } from "./awe32_nrpn";
 import type { CustomChannelVibrato } from "./types";
 import type { ChannelSystemParameter } from "./parameters/system";
 import type { ChannelMIDIParameter } from "./parameters/midi";
