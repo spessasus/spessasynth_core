@@ -448,6 +448,7 @@ export class BasicMIDI {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
+     * Note that this ignores the MIDI parameters and only applies system parameter tuning.
      * @param snapshot the snapshot to apply.
      */
     public applySnapshot(snapshot: SynthesizerSnapshot) {

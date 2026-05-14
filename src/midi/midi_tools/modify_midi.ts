@@ -30,7 +30,6 @@ import type {
 import { MIDIUtils } from "./midi_utils";
 import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
-import { fillWithDefaults } from "../../utils/fill_with_defaults";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -79,165 +78,120 @@ function getControllerChange(
 }
 
 /**
- * Represents a desired program change for a MIDI channel.
+ * Represents a value that means "clear this parameter" instead of "replace this parameter with".
+ * Essentially:
+ * - undefined - no change.
+ * - `clear` - clear all changes of this parameter from the MIDI file.
+ * - T - clear all changes of this parameter from the MIDI file and add T.
  */
-interface ChannelProgram extends MIDIPatch {
-    /**
-     * The channel number.
-     */
-    channel: number;
-}
+type ClearableParameter<T> = T | "clear";
 
-/**
- * Represents a desired controller change for a MIDI channel.
- */
-interface ChannelController {
+interface ChannelModification {
     /**
-     * The channel number.
+     * All controllers that should be modified for this channel.
+     * - Key: the MIDI controller number.
+     * - value:
+     *   - `"clear"` - all controller changes for this controller are removed.
+     *   - `number` - clear + sets the new controller at the start of the song, effectively locking them to the set value.
      */
-    channel: number;
+    controllers?: Map<MIDIController, ClearableParameter<number>>;
 
     /**
-     * The MIDI controller number.
+     * The new program of this channel.
+     * - `"clear"` - all program changes for this channel are removed.
+     * - `MIDIPatch` - clear + sets the new patch according to the MIDI system at the start of the song.
      */
-    controller: MIDIController;
-
-    /**
-     * The new controller value.
-     */
-    value: number;
-}
-
-/**
- * Represents a desired channel transpose change.
- */
-interface ChannelPitchOffset {
-    /**
-     * The channel number.
-     */
-    channel: number;
+    patch?: ClearableParameter<MIDIPatch>;
 
     /**
      * The channel key shift in semitones.
      * Note on/off numbers are shifted.
      */
-    keyShift: number;
+    keyShift?: number;
 
     /**
      * The channel tuning in cents.
      * Tuned using RPN Fine Tune.
      */
-    fineTune: number;
+    fineTune?: number;
 }
 
 export interface ModifyMIDIOptions {
     /**
-     * The programs to set on given channels.
-     * This removes all program changes from this channel
-     * and inserts one with the selected preset at the beginning.
+     * The channel changes.
+     * - Key: the MIDI channel number.
+     * - value:
+     *   - `"clear"` - all MIDI messages for this channel, such as Note On are removed.
+     *   - `ChannelModification` - modifies the channel.
      */
-    programChanges: ChannelProgram[];
+    channels?: Map<number, ClearableParameter<ChannelModification>>;
     /**
-     * The controllers to set on given channels.
-     * This removes all program changes from this channel
-     * and inserts one with the selected preset at the beginning.
+     * The drum parameter changes.
+     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - `never` - not yet implemented.
      */
-    controllerChanges: ChannelController[];
+    drumSetupParams?: ClearableParameter<never>; // Only clear for now
     /**
-     * The channels to remove from the sequence.
-     * This deletes all messages that belong to this channel.
+     * The desired GS reverb parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - `ReverbProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
      */
-    clearedChannels: Set<number>;
+    reverbParams?: ClearableParameter<ReverbProcessorSnapshot>;
     /**
-     * The channels to change the pitch of.
-     * This shifts the key numbers and allows microtonal tuning in cents.
+     * The GS chorus parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are cleared.
+     * - `ChorusProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
      */
-    pitchOffsets: ChannelPitchOffset[];
+    chorusParams?: ClearableParameter<ChorusProcessorSnapshot>;
     /**
-     * If the drum editing parameters should be cleared.
+     * The GS delay parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are cleared.
+     * - `DelayProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
      */
-    clearDrumParams: boolean;
+    delayParams?: ClearableParameter<DelayProcessorSnapshot>;
     /**
-     * The desired GS reverb parameters, leave undefined for no change.
-     * If set, all reverb parameters are cleared and the new ones are set via a System Exclusive message.
+     * The GS Insertion Effect parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are cleared.
+     * - `InsertionProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
      */
-    reverbParams?: ReverbProcessorSnapshot;
-    /**
-     * The GS chorus parameters, leave undefined for no change.
-     * If set, all chorus parameters are cleared and the new ones are set via a System Exclusive message.
-     */
-    chorusParams?: ChorusProcessorSnapshot;
-    /**
-     * The GS delay parameters, leave undefined for no change.
-     * If set, all delay parameters are cleared and the new ones are set via a System Exclusive message.
-     */
-    delayParams?: DelayProcessorSnapshot;
-    /**
-     * The GS Insertion Effect parameters, leave undefined for no change.
-     * If set, all Insertion Effect parameters are cleared and the new ones are set via a System Exclusive message.
-     */
-    insertionParams?: InsertionProcessorSnapshot;
+    insertionParams?: ClearableParameter<InsertionProcessorSnapshot>;
 }
-
-interface ChannelStatus {
-    // Tracks if the channel already had its first note on
-    isFirstNoteOn: boolean;
-    // Target MIDI key shift
-    keyShift: number;
-    // Target RPN fine-tuning
-    fineTune: number;
-    // RPN/NRPN tracking
-    param: ParameterTracker;
-    // If the parameters (MSB, LSB and the first data) were cleared.
-    // Then we see the second data and only clean it.
-    clearedParams: boolean;
-}
-
-const DEFAULT_MODIFY_MIDI_OPTIONS: ModifyMIDIOptions = {
-    pitchOffsets: [],
-    clearDrumParams: false,
-    clearedChannels: new Set<number>(),
-    controllerChanges: [],
-    programChanges: []
-};
 
 /**
  * Allows easy editing of the file by removing channels, changing programs,
  * changing controllers and transposing channels. Note that this modifies the MIDI in-place.
  * @internal
  */
-export function modifyMIDIInternal(
-    midi: BasicMIDI,
-    opts: Partial<ModifyMIDIOptions>
-) {
+export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     SpessaLog.groupCollapsed(
         "%cApplying changes to the MIDI file...",
         ConsoleColors.info
     );
     const {
-        programChanges,
-        controllerChanges,
-        clearedChannels,
-        clearDrumParams,
-        pitchOffsets,
+        channels,
         reverbParams,
         chorusParams,
         delayParams,
         insertionParams
-    } = fillWithDefaults(opts, DEFAULT_MODIFY_MIDI_OPTIONS);
+    } = opts;
 
-    SpessaLog.info("Desired program changes:", programChanges);
-    SpessaLog.info("Desired CC changes:", controllerChanges);
-    SpessaLog.info("Desired channels to clear:", clearedChannels);
-    SpessaLog.info("Desired channels to transpose:", pitchOffsets);
+    SpessaLog.info("Desired channel changes", channels);
     SpessaLog.info("Desired reverb parameters", reverbParams);
     SpessaLog.info("Desired chorus parameters", chorusParams);
     SpessaLog.info("Desired delay parameters", delayParams);
     SpessaLog.info("Desired insertion parameters", insertionParams);
 
-    const channelsToChangeProgram = new Set<number>();
-    for (const c of programChanges) {
-        channelsToChangeProgram.add(c.channel);
+    // Optimizations
+    const clearDrumParams = opts.drumSetupParams === "clear";
+    // Track only channels to clear
+    const clearedChannels = new Set<number>();
+    // Track only channels to change here
+    const channelChanges = new Map<number, ChannelModification>();
+    if (channels) {
+        for (const [channel, ch] of channels) {
+            if (ch === "clear") clearedChannels.add(channel);
+            else channelChanges.set(channel, ch);
+        }
     }
 
     // Go through all events one by one
@@ -278,14 +232,22 @@ export function modifyMIDIInternal(
     for (const [i, track] of midi.tracks.entries())
         assignMIDIPort(i, track.port);
 
+    // Internal tracking interface
+    interface ChannelStatus {
+        // Tracks if the channel already had its first note on
+        isFirstNoteOn: boolean;
+        // RPN/NRPN tracking
+        param: ParameterTracker;
+        // If the parameters (MSB, LSB and the first data) were cleared.
+        // Then we see the second data and only clean it.
+        clearedParams: boolean;
+    }
+
     const channelsAmount = midiPortChannelOffset;
-    const channels: ChannelStatus[] = [];
+    const channelStatuses: ChannelStatus[] = [];
     for (let i = 0; i < channelsAmount; i++) {
-        const pitchOffset = pitchOffsets.find((o) => o.channel === i);
-        channels.push({
+        channelStatuses.push({
             isFirstNoteOn: true,
-            keyShift: pitchOffset?.keyShift ?? 0,
-            fineTune: pitchOffset?.fineTune ?? 0,
             param: new ParameterTracker(i),
             clearedParams: false
         });
@@ -301,7 +263,7 @@ export function modifyMIDIInternal(
         };
 
         const deleteParameter = (channel: number) => {
-            const ch = channels[channel];
+            const ch = channelStatuses[channel];
             if (ch.clearedParams) {
                 // Just this (probably data LSB)
                 // But it could also be MSB...
@@ -354,31 +316,37 @@ export function modifyMIDIInternal(
             deleteThisEvent();
             return;
         }
-        const ch = channels[channel];
+        const channelStatus = channelStatuses[channel];
+        const channelChange = channelChanges.get(channel);
         switch (status) {
             case MIDIMessageTypes.noteOn: {
+                // Make sure that we want to modify this channel at all
+                if (!channelChange) break;
+
                 // Is it first?
-                if (ch.isFirstNoteOn) {
-                    ch.isFirstNoteOn = false;
-                    // All right, so this is the first note on
+                if (channelStatus.isFirstNoteOn) {
+                    channelStatus.isFirstNoteOn = false;
+                    // All right, so this is the first note on for this channel
+
                     // First: controllers
                     // Because FSMP does not like program changes after cc changes in embedded midis
                     // And since we use splice,
-                    // Controllers get added first, then programs before them
+                    // Controllers get added first, then programs before them.
                     // Now add controllers
-                    for (const change of controllerChanges.filter(
-                        (c) => c.channel === channel
-                    )) {
-                        const ccChange = getControllerChange(
-                            midiChannel,
-                            change.controller,
-                            change.value,
-                            e.ticks
-                        );
-                        addEventBefore(ccChange);
-                    }
-                    const fineTune = ch.fineTune;
+                    if (channelChange.controllers)
+                        for (const [cc, value] of channelChange.controllers) {
+                            if (value === "clear") continue;
+                            const ccChange = getControllerChange(
+                                midiChannel,
+                                cc,
+                                value,
+                                e.ticks
+                            );
+                            addEventBefore(ccChange);
+                        }
 
+                    // Tuning
+                    const fineTune = channelChange.fineTune ?? 0;
                     if (fineTune !== 0) {
                         // Add rpn
                         // 64 is the center, 96 = 50 cents up
@@ -413,15 +381,11 @@ export function modifyMIDIInternal(
                         addEventBefore(rpnCoarse);
                     }
 
-                    if (channelsToChangeProgram.has(channel)) {
-                        const change = programChanges.find(
-                            (c) => c.channel === channel
-                        );
-                        if (!change) {
-                            return;
-                        }
+                    // Program change
+                    const patch = channelChange.patch;
+                    if (patch && patch !== "clear") {
                         SpessaLog.info(
-                            `%cSetting %c${change.channel}%c to %c${MIDIPatchTools.toMIDIString(change)}%c. Track num: %c${trackNum}`,
+                            `%cSetting %c${channel}%c to %c${MIDIPatchTools.toMIDIString(patch)}%c. Track num: %c${trackNum}`,
                             ConsoleColors.info,
                             ConsoleColors.recognized,
                             ConsoleColors.info,
@@ -432,9 +396,9 @@ export function modifyMIDIInternal(
 
                         // Note: this is in reverse.
                         // The output event order is: drums -> lsb -> msb -> program change
-                        let desiredBankMSB = change.bankMSB;
-                        let desiredBankLSB = change.bankLSB;
-                        const desiredProgram = change.program;
+                        let desiredBankMSB = patch.bankMSB;
+                        let desiredBankLSB = patch.bankLSB;
+                        const desiredProgram = patch.program;
 
                         // Add program change
                         const programChange = new MIDIMessage(
@@ -459,7 +423,7 @@ export function modifyMIDIInternal(
 
                         if (
                             BankSelectHacks.isSystemXG(system) &&
-                            change.isGMGSDrum
+                            patch.isGMGSDrum
                         ) {
                             // Best I can do is XG drums
                             SpessaLog.info(
@@ -477,7 +441,7 @@ export function modifyMIDIInternal(
                         addBank(true, desiredBankLSB);
 
                         if (
-                            change.isGMGSDrum &&
+                            patch.isGMGSDrum &&
                             !BankSelectHacks.isSystemXG(system) &&
                             midiChannel !== DEFAULT_PERCUSSION
                         ) {
@@ -494,18 +458,19 @@ export function modifyMIDIInternal(
                     }
                 }
                 // Transpose key (for zero it won't change anyway)
-                e.data[0] += ch.keyShift;
+                e.data[0] += channelChange.keyShift ?? 0;
                 break;
             }
 
             case MIDIMessageTypes.noteOff: {
-                e.data[0] += ch.keyShift;
+                if (!channelChange) break;
+                e.data[0] += channelChange?.keyShift ?? 0;
                 break;
             }
 
             case MIDIMessageTypes.programChange: {
                 // Do we delete it?
-                if (channelsToChangeProgram.has(channel)) {
+                if (channelChange?.patch) {
                     // This channel has program change. BEGONE!
                     deleteThisEvent();
                     return;
@@ -517,10 +482,8 @@ export function modifyMIDIInternal(
                 {
                     const ccNum = e.data[0] as MIDIController;
                     const value = e.data[1];
-                    const changes = controllerChanges.find(
-                        (c) => c.channel === channel && ccNum === c.controller
-                    );
-                    if (changes !== undefined) {
+                    const change = channelChange?.controllers?.get(ccNum);
+                    if (change) {
                         // This controller is locked, BEGONE CHANGE!
                         deleteThisEvent();
                         return;
@@ -528,7 +491,7 @@ export function modifyMIDIInternal(
                     switch (ccNum) {
                         case MIDIControllers.bankSelect:
                         case MIDIControllers.bankSelectLSB: {
-                            if (channelsToChangeProgram.has(channel)) {
+                            if (channelChange?.patch) {
                                 // BEGONE!
                                 deleteThisEvent();
                             }
@@ -539,8 +502,8 @@ export function modifyMIDIInternal(
                         case MIDIControllers.registeredParameterMSB:
                         case MIDIControllers.nonRegisteredParameterMSB:
                         case MIDIControllers.nonRegisteredParameterLSB: {
-                            ch.clearedParams = false;
-                            ch.param.controllerChange(
+                            channelStatus.clearedParams = false;
+                            channelStatus.param.controllerChange(
                                 ccNum,
                                 value,
                                 trackNum,
@@ -551,7 +514,7 @@ export function modifyMIDIInternal(
 
                         case MIDIControllers.dataEntryMSB:
                         case MIDIControllers.dataEntryLSB: {
-                            const data = ch.param.controllerChange(
+                            const data = channelStatus.param.controllerChange(
                                 ccNum,
                                 value,
                                 trackNum,
@@ -572,12 +535,9 @@ export function modifyMIDIInternal(
                                     // NRPN can change controllers too!
                                     const ccNum = data.controller;
                                     const channel = data.channel;
-                                    const changes = controllerChanges.find(
-                                        (c) =>
-                                            c.channel === channel &&
-                                            ccNum === c.controller
-                                    );
-                                    if (changes !== undefined) {
+                                    const change =
+                                        channelChange?.controllers?.get(ccNum);
+                                    if (change) {
                                         // This controller is locked, BEGONE CHANGE!
                                         deleteParameter(channel);
                                         return;
@@ -586,7 +546,7 @@ export function modifyMIDIInternal(
                                         (ccNum === MIDIControllers.bankSelect ||
                                             ccNum ===
                                                 MIDIControllers.bankSelectLSB) &&
-                                        channelsToChangeProgram.has(channel)
+                                        channelChange?.patch
                                     ) {
                                         // BEGONE!
                                         deleteParameter(channel);
@@ -595,13 +555,16 @@ export function modifyMIDIInternal(
                                 }
 
                                 case "Fine Tune": {
-                                    if (ch.fineTune !== 0) {
-                                        if (ch.isFirstNoteOn) {
+                                    if (channelChange?.fineTune) {
+                                        if (channelStatus.isFirstNoteOn) {
                                             // No note-on yet. Then use it as relative!
                                             const newTune =
-                                                ch.fineTune + data.value / 100;
-                                            ch.keyShift += Math.trunc(newTune);
-                                            ch.fineTune =
+                                                channelChange.fineTune +
+                                                data.value / 100;
+                                            channelChange.keyShift =
+                                                (channelChange.keyShift ?? 0) +
+                                                Math.trunc(newTune);
+                                            channelChange.fineTune =
                                                 newTune - Math.trunc(newTune);
                                             SpessaLog.info(
                                                 `%cRelative fine tuning, offset: %c${data.value}`,
@@ -711,9 +674,7 @@ export function modifyMIDIInternal(
                         // SysEx can change programs
                         // Do we delete it?
                         if (
-                            channelsToChangeProgram.has(
-                                syx.channel + portOffset
-                            )
+                            channelChanges.get(syx.channel + portOffset)?.patch
                         ) {
                             // This channel has program change. BEGONE!
                             deleteThisEvent();
@@ -722,11 +683,17 @@ export function modifyMIDIInternal(
                     }
 
                     case "Fine Tune": {
-                        if (ch.isFirstNoteOn) {
+                        const syxChannel = channelChanges.get(
+                            syx.channel + portOffset
+                        );
+                        if (channelStatus.isFirstNoteOn && syxChannel) {
                             // No note-on yet. Then use it as relative!
-                            const newTune = ch.fineTune + syx.value / 100;
-                            ch.keyShift += Math.trunc(newTune);
-                            ch.fineTune = newTune - Math.trunc(newTune);
+                            const newTune =
+                                (syxChannel?.fineTune ?? 0) + syx.value / 100;
+                            syxChannel.keyShift =
+                                (syxChannel.keyShift ?? 0) +
+                                Math.trunc(newTune);
+                            syxChannel.fineTune = newTune - Math.trunc(newTune);
                             SpessaLog.info(
                                 `%cRelative fine tuning, offset: %c${syx.value}`,
                                 ConsoleColors.info,
@@ -740,11 +707,10 @@ export function modifyMIDIInternal(
                     case "Controller Change": {
                         // SysEx can change controllers too!
                         const ccNum = syx.controller;
-                        const channel = syx.channel;
-                        const changes = controllerChanges.find(
-                            (c) =>
-                                c.channel === channel && ccNum === c.controller
+                        const syxChannel = channelChanges.get(
+                            syx.channel + portOffset
                         );
+                        const changes = syxChannel?.controllers?.get(ccNum);
                         if (changes !== undefined) {
                             // This controller is locked, BEGONE CHANGE!
                             deleteThisEvent();
@@ -753,7 +719,7 @@ export function modifyMIDIInternal(
                         if (
                             (ccNum === MIDIControllers.bankSelect ||
                                 ccNum === MIDIControllers.bankSelectLSB) &&
-                            channelsToChangeProgram.has(channel)
+                            syxChannel?.patch
                         ) {
                             // BEGONE!
                             deleteThisEvent();
@@ -772,7 +738,7 @@ export function modifyMIDIInternal(
         0,
         targetTrack.events.findIndex((m) => m.ticks >= targetTicks) - 1
     );
-    if (reverbParams) {
+    if (reverbParams && reverbParams !== "clear") {
         const m = reverbAddressMap;
         const p = reverbParams;
         targetTrack.addEvents(
@@ -793,7 +759,7 @@ export function modifyMIDIInternal(
             ])
         );
     }
-    if (chorusParams) {
+    if (chorusParams && chorusParams !== "clear") {
         const m = chorusAddressMap;
         const p = chorusParams;
         targetTrack.addEvents(
@@ -816,7 +782,7 @@ export function modifyMIDIInternal(
             ])
         );
     }
-    if (delayParams) {
+    if (delayParams && delayParams !== "clear") {
         const m = delayAddressMap;
         const p = delayParams;
         targetTrack.addEvents(
@@ -853,7 +819,7 @@ export function modifyMIDIInternal(
         );
     }
 
-    if (insertionParams) {
+    if (insertionParams && insertionParams !== "clear") {
         const p = insertionParams;
 
         for (let channel = 0; channel < p.channels.length; channel++) {
@@ -895,7 +861,10 @@ export function modifyMIDIInternal(
     }
 
     // Check for gs
-    if (!addedGs && programChanges.length > 0) {
+    if (
+        !addedGs &&
+        [...channelChanges.values()].some((c) => c.patch && c.patch !== "clear")
+    ) {
         // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)
         let index = 0;
         if (
@@ -911,17 +880,14 @@ export function modifyMIDIInternal(
 }
 
 /**
- * Modifies the sequence according to the locked presets and controllers in the given snapshot
+ * Modifies the sequence according to the locked presets and controllers in the given snapshot.
+ * Note that this ignores the MIDI parameters and only applies system parameter tuning.
  */
 export function applySnapshotInternal(
     midi: BasicMIDI,
     snapshot: SynthesizerSnapshot
 ) {
-    const pitchOffsets: ChannelPitchOffset[] = [];
-
-    const channelsToClear = new Set<number>();
-    const programChanges: ChannelProgram[] = [];
-    const controllerChanges: ChannelController[] = [];
+    const channels = new Map<number, ClearableParameter<ChannelModification>>();
     const globalKeyShift = snapshot.systemParameters.keyShift;
     const globalFineTune = snapshot.systemParameters.fineTune;
     for (
@@ -929,52 +895,49 @@ export function applySnapshotInternal(
         channelNumber < snapshot.midiChannels.length;
         channelNumber++
     ) {
-        const channel = snapshot.midiChannels[channelNumber];
-        if (channel.systemParameters.isMuted) {
-            channelsToClear.add(channelNumber);
+        const channelSnapshot = snapshot.midiChannels[channelNumber];
+        if (channelSnapshot.systemParameters.isMuted) {
+            channels.set(channelNumber, "clear");
             continue;
         }
         const keyShift =
-            channel.systemParameters.keyShift +
-            (channel.drumChannel ? 0 : globalKeyShift);
+            channelSnapshot.systemParameters.keyShift +
+            (channelSnapshot.drumChannel ? 0 : globalKeyShift);
         const fineTune =
-            channel.systemParameters.fineTune +
-            (channel.drumChannel ? 0 : globalFineTune);
-        if (keyShift !== 0 && fineTune !== 0) {
-            pitchOffsets.push({
-                channel: channelNumber,
-                keyShift,
-                fineTune
-            });
-        }
-        if (channel.systemParameters.presetLock && channel.patch) {
-            programChanges.push({
-                channel: channelNumber,
-                ...channel.patch
-            });
+            channelSnapshot.systemParameters.fineTune +
+            (channelSnapshot.drumChannel ? 0 : globalFineTune);
+        let patch: MIDIPatch | undefined;
+        if (
+            channelSnapshot.systemParameters.presetLock &&
+            channelSnapshot.patch
+        ) {
+            patch = { ...channelSnapshot.patch };
         }
 
+        const controllers = new Map<MIDIController, number>();
         for (let ccNumber = 0; ccNumber < CONTROLLER_TABLE_SIZE; ccNumber++) {
             if (
-                !channel.lockedControllers[ccNumber] ||
+                !channelSnapshot.lockedControllers[ccNumber] ||
                 ccNumber === MIDIControllers.bankSelect
             ) {
                 continue;
             }
-            const targetValue = channel.midiControllers[ccNumber] >> 7; // Channel controllers are stored as 14 bit values
-            controllerChanges.push({
-                channel: channelNumber,
-                controller: ccNumber as MIDIController,
-                value: targetValue
-            });
+            const targetValue = channelSnapshot.midiControllers[ccNumber] >> 7; // Channel controllers are stored as 14 bit values
+            controllers.set(ccNumber as MIDIController, targetValue);
         }
+
+        channels.set(channelNumber, {
+            keyShift,
+            fineTune,
+            patch,
+            controllers
+        });
     }
     midi.modify({
-        programChanges,
-        controllerChanges,
-        clearedChannels: channelsToClear,
-        pitchOffsets: pitchOffsets,
-        clearDrumParams: snapshot.systemParameters.drumLock,
+        channels,
+        drumSetupParams: snapshot.systemParameters.drumLock
+            ? "clear"
+            : undefined,
         reverbParams: snapshot.systemParameters.reverbLock
             ? snapshot.reverbProcessor
             : undefined,
