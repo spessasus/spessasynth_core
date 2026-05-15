@@ -350,7 +350,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                     if (fineTune !== 0) {
                         // Add rpn
                         // 64 is the center, 96 = 50 cents up
-                        const data = Math.floor(fineTune * 8192) + 8192;
+                        const data = Math.floor(fineTune * 81.92) + 8192;
                         const rpnCoarse = getControllerChange(
                             midiChannel,
                             MIDIControllers.registeredParameterMSB,
