@@ -15,7 +15,7 @@ SpessaLog.setLogLevel(true, true, true);
 const p = new Map<number, { fineTune: number }>();
 for (let i = 0; i < 16; i++) {
     p.set(i, {
-        fineTune: 50
+        fineTune: i === 9 ? 0 : 65
     });
 }
 

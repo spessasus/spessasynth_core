@@ -575,7 +575,8 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                             channelStatus.fineTune =
                                                 newTune % 100;
                                             SpessaLog.info(
-                                                `%cFine tuning already present, new relative tune: %c${newTune}`,
+                                                `%cFine tuning already present on ${channel}, ` +
+                                                    `new relative tune: %c${newTune} cents`,
                                                 ConsoleColors.info,
                                                 ConsoleColors.recognized
                                             );
@@ -702,7 +703,8 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                             syxStatus.keyShift += Math.trunc(newTune / 100);
                             syxStatus.fineTune = newTune % 100;
                             SpessaLog.info(
-                                `%cFine tuning already present, new relative tune: %c${newTune}`,
+                                `%cFine tuning already present on ${syx.channel + portOffset}, ` +
+                                    `new relative tune: %c${newTune} cents`,
                                 ConsoleColors.info,
                                 ConsoleColors.recognized
                             );

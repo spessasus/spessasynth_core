@@ -524,11 +524,10 @@ export class MIDIChannel {
      * @internal
      */
     public modulationDepth(cents: number, log = true) {
-        cents = Math.round(cents);
         this.setMIDIParameter("modulationDepth", cents / 50);
         if (!log) return;
         SpessaLog.info(
-            `%cChannel ${this.channel} modulation depth. Cents: %c${cents}`,
+            `%cChannel ${this.channel} modulation depth. Cents: %c${Math.round(cents)}`,
             ConsoleColors.info,
             ConsoleColors.value
         );
@@ -560,12 +559,11 @@ export class MIDIChannel {
      * @internal
      */
     public fineTune(cents: number, log = true) {
-        cents = Math.round(cents);
         this.setMIDIParameter("fineTune", cents);
         if (!log) return;
 
         SpessaLog.info(
-            `%cFine tuning for %c${this.channel}%c is now set to %c${cents}%c cents.`,
+            `%cFine tuning for %c${this.channel}%c is now set to %c${Math.round(cents)}%c cents.`,
             ConsoleColors.info,
             ConsoleColors.recognized,
             ConsoleColors.info,
