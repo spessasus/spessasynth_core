@@ -112,6 +112,7 @@ interface ChannelModification {
     /**
      * The channel tuning in cents.
      * Tuned using RPN Fine Tune.
+     * Range is [-100; 99.987] cents.
      */
     fineTune?: number;
 }
@@ -241,6 +242,12 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         // If the parameters (MSB, LSB and the first data) were cleared.
         // Then we see the second data and only clean it.
         clearedParams: boolean;
+
+        // Semitones, for easier access rather than having to do "?? 0"
+        keyShift: number;
+
+        // Cents, for easier access rather than having to do "?? 0"
+        fineTune: number;
     }
 
     const channelsAmount = midiPortChannelOffset;
@@ -249,7 +256,9 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         channelStatuses.push({
             isFirstNoteOn: true,
             param: new ParameterTracker(i),
-            clearedParams: false
+            clearedParams: false,
+            keyShift: channelChanges.get(i)?.keyShift ?? 0,
+            fineTune: channelChanges.get(i)?.fineTune ?? 0
         });
     }
 
@@ -298,13 +307,13 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             assignMIDIPort(trackNum, e.data[0]);
             return;
         }
-        // Don't clear meta
+        // Only process voice + system exclusive messages
         if (
-            e.statusByte <= MIDIMessageTypes.sequenceSpecific &&
-            e.statusByte >= MIDIMessageTypes.sequenceNumber
-        ) {
+            e.statusByte < MIDIMessageTypes.noteOff ||
+            e.statusByte > MIDIMessageTypes.systemExclusive
+        )
             return;
-        }
+
         const status = e.statusByte & 0xf0;
         const midiChannel = e.statusByte & 0xf;
         const channel = midiChannel + portOffset;
@@ -346,11 +355,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         }
 
                     // Tuning
-                    const fineTune = channelChange.fineTune ?? 0;
-                    if (fineTune !== 0) {
+                    if (channelStatus.fineTune !== 0) {
                         // Add rpn
                         // 64 is the center, 96 = 50 cents up
-                        const data = Math.floor(fineTune * 81.92) + 8192;
+                        const data =
+                            Math.floor(channelStatus.fineTune * 81.92) + 8192;
                         const rpnCoarse = getControllerChange(
                             midiChannel,
                             MIDIControllers.registeredParameterMSB,
@@ -366,7 +375,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         const dataEntryCoarse = getControllerChange(
                             channel,
                             MIDIControllers.dataEntryMSB,
-                            data >> 7,
+                            (data >> 7) & 0x7f,
                             e.ticks
                         );
                         const dataEntryFine = getControllerChange(
@@ -458,13 +467,13 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                     }
                 }
                 // Transpose key (for zero it won't change anyway)
-                e.data[0] += channelChange.keyShift ?? 0;
+                e.data[0] += channelStatus.keyShift;
                 break;
             }
 
             case MIDIMessageTypes.noteOff: {
                 if (!channelChange) break;
-                e.data[0] += channelChange?.keyShift ?? 0;
+                e.data[0] += channelStatus.keyShift;
                 break;
             }
 
@@ -555,19 +564,18 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                 }
 
                                 case "Fine Tune": {
-                                    if (channelChange?.fineTune) {
+                                    if (channelStatus.fineTune) {
                                         if (channelStatus.isFirstNoteOn) {
                                             // No note-on yet. Then use it as relative!
                                             const newTune =
-                                                channelChange.fineTune +
-                                                data.value / 100;
-                                            channelChange.keyShift =
-                                                (channelChange.keyShift ?? 0) +
-                                                Math.trunc(newTune);
-                                            channelChange.fineTune =
-                                                newTune - Math.trunc(newTune);
+                                                channelStatus.fineTune +
+                                                data.value;
+                                            channelStatus.keyShift +=
+                                                Math.trunc(newTune / 100);
+                                            channelStatus.fineTune =
+                                                newTune % 100;
                                             SpessaLog.info(
-                                                `%cRelative fine tuning, offset: %c${data.value}`,
+                                                `%cFine tuning already present, new relative tune: %c${newTune}`,
                                                 ConsoleColors.info,
                                                 ConsoleColors.recognized
                                             );
@@ -686,16 +694,15 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         const syxChannel = channelChanges.get(
                             syx.channel + portOffset
                         );
+                        const syxStatus =
+                            channelStatuses[syx.channel + portOffset];
                         if (channelStatus.isFirstNoteOn && syxChannel) {
                             // No note-on yet. Then use it as relative!
-                            const newTune =
-                                (syxChannel?.fineTune ?? 0) + syx.value / 100;
-                            syxChannel.keyShift =
-                                (syxChannel.keyShift ?? 0) +
-                                Math.trunc(newTune);
-                            syxChannel.fineTune = newTune - Math.trunc(newTune);
+                            const newTune = syxStatus.fineTune + syx.value;
+                            syxStatus.keyShift += Math.trunc(newTune / 100);
+                            syxStatus.fineTune = newTune % 100;
                             SpessaLog.info(
-                                `%cRelative fine tuning, offset: %c${syx.value}`,
+                                `%cFine tuning already present, new relative tune: %c${newTune}`,
                                 ConsoleColors.info,
                                 ConsoleColors.recognized
                             );
