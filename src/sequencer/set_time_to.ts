@@ -194,7 +194,9 @@ export function setTimeToInternal(
                         }
                         if (nonSkippableCCs.has(controller))
                             this.sendMIDICC(channel, controller, value);
-                        else ch.controllers[controller] = value << 7;
+                        else
+                            channels[channel].controllers[controller] =
+                                value << 7;
                     }
                 }
                 break;

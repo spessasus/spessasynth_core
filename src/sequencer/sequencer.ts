@@ -15,6 +15,8 @@ import {
 import type { SequencerEvent, SequencerEventData } from "./types";
 import { arrayToHexString, ConsoleColors } from "../utils/other";
 import { SpessaLog } from "../utils/loggin";
+import type { SysExAcceptedArray } from "../midi/types";
+import { MIDIUtils } from "../midi/exports";
 
 export class SpessaSynthSequencer {
     /**
@@ -429,7 +431,6 @@ export class SpessaSynthSequencer {
         // Send off controllers
         for (let c = 0; c < 16; c++) {
             this.sendMIDICC(c, MIDIControllers.allNotesOff, 0);
-            this.sendMIDICC(c, MIDIControllers.allSoundOff, 0);
         }
     }
 
@@ -439,7 +440,14 @@ export class SpessaSynthSequencer {
             this.synth.resetAllControllers();
             return;
         }
-        this.sendMIDIMessage([MIDIMessageTypes.reset]);
+        this.sendMIDISysEx(
+            MIDIUtils.gsData(
+                0x40, // System parameter - Address
+                0x00, // Global mode parameter -  Address
+                0x7f, // MODE SET - Address
+                [0x00] // 00 = GS Reset - Data
+            )
+        );
     }
 
     protected loadCurrentSong() {
@@ -561,6 +569,14 @@ export class SpessaSynthSequencer {
             type,
             value
         ]);
+    }
+
+    protected sendMIDISysEx(syx: SysExAcceptedArray) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.systemExclusive(syx);
+            return;
+        }
+        this.sendMIDIMessage([MIDIMessageTypes.systemExclusive, ...syx]);
     }
 
     /**
