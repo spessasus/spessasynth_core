@@ -50,31 +50,17 @@ export function processEventInternal(
             const velocity = event.data[1];
             if (velocity > 0) {
                 this.synth.noteOn(channel, event.data[0], velocity);
-                this.playingNotes.push({
-                    midiNote: event.data[0],
-                    channel: channel,
-                    velocity: velocity
-                });
+                this.playingNotes[channel].set(event.data[0], velocity);
             } else {
                 this.synth.noteOff(channel, event.data[0]);
-                const toDelete = this.playingNotes.findIndex(
-                    (n) => n.midiNote === event.data[0] && n.channel === channel
-                );
-                if (toDelete !== -1) {
-                    this.playingNotes.splice(toDelete, 1);
-                }
+                this.playingNotes[channel].delete(event.data[0]);
             }
             break;
         }
 
         case MIDIMessageTypes.noteOff: {
             this.synth.noteOff(channel, event.data[0]);
-            const toDelete = this.playingNotes.findIndex(
-                (n) => n.midiNote === event.data[0] && n.channel === channel
-            );
-            if (toDelete !== -1) {
-                this.playingNotes.splice(toDelete, 1);
-            }
+            this.playingNotes[channel].delete(event.data[0]);
             break;
         }
 

@@ -107,13 +107,11 @@ export class SpessaSynthSequencer {
      */
     protected absoluteStartTime = 0;
     /**
-     * Currently playing notes (for pausing and resuming)
+     * Currently playing notes, for pressing them after pausing.
+     * Map per channel, key: velocity.
+     * If the `.get()` method returns nothing then this note is not playing.
      */
-    protected playingNotes: {
-        midiNote: number;
-        channel: number;
-        velocity: number;
-    }[] = [];
+    protected readonly playingNotes: Map<number, number>[] = [];
     /**
      * MIDI Port number for each of the MIDI tracks in the current sequence.
      */
@@ -141,6 +139,8 @@ export class SpessaSynthSequencer {
     public constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
         this.absoluteStartTime = this.synth.currentTime;
+        for (let i = 0; i < 16; i++)
+            this.playingNotes.push(new Map<number, number>());
     }
 
     protected _midiData?: BasicMIDI;
@@ -270,7 +270,7 @@ export class SpessaSynthSequencer {
             this.setTimeTicks(this._midiData.firstNoteOn - 1);
             return;
         } else {
-            this.playingNotes = [];
+            for (const ch of this.playingNotes) ch.clear();
             this.callEvent("timeChange", { newTime: time });
             this.setTimeTo(time);
             this.recalculateStartTime(time);
@@ -306,9 +306,17 @@ export class SpessaSynthSequencer {
             // Adjust the start time
             this.recalculateStartTime(this.pausedTime ?? 0);
         }
-        if (this.retriggerPausedNotes) {
-            for (const n of this.playingNotes) {
-                this.sendMIDINoteOn(n.channel, n.midiNote, n.velocity);
+        // Do not retrigger if external playback is enabled since we're not tracking notes there
+        if (this.retriggerPausedNotes && !this.externalMIDIPlayback) {
+            for (
+                let channel = 0;
+                channel < this.playingNotes.length;
+                channel++
+            ) {
+                const ch = this.playingNotes[channel];
+                for (const [midiNote, velocity] of ch) {
+                    this.sendMIDINoteOn(channel, midiNote, velocity);
+                }
             }
         }
         this.pausedTime = undefined;
@@ -398,6 +406,7 @@ export class SpessaSynthSequencer {
     protected addNewMIDIPort() {
         for (let i = 0; i < 16; i++) {
             this.synth.createMIDIChannel();
+            this.playingNotes.push(new Map<number, number>());
         }
     }
 
@@ -425,9 +434,12 @@ export class SpessaSynthSequencer {
         }
         // External
         // Off all playing notes
-        for (const note of this.playingNotes) {
-            this.sendMIDINoteOff(note.channel, note.midiNote);
+        for (let channel = 0; channel < this.playingNotes.length; channel++) {
+            const ch = this.playingNotes[channel];
+            for (const midiNote of ch.keys())
+                this.sendMIDINoteOff(channel, midiNote);
         }
+
         // Send off controllers
         for (let c = 0; c < 16; c++) {
             this.sendMIDICC(c, MIDIControllers.allNotesOff, 0);
@@ -476,7 +488,7 @@ export class SpessaSynthSequencer {
         if (!this._midiData) {
             return;
         }
-        this.playingNotes = [];
+        for (const ch of this.playingNotes) ch.clear();
         const seconds = this._midiData.midiTicksToSeconds(ticks);
         this.callEvent("timeChange", { newTime: seconds });
         const isNotFinished = this.setTimeTo(0, ticks);
