@@ -169,7 +169,9 @@ export function getUsedProgramsAndKeys(
                         );
                         // RPN#02 Coarse Tune is key-shift according to GM2 section 3.4.3
                         if (analyzed?.type === "Key Shift")
-                            ch.keyShift = analyzed.value;
+                            // Drum channels ignore key shift
+                            // Testcase: th07_19_user_gm.mid
+                            ch.keyShift = ch.isDrum ? 0 : analyzed.value;
                         break;
                     }
 
@@ -207,7 +209,8 @@ export function getUsedProgramsAndKeys(
                     usedProgramsAndKeys.set(ch.preset, keysForPreset);
                 }
 
-                const midiNote = e.data[0] + masterKeyShift + ch.keyShift;
+                const midiNote =
+                    e.data[0] + (ch.isDrum ? 0 : masterKeyShift) + ch.keyShift;
                 let velocities = keysForPreset.get(midiNote);
                 // Add the key with an empty list of velocities to the preset
                 if (!velocities) {
@@ -271,7 +274,10 @@ export function getUsedProgramsAndKeys(
                         }
 
                         case "Key Shift": {
-                            channels[syx.channel].keyShift = syx.value;
+                            const ch = channels[syx.channel];
+                            // Drum channels ignore key shift
+                            // Testcase: th07_19_user_gm.mid
+                            ch.keyShift = ch.isDrum ? 0 : syx.value;
                             break;
                         }
 

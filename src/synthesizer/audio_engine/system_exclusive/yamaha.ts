@@ -152,14 +152,8 @@ export function yamahaSystemExclusive(
 
                 // Note shift
                 case 0x08: {
-                    if (ch.drumChannel) break;
                     const keyShift = data - 64;
-                    ch.setMIDIParameter("keyShift", keyShift);
-                    SpessaLog.xgInfo(
-                        `Key Shift on ${channel}`,
-                        keyShift,
-                        "keys"
-                    );
+                    ch.keyShift(keyShift);
                     break;
                 }
 

@@ -534,12 +534,16 @@ export class MIDIChannel {
     }
 
     /**
-     * Sets the channel's key shift.
+     * Sets the channel's key shift (MIDI).
      * @param shift the key shift.
      * @param log If true, logs the change to the console.
      * @internal
      */
     public keyShift(shift: number, log = true) {
+        // Drum channels ignore key shift
+        // Testcase: th07_19_user_gm.mid
+        // Reset to 0 just to be sure
+        if (this.drumChannel) shift = 0;
         if (this._midiParameters.keyShift === shift) return;
         this.setMIDIParameter("keyShift", shift);
         if (!log) return;
@@ -902,13 +906,9 @@ export class MIDIChannel {
         )
             return;
 
-        if (isDrum) {
-            // Clear transpose
-            this.keyShift(0, false);
-            this.drumChannel = true;
-        } else {
-            this.drumChannel = false;
-        }
+        this.drumChannel = isDrum;
+        // Update transpose (clear on drums)
+        this.keyShift(this._midiParameters.keyShift, false);
     }
 
     protected addDefaultVibrato() {
