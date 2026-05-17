@@ -119,6 +119,7 @@ export class SoundBankManager {
      * @param patch The MIDI patch to search for.
      * @param system The MIDI system to select the preset for.
      * @returns An object containing the preset and its bank offset.
+     * @internal
      */
     public getPreset(
         patch: MIDIPatch,
