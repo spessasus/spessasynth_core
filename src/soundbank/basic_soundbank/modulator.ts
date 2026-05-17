@@ -338,7 +338,7 @@ const defaultSpessaSynthModulators = [
         DEFAULT_RESONANT_MOD_SOURCE,
         0x0, // No controller
         GeneratorTypes.initialFilterQ,
-        200,
+        250,
         0
     ),
 
