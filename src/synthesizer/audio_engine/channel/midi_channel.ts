@@ -52,7 +52,6 @@ import type { MIDISystem } from "../../../soundbank/types";
  */
 export class MIDIChannel {
     /**
-     * @internal
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
      * such as volume, pan, modulation, etc.
@@ -80,14 +79,6 @@ export class MIDIChannel {
     public readonly lockedControllers: readonly boolean[] = new Array(
         CONTROLLER_TABLE_SIZE
     ).fill(false) as boolean[];
-    /**
-     * An array of octave tuning values for each note on the channel.
-     * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
-     * Note: Repeated every 12 notes.
-     * @internal
-     */
-    public readonly octaveTuning: Int8Array = new Int8Array(128);
-
     /**
      * Parameters for each drum instrument.
      * @internal
@@ -170,11 +161,6 @@ export class MIDIChannel {
      */
     public readonly lockController: typeof lockController =
         lockController.bind(this);
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-     */
     // MIDI messages
     /**
      * Sends a "MIDI Note on" message and starts a note.
@@ -183,7 +169,11 @@ export class MIDIChannel {
      * @internal
      */
     public readonly noteOn = noteOn.bind(this);
-
+    /*
+    =================
+    END OF PUBLIC API
+    =================
+     */
     /**
      * Releases a note by its MIDI note number.
      * If the note is in high performance mode and the channel is not a drum channel,
@@ -231,6 +221,12 @@ export class MIDIChannel {
      * @internal
      */
     public readonly renderVoice = renderVoice.bind(this);
+    /**
+     * An array of octave tuning values for each note on the channel.
+     * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
+     * Note: Repeated every 12 notes.
+     */
+    protected readonly octaveTuning: Int8Array = new Int8Array(128);
     /**
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      * Reset controllers according to RP-15 Recommended Practice.
