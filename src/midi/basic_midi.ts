@@ -23,7 +23,6 @@ import type {
     TimelineEvent
 } from "./types";
 import {
-    applySnapshotInternal,
     modifyMIDIInternal,
     type ModifyMIDIOptions
 } from "./midi_tools/modify_midi";
@@ -41,6 +40,7 @@ import type { SoundBankManager } from "../synthesizer/audio_engine/sound_bank_ma
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { parseRMIDIInternal } from "./read/rmidi";
 import { loadXMF } from "./read/xmf";
+import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
