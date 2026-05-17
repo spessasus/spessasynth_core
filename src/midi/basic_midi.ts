@@ -719,7 +719,11 @@ export class BasicMIDI {
                                 // Touhou
                                 case 2:
                                 // RPG Maker
-                                case 111:
+                                case 111: {
+                                    // For Touhou and RPG Maker, the data value must be 0.
+                                    if (e.data[1] === 0) loopStart = e.ticks;
+                                    break;
+                                }
                                 // EMIDI/XMI
                                 case 116: {
                                     loopStart = e.ticks;
@@ -730,7 +734,13 @@ export class BasicMIDI {
                                 case 4:
                                 // EMIDI/XMI
                                 case 117: {
-                                    if (loopEnd === null) {
+                                    // For Touhou loops, the data value must be 0.
+                                    if (
+                                        loopEnd === null &&
+                                        (e.data[0] !== 4 ||
+                                            (e.data[0] === 4 &&
+                                                e.data[1] === 0))
+                                    ) {
                                         loopType = "soft";
                                         loopEnd = e.ticks;
                                     } else {
@@ -738,6 +748,7 @@ export class BasicMIDI {
                                         // This means
                                         // That it doesn't indicate the loop
                                         loopEnd = 0;
+                                        loopType = "hard";
                                     }
                                     break;
                                 }
