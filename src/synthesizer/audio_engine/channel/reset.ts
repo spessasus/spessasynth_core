@@ -1,4 +1,9 @@
-import { CONTROLLER_TABLE_SIZE, DEFAULT_PERCUSSION } from "../synth_constants";
+import {
+    CONTROLLER_TABLE_SIZE,
+    DEFAULT_NRPN,
+    DEFAULT_PERCUSSION,
+    DEFAULT_RPN
+} from "../synth_constants";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { MIDIChannel } from "./midi_channel";
@@ -40,10 +45,10 @@ setResetValue(MIDIControllers.vibratoDelay, 64);
 setResetValue(MIDIControllers.generalPurposeController6, 64);
 setResetValue(MIDIControllers.generalPurposeController8, 64);
 
-setResetValue(MIDIControllers.registeredParameterLSB, 127);
-setResetValue(MIDIControllers.registeredParameterMSB, 127);
-setResetValue(MIDIControllers.nonRegisteredParameterLSB, 127);
-setResetValue(MIDIControllers.nonRegisteredParameterMSB, 127);
+setResetValue(MIDIControllers.registeredParameterLSB, DEFAULT_RPN);
+setResetValue(MIDIControllers.registeredParameterMSB, DEFAULT_RPN);
+setResetValue(MIDIControllers.nonRegisteredParameterLSB, DEFAULT_NRPN);
+setResetValue(MIDIControllers.nonRegisteredParameterMSB, DEFAULT_NRPN);
 
 export const DEFAULT_DRUM_REVERB = new Int8Array(128).fill(127);
 // Kicks have no reverb
@@ -126,10 +131,14 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     // Reset Parameters (do not emit controller change)
     // We reset them here since in the loop, the data entries would come before params
     this.lastParameterIsRegistered = true;
-    this.midiControllers[MIDIControllers.nonRegisteredParameterLSB] = 127 << 7;
-    this.midiControllers[MIDIControllers.nonRegisteredParameterMSB] = 127 << 7;
-    this.midiControllers[MIDIControllers.registeredParameterLSB] = 127 << 7;
-    this.midiControllers[MIDIControllers.registeredParameterMSB] = 127 << 7;
+    this.midiControllers[MIDIControllers.nonRegisteredParameterLSB] =
+        DEFAULT_NRPN << 7;
+    this.midiControllers[MIDIControllers.nonRegisteredParameterMSB] =
+        DEFAULT_NRPN << 7;
+    this.midiControllers[MIDIControllers.registeredParameterLSB] =
+        DEFAULT_RPN << 7;
+    this.midiControllers[MIDIControllers.registeredParameterMSB] =
+        DEFAULT_RPN << 7;
     this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
     this.midiControllers[MIDIControllers.dataEntryLSB] = 0;
 

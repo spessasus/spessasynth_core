@@ -123,18 +123,24 @@ export class SpessaLog {
     /**
      * @internal
      */
-    public static coolInfo(what: string, value: number | string, unit = "") {
+    public static coolInfo(
+        what: string,
+        value: number | string | boolean,
+        unit = ""
+    ) {
         if (!this.infoEnabled) return;
         if (unit)
             SpessaLog.info(
-                `%c${what} is now set to %c${value}%c ${unit}.`,
+                `%c${what}%c is now set to %c${value}%c ${unit}.`,
+                ConsoleColors.recognized,
                 ConsoleColors.info,
                 ConsoleColors.value,
                 ConsoleColors.info
             );
         else
             SpessaLog.info(
-                `%c${what} is now set to %c${value}%c.`,
+                `%c${what}%c is now set to %c${value}%c.`,
+                ConsoleColors.recognized,
                 ConsoleColors.info,
                 ConsoleColors.value,
                 ConsoleColors.info

@@ -1,4 +1,3 @@
-import { ConsoleColors } from "../../../utils/other";
 import {
     type GeneratorType,
     GeneratorTypes
@@ -102,9 +101,10 @@ export function handleAWE32NRPN(
     dataValue -= 8192;
     const generator = AWE_NRPN_GENERATOR_MAPPINGS[paramLSB];
     if (!generator) {
-        SpessaLog.warn(
-            `Invalid AWE32 LSB: %c${paramLSB}%`,
-            ConsoleColors.unrecognized
+        SpessaLog.unsupported(
+            `AWE32 LSB for ${this.channel}`,
+            [paramLSB],
+            "Invalid Generator Number"
         );
     }
     let milliseconds, hertz, centibels, cents;

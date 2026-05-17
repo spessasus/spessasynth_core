@@ -57,3 +57,12 @@ export const EFX_SENDS_GAIN_CORRECTION = 1 / Math.cos(Math.PI / 4) ** 2;
  * The amount of MIDI controllers (127)
  */
 export const CONTROLLER_TABLE_SIZE = 128;
+
+/**
+ * RPN NULL per MIDI spec.
+ */
+export const DEFAULT_RPN = 0x7f;
+/**
+ * No NRPN is bound to 0 0, while 0x7f MSB is AWE32!
+ */
+export const DEFAULT_NRPN = 0;

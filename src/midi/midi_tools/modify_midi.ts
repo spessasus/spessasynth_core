@@ -16,7 +16,6 @@ import {
     MIDIMessageTypes
 } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
-import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/synthesizer_snapshot";
 import {
     type MIDIPatch,
     MIDIPatchTools
@@ -30,6 +29,7 @@ import type {
 import { MIDIUtils } from "./midi_utils";
 import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
+import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/synthesizer_snapshot";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -84,9 +84,9 @@ function getControllerChange(
  * - `clear` - clear all changes of this parameter from the MIDI file.
  * - T - clear all changes of this parameter from the MIDI file and add T.
  */
-type ClearableParameter<T> = T | "clear";
+export type ClearableParameter<T> = T | "clear";
 
-interface ChannelModification {
+export interface ChannelModification {
     /**
      * All controllers that should be modified for this channel.
      * - Key: the MIDI controller number.
@@ -240,8 +240,21 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         // RPN/NRPN tracking
         param: ParameterTracker;
         // If the parameters (MSB, LSB and the first data) were cleared.
-        // Then we see the second data and only clean it.
-        clearedParams: boolean;
+        // Some MIDIs send param MSB once and then set via LSB only, like:
+        // MSB,
+        // LSB,
+        // Data,
+        // LSB,
+        // Data,
+        // And even though it violates MIDI 1.0, it works...
+        clearedParams: {
+            // Param LSB
+            pLSB: boolean;
+            // Param MSB
+            pMSB: boolean;
+            // Data (any)
+            data: boolean;
+        };
 
         // Semitones, for easier access rather than having to do "?? 0"
         keyShift: number;
@@ -256,7 +269,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         channelStatuses.push({
             isFirstNoteOn: true,
             param: new ParameterTracker(i),
-            clearedParams: false,
+            clearedParams: {
+                pLSB: true,
+                pMSB: true,
+                data: true
+            },
             keyShift: channelChanges.get(i)?.keyShift ?? 0,
             fineTune: channelChanges.get(i)?.fineTune ?? 0
         });
@@ -273,27 +290,68 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
 
         const deleteParameter = (channel: number) => {
             const ch = channelStatuses[channel];
-            if (ch.clearedParams) {
-                // Just this (probably data LSB)
-                // But it could also be MSB...
-                // Why isn't RPN just a single message?
-                // Broadcast System Exclusives were made just for this.
-                deleteThisEvent();
-                ch.clearedParams = false;
-            } else {
-                // Delete param + data
-                // We don't wait for lsb as it's not required to arrive :-(
-                // Why, MIDI, why are you like this?
-                // Now I have to handle this complex mess that has to work for either single or double data...
-                // At least both params are guaranteed be sent.
+
+            // Delete the parameter selection pair + the data entry that we're currently processing.
+            // We don't wait for lsb as it's not required to arrive :-(
+            // Why, MIDI, why are you like this?
+            // Now I have to handle this complex mess that has to work for either single or double data...
+            // And both parameters aren't even required to be sent! Well, they are! But some files don't care.
+            // And Sound Canvases don't seem to care either...
+
+            // Testcase: MIDI_Jam & Spoon_Right In The Night.mid, channel 12.
+            // That's why we track what we can and can't delete.
+            const p = ch.param;
+            const msb = p.paramMSB;
+            const lsb = p.paramLSB;
+
+            SpessaLog.info(
+                `%cClearing Non/Registered Parameter on ${channel}. ` +
+                    `Clear MSB: %c${ch.clearedParams.pMSB}%c, ` +
+                    `clear LSB: %c${ch.clearedParams.pLSB}%c, ` +
+                    `clear data: %c${ch.clearedParams.data}.`,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info,
+                ConsoleColors.recognized
+            );
+
+            // Delete the current data entry event first.
+            // This is safe because it's the event currently being processed in the loop,
+            // Meaning its index is always higher than or equal
+            // To the cached MSB/LSB (on a different track).
+            if (!ch.clearedParams.data) {
                 deleteThisEvent();
 
-                const p = ch.param;
-                midi.tracks[p.paramMSB.track].deleteEvent(p.paramMSB.event);
-                eventIndexes[p.paramMSB.track]--;
-                midi.tracks[p.paramLSB.track].deleteEvent(p.paramLSB.event);
-                eventIndexes[p.paramLSB.track]--;
-                ch.clearedParams = true;
+                // Shift the events down if they are on the same track (very likely)
+                if (trackNum === msb.track && index < msb.event) msb.event--;
+                if (trackNum === lsb.track && index < lsb.event) lsb.event--;
+
+                // Flag data as deleted
+                ch.clearedParams.data = true;
+            }
+
+            if (!ch.clearedParams.pMSB) {
+                // Delete data MSB
+                midi.tracks[msb.track].deleteEvent(msb.event);
+                eventIndexes[msb.track]--;
+
+                // Shift the LSB down if they are on the same track (very likely)
+                if (msb.track === lsb.track && msb.event < lsb.event)
+                    lsb.event--;
+
+                // Flag MSB as deleted
+                ch.clearedParams.pMSB = true;
+            }
+
+            if (!ch.clearedParams.pLSB) {
+                // Delete data LSB
+                midi.tracks[lsb.track].deleteEvent(lsb.event);
+                eventIndexes[lsb.track]--;
+
+                // Flag LSB as deleted
+                ch.clearedParams.pLSB = true;
             }
         };
 
@@ -511,7 +569,15 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         case MIDIControllers.registeredParameterMSB:
                         case MIDIControllers.nonRegisteredParameterMSB:
                         case MIDIControllers.nonRegisteredParameterLSB: {
-                            channelStatus.clearedParams = false;
+                            // Flag the parameter as not cleaned
+                            if (
+                                ccNum ===
+                                    MIDIControllers.nonRegisteredParameterLSB ||
+                                ccNum === MIDIControllers.registeredParameterLSB
+                            )
+                                channelStatus.clearedParams.pLSB = false;
+                            else channelStatus.clearedParams.pMSB = false;
+
                             channelStatus.param.controllerChange(
                                 ccNum,
                                 value,
@@ -523,6 +589,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
 
                         case MIDIControllers.dataEntryMSB:
                         case MIDIControllers.dataEntryLSB: {
+                            channelStatus.clearedParams.data = false;
                             const data = channelStatus.param.controllerChange(
                                 ccNum,
                                 value,
@@ -587,6 +654,18 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                     return;
                                 }
                             }
+
+                            // If the parameters (MSB, LSB and the first data) were cleared.
+                            // Some MIDIs send param MSB once and then set via LSB only, like:
+                            // MSB,
+                            // LSB,
+                            // Data,
+                            // LSB,
+                            // Data,
+                            // And even though it violates MIDI 1.0, it works...
+                            // So since we've used those, mark them as "cleaned" so future LSB-only entries won't delete them.
+                            channelStatus.clearedParams.pLSB = true;
+                            channelStatus.clearedParams.pMSB = true;
                             return;
                         }
 
@@ -697,7 +776,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         );
                         const syxStatus =
                             channelStatuses[syx.channel + portOffset];
-                        if (channelStatus.isFirstNoteOn && syxChannel) {
+                        if (syxStatus.isFirstNoteOn && syxChannel) {
                             // No note-on yet. Then use it as relative!
                             const newTune = syxStatus.fineTune + syx.value;
                             syxStatus.keyShift += Math.trunc(newTune / 100);

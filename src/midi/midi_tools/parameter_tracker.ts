@@ -1,5 +1,9 @@
 import { type MIDIController, MIDIControllers } from "../enums";
 import { MIDIUtils } from "./midi_utils";
+import {
+    DEFAULT_NRPN,
+    DEFAULT_RPN
+} from "../../synthesizer/audio_engine/synth_constants";
 
 interface ParameterController {
     /**
@@ -21,22 +25,22 @@ interface ParameterController {
  */
 export class ParameterTracker {
     public rpnMSB: ParameterController = {
-        v: 0x7f,
+        v: DEFAULT_RPN,
         track: 0,
         event: 0
     };
     public rpnLSB: ParameterController = {
-        v: 0x7f,
+        v: DEFAULT_RPN,
         track: 0,
         event: 0
     };
     public nrpnMSB: ParameterController = {
-        v: 0x7f,
+        v: DEFAULT_NRPN,
         track: 0,
         event: 0
     };
     public nrpnLSB: ParameterController = {
-        v: 0x7f,
+        v: DEFAULT_NRPN,
         track: 0,
         event: 0
     };
@@ -67,12 +71,11 @@ export class ParameterTracker {
 
     public reset() {
         this.isRegistered = true;
-        this.rpnLSB.v = 0x7f;
-        this.rpnMSB.v = 0x7f;
-        this.nrpnMSB.v = 0x7f;
-        this.nrpnLSB.v = 0x7f;
-        this.dataLSB.v = 0;
-        this.dataMSB.v = 0;
+        this.rpnLSB.v = DEFAULT_RPN;
+        this.rpnMSB.v = DEFAULT_RPN;
+        this.nrpnMSB.v = DEFAULT_NRPN;
+        this.nrpnLSB.v = DEFAULT_NRPN;
+        this.resetData();
     }
 
     public controllerChange(
@@ -83,6 +86,7 @@ export class ParameterTracker {
     ) {
         switch (cc) {
             case MIDIControllers.registeredParameterMSB: {
+                this.resetData();
                 this.isRegistered = true;
                 this.rpnMSB = {
                     v,
@@ -93,6 +97,7 @@ export class ParameterTracker {
             }
 
             case MIDIControllers.registeredParameterLSB: {
+                this.resetData();
                 this.isRegistered = true;
                 this.rpnLSB = {
                     v,
@@ -103,6 +108,7 @@ export class ParameterTracker {
             }
 
             case MIDIControllers.nonRegisteredParameterMSB: {
+                this.resetData();
                 this.isRegistered = false;
                 this.nrpnMSB = {
                     v,
@@ -113,6 +119,7 @@ export class ParameterTracker {
             }
 
             case MIDIControllers.nonRegisteredParameterLSB: {
+                this.resetData();
                 this.isRegistered = false;
                 this.nrpnLSB = {
                     v,
@@ -141,6 +148,15 @@ export class ParameterTracker {
             }
         }
         return undefined;
+    }
+
+    private resetData() {
+        // We call this in parameter set because
+        // This is technically not a MIDI behavior,
+        // But some MIDI files only send MSB data:
+        // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
+        this.dataLSB.v = 0;
+        this.dataMSB.v = 0;
     }
 
     private analyze() {
