@@ -12,7 +12,10 @@ import {
 } from "../enums";
 import type { SoundBankManager } from "../../synthesizer/audio_engine/sound_bank_manager";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import type { MIDISystem } from "../../soundbank/types";
+import type {
+    MIDISystem,
+    PresetsWithKeyCombinations
+} from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
 
 interface InternalChannelType {
@@ -27,13 +30,13 @@ interface InternalChannelType {
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank.
  * @param mid
- * @param soundBank  the sound bank.
- * @returns  Map<patch, Set<key-velocity>>.
+ * @param soundBank the sound bank.
+ * @returns  Map<patch, Map<midiNote, Set<velocity>>>
  */
 export function getUsedProgramsAndKeys(
     mid: BasicMIDI,
     soundBank: BasicSoundBank | SoundBankManager
-) {
+): PresetsWithKeyCombinations {
     SpessaLog.groupCollapsed(
         "%cSearching for all used programs and keys...",
         ConsoleColors.info
@@ -81,9 +84,12 @@ export function getUsedProgramsAndKeys(
 
     /**
      * Find all programs used and key-velocity combos in them
-     * bank:program each has a set of midiNote-velocity
+     * bank:program each has a map of midiNote -> set of velocities.
      */
-    const usedProgramsAndKeys = new Map<BasicPreset, Set<string>>();
+    const usedProgramsAndKeys = new Map<
+        BasicPreset,
+        Map<number, Set<number>>
+    >();
 
     const ports = mid.tracks.map((t) => t.port);
 
@@ -194,15 +200,21 @@ export function getUsedProgramsAndKeys(
                 // If there's no preset, ignore
                 if (!ch.preset) continue;
 
-                let combos = usedProgramsAndKeys.get(ch.preset);
-                if (!combos) {
-                    combos = new Set<string>();
-                    usedProgramsAndKeys.set(ch.preset, combos);
+                // Add the preset to the used list if it does not exist
+                let keysForPreset = usedProgramsAndKeys.get(ch.preset);
+                if (!keysForPreset) {
+                    keysForPreset = new Map<number, Set<number>>();
+                    usedProgramsAndKeys.set(ch.preset, keysForPreset);
                 }
 
                 const midiNote = e.data[0] + masterKeyShift + ch.keyShift;
-
-                combos.add(`${midiNote}-${e.data[1]}`);
+                let velocities = keysForPreset.get(midiNote);
+                // Add the key with an empty list of velocities to the preset
+                if (!velocities) {
+                    velocities = new Set<number>();
+                    keysForPreset.set(midiNote, velocities);
+                }
+                velocities.add(e.data[1]);
                 break;
             }
 
@@ -301,8 +313,8 @@ export function getUsedProgramsAndKeys(
         }
     }
 
-    for (const [preset, combos] of usedProgramsAndKeys.entries()) {
-        if (combos.size === 0) {
+    for (const [preset, keysForPreset] of usedProgramsAndKeys.entries()) {
+        if (keysForPreset.size === 0) {
             SpessaLog.info(
                 `%cDetected change but no keys for %c${preset.name}`,
                 ConsoleColors.info,

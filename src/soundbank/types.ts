@@ -285,8 +285,13 @@ export interface DLSLoop {
 }
 
 /**
- * Key - the preset
- * Value - the set of key combinations, stored as `{key}-{velocity}` string.
+ * - Key - the preset.
+ * - Value - A Map:
+ *   - Key: The MIDI note number.
+ *   - Value: A set of matching velocities for this note number.
  */
-export type PresetsWithKeyCombinations = Map<BasicPreset, Set<string>>;
+export type PresetsWithKeyCombinations = Map<
+    BasicPreset,
+    Map<number, Set<number>>
+>;
 export type MIDISystem = "gm" | "gm2" | "gs" | "xg";

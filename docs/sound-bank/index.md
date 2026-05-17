@@ -314,14 +314,14 @@ Trims a sound bank to only contain samples in a given MIDI file.
 soundBank.trim(presetData);
 ```
 
-- `presetData` - `PresetsWithKeyCombinations` - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
+- `presetData` - `PresetWithKeyCombinations` which is `Map<BasicPreset, Map<number, Set<number>>`.
   Absent presets will be removed from the sound bank,
   and samples that don't get activated in the remaining presets will be removed as well.
 
 !!! Note
 
     This exact type is returned from [`getUsedProgramsAndKeys`](../midi/index.md#getusedprogramsandkeys)
-    in the `BasicMIDI` class.
+    in the `BasicMIDI` class. See that for more explanation
 
 ### removeUnusedElements
 

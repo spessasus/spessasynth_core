@@ -417,7 +417,7 @@ export class BasicSoundBank {
     public trim(presetData: PresetsWithKeyCombinations) {
         const trimInstrumentZones = (
             instrument: BasicInstrument,
-            combos: { key: number; velocity: number }[]
+            keyCombos: Map<number, Set<number>>
         ): number => {
             let trimmedIZones = 0;
             for (
@@ -429,18 +429,22 @@ export class BasicSoundBank {
                 const iKeyRange = iZone.keyRange;
                 const iVelRange = iZone.velRange;
                 let isIZoneUsed = false;
-                for (const iCombo of combos) {
+                for (const [key, velocities] of keyCombos) {
+                    // Check if the key range matches and if any of the velocities match as well
                     if (
-                        iCombo.key >= iKeyRange.min &&
-                        iCombo.key <= iKeyRange.max &&
-                        iCombo.velocity >= iVelRange.min &&
-                        iCombo.velocity <= iVelRange.max
+                        key >= iKeyRange.min &&
+                        key <= iKeyRange.max &&
+                        [...velocities].some(
+                            (velocity) =>
+                                velocity >= iVelRange.min &&
+                                velocity <= iVelRange.max
+                        )
                     ) {
                         isIZoneUsed = true;
                         break;
                     }
                 }
-                if (!isIZoneUsed && iZone.sample) {
+                if (!isIZoneUsed) {
                     SpessaLog.info(
                         `%c${iZone.sample.name}%c removed from %c${instrument.name}%c.`,
                         ConsoleColors.recognized,
@@ -478,8 +482,8 @@ export class BasicSoundBank {
             presetIndex++
         ) {
             const p = this.presets[presetIndex];
-            const used = presetData.get(p);
-            if (used === undefined) {
+            const keyCombos = presetData.get(p);
+            if (keyCombos === undefined) {
                 SpessaLog.info(
                     `%cDeleting preset %c${p.name}%c and its zones`,
                     ConsoleColors.info,
@@ -489,19 +493,12 @@ export class BasicSoundBank {
                 this.deletePreset(p);
                 presetIndex--;
             } else {
-                const combos = [...used].map((s) => {
-                    const split = s.split("-");
-                    return {
-                        key: Number.parseInt(split[0]),
-                        velocity: Number.parseInt(split[1])
-                    };
-                });
                 SpessaLog.groupCollapsed(
                     `%cTrimming %c${p.name}`,
                     ConsoleColors.info,
                     ConsoleColors.recognized
                 );
-                SpessaLog.info(`Keys for ${p.name}:`, combos);
+                SpessaLog.info(`Keys for ${p.name}:`, keyCombos);
                 let trimmedZones = 0;
                 // Clean the preset to only use zones that are used
                 for (
@@ -512,24 +509,28 @@ export class BasicSoundBank {
                     const zone = p.zones[zoneIndex];
                     const keyRange = zone.keyRange;
                     const velRange = zone.velRange;
+
                     // Check if any of the combos matches the zone
                     let isZoneUsed = false;
-                    for (const combo of combos) {
+                    for (const [key, velocities] of keyCombos) {
+                        // Check if the key range matches and if any of the velocities match as well
                         if (
-                            combo.key >= keyRange.min &&
-                            combo.key <= keyRange.max &&
-                            combo.velocity >= velRange.min &&
-                            combo.velocity <= velRange.max &&
-                            zone.instrument
+                            key >= keyRange.min &&
+                            key <= keyRange.max &&
+                            [...velocities].some(
+                                (velocity) =>
+                                    velocity >= velRange.min &&
+                                    velocity <= velRange.max
+                            )
                         ) {
                             // Zone is used, trim the instrument zones
                             isZoneUsed = true;
                             const trimmedIZones = trimInstrumentZones(
                                 zone.instrument,
-                                combos
+                                keyCombos
                             );
                             SpessaLog.info(
-                                `%cTrimmed off %c${trimmedIZones}%c zones from %c${zone.instrument.name}`,
+                                `%cTrimmed off %c${trimmedIZones}%c instrument zones from %c${zone.instrument.name}`,
                                 ConsoleColors.info,
                                 ConsoleColors.recognized,
                                 ConsoleColors.info,
@@ -538,7 +539,7 @@ export class BasicSoundBank {
                             break;
                         }
                     }
-                    if (!isZoneUsed && zone.instrument) {
+                    if (!isZoneUsed) {
                         trimmedZones++;
                         p.deleteZone(zoneIndex);
                         if (zone.instrument.useCount < 1) {
@@ -548,7 +549,7 @@ export class BasicSoundBank {
                     }
                 }
                 SpessaLog.info(
-                    `%cTrimmed off %c${trimmedZones}%c zones from %c${p.name}`,
+                    `%cTrimmed off %c${trimmedZones}%c preset zones from %c${p.name}`,
                     ConsoleColors.info,
                     ConsoleColors.recognized,
                     ConsoleColors.info,

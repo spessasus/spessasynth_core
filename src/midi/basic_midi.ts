@@ -354,7 +354,7 @@ export class BasicMIDI {
     /**
      * Gets the used programs and keys for this MIDI file with a given sound bank.
      * @param soundbank the sound bank.
-     * @returns The output data is a key-value pair: preset -> Set<"key-velocity">
+     * @returns The output data is a key-value pair: preset -> Map<midiNote, Set<velocity>>
      */
     public getUsedProgramsAndKeys(
         soundbank: BasicSoundBank | SoundBankManager
@@ -372,16 +372,17 @@ export class BasicMIDI {
         SpessaLog.groupCollapsed(`%cPreloading samples...`, ConsoleColors.info);
         // Smart preloading: load only samples used in the midi!
         const used = this.getUsedProgramsAndKeys(synth.soundBankManager);
-        for (const [preset, combos] of used.entries()) {
+        for (const [preset, keys] of used.entries()) {
             SpessaLog.info(
                 `%cPreloading used samples on %c${preset.name}%c...`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
                 ConsoleColors.info
             );
-            for (const combo of combos) {
-                const [midiNote, velocity] = combo.split("-").map(Number);
-                synth.getVoicesForPreset(preset, midiNote, velocity);
+            for (const [midiNote, velocities] of keys.entries()) {
+                for (const velocity of velocities) {
+                    synth.getVoicesForPreset(preset, midiNote, velocity);
+                }
             }
         }
         SpessaLog.groupEnd();

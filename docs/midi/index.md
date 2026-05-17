@@ -284,11 +284,12 @@ const used = midi.getUsedProgramsAndKeys(soundBank);
 
 - soundBank - `BasicSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
 
-The returned value is `Map<BasicPreset, Set<string>>`. That is:
+The returned value is `PresetWithKeyCombinations` which is `Map<BasicPreset, Map<number, Set<number>>`. That is:
 
 - The key is a `BasicPreset`, the patch that was used by the song.
-- The value is a `Set` of all unique combinations played on this preset, formatted as `key-velocity`, e.g., `60-120` (
-  key 60, velocity 120)
+- The value is a `Map`, where:
+    - The key is the MIDI note number.
+    - The value is a set of all velocities this key was pressed with.
 
 ### preloadSynth
 
