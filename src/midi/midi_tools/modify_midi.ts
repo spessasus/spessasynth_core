@@ -194,6 +194,9 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     // Go through all events one by one
     let system: MIDISystem = "gs";
     let addedGs = false;
+    // Track reset position to insert effects right after
+    let resetTrack = 0;
+    let resetIndex = 0;
 
     // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
     /**
@@ -684,8 +687,20 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                             "%cXG system on detected",
                             ConsoleColors.info
                         );
+
                         system = "xg";
                         addedGs = true; // Flag as true so gs won't get added
+                        resetTrack = trackNum;
+                        resetIndex = index;
+                        // Reset NRPN (accuracy + prevent deletion before reset)
+                        for (const ch of channelStatuses) {
+                            ch.param.reset();
+                            ch.clearedParams = {
+                                pLSB: true,
+                                pMSB: true,
+                                data: true
+                            };
+                        }
                         return;
                     }
 
@@ -694,19 +709,43 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                             "%cGM2 system on detected",
                             ConsoleColors.info
                         );
+
                         system = "gm2";
                         addedGs = true; // Flag as true so gs won't get added
+                        resetTrack = trackNum;
+                        resetIndex = index;
+                        // Reset NRPN (accuracy + prevent deletion before reset)
+                        for (const ch of channelStatuses) {
+                            ch.param.reset();
+                            ch.clearedParams = {
+                                pLSB: true,
+                                pMSB: true,
+                                data: true
+                            };
+                        }
                         return;
                     }
 
                     case "GS Reset": {
                         // Check for GS on
                         // That's a GS on, we're done here
-                        addedGs = true;
                         SpessaLog.info(
                             "%cGS on detected!",
                             ConsoleColors.recognized
                         );
+
+                        addedGs = true;
+                        resetTrack = trackNum;
+                        resetIndex = index;
+                        // Reset NRPN (accuracy + prevent deletion before reset)
+                        for (const ch of channelStatuses) {
+                            ch.param.reset();
+                            ch.clearedParams = {
+                                pLSB: true,
+                                pMSB: true,
+                                data: true
+                            };
+                        }
                         return;
                     }
 
@@ -815,13 +854,30 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         }
     });
 
+    // Check for GS reset and insert it to ensure that a reset always exists.
+    if (
+        !addedGs &&
+        [...channelChanges.values()].some((c) => c.patch && c.patch !== "clear")
+    ) {
+        // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)
+        let index = 0;
+        if (
+            midi.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName
+        ) {
+            index++;
+        }
+        midi.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
+        resetTrack = 0;
+        resetIndex = index;
+        SpessaLog.info("%cGS on not detected. Adding it.", ConsoleColors.info);
+    }
+
     // Add effects
-    const targetTicks = Math.max(0, midi.firstNoteOn - 10);
-    const targetTrack = midi.tracks[0];
-    const targetIndex = Math.max(
-        0,
-        targetTrack.events.findIndex((m) => m.ticks >= targetTicks) - 1
-    );
+    const targetTicks = Math.max(0, midi.firstNoteOn);
+    // Insert right after reset
+    const targetTrack = midi.tracks[resetTrack];
+    const targetIndex = resetIndex + 1;
+
     if (reverbParams && reverbParams !== "clear") {
         const m = reverbAddressMap;
         const p = reverbParams;
@@ -942,22 +998,6 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                 p.type & 0x7f
             ])
         );
-    }
-
-    // Check for gs
-    if (
-        !addedGs &&
-        [...channelChanges.values()].some((c) => c.patch && c.patch !== "clear")
-    ) {
-        // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)
-        let index = 0;
-        if (
-            midi.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName
-        ) {
-            index++;
-        }
-        midi.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
-        SpessaLog.info("%cGS on not detected. Adding it.", ConsoleColors.info);
     }
     midi.flush();
     SpessaLog.groupEnd();
