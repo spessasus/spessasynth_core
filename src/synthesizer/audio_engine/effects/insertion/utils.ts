@@ -20,21 +20,21 @@ const MIN_PAN = -64;
 const MAX_PAN = 63;
 const PAN_RESOLUTION = MAX_PAN - MIN_PAN;
 // Initialize pan lookup tables
-export const panTableLeft = new Float32Array(PAN_RESOLUTION + 1);
-export const panTableRight = new Float32Array(PAN_RESOLUTION + 1);
+export const PAN_TABLE_LEFT = new Float32Array(PAN_RESOLUTION + 1);
+export const PAN_TABLE_RIGHT = new Float32Array(PAN_RESOLUTION + 1);
 for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
     // Clamp to 0-1
     const realPan = (pan - MIN_PAN) / PAN_RESOLUTION;
     const tableIndex = pan - MIN_PAN;
-    panTableLeft[tableIndex] = Math.cos(HALF_PI * realPan);
-    panTableRight[tableIndex] = Math.sin(HALF_PI * realPan);
+    PAN_TABLE_LEFT[tableIndex] = Math.cos(HALF_PI * realPan);
+    PAN_TABLE_RIGHT[tableIndex] = Math.sin(HALF_PI * realPan);
 }
 
 export function zeroState(h: BiquadState) {
     h.x1 = h.x2 = h.y1 = h.y2 = 0;
 }
 
-export const zeroCoeffs = {
+export const ZERO_COEFFS = {
     b0: 1,
     b1: 0,
     b2: 0,
@@ -146,4 +146,4 @@ export function computeShelfCoeffs(
     coeffs.a1 = a1 / a0;
     coeffs.a2 = a2 / a0;
 }
-export const zeroStateC = { x1: 0, x2: 0, y1: 0, y2: 0 };
+export const ZeroStateC = { x1: 0, x2: 0, y1: 0, y2: 0 };

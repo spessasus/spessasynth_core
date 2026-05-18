@@ -1,41 +1,27 @@
 import { readBigEndian } from "./byte_functions/big_endian";
-import { readLittleEndianIndexed } from "./byte_functions/little_endian";
-import { readBinaryStringIndexed } from "./byte_functions/string";
-import { readVariableLengthQuantity } from "./byte_functions/variable_length_quantity";
-import { consoleColors } from "./other";
-import { inflateSync } from "../externals/fflate/fflate_wrapper";
 import {
-    SpessaSynthGroup,
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd,
-    SpessaSynthInfo,
-    SpessaSynthWarn
-} from "./loggin";
+    readLittleEndian,
+    readLittleEndianIndexed
+} from "./byte_functions/little_endian";
+import {
+    readBinaryString,
+    readBinaryStringIndexed
+} from "./byte_functions/string";
+import { readVariableLengthQuantity } from "./byte_functions/variable_length_quantity";
+import { ConsoleColors } from "./other";
+import { inflateSync } from "../externals/fflate/fflate_wrapper"; // You shouldn't use these...
 
 // You shouldn't use these...
-const SpessaSynthCoreUtils = {
-    consoleColors,
-    SpessaSynthInfo,
-    SpessaSynthWarn,
-    SpessaSynthGroupCollapsed,
-    // noinspection JSUnusedGlobalSymbols
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    // noinspection JSUnusedGlobalSymbols
-    readBytesAsUintBigEndian: readBigEndian,
-    readLittleEndian: readLittleEndianIndexed,
-    readBytesAsString: readBinaryStringIndexed,
-    // noinspection JSUnusedGlobalSymbols
+// noinspection JSUnusedGlobalSymbols
+export const SpessaSynthCoreUtils = {
+    ConsoleColors,
+    readBigEndian,
+    readLittleEndian,
+    readLittleEndianIndexed,
+    readBinaryString,
+    readBinaryStringIndexed,
     readVariableLengthQuantity,
     inflateSync
-};
-
-export { SpessaSynthCoreUtils };
-
-export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
-    normalizeAudio: true,
-    loop: undefined,
-    metadata: {}
 };
 
 export interface WaveWriteOptions {
@@ -83,5 +69,5 @@ export interface WaveMetadata {
 
 export { IndexedByteArray } from "./indexed_array";
 export { audioToWav } from "./write_wav";
-export { SpessaSynthLogging } from "./loggin";
+export { SpessaLog } from "./loggin";
 export { type FourCC } from "./riff_chunk";

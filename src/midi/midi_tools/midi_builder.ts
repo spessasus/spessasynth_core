@@ -1,9 +1,13 @@
 import { BasicMIDI } from "../basic_midi";
 import { MIDIMessage } from "../midi_message";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { type MIDIMessageType, midiMessageTypes } from "../enums";
+import {
+    MIDIControllers,
+    type MIDIMessageType,
+    MIDIMessageTypes
+} from "../enums";
 import { MIDITrack } from "../midi_track";
-import type { MIDIFormat } from "../types";
+import type { MIDIFormat, SysExAcceptedArray } from "../types";
 import { fillWithDefaults } from "../../utils/fill_with_defaults";
 
 interface MIDIBuilderOptions {
@@ -63,8 +67,8 @@ export class MIDIBuilder extends BasicMIDI {
         this.binaryName = this.encoder.encode(fullOptions.name);
 
         // Create the first (conductor) track with the file name
-        this.addNewTrack(fullOptions.name);
-        this.addSetTempo(0, fullOptions.initialTempo);
+        this.addTrack(fullOptions.name);
+        this.setTempo(0, fullOptions.initialTempo);
     }
 
     /**
@@ -72,7 +76,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick number of the event.
      * @param tempo the tempo in beats per minute (BPM).
      */
-    public addSetTempo(ticks: number, tempo: number) {
+    public setTempo(ticks: number, tempo: number) {
         const array = new IndexedByteArray(3);
 
         tempo = 60_000_000 / tempo;
@@ -82,7 +86,7 @@ export class MIDIBuilder extends BasicMIDI {
         array[1] = (tempo >> 8) & 0xff;
         array[2] = tempo & 0xff;
 
-        this.addEvent(ticks, 0, midiMessageTypes.setTempo, array);
+        this.addEvent(ticks, 0, MIDIMessageTypes.setTempo, array);
     }
 
     /**
@@ -90,7 +94,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param name the new track's name.
      * @param port the new track's port.
      */
-    public addNewTrack(name: string, port = 0) {
+    public addTrack(name: string, port = 0) {
         if (this.format === 0 && this.tracks.length > 0) {
             throw new Error(
                 "Can't add more tracks to MIDI format 0. Consider using format 1."
@@ -103,10 +107,10 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             0,
             this.tracks.length - 1,
-            midiMessageTypes.trackName,
+            MIDIMessageTypes.trackName,
             this.encoder.encode(name)
         );
-        this.addEvent(0, this.tracks.length - 1, midiMessageTypes.midiPort, [
+        this.addEvent(0, this.tracks.length - 1, MIDIMessageTypes.midiPort, [
             port
         ]);
     }
@@ -116,13 +120,13 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick time of the event (absolute).
      * @param track the track number to use.
      * @param event the MIDI event number.
-     * @param eventData {Uint8Array|Iterable<number>} the raw event data.
+     * @param eventData the raw event data.
      */
     public addEvent(
         ticks: number,
         track: number,
         event: MIDIMessageType,
-        eventData: Uint8Array | Iterable<number>
+        eventData: ArrayLike<number>
     ) {
         if (!this.tracks[track]) {
             throw new Error(
@@ -130,7 +134,7 @@ export class MIDIBuilder extends BasicMIDI {
             );
         }
         if (
-            event >= midiMessageTypes.noteOff && // Voice event
+            event >= MIDIMessageTypes.noteOff && // Voice event
             this.format === 1 &&
             track === 0
         ) {
@@ -152,7 +156,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param midiNote the midi note of the keypress.
      * @param velocity the velocity of the keypress.
      */
-    public addNoteOn(
+    public noteOn(
         ticks: number,
         track: number,
         channel: number,
@@ -165,7 +169,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.noteOn | channel) as MIDIMessageType,
+            (MIDIMessageTypes.noteOn | channel) as MIDIMessageType,
             [midiNote, velocity]
         );
     }
@@ -179,7 +183,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param midiNote the midi note of the key release.
      * @param velocity optional and unsupported by spessasynth.
      */
-    public addNoteOff(
+    public noteOff(
         ticks: number,
         track: number,
         channel: number,
@@ -191,7 +195,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.noteOff | channel) as MIDIMessageType,
+            (MIDIMessageTypes.noteOff | channel) as MIDIMessageType,
             [midiNote, velocity]
         );
     }
@@ -204,7 +208,7 @@ export class MIDIBuilder extends BasicMIDI {
      * @param channel the channel to use.
      * @param programNumber the MIDI program to use.
      */
-    public addProgramChange(
+    public programChange(
         ticks: number,
         track: number,
         channel: number,
@@ -215,7 +219,7 @@ export class MIDIBuilder extends BasicMIDI {
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.programChange | channel) as MIDIMessageType,
+            (MIDIMessageTypes.programChange | channel) as MIDIMessageType,
             [programNumber]
         );
     }
@@ -226,24 +230,24 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick time of the event.
      * @param track the track number to use.
      * @param channel the channel to use.
-     * @param controllerNumber the MIDI CC to use.
-     * @param controllerValue the new CC value.
+     * @param controller the MIDI CC to use.
+     * @param value the new CC value.
      */
-    public addControllerChange(
+    public controllerChange(
         ticks: number,
         track: number,
         channel: number,
-        controllerNumber: number,
-        controllerValue: number
+        controller: number,
+        value: number
     ) {
         channel %= 16;
-        controllerNumber %= 128;
-        controllerValue %= 128;
+        controller %= 128;
+        value %= 128;
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.controllerChange | channel) as MIDIMessageType,
-            [controllerNumber, controllerValue]
+            (MIDIMessageTypes.controllerChange | channel) as MIDIMessageType,
+            [controller, value]
         );
     }
 
@@ -253,24 +257,128 @@ export class MIDIBuilder extends BasicMIDI {
      * @param ticks the tick time of the event.
      * @param track the track to use.
      * @param channel the channel to use.
-     * @param MSB SECOND byte of the MIDI pitchWheel message.
-     * @param LSB FIRST byte of the MIDI pitchWheel message.
+     * @param pitch the pitch (0 - 16383).
      */
-    public addPitchWheel(
+    public pitchWheel(
         ticks: number,
         track: number,
         channel: number,
-        MSB: number,
-        LSB: number
+        pitch: number
     ) {
         channel %= 16;
-        MSB %= 128;
-        LSB %= 128;
+        pitch %= 16_384;
         this.addEvent(
             ticks,
             track,
-            (midiMessageTypes.pitchWheel | channel) as MIDIMessageType,
-            [LSB, MSB]
+            (MIDIMessageTypes.pitchWheel | channel) as MIDIMessageType,
+            [pitch & 0x7f, (pitch >> 7) & 0x7f]
+        );
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Adds a new System Exclusive.
+     * @param ticks the tick time of the event.
+     * @param track the track to use.
+     * @param data the System Exclusive data, without the 0xf0 status byte.
+     */
+    public systemExclusive(
+        ticks: number,
+        track: number,
+        data: SysExAcceptedArray
+    ) {
+        this.addEvent(ticks, track, MIDIMessageTypes.systemExclusive, data);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Selects a new Registered Parameter Number.
+     * @param ticks the tick time of the events.
+     * @param track the track to use.
+     * @param channel the channel to use.
+     * @param parameter the 14-bit registered parameter number. For example 0 is pitch wheel range.
+     * @param value the 14-bit value for this parameter.
+     */
+    public registeredParameter(
+        ticks: number,
+        track: number,
+        channel: number,
+        parameter: number,
+        value: number
+    ) {
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.registeredParameterMSB,
+            parameter >> 7
+        );
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.registeredParameterLSB,
+            parameter & 0x7f
+        );
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.dataEntryMSB,
+            value >> 7
+        );
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.dataEntryLSB,
+            value & 0x7f
+        );
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Selects a new Non-Registered Parameter Number.
+     * @param ticks the tick time of the events.
+     * @param track the track to use.
+     * @param channel the channel to use.
+     * @param parameter the 14-bit non-registered parameter number
+     * @param value the 14-bit value for this parameter.
+     */
+    public nonRegisteredParameter(
+        ticks: number,
+        track: number,
+        channel: number,
+        parameter: number,
+        value: number
+    ) {
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.nonRegisteredParameterMSB,
+            parameter >> 7
+        );
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.nonRegisteredParameterLSB,
+            parameter & 0x7f
+        );
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.dataEntryMSB,
+            value >> 7
+        );
+        this.controllerChange(
+            ticks,
+            track,
+            channel,
+            MIDIControllers.dataEntryLSB,
+            value & 0x7f
         );
     }
 }

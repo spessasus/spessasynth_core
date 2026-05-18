@@ -3,24 +3,20 @@ import { processTick } from "./process_tick";
 import {
     assignMIDIPortInternal,
     loadNewSequenceInternal
-} from "./song_control";
-import { setTimeToInternal } from "./play";
-
-import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
+} from "./load_new_sequence";
+import { setTimeToInternal } from "./set_time_to";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import {
     type MIDIController,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupEnd,
-    SpessaSynthWarn
-} from "../utils/loggin";
-import { arrayToHexString, consoleColors } from "../utils/other";
+import { arrayToHexString, ConsoleColors } from "../utils/other";
+import { SpessaLog } from "../utils/loggin";
+import type { SysExAcceptedArray } from "../midi/types";
+import { MIDIUtils } from "../midi/exports";
 
 export class SpessaSynthSequencer {
     /**
@@ -89,11 +85,13 @@ export class SpessaSynthSequencer {
      * How long a single MIDI tick currently lasts in seconds.
      */
     protected oneTickToSeconds = 0;
+
     /**
-     * The current event index for each track.
-     * This is used to track which event is currently being processed for each track.
+     * The current event index in the sorted event list.
+     * This is used to track which event is currently being processed.
+     * @protected
      */
-    protected eventIndexes: number[] = [];
+    protected index = 0;
     /**
      * The time that has already been played in the current song.
      */
@@ -109,13 +107,11 @@ export class SpessaSynthSequencer {
      */
     protected absoluteStartTime = 0;
     /**
-     * Currently playing notes (for pausing and resuming)
+     * Currently playing notes, for pressing them after pausing.
+     * Map per channel, key: velocity.
+     * If the `.get()` method returns nothing then this note is not playing.
      */
-    protected playingNotes: {
-        midiNote: number;
-        channel: number;
-        velocity: number;
-    }[] = [];
+    protected readonly playingNotes: Map<number, number>[] = [];
     /**
      * MIDI Port number for each of the MIDI tracks in the current sequence.
      */
@@ -142,7 +138,9 @@ export class SpessaSynthSequencer {
      */
     public constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
-        this.absoluteStartTime = this.synth.currentSynthTime;
+        this.absoluteStartTime = this.synth.currentTime;
+        for (let i = 0; i < 16; i++)
+            this.playingNotes.push(new Map<number, number>());
     }
 
     protected _midiData?: BasicMIDI;
@@ -244,7 +242,7 @@ export class SpessaSynthSequencer {
         }
 
         return (
-            (this.synth.currentSynthTime - this.absoluteStartTime) *
+            (this.synth.currentTime - this.absoluteStartTime) *
             this._playbackRate
         );
     }
@@ -272,7 +270,7 @@ export class SpessaSynthSequencer {
             this.setTimeTicks(this._midiData.firstNoteOn - 1);
             return;
         } else {
-            this.playingNotes = [];
+            for (const ch of this.playingNotes) ch.clear();
             this.callEvent("timeChange", { newTime: time });
             this.setTimeTo(time);
             this.recalculateStartTime(time);
@@ -292,7 +290,7 @@ export class SpessaSynthSequencer {
      */
     public play() {
         if (!this._midiData) {
-            SpessaSynthWarn(
+            SpessaLog.warn(
                 "No songs loaded in the sequencer. Ignoring the play call."
             );
             return;
@@ -308,9 +306,17 @@ export class SpessaSynthSequencer {
             // Adjust the start time
             this.recalculateStartTime(this.pausedTime ?? 0);
         }
-        if (this.retriggerPausedNotes) {
-            for (const n of this.playingNotes) {
-                this.sendMIDINoteOn(n.channel, n.midiNote, n.velocity);
+        // Do not retrigger if external playback is enabled since we're not tracking notes there
+        if (this.retriggerPausedNotes && !this.externalMIDIPlayback) {
+            for (
+                let channel = 0;
+                channel < this.playingNotes.length;
+                channel++
+            ) {
+                const ch = this.playingNotes[channel];
+                for (const [midiNote, velocity] of ch) {
+                    this.sendMIDINoteOn(channel, midiNote, velocity);
+                }
             }
         }
         this.pausedTime = undefined;
@@ -341,13 +347,13 @@ export class SpessaSynthSequencer {
         this.callEvent("songListChange", { newSongList: [...this.songs] });
         // Preload all songs (without embedded sound banks)
         if (this.preload) {
-            SpessaSynthGroup("%cPreloading all songs...", consoleColors.info);
+            SpessaLog.group("%cPreloading all songs...", ConsoleColors.info);
             for (const song of this.songs) {
                 if (song.embeddedSoundBank === undefined) {
                     song.preloadSynth(this.synth);
                 }
             }
-            SpessaSynthGroupEnd();
+            SpessaLog.groupEnd();
         }
 
         this.loadCurrentSong();
@@ -395,52 +401,32 @@ export class SpessaSynthSequencer {
     }
 
     /**
-     * @returns The track number of the next closest event, based on eventIndexes.
-     */
-    protected findFirstEventIndex() {
-        let index = 0;
-        let ticks = Infinity;
-        const tLen = this._midiData!.tracks.length;
-        for (let i = 0; i < tLen; i++) {
-            const track = this._midiData!.tracks[i];
-            if (this.eventIndexes[i] >= track.events.length) {
-                continue;
-            }
-            const event = track.events[this.eventIndexes[i]];
-            if (event.ticks < ticks) {
-                index = i;
-                ticks = event.ticks;
-            }
-        }
-        return index;
-    }
-
-    /**
      * Adds a new port (16 channels) to the synth.
      */
     protected addNewMIDIPort() {
         for (let i = 0; i < 16; i++) {
             this.synth.createMIDIChannel();
+            this.playingNotes.push(new Map<number, number>());
         }
     }
 
     protected sendMIDIMessage(message: number[]) {
         if (!this.externalMIDIPlayback) {
-            SpessaSynthWarn(
+            SpessaLog.warn(
                 `Attempting to send ${arrayToHexString(message)} to the synthesizer via sendMIDIMessage. This shouldn't happen!`
             );
             return;
         }
         this.callEvent("midiMessage", {
             message,
-            time: this.synth.currentSynthTime
+            time: this.synth.currentTime
         });
     }
 
     protected sendMIDIAllOff() {
         // Disable sustain
         for (let i = 0; i < 16; i++) {
-            this.sendMIDICC(i, midiControllers.sustainPedal, 0);
+            this.sendMIDICC(i, MIDIControllers.sustainPedal, 0);
         }
         if (!this.externalMIDIPlayback) {
             this.synth.stopAllChannels();
@@ -448,23 +434,32 @@ export class SpessaSynthSequencer {
         }
         // External
         // Off all playing notes
-        for (const note of this.playingNotes) {
-            this.sendMIDINoteOff(note.channel, note.midiNote);
+        for (let channel = 0; channel < this.playingNotes.length; channel++) {
+            const ch = this.playingNotes[channel];
+            for (const midiNote of ch.keys())
+                this.sendMIDINoteOff(channel, midiNote);
         }
+
         // Send off controllers
-        for (let c = 0; c < MIDI_CHANNEL_COUNT; c++) {
-            this.sendMIDICC(c, midiControllers.allNotesOff, 0);
-            this.sendMIDICC(c, midiControllers.allSoundOff, 0);
+        for (let c = 0; c < 16; c++) {
+            this.sendMIDICC(c, MIDIControllers.allNotesOff, 0);
         }
     }
 
     protected sendMIDIReset() {
         this.sendMIDIAllOff();
         if (!this.externalMIDIPlayback) {
-            this.synth.resetAllControllers();
+            this.synth.reset();
             return;
         }
-        this.sendMIDIMessage([midiMessageTypes.reset]);
+        this.sendMIDISysEx(
+            MIDIUtils.gsData(
+                0x40, // System parameter - Address
+                0x00, // Global mode parameter -  Address
+                0x7f, // MODE SET - Address
+                [0x00] // 00 = GS Reset - Data
+            )
+        );
     }
 
     protected loadCurrentSong() {
@@ -493,7 +488,7 @@ export class SpessaSynthSequencer {
         if (!this._midiData) {
             return;
         }
-        this.playingNotes = [];
+        for (const ch of this.playingNotes) ch.clear();
         const seconds = this._midiData.midiTicksToSeconds(ticks);
         this.callEvent("timeChange", { newTime: seconds });
         const isNotFinished = this.setTimeTo(0, ticks);
@@ -509,7 +504,7 @@ export class SpessaSynthSequencer {
      */
     protected recalculateStartTime(time: number) {
         this.absoluteStartTime =
-            this.synth.currentSynthTime - time / this._playbackRate;
+            this.synth.currentTime - time / this._playbackRate;
     }
 
     /**
@@ -522,26 +517,23 @@ export class SpessaSynthSequencer {
             return;
         }
         this.sendMIDIAllOff();
-        const seconds = this._midiData.midiTicksToSeconds(targetTicks);
+        const m = this._midiData;
+        const seconds = m.midiTicksToSeconds(targetTicks);
         this.callEvent("timeChange", { newTime: seconds });
 
         // Recalculate time and reset indexes
         this.recalculateStartTime(seconds);
         this.playedTime = seconds;
-        this.eventIndexes.length = 0;
-        for (const track of this._midiData.tracks) {
-            const idx = track.events.findIndex((e) => e.ticks >= targetTicks);
-            // Not length - 1 since we want to mark the track as finished
-            this.eventIndexes.push(idx === -1 ? track.events.length : idx);
-        }
+        const idx = m.timeline.findIndex(
+            (e) => m.tracks[e.tr].events[e.ev].ticks >= targetTicks
+        );
+        // Not length - 1 since we want to mark the track as finished
+        this.index = idx === -1 ? m.timeline.length : idx;
 
         // Correct tempo
         // Some softy-looped files (example: th06_06.mid) have slightly mismatched tempos
-        const targetTempo = this._midiData.tempoChanges.find(
-            (t) => t.ticks <= targetTicks
-        )!;
-        this.oneTickToSeconds =
-            60 / (targetTempo.tempo * this._midiData.timeDivision);
+        const targetTempo = m.tempoChanges.find((t) => t.ticks <= targetTicks)!;
+        this.oneTickToSeconds = 60 / (targetTempo.tempo * m.timeDivision);
     }
 
     /*
@@ -559,7 +551,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.noteOn | channel,
+            MIDIMessageTypes.noteOn | channel,
             midiNote,
             velocity
         ]);
@@ -572,7 +564,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.noteOff | channel,
+            MIDIMessageTypes.noteOff | channel,
             midiNote,
             64 // Make sure to send velocity as well
         ]);
@@ -585,10 +577,18 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.controllerChange | channel,
+            MIDIMessageTypes.controllerChange | channel,
             type,
             value
         ]);
+    }
+
+    protected sendMIDISysEx(syx: SysExAcceptedArray) {
+        if (!this.externalMIDIPlayback) {
+            this.synth.systemExclusive(syx);
+            return;
+        }
+        this.sendMIDIMessage([MIDIMessageTypes.systemExclusive, ...syx]);
     }
 
     /**
@@ -603,7 +603,7 @@ export class SpessaSynthSequencer {
         }
         channel %= 16;
         this.sendMIDIMessage([
-            midiMessageTypes.pitchWheel | channel,
+            MIDIMessageTypes.pitchWheel | channel,
             pitch & 0x7f,
             pitch >> 7
         ]);

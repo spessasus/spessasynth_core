@@ -1,5 +1,9 @@
 # 4.0 Migration guide
 
+!!! Danger
+
+    This guide is outdated for versions `4.3.0` and above.
+
 SpessaSynth 4.0 (The TypeScript Update) updates its libraries to ship with TypeScript definitions.
 
 It also includes a few breaking changes which were made to make the API more consistent and logical.

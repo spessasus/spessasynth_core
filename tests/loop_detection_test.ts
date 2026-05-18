@@ -1,5 +1,5 @@
 import { BasicMIDI } from "../src";
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -10,7 +10,7 @@ if (args.length !== 1) {
 const midPath = args[0];
 
 const m = await fs.readFile(midPath);
-const mid = BasicMIDI.fromArrayBuffer(m.buffer as ArrayBuffer);
+const mid = BasicMIDI.fromArrayBuffer(m.buffer);
 
 if (mid.loop.start === mid.firstNoteOn) {
     console.info(`Loop start is using the first note on: ${mid.firstNoteOn}`);

@@ -2,15 +2,15 @@ import type { IndexedByteArray } from "../indexed_array";
 
 /**
  * Reads VLQ from a MIDI byte array.
- * @param MIDIbyteArray the array to read from.
+ * @param midiByteArray the array to read from.
  * @returns the number.
  */
 export function readVariableLengthQuantity(
-    MIDIbyteArray: IndexedByteArray
+    midiByteArray: IndexedByteArray
 ): number {
     let out = 0;
-    while (MIDIbyteArray) {
-        const byte = MIDIbyteArray[MIDIbyteArray.currentIndex++];
+    while (midiByteArray) {
+        const byte = midiByteArray[midiByteArray.currentIndex++];
         // Extract the first 7 bytes
         out = (out << 7) | (byte & 127);
 

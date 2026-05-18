@@ -40,7 +40,7 @@ function addSoundBank(soundBank: BasicSoundBank, id: string, bankOffset = 0) {}
 This method gets a given preset from the sound bank stack.
 
 ```ts
-function getPreset(patch: MIDIPatch, system: SynthSystem) {}
+function getPreset(patch: MIDIPatch, system: MIDISystem) {}
 ```
 
 - patch - the MIDI patch to search for.
@@ -60,11 +60,11 @@ Each item is a preset list entry:
 
 - The properties of a [MIDI Patch](midi-patch.md).
 - `name` - The name of the preset.
-- `isAnyDrums` - if this preset is a drum preset.
+- `isDrum` - if this preset is a drum preset.
 
 !!! Warning
 
-    `isAnyDrums` is the correct way of distinguishing between drum and melodic presets.
+    `isDrum` is the correct way of distinguishing between drum and melodic presets.
 
     _Do not_ use `isGMGSDrum` as the indication!
 

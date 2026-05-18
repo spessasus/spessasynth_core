@@ -1,18 +1,29 @@
 export * from "./types";
 export * from "./enums";
-export * from "./audio_engine/engine_components/controller_tables";
 export * from "./audio_engine/effects/types";
 
 export { SpessaSynthProcessor } from "./processor";
-export { SynthesizerSnapshot } from "./audio_engine/snapshot/synthesizer_snapshot";
-export { ChannelSnapshot } from "./audio_engine/snapshot/channel_snapshot";
-export { KeyModifier } from "./audio_engine/engine_components/key_modifier_manager";
-export { DEFAULT_MASTER_PARAMETERS } from "./audio_engine/engine_components/master_parameters";
+export { MIDIChannel } from "./audio_engine/channel/midi_channel";
+export { KeyModifier } from "./audio_engine/key_modifier_manager";
+export { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "./audio_engine/parameters/system";
+export { DEFAULT_GLOBAL_MIDI_PARAMETERS } from "./audio_engine/parameters/midi";
+export { DEFAULT_CHANNEL_SYSTEM_PARAMETERS } from "./audio_engine/channel/parameters/system";
+export { DEFAULT_CHANNEL_MIDI_PARAMETERS } from "./audio_engine/channel/parameters/midi";
 export {
-    ALL_CHANNELS_OR_DIFFERENT_ACTION,
-    DEFAULT_PERCUSSION
-} from "./audio_engine/engine_components/synth_constants";
+    DEFAULT_PERCUSSION,
+    DEFAULT_SYNTH_MODE,
+    VOICE_CAP,
+    SPESSASYNTH_GAIN_FACTOR,
+    SPESSA_BUFSIZE,
+    CONTROLLER_TABLE_SIZE
+} from "./audio_engine/synth_constants";
+export * from "./audio_engine/channel/types";
+export type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
+export type { GlobalSystemParameter } from "./audio_engine/parameters/system";
+export type { ChannelSystemParameter } from "./audio_engine/channel/parameters/system";
+export type { ChannelMIDIParameter } from "./audio_engine/channel/parameters/midi";
+export type { SynthesizerSnapshot } from "./audio_engine/synthesizer_snapshot";
 export {
-    defaultMIDIControllerValues,
-    NON_CC_INDEX_OFFSET
-} from "./audio_engine/engine_components/controller_tables";
+    DEFAULT_DRUM_REVERB,
+    DEFAULT_MIDI_CONTROLLERS
+} from "./audio_engine/channel/reset";

@@ -24,11 +24,7 @@ The global zone for this preset, a `BasicZone`.
 
 The zones of this preset, an array of `BasicPresetZone`s.
 
-### isXGDrums
-
-A boolean indicating if this preset is an XG drum preset.
-
-### isAnyDrums
+### isDrum
 
 A boolean indicating if this preset is a drum preset.
 
@@ -96,7 +92,7 @@ Returns a MIDI Patch formatted string.
 
 ### toString
 
-Returns a MIDI Patch formatted string and preset's name combined.
+An alias for [`MIDIPatchTools.toFullMIDIString`](../spessa-synth-processor/midi-patch.md#tofullmidistring).
 
 ### toFlattenedInstrument
 

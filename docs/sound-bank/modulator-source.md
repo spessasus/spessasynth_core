@@ -46,7 +46,7 @@ A boolean.
 ### curveType
 
 This field specifies how the minimum value approaches the maximum value.
-One of the predefined `modulatorCurveTypes`.
+One of the predefined `ModulatorCurveTypes`.
 
 ## Methods
 

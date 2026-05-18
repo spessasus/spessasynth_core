@@ -6,7 +6,7 @@ import type { SoundFontInstrument } from "./instruments";
 import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
-import { generatorTypes } from "../../basic_soundbank/generator_types";
+import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 /**
  * Reads the given instrument zone
@@ -32,7 +32,7 @@ export function applyInstrumentZones(
             const modsEnd = modStartIndexes[modIndex];
             const mods = instrumentModulators.slice(modsStart, modsEnd);
             // Check for global zone
-            if (gens.some((g) => g.generatorType === generatorTypes.sampleID)) {
+            if (gens.some((g) => g.type === GeneratorTypes.sampleID)) {
                 // Regular zone
                 instrument.createSoundFontZone(mods, gens, samples);
             } else {

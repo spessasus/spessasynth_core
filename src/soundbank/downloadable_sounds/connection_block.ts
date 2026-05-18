@@ -1,12 +1,5 @@
 import { ConnectionSource } from "./connection_source";
-import {
-    type DLSDestination,
-    dlsDestinations,
-    type DLSSource,
-    dlsSources,
-    type DLSTransform,
-    modulatorCurveTypes
-} from "../enums";
+import { ModulatorCurveTypes } from "../enums";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import {
     readLittleEndianIndexed,
@@ -17,11 +10,11 @@ import { bitMaskToBool } from "../../utils/byte_functions/bit_mask";
 import { Generator } from "../basic_soundbank/generator";
 import {
     type GeneratorType,
-    generatorTypes
+    GeneratorTypes
 } from "../basic_soundbank/generator_types";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { BasicZone } from "../basic_soundbank/basic_zone";
-import { consoleColors } from "../../utils/other";
+import { ConsoleColors } from "../../utils/other";
 import { ModulatorSource } from "../basic_soundbank/modulator_source";
 import { Modulator } from "../basic_soundbank/modulator";
 import type { DownloadableSoundsArticulation } from "./articulation";
@@ -29,25 +22,32 @@ import {
     DEFAULT_DLS_CHORUS,
     DEFAULT_DLS_REVERB
 } from "./default_dls_modulators";
+import {
+    type DLSDestination,
+    DLSDestinations,
+    type DLSSource,
+    DLSSources,
+    type DLSTransform
+} from "./enums";
 
 const invalidGeneratorTypes = new Set<GeneratorType>([
-    generatorTypes.sampleModes, // Set in wave sample
-    generatorTypes.initialAttenuation, // Set in wave sample
-    generatorTypes.keyRange, // Set in region header
-    generatorTypes.velRange, // Set in region header
-    generatorTypes.sampleID, // Set in wave link
-    generatorTypes.fineTune, // Set in wave sample
-    generatorTypes.coarseTune, // Set in wave sample
-    generatorTypes.startAddrsOffset, // Does not exist in DLS
-    generatorTypes.startAddrsCoarseOffset, // Does not exist in DLS
-    generatorTypes.endAddrOffset, // Does not exist in DLS
-    generatorTypes.endAddrsCoarseOffset, // Set in wave sample
-    generatorTypes.startloopAddrsOffset, // Set in wave sample
-    generatorTypes.startloopAddrsCoarseOffset, // Set in wave sample
-    generatorTypes.endloopAddrsOffset, // Set in wave sample
-    generatorTypes.endloopAddrsCoarseOffset, // Set in wave sample
-    generatorTypes.overridingRootKey, // Set in wave sample
-    generatorTypes.exclusiveClass // Set in region header
+    GeneratorTypes.sampleModes, // Set in wave sample
+    GeneratorTypes.initialAttenuation, // Set in wave sample
+    GeneratorTypes.keyRange, // Set in region header
+    GeneratorTypes.velRange, // Set in region header
+    GeneratorTypes.sampleID, // Set in wave link
+    GeneratorTypes.fineTune, // Set in wave sample
+    GeneratorTypes.coarseTune, // Set in wave sample
+    GeneratorTypes.startAddrsOffset, // Does not exist in DLS
+    GeneratorTypes.startAddrsCoarseOffset, // Does not exist in DLS
+    GeneratorTypes.endAddrOffset, // Does not exist in DLS
+    GeneratorTypes.endAddrsCoarseOffset, // Set in wave sample
+    GeneratorTypes.startloopAddrsOffset, // Set in wave sample
+    GeneratorTypes.startloopAddrsCoarseOffset, // Set in wave sample
+    GeneratorTypes.endloopAddrsOffset, // Set in wave sample
+    GeneratorTypes.endloopAddrsCoarseOffset, // Set in wave sample
+    GeneratorTypes.overridingRootKey, // Set in wave sample
+    GeneratorTypes.exclusiveClass // Set in region header
 ] as const);
 
 /**
@@ -91,8 +91,8 @@ export class ConnectionBlock {
 
     public get isStaticParameter() {
         return (
-            this.source.source === dlsSources.none &&
-            this.control.source === dlsSources.none
+            this.source.source === DLSSources.none &&
+            this.control.source === DLSSources.none
         );
     }
 
@@ -102,10 +102,10 @@ export class ConnectionBlock {
 
     private get transformName() {
         return (
-            Object.keys(modulatorCurveTypes).find(
+            Object.keys(ModulatorCurveTypes).find(
                 (k) =>
-                    modulatorCurveTypes[
-                        k as keyof typeof modulatorCurveTypes
+                    ModulatorCurveTypes[
+                        k as keyof typeof ModulatorCurveTypes
                     ] === this.transform
             ) ?? this.transform.toString()
         );
@@ -113,17 +113,17 @@ export class ConnectionBlock {
 
     private get destinationName() {
         return (
-            Object.keys(dlsDestinations).find(
+            Object.keys(DLSDestinations).find(
                 (k) =>
-                    dlsDestinations[k as keyof typeof dlsDestinations] ===
+                    DLSDestinations[k as keyof typeof DLSDestinations] ===
                     this.destination
             ) ?? this.destination.toString()
         );
     }
 
     public static read(artData: IndexedByteArray) {
-        const usSource = readLittleEndianIndexed(artData, 2);
-        const usControl = readLittleEndianIndexed(artData, 2);
+        const usSource = readLittleEndianIndexed(artData, 2) as DLSSource;
+        const usControl = readLittleEndianIndexed(artData, 2) as DLSSource;
         const usDestination = readLittleEndianIndexed(
             artData,
             2
@@ -146,7 +146,7 @@ export class ConnectionBlock {
         const controlBipolar = bitMaskToBool(usTransform, 8);
         const controlInvert = bitMaskToBool(usTransform, 9);
         const control = new ConnectionSource(
-            usControl as DLSSource,
+            usControl,
             controlTransform,
             controlBipolar,
             controlInvert
@@ -158,7 +158,7 @@ export class ConnectionBlock {
         const sourceInvert = bitMaskToBool(usTransform, 15);
 
         const source = new ConnectionSource(
-            usSource as DLSSource,
+            usSource,
             sourceTransform,
             sourceBipolar,
             sourceInvert
@@ -178,7 +178,7 @@ export class ConnectionBlock {
         articulation: DownloadableSoundsArticulation
     ) {
         const failed = (msg: string) => {
-            SpessaSynthWarn(
+            SpessaLog.warn(
                 `Failed converting SF modulator into DLS:\n ${m.toString()} \n(${msg})`
             );
         };
@@ -223,10 +223,10 @@ export class ConnectionBlock {
              Check for a special case, for example mod wheel to vibLfoToPitch
              comprises vibLFO source, mod wheel control and pitch destination.
             */
-            if (dlsDestination.source !== dlsSources.none) {
+            if (dlsDestination.source !== DLSSources.none) {
                 if (
-                    control.source !== dlsSources.none &&
-                    source.source !== dlsSources.none
+                    control.source !== DLSSources.none &&
+                    source.source !== DLSSources.none
                 ) {
                     failed(
                         "Articulation generators with secondary source are not supported"
@@ -234,12 +234,12 @@ export class ConnectionBlock {
                     return;
                 }
                 // Move the source to control if needed
-                if (source.source !== dlsSources.none) {
+                if (source.source !== DLSSources.none) {
                     control = source;
                 }
                 source = new ConnectionSource(
                     dlsDestination.source,
-                    modulatorCurveTypes.linear,
+                    ModulatorCurveTypes.linear,
                     dlsDestination.isBipolar
                 );
             }
@@ -268,19 +268,19 @@ export class ConnectionBlock {
         generator: Generator,
         articulation: DownloadableSoundsArticulation
     ) {
-        if (invalidGeneratorTypes.has(generator.generatorType)) {
+        if (invalidGeneratorTypes.has(generator.type)) {
             return;
         }
 
         const failed = (msg: string) => {
-            SpessaSynthWarn(
+            SpessaLog.warn(
                 `Failed converting SF2 generator into DLS:\n ${generator.toString()} \n(${msg})`
             );
         };
 
         const dlsDestination = ConnectionBlock.fromSFDestination(
-            generator.generatorType,
-            generator.generatorValue
+            generator.type,
+            generator.value
         );
         if (dlsDestination === undefined) {
             failed("Invalid type");
@@ -288,7 +288,7 @@ export class ConnectionBlock {
         }
         const source = new ConnectionSource();
         let destination: DLSDestination;
-        let amount = generator.generatorValue;
+        let amount = generator.value;
 
         // Envelope generators are limited to 40 seconds,
         // However the keyToEnv correction makes us use the full SF range.
@@ -331,198 +331,198 @@ export class ConnectionBlock {
                 return undefined;
             }
 
-            case generatorTypes.initialAttenuation: {
+            case GeneratorTypes.initialAttenuation: {
                 // The amount does not get EMU corrected here, as this only applies to modulator attenuation
                 // The generator (affected) attenuation is handled in wsmp.
                 return {
-                    destination: dlsDestinations.gain,
+                    destination: DLSDestinations.gain,
                     amount: -amount,
                     isBipolar: false,
-                    source: dlsSources.none
+                    source: DLSSources.none
                 };
             }
-            case generatorTypes.fineTune: {
-                return dlsDestinations.pitch;
+            case GeneratorTypes.fineTune: {
+                return DLSDestinations.pitch;
             }
-            case generatorTypes.pan: {
-                return dlsDestinations.pan;
+            case GeneratorTypes.pan: {
+                return DLSDestinations.pan;
             }
-            case generatorTypes.keyNum: {
-                return dlsDestinations.keyNum;
-            }
-
-            case generatorTypes.reverbEffectsSend: {
-                return dlsDestinations.reverbSend;
-            }
-            case generatorTypes.chorusEffectsSend: {
-                return dlsDestinations.chorusSend;
+            case GeneratorTypes.keyNum: {
+                return DLSDestinations.keyNum;
             }
 
-            case generatorTypes.freqModLFO: {
-                return dlsDestinations.modLfoFreq;
+            case GeneratorTypes.reverbEffectsSend: {
+                return DLSDestinations.reverbSend;
             }
-            case generatorTypes.delayModLFO: {
-                return dlsDestinations.modLfoDelay;
-            }
-
-            case generatorTypes.delayVibLFO: {
-                return dlsDestinations.vibLfoDelay;
-            }
-            case generatorTypes.freqVibLFO: {
-                return dlsDestinations.vibLfoFreq;
+            case GeneratorTypes.chorusEffectsSend: {
+                return DLSDestinations.chorusSend;
             }
 
-            case generatorTypes.delayVolEnv: {
-                return dlsDestinations.volEnvDelay;
+            case GeneratorTypes.freqModLFO: {
+                return DLSDestinations.modLfoFreq;
             }
-            case generatorTypes.attackVolEnv: {
-                return dlsDestinations.volEnvAttack;
+            case GeneratorTypes.delayModLFO: {
+                return DLSDestinations.modLfoDelay;
             }
-            case generatorTypes.holdVolEnv: {
-                return dlsDestinations.volEnvHold;
+
+            case GeneratorTypes.delayVibLFO: {
+                return DLSDestinations.vibLfoDelay;
             }
-            case generatorTypes.decayVolEnv: {
-                return dlsDestinations.volEnvDecay;
+            case GeneratorTypes.freqVibLFO: {
+                return DLSDestinations.vibLfoFreq;
             }
-            case generatorTypes.sustainVolEnv: {
+
+            case GeneratorTypes.delayVolEnv: {
+                return DLSDestinations.volEnvDelay;
+            }
+            case GeneratorTypes.attackVolEnv: {
+                return DLSDestinations.volEnvAttack;
+            }
+            case GeneratorTypes.holdVolEnv: {
+                return DLSDestinations.volEnvHold;
+            }
+            case GeneratorTypes.decayVolEnv: {
+                return DLSDestinations.volEnvDecay;
+            }
+            case GeneratorTypes.sustainVolEnv: {
                 return {
-                    destination: dlsDestinations.volEnvSustain,
+                    destination: DLSDestinations.volEnvSustain,
                     amount: 1000 - amount,
                     isBipolar: false,
-                    source: dlsSources.none
+                    source: DLSSources.none
                 };
             }
-            case generatorTypes.releaseVolEnv: {
-                return dlsDestinations.volEnvRelease;
+            case GeneratorTypes.releaseVolEnv: {
+                return DLSDestinations.volEnvRelease;
             }
 
-            case generatorTypes.delayModEnv: {
-                return dlsDestinations.modEnvDelay;
+            case GeneratorTypes.delayModEnv: {
+                return DLSDestinations.modEnvDelay;
             }
-            case generatorTypes.attackModEnv: {
-                return dlsDestinations.modEnvAttack;
+            case GeneratorTypes.attackModEnv: {
+                return DLSDestinations.modEnvAttack;
             }
-            case generatorTypes.holdModEnv: {
-                return dlsDestinations.modEnvHold;
+            case GeneratorTypes.holdModEnv: {
+                return DLSDestinations.modEnvHold;
             }
-            case generatorTypes.decayModEnv: {
-                return dlsDestinations.modEnvDecay;
+            case GeneratorTypes.decayModEnv: {
+                return DLSDestinations.modEnvDecay;
             }
-            case generatorTypes.sustainModEnv: {
+            case GeneratorTypes.sustainModEnv: {
                 return {
-                    destination: dlsDestinations.modEnvSustain,
+                    destination: DLSDestinations.modEnvSustain,
                     amount: 1000 - amount,
                     isBipolar: false,
-                    source: dlsSources.none
+                    source: DLSSources.none
                 };
             }
-            case generatorTypes.releaseModEnv: {
-                return dlsDestinations.modEnvRelease;
+            case GeneratorTypes.releaseModEnv: {
+                return DLSDestinations.modEnvRelease;
             }
 
-            case generatorTypes.initialFilterFc: {
-                return dlsDestinations.filterCutoff;
+            case GeneratorTypes.initialFilterFc: {
+                return DLSDestinations.filterCutoff;
             }
-            case generatorTypes.initialFilterQ: {
-                return dlsDestinations.filterQ;
+            case GeneratorTypes.initialFilterQ: {
+                return DLSDestinations.filterQ;
             }
 
             // Mod env
-            case generatorTypes.modEnvToFilterFc: {
+            case GeneratorTypes.modEnvToFilterFc: {
                 return {
-                    source: dlsSources.modEnv,
-                    destination: dlsDestinations.filterCutoff,
+                    source: DLSSources.modEnv,
+                    destination: DLSDestinations.filterCutoff,
                     amount,
                     isBipolar: false
                 };
             }
-            case generatorTypes.modEnvToPitch: {
+            case GeneratorTypes.modEnvToPitch: {
                 return {
-                    source: dlsSources.modEnv,
-                    destination: dlsDestinations.pitch,
+                    source: DLSSources.modEnv,
+                    destination: DLSDestinations.pitch,
                     amount,
                     isBipolar: false
                 };
             }
 
             // Mod lfo
-            case generatorTypes.modLfoToFilterFc: {
+            case GeneratorTypes.modLfoToFilterFc: {
                 return {
-                    source: dlsSources.modLfo,
-                    destination: dlsDestinations.filterCutoff,
+                    source: DLSSources.modLfo,
+                    destination: DLSDestinations.filterCutoff,
                     amount,
                     isBipolar: true
                 };
             }
-            case generatorTypes.modLfoToVolume: {
+            case GeneratorTypes.modLfoToVolume: {
                 return {
-                    source: dlsSources.modLfo,
-                    destination: dlsDestinations.gain,
+                    source: DLSSources.modLfo,
+                    destination: DLSDestinations.gain,
                     amount,
                     isBipolar: true
                 };
             }
-            case generatorTypes.modLfoToPitch: {
+            case GeneratorTypes.modLfoToPitch: {
                 return {
-                    source: dlsSources.modLfo,
-                    destination: dlsDestinations.pitch,
+                    source: DLSSources.modLfo,
+                    destination: DLSDestinations.pitch,
                     amount,
                     isBipolar: true
                 };
             }
 
             // Vib lfo
-            case generatorTypes.vibLfoToPitch: {
+            case GeneratorTypes.vibLfoToPitch: {
                 return {
-                    source: dlsSources.vibratoLfo,
-                    destination: dlsDestinations.pitch,
+                    source: DLSSources.vibratoLfo,
+                    destination: DLSDestinations.pitch,
                     amount,
                     isBipolar: true
                 };
             }
 
             // Key to something
-            case generatorTypes.keyNumToVolEnvHold: {
+            case GeneratorTypes.keyNumToVolEnvHold: {
                 return {
-                    source: dlsSources.keyNum,
-                    destination: dlsDestinations.volEnvHold,
+                    source: DLSSources.keyNum,
+                    destination: DLSDestinations.volEnvHold,
                     amount,
                     isBipolar: true
                 };
             }
-            case generatorTypes.keyNumToVolEnvDecay: {
+            case GeneratorTypes.keyNumToVolEnvDecay: {
                 return {
-                    source: dlsSources.keyNum,
-                    destination: dlsDestinations.volEnvDecay,
+                    source: DLSSources.keyNum,
+                    destination: DLSDestinations.volEnvDecay,
                     amount,
                     isBipolar: true
                 };
             }
-            case generatorTypes.keyNumToModEnvHold: {
+            case GeneratorTypes.keyNumToModEnvHold: {
                 return {
-                    source: dlsSources.keyNum,
-                    destination: dlsDestinations.modEnvHold,
+                    source: DLSSources.keyNum,
+                    destination: DLSDestinations.modEnvHold,
                     amount,
                     isBipolar: true
                 };
             }
-            case generatorTypes.keyNumToModEnvDecay: {
+            case GeneratorTypes.keyNumToModEnvDecay: {
                 return {
-                    source: dlsSources.keyNum,
-                    destination: dlsDestinations.modEnvDecay,
+                    source: DLSSources.keyNum,
+                    destination: DLSDestinations.modEnvDecay,
                     amount,
                     isBipolar: true
                 };
             }
 
-            case generatorTypes.scaleTuning: {
+            case GeneratorTypes.scaleTuning: {
                 // Scale tuning is implemented in DLS via an articulator:
                 // KeyNum to relative pitch at 12,800 cents.
                 // Change that to scale tuning * 128.
                 // Therefore, a regular scale is still 12,800, half is 6400, etc.
                 return {
-                    source: dlsSources.keyNum,
-                    destination: dlsDestinations.pitch,
+                    source: DLSSources.keyNum,
+                    destination: DLSDestinations.pitch,
                     amount: amount * 128,
                     isBipolar: false // According to table 4, this should be false.
                 };
@@ -561,117 +561,117 @@ export class ConnectionBlock {
 
         switch (destination) {
             default: {
-                SpessaSynthInfo(
+                SpessaLog.info(
                     `%cFailed converting DLS articulator into SF generator: %c${this.toString()}%c\n(invalid destination)`,
-                    consoleColors.warn,
-                    consoleColors.value,
-                    consoleColors.unrecognized
+                    ConsoleColors.warn,
+                    ConsoleColors.value,
+                    ConsoleColors.unrecognized
                 );
                 return;
             }
 
-            case dlsDestinations.pan: {
-                zone.setGenerator(generatorTypes.pan, value);
+            case DLSDestinations.pan: {
+                zone.setGenerator(GeneratorTypes.pan, value);
                 break;
             }
-            case dlsDestinations.gain: {
+            case DLSDestinations.gain: {
                 // Turn to centibels and apply emu correction
                 zone.addToGenerator(
-                    generatorTypes.initialAttenuation,
+                    GeneratorTypes.initialAttenuation,
                     -value / 0.4
                 );
                 break;
             }
-            case dlsDestinations.filterCutoff: {
-                zone.setGenerator(generatorTypes.initialFilterFc, value);
+            case DLSDestinations.filterCutoff: {
+                zone.setGenerator(GeneratorTypes.initialFilterFc, value);
                 break;
             }
-            case dlsDestinations.filterQ: {
-                zone.setGenerator(generatorTypes.initialFilterQ, value);
+            case DLSDestinations.filterQ: {
+                zone.setGenerator(GeneratorTypes.initialFilterQ, value);
                 break;
             }
 
             // Mod LFO raw values it seems
-            case dlsDestinations.modLfoFreq: {
-                zone.setGenerator(generatorTypes.freqModLFO, value);
+            case DLSDestinations.modLfoFreq: {
+                zone.setGenerator(GeneratorTypes.freqModLFO, value);
                 break;
             }
-            case dlsDestinations.modLfoDelay: {
-                zone.setGenerator(generatorTypes.delayModLFO, value);
+            case DLSDestinations.modLfoDelay: {
+                zone.setGenerator(GeneratorTypes.delayModLFO, value);
                 break;
             }
-            case dlsDestinations.vibLfoFreq: {
-                zone.setGenerator(generatorTypes.freqVibLFO, value);
+            case DLSDestinations.vibLfoFreq: {
+                zone.setGenerator(GeneratorTypes.freqVibLFO, value);
                 break;
             }
-            case dlsDestinations.vibLfoDelay: {
-                zone.setGenerator(generatorTypes.delayVibLFO, value);
+            case DLSDestinations.vibLfoDelay: {
+                zone.setGenerator(GeneratorTypes.delayVibLFO, value);
                 break;
             }
 
             // Vol. env: all times are timecents like sf2
-            case dlsDestinations.volEnvDelay: {
-                zone.setGenerator(generatorTypes.delayVolEnv, value);
+            case DLSDestinations.volEnvDelay: {
+                zone.setGenerator(GeneratorTypes.delayVolEnv, value);
                 break;
             }
-            case dlsDestinations.volEnvAttack: {
-                zone.setGenerator(generatorTypes.attackVolEnv, value);
+            case DLSDestinations.volEnvAttack: {
+                zone.setGenerator(GeneratorTypes.attackVolEnv, value);
                 break;
             }
-            case dlsDestinations.volEnvHold: {
-                zone.setGenerator(generatorTypes.holdVolEnv, value);
+            case DLSDestinations.volEnvHold: {
+                zone.setGenerator(GeneratorTypes.holdVolEnv, value);
                 break;
             }
-            case dlsDestinations.volEnvDecay: {
-                zone.setGenerator(generatorTypes.decayVolEnv, value);
+            case DLSDestinations.volEnvDecay: {
+                zone.setGenerator(GeneratorTypes.decayVolEnv, value);
                 break;
             }
-            case dlsDestinations.volEnvRelease: {
-                zone.setGenerator(generatorTypes.releaseVolEnv, value);
+            case DLSDestinations.volEnvRelease: {
+                zone.setGenerator(GeneratorTypes.releaseVolEnv, value);
                 break;
             }
-            case dlsDestinations.volEnvSustain: {
+            case DLSDestinations.volEnvSustain: {
                 // Gain seems to be (1000 - value) = sustain cB
-                zone.setGenerator(generatorTypes.sustainVolEnv, 1000 - value);
+                zone.setGenerator(GeneratorTypes.sustainVolEnv, 1000 - value);
                 break;
             }
 
             // Mod env
-            case dlsDestinations.modEnvDelay: {
-                zone.setGenerator(generatorTypes.delayModEnv, value);
+            case DLSDestinations.modEnvDelay: {
+                zone.setGenerator(GeneratorTypes.delayModEnv, value);
                 break;
             }
-            case dlsDestinations.modEnvAttack: {
-                zone.setGenerator(generatorTypes.attackModEnv, value);
+            case DLSDestinations.modEnvAttack: {
+                zone.setGenerator(GeneratorTypes.attackModEnv, value);
                 break;
             }
-            case dlsDestinations.modEnvHold: {
-                zone.setGenerator(generatorTypes.holdModEnv, value);
+            case DLSDestinations.modEnvHold: {
+                zone.setGenerator(GeneratorTypes.holdModEnv, value);
                 break;
             }
-            case dlsDestinations.modEnvDecay: {
-                zone.setGenerator(generatorTypes.decayModEnv, value);
+            case DLSDestinations.modEnvDecay: {
+                zone.setGenerator(GeneratorTypes.decayModEnv, value);
                 break;
             }
-            case dlsDestinations.modEnvRelease: {
-                zone.setGenerator(generatorTypes.releaseModEnv, value);
+            case DLSDestinations.modEnvRelease: {
+                zone.setGenerator(GeneratorTypes.releaseModEnv, value);
                 break;
             }
-            case dlsDestinations.modEnvSustain: {
+            case DLSDestinations.modEnvSustain: {
                 // DLS uses 0.1%, SF uses 0.1%
-                zone.setGenerator(generatorTypes.sustainModEnv, 1000 - value);
+                zone.setGenerator(GeneratorTypes.sustainModEnv, 1000 - value);
                 break;
             }
 
-            case dlsDestinations.reverbSend: {
-                zone.setGenerator(generatorTypes.reverbEffectsSend, value);
+            case DLSDestinations.reverbSend: {
+                zone.setGenerator(GeneratorTypes.reverbEffectsSend, value);
                 break;
             }
-            case dlsDestinations.chorusSend: {
-                zone.setGenerator(generatorTypes.chorusEffectsSend, value);
+            case DLSDestinations.chorusSend: {
+                zone.setGenerator(GeneratorTypes.chorusEffectsSend, value);
                 break;
             }
-            case dlsDestinations.pitch: {
+            case DLSDestinations.pitch: {
                 zone.fineTuning += value;
                 break;
             }
@@ -738,17 +738,17 @@ export class ConnectionBlock {
         // Unless the curve type of source is linear, then output is copied.
         // Testcase: Fury.dls (sets concave output transform for the key to attenuation)
         if (
-            this.transform !== modulatorCurveTypes.linear &&
-            primarySource.curveType === modulatorCurveTypes.linear
+            this.transform !== ModulatorCurveTypes.linear &&
+            primarySource.curveType === ModulatorCurveTypes.linear
         ) {
             primarySource.curveType = this.transform;
         }
 
-        if (modulatorDestination === generatorTypes.initialAttenuation) {
+        if (modulatorDestination === GeneratorTypes.initialAttenuation) {
             if (
-                this.source.source === dlsSources.velocity ||
-                this.source.source === dlsSources.volume ||
-                this.source.source === dlsSources.expression
+                this.source.source === DLSSources.velocity ||
+                this.source.source === DLSSources.volume ||
+                this.source.source === DLSSources.expression
             ) {
                 /*
                 Some DLS banks (example: Fury.dls or 1 - House.rmi) only specify the output transform,
@@ -786,52 +786,52 @@ export class ConnectionBlock {
         const source = this.source.source;
         const destination = this.destination;
         if (
-            source === dlsSources.vibratoLfo &&
-            destination === dlsDestinations.pitch
+            source === DLSSources.vibratoLfo &&
+            destination === DLSDestinations.pitch
         ) {
             // Vibrato lfo to pitch
-            return generatorTypes.vibLfoToPitch;
+            return GeneratorTypes.vibLfoToPitch;
         } else if (
-            source === dlsSources.modLfo &&
-            destination === dlsDestinations.pitch
+            source === DLSSources.modLfo &&
+            destination === DLSDestinations.pitch
         ) {
             // Mod lfo to pitch
-            return generatorTypes.modLfoToPitch;
+            return GeneratorTypes.modLfoToPitch;
         } else if (
-            source === dlsSources.modLfo &&
-            destination === dlsDestinations.filterCutoff
+            source === DLSSources.modLfo &&
+            destination === DLSDestinations.filterCutoff
         ) {
             // Mod lfo to filter
-            return generatorTypes.modLfoToFilterFc;
+            return GeneratorTypes.modLfoToFilterFc;
         } else if (
-            source === dlsSources.modLfo &&
-            destination === dlsDestinations.gain
+            source === DLSSources.modLfo &&
+            destination === DLSDestinations.gain
         ) {
             // Mod lfo to volume
-            return generatorTypes.modLfoToVolume;
+            return GeneratorTypes.modLfoToVolume;
         } else if (
-            source === dlsSources.modEnv &&
-            destination === dlsDestinations.filterCutoff
+            source === DLSSources.modEnv &&
+            destination === DLSDestinations.filterCutoff
         ) {
             // Mod envelope to filter
-            return generatorTypes.modEnvToFilterFc;
+            return GeneratorTypes.modEnvToFilterFc;
         } else if (
-            source === dlsSources.modEnv &&
-            destination === dlsDestinations.pitch
+            source === DLSSources.modEnv &&
+            destination === DLSDestinations.pitch
         ) {
             // Mod envelope to pitch
-            return generatorTypes.modEnvToPitch;
+            return GeneratorTypes.modEnvToPitch;
         } else {
             return undefined;
         }
     }
 
     private failedConversion(msg: string) {
-        SpessaSynthInfo(
+        SpessaLog.info(
             `%cFailed converting DLS articulator into SF2:\n %c${this.toString()}%c\n(${msg})`,
-            consoleColors.warn,
-            consoleColors.value,
-            consoleColors.unrecognized
+            ConsoleColors.warn,
+            ConsoleColors.value,
+            ConsoleColors.unrecognized
         );
     }
 
@@ -846,97 +846,97 @@ export class ConnectionBlock {
         const amount = this.shortScale;
         switch (this.destination) {
             default:
-            case dlsDestinations.none: {
+            case DLSDestinations.none: {
                 return undefined;
             }
-            case dlsDestinations.pan: {
-                return generatorTypes.pan;
+            case DLSDestinations.pan: {
+                return GeneratorTypes.pan;
             }
-            case dlsDestinations.gain: {
+            case DLSDestinations.gain: {
                 return {
                     // DLS uses gain, SF uses attenuation
-                    gen: generatorTypes.initialAttenuation,
+                    gen: GeneratorTypes.initialAttenuation,
                     newAmount: -amount
                 };
             }
-            case dlsDestinations.pitch: {
-                return generatorTypes.fineTune;
+            case DLSDestinations.pitch: {
+                return GeneratorTypes.fineTune;
             }
-            case dlsDestinations.keyNum: {
-                return generatorTypes.overridingRootKey;
+            case DLSDestinations.keyNum: {
+                return GeneratorTypes.overridingRootKey;
             }
 
             // Vol env
-            case dlsDestinations.volEnvDelay: {
-                return generatorTypes.delayVolEnv;
+            case DLSDestinations.volEnvDelay: {
+                return GeneratorTypes.delayVolEnv;
             }
-            case dlsDestinations.volEnvAttack: {
-                return generatorTypes.attackVolEnv;
+            case DLSDestinations.volEnvAttack: {
+                return GeneratorTypes.attackVolEnv;
             }
-            case dlsDestinations.volEnvHold: {
-                return generatorTypes.holdVolEnv;
+            case DLSDestinations.volEnvHold: {
+                return GeneratorTypes.holdVolEnv;
             }
-            case dlsDestinations.volEnvDecay: {
-                return generatorTypes.decayVolEnv;
+            case DLSDestinations.volEnvDecay: {
+                return GeneratorTypes.decayVolEnv;
             }
-            case dlsDestinations.volEnvSustain: {
+            case DLSDestinations.volEnvSustain: {
                 return {
-                    gen: generatorTypes.sustainVolEnv,
+                    gen: GeneratorTypes.sustainVolEnv,
                     newAmount: 1000 - amount
                 };
             }
-            case dlsDestinations.volEnvRelease: {
-                return generatorTypes.releaseVolEnv;
+            case DLSDestinations.volEnvRelease: {
+                return GeneratorTypes.releaseVolEnv;
             }
 
             // Mod env
-            case dlsDestinations.modEnvDelay: {
-                return generatorTypes.delayModEnv;
+            case DLSDestinations.modEnvDelay: {
+                return GeneratorTypes.delayModEnv;
             }
-            case dlsDestinations.modEnvAttack: {
-                return generatorTypes.attackModEnv;
+            case DLSDestinations.modEnvAttack: {
+                return GeneratorTypes.attackModEnv;
             }
-            case dlsDestinations.modEnvHold: {
-                return generatorTypes.holdModEnv;
+            case DLSDestinations.modEnvHold: {
+                return GeneratorTypes.holdModEnv;
             }
-            case dlsDestinations.modEnvDecay: {
-                return generatorTypes.decayModEnv;
+            case DLSDestinations.modEnvDecay: {
+                return GeneratorTypes.decayModEnv;
             }
-            case dlsDestinations.modEnvSustain: {
+            case DLSDestinations.modEnvSustain: {
                 return {
-                    gen: generatorTypes.sustainModEnv,
+                    gen: GeneratorTypes.sustainModEnv,
                     newAmount: 1000 - amount
                 };
             }
-            case dlsDestinations.modEnvRelease: {
-                return generatorTypes.releaseModEnv;
+            case DLSDestinations.modEnvRelease: {
+                return GeneratorTypes.releaseModEnv;
             }
 
-            case dlsDestinations.filterCutoff: {
-                return generatorTypes.initialFilterFc;
+            case DLSDestinations.filterCutoff: {
+                return GeneratorTypes.initialFilterFc;
             }
-            case dlsDestinations.filterQ: {
-                return generatorTypes.initialFilterQ;
+            case DLSDestinations.filterQ: {
+                return GeneratorTypes.initialFilterQ;
             }
-            case dlsDestinations.chorusSend: {
-                return generatorTypes.chorusEffectsSend;
+            case DLSDestinations.chorusSend: {
+                return GeneratorTypes.chorusEffectsSend;
             }
-            case dlsDestinations.reverbSend: {
-                return generatorTypes.reverbEffectsSend;
+            case DLSDestinations.reverbSend: {
+                return GeneratorTypes.reverbEffectsSend;
             }
 
             // Lfo
-            case dlsDestinations.modLfoFreq: {
-                return generatorTypes.freqModLFO;
+            case DLSDestinations.modLfoFreq: {
+                return GeneratorTypes.freqModLFO;
             }
-            case dlsDestinations.modLfoDelay: {
-                return generatorTypes.delayModLFO;
+            case DLSDestinations.modLfoDelay: {
+                return GeneratorTypes.delayModLFO;
             }
-            case dlsDestinations.vibLfoFreq: {
-                return generatorTypes.freqVibLFO;
+            case DLSDestinations.vibLfoFreq: {
+                return GeneratorTypes.freqVibLFO;
             }
-            case dlsDestinations.vibLfoDelay: {
-                return generatorTypes.delayVibLFO;
+            case DLSDestinations.vibLfoDelay: {
+                return GeneratorTypes.delayVibLFO;
             }
         }
     }

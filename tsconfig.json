@@ -4,7 +4,6 @@
         "target": "es2022",
         "useDefineForClassFields": true,
         "lib": ["es2022"],
-        "types": ["node"],
         "module": "es2022",
         "skipLibCheck": true,
         "allowJs": true,
@@ -19,6 +18,7 @@
         "noImplicitReturns": true,
         "alwaysStrict": true,
         "noImplicitThis": true,
+        "stripInternal": true,
         "strictBindCallApply": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
@@ -28,6 +28,6 @@
         "verbatimModuleSyntax": true,
         "noEmit": true
     },
-    "include": ["src"],
-    "exclude": ["node_modules", "examples", "dist"]
+    "include": ["src", "examples", "tests"],
+    "exclude": ["node_modules", "dist"]
 }

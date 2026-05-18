@@ -4,12 +4,12 @@ This class represents a single generator (a static parameter).
 
 ## Properties
 
-### generatorType
+### type
 
 The type of this generator. One of the predefined values.
 A number.
 
-### generatorValue
+### value
 
 The generator's value, which can be negative.
 A number.
@@ -24,8 +24,8 @@ Converts the generator into a human-readable string with the name instead of num
 
 Below are all defined generator types as of soundfont 2.04.
 
-They are accessible through the `generatorTypes` enum.
-The limits and default values are accessible through the `generatorLimits` constant.
+They are accessible through the `GeneratorTypes` enum.
+The limits and default values are accessible through the `GeneratorLimits` constant.
 
 !!! Important
 

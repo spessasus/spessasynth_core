@@ -5,7 +5,7 @@ import {
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 export async function runPerformanceTest(
     sfPath: string,
@@ -15,19 +15,18 @@ export async function runPerformanceTest(
     const sf = await fs.readFile(sfPath);
     const mid = await fs.readFile(midPath);
     const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
-    const sampleRate = 44100;
-    const sampleCount = Math.ceil(44100 * (midi.duration + 2));
+    const sampleRate = 44_100;
+    const sampleCount = Math.ceil(44_100 * (midi.duration + 2));
     const sbk = SoundBankLoader.fromArrayBuffer(sf.buffer);
     const BUFFER_SIZE = 128;
 
     const outLeft = new Float32Array(sampleCount);
     const outRight = new Float32Array(sampleCount);
-    const outputArray = [outLeft, outRight];
 
-    let times = new Array<number>();
+    const times = new Array<number>();
     for (let i = 0; i < passes; i++) {
         const synth = new SpessaSynthProcessor(sampleRate, {
-            enableEventSystem: false
+            eventsEnabled: false
         });
         synth.soundBankManager.addSoundBank(sbk, "main");
         await synth.processorInitialized;
@@ -46,20 +45,14 @@ export async function runPerformanceTest(
                 BUFFER_SIZE,
                 sampleCount - filledSamples
             );
-            synth.renderAudio(
-                outputArray,
-                outputArray,
-                outputArray,
-                filledSamples,
-                bufferSize
-            );
+            synth.process(outLeft, outRight, filledSamples, bufferSize);
             filledSamples += bufferSize;
         }
         const time = performance.now() - start;
         console.info(`Pass ${i}: ${Math.floor(time)}ms`);
         times.push(time);
     }
-    let avg = times.reduce((sum, i) => sum + i, 0) / times.length;
+    const avg = times.reduce((sum, i) => sum + i, 0) / times.length;
     console.info(`Average time: ${Math.floor(avg)}ms`);
 }
 
@@ -69,5 +62,5 @@ if (import.meta.main) {
         console.info("Usage: tsx index.ts <soundbank path> <midi path>");
         process.exit();
     }
-    void runPerformanceTest(args[0], args[1], 10);
+    await runPerformanceTest(args[0], args[1], 10);
 }

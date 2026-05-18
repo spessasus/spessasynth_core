@@ -82,6 +82,7 @@ site/
 # random files
 *.tgz
 *.mid
+*.rmi
 *.wav
 test.ts
 out.*

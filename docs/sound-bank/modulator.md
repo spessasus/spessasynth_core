@@ -128,7 +128,7 @@ SpessaSynth applies a few extra modulators for extended compatibility with vario
 | **CC 8** (Balance)           | Positive Bipolar Linear  | -                | Pan                      | 500 percent      |
 | **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial attenuation      | 50 cB            |
 | **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -2400 abs cents  |
-| **CC 71** (Filter Resonance) | Positive Bipolar Linear  | -                | Initial Filter Resonance | 200 cB           |
+| **CC 71** (Filter Resonance) | Positive Bipolar Linear  | -                | Initial Filter Resonance | 250 cB           |
 | **CC 72** (Vol Env Attack)   | Positive Bipolar Convex  | -                | Volume envelope attack   | 6000 timecents   |
 | **CC 73** (Vol Env Release)  | Positive Bipolar Linear  | -                | Volume envelope release  | 3600 timecents   |
 | **CC 74** (Filter Cutoff)    | Positive Bipolar Linear  | -                | Initial Filter Cutoff    | 9600 abs cents   |

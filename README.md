@@ -135,7 +135,7 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 - **Automatic bank shifting and validation:** Every sound bank _just works!_
 - **Metadata support:** Add title, artist, album name and cover and more! And of course, read them too! _(In any
   encoding!)_
-- **Compatible with [Falcosoft Midi Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
+- **Compatible with [Falcosoft MIDI Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
 - **Easy saving:**
   _[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writermidi)_
 
@@ -217,11 +217,12 @@ Featuring Reverb, Chorus, Delay, Insertion effects and more!
 For use with node.js
 
 ```ts
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import {
     audioToWav,
     BasicMIDI,
     SoundBankLoader,
+    SpessaLog,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "spessasynth_core";
@@ -242,14 +243,16 @@ const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 const soundBank = SoundBankLoader.fromArrayBuffer(sf.buffer);
 
 // Initialize the synthesizer
-const sampleRate = 48000;
+const sampleRate = 48_000;
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEventSystem: false
+    eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(soundBank, "main");
 await synth.processorInitialized;
+// Enable verbose information during render
+SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count
-synth.setMasterParameter("autoAllocateVoices", true);
+synth.setSystemParameter("autoAllocateVoices", true);
 
 // Initialize the sequencer
 const seq = new SpessaSynthSequencer(synth);

@@ -24,11 +24,11 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 ### Preparation
 
 1. If you are on Windows, [obtain WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
-2. Install esbuild `npm install -g esbuild`
-3. Create a directory where you want to develop.
-4. Clone your fork of `spessasynth_core` into the directory.
-5. Clone `spessasynth_lib` (or your fork of it) into the directory.
-6. Clone `SpessaSynth` into the directory.
+2. Create a directory where you want to develop.
+3. Clone your fork of `spessasynth_core` into the directory.
+4. Install dependencies `npm install`
+5. Clone `spessasynth_lib` (or your fork of it) into the directory and install dependencies.
+6. Clone `SpessaSynth` into the directory and install dependencies.
 7. You now should have the following structure:
     - your directory
         - spessasynth_core (your fork of it)

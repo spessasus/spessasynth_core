@@ -1,44 +1,44 @@
-import { BasicGlobalZone } from "./basic_global_zone";
 import { BasicInstrumentZone } from "./basic_instrument_zone";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import { type BasicPreset } from "./basic_preset";
 import type { BasicSample } from "./basic_sample";
 import {
-    generatorLimits,
+    GeneratorLimits,
     type GeneratorType,
-    generatorTypes
+    GeneratorTypes
 } from "./generator_types";
 import { Modulator } from "./modulator";
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { writeWord } from "../../utils/byte_functions/little_endian";
-import { consoleColors } from "../../utils/other";
+import { ConsoleColors } from "../../utils/other";
+import { BasicZone } from "./basic_zone";
 
 export const INST_BYTE_SIZE = 22;
 
 const notGlobalizedTypes = new Set([
-    generatorTypes.velRange,
-    generatorTypes.keyRange,
-    generatorTypes.instrument,
-    generatorTypes.sampleID,
-    generatorTypes.exclusiveClass,
-    generatorTypes.endOper,
-    generatorTypes.sampleModes,
-    generatorTypes.startloopAddrsOffset,
-    generatorTypes.startloopAddrsCoarseOffset,
-    generatorTypes.endloopAddrsOffset,
-    generatorTypes.endloopAddrsCoarseOffset,
-    generatorTypes.startAddrsOffset,
-    generatorTypes.startAddrsCoarseOffset,
-    generatorTypes.endAddrOffset,
-    generatorTypes.endAddrsCoarseOffset,
-    generatorTypes.initialAttenuation, // Written into wsmp, there's no global wsmp
-    generatorTypes.fineTune, // Written into wsmp, there's no global wsmp
-    generatorTypes.coarseTune, // Written into wsmp, there's no global wsmp
-    generatorTypes.keyNumToVolEnvHold, // KEY TO SOMETHING:
-    generatorTypes.keyNumToVolEnvDecay, // Cannot be globalized as they modify their respective generators
-    generatorTypes.keyNumToModEnvHold, // (for example, keyNumToVolEnvDecay modifies VolEnvDecay)
-    generatorTypes.keyNumToModEnvDecay
+    GeneratorTypes.velRange,
+    GeneratorTypes.keyRange,
+    GeneratorTypes.instrument,
+    GeneratorTypes.sampleID,
+    GeneratorTypes.exclusiveClass,
+    GeneratorTypes.endOper,
+    GeneratorTypes.sampleModes,
+    GeneratorTypes.startloopAddrsOffset,
+    GeneratorTypes.startloopAddrsCoarseOffset,
+    GeneratorTypes.endloopAddrsOffset,
+    GeneratorTypes.endloopAddrsCoarseOffset,
+    GeneratorTypes.startAddrsOffset,
+    GeneratorTypes.startAddrsCoarseOffset,
+    GeneratorTypes.endAddrOffset,
+    GeneratorTypes.endAddrsCoarseOffset,
+    GeneratorTypes.initialAttenuation, // Written into wsmp, there's no global wsmp
+    GeneratorTypes.fineTune, // Written into wsmp, there's no global wsmp
+    GeneratorTypes.coarseTune, // Written into wsmp, there's no global wsmp
+    GeneratorTypes.keyNumToVolEnvHold, // KEY TO SOMETHING:
+    GeneratorTypes.keyNumToVolEnvDecay, // Cannot be globalized as they modify their respective generators
+    GeneratorTypes.keyNumToModEnvHold, // (for example, keyNumToVolEnvDecay modifies VolEnvDecay)
+    GeneratorTypes.keyNumToModEnvDecay
 ] as const);
 type notGlobalizedTypes =
     typeof notGlobalizedTypes extends Set<infer T> ? T : never;
@@ -59,7 +59,7 @@ export class BasicInstrument {
     /**
      * Instrument's global zone
      */
-    public readonly globalZone: BasicGlobalZone = new BasicGlobalZone();
+    public readonly globalZone = new BasicZone();
     /**
      * Instrument's linked presets (the presets that use it)
      * note that duplicates are allowed since one preset can use the same instrument multiple times.
@@ -99,7 +99,7 @@ export class BasicInstrument {
     public unlinkFrom(preset: BasicPreset) {
         const index = this.linkedTo.indexOf(preset);
         if (index === -1) {
-            SpessaSynthWarn(
+            SpessaLog.warn(
                 `Cannot unlink ${preset.name} from ${this.name}: not linked.`
             );
             return;
@@ -168,7 +168,7 @@ export class BasicInstrument {
             }
             checkedType = checkedType as GeneratorType;
             let occurrencesForValues: Record<number, number> = {};
-            const defaultForChecked = generatorLimits[checkedType]?.def || 0;
+            const defaultForChecked = GeneratorLimits[checkedType]?.def || 0;
             occurrencesForValues[defaultForChecked] = 0;
             for (const zone of this.zones) {
                 const value = zone.getGenerator(checkedType, undefined);
@@ -189,22 +189,22 @@ export class BasicInstrument {
                         continue;
                     }
 
-                    case generatorTypes.decayVolEnv: {
+                    case GeneratorTypes.decayVolEnv: {
                         relativeCounterpart =
-                            generatorTypes.keyNumToVolEnvDecay;
+                            GeneratorTypes.keyNumToVolEnvDecay;
                         break;
                     }
-                    case generatorTypes.holdVolEnv: {
-                        relativeCounterpart = generatorTypes.keyNumToVolEnvHold;
+                    case GeneratorTypes.holdVolEnv: {
+                        relativeCounterpart = GeneratorTypes.keyNumToVolEnvHold;
                         break;
                     }
-                    case generatorTypes.decayModEnv: {
+                    case GeneratorTypes.decayModEnv: {
                         relativeCounterpart =
-                            generatorTypes.keyNumToModEnvDecay;
+                            GeneratorTypes.keyNumToModEnvDecay;
                         break;
                     }
-                    case generatorTypes.holdModEnv: {
-                        relativeCounterpart = generatorTypes.keyNumToModEnvHold;
+                    case GeneratorTypes.holdModEnv: {
+                        relativeCounterpart = GeneratorTypes.keyNumToModEnvHold;
                     }
                 }
                 const relative = zone.getGenerator(
@@ -254,9 +254,10 @@ export class BasicInstrument {
         }
 
         // Globalize only modulators that exist in all zones
-        const modulators = this.zones.length === 0 
-            ? []
-            : this.zones[0].modulators.map((m) => Modulator.copyFrom(m));
+        const modulators =
+            this.zones.length === 0
+                ? []
+                : this.zones[0].modulators.map((m) => Modulator.copyFrom(m));
         for (const checkedModulator of modulators) {
             let existsForAllZones = true;
             for (const zone of this.zones) {
@@ -301,7 +302,7 @@ export class BasicInstrument {
     }
 
     public write(instData: ExtendedSF2Chunks, index: number) {
-        SpessaSynthInfo(`%cWriting ${this.name}...`, consoleColors.info);
+        SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(instData.pdta, this.name.slice(0, 20), 20);
         writeBinaryStringIndexed(instData.xdta, this.name.slice(20), 20);
