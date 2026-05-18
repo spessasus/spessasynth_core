@@ -94,7 +94,6 @@ export class MIDIChannel {
     /**
      * The preset currently assigned to the channel.
      * Note that this may be undefined in some cases.
-     * @internal
      */
     public preset?: BasicPreset;
     /**

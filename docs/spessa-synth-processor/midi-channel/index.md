@@ -33,7 +33,9 @@ channel.lockController(controller, isLocked);
 
 Changes the preset to, or from drums.
 
-Parameters:
+```ts
+channel.setDrums(isDrum);
+```
 
 - isDrum - if the channel should be a drum preset or not.
 
@@ -59,6 +61,16 @@ The currently selected [`MIDIPatch`](../midi-patch.md) of this channel.
 
     The exact matching preset may not be available,
     but this property represents exactly what MIDI asks for.
+
+### preset
+
+The preset currently assigned to the channel.
+
+!!! Note
+
+    This may be undefined in some cases.
+
+This property can be set to directly replace a preset on this channel.
 
 ### channel
 
