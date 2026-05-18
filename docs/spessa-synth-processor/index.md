@@ -28,9 +28,9 @@ All properties are optional. If they are not supplied, the defaults will be used
 
 ## Effects
 
-- [Reverb](reverb-processor.md) - How to implement your own reverb processor.
-- [Chorus](chorus-processor.md) - How to implement your own chorus processor.
-- [Delay](delay-processor.md) - How to implement your own delay processor.
+- [Reverb](effects/reverb-processor.md) - How to implement your own reverb processor.
+- [Chorus](effects/chorus-processor.md) - How to implement your own chorus processor.
+- [Delay](effects/delay-processor.md) - How to implement your own delay processor.
 
 ## Managers
 
@@ -344,15 +344,15 @@ The current time of the synthesizer, in seconds.
 
 ### reverbProcessor
 
-Synthesizer's reverb processor, a [`ReverbProcessor` instance](reverb-processor.md)
+Synthesizer's reverb processor, a [`ReverbProcessor` instance](effects/reverb-processor.md)
 
 ### chorusProcessor
 
-Synthesizer's chorus processor, a [`ChorusProcessor` instance](chorus-processor.md)
+Synthesizer's chorus processor, a [`ChorusProcessor` instance](effects/chorus-processor.md)
 
 ### delayProcessor
 
-Synthesizer's delay processor, a [`DelayProcessor` instance](delay-processor.md)
+Synthesizer's delay processor, a [`DelayProcessor` instance](effects/delay-processor.md)
 
 ### soundBankManager
 

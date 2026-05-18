@@ -184,9 +184,9 @@ This event is triggered when an effect processor has one of its parameters chang
 
 The effects and their parameters can be found here:
 
-- [reverb](reverb-processor.md)
-- [chorus](chorus-processor.md)
-- [delay](delay-processor.md)
+- [Reverb](effects/reverb-processor.md)
+- [Chorus](effects/chorus-processor.md)
+- [Delay](effects/delay-processor.md)
 
 #### Insertion
 

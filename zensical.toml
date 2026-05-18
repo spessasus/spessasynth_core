@@ -64,9 +64,11 @@ nav = [
             "spessa-synth-processor/key-modifier-manager.md",
             "spessa-synth-processor/synthesizer-snapshot.md",
             "spessa-synth-processor/event-types.md",
-            "spessa-synth-processor/reverb-processor.md",
-            "spessa-synth-processor/chorus-processor.md",
-            "spessa-synth-processor/delay-processor.md"
+            {"Effects" = [
+                "spessa-synth-processor/effects/reverb-processor.md",
+                "spessa-synth-processor/effects//chorus-processor.md",
+                "spessa-synth-processor/effects//delay-processor.md"
+            ]},
         ]},
         {"SpessaSynthSequencer" = [
             "spessa-synth-sequencer/index.md",
