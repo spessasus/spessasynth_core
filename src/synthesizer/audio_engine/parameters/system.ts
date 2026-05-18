@@ -134,16 +134,7 @@ export interface GlobalSystemParameter {
     interpolationType: InterpolationType;
 
     /**
-     * If the synthesizer should prevent applying the custom vibrato.
-     * This effect is modified using NRPN, so
-     * the recommended use case would be setting
-     * the custom vibrato then locking it to prevent changes by MIDI files.
-     */
-    customVibratoLock: boolean;
-
-    /**
      * If the synthesizer should prevent changing any parameters via NRPN.
-     * This includes the custom vibrato parameters.
      */
     nrpnParamLock: boolean;
 
@@ -184,7 +175,6 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
     fineTune: 0,
 
     interpolationType: InterpolationTypes.hermite,
-    customVibratoLock: false,
     nrpnParamLock: false,
     monophonicRetrigger: false
 };

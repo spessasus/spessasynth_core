@@ -147,50 +147,23 @@ Below is the list of currently implemented Non-Registered Parameters.
 
 rr: Drum MIDI note number (0 - 127)
 
-| NRPN MSB | NRPN LSB | Name                       | Explanation                                                                   | Default                          |
-| -------- | -------- | -------------------------- | ----------------------------------------------------------------------------- | -------------------------------- |
-| 0x01     | 0x08     | Vibrato rate **(custom)**  | Controls the vibrato rate. More info below.                                   | 0 (disabled)                     |
-| 0x01     | 0x09     | Vibrato depth **(custom)** | Controls the vibrato depth. More info below.                                  | 0 (disabled)                     |
-| 0x01     | 0x0A     | Vibrato delay **(custom)** | Controls the vibrato delay. More info below.                                  | 0 (disabled)                     |
-| 0x01     | 0x20     | TVF Filter Cutoff          | Alias to MIDI CC#74. (Brightness)                                             | 64                               |
-| 0x01     | 0x21     | TVF Filter Resonance       | Alias to MIDI CC#71. (Filter resonance)                                       | 64                               |
-| 0x01     | 0x63     | EG Attack Time             | Alias to MIDI CC#73. (Attack Time)                                            | 64                               |
-| 0x01     | 0x64     | EG Decay Time              | Alias to MIDI CC#75. (Decay Time)                                             | 64                               |
-| 0x01     | 0x66     | EG Release Time            | Alias to MIDI CC#72. (Release Time)                                           | 64                               |
-| 0x18     | rr       | Drum Pitch                 | Controls the pitch of the drum instrument.                                    | 0                                |
-| 0x18     | rr       | Drum Pitch Fine            | Controls the pitch of the drum instrument in cents (XG only)                  | 0                                |
-| 0x1A     | rr       | Drum Level                 | Controls how loud the drum instrument is.                                     | 120 (normal)                     |
-| 0x1C     | rr       | Drum Pan                   | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                 |
-| 0x1D     | rr       | Drum Reverb                | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127. |
-| 0x1E     | rr       | Drum Chorus                | Controls the chorus level of the drum instrument. (multiplicative of channel) | 127 for XG, otherwise 0.         |
-| 0x1F     | rr       | Drum Delay                 | Controls the delay level of the drum instrument. (multiplicative of channel)  | 0 (none)                         |
-
-##### Custom Vibrato
-
-The NRPN vibrato messages have special behavior.
-On synth start and reset it is disabled.
-Any value other than 64 received for any of the states activates it with the default settings:
-
-- depth = 50 cents
-- rate = 8 Hz
-- delay = 0.6s
-
-After which any changes received through the NRPN (including the one that triggered it) are processed.
-
-Calculation for the specific NRPN parameters are as follows (value is the data entry MSB value from 0 to 127):
-
-- Rate: `Hz = (value / 64) * 8`
-- Depth: `cents = value / 2`
-- Delay: `seconds = (64 / value) / 3`
-
-This behavior has existed since the beginning of this program as a way to enhance Touhou Project MIDI files,
-the original target of SpessaSynth.
-
-**It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
-This can be useful as setting CC#1 to something like 1 (which is usually imperceptible),
-will disable the extra vibrato for this channel.
-
-[Custom vibrato can be disabled globally as well.](../spessa-synth-processor/global-parameters.md#customvibratolock)
+| NRPN MSB | NRPN LSB | Name                 | Explanation                                                                   | Default                          |
+| -------- | -------- | -------------------- | ----------------------------------------------------------------------------- | -------------------------------- |
+| 0x01     | 0x08     | Vibrato Rate         | Alias to MIDI CC#76. (Vibrato Rate)                                           | 64                               |
+| 0x01     | 0x09     | Vibrato Depth        | Alias to MIDI CC#77. (Vibrato Depth)                                          | 64                               |
+| 0x01     | 0x0A     | Vibrato Delay        | Alias to MIDI CC#78. (Vibrato Delay)                                          | 64                               |
+| 0x01     | 0x20     | TVF Filter Cutoff    | Alias to MIDI CC#74. (Brightness)                                             | 64                               |
+| 0x01     | 0x21     | TVF Filter Resonance | Alias to MIDI CC#71. (Filter resonance)                                       | 64                               |
+| 0x01     | 0x63     | EG Attack Time       | Alias to MIDI CC#73. (Attack Time)                                            | 64                               |
+| 0x01     | 0x64     | EG Decay Time        | Alias to MIDI CC#75. (Decay Time)                                             | 64                               |
+| 0x01     | 0x66     | EG Release Time      | Alias to MIDI CC#72. (Release Time)                                           | 64                               |
+| 0x18     | rr       | Drum Pitch           | Controls the pitch of the drum instrument.                                    | 0                                |
+| 0x18     | rr       | Drum Pitch Fine      | Controls the pitch of the drum instrument in cents (XG only)                  | 0                                |
+| 0x1A     | rr       | Drum Level           | Controls how loud the drum instrument is.                                     | 120 (normal)                     |
+| 0x1C     | rr       | Drum Pan             | Controls the pan position of the drum instrument. 0 is random.                | 64 (channel pan)                 |
+| 0x1D     | rr       | Drum Reverb          | Controls the reverb level of the drum instrument. (multiplicative of channel) | 0 for kick drums, otherwise 127. |
+| 0x1E     | rr       | Drum Chorus          | Controls the chorus level of the drum instrument. (multiplicative of channel) | 127 for XG, otherwise 0.         |
+| 0x1F     | rr       | Drum Delay           | Controls the delay level of the drum instrument. (multiplicative of channel)  | 0 (none)                         |
 
 ##### SoundFont2 NRPN
 

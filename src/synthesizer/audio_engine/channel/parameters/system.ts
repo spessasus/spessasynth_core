@@ -50,18 +50,7 @@ export interface ChannelSystemParameter {
     interpolationType: InterpolationType | null;
 
     /**
-     * If the channel should prevent applying the custom vibrato.
-     * This effect is modified using NRPN, so
-     * the recommended use case would be setting
-     * the custom vibrato then locking it to prevent changes by MIDI files.
-     *
-     * Overrides the global parameter if set.
-     */
-    customVibratoLock: boolean | null;
-
-    /**
      * If the channel should prevent changing any parameters via NRPN.
-     * This includes the custom vibrato parameters.
      *
      * Overrides the global parameter if set.
      */
@@ -89,7 +78,6 @@ export const DEFAULT_CHANNEL_SYSTEM_PARAMETERS: ChannelSystemParameter = {
     fineTune: 0,
 
     interpolationType: null,
-    customVibratoLock: null,
     nrpnParamLock: null,
     monophonicRetrigger: null
 };

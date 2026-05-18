@@ -166,22 +166,11 @@ The interpolation types defined are:
 - 1 - nearest neighbor interpolation - fastest, but lowest quality (it may be desirable in some cases to make the sound "crispier")
 - 2 - Hermite interpolation - slow, high quality (default)
 
-### customVibratoLock
-
-`boolean`
-
-If the synthesizer should prevent applying the custom vibrato.
-This effect is modified using NRPN, so
-the recommended use case would be setting
-the custom vibrato then locking it to prevent changes by MIDI files.
-To disable it, make sure that it's unlocked, reset the synthesizer then lock it.
-
 ### nrpnParamLock
 
 `boolean`
 
 If the synthesizer should prevent changing any parameters via NRPN.
-This includes the custom vibrato parameters.
 
 ### monophonicRetrigger
 

@@ -122,7 +122,6 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.octaveTuning.fill(0);
     resetPortamento.call(this);
     this.resetDrumParams();
-    this.resetVibratoParams();
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
     this.dynamicModulators.resetModulators();

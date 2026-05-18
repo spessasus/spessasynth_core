@@ -69,23 +69,11 @@ The interpolation types defined are:
 
 Overrides the global parameter if set.
 
-### customVibratoLock
-
-`boolean?`
-
-If the channel should prevent applying the custom vibrato.
-This effect is modified using NRPN, so
-the recommended use case would be setting
-the custom vibrato then locking it to prevent changes by MIDI files.
-
-Overrides the global parameter if set.
-
 ### nrpnParamLock
 
 `boolean?`
 
 If the channel should prevent changing any parameters via NRPN.
-This includes the custom vibrato parameters.
 
 Overrides the global parameter if set.
 

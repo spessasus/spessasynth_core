@@ -39,7 +39,7 @@ import {
     type ChannelMIDIParameter,
     DEFAULT_CHANNEL_MIDI_PARAMETERS
 } from "./parameters/midi";
-import type { ChannelMIDIParameterChange, CustomChannelVibrato } from "./types";
+import type { ChannelMIDIParameterChange } from "./types";
 import {
     type ChannelSystemParameter,
     DEFAULT_CHANNEL_SYSTEM_PARAMETERS,
@@ -101,15 +101,6 @@ export class MIDIChannel {
      * @internal
      */
     public lockedSystem: MIDISystem = "gs";
-    /**
-     * The vibrato settings for the channel.
-     * @internal
-     */
-    public readonly vibrato: CustomChannelVibrato = {
-        delay: 0,
-        depth: 0,
-        rate: 0
-    };
     /**
      * The channel's number (0-based index)
      */
@@ -314,7 +305,6 @@ export class MIDIChannel {
             this.drumParams.push(new DrumParameters());
         }
         this.resetDrumParams();
-        this.resetVibratoParams();
     }
 
     /**
@@ -908,17 +898,6 @@ export class MIDIChannel {
         }
     }
 
-    protected resetVibratoParams() {
-        if (
-            this._systemParameters.customVibratoLock ??
-            this.synthCore.systemParameters.customVibratoLock
-        )
-            return;
-        this.vibrato.rate = 0;
-        this.vibrato.depth = 0;
-        this.vibrato.delay = 0;
-    }
-
     protected computeModulatorsAll(
         sourceUsesCC: -1 | 0 | 1,
         sourceIndex: number
@@ -957,17 +936,5 @@ export class MIDIChannel {
         this._drumChannel = isDrum;
         // Update transpose (clear on drums)
         this.keyShift(this._midiParameters.keyShift, false);
-    }
-
-    protected addDefaultVibrato() {
-        if (
-            this.vibrato.delay === 0 &&
-            this.vibrato.rate === 0 &&
-            this.vibrato.depth === 0
-        ) {
-            this.vibrato.depth = 50;
-            this.vibrato.rate = 8;
-            this.vibrato.delay = 0.6;
-        }
     }
 }

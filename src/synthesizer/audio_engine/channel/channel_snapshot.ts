@@ -2,7 +2,6 @@ import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patc
 import { DrumParameters } from "./drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./awe32_nrpn";
-import type { CustomChannelVibrato } from "./types";
 import type { ChannelSystemParameter } from "./parameters/system";
 import type { ChannelMIDIParameter } from "./parameters/midi";
 import type { MIDIController } from "../../../midi/enums";
@@ -32,7 +31,6 @@ export interface ChannelSnapshot {
 
     midiParameters: ChannelMIDIParameter;
     systemParameters: ChannelSystemParameter;
-    channelVibrato: CustomChannelVibrato;
     octaveTuning: Int8Array;
 
     perNotePitch: boolean;
@@ -62,7 +60,6 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
             overrides: this.generators.overrides.slice()
         },
 
-        channelVibrato: { ...this.vibrato },
         midiParameters: {
             ...this._midiParameters
         },
@@ -84,9 +81,6 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         this.lockController(i as MIDIController, snapshot.lockedControllers[i]);
 
     this.pitchWheels.set(snapshot.pitchWheels);
-    this.vibrato.delay = snapshot.channelVibrato.delay;
-    this.vibrato.depth = snapshot.channelVibrato.depth;
-    this.vibrato.rate = snapshot.channelVibrato.rate;
     this.octaveTuning.set(snapshot.octaveTuning);
 
     this.perNotePitch = snapshot.perNotePitch;

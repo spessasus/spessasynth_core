@@ -114,20 +114,7 @@ export function dataEntry(this: MIDIChannel) {
             const paramLock =
                 this._systemParameters.nrpnParamLock ??
                 this.synthCore.systemParameters.nrpnParamLock;
-            const vibratoLock =
-                (this._systemParameters.customVibratoLock ??
-                    this.synthCore.systemParameters.customVibratoLock) ||
-                paramLock;
             switch (paramFine) {
-                /*
-                A note on this vibrato.
-                This is a completely custom vibrato, with its own oscillator and parameters.
-                It is disabled by default,
-                only being enabled when one of the NRPN messages changing it is received
-                and stays on until the next system-reset.
-                It was implemented very early in SpessaSynth's development,
-                because I wanted support for Touhou MIDIs :-)
-                 */
                 default: {
                     SpessaLog.info(
                         `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse.toString(16)} 0x${paramFine.toString(
@@ -143,51 +130,29 @@ export function dataEntry(this: MIDIChannel) {
                     break;
                 }
 
-                // Vibrato rate (custom vibrato)
+                // Vibrato rate
                 case NonRegisteredLSB.vibratoRate: {
-                    if (this.dynamicModulators.active) {
-                        this.controllerChange(
-                            MIDIControllers.vibratoRate,
-                            dataCoarse
-                        );
-                        return;
-                    }
-                    if (vibratoLock || dataCoarse === 64) return;
-
-                    this.addDefaultVibrato();
-                    this.vibrato.rate = (dataCoarse / 64) * 8;
-                    SpessaLog.coolInfo(
-                        `Vibrato rate for ${this.channel}`,
-                        `${dataCoarse} = ${this.vibrato.rate}`,
-                        "Hz"
+                    this.controllerChange(
+                        MIDIControllers.vibratoRate,
+                        dataCoarse
                     );
                     break;
                 }
 
-                // Vibrato depth (custom vibrato)
+                // Vibrato depth
                 case NonRegisteredLSB.vibratoDepth: {
-                    if (vibratoLock || dataCoarse === 64) return;
-
-                    this.addDefaultVibrato();
-                    this.vibrato.depth = dataCoarse / 2;
-                    SpessaLog.coolInfo(
-                        `Vibrato depth for ${this.channel}`,
-                        `${dataCoarse} = ${this.vibrato.depth}`,
-                        "cents of detune"
+                    this.controllerChange(
+                        MIDIControllers.vibratoDepth,
+                        dataCoarse
                     );
                     break;
                 }
 
-                // Vibrato delay (custom vibrato)
+                // Vibrato delay
                 case NonRegisteredLSB.vibratoDelay: {
-                    if (vibratoLock || dataCoarse === 64) return;
-
-                    this.addDefaultVibrato();
-                    this.vibrato.delay = dataCoarse / 64 / 3;
-                    SpessaLog.coolInfo(
-                        `Vibrato delay for ${this.channel}`,
-                        `${dataCoarse} = ${this.vibrato.delay}`,
-                        "seconds"
+                    this.controllerChange(
+                        MIDIControllers.vibratoDelay,
+                        dataCoarse
                     );
                     break;
                 }

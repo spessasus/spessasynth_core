@@ -1,5 +1,4 @@
 import { absCentsToHz, cbAttenuationToGain } from "../voice/unit_converter";
-import { getLFOValueSine } from "../voice/lfo";
 import type { Voice } from "../voice/voice";
 import type { MIDIChannel } from "./midi_channel";
 import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
@@ -175,20 +174,7 @@ export function renderVoice(
         }
     }
 
-    // Channel vibrato (GS NRPN)
-    if (
-        // Only enabled when modulation wheel is disabled (to prevent overlap)
-        this._midiControllers[MIDIControllers.modulationWheel] === 0 &&
-        this.vibrato.depth > 0
-    ) {
-        // Sine! (GS uses sine)
-        cents +=
-            getLFOValueSine(
-                voice.startTime + this.vibrato.delay,
-                this.vibrato.rate,
-                timeNow
-            ) * this.vibrato.depth;
-    }
+    // TODO: Implement proper GS vibrato. Custom vibrato used to be here.
 
     // Mod env
     const modEnvPitchDepth = modulated[GeneratorTypes.modEnvToPitch];
