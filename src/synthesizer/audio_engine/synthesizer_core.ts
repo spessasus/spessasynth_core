@@ -51,6 +51,7 @@ import {
     setMIDIParameterInternal
 } from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
+import type { SysExAcceptedArray } from "../../midi/types";
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -241,7 +242,7 @@ export class SynthesizerCore {
      * Synth's event queue from the main thread
      */
     private eventQueue: {
-        message: Uint8Array | number[];
+        message: SysExAcceptedArray;
         channelOffset: number;
         time: number;
     }[] = [];
@@ -461,7 +462,7 @@ export class SynthesizerCore {
      * @param options Additional options for scheduling the message.
      */
     public processMessage(
-        message: Uint8Array | number[],
+        message: SysExAcceptedArray,
         channelOffset = 0,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
@@ -542,7 +543,7 @@ export class SynthesizerCore {
      */
     public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
         // Call here because there are returns in this function.
-        this.callEvent("allControllerReset", undefined);
+        this.callEvent("synthReset", system);
         this.resetMIDIParameters(system);
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
@@ -561,7 +562,7 @@ export class SynthesizerCore {
         if (!this.drumPreset || !this.defaultPreset) return;
 
         // Reset channels
-        // Do not send CC changes as we call allControllerReset
+        // Do not send CC changes as we call synthReset
         for (const ch of this.midiChannels) ch.reset(false);
     }
 
@@ -1251,7 +1252,7 @@ export class SynthesizerCore {
     }
 
     private processMessageInternal(
-        message: Uint8Array | number[],
+        message: SysExAcceptedArray,
         channelOffset: number
     ) {
         const byte = message[0] as MIDIMessageType;

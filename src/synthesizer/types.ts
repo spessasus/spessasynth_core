@@ -16,16 +16,12 @@ import type {
     StopAllCallback
 } from "./audio_engine/channel/types";
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
+import type { MIDISystem } from "../soundbank/types";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
  */
 type SynthDisplayCallback = number[];
-
-/**
- * The error message for sound bank errors.
- */
-export type SoundBankErrorCallback = Error;
 
 export type GlobalMIDIParameterChangeCallback = {
     [P in keyof GlobalMIDIParameter]: {
@@ -142,13 +138,9 @@ export interface SynthProcessorEventData {
      */
     presetListChange: MIDIPatchFull[];
     /**
-     * This event fires when all controllers on all channels are reset. There is no data for this event.
+     * This event fires when the synthesizer is reset.
      */
-    allControllerReset: void;
-    /**
-     * This event fires when a sound bank parsing error occurs.
-     */
-    soundBankError: SoundBankErrorCallback;
+    synthReset: MIDISystem;
     /**
      * This event fires when the synthesizer receives a display message.
      */

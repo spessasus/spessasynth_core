@@ -148,7 +148,7 @@ export function processEventInternal(
 
         case MIDIMessageTypes.reset: {
             this.synth.stopAllChannels();
-            this.synth.resetAllControllers();
+            this.synth.reset();
             break;
         }
 

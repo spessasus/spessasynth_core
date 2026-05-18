@@ -4,26 +4,22 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
 
 ## Table summary
 
-!!! Important
-
-    If there's more than one property, the returned value is an object with the properties as keys.
-
-| Name                 | Description                                      |
-| -------------------- | ------------------------------------------------ |
-| `noteOff`            | Key has been released.                           |
-| `noteOn`             | Key has been pressed.                            |
-| `controllerChange`   | Controller has been changed.                     |
-| `programChange`      | Program has been changed.                        |
-| `channelPressure`    | Channel's pressure has been changed.             |
-| `polyPressure`       | Note's pressure has been changed.                |
-| `stopAll`            | All voices were stopped.                         |
-| `newChannel`         | A new channel was added to the synth.            |
-| `muteChannel`        | A channel has been muted/unmuted.                |
-| `presetListChange`   | The preset list has been changed/initialized.    |
-| `allControllerReset` | All controllers have been reset. (and programs!) |
-| `soundBankError`     | The loaded sound bank was invalid.               |
-| `synthDisplay`       | A SysEx to display some text has been received.  |
-| `globalParamChange`  | A master parameter has been changed.             |
+| Name                     | Description                                     |
+| ------------------------ | ----------------------------------------------- |
+| `noteOn`                 | Key has been pressed.                           |
+| `noteOff`                | Key has been released.                          |
+| `controllerChange`       | Controller has been changed.                    |
+| `programChange`          | Program has been changed.                       |
+| `channelPressure`        | Channel's pressure has been changed.            |
+| `polyPressure`           | Note's pressure has been changed.               |
+| `stopAll`                | All voices were stopped on a given channel.     |
+| `newChannel`             | A new channel was added to the synth.           |
+| `presetListChange`       | The preset list has been changed/initialized.   |
+| `synthReset`             | The synthesizer has been reset.                 |
+| `synthDisplay`           | The synthesizer has received a display message. |
+| `globalMIDIParamChange`  | A global MIDI Parameter has been changed.       |
+| `channelMIDIParamChange` | A channel MIDI Parameter has been changed.      |
+| `effectChange`           | An effect parameter has been changed.           |
 
 !!! Note
 
@@ -32,14 +28,6 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
     It also signals that the sound bank has been fully loaded.
 
 ## Detailed descriptions
-
-### `noteOff`
-
-This event is triggered when a note is released on any channel.
-
-- `midiNote`: `number` - the MIDI key number of the note that was released. Ranges from 0 to 127.
-- `channel`: `number` - the channel number which got the note released. Usually it ranges from 0 to 16, but it depends
-  on the channel count.
 
 ### `noteOn`
 
@@ -62,6 +50,14 @@ This event is triggered when a note is pressed on any channel.
         this.synth.midiChannels[event.channel].midiParameters.keyShift;
     ```
 
+### `noteOff`
+
+This event is triggered when a note is released on any channel.
+
+- `midiNote`: `number` - the MIDI key number of the note that was released. Ranges from 0 to 127.
+- `channel`: `number` - the channel number which got the note released. Usually it ranges from 0 to 16, but it depends
+  on the channel count.
+
 ### `controllerChange`
 
 This event is triggered when a controller is changed on any channel (usually MIDI program change,
@@ -72,9 +68,9 @@ though [Some system exclusives can change it too](../extra/midi-implementation.m
 - `controller`: `number` - the number of the MIDI controller list. Ranges from 0 to 127.
 - `value`: `number` - the new value of the controller. Ranges from 0 to 127.
 
-Note that this event is also called after `allControllerReset` if there were any locked controllers.
+Note that this event is also called after `synthReset` if there were any locked controllers.
 For example, if CC#1 was locked to 64,
-after `allControllerReset` a `controllerChange` event will be called with `controller` 1 and `value` 64.
+after `synthReset` a `controllerChange` event will be called with `controller` 1 and `value` 64.
 
 ### `programChange`
 
@@ -104,13 +100,6 @@ Simply perform a `.find()` call and compare these properties to find the exact p
 
     This event can be used as a replacement for the previous `drumChange` event as it contains the `isDrum` property and always has been called when `drumChange` happened.
 
-### `channelPressure`
-
-This event is triggered when a MIDI channel pressure event is received. This usually controls channels' vibrato.
-
-- `channel`: `number` - the channel affected. Usually it ranges from 0 to 16, but it depends on the channel count.
-- `pressure`: `number` - the new pressure. Ranges from 0 to 127.
-
 ### `polyPressure`
 
 This event is triggered when a MIDI polyphonic pressure event is received. This controls the pressure of a single note.
@@ -124,7 +113,8 @@ By default, this controls vibrato in SpessaSynth, though it can be changed with 
 
 This event is triggered when all voices are stopped. Either manually or when receiving a system reset.
 
-This event has no data.
+- `channel`: `number` - the MIDI channel number.
+- `force`: `boolean` - if the channel was force stopped. (no release time)
 
 ### `newChannel`
 
@@ -134,15 +124,6 @@ or when the sequencer detects
 a [Multi-Port MIDI file.](../extra/about-multi-port.md)
 
 This event has no data.
-
-### `muteChannel`
-
-This event is triggered when a channel is muted or unmuted.
-This only can be done manually, there's no MIDI message to mute a channel.
-
-- `channel`: `number` - the channel that was altered. Usually it ranges from 0 to 16, but it depends on the channel
-  count.
-- `isMuted`: `boolean` - if the channel is muted or unmuted.
 
 ### `presetListChange`
 
@@ -162,22 +143,16 @@ The event data is the preset list. Each item is a preset list entry:
 
     _Do not_ use `isGMGSDrum` as the indication!
 
-### `allControllerReset`
+### `synthReset`
 
 This event is triggered when all controllers and programs have been reset. Effectively a system reset.
 
-None.
+The data is the new `MIDISystem`. Either `gs`, `gm`, `gm2` or `xg`.
 
 !!! Note
 
     If there were any locked controllers, they will be restored via `controllerChange` event after (like
     described in `controllerChange`).
-
-### `soundBankError`
-
-This event is triggered when the loaded sound bank was invalid.
-
-The data is the error message from the parser, a JavaScript error object.
 
 ### `synthDisplay`
 
@@ -185,16 +160,19 @@ This event is triggered when a SysEx to display some text has been received.
 
 The data is a number array of the entire system exclusive, excluding the `F0` status byte.
 
-### `globalParamChange`
+### `globalMIDIParamChange`
 
-This event is triggered when a global system parameter changes.
+This event is triggered when a [Global MIDI Parameter](global-parameters.md#midi) changes.
 
-- `parameter`: `GlobalSystemParameter` - the parameter type.
+- `parameter`: `GlobalMIDIParameter` - the parameter type (string)
 - `value`: varies - the new value of this parameter.
 
-Note that this event usually triggers from the MIDI system change or user's change.
+### `channelMIDIParamChange`
 
-[All system parameters can be found here](global-parameters.md)
+This event is triggered when a [Channel MIDI Parameter](midi-channel/channel-parameters.md#midi) changes.
+
+- `parameter`: `ChannelMIDIParameter` - the parameter type (string)
+- `value`: varies - the new value of this parameter.
 
 ### `effectChange`
 

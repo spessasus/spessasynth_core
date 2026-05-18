@@ -193,10 +193,4 @@ export type SysExAcceptedArray =
     | number[]
     | Uint8Array
     | Int8Array
-    | Uint16Array
-    | Int16Array
-    | Uint32Array
-    | Int32Array
-    | Uint8ClampedArray
-    | Float32Array
-    | Float64Array;
+    | Uint8ClampedArray;

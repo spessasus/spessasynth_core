@@ -1,9 +1,6 @@
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
-import {
-    DEFAULT_SYNTH_MODE,
-    EMBEDDED_SOUND_BANK_ID
-} from "./audio_engine/synth_constants";
+import { EMBEDDED_SOUND_BANK_ID } from "./audio_engine/synth_constants";
 import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
@@ -110,12 +107,13 @@ export class SpessaSynthProcessor {
     ) => void;
 
     /**
-     * Executes a MIDI Note-on message on the specified channel.
+     * Executes a MIDI Note On message on the specified channel.
+     * Starts playing a note.
      * @param channel The MIDI channel to send the note on.
      * @param midiNote The MIDI note number to play.
      * @param velocity The velocity of the note, from 0 to 127.
      * @remarks
-     * If the velocity is 0, it will be treated as a Note-off message.
+     * If the velocity is 0, it will be treated as a Note Off message.
      */
     public readonly noteOn: (
         channel: number,
@@ -124,7 +122,8 @@ export class SpessaSynthProcessor {
     ) => void;
 
     /**
-     * Executes a MIDI Note-off message on the specified channel.
+     * Executes a MIDI Note Off message on the specified channel.
+     * Stops playing a note.
      * @param channel The MIDI channel to send the note off.
      * @param midiNote The MIDI note number to stop playing.
      */
@@ -132,6 +131,7 @@ export class SpessaSynthProcessor {
 
     /**
      * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
+     * This differs from the Channel Pressure in that it's per-note and not for the whole channel.
      * @param channel The MIDI channel to send the poly pressure on.
      * @param midiNote The MIDI note number to apply the pressure to.
      * @param pressure The pressure value, from 0 to 127.
@@ -176,13 +176,13 @@ export class SpessaSynthProcessor {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Processes a raw MIDI message.
-     * @param message The message to process.
-     * @param channelOffset The channel offset for the message.
+     * Processes a raw MIDI message and allows scheduling it at a specific time.
+     * @param message The MIDI message to process.
+     * @param channelOffset The channel offset for the message. It will be added to message's channel number if applicable.
      * @param options Additional options for scheduling the message.
      */
     public readonly processMessage: (
-        message: Uint8Array | number[],
+        message: SysExAcceptedArray,
         channelOffset?: number,
         options?: SynthMethodOptions
     ) => void;
@@ -327,92 +327,6 @@ export class SpessaSynthProcessor {
         return this.synthCore.keyModifierManager;
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Renders float32 audio data to stereo outputs; buffer size of 128 is recommended.
-     * All float arrays must have the same length.
-     * @param outputs output stereo channels (L, R).
-     * @param reverb unused legacy parameter.
-     * @param chorus unused legacy parameter.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     * @deprecated use process() as the effects are now integrated.
-     */
-    public renderAudio(
-        outputs: Float32Array[],
-        reverb: Float32Array[],
-        chorus: Float32Array[],
-        startIndex = 0,
-        sampleCount = 0
-    ) {
-        void reverb;
-        void chorus;
-        const maxBuff = this.synthCore.maxBufferSize;
-        if (sampleCount > maxBuff) {
-            let samples = 0;
-            while (samples < sampleCount) {
-                const blockSize = Math.min(maxBuff, sampleCount - samples);
-                this.synthCore.process(
-                    outputs[0],
-                    outputs[1],
-                    startIndex + samples,
-                    blockSize
-                );
-                samples += blockSize;
-            }
-        } else
-            this.synthCore.process(
-                outputs[0],
-                outputs[1],
-                startIndex,
-                sampleCount
-            );
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Renders the float32 audio data of each channel, routing effects to external outputs.
-     * Buffer size of 128 is recommended.
-     * All float arrays must have the same length.
-     * @param reverbChannels unused legacy parameter.
-     * @param chorusChannels unused legacy parameter.
-     * @param separateChannels a total of 16 stereo pairs (L, R) for each MIDI channel.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     * @deprecated use processSplit() as the effects are now integrated.
-     */
-    public renderAudioSplit(
-        reverbChannels: Float32Array[],
-        chorusChannels: Float32Array[],
-        separateChannels: Float32Array[][],
-        startIndex = 0,
-        sampleCount = 0
-    ) {
-        void chorusChannels;
-        const maxBuff = this.synthCore.maxBufferSize;
-        if (sampleCount > maxBuff) {
-            let samples = 0;
-            while (samples < sampleCount) {
-                const blockSize = Math.min(maxBuff, sampleCount - samples);
-                this.synthCore.processSplit(
-                    separateChannels,
-                    reverbChannels[0],
-                    reverbChannels[1],
-                    startIndex + samples,
-                    blockSize
-                );
-                samples += blockSize;
-            }
-        } else
-            this.synthCore.processSplit(
-                separateChannels,
-                reverbChannels[0],
-                reverbChannels[1],
-                startIndex,
-                sampleCount
-            );
-    }
-
     /**
      * A handler for missing presets during program change. By default, it warns to console.
      * @param patch The MIDI patch that was requested.
@@ -444,12 +358,12 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * Executes a full system reset of all controllers.
+     * Executes a full synthesizer reset.
      * This will reset all controllers to their default values,
      * except for the locked controllers.
      */
-    public resetAllControllers(system: MIDISystem = DEFAULT_SYNTH_MODE) {
-        this.synthCore.reset(system);
+    public reset() {
+        this.synthCore.reset();
     }
 
     /**
@@ -459,7 +373,7 @@ export class SpessaSynthProcessor {
     public applySnapshot(snapshot: SynthesizerSnapshot) {
         this.savedSnapshot = snapshot;
         applySnapshot.call(this.synthCore, snapshot);
-        this.resetAllControllers();
+        this.reset();
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -519,7 +433,7 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * Creates a new MIDI channel for the synthesizer.
+     * Creates a new MIDI channel and adds it to the synthesizer.
      */
     public createMIDIChannel() {
         this.synthCore.createMIDIChannel(true);
@@ -527,7 +441,7 @@ export class SpessaSynthProcessor {
 
     /**
      * Stops all notes on all channels.
-     * @param force if true, all notes are stopped immediately, otherwise they are stopped gracefully.
+     * @param force If true, all notes are stopped immediately, otherwise they are stopped gracefully.
      */
     public stopAllChannels(force = false) {
         this.synthCore.stopAllChannels(force);
@@ -540,18 +454,6 @@ export class SpessaSynthProcessor {
      */
     public destroySynthProcessor() {
         this.synthCore.destroySynthProcessor();
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * DEPRECATED, does nothing!
-     * @param amount
-     * @deprecated
-     */
-    public killVoices(amount: number) {
-        SpessaLog.warn(
-            `killVoices is deprecated, don't use it! Amount requested: ${amount}`
-        );
     }
 
     // noinspection JSUnusedGlobalSymbols

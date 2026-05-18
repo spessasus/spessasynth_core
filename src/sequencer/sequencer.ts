@@ -449,7 +449,7 @@ export class SpessaSynthSequencer {
     protected sendMIDIReset() {
         this.sendMIDIAllOff();
         if (!this.externalMIDIPlayback) {
-            this.synth.resetAllControllers();
+            this.synth.reset();
             return;
         }
         this.sendMIDISysEx(
