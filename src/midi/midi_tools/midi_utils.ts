@@ -136,6 +136,33 @@ export class MIDIUtils {
                         return OTHER;
                     }
 
+                    case NonRegisteredLSB.vibratoRate: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.vibratoRate,
+                            value: value >> 7
+                        };
+                    }
+
+                    case NonRegisteredLSB.vibratoDepth: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.vibratoDepth,
+                            value: value >> 7
+                        };
+                    }
+
+                    case NonRegisteredLSB.vibratoDelay: {
+                        return {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.vibratoDelay,
+                            value: value >> 7
+                        };
+                    }
+
                     case NonRegisteredLSB.tvfCutoffFrequency: {
                         return {
                             type: "Controller Change",
