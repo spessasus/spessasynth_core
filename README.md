@@ -14,9 +14,10 @@ It allows you to:
 - Convert DLS to SF2! (and back!)
 - [and more!](#current-features)
 
-### v4.2.0 The Effects Update is here!
+### v4.3.0 The General Update is here!
 
-Featuring Reverb, Chorus, Delay, Insertion effects and more!
+Featuring robust MIDI analysis and editing, broadened MIDI exclusive support,
+and reworked, more powerful API!
 
 > **Tip:**
 >
