@@ -531,7 +531,7 @@ export class SynthesizerCore {
         );
         this.midiChannels.push(channel);
         if (sendEvent) {
-            this.callEvent("newChannel", undefined);
+            this.callEvent("channelAdded", undefined);
             channel.setDrums(true);
         }
     }
@@ -543,7 +543,7 @@ export class SynthesizerCore {
      */
     public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
         // Call here because there are returns in this function.
-        this.callEvent("synthReset", system);
+        this.callEvent("reset", system);
         this.resetMIDIParameters(system);
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
@@ -562,7 +562,7 @@ export class SynthesizerCore {
         if (!this.drumPreset || !this.defaultPreset) return;
 
         // Reset channels
-        // Do not send CC changes as we call synthReset
+        // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
     }
 

@@ -521,7 +521,7 @@ export class MIDIChannel {
 
         this.updateInternalParams();
 
-        this.synthCore.callEvent("channelMIDIParamChange", {
+        this.synthCore.callEvent("channelParamChange", {
             channel: this.channel,
             parameter,
             value

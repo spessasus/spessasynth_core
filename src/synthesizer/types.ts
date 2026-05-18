@@ -21,7 +21,7 @@ import type { MIDISystem } from "../soundbank/types";
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
  */
-type SynthDisplayCallback = number[];
+type DisplayMessageData = number[];
 
 export type GlobalMIDIParameterChangeCallback = {
     [P in keyof GlobalMIDIParameter]: {
@@ -132,7 +132,7 @@ export interface SynthProcessorEventData {
     /**
      * This event fires when a new channel is created. There is no data for this event.
      */
-    newChannel: void;
+    channelAdded: void;
     /**
      * This event fires when the preset list is changed.
      */
@@ -140,21 +140,21 @@ export interface SynthProcessorEventData {
     /**
      * This event fires when the synthesizer is reset.
      */
-    synthReset: MIDISystem;
+    reset: MIDISystem;
     /**
      * This event fires when the synthesizer receives a display message.
      */
-    synthDisplay: SynthDisplayCallback;
+    displayMessage: DisplayMessageData;
 
     /**
      * This event fires when a global MIDI parameter changes.
      */
-    globalMIDIParamChange: GlobalMIDIParameterChangeCallback;
+    globalParamChange: GlobalMIDIParameterChangeCallback;
 
     /**
      * This event fires when a channel MIDI parameter changes.
      */
-    channelMIDIParamChange: ChannelMIDIParameterChange;
+    channelParamChange: ChannelMIDIParameterChange;
 
     /**
      * This event fires when an effect processor is modified.

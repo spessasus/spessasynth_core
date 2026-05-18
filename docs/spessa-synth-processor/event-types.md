@@ -4,22 +4,22 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
 
 ## Table summary
 
-| Name                     | Description                                     |
-| ------------------------ | ----------------------------------------------- |
-| `noteOn`                 | Key has been pressed.                           |
-| `noteOff`                | Key has been released.                          |
-| `controllerChange`       | Controller has been changed.                    |
-| `programChange`          | Program has been changed.                       |
-| `channelPressure`        | Channel's pressure has been changed.            |
-| `polyPressure`           | Note's pressure has been changed.               |
-| `stopAll`                | All voices were stopped on a given channel.     |
-| `newChannel`             | A new channel was added to the synth.           |
-| `presetListChange`       | The preset list has been changed/initialized.   |
-| `synthReset`             | The synthesizer has been reset.                 |
-| `synthDisplay`           | The synthesizer has received a display message. |
-| `globalMIDIParamChange`  | A global MIDI Parameter has been changed.       |
-| `channelMIDIParamChange` | A channel MIDI Parameter has been changed.      |
-| `effectChange`           | An effect parameter has been changed.           |
+| Name                 | Description                                     |
+| -------------------- | ----------------------------------------------- |
+| `noteOn`             | Key has been pressed.                           |
+| `noteOff`            | Key has been released.                          |
+| `controllerChange`   | Controller has been changed.                    |
+| `programChange`      | Program has been changed.                       |
+| `channelPressure`    | Channel's pressure has been changed.            |
+| `polyPressure`       | Note's pressure has been changed.               |
+| `stopAll`            | All voices were stopped on a given channel.     |
+| `channelAdded`       | A new channel was added to the synth.           |
+| `presetListChange`   | The preset list has been changed/initialized.   |
+| `reset`              | The synthesizer has been reset.                 |
+| `displayMessage`     | The synthesizer has received a display message. |
+| `globalParamChange`  | A global MIDI Parameter has been changed.       |
+| `channelParamChange` | A channel MIDI Parameter has been changed.      |
+| `effectChange`       | An effect parameter has been changed.           |
 
 !!! Note
 
@@ -68,9 +68,9 @@ though [Some system exclusives can change it too](../extra/midi-implementation.m
 - `controller`: `number` - the number of the MIDI controller list. Ranges from 0 to 127.
 - `value`: `number` - the new value of the controller. Ranges from 0 to 127.
 
-Note that this event is also called after `synthReset` if there were any locked controllers.
+Note that this event is also called after `reset` if there were any locked controllers.
 For example, if CC#1 was locked to 64,
-after `synthReset` a `controllerChange` event will be called with `controller` 1 and `value` 64.
+after `reset` a `controllerChange` event will be called with `controller` 1 and `value` 64.
 
 ### `programChange`
 
@@ -116,7 +116,7 @@ This event is triggered when all voices are stopped. Either manually or when rec
 - `channel`: `number` - the MIDI channel number.
 - `force`: `boolean` - if the channel was force stopped. (no release time)
 
-### `newChannel`
+### `channelAdded`
 
 This event is triggered when a new channel is added to the synthesizer.
 Either manually,
@@ -143,7 +143,7 @@ The event data is the preset list. Each item is a preset list entry:
 
     _Do not_ use `isGMGSDrum` as the indication!
 
-### `synthReset`
+### `reset`
 
 This event is triggered when all controllers and programs have been reset. Effectively a system reset.
 
@@ -154,20 +154,20 @@ The data is the new `MIDISystem`. Either `gs`, `gm`, `gm2` or `xg`.
     If there were any locked controllers, they will be restored via `controllerChange` event after (like
     described in `controllerChange`).
 
-### `synthDisplay`
+### `displayMessage`
 
 This event is triggered when a SysEx to display some text has been received.
 
-The data is a number array of the entire system exclusive, excluding the `F0` status byte.
+The data is a number array of the entire system exclusive, **excluding the `F0` status byte.**
 
-### `globalMIDIParamChange`
+### `globalParamChange`
 
 This event is triggered when a [Global MIDI Parameter](global-parameters.md#midi) changes.
 
 - `parameter`: `GlobalMIDIParameter` - the parameter type (string)
 - `value`: varies - the new value of this parameter.
 
-### `channelMIDIParamChange`
+### `channelParamChange`
 
 This event is triggered when a [Channel MIDI Parameter](midi-channel/channel-parameters.md#midi) changes.
 

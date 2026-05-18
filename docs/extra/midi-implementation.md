@@ -269,12 +269,12 @@ Below are the supported Roland GS messages.
 ##### Displayed Letter
 
 The text that Sound Canvas MIDIs display on the device.
-A `synthdisplay` event will be emitted with the System Exclusive data.
+A `displayMessage` event will be emitted with the System Exclusive data.
 
 ##### Displayed Dot Data
 
 Dot matrix display data for the Sound Canvas devices.
-A `synthdisplay` event will be emitted with the System Exclusive data.
+A `displayMessage` event will be emitted with the System Exclusive data.
 
 #### System Parameters, Patch Common Parameters
 
@@ -612,12 +612,12 @@ This allows to disable a specific drum instrument from receiving Note On events.
 ##### Display Letter
 
 The text that XG MIDIs display on the device.
-A `synthdisplay` event will be emitted with the System Exclusive data.
+A `displayMessage` event will be emitted with the System Exclusive data.
 
 ##### Display Bitmap
 
 A dot matrix display data for the XG devices.
-A `synthdisplay` event will be emitted with the System Exclusive data.
+A `displayMessage` event will be emitted with the System Exclusive data.
 
 ### Universal MIDI System Exclusive
 

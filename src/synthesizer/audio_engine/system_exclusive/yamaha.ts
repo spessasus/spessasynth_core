@@ -372,7 +372,7 @@ export function yamahaSystemExclusive(
             a1 === 0x07 // Display bitmap
         ) {
             // Displayed letters
-            this.callEvent("synthDisplay", [...syx]);
+            this.callEvent("displayMessage", [...syx]);
             return;
         }
 

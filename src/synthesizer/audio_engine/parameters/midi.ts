@@ -56,7 +56,7 @@ export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
 
     for (const ch of this.midiChannels) ch.updateInternalParams();
 
-    this.callEvent("globalMIDIParamChange", {
+    this.callEvent("globalParamChange", {
         parameter,
         value
     } as GlobalMIDIParameterChangeCallback);

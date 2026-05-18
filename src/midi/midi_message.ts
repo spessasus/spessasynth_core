@@ -21,10 +21,10 @@ export class MIDIMessage {
     public data: Uint8Array<ArrayBuffer>;
 
     /**
-     * Creates a new MIDI message
-     * @param ticks time of this message in absolute MIDI ticks
-     * @param byte the message status byte
-     * @param data the message's binary data
+     * Creates a new MIDI message.
+     * @param ticks time of this message in absolute MIDI ticks.
+     * @param byte the message status byte.
+     * @param data the message's binary data.
      */
     public constructor(
         ticks: number,

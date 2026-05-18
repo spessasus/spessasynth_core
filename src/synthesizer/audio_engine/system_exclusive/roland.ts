@@ -1222,10 +1222,10 @@ export function rolandSystemExclusive(
                 ) {
                     if (syx[5] === 0x00) {
                         // Display letters
-                        this.callEvent("synthDisplay", [...syx]);
+                        this.callEvent("displayMessage", [...syx]);
                     } else if (syx[5] === 0x01) {
                         // Matrix display
-                        this.callEvent("synthDisplay", [...syx]);
+                        this.callEvent("displayMessage", [...syx]);
                     } else {
                         // This is some other GS sysex...
                         SpessaLog.gsFail("Display Data", syx);
