@@ -141,7 +141,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
                 // Room1
                 this.dattorro.damping = 0.85;
                 this.characterTimeCoefficient = 0.9;
-                this.characterGainCoefficient = 0.7;
+                this.characterGainCoefficient = 0.9;
                 this.characterLPFCoefficient = 0.2;
                 break;
             }
@@ -149,7 +149,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             case 1: {
                 // Room2
                 this.dattorro.damping = 0.2;
-                this.characterGainCoefficient = 0.5;
+                this.characterGainCoefficient = 0.7;
                 this.characterTimeCoefficient = 1;
                 this.dattorro.decayDiffusion2 = 0.64;
                 this.dattorro.decayDiffusion1 = 0.6;
@@ -160,7 +160,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
             case 2: {
                 // Room3
                 this.dattorro.damping = 0.56;
-                this.characterGainCoefficient = 0.55;
+                this.characterGainCoefficient = 0.75;
                 this.characterTimeCoefficient = 1;
                 this.dattorro.decayDiffusion2 = 0.64;
                 this.dattorro.decayDiffusion1 = 0.6;
@@ -170,8 +170,9 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
             case 3: {
                 // Hall1
-                this.dattorro.damping = 0.6;
-                this.characterGainCoefficient = 1;
+                this.dattorro.damping = 0.3;
+                this.characterGainCoefficient = 1.25;
+                this.characterTimeCoefficient = 1.3;
                 this.characterLPFCoefficient = 0;
                 this.dattorro.decayDiffusion2 = 0.7;
                 this.dattorro.decayDiffusion1 = 0.66;
@@ -180,15 +181,18 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
             case 4: {
                 // Hall2
-                this.characterGainCoefficient = 0.75;
-                this.dattorro.damping = 0.2;
-                this.characterLPFCoefficient = 0.2;
+                this.characterGainCoefficient = 1;
+                this.characterTimeCoefficient = 1.2;
+                this.characterLPFCoefficient = 0.1;
+                this.dattorro.damping = 0.1;
+                this.dattorro.decayDiffusion2 = 0.69;
+                this.dattorro.decayDiffusion1 = 0.67;
                 break;
             }
 
             case 5: {
                 // Plate
-                this.characterGainCoefficient = 0.55;
+                this.characterGainCoefficient = 0.75;
                 this.dattorro.damping = 0.65;
                 this.characterTimeCoefficient = 0.5;
                 break;
@@ -398,7 +402,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
 
     private updateGain() {
         this.dattorro.gain =
-            (this._level / 348) * this.characterGainCoefficient;
+            (this._level / 345) * this.characterGainCoefficient;
         // SC-VA: Delay seems to be quite loud
         this.delayGain = (this._level / 127) * DELAY_GAIN;
     }

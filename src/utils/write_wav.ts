@@ -2,8 +2,14 @@ import { IndexedByteArray } from "./indexed_array";
 import { writeBinaryStringIndexed } from "./byte_functions/string";
 import { RIFFChunk } from "./riff_chunk";
 import { writeLittleEndianIndexed } from "./byte_functions/little_endian";
-import { DEFAULT_WAV_WRITE_OPTIONS, type WaveWriteOptions } from "./exports";
+import { type WaveWriteOptions } from "./exports";
 import { fillWithDefaults } from "./fill_with_defaults";
+
+export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
+    normalizeAudio: true,
+    loop: undefined,
+    metadata: {}
+};
 
 /**
  * Writes an audio into a valid WAV file.

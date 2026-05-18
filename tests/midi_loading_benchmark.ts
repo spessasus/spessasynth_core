@@ -5,7 +5,7 @@ import {
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import { formatTime } from "../src/utils/other";
 
 // Process arguments
@@ -18,16 +18,16 @@ const midPath = args[0];
 
 const mid = await fs.readFile(midPath);
 
-const sfFile = await BasicSoundBank.getSampleSoundBankFile();
-// const sfFile = (
-//     await fs.readFile(
+const sfFile = BasicSoundBank.getSampleSoundBankFile();
+// Const sfFile = (
+//     Await fs.readFile(
 //         "/home/spessasus/htdocs/SpessaSynth/soundfonts/SpessaSynthGMGS.sf3"
 //     )
 // ).buffer;
 
-const sampleRate = 44100;
+const sampleRate = 44_100;
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEffects: false
+    effectsEnabled: false
 });
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sfFile),
@@ -38,7 +38,7 @@ const seq = new SpessaSynthSequencer(synth);
 
 console.info("Engine initialized, loading MIDI...");
 console.time("MIDI parsed in");
-const midi = BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer);
+const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 console.timeEnd("MIDI parsed in");
 console.time("New song loaded in");
 seq.loadNewSongList([midi]);

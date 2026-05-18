@@ -1,5 +1,5 @@
 // All the midi statuses dictionary
-export const midiMessageTypes = {
+export const MIDIMessageTypes = {
     noteOff: 0x80,
     noteOn: 0x90,
     polyPressure: 0xa0,
@@ -38,10 +38,10 @@ export const midiMessageTypes = {
 } as const;
 
 export type MIDIMessageType =
-    (typeof midiMessageTypes)[keyof typeof midiMessageTypes];
+    (typeof MIDIMessageTypes)[keyof typeof MIDIMessageTypes];
 
 // All midi controllers dictionary
-export const midiControllers = {
+export const MIDIControllers = {
     bankSelect: 0,
     modulationWheel: 1,
     breathController: 2,
@@ -53,7 +53,7 @@ export const midiControllers = {
     balance: 8,
     undefinedCC9: 9,
     pan: 10,
-    expressionController: 11,
+    expression: 11,
     effectControl1: 12,
     effectControl2: 13,
     undefinedCC14: 14,
@@ -85,7 +85,7 @@ export const midiControllers = {
     balanceLSB: 40,
     undefinedCC9LSB: 41,
     panLSB: 42,
-    expressionControllerLSB: 43,
+    expressionLSB: 43,
     effectControl1LSB: 44,
     effectControl2LSB: 45,
     undefinedCC14LSB: 46,
@@ -173,4 +173,44 @@ export const midiControllers = {
 } as const;
 
 export type MIDIController =
-    (typeof midiControllers)[keyof typeof midiControllers];
+    (typeof MIDIControllers)[keyof typeof MIDIControllers];
+
+export const RegisteredParameterTypes = {
+    pitchWheelRange: 0x00_00,
+    fineTuning: 0x00_01,
+    coarseTuning: 0x00_02,
+    modulationDepth: 0x00_05,
+    resetParameters: 0x3f_ff
+} as const;
+
+export const NonRegisteredMSB = {
+    partParameter: 0x01,
+    drumPitch: 0x18,
+    drumPitchFine: 0x19,
+    drumLevel: 0x1a,
+    drumPan: 0x1c,
+    drumReverb: 0x1d,
+    drumChorus: 0x1e,
+    drumDelay: 0x1f,
+
+    awe32: 0x7f,
+    SF2: 120
+} as const;
+
+/**
+ * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
+ * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ * These also seem to match XG
+ */
+export const NonRegisteredLSB = {
+    vibratoRate: 0x08,
+    vibratoDepth: 0x09,
+    vibratoDelay: 0x0a,
+
+    tvfCutoffFrequency: 0x20,
+    tvfResonance: 0x21,
+
+    envelopeAttackTime: 0x63,
+    envelopeDecayTime: 0x64,
+    envelopeReleaseTime: 0x66
+} as const;

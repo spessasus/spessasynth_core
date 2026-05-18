@@ -7,7 +7,7 @@ import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
 import { BasicPresetZone } from "../../basic_soundbank/basic_preset_zone";
-import { generatorTypes } from "../../basic_soundbank/generator_types";
+import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 /**
  * Parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
@@ -22,10 +22,7 @@ export class SoundFontPreset extends BasicPreset {
      */
     public constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
         super(sf2);
-        this.name = readBinaryStringIndexed(presetChunk.data, 20).replace(
-            /\d{3}:\d{3}/,
-            ""
-        ); // Remove those pesky "000:001"
+        this.name = readBinaryStringIndexed(presetChunk.data, 20);
 
         this.program = readLittleEndianIndexed(presetChunk.data, 2);
         const wBank = readLittleEndianIndexed(presetChunk.data, 2);
@@ -47,17 +44,17 @@ export class SoundFontPreset extends BasicPreset {
         instruments: BasicInstrument[]
     ) {
         const instrumentID = generators.find(
-            (g) => g.generatorType === generatorTypes.instrument
+            (g) => g.type === GeneratorTypes.instrument
         );
         let instrument;
         if (instrumentID) {
-            instrument = instruments[instrumentID.generatorValue];
+            instrument = instruments[instrumentID.value];
         } else {
             throw new Error("No instrument ID found in preset zone.");
         }
         if (!instrument) {
             throw new Error(
-                `Invalid instrument ID: ${instrumentID.generatorValue}, available instruments: ${instruments.length}`
+                `Invalid instrument ID: ${instrumentID.value}, available instruments: ${instruments.length}`
             );
         }
         const z = new BasicPresetZone(this, instrument);

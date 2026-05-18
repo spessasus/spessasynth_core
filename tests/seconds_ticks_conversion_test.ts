@@ -10,17 +10,17 @@ if (args.length !== 1) {
 const midPath = args[0];
 
 const m = await fs.readFile(midPath);
-const mid = BasicMIDI.fromArrayBuffer(m.buffer as ArrayBuffer);
+const mid = BasicMIDI.fromArrayBuffer(m.buffer);
 
 const loopEnd = mid.loop.end;
 const loopEndSeconds = mid.midiTicksToSeconds(loopEnd);
 const loopEndTicks2 = mid.secondsToMIDITicks(loopEndSeconds);
 console.info("Loop end in ticks:", loopEnd);
 console.info("Loop end in seconds:", loopEndSeconds);
-if (loopEndTicks2 !== loopEnd) {
+if (loopEndTicks2 === loopEnd) {
+    console.info("Test passed! Ticks match.", loopEndTicks2, loopEnd);
+} else {
     throw new Error(
         `Test failed!, ticks -> seconds -> ticks resulted in ${loopEndTicks2} instead of ${loopEnd}`
     );
-} else {
-    console.info("Test passed! Ticks match.", loopEndTicks2, loopEnd);
 }

@@ -1,10 +1,10 @@
 import {
     IndexedByteArray,
     MIDIBuilder,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 const builder = new MIDIBuilder({
     name: "GS Drum Pitch NRPN Test"
@@ -13,7 +13,7 @@ const builder = new MIDIBuilder({
 builder.addEvent(
     0,
     0,
-    midiMessageTypes.systemExclusive,
+    MIDIMessageTypes.systemExclusive,
     new IndexedByteArray([
         0x41, // Roland
         0x10, // Device ID (defaults to 16 on roland)
@@ -32,39 +32,26 @@ let ticks = 780;
 
 let MIDI_NOTE = 50;
 
-builder.addControllerChange(ticks, 0, 9, midiControllers.reverbDepth, 0);
+builder.controllerChange(ticks, 0, 9, MIDIControllers.reverbDepth, 0);
 // SC-88Pro MAP STANDARD
-builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 3);
-builder.addProgramChange(ticks, 0, 9, 0);
+builder.controllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 3);
+builder.programChange(ticks, 0, 9, 0);
 
 let pitch = 50;
 while (pitch <= 70) {
     // Rate
-    builder.addControllerChange(
+    builder.nonRegisteredParameter(
         ticks,
         0,
         9,
-        midiControllers.nonRegisteredParameterMSB,
-        0x18
+        (0x18 << 7) | MIDI_NOTE,
+        pitch << 7
     );
-    builder.addControllerChange(
-        ticks,
-        0,
-        9,
-        midiControllers.nonRegisteredParameterLSB,
-        MIDI_NOTE
-    );
-    builder.addControllerChange(
-        ticks,
-        0,
-        9,
-        midiControllers.dataEntryMSB,
-        pitch
-    );
+    builder.controllerChange(ticks, 0, 9, MIDIControllers.dataEntryMSB, pitch);
     ticks += 240;
-    builder.addNoteOn(ticks, 0, 9, MIDI_NOTE, 120);
+    builder.noteOn(ticks, 0, 9, MIDI_NOTE, 120);
     ticks += 80;
-    builder.addNoteOff(ticks, 0, 9, MIDI_NOTE);
+    builder.noteOff(ticks, 0, 9, MIDI_NOTE);
     pitch += 1;
 }
 
@@ -72,39 +59,25 @@ ticks += 480;
 
 MIDI_NOTE = 48; // The same tom pitch compared to 88Pro
 // SC-55 MAP STANDARD
-builder.addControllerChange(ticks, 0, 9, midiControllers.bankSelectLSB, 1);
-builder.addProgramChange(ticks, 0, 9, 0);
+builder.controllerChange(ticks, 0, 9, MIDIControllers.bankSelectLSB, 1);
+builder.programChange(ticks, 0, 9, 0);
 
 ticks += 480;
 
 pitch = 50;
 while (pitch <= 70) {
     // Rate
-    builder.addControllerChange(
+    builder.nonRegisteredParameter(
         ticks,
         0,
         9,
-        midiControllers.nonRegisteredParameterMSB,
-        0x18
-    );
-    builder.addControllerChange(
-        ticks,
-        0,
-        9,
-        midiControllers.nonRegisteredParameterLSB,
-        MIDI_NOTE
-    );
-    builder.addControllerChange(
-        ticks,
-        0,
-        9,
-        midiControllers.dataEntryMSB,
-        pitch
+        (0x18 << 7) | MIDI_NOTE,
+        pitch << 7
     );
     ticks += 240;
-    builder.addNoteOn(ticks, 0, 9, MIDI_NOTE, 120);
+    builder.noteOn(ticks, 0, 9, MIDI_NOTE, 120);
     ticks += 80;
-    builder.addNoteOff(ticks, 0, 9, MIDI_NOTE);
+    builder.noteOff(ticks, 0, 9, MIDI_NOTE);
     pitch += 1;
 }
 

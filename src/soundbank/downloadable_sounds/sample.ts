@@ -11,8 +11,8 @@ import {
     readBinaryStringIndexed
 } from "../../utils/byte_functions/string";
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { SpessaSynthInfo } from "../../utils/loggin";
-import { consoleColors } from "../../utils/other";
+import { SpessaLog } from "../../utils/loggin";
+import { ConsoleColors } from "../../utils/other";
 import { DLSSample } from "./dls_sample";
 import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import type { BasicSample } from "../basic_soundbank/basic_sample";
@@ -152,17 +152,17 @@ export class DownloadableSoundsSample extends DLSVerifier {
     public write() {
         const fmt = this.writeFmt();
         const wsmp = this.waveSample.write();
-        const data = RIFFChunk.write("data", this.dataChunk.data);
+        const data = RIFFChunk.getParts("data", [this.dataChunk.data]);
 
         const inam = RIFFChunk.write("INAM", getStringBytes(this.name, true));
         const info = RIFFChunk.write("INFO", inam, false, true);
-        SpessaSynthInfo(
+        SpessaLog.info(
             `%cSaved %c${this.name}%c successfully!`,
-            consoleColors.recognized,
-            consoleColors.value,
-            consoleColors.recognized
+            ConsoleColors.recognized,
+            ConsoleColors.value,
+            ConsoleColors.recognized
         );
-        return RIFFChunk.writeParts("wave", [fmt, wsmp, data, info], true);
+        return RIFFChunk.getParts("wave", [fmt, wsmp, ...data, info], true);
     }
 
     private writeFmt() {

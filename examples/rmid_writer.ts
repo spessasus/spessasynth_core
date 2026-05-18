@@ -1,11 +1,6 @@
 // Process arguments
-import * as fs from "fs/promises";
-import {
-    BasicMIDI,
-    BasicSoundBank,
-    SoundBankLoader,
-    SpessaSynthLogging
-} from "../src";
+import * as fs from "node:fs/promises";
+import { BasicMIDI, BasicSoundBank, SoundBankLoader, SpessaLog } from "../src";
 
 const args = process.argv.slice(2);
 if (args.length !== 3) {
@@ -22,20 +17,20 @@ const outPath = args[2];
 // Await sf3 decoder
 await BasicSoundBank.isSF3DecoderReady;
 
-SpessaSynthLogging(true, true, true);
+SpessaLog.setLogLevel(true, true, true);
 
 // Load bank and MIDI
-const bank = SoundBankLoader.fromArrayBuffer(
-    (await fs.readFile(sfPath)).buffer
-);
-const midi = BasicMIDI.fromArrayBuffer((await fs.readFile(midPath)).buffer);
+const bankFile = await fs.readFile(sfPath);
+const bank = SoundBankLoader.fromArrayBuffer(bankFile.buffer);
+const midiFile = await fs.readFile(midPath);
+const midi = BasicMIDI.fromArrayBuffer(midiFile.buffer);
 console.info("Loaded bank and MIDI!");
 
 // Trim sf2 for midi
-bank.trimSoundBank(midi);
+bank.trim(midi.getUsedProgramsAndKeys(bank));
 
 // Write rmid
-const rmidi = midi.writeRMIDI(await bank.writeSF2(), {
+const rmidi = midi.writeRMIDI(bank.writeSF2(), {
     soundBank: bank
 });
 await fs.writeFile(outPath, new Uint8Array(rmidi));

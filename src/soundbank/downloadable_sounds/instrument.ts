@@ -1,21 +1,16 @@
 import { DownloadableSoundsArticulation } from "./articulation";
 import { DownloadableSoundsRegion } from "./region";
-import { type MIDIPatchNamed } from "../basic_soundbank/midi_patch";
 import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     getStringBytes,
     readBinaryStringIndexed
 } from "../../utils/byte_functions/string";
-import {
-    SpessaSynthGroup,
-    SpessaSynthGroupCollapsed,
-    SpessaSynthGroupEnd
-} from "../../utils/loggin";
+import { SpessaLog } from "../../utils/loggin";
 import {
     readLittleEndianIndexed,
     writeDword
 } from "../../utils/byte_functions/little_endian";
-import { consoleColors } from "../../utils/other";
+import { ConsoleColors } from "../../utils/other";
 import { DLSVerifier } from "./dls_verifier";
 import type { DLSChunkFourCC } from "../types";
 import type { DownloadableSoundsSample } from "./sample";
@@ -25,8 +20,9 @@ import { BasicInstrument } from "../basic_soundbank/basic_instrument";
 import {
     BasicSample,
     BasicSoundBank,
-    generatorLimits,
-    generatorTypes,
+    GeneratorLimits,
+    GeneratorTypes,
+    type MIDIPatch,
     Modulator
 } from "../exports";
 import {
@@ -40,7 +36,7 @@ import {
  */
 export class DownloadableSoundsInstrument
     extends DLSVerifier
-    implements MIDIPatchNamed
+    implements MIDIPatch
 {
     public readonly articulation = new DownloadableSoundsArticulation();
     public readonly regions = new Array<DownloadableSoundsRegion>();
@@ -71,7 +67,7 @@ export class DownloadableSoundsInstrument
 
         const instrumentHeader = chunks.find((c) => c.header === "insh");
         if (!instrumentHeader) {
-            SpessaSynthGroupEnd();
+            SpessaLog.groupEnd();
             throw new Error("No instrument header!");
         }
 
@@ -114,17 +110,17 @@ export class DownloadableSoundsInstrument
         instrument.bankLSB = ulBank & 127;
         instrument.isGMGSDrum = ulBank >>> 31 > 0;
 
-        SpessaSynthGroupCollapsed(
+        SpessaLog.groupCollapsed(
             `%cParsing %c"${instrumentName}"%c...`,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info
         );
 
         // List of regions
         const regionListChunk = RIFFChunk.findListType(chunks, "lrgn");
         if (!regionListChunk) {
-            SpessaSynthGroupEnd();
+            SpessaLog.groupEnd();
             throw new Error("No region list!");
         }
 
@@ -139,7 +135,7 @@ export class DownloadableSoundsInstrument
                 4
             ) as DLSChunkFourCC;
             if (type !== "rgn " && type !== "rgn2") {
-                SpessaSynthGroupEnd();
+                SpessaLog.groupEnd();
                 this.parsingError(
                     `Invalid DLS region! Expected "rgn " or "rgn2" got "${type}"`
                 );
@@ -150,7 +146,7 @@ export class DownloadableSoundsInstrument
                 instrument.regions.push(region);
             }
         }
-        SpessaSynthGroupEnd();
+        SpessaLog.groupEnd();
         return instrument;
     }
 
@@ -161,11 +157,11 @@ export class DownloadableSoundsInstrument
         instrument.bankMSB = preset.bankMSB;
         instrument.program = preset.program;
         instrument.isGMGSDrum = preset.isGMGSDrum;
-        SpessaSynthGroup(
+        SpessaLog.group(
             `%cConverting %c${preset.toString()}%c to DLS...`,
-            consoleColors.info,
-            consoleColors.value,
-            consoleColors.info
+            ConsoleColors.info,
+            ConsoleColors.value,
+            ConsoleColors.info
         );
 
         // Combine preset and instrument zones into a single instrument zone (region) list
@@ -176,32 +172,34 @@ export class DownloadableSoundsInstrument
                 DownloadableSoundsRegion.fromSFZone(z, samples)
             );
         }
-        SpessaSynthGroupEnd();
+        SpessaLog.groupEnd();
         return instrument;
     }
 
     public write() {
-        SpessaSynthGroupCollapsed(
+        SpessaLog.groupCollapsed(
             `%cWriting %c${this.name}%c...`,
-            consoleColors.info,
-            consoleColors.recognized,
-            consoleColors.info
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info
         );
-        const chunks = [this.writeHeader()];
+        const chunks: Uint8Array[] = [this.writeHeader()];
 
-        const regionChunks = this.regions.map((r) => r.write());
-        chunks.push(RIFFChunk.writeParts("lrgn", regionChunks, true));
+        const regionChunks = this.regions.flatMap((r) => r.write());
+        chunks.push(...RIFFChunk.getParts("lrgn", regionChunks, true));
 
         // This will mostly be false as SF2 -> DLS can't have both global and local regions,
         // So it only has global, hence this check.
         if (this.articulation.length > 0) {
-            chunks.push(this.articulation.write());
+            chunks.push(...this.articulation.write());
         }
 
         // Write the name
         const inam = RIFFChunk.write("INAM", getStringBytes(this.name, true));
         chunks.push(RIFFChunk.write("INFO", inam, false, true));
-        SpessaSynthGroupEnd();
+        SpessaLog.groupEnd();
+        // This one can explode in length (causing a maximum argument crash),
+        // So keep as writeParts, not getParts
         return RIFFChunk.writeParts("ins ", chunks, true);
     }
 
@@ -233,7 +231,7 @@ export class DownloadableSoundsInstrument
         // Reverb
         if (
             !instrument.globalZone.modulators.some(
-                (m) => m.destination === generatorTypes.reverbEffectsSend
+                (m) => m.destination === GeneratorTypes.reverbEffectsSend
             )
         ) {
             instrument.globalZone.addModulators(
@@ -243,7 +241,7 @@ export class DownloadableSoundsInstrument
         // Chorus
         if (
             !instrument.globalZone.modulators.some(
-                (m) => m.destination === generatorTypes.chorusEffectsSend
+                (m) => m.destination === GeneratorTypes.chorusEffectsSend
             )
         ) {
             instrument.globalZone.addModulators(
@@ -254,7 +252,7 @@ export class DownloadableSoundsInstrument
         // Remove generators with default values
         instrument.globalZone.generators =
             instrument.globalZone.generators.filter(
-                (g) => g.generatorValue !== generatorLimits[g.generatorType].def
+                (g) => g.value !== GeneratorLimits[g.type].def
             );
 
         soundBank.addPresets(preset);

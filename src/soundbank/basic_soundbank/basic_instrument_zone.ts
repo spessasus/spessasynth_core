@@ -3,7 +3,7 @@ import type { BasicInstrument } from "./basic_instrument";
 import type { BasicSample } from "./basic_sample";
 import { Generator } from "./generator";
 import type { BasicSoundBank } from "./basic_soundbank";
-import { generatorTypes } from "./generator_types";
+import { GeneratorTypes } from "./generator_types";
 
 export class BasicInstrumentZone extends BasicZone {
     /**
@@ -61,7 +61,7 @@ export class BasicInstrumentZone extends BasicZone {
                 `${this.sample.name} does not exist in ${bank.soundBankInfo.name}! Cannot write sampleID generator.`
             );
         }
-        gens.push(new Generator(generatorTypes.sampleID, sampleID, false));
+        gens.push(new Generator(GeneratorTypes.sampleID, sampleID, false));
         return gens;
     }
 }

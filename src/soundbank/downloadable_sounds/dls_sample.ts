@@ -1,9 +1,9 @@
 import { BasicSample } from "../basic_soundbank/basic_sample";
-import { SpessaSynthWarn } from "../../utils/loggin";
 import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { RIFFChunk } from "../../utils/riff_chunk";
-import { sampleTypes } from "../enums";
+import { SampleTypes } from "../enums";
+import { SpessaLog } from "../../utils/loggin";
 
 const W_FORMAT_TAG = {
     PCM: 0x01,
@@ -125,7 +125,7 @@ export class DLSSample extends BasicSample {
             rate,
             pitch,
             pitchCorrection,
-            sampleTypes.monoSample,
+            SampleTypes.monoSample,
             loopStart,
             loopEnd
         );
@@ -143,7 +143,7 @@ export class DLSSample extends BasicSample {
             let sampleData;
             switch (this.wFormatTag) {
                 default: {
-                    SpessaSynthWarn(
+                    SpessaLog.warn(
                         `Failed to decode sample. Unknown wFormatTag: ${this.wFormatTag}`
                     );
                     sampleData = new Float32Array(

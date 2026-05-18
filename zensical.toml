@@ -54,16 +54,21 @@ nav = [
         "extra/midi-implementation.md",
         {"SpessaSynthProcessor" = [
             "spessa-synth-processor/index.md",
-            "spessa-synth-processor/midi-channel.md",
+            {"MIDI Channel" = [
+                "spessa-synth-processor/midi-channel/index.md",
+                "spessa-synth-processor/midi-channel/channel-parameters.md",
+            ]},
             "spessa-synth-processor/midi-patch.md",
+            "spessa-synth-processor/global-parameters.md",
             "spessa-synth-processor/sound-bank-manager.md",
             "spessa-synth-processor/key-modifier-manager.md",
             "spessa-synth-processor/synthesizer-snapshot.md",
             "spessa-synth-processor/event-types.md",
-            "spessa-synth-processor/master-parameter.md",
-            "spessa-synth-processor/reverb-processor.md",
-            "spessa-synth-processor/chorus-processor.md",
-            "spessa-synth-processor/delay-processor.md"
+            {"Effects" = [
+                "spessa-synth-processor/effects/reverb-processor.md",
+                "spessa-synth-processor/effects//chorus-processor.md",
+                "spessa-synth-processor/effects//delay-processor.md"
+            ]},
         ]},
         {"SpessaSynthSequencer" = [
             "spessa-synth-sequencer/index.md",
@@ -93,6 +98,7 @@ nav = [
     ]},
     {"Extra Info" = [
         "extra/all-npm-exports.md",
+        "extra/kinds-of-parameters.md",
         "extra/developer-docs.md",
         "extra/console-output.md",
         "extra/about-multi-port.md",

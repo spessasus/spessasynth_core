@@ -2,8 +2,10 @@ import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
-import type { DLSLoopType, ModulatorSourceEnum } from "./enums";
+import type { ModulatorControllerSource } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
+import type { BasicPreset } from "./basic_soundbank/basic_preset";
+import type { DLSLoopType } from "./downloadable_sounds/enums";
 
 export interface SoundBankManagerListEntry {
     /**
@@ -18,6 +20,33 @@ export interface SoundBankManagerListEntry {
      * The bank MSB offset for this sound bank.
      */
     bankOffset: number;
+}
+
+export interface SF2Channel {
+    /**
+     * All MIDI controller values for modulation.
+     */
+    midiControllers: Int16Array;
+
+    /**
+     * Other MIDI parameters.
+     */
+    midiParameters: {
+        /**
+         * Channel Pressure.
+         */
+        pressure: number;
+
+        /**
+         * 0-16,383
+         */
+        pitchWheel: number;
+
+        /**
+         * Semitones, can be a floating point number.
+         */
+        pitchWheelRange: number;
+    };
 }
 
 export interface SF2VersionTag {
@@ -127,6 +156,10 @@ export interface SoundBankInfoData {
      */
     comment?: string;
     /**
+     * Software used to edit the file.
+     */
+    software?: string;
+    /**
      * Subject.
      */
     subject?: string;
@@ -134,10 +167,6 @@ export interface SoundBankInfoData {
      * ROM information.
      */
     romInfo?: string;
-    /**
-     * Software used to edit the file.
-     */
-    software?: string;
     /**
      * A tag that only applies to SF2 and will usually be undefined.
      */
@@ -157,54 +186,68 @@ export type SampleEncodingFunction = (
     sampleRate: number
 ) => Promise<Uint8Array>;
 
-export type ModulatorSourceIndex = ModulatorSourceEnum | MIDIController;
+export type ModulatorSourceIndex = ModulatorControllerSource | MIDIController;
 
 /**
  * A function to track progress during writing.
  */
 export type ProgressFunction = (
     /**
-     * The written sample name.
+     * Estimated progress, from 0 to 1.
      */
-    sampleName: string,
+    progress: number
+) => unknown;
+
+export type SetSampleFormatOptions = {
     /**
-     * The sample's index.
+     * A function to show progress for compressing. It can be undefined.
      */
-    sampleIndex: number,
-    /**
-     * The total sample count for progress displaying.
-     */
-    sampleCount: number
-) => Promise<unknown>;
+    progressFunction?: ProgressFunction;
+} & (
+    | {
+          /**
+           * The sample format to use.
+           * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
+           * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+           *
+           * Note that decompressing usually results in permanent sample quality loss!
+           */
+          format: "pcm";
+      }
+    | {
+          /**
+           * The sample format to use.
+           * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
+           * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
+           *
+           * Note that decompressing usually results in permanent sample quality loss!
+           */
+          format: "compressed";
+
+          /**
+           * The function for compressing samples.
+           */
+          compressionFunction: SampleEncodingFunction;
+      }
+);
 
 interface SoundBankWriteOptions {
     /**
-     * A function to show progress for writing large sound banks. It can be undefined.
-     */
-    progressFunction?: ProgressFunction;
-
-    /**
-     * The `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
+     * The `ISFT` field to set when writing. If unset, `SpessaSynth` is written.
      * This field indicates the last software that was used to edit this sound bank.
      */
-    software?: string;
+    software: string;
+
+    /**
+     * A function for long operations. It can be undefined.
+     */
+    progressFunction?: ProgressFunction;
 }
 
 /**
  * Options for writing a SoundFont2 file.
  */
 export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
-    /**
-     * If the soundfont should be compressed with a given function.
-     * This changes the version to 3.0.
-     */
-    compress: boolean;
-
-    /**
-     * The function for compressing samples. It can be undefined if not compressed.
-     */
-    compressionFunction?: SampleEncodingFunction;
-
     /**
      * If the DMOD chunk should be written. Recommended.
      * Note that it will only be written if the modulators are unchanged.
@@ -216,12 +259,6 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
      * Note that it will only be written needed.
      */
     writeExtendedLimits: boolean;
-
-    /**
-     * If an SF3 bank should be decompressed back to SF2. Not recommended.
-     * This changes the version to 2.4.
-     */
-    decompress: boolean;
 }
 
 /**
@@ -236,13 +273,25 @@ export interface GenericRange {
 
 export interface DLSLoop {
     loopType: DLSLoopType;
-    /*
-    Specifies the start point of the loop in samples as an absolute offset from the beginning of the
-    data in the <data-ck> subchunk of the <wave-list> wave file chunk.
+    /**
+     * Specifies the start point of the loop in samples as an absolute offset from the beginning of the
+     * data in the <data-ck> subchunk of the <wave-list> wave file chunk.
      */
     loopStart: number;
-    /*
-    Specifies the length of the loop in samples.
+    /**
+     * Specifies the length of the loop in samples.
      */
     loopLength: number;
 }
+
+/**
+ * - Key - the preset.
+ * - Value - A Map:
+ *   - Key: The MIDI note number.
+ *   - Value: A set of matching velocities for this note number.
+ */
+export type PresetsWithKeyCombinations = Map<
+    BasicPreset,
+    Map<number, Set<number>>
+>;
+export type MIDISystem = "gm" | "gm2" | "gs" | "xg";

@@ -1,25 +1,25 @@
-import { midiControllers } from "../../src";
+import { MIDIControllers } from "../../src";
 import { MIDITestMaker } from "../test_maker";
 
 const test = new MIDITestMaker("Stereo EQ");
 
 // P5 Square
-test.addProgramChange(16, 3, 80);
+test.programChange(16, 3, 80);
 
 // No vibrato nor filter
-test.addControllerChange(midiControllers.vibratoDepth, 0);
-test.addControllerChange(midiControllers.brightness, 127);
-test.addControllerChange(midiControllers.reverbDepth, 0);
+test.cc(MIDIControllers.vibratoDepth, 0);
+test.cc(MIDIControllers.brightness, 127);
+test.cc(MIDIControllers.reverbDepth, 0);
 
 test.ticks += 80;
 // Short raw play
-test.addNoteOn(60, 120);
+test.noteOn(60, 120);
 test.ticks += 480;
-test.addNoteOff(60);
+test.noteOff(60);
 
 const efx = test.testEFX(0x01, 0x00);
 test.ticks += 80;
-test.addNoteOn(60, 120);
+test.noteOn(60, 120);
 
 // Low Freq
 efx.sweepParam(3, 0, 1, 840);
@@ -47,6 +47,6 @@ efx.sweepParam(0xb, 1, 4);
 // Mid 2 Gain
 efx.sweepParam(0xc, 52, 76);
 
-test.addNoteOff(60);
+test.noteOff(60);
 
 test.make("efx");

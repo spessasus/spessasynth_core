@@ -93,7 +93,7 @@ Sets the sample type and unlinks if needed.
 sample.setSampleType(type);
 ```
 
-- type - the type to set it to. `sampleTypes` enum contains all valid types.
+- type - the type to set it to. `SampleTypes` enum contains all valid types.
 
 ### unlinkSample
 
@@ -108,7 +108,7 @@ sample.setLinkedSample(sample, type);
 ```
 
 - sample - the BasicSample to link to.
-- type - the type to set it to. `sampleTypes` enum contains all valid types.
+- type - the type to set it to. `SampleTypes` enum contains all valid types.
 
 ### getAudioData
 

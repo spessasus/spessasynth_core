@@ -1,5 +1,6 @@
 // Attempt to load a date from string
-import { SpessaSynthWarn } from "./loggin";
+
+import { SpessaLog } from "./loggin";
 
 export function toISODateString(date: Date) {
     return date.toISOString().split(".")[0] + "Z";
@@ -120,7 +121,7 @@ export function parseDateString(dateString: string) {
             return year;
         }
 
-        SpessaSynthWarn(
+        SpessaLog.warn(
             `Invalid date: "${dateString}". Replacing with the current date!`
         );
         return new Date();

@@ -4,12 +4,12 @@ import {
     type BiquadCoeffs,
     type BiquadState,
     computeShelfCoeffs,
-    panTableLeft,
-    panTableRight,
+    PAN_TABLE_LEFT,
+    PAN_TABLE_RIGHT,
     processBiquad,
-    zeroCoeffs,
+    ZERO_COEFFS,
     zeroState,
-    zeroStateC
+    ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
 
@@ -127,20 +127,20 @@ export class AutoWahFX implements InsertionProcessor {
      * @private
      */
     private level = DEFAULT_LEVEL / 127;
-    private readonly coeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly state: BiquadState = { ...zeroStateC };
-    private readonly hpCoeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly hpState: BiquadState = { ...zeroStateC };
+    private readonly coeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly state: BiquadState = { ...ZeroStateC };
+    private readonly hpCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly hpState: BiquadState = { ...ZeroStateC };
     private phase = 0;
 
     // Biquad shelving coefficients and states (per channel)
-    private readonly lsCoeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly hsCoeffs: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly lsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly hsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
 
     // Low shelf
-    private lsState: BiquadState = { ...zeroStateC };
+    private lsState: BiquadState = { ...ZeroStateC };
     // High shelf
-    private hsState: BiquadState = { ...zeroStateC };
+    private hsState: BiquadState = { ...ZeroStateC };
     private readonly sampleRate;
     private lastFc = this.manual;
     private readonly attackCoeff;
@@ -218,8 +218,8 @@ export class AutoWahFX implements InsertionProcessor {
         const sens = this.sens / 127;
 
         const index = (pan + 64) | 0;
-        const gainL = panTableLeft[index];
-        const gainR = panTableRight[index];
+        const gainL = PAN_TABLE_LEFT[index];
+        const gainR = PAN_TABLE_RIGHT[index];
         for (let i = 0; i < sampleCount; i++) {
             // Mono!
             const s = applyShelves(

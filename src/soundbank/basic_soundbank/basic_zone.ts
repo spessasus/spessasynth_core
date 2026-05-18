@@ -1,7 +1,7 @@
 import {
-    generatorLimits,
+    GeneratorLimits,
     type GeneratorType,
-    generatorTypes
+    GeneratorTypes
 } from "./generator_types";
 import { Generator } from "./generator";
 import { Modulator } from "./modulator";
@@ -45,8 +45,8 @@ export class BasicZone {
      * The current tuning in cents, taking in both coarse and fine generators.
      */
     public get fineTuning() {
-        const currentCoarse = this.getGenerator(generatorTypes.coarseTune, 0);
-        const currentFine = this.getGenerator(generatorTypes.fineTune, 0);
+        const currentCoarse = this.getGenerator(GeneratorTypes.coarseTune, 0);
+        const currentFine = this.getGenerator(GeneratorTypes.fineTune, 0);
         return currentCoarse * 100 + currentFine;
     }
 
@@ -56,8 +56,8 @@ export class BasicZone {
     public set fineTuning(tuningCents: number) {
         const coarse = Math.trunc(tuningCents / 100);
         const fine = tuningCents % 100;
-        this.setGenerator(generatorTypes.coarseTune, coarse);
-        this.setGenerator(generatorTypes.fineTune, fine);
+        this.setGenerator(GeneratorTypes.coarseTune, coarse);
+        this.setGenerator(GeneratorTypes.fineTune, fine);
     }
 
     /**
@@ -67,7 +67,7 @@ export class BasicZone {
      * @param validate if the value should be clamped to allowed limits.
      */
     public addToGenerator(type: GeneratorType, value: number, validate = true) {
-        const genValue = this.getGenerator(type, generatorLimits[type].def);
+        const genValue = this.getGenerator(type, GeneratorLimits[type].def);
         this.setGenerator(type, value + genValue, validate);
     }
 
@@ -83,27 +83,23 @@ export class BasicZone {
         validate = true
     ) {
         switch (type) {
-            case generatorTypes.sampleID: {
+            case GeneratorTypes.sampleID: {
                 throw new Error("Use setSample()");
             }
-            case generatorTypes.instrument: {
+            case GeneratorTypes.instrument: {
                 throw new Error("Use setInstrument()");
             }
 
-            case generatorTypes.velRange:
-            case generatorTypes.keyRange: {
+            case GeneratorTypes.velRange:
+            case GeneratorTypes.keyRange: {
                 throw new Error("Set the range manually");
             }
         }
         if (value === null) {
-            this.generators = this.generators.filter(
-                (g) => g.generatorType !== type
-            );
+            this.generators = this.generators.filter((g) => g.type !== type);
             return;
         }
-        const index = this.generators.findIndex(
-            (g) => g.generatorType === type
-        );
+        const index = this.generators.findIndex((g) => g.type === type);
         if (index === -1) {
             this.addGenerators(new Generator(type, value, validate));
         } else {
@@ -117,27 +113,27 @@ export class BasicZone {
      */
     public addGenerators(...generators: Generator[]) {
         for (const g of generators) {
-            switch (g.generatorType) {
+            switch (g.type) {
                 default: {
                     this.generators.push(g);
                     break;
                 }
 
-                case generatorTypes.sampleID:
-                case generatorTypes.instrument: {
+                case GeneratorTypes.sampleID:
+                case GeneratorTypes.instrument: {
                     // Don't add these, they already have their own properties
                     break;
                 }
 
-                case generatorTypes.velRange: {
-                    this.velRange.min = g.generatorValue & 0x7f;
-                    this.velRange.max = (g.generatorValue >> 8) & 0x7f;
+                case GeneratorTypes.velRange: {
+                    this.velRange.min = g.value & 0x7f;
+                    this.velRange.max = (g.value >> 8) & 0x7f;
                     break;
                 }
 
-                case generatorTypes.keyRange: {
-                    this.keyRange.min = g.generatorValue & 0x7f;
-                    this.keyRange.max = (g.generatorValue >> 8) & 0x7f;
+                case GeneratorTypes.keyRange: {
+                    this.keyRange.min = g.value & 0x7f;
+                    this.keyRange.max = (g.value >> 8) & 0x7f;
                 }
             }
         }
@@ -162,14 +158,14 @@ export class BasicZone {
         notFoundValue: number | K
     ): number | K {
         return (
-            this.generators.find((g) => g.generatorType === generatorType)
-                ?.generatorValue ?? notFoundValue
+            this.generators.find((g) => g.type === generatorType)?.value ??
+            notFoundValue
         );
     }
 
     public copyFrom(zone: BasicZone) {
         this.generators = zone.generators.map(
-            (g) => new Generator(g.generatorType, g.generatorValue, false)
+            (g) => new Generator(g.type, g.value, false)
         );
         this.modulators = zone.modulators.map(
             Modulator.copyFrom.bind(Modulator)
@@ -184,10 +180,10 @@ export class BasicZone {
     public getWriteGenerators(bank: BasicSoundBank) {
         const generators = this.generators.filter(
             (g) =>
-                g.generatorType !== generatorTypes.sampleID &&
-                g.generatorType !== generatorTypes.instrument &&
-                g.generatorType !== generatorTypes.keyRange &&
-                g.generatorType !== generatorTypes.velRange
+                g.type !== GeneratorTypes.sampleID &&
+                g.type !== GeneratorTypes.instrument &&
+                g.type !== GeneratorTypes.keyRange &&
+                g.type !== GeneratorTypes.velRange
         );
 
         // Instrument and preset zones use this parameter!
@@ -201,7 +197,7 @@ export class BasicZone {
         if (this.hasVelRange) {
             generators.unshift(
                 new Generator(
-                    generatorTypes.velRange,
+                    GeneratorTypes.velRange,
                     (this.velRange.max << 8) | Math.max(this.velRange.min, 0),
                     false
                 )
@@ -210,7 +206,7 @@ export class BasicZone {
         if (this.hasKeyRange) {
             generators.unshift(
                 new Generator(
-                    generatorTypes.keyRange,
+                    GeneratorTypes.keyRange,
                     (this.keyRange.max << 8) | Math.max(this.keyRange.min, 0),
                     false
                 )

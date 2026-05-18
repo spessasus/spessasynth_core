@@ -18,138 +18,6 @@ midi.writeMIDI();
 
 The returned value is an `ArrayBuffer` - a binary representation of the Standard MIDI File.
 
-### modify
-
-Allows easily modifying the sequence's programs and controllers.
-All parameters are optional.
-
-```ts
-midi.modify({
-    programChanges,
-    controllerChanges,
-    channelsToClear,
-    channelsToTranspose,
-    clearDrumParams,
-    reverbParams,
-    chorusParams,
-    delayParams,
-    insertionParams
-});
-```
-
-- programChanges - an array of objects, defined as follows (note the `extends MIDIPatch`):
-
-```ts
-interface DesiredProgramChange extends MIDIPatch {
-    /**
-     * The channel number.
-     */
-    channel: number;
-}
-```
-
-- controllerChanges - an array of objects, defined as follows:
-
-```ts
-interface DesiredControllerChange {
-    /**
-     * The channel number.
-     */
-    channel: number;
-
-    /**
-     * The MIDI controller number.
-     */
-    controllerNumber: number;
-
-    /**
-     * The new controller value.
-     */
-    controllerValue: number;
-}
-```
-
-- channelsToClear - an array of numbers, indicating the channel number to effectively mute.
-
-!!! Warning
-
-    Clearing the channel removes the messages rather than setting volume to 0! This operation is irreversible if the
-    original midi file is lost.
-
-- channelsToTranspose - an array of objects, defined as follows:
-
-```ts
-interface DesiredChannelTranspose {
-    /**
-     * The channel number.
-     */
-    channel: number;
-
-    /**
-     * The number of semitones to transpose.
-     * This can use floating point numbers, which will be used to fine-tune the pitch in cents using RPN.
-     */
-    keyShift: number;
-}
-```
-
-- clearDrumParams - `boolean`, if the drum editing parameters (such as pitch, pan, etc.) should be removed. Both XG and GS.
-- reverbParams - `ReverbProcessorSnapshot`, the desired GS reverb params, leave undefined for no change.
-- chorusParams - `ChorusProcessorSnapshot`, the desired GS chorus params, leave undefined for no change.
-- delayParams - `DelayProcessorSnapshot`, the desired GS delay params, leave undefined for no change.
-- insertionParams - `InsertionProcessorSnapshot`, the desired GS insertion params, leave undefined for no change.
-  Object is defined as follows:
-
-```ts
-interface InsertionProcessorSnapshot {
-    type: number;
-    /**
-     * Parameters for the effect, 255 means "no change"
-     */
-    params: Uint8Array;
-
-    /**
-     * 0-127
-     * This parameter sets the amount of insertion sound that will be sent to the reverb.
-     * Higher values result in more sound being sent.
-     */
-    sendLevelToReverb: number;
-
-    /**
-     * 0-127
-     * This parameter sets the amount of insertion sound that will be sent to the chorus.
-     * Higher values result in more sound being sent.
-     */
-    sendLevelToChorus: number;
-
-    /**
-     * 0-127
-     * This parameter sets the amount of insertion sound that will be sent to the delay.
-     * Higher values result in more sound being sent.
-     */
-    sendLevelToDelay: number;
-
-    /**
-     * A boolean list for channels that have the insertion effect enabled.
-     */
-    channels: boolean[];
-}
-```
-
-### applySnapshot
-
-Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence _in place_.
-This means changing the programs and controllers if they are locked.
-
-```ts
-midi.applySnapshot(snapshot);
-```
-
-- snapshot - the `SynthesizerSnapshot` to use.
-
-For example, if channel 1 has locked preset on `Drawbar Organ`,
-this will remove all program changes for channel 1 and add one at the start to change the program to `Drawbar organ`.
-
 ### Example
 
 Below is a basic example of writing a modified MIDI file
@@ -162,7 +30,7 @@ const synth = new SpessaSynthProcessor(44100);
 // ...
 
 // get the snapshot and apply it
-const snapshot = SynthesizerSnapshot.create(synth);
+const snapshot = synth.getSnapshot();
 midi.applySnapshot(snapshot);
 
 // write midi
@@ -230,7 +98,7 @@ The method is called on a `BasicMIDI` instance; that instance is the MIDI file t
 
 !!! Tip
 
-    use [trimSoundBank](../sound-bank/index.md#trimsoundbank) to drastically reduce the file size.
+    use [trim](../sound-bank/index.md#trim) to drastically reduce the file size.
     consider also using compression (like shown in example) to save even more space.
     (using these both methods, I managed to cram a 1GB soundfont into a 5MB RMIDI!)
 
@@ -264,12 +132,13 @@ document.getElementById("export").onchange = async () => {
     );
 
     // trim the soundfont
-    soundBank.trimSoundBank(midi);
+    soundBank.trim(midi);
     // write out with compression to save space (0.5 is medium quality)
-    const soundfontBinary = await soundBank.writeSF2({
-        compress: true,
+    await soundBank.setSampleFormat({
+        format: "compressed",
         compressionFunction: SampleEncodingFunction // Remember to get your compression function
     });
+    const soundfontBinary = soundBank.writeSF2();
     // get the rmidi
     const rmidiBinary = midi.writeRMIDI(soundfontBinary, {
         soundBank,

@@ -20,17 +20,28 @@ and efficiently.
 
 ```ts
 const sfont = SoundBankLoader.fromArrayBuffer(input);
-const output = await sfont.writeSF2({
-    compress: true,
+await sfont.setSampleFormat({
+    format: "compressed",
     compressionFunction: SampleEncodingFunction // make sure to get the function for compression
 });
+const output = sfont.writeSF2();
+```
+
+## SF3 To SF2
+
+```ts
+const sfont = SoundBankLoader.fromArrayBuffer(input);
+await sfont.setSampleFormat({
+    format: "pcm"
+});
+const output = sfont.writeSF2();
 ```
 
 ## DLS to SF2
 
 ```ts
 const sfont = SoundBankLoader.fromArrayBuffer(input);
-const output = await sfont.writeSF2();
+const output = sfont.writeSF2();
 ```
 
 ## SF2 To DLS
@@ -39,7 +50,7 @@ Make sure to read about [the DLS conversion problem](../extra/dls-conversion-pro
 
 ```ts
 const sfont = SoundBankLoader.fromArrayBuffer(input);
-const output = await sfont.writeDLS();
+const output = sfont.writeDLS();
 ```
 
 ## RMI To MIDI
@@ -54,7 +65,7 @@ const output = rmid.writeMIDI();
 ```ts
 const rmid = BasicMIDI.fromArrayBuffer(input);
 const sfont = SoundBankLoader.fromArrayBuffer(rmid.embeddedSoundBank);
-const output = await sfont.writeSF2();
+const output = sfont.writeSF2();
 ```
 
 ## SF2/DLS + MIDI To RMI
@@ -65,7 +76,7 @@ This uses two inputs, `input1` for MIDI and `input2` for the sound bank.
 const mid = BasicMIDI.fromArrayBuffer(input1);
 const sfont = SoundBankLoader.fromArrayBuffer(input2);
 // compress this if you want
-const sfontBinary = await sfont.writeSF2();
+const sfontBinary = sfont.writeSF2();
 const output = mid.writeRMIDI(
     sfontBinary,
     sfont,
@@ -86,7 +97,7 @@ const output = mid.writeRMIDI(
 ```ts
 const dlsRMID = BasicMIDI.fromArrayBuffer(input);
 const sfont = SoundBankLoader.fromArrayBuffer(dlsRMID.embeddedSoundBank);
-const sfontBinary = await sfont.writeSF2();
+const sfontBinary = sfont.writeSF2();
 const output = dlsRMID.writeRMIDI(
     sfontBinary,
     sfont,

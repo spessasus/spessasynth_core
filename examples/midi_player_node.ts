@@ -1,13 +1,13 @@
 import {
     BasicMIDI,
     SoundBankLoader,
-    SpessaSynthLogging,
+    SpessaLog,
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../src";
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import { Readable } from "node:stream";
-import Speaker from "speaker";
+import Speaker from "speaker"; // Process arguments
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -21,20 +21,20 @@ const midPath = args[1];
 const sf = await fs.readFile(sfPath);
 const mid = await fs.readFile(midPath);
 
-const sampleRate = 44100;
-SpessaSynthLogging(true, true, true);
+const sampleRate = 44_100;
+SpessaLog.setLogLevel(true, true, true);
 console.info("Initializing synthesizer...");
 const synth = new SpessaSynthProcessor(sampleRate, {
-    enableEventSystem: false
+    eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(
-    SoundBankLoader.fromArrayBuffer(sf.buffer as ArrayBuffer),
+    SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
 await synth.processorInitialized;
 
 console.info("Parsing MIDI file...");
-const midi = BasicMIDI.fromArrayBuffer(mid.buffer as ArrayBuffer);
+const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 console.info(`Now playing: ${midi.getName()}`);
 const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
@@ -65,7 +65,7 @@ const audioStream = new Readable({
 });
 
 const speaker = new Speaker({
-    sampleRate: 44100,
+    sampleRate: 44_100,
     channels: 2,
     bitDepth: 32,
     // @ts-expect-error badly typed package (again)

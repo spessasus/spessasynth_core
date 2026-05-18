@@ -34,12 +34,12 @@ Updates the internal values of the file, making it ready for playback.
 mid.flush();
 ```
 
-### addNewTrack
+### addTrack
 
 Adds a new MIDI track. Changes the format to 1.
 
 ```ts
-mid.addNewTrack(name, (port = 0));
+mid.addTrack(name, (port = 0));
 ```
 
 - `name` - `string` - The track's name. The first event will be track name with this.
@@ -64,23 +64,23 @@ mid.addEvent(ticks, track, event, eventData);
     For meta messages, the `event` is the SECOND status byte, not the 0xFF!
     For system exclusives, the status byte is F0, and it must be excluded from `eventData`!
 
-### addSetTempo
+### setTempo
 
-Adds a new "set tempo" message.
+Adds a new "Set Tempo" meta message.
 
 ```ts
-mid.addSetTempo(ticks, tempo);
+mid.setTempo(ticks, tempo);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
 - `tempo` - `number` - the new tempo in beats per minute.
 
-### addNoteOn
+### noteOn
 
-Adds a new "note on" message.
+Adds a new "Note On" message.
 
 ```ts
-mid.addNoteOn(ticks, track, channel, midiNote, velocity);
+mid.noteOn(ticks, track, channel, midiNote, velocity);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
@@ -90,12 +90,12 @@ mid.addNoteOn(ticks, track, channel, midiNote, velocity);
 - `velocity` - `number` - the velocity (strength) of the keypress. Ranges from 0 to 127. A value of 0 is equal to "note
   off" message.
 
-### addNoteOff
+### noteOff
 
-Adds a new "note off" message.
+Adds a new "Note Off" message.
 
 ```ts
-mid.addNoteOff(ticks, track, channel, midiNote);
+mid.noteOff(ticks, track, channel, midiNote);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
@@ -103,12 +103,12 @@ mid.addNoteOff(ticks, track, channel, midiNote);
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
 - `midiNote` - `number` - the MIDI key number to release. Ranges from 0 to 127.
 
-### addProgramChange
+### programChange
 
-Adds a new "program change" message.
+Adds a new "Program Change" message.
 
 ```ts
-mid.addProgramChange(ticks, track, channel, programNumber);
+mid.programChange(ticks, track, channel, programNumber);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
@@ -116,83 +116,111 @@ mid.addProgramChange(ticks, track, channel, programNumber);
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
 - `programNumber` - `number` - the new MIDI program number to change.
 
-### addControllerChange
+### controllerChange
 
 Adds a new "controller change" message.
 
 ```ts
-mid.addControllerChange(
-    ticks,
-    track,
-    channel,
-    controllerNumber,
-    controllerValue
-);
+mid.controllerChange(ticks, track, channel, controller, value);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
 - `track` - `number` - the track to use.
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
-- `controllerNumber` - `number` -
+- `controller` - `number` -
   the [MIDI Controller Number](../extra/midi-implementation.md#default-supported-controllers)
   to
   change.
-- `controllerValue` - `number` - the new value of the controller. 0 to 127.
+- `value` - `number` - the new value of the controller. 0 to 127.
 
-### addPitchWheel
+### pitchWheel
 
-Adds a new "pitch wheel" message.
+Adds a new "Pitch Wheel" message.
 
 ```ts
-mid.addPitchWheel(ticks, track, channel, MSB, LSB);
+mid.pitchWheel(ticks, track, channel, pitch);
 ```
 
 - `ticks` - `number` - the MIDI tick time of the event.
 - `track` - `number` - the track to use.
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
-- `MSB` and `LSB` - both `number` - 7-bit numbers that form a 14-bit pitch wheel value.
+- `pitch` - `number` - the new 14-bit pitch value. Ranges from 0 to 16,383. Value of 8192 centers the wheel (no change)
 
-!!! Tip
+### systemExclusive
 
-    [I highly recommend this article for more info.](https://www.recordingblogs.com/wiki/midi-pitch-wheel-message)
+Adds a new "System Exclusive" message.
+
+```ts
+mid.systemExclusive(ticks, track, data);
+```
+
+- `ticks` - `number` - the MIDI tick time of the event.
+- `track` - `number` - the track to use.
+- `data` - `number[]|TypedArray` - the System Exclusive data, without the 0xf0 status byte.
+
+### registeredParameter
+
+Selects a new "Registered Parameter Number".
+
+```ts
+mid.registeredParameter(ticks, track, channel, parameter, value);
+```
+
+- `ticks` - `number` - the MIDI tick time of the event.
+- `track` - `number` - the track to use.
+- `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
+- `parameter` - `number` - the 14-bit registered parameter number. For example 0 is pitch wheel range.
+- `value` - `number` - the 14-bit value for this parameter.
+
+### nonRegisteredParameter
+
+Selects a new "Non-Registered Parameter Number".
+
+```ts
+mid.nonRegisteredParameter(ticks, track, channel, parameter, value);
+```
+
+- `ticks` - `number` - the MIDI tick time of the event.
+- `track` - `number` - the track to use.
+- `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
+- `parameter` - `number` - the 14-bit non-registered parameter number. For example 0 is pitch wheel range.
+- `value` - `number` - the 14-bit value for this parameter.
 
 ## Example usage
 
 The below code produces a file that plays C Major scale.
 
 ```ts
+import { MIDIBuilder } from "spessasynth_core";
+import fs from "fs/promises";
+
 // Create a new MIDI file
 const mid = new MIDIBuilder({
     name: "C Major Scale"
 });
 
 // Add the C Major scale notes
-mid.addNoteOn(0, 0, 0, 60, 127);
-mid.addNoteOff(1250, 0, 0, 60);
-mid.addNoteOn(1250, 0, 0, 62, 127);
-mid.addNoteOff(2500, 0, 0, 62);
-mid.addNoteOn(2500, 0, 0, 64, 127);
-mid.addNoteOff(3750, 0, 0, 64);
-mid.addNoteOn(3750, 0, 0, 65, 127);
-mid.addNoteOff(5000, 0, 0, 65);
-mid.addNoteOn(5000, 0, 0, 67, 127);
-mid.addNoteOff(6250, 0, 0, 67);
-mid.addNoteOn(6250, 0, 0, 69, 127);
-mid.addNoteOff(7500, 0, 0, 69);
-mid.addNoteOn(7500, 0, 0, 71, 127);
-mid.addNoteOff(8750, 0, 0, 71);
-mid.addNoteOn(8750, 0, 0, 72, 127);
-mid.addNoteOff(10000, 0, 0, 72);
+mid.noteOn(0, 0, 0, 60, 127);
+mid.noteOff(1250, 0, 0, 60);
+mid.noteOn(1250, 0, 0, 62, 127);
+mid.noteOff(2500, 0, 0, 62);
+mid.noteOn(2500, 0, 0, 64, 127);
+mid.noteOff(3750, 0, 0, 64);
+mid.noteOn(3750, 0, 0, 65, 127);
+mid.noteOff(5000, 0, 0, 65);
+mid.noteOn(5000, 0, 0, 67, 127);
+mid.noteOff(6250, 0, 0, 67);
+mid.noteOn(6250, 0, 0, 69, 127);
+mid.noteOff(7500, 0, 0, 69);
+mid.noteOn(7500, 0, 0, 71, 127);
+mid.noteOff(8750, 0, 0, 71);
+mid.noteOn(8750, 0, 0, 72, 127);
+mid.noteOff(10000, 0, 0, 72);
 
 // Finalize the MIDI file
 mid.flush();
 
-// Write the MIDI file to a blob and save it
-const b = mid.writeMIDI();
-const blob = new Blob([b.buffer], { type: "audio/mid" });
-const url = URL.createObjectURL(blob);
-const a = document.createElement("a");
-a.href = url;
-a.download = "C_major_scale.mid";
-a.click();
+// Write the MIDI file
+const file = mid.writeMIDI();
+await fs.writeFile("c_major_scale.mid", new Uint8Array(file));
 ```

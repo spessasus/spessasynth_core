@@ -3,10 +3,10 @@ import {
     readLittleEndianIndexed,
     signedInt8
 } from "../../../utils/byte_functions/little_endian";
-import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
+import { SpessaLog } from "../../../utils/loggin";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
-import { consoleColors } from "../../../utils/other";
+import { ConsoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
 import type { RIFFChunk } from "../../../utils/riff_chunk";
 
@@ -134,9 +134,9 @@ export class SoundFontSample extends BasicSample {
         if (linked) {
             // Check for corrupted files (like FluidR3_GM.sf2 that link EVERYTHING to a single sample)
             if (linked.linkedSample) {
-                SpessaSynthInfo(
+                SpessaLog.info(
                     `%cInvalid linked sample for ${this.name}: ${linked.name} is already linked to ${linked.linkedSample.name}`,
-                    consoleColors.warn
+                    ConsoleColors.warn
                 );
                 this.unlinkSample();
             } else {
@@ -144,9 +144,9 @@ export class SoundFontSample extends BasicSample {
             }
         } else {
             // Log as info because it's common and not really dangerous
-            SpessaSynthInfo(
+            SpessaLog.info(
                 `%cInvalid linked sample for ${this.name}. Setting to mono.`,
-                consoleColors.warn
+                ConsoleColors.warn
             );
             this.unlinkSample();
         }
@@ -173,7 +173,7 @@ export class SoundFontSample extends BasicSample {
         // Start loading data if it is not loaded
         const byteLength = this.endByteOffset - this.startByteOffset;
         if (byteLength < 1) {
-            SpessaSynthWarn(
+            SpessaLog.warn(
                 `Invalid sample ${this.name}! Invalid length: ${byteLength}`
             );
             return new Float32Array(1);

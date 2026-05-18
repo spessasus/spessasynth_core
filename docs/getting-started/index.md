@@ -54,7 +54,7 @@ for (let i = 0; i < 16; i++) {
 }
 ```
 
-Check out the [processo method](../spessa-synth-processor/index.md#process) for more information.
+Check out the [`.process()` method](../spessa-synth-processor/index.md#process) for more information.
 
 ## Examples
 
@@ -70,16 +70,16 @@ Here is what this code does:
 
 - Import necessary modules
 - Read the files passed to the command line
-- Initialize the processor
+- Parse the binary file buffers
+- Initialize the synthesizer
 - Initialize the sequencer
 - Initialize the output buffers
 - Render loop:
     - Process sequencer
-    - Initialize buffer arrays
-    - Render out
-    - Fill the output arrays
+    - Render `BUFFER_SIZE` samples into the output buffers
+    - Log progress
 - Convert to WAV and save
 
-```ts
+```ts title='midi_to_wav_node.ts'
 --8<-- "midi_to_wav_node.ts"
 ```

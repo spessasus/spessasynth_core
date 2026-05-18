@@ -1,10 +1,10 @@
 import {
     IndexedByteArray,
     MIDIBuilder,
-    midiControllers,
-    midiMessageTypes
+    MIDIControllers,
+    MIDIMessageTypes
 } from "../src";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 const builder = new MIDIBuilder({
     name: "GS Chorus Rate Test"
@@ -13,7 +13,7 @@ const builder = new MIDIBuilder({
 builder.addEvent(
     0,
     0,
-    midiMessageTypes.systemExclusive,
+    MIDIMessageTypes.systemExclusive,
     new IndexedByteArray([
         0x41, // Roland
         0x10, // Device ID (defaults to 16 on roland)
@@ -38,7 +38,7 @@ function sendAddress(a1: number, a2: number, a3: number, data: number) {
     builder.addEvent(
         ticks,
         0,
-        midiMessageTypes.systemExclusive,
+        MIDIMessageTypes.systemExclusive,
         new IndexedByteArray([
             0x41, // Roland
             0x10, // Device ID (defaults to 16 on roland)
@@ -63,22 +63,22 @@ sendAddress(0x40, 0x01, 0x3c, 0);
 // Depth
 sendAddress(0x40, 0x01, 0x3e, 127);
 
-builder.addControllerChange(ticks, 0, 0, midiControllers.reverbDepth, 0);
-builder.addControllerChange(ticks, 0, 0, midiControllers.chorusDepth, 127);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.reverbDepth, 0);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.chorusDepth, 127);
 
 // SC-55 MAP sine wave
-builder.addControllerChange(ticks, 0, 0, midiControllers.bankSelectLSB, 1);
-builder.addControllerChange(ticks, 0, 0, midiControllers.bankSelect, 1);
-builder.addProgramChange(ticks, 0, 0, 80);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.bankSelectLSB, 1);
+builder.controllerChange(ticks, 0, 0, MIDIControllers.bankSelect, 1);
+builder.programChange(ticks, 0, 0, 80);
 
 let level = 0;
 while (level <= 128) {
     // Rate
     sendAddress(0x40, 0x01, 0x3d, Math.min(127, level));
     ticks += 80;
-    builder.addNoteOn(ticks, 0, 0, 60, 120);
+    builder.noteOn(ticks, 0, 0, 60, 120);
     ticks += 960;
-    builder.addNoteOff(ticks, 0, 0, 60);
+    builder.noteOff(ticks, 0, 0, 60);
     level += 1;
 }
 

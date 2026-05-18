@@ -1,6 +1,6 @@
-import * as fs from "fs/promises";
-import * as path from "path";
 import { BasicMIDI } from "../src";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const args = process.argv.slice(2);
 if (args.length !== 1) {
@@ -27,7 +27,7 @@ for (const file of files) {
         continue;
     }
 
-    const midi = BasicMIDI.fromArrayBuffer(fileBin.buffer as ArrayBuffer);
+    const midi = BasicMIDI.fromArrayBuffer(fileBin.buffer);
     const outFile = path.resolve(dir, "rmid", file.replace(".mid", ".rmi"));
     await fs.writeFile(
         outFile,

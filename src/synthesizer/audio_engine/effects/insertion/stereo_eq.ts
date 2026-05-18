@@ -3,9 +3,9 @@ import { InsertionValueConverter } from "./convert";
 import {
     type BiquadCoeffs,
     processBiquad,
-    zeroCoeffs,
+    ZERO_COEFFS,
     zeroState,
-    zeroStateC
+    ZeroStateC
 } from "./utils";
 
 /**
@@ -88,19 +88,19 @@ export class StereoEQFX implements InsertionProcessor {
      */
     private m2Gain = -8;
 
-    private readonly lowCoeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly m1Coeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly m2Coeffs: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly hiCoeffs: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly lowCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly m1Coeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly m2Coeffs: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly hiCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
 
-    private readonly lowStateL = { ...zeroStateC };
-    private readonly lowStateR = { ...zeroStateC };
-    private readonly m1StateL = { ...zeroStateC };
-    private readonly m1StateR = { ...zeroStateC };
-    private readonly m2StateL = { ...zeroStateC };
-    private readonly m2StateR = { ...zeroStateC };
-    private readonly hiStateL = { ...zeroStateC };
-    private readonly hiStateR = { ...zeroStateC };
+    private readonly lowStateL = { ...ZeroStateC };
+    private readonly lowStateR = { ...ZeroStateC };
+    private readonly m1StateL = { ...ZeroStateC };
+    private readonly m1StateR = { ...ZeroStateC };
+    private readonly m2StateL = { ...ZeroStateC };
+    private readonly m2StateR = { ...ZeroStateC };
+    private readonly hiStateL = { ...ZeroStateC };
+    private readonly hiStateR = { ...ZeroStateC };
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;

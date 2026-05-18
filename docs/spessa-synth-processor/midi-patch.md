@@ -8,7 +8,7 @@ The system now operates on _MIDI Patches_ - a way of selecting MIDI presets usin
 compatible with GM, GS, XG and GM2.
 The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.
 
-## Properties
+## MIDIPatch interface
 
 ### program
 
@@ -38,7 +38,88 @@ This allows XG and GS drums to coexist in a single sound bank and can be thought
 !!! Warning
 
     The `isGMGSDrum` flag being set does *not* necessarily mean that this patch is a drum patch!
-    The preset list change event provides an additional property `isAnyDrums` which correctly identifies drums across all MIDI systems.
+    The `MIDIPatchFull` sent with the `presetListChange` event provides an additional property `isDrum` which correctly identifies drums across all MIDI systems.
+
+## MIDIPatchFull
+
+An extended version of `MIDIPatch` containing two new properties.
+This object is sent with the `presetListChange` event of the synthesizer,
+and it is what `BasicPreset` implements.
+
+### name
+
+The name of the patch, a string.
+
+### isDrum
+
+Indicates if this patch is a drum patch.
+If `isGMGSDrum` is true, then this is a GM/GS drum preset.
+If `isGMGSDrum` is false, then this is a GM2/XG drum preset.
+
+!!! Tip
+
+    This is the recommended way of determining if this is a drum preset.
+
+## MIDIPatchTools
+
+A class containing useful functions for working with MIDI patches.
+
+### toMIDIString
+
+Converts a given `MIDIPatch` to a string.
+The format is:
+
+- `DRUM:program` for `GMGSDrum` set to `true`.
+- `bankLSB:bankMSB:program` for `GMGSDrum` set to `false`.
+
+### fromMIDIString
+
+Gets `MIDIPatch` from a given string.
+
+### toFullMIDIString
+
+Converts a given `MIDIPatchFull`to string.
+The format is:
+
+- `<MIDIPatch string> D <name>` for `isDrum` set to `true`.
+- `<MIDIPatch string> M <name>` for `isDrum` set to `true`.
+
+### fromFullMIDIString
+
+Gets `MIDIPatchFull` from a given string.
+
+### matches
+
+Checks if two MIDI patches represent the same one.
+
+### compare
+
+A comparison function for `.sort()` or `.toSorted()`,
+ordering the patches in ascending order.
+
+### isXGDrum
+
+Checks if the given `MIDIPatchFull` is an XG/GM2 drum patch.
+
+### selectPatch
+
+A sophisticated patch selection system based on the MIDI Patch system.
+This is the algorithm that the synthesizer uses for selecting presets.
+
+```ts
+MIDIPatchTools.selectPatch(patches, patch, system);
+```
+
+- patches - the `MIDIPatchFull` array to select from.
+- patch - The `MIDIPatch` to select.
+- system - The MIDI system (`xg`,`gs`,`gm2`,`gm`) to select for.
+
+Returns the selected `MIDIPatchFull`.
+
+!!! Note
+
+    This function uses generics,
+    so you can pass any object that implements `MIDIPatchFull`, including `BasicPreset`.
 
 ## XG Validity Test
 

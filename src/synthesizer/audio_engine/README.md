@@ -1,9 +1,9 @@
 ## This is the synthesis engine folder.
 
-The code here is responsible for a single midi channel, synthesizing the sound to it.
+The code here is responsible for a generating sound and managing the synthesis engine state.
 
-- `engine_methods` contains the methods for the `processor`
-- `engine_components` contains the various digital signal processing functions such as the wavetable oscillator, low
-  pass filter, etc.
-
-For those interested, `engine_components/dsp/render_voice.ts` file contains the actual DSP synthesis code.
+- `channel` - a single MIDI channel (part) implementation.
+- `effects` - the audio effects: Reverb, Chorus, Delay, Insertion.
+- `parameters` - the Global MIDI and System parameters.
+- `system_exclusive` - MIDI System Exclusive message parser.
+- `voice` - a single voice structure.

@@ -1,16 +1,16 @@
 import {
     type GeneratorType,
-    generatorTypes,
+    GeneratorTypes,
     MAX_GENERATOR
 } from "./generator_types";
 import type { ModulatorSourceIndex } from "../types";
 import {
+    ModulatorControllerSources,
     type ModulatorCurveType,
-    modulatorCurveTypes,
-    modulatorSources,
+    ModulatorCurveTypes,
     type ModulatorTransformType
 } from "../enums";
-import { midiControllers } from "../../midi/enums";
+import { MIDIControllers } from "../../midi/enums";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { IndexedByteArray } from "../../utils/indexed_array";
 import { ModulatorSource } from "./modulator_source";
@@ -40,18 +40,18 @@ export function getModSourceEnum(
 }
 
 export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
-    modulatorCurveTypes.linear,
+    ModulatorCurveTypes.linear,
     true,
     false,
     true,
-    midiControllers.filterResonance
+    MIDIControllers.filterResonance
 ); // Linear forwards bipolar cc 74
 
 export class Modulator {
     /**
      * The generator destination of this modulator.
      */
-    public destination: GeneratorType = generatorTypes.initialAttenuation;
+    public destination: GeneratorType = GeneratorTypes.initialAttenuation;
 
     /**
      * The transform amount for this modulator.
@@ -79,7 +79,7 @@ export class Modulator {
     public constructor(
         primarySource = new ModulatorSource(),
         secondarySource = new ModulatorSource(),
-        destination: GeneratorType = generatorTypes.INVALID,
+        destination: GeneratorType = GeneratorTypes.invalid,
         amount = 0,
         transformType: ModulatorTransformType = 0
     ) {
@@ -92,9 +92,9 @@ export class Modulator {
     }
 
     private get destinationName() {
-        return Object.keys(generatorTypes).find(
+        return Object.keys(GeneratorTypes).find(
             (k) =>
-                generatorTypes[k as keyof typeof generatorTypes] ===
+                GeneratorTypes[k as keyof typeof GeneratorTypes] ===
                 this.destination
         );
     }
@@ -194,70 +194,67 @@ export class DecodedModulator extends Modulator {
         );
 
         if (this.destination > MAX_GENERATOR) {
-            this.destination = generatorTypes.INVALID; // Flag as invalid (for linked ones)
+            this.destination = GeneratorTypes.invalid; // Flag as invalid (for linked ones)
         }
     }
 }
-
-export const DEFAULT_ATTENUATION_MOD_AMOUNT = 960;
-export const DEFAULT_ATTENUATION_MOD_CURVE_TYPE = modulatorCurveTypes.concave;
 
 const defaultSoundFont2Modulators = [
     // Vel to attenuation
     new DecodedModulator(
         getModSourceEnum(
-            DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
+            ModulatorCurveTypes.concave,
             false,
             true,
             false,
-            modulatorSources.noteOnVelocity
+            ModulatorControllerSources.noteOnVelocity
         ),
         0x0,
-        generatorTypes.initialAttenuation,
-        DEFAULT_ATTENUATION_MOD_AMOUNT,
+        GeneratorTypes.initialAttenuation,
+        960,
         0
     ),
 
     // Mod wheel to vibrato
-    new DecodedModulator(0x00_81, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
+    new DecodedModulator(0x00_81, 0x0, GeneratorTypes.vibLfoToPitch, 50, 0),
 
     // Vol to attenuation
     new DecodedModulator(
         getModSourceEnum(
-            DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
+            ModulatorCurveTypes.concave,
             false,
             true,
             true,
-            midiControllers.mainVolume
+            MIDIControllers.mainVolume
         ),
         0x0,
-        generatorTypes.initialAttenuation,
-        DEFAULT_ATTENUATION_MOD_AMOUNT,
+        GeneratorTypes.initialAttenuation,
+        960,
         0
     ),
 
     // Channel pressure to vibrato
-    new DecodedModulator(0x00_0d, 0x0, generatorTypes.vibLfoToPitch, 50, 0),
+    new DecodedModulator(0x00_0d, 0x0, GeneratorTypes.vibLfoToPitch, 50, 0),
 
     // Pitch wheel to tuning
-    new DecodedModulator(0x02_0e, 0x00_10, generatorTypes.fineTune, 12_700, 0),
+    new DecodedModulator(0x02_0e, 0x00_10, GeneratorTypes.fineTune, 12_700, 0),
 
     // Pan to uhh, pan
     // Amount is 500 instead of 1000, see #59
-    new DecodedModulator(0x02_8a, 0x0, generatorTypes.pan, 500, 0),
+    new DecodedModulator(0x02_8a, 0x0, GeneratorTypes.pan, 500, 0),
 
     // Expression to attenuation
     new DecodedModulator(
         getModSourceEnum(
-            DEFAULT_ATTENUATION_MOD_CURVE_TYPE,
+            ModulatorCurveTypes.concave,
             false,
             true,
             true,
-            midiControllers.expressionController
+            MIDIControllers.expression
         ),
         0x0,
-        generatorTypes.initialAttenuation,
-        DEFAULT_ATTENUATION_MOD_AMOUNT,
+        GeneratorTypes.initialAttenuation,
+        960,
         0
     ),
 
@@ -265,13 +262,13 @@ const defaultSoundFont2Modulators = [
     new DecodedModulator(
         0x00_db,
         0x0,
-        generatorTypes.reverbEffectsSend,
+        GeneratorTypes.reverbEffectsSend,
         200,
         0
     ),
 
     // Chorus effects to send
-    new DecodedModulator(0x00_dd, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
+    new DecodedModulator(0x00_dd, 0x0, GeneratorTypes.chorusEffectsSend, 200, 0)
 ];
 
 const defaultSpessaSynthModulators = [
@@ -279,14 +276,14 @@ const defaultSpessaSynthModulators = [
     // Cc 73 (attack time) to volEnv attack
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.convex,
+            ModulatorCurveTypes.convex,
             true,
             false,
             true,
-            midiControllers.attackTime
+            MIDIControllers.attackTime
         ), // Linear forward bipolar cc 72
         0x0, // No controller
-        generatorTypes.attackVolEnv,
+        GeneratorTypes.attackVolEnv,
         6000,
         0
     ),
@@ -294,14 +291,14 @@ const defaultSpessaSynthModulators = [
     // Cc 72 (release time) to volEnv release
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.linear,
+            ModulatorCurveTypes.linear,
             true,
             false,
             true,
-            midiControllers.releaseTime
+            MIDIControllers.releaseTime
         ), // Linear forward bipolar cc 72
         0x0, // No controller
-        generatorTypes.releaseVolEnv,
+        GeneratorTypes.releaseVolEnv,
         3600,
         0
     ),
@@ -309,14 +306,14 @@ const defaultSpessaSynthModulators = [
     // Cc 75 (decay time) to vol env decay
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.linear,
+            ModulatorCurveTypes.linear,
             true,
             false,
             true,
-            midiControllers.decayTime
+            MIDIControllers.decayTime
         ), // Linear forward bipolar cc 75
         0x0, // No controller
-        generatorTypes.decayVolEnv,
+        GeneratorTypes.decayVolEnv,
         3600,
         0
     ),
@@ -324,14 +321,14 @@ const defaultSpessaSynthModulators = [
     // Cc 74 (brightness) to filterFc
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.linear,
+            ModulatorCurveTypes.linear,
             true,
             false,
             true,
-            midiControllers.brightness
+            MIDIControllers.brightness
         ), // Linear forwards bipolar cc 74
         0x0, // No controller
-        generatorTypes.initialFilterFc,
+        GeneratorTypes.initialFilterFc,
         9600,
         0
     ),
@@ -340,36 +337,36 @@ const defaultSpessaSynthModulators = [
     new DecodedModulator(
         DEFAULT_RESONANT_MOD_SOURCE,
         0x0, // No controller
-        generatorTypes.initialFilterQ,
-        200,
+        GeneratorTypes.initialFilterQ,
+        250,
         0
     ),
 
     // Cc 67 (soft pedal) to attenuation
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.switch,
+            ModulatorCurveTypes.switch,
             false,
             false,
             true,
-            midiControllers.softPedal
+            MIDIControllers.softPedal
         ), // Switch unipolar positive 67
         0x0, // No controller
-        generatorTypes.initialAttenuation,
+        GeneratorTypes.initialAttenuation,
         50,
         0
     ),
     // Cc 67 (soft pedal) to filter fc
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.switch,
+            ModulatorCurveTypes.switch,
             false,
             false,
             true,
-            midiControllers.softPedal
+            MIDIControllers.softPedal
         ), // Switch unipolar positive 67
         0x0, // No controller
-        generatorTypes.initialFilterFc,
+        GeneratorTypes.initialFilterFc,
         -2400,
         0
     ),
@@ -377,14 +374,14 @@ const defaultSpessaSynthModulators = [
     // Cc 8 (balance) to pan
     new DecodedModulator(
         getModSourceEnum(
-            modulatorCurveTypes.linear,
+            ModulatorCurveTypes.linear,
             true,
             false,
             true,
-            midiControllers.balance
+            MIDIControllers.balance
         ), // Linear bipolar positive 8
         0x0, // No controller
-        generatorTypes.pan,
+        GeneratorTypes.pan,
         500,
         0
     )

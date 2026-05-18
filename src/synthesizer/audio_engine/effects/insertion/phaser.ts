@@ -5,7 +5,7 @@ import {
     type BiquadCoeffs,
     type BiquadState,
     computeShelfCoeffs,
-    zeroCoeffs,
+    ZERO_COEFFS,
     zeroState
 } from "./utils";
 
@@ -96,8 +96,8 @@ export class PhaserFX implements InsertionProcessor {
     private readonly prevOutR: Float32Array;
 
     // Biquad shelving coefficients and states (per channel)
-    private readonly lowShelfCoef: BiquadCoeffs = { ...zeroCoeffs };
-    private readonly highShelfCoef: BiquadCoeffs = { ...zeroCoeffs };
+    private readonly lowShelfCoef: BiquadCoeffs = { ...ZERO_COEFFS };
+    private readonly highShelfCoef: BiquadCoeffs = { ...ZERO_COEFFS };
 
     private manualOffset = MANUAL_OFFSET;
     private lowShelfStateL: BiquadState = { x1: 0, x2: 0, y1: 0, y2: 0 };
