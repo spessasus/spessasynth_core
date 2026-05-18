@@ -8,7 +8,7 @@ They are accessible through the `midiChannels` property of the synthesizer.
 
 ### setSystemParameter
 
-Set a [system parameter value.](channel-parameters.md#system)
+Set a [Channel System Parameter.](channel-parameters.md#system)
 
 ```ts
 channel.setSystemParameter(type, value);
@@ -60,6 +60,10 @@ The currently selected [`MIDIPatch`](../midi-patch.md) of this channel.
     The exact matching preset may not be available,
     but this property represents exactly what MIDI asks for.
 
+### channel
+
+The channel's number (0-based index)
+
 ### voiceCount
 
 Current amount of voices that are playing on this channel.
@@ -89,10 +93,14 @@ such as volume, pan, modulation, etc.
 
 ### systemParameters
 
-The channel's current [system parameters](channel-parameters.md#system),
-stored as key: value. Readonly.
+The current [Channel System Parameters](channel-parameters.md#system) of this channel.
+These are only editable via the API.
+
+Stored as key: value. Readonly.
 
 ### midiParameters
 
-The channel's current MIDI parameters,
-stored as key: value. Readonly.
+The current [Channel MIDI Parameters](channel-parameters.md#midi) of this channel.
+These are only editable via MIDI messages.
+
+Stored as key: value. Readonly.

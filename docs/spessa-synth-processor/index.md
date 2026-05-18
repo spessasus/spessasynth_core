@@ -322,13 +322,17 @@ All MIDI channels of the synthesizer, an array of `MIDIChannel`.
 
 ### midiParameters
 
-The [Global MIDI Parameters](global-parameters.md#midi) of the synthesizer.
+The current [Global MIDI Parameters](global-parameters.md#midi) of the synthesizer.
 These are only editable via MIDI messages.
+
+Stored as key: value. Readonly.
 
 ### systemParameters
 
-The [Global System Parameters](global-parameters.md#system) of the synthesizer.
+The current [Global System Parameters](global-parameters.md#system) of the synthesizer.
 These are only editable via the API.
+
+Stored as key: value. Readonly.
 
 ### voiceCount
 

@@ -1,7 +1,10 @@
 # NPM Exports
 
 This is a (non-exhaustive) list of exports in the NPM package.
-Note that types/intefaces are not present in this list.
+
+!!! Warning
+
+    Types/intefaces are not present in this list.
 
 !!! Tip
 
@@ -15,7 +18,7 @@ Note that types/intefaces are not present in this list.
 - `MIDIChannel` - the class representing a single MIDI channel.
 - `KeyModifier` - for the `KeyModifierManager`, a single key modification.
 
-### Related Enums
+### Related Enums and Constants
 
 - `InterpolationTypes` - the available interpolation types.
 - `DEFAULT_PERCUSSION` - the default drum channel, i.e. channel 9.
@@ -27,6 +30,7 @@ Note that types/intefaces are not present in this list.
 - `DEFAULT_GLOBAL_SYSTEM_PARAMETERS` - default values for global system parameters.
 - `DEFAULT_CHANNEL_MIDI_PARAMETERS` - default values for channel MIDI parameters.
 - `DEFAULT_GLOBAL_MIDI_PARAMETERS` - default values for global MIDI parameters.
+- `DEFAULT_DRUM_REVERB` - the default reverb level (0-127) for each drum key.
 
 ## Sound banks
 
@@ -41,11 +45,13 @@ Note that types/intefaces are not present in this list.
 - `BasicPresetZone` - represents a preset zone in a sound bank. Extends BasicZone with a `instrument` property.
 - `Generator` - represents an SF2 generator.
 - `Modulator` - represents an SF2 modulator.
+- `ModulatorSource` - represents a source of an SF2 modulator.
 
-### Related Enums
+### Related Enums and Constants
 
 - `ModulatorControllerSources` - an enum for modulator sources as defined in SF2 specification.
 - `ModulatorCurveTypes` - an enum for modulator curve types as defined in the SF2 specification.
+- `ModulatortransformTypes` - an enum for modulator transform types as defined in the SF2 specification. Only 2 values.
 - `GeneratorTypes` - an enum for all the generators in the SF2 specification, along with a few internal ones.
 - `GeneratorLimits` - an object, the key specifies the type, the value is min, max and def (default) values for this
   generator.
@@ -60,7 +66,7 @@ Note that types/intefaces are not present in this list.
 - `MIDIUtils` - utility functions for MIDI operations, such as analyzing System Exclusive Messages and creating them.
 - `MIDITrack` - represents a single MIDI track.
 
-### Related enums
+### Related enums and Constants
 
 - `MIDIControllers` - an enum for all MIDI controllers.
 - `MIDIMessageTypes` - an enum for all the MIDI event status bytes recognized.
@@ -70,6 +76,7 @@ Note that types/intefaces are not present in this list.
 ### Others
 
 - `IndexedByteArray` - an Uint8Array with an internal counter called `currentIndex`. Extensively used in the library.
+- `RIFFChunk` - a utility class for reading and writing RIFF chunks.
 - `audioToWav` - a function that converts PCM audio data to a WAV file.
 - `SpessaLog` - the log manager for `spessasynth_core`.
 - `SpessaSynthCoreUtils` - some utilities and byte functions of the library, used by `spessasynth_lib` and might be useful
