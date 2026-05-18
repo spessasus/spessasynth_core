@@ -14,9 +14,9 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         // If high performance mode, kill notes instead of stopping them
         (this.synthCore.systemParameters.blackMIDIMode &&
             // If the channel is percussion channel, do not kill the notes
-            !this.drumChannel) ||
+            !this._drumChannel) ||
         // If "receive note off" is enabled, kill the note (force quick release)
-        (this.drumChannel && this.drumParams[midiNote].rxNoteOff)
+        (this._drumChannel && this.drumParams[midiNote].rxNoteOff)
     ) {
         // Instantly kill the note
         this.killNote(midiNote);
@@ -27,9 +27,9 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    const sustain = this.midiControllers[MIDIControllers.sustainPedal] >= 8192;
+    const sustain = this._midiControllers[MIDIControllers.sustainPedal] >= 8192;
     let vc = 0;
-    if (this.voiceCount > 0)
+    if (this._voiceCount > 0)
         for (const v of this.synthCore.voices) {
             if (
                 v.channel === this.channel &&
@@ -40,7 +40,7 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
                 if (sustain) v.isHeld = true;
                 else v.releaseVoice(this.synthCore.currentTime);
 
-                if (++vc >= this.voiceCount) break; // We already checked all the voices
+                if (++vc >= this._voiceCount) break; // We already checked all the voices
             }
         }
     this.synthCore.callEvent("noteOff", {

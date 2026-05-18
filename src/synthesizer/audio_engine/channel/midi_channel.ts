@@ -1,6 +1,6 @@
 import { DEFAULT_DRUM_REVERB, resetChannelInternal, resetRP15 } from "./reset";
 import { renderVoice } from "./render_voice";
-import { controllerChange, lockController } from "./controller_change";
+import { controllerChange } from "./controller_change";
 import { dataEntry } from "./data_entry";
 import { noteOn } from "./note_on";
 import { noteOff } from "./note_off";
@@ -21,10 +21,10 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import type { BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
+import { type BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { SpessaLog } from "../../../utils/loggin";
 import { ConsoleColors } from "../../../utils/other";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
@@ -46,25 +46,12 @@ import {
     setSystemParameterInternal
 } from "./parameters/system";
 import type { MIDISystem } from "../../../soundbank/types";
+import type { MIDIController } from "../../../midi/enums";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
  */
 export class MIDIChannel {
-    /**
-     * An array of MIDI controllers for the channel.
-     * This array is used to store the state of various MIDI controllers
-     * such as volume, pan, modulation, etc.
-     * @remarks
-     * A bit of an explanation:
-     * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
-     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
-     * Data entries do store it!
-     */
-    public readonly midiControllers: Int16Array = new Int16Array(
-        CONTROLLER_TABLE_SIZE
-    );
-
     /**
      * An array for the MIDI 2.0 Per-note pitch wheels.
      * @internal
@@ -76,9 +63,9 @@ export class MIDIChannel {
      * A locked controller cannot be modified.
      * @internal
      */
-    public readonly lockedControllers: readonly boolean[] = new Array(
-        CONTROLLER_TABLE_SIZE
-    ).fill(false) as boolean[];
+    public readonly lockedControllers = new Array(CONTROLLER_TABLE_SIZE).fill(
+        false
+    ) as boolean[];
     /**
      * Parameters for each drum instrument.
      * @internal
@@ -89,10 +76,6 @@ export class MIDIChannel {
      * @internal
      */
     public readonly dynamicModulators;
-    /**
-     * Indicates whether this channel is a drum channel.
-     */
-    public drumChannel = false;
     /**
      * SF2 NRPN LSB for selecting a generator value.
      * @internal
@@ -111,6 +94,7 @@ export class MIDIChannel {
     /**
      * The preset currently assigned to the channel.
      * Note that this may be undefined in some cases.
+     * @internal
      */
     public preset?: BasicPreset;
     /**
@@ -127,10 +111,6 @@ export class MIDIChannel {
         depth: 0,
         rate: 0
     };
-    /**
-     * Channel's current voice count.
-     */
-    public voiceCount = 0;
     /**
      * The channel's number (0-based index)
      */
@@ -152,15 +132,11 @@ export class MIDIChannel {
      */
     public readonly setSystemParameter: typeof setSystemParameterInternal =
         setSystemParameterInternal.bind(this);
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Locks or unlocks a given controller.
-     * This prevents any changes to it until it's unlocked.
-     * @param controllerNumber The MIDI controller number (0-127).
-     * @param isLocked If the controller should be locked.
+    /*
+    =================
+    END OF PUBLIC API
+    =================
      */
-    public readonly lockController: typeof lockController =
-        lockController.bind(this);
     // MIDI messages
     /**
      * Sends a "MIDI Note on" message and starts a note.
@@ -169,11 +145,6 @@ export class MIDIChannel {
      * @internal
      */
     public readonly noteOn = noteOn.bind(this);
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-     */
     /**
      * Releases a note by its MIDI note number.
      * If the note is in high performance mode and the channel is not a drum channel,
@@ -221,6 +192,19 @@ export class MIDIChannel {
      * @internal
      */
     public readonly renderVoice = renderVoice.bind(this);
+    /**
+     * An array of MIDI controllers for the channel.
+     * This array is used to store the state of various MIDI controllers
+     * such as volume, pan, modulation, etc.
+     * @remarks
+     * A bit of an explanation:
+     * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
+     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
+     * Data entries do store it!
+     */
+    protected readonly _midiControllers: Int16Array = new Int16Array(
+        CONTROLLER_TABLE_SIZE
+    );
     /**
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
@@ -334,11 +318,53 @@ export class MIDIChannel {
         this.resetVibratoParams();
     }
 
-    /*
-    ==========
-    PUBLIC API
-    ==========
+    /**
+     * Current amount of voices that are playing on this channel.
      */
+    protected _voiceCount = 0;
+
+    /**
+     * Current amount of voices that are playing on this channel.
+     */
+    public get voiceCount(): number {
+        return this._voiceCount;
+    }
+
+    /**
+     * Current amount of voices that are playing on this channel.
+     * @internal
+     */
+    public set voiceCount(value: number) {
+        this._voiceCount = value;
+    }
+
+    /**
+     * Indicates whether this channel is a drum channel.
+     */
+    protected _drumChannel = false;
+
+    /**
+     * Indicates whether this channel is a drum channel.
+     */
+    public get drumChannel() {
+        return this._drumChannel;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * An array of MIDI controllers for the channel.
+     * This array is used to store the state of various MIDI controllers
+     * such as volume, pan, modulation, etc.
+     * @remarks
+     * A bit of an explanation:
+     * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
+     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
+     * Data entries do store it!
+     */
+    public get midiControllers() {
+        return this._midiControllers as Readonly<Int16Array>;
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * The channel system parameters of this channel.
@@ -347,6 +373,12 @@ export class MIDIChannel {
     public get systemParameters(): Readonly<ChannelSystemParameter> {
         return this._systemParameters;
     }
+
+    /*
+    ==========
+    PUBLIC API
+    ==========
+     */
 
     /**
      * The channel MIDI parameters of this channel.
@@ -373,6 +405,21 @@ export class MIDIChannel {
     PUBLIC API
     ==========
      */
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Locks or unlocks a given controller.
+     * This prevents any changes to it until it's unlocked.
+     * @param controller The MIDI controller number (0-127).
+     * @param isLocked If the controller should be locked.
+     */
+    public lockController(
+        this: MIDIChannel,
+        controller: MIDIController,
+        isLocked: boolean
+    ) {
+        this.lockedControllers[controller] = isLocked;
+    }
 
     /**
      * Changes the preset to, or from drums.
@@ -416,22 +463,22 @@ export class MIDIChannel {
         if (force) {
             // Force stop all
             let vc = 0;
-            if (this.voiceCount > 0)
+            if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {
                     if (v.channel === this.channel && v.isActive) {
                         v.isActive = false;
-                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                        if (++vc >= this._voiceCount) break; // We already checked all the voices
                     }
                 }
             this.clearVoiceCount();
         } else {
             // Gracefully stop
             let vc = 0;
-            if (this.voiceCount > 0)
+            if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {
                     if (v.channel === this.channel && v.isActive) {
                         v.releaseVoice(this.synthCore.currentTime);
-                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                        if (++vc >= this._voiceCount) break; // We already checked all the voices
                     }
                 }
         }
@@ -486,7 +533,7 @@ export class MIDIChannel {
      * @internal
      */
     public clearVoiceCount() {
-        this.voiceCount = 0;
+        this._voiceCount = 0;
     }
 
     /**
@@ -539,7 +586,7 @@ export class MIDIChannel {
         // Drum channels ignore key shift
         // Testcase: th07_19_user_gm.mid
         // Reset to 0 just to be sure
-        if (this.drumChannel) shift = 0;
+        if (this._drumChannel) shift = 0;
         if (this._midiParameters.keyShift === shift) return;
         this.setMIDIParameter("keyShift", shift);
         if (!log) return;
@@ -608,7 +655,7 @@ export class MIDIChannel {
     public polyPressure(midiNote: number, pressure: number) {
         // Note to self: don't use computeModulatorsAll here as we're setting the pressure!
         let vc = 0;
-        if (this.voiceCount > 0)
+        if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (
                     v.isActive &&
@@ -621,7 +668,7 @@ export class MIDIChannel {
                         0,
                         ModulatorControllerSources.polyPressure
                     );
-                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             }
         this.synthCore.callEvent("polyPressure", {
@@ -658,16 +705,32 @@ export class MIDIChannel {
         // Note:
         // - System -> System Parameter
         // - MIDI -> MIDI Parameter
-        //
-        this.currentTuning =
-            // Global System (disabled for drums)
-            (this.drumChannel ? 0 : globalSystem.fineTune) +
-            // Global MIDI (disabled for drums)
-            (this.drumChannel ? 0 : globalMIDI.fineTune) +
-            // Channel System
-            channelSystem.fineTune +
-            // Channel MIDI
-            channelMIDI.fineTune;
+
+        // Only Channel System is processed for drum channels
+        const currentKeyShift = this._drumChannel
+            ? channelSystem.keyShift
+            : // Global System
+              globalSystem.keyShift +
+              // Global MIDI
+              globalMIDI.keyShift +
+              // Channel System
+              channelSystem.keyShift +
+              // Channel MIDI
+              channelMIDI.keyShift;
+        // Ensure integer
+        this.currentKeyShift = Math.trunc(currentKeyShift);
+
+        // Only Channel System is processed for drum channels
+        this.currentTuning = this._drumChannel
+            ? channelSystem.fineTune
+            : // Global System
+              globalSystem.fineTune +
+              // Global MIDI
+              globalMIDI.fineTune +
+              // Channel System
+              channelSystem.fineTune +
+              // Channel MIDI
+              channelMIDI.fineTune;
 
         // [-1;1] normalized
         const currentPanNormalized =
@@ -681,17 +744,6 @@ export class MIDIChannel {
 
         // For faster renderVoice calculation
         this.currentPan = currentPanNormalized * 500;
-
-        this.currentKeyShift = Math.floor(
-            // Global System (disabled for drums)
-            (this.drumChannel ? 0 : globalSystem.keyShift) +
-                // Global MIDI (disabled for drums)
-                (this.drumChannel ? 0 : globalMIDI.keyShift) +
-                // Channel System
-                channelSystem.keyShift +
-                // Channel MIDI
-                channelMIDI.keyShift
-        );
 
         this.currentGain =
             // Global forced
@@ -740,7 +792,7 @@ export class MIDIChannel {
      */
     public killNote(midiNote: number, releaseTime = -12_000) {
         let vc = 0;
-        if (this.voiceCount > 0)
+        if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (
                     v.channel === this.channel &&
@@ -750,7 +802,7 @@ export class MIDIChannel {
                     v.overrideReleaseVolEnv = releaseTime; // Set release to be very short
                     v.isInRelease = false; // Force release again
                     v.releaseVoice(this.synthCore.currentTime);
-                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             }
     }
@@ -790,7 +842,7 @@ export class MIDIChannel {
         // @ts-expect-error destruction
         this._systemParameters = undefined;
         // @ts-expect-error destruction
-        this.midiControllers = undefined;
+        this._midiControllers = undefined;
         // @ts-expect-error destruction
         this._midiParameters = undefined;
     }
@@ -809,12 +861,12 @@ export class MIDIChannel {
         this.generators.overridesEnabled = true;
         if (realtime) {
             let vc = 0;
-            if (this.voiceCount > 0)
+            if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {
                     if (v.channel === this.channel && v.isActive) {
                         v.generators[gen] = value;
                         this.computeModulators(v);
-                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                        if (++vc >= this._voiceCount) break; // We already checked all the voices
                     }
                 }
         }
@@ -829,17 +881,17 @@ export class MIDIChannel {
         this.generators.offsets[gen] = value * GeneratorLimits[gen].nrpn;
         this.generators.offsetsEnabled = true;
         let vc = 0;
-        if (this.voiceCount > 0)
+        if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (v.channel === this.channel && v.isActive) {
                     this.computeModulators(v);
-                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             }
     }
 
     protected resetDrumParams() {
-        if (this.synthCore.systemParameters.drumLock || !this.drumChannel)
+        if (this.synthCore.systemParameters.drumLock || !this._drumChannel)
             return;
         for (let i = 0; i < 128; i++) {
             const p = this.drumParams[i];
@@ -872,11 +924,11 @@ export class MIDIChannel {
         sourceIndex: number
     ) {
         let vc = 0;
-        if (this.voiceCount > 0)
+        if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (v.channel === this.channel && v.isActive) {
                     this.computeModulators(v, sourceUsesCC, sourceIndex);
-                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             }
     }
@@ -898,11 +950,11 @@ export class MIDIChannel {
         if (
             this._systemParameters.presetLock ||
             !this.preset ||
-            this.drumChannel === isDrum
+            this._drumChannel === isDrum
         )
             return;
 
-        this.drumChannel = isDrum;
+        this._drumChannel = isDrum;
         // Update transpose (clear on drums)
         this.keyShift(this._midiParameters.keyShift, false);
     }

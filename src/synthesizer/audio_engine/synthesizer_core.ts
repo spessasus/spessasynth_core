@@ -65,7 +65,6 @@ export class SynthesizerCore {
      * Voices of this synthesizer, as a fixed voice pool.
      */
     public readonly voices: Voice[];
-
     /**
      * All MIDI channels of the synthesizer.
      */
@@ -78,7 +77,6 @@ export class SynthesizerCore {
      * The buffer to use when rendering a voice.
      */
     public readonly voiceBuffer;
-
     /**
      * The insertion processor's left input buffer.
      */
@@ -120,21 +118,18 @@ export class SynthesizerCore {
      * -1 means no change.
      */
     public readonly tunings = new Float32Array(128 * 128).fill(-1);
-
     /**
      * The global MIDI parameters of the synthesizer.
      */
     public readonly midiParameters: GlobalMIDIParameter = {
         ...DEFAULT_GLOBAL_MIDI_PARAMETERS
     }; // Copy, not set!
-
     /**
      * The system parameters of the synthesizer.
      */
     public readonly systemParameters: GlobalSystemParameter = {
         ...DEFAULT_GLOBAL_SYSTEM_PARAMETERS
     }; // Copy, not set!
-
     /**
      * The current time of the synthesizer, in seconds.
      */
@@ -182,10 +177,6 @@ export class SynthesizerCore {
         setSystemParameterInternal.bind(this);
     public readonly systemExclusive: typeof systemExclusiveInternal =
         systemExclusiveInternal.bind(this);
-    /**
-     * Current total amount of voices that are currently playing.
-     */
-    public voiceCount = 0;
     /**
      * The synthesizer's reverb processor.
      */
@@ -314,6 +305,18 @@ export class SynthesizerCore {
         // Initialize voices
         this.voices = [];
         this.allocateNewVoices(this.systemParameters.voiceCap);
+    }
+
+    /**
+     * Current total amount of voices that are playing.
+     */
+    private _voiceCount = 0;
+
+    /**
+     * Current total amount of voices that are playing.
+     */
+    public get voiceCount(): number {
+        return this._voiceCount;
     }
 
     public controllerChange(
@@ -661,7 +664,7 @@ export class SynthesizerCore {
         for (const c of this.midiChannels) {
             c.clearVoiceCount();
         }
-        this.voiceCount = 0;
+        this._voiceCount = 0;
 
         // Process voices
         const cap = this.systemParameters.voiceCap;
@@ -684,7 +687,7 @@ export class SynthesizerCore {
 
             // Update voice count
             ch.voiceCount++;
-            this.voiceCount++;
+            this._voiceCount++;
         }
 
         // Process effects

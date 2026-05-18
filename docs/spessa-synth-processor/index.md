@@ -207,14 +207,14 @@ synth.controllerChange(channel, controller, value);
 
     Theoretically all controllers are supported as it depends on the SoundFont's modulators.
 
-### reset
+### resetAllControllers
 
 Reset all controllers and all programs to their default values. Essentially a system reset.
 This will reset all controllers to their default values,
 except for the locked controllers.
 
 ```ts
-synth.reset();
+synth.resetAllControllers();
 ```
 
 ### channelPressure
@@ -252,7 +252,7 @@ synth.stopAllChannels((force = false));
 
 ### setSystemParameter
 
-Set a [master parameter value.](master-parameter.md)
+Set a [system parameter value.](global-parameters.md)
 
 ```ts
 synth.setSystemParameter(type, value);
@@ -260,18 +260,6 @@ synth.setSystemParameter(type, value);
 
 - type - the type of the parameter to set, a string of the parameter type.
 - value - the value of the parameter to set, depends on the type.
-
-### getMasterParameter
-
-Get a [master parameter value.](master-parameter.md)
-
-```ts
-synth.getMasterParameter(type);
-```
-
-- type - the type of the master parameter to get, a string of the parameter type.
-
-Returns the value of the master parameter.
 
 ### killVoices
 
@@ -291,7 +279,7 @@ synth.applySnapshot(snapshot);
 
 !!! WARNING
 
-    This method overrides the existing master parameters with the ones from the snapshot.
+    This method overrides the existing system parameters with the ones from the snapshot.
 
 ### getSnapshot
 

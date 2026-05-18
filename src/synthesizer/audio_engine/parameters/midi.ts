@@ -5,35 +5,31 @@ import type { MIDISystem } from "../../../soundbank/types";
 
 export interface GlobalMIDIParameter {
     /**
-     * The MIDI system used by the synthesizer for bank selects and system exclusives. (GM, GM2, GS, XG)
-     * Set by MIDI SysEx.
+     * The currently enabled MIDI system used by the synthesizer
+     * for bank selects and system exclusives.
+     * (GM, GM2, GS, XG)
      */
     system: MIDISystem;
     /**
      * The global key shift in semitones.
      * Drum channels ignore this value.
-     * Set by MIDI SysEx.
      */
     keyShift: number;
     /**
      * The global tuning in cents.
      * Drum channels ignore this value.
-     * Set by MIDI SysEx.
      */
     fineTune: number;
 
     /**
-     * The global volume gain.
-     * Set by MIDI SysEx.
+     * The master gain.
+     * From 0 to any number. 1 is 100% volume.
      */
     gain: number;
 
     /**
-     * The global panning.
-     * - -1 - hard left
-     * - 0 - center
-     * - 1 - hard right
-     * Set by MIDI SysEx.
+     * The master pan.
+     * From -1 (left) to 1 (right). 0 is center.
      */
     pan: number;
 }

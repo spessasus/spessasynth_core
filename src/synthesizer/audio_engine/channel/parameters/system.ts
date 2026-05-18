@@ -13,7 +13,8 @@ export interface ChannelSystemParameter {
     presetLock: boolean;
 
     /**
-     * If the channel is muted.
+     * If the channel should not produce any sound
+     * and ignore incoming Note On messages.
      */
     isMuted: boolean;
 
@@ -31,11 +32,13 @@ export interface ChannelSystemParameter {
 
     /**
      * The channel key shift in semitones.
+     * Drum channels DO NOT ignore this value.
      */
     keyShift: number;
 
     /**
      * The channel tuning in cents.
+     * Drum channels DO NOT ignore this value.
      */
     fineTune: number;
 
@@ -122,7 +125,7 @@ export function setSystemParameterInternal<
         }
 
         case "keyShift": {
-            if (!this.drumChannel && (prev as number) !== (value as number))
+            if (!this._drumChannel && (prev as number) !== (value as number))
                 this.stopAllNotes(true);
         }
     }

@@ -28,7 +28,7 @@ export function programChange(this: MIDIChannel, program: number) {
 
     // Drums first
     // SC resets drum params on program change
-    if (preset.isDrum !== this.drumChannel) {
+    if (preset.isDrum !== this._drumChannel) {
         this.setDrumFlag(preset.isDrum);
     }
     this.resetDrumParams();

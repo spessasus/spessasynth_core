@@ -1,26 +1,8 @@
 # MIDIChannel
 
-## Description
-
 This class represents a single MIDI channel within a `SpessaSynthProcessor`.
 
-!!! Danger
-
-    Unless you are doing advanced synth operations, you shouldn't be interacting with this class.
-    This is for advanced users only.
-
-This page serves as a documentation for this internal class.
-However, they can allow to manipulate the synth extensively.
-
-!!! Note
-
-    Methods here may not be 100% stable. Expect removals!
-
 ## Methods
-
-!!! Note
-
-    The MIDI methods (noteOn, noteOff, program change, etc.) are omitted here as they can be called from the `SpessaSynthProcessor` class.
 
 ### resetPreset
 
@@ -126,7 +108,7 @@ Sets the channel to a given MIDI patch.
 
 Parameters:
 
-- patch - the [MIDI Patch](midi-patch.md) to set the channel to.
+- patch - the [MIDI Patch](../midi-patch.md) to set the channel to.
 
 !!! Note
 
@@ -164,3 +146,67 @@ Mutes or unmutes a channel.
 Parameters:
 
 - isMuted - if the channel should be muted.
+
+### applySnapshot
+
+Applies a channel snapshot to this channel.
+
+```ts
+channel.applySnapshot(snapshot);
+```
+
+- snapshot - the `ChannelSnapshot` to apply.
+
+### getSnapshot
+
+Returns a `ChannelSnapshot` of this channel's current state.
+
+```ts
+const snapshot = channel.getSnapshot();
+```
+
+## Properties
+
+### patch
+
+The currently selected [`MIDIPatch`](../midi-patch.md) of this channel.
+
+!!! Note
+
+    The exact matching preset may not be available,
+    but this property represents exactly what MIDI asks for.
+
+### voiceCount
+
+Current amount of voices that are playing on this channel.
+
+### drumChannel
+
+Indicates whether this channel is a drum channel.
+
+### midiControllers
+
+An array of MIDI controllers for the channel.
+This array is used to store the state of various MIDI controllers
+such as volume, pan, modulation, etc.
+
+!!! Note
+
+    A bit of an explanation:
+    The controller table is stored as an `Int16Array`,
+    it stores 14-bit values, allowing for full 14-bit LSB resolution.
+    The only exception from this are
+    the Registered and Non-Registered Parameter Numbers.
+    Data entries do store it!
+
+!!! Warning
+
+    Readonly, do not modify directly!
+
+### systemParameters
+
+The channel's current [System Parameters](channel-parameters.md)
+
+### midiParameters
+
+`Readonly<ChannelMIDIParameter>` - The channel's MIDI parameters.

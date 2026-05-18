@@ -178,7 +178,7 @@ export function renderVoice(
     // Channel vibrato (GS NRPN)
     if (
         // Only enabled when modulation wheel is disabled (to prevent overlap)
-        this.midiControllers[MIDIControllers.modulationWheel] === 0 &&
+        this._midiControllers[MIDIControllers.modulationWheel] === 0 &&
         this.vibrato.depth > 0
     ) {
         // Sine! (GS uses sine)
@@ -394,7 +394,7 @@ export function renderVoice(
 
     if (core.delayActive) {
         const delaySend =
-            this.midiControllers[MIDIControllers.variationDepth] *
+            this._midiControllers[MIDIControllers.variationDepth] *
             voice.delaySend;
         if (delaySend > 0) {
             const delayGain =

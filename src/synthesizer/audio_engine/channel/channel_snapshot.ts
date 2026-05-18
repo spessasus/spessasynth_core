@@ -53,7 +53,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
             : undefined,
         lockedSystem: this.lockedSystem,
 
-        midiControllers: this.midiControllers.slice(),
+        midiControllers: this._midiControllers.slice(),
         lockedControllers: [...this.lockedControllers],
         pitchWheels: this.pitchWheels.slice(),
         generators: {
@@ -71,7 +71,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         perNotePitch: this.perNotePitch,
 
         drumParams: this.drumParams.map((d) => ({ ...d })),
-        drumChannel: this.drumChannel,
+        drumChannel: this._drumChannel,
         channelNumber: this.channel
     };
 }
@@ -79,7 +79,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
 export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     this.setDrums(snapshot.drumChannel);
 
-    this.midiControllers.set(snapshot.midiControllers);
+    this._midiControllers.set(snapshot.midiControllers);
     for (let i = 0; i < CONTROLLER_TABLE_SIZE; i++)
         this.lockController(i as MIDIController, snapshot.lockedControllers[i]);
 

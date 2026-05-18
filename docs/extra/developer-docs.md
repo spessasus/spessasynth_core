@@ -28,7 +28,7 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 3. Clone your fork of `spessasynth_core` into the directory.
 4. Install dependencies `npm install`
 5. Clone `spessasynth_lib` (or your fork of it) into the directory and install dependencies.
-6. Clone `SpessaSynth` into the directoryand install dependencies.
+6. Clone `SpessaSynth` into the directory and install dependencies.
 7. You now should have the following structure:
     - your directory
         - spessasynth_core (your fork of it)

@@ -77,15 +77,15 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     const previousNote = this.lastNote;
     const portamentoEnabled =
         this.portamentoForce ||
-        this.midiControllers[MIDIControllers.portamentoOnOff] >= 8192;
+        this._midiControllers[MIDIControllers.portamentoOnOff] >= 8192;
 
     // 14-bit MIDI CC -> 7-bit value
     const portamentoTime =
-        this.midiControllers[MIDIControllers.portamentoTime] >> 7;
+        this._midiControllers[MIDIControllers.portamentoTime] >> 7;
 
     const canApplyPortamento =
         portamentoEnabled && // Enabled?
-        !this.drumChannel && // Not a drum channel?
+        !this._drumChannel && // Not a drum channel?
         previousNote >= 0 && // Valid note?
         previousNote !== midiNote && // Not the same note?
         portamentoTime > 0; // Non-instant time?
@@ -109,12 +109,12 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     // Mono mode
     if (!this._midiParameters.polyMode) {
         let vc = 0;
-        if (this.voiceCount > 0)
+        if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (v.isActive && v.channel === this.channel) {
                     // No minimum note time, release ASAP
                     v.exclusiveRelease(this.synthCore.currentTime, 0);
-                    if (++vc >= this.voiceCount) break; // We already checked all the voices
+                    if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             }
     }
@@ -140,7 +140,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     }
 
     // Drum parameters
-    if (this.drumChannel) {
+    if (this._drumChannel) {
         const p = this.drumParams[midiNote];
         if (!p.rxNoteOn) {
             return;
@@ -153,7 +153,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
                 panOverride = Math.round(Math.random() * 1000 - 500);
             } else {
                 const channelPan =
-                    (this.midiControllers[MIDIControllers.pan] >> 7) - 64;
+                    (this._midiControllers[MIDIControllers.pan] >> 7) - 64;
                 const targetPan = Math.max(
                     -63,
                     Math.min(drumPan + channelPan, 63)
@@ -241,7 +241,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         if (voice.exclusiveClass !== 0 && this._midiParameters.polyMode) {
             // Kill all voices with the same exclusive class
             let vc = 0;
-            if (this.voiceCount > 0)
+            if (this._voiceCount > 0)
                 for (const v of this.synthCore.voices) {
                     if (
                         v.isActive &&
@@ -251,7 +251,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
                         v.hasRendered
                     ) {
                         v.exclusiveRelease(this.synthCore.currentTime);
-                        if (++vc >= this.voiceCount) break; // We already checked all the voices
+                        if (++vc >= this._voiceCount) break; // We already checked all the voices
                     }
                 }
         }
@@ -352,7 +352,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             )
         ); //  -500 to 500
     }
-    this.voiceCount += voices.length;
+    this._voiceCount += voices.length;
     this.synthCore.callEvent("noteOn", {
         midiNote,
         channel: this.channel,

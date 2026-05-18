@@ -12,14 +12,16 @@ export interface ChannelMIDIParameter {
     pitchWheel: number;
 
     /**
-     * The pitch wheel range, in semitones.
+     * The current pitch wheel range, in semitones.
      */
     pitchWheelRange: number;
 
     /**
+     * The multiplier of the modulation wheel modulator.
+     *
      * The MIDI specification assumes the default modulation depth is 50 cents,
      * but it may vary for different sound banks.
-     * For example, if you want a modulation depth of 100 cents,
+     * For example, if a MIDI requests a modulation depth of 100 cents,
      * the multiplier will be 2,
      * which, for a preset with a depth of 50,
      * will create a total modulation depth of 100 cents.
@@ -27,28 +29,31 @@ export interface ChannelMIDIParameter {
     modulationDepth: number;
 
     /**
-     * The channel's receiving number (0-based index)
+     * The channel's receiving number (0-based index).
+     * This allows triggering multiple parts (channels) with a single note message.
+     * @remarks
      * Only used when customChannelNumbers is enabled.
      */
     rxChannel: number;
 
     /**
      * If the channel is in the poly mode.
-     * True - POLY ON - regular playback.
-     * False - MONO ON - one note per channel, others are killed on note-on
+     * - `true` - POLY ON - regular playback.
+     * - `false` - MONO ON - one note per channel, others are killed on Note On.
      */
     polyMode: boolean;
 
     /**
-     * Cents, RPN/SysEx for fine-tuning.
-     */
-    fineTune: number;
-
-    /**
      * The key shift of the channel (in semitones).
-     * Set by system exclusive or RPN#2.
+     * Drum channels ignore this value.
      */
     keyShift: number;
+
+    /**
+     * Cents, RPN/SysEx for fine-tuning.
+     * Drum channels ignore this value.
+     */
+    fineTune: number;
 
     /**
      * Enables random panning for every note played on this channel.
@@ -57,13 +62,16 @@ export interface ChannelMIDIParameter {
 
     /**
      * Assign mode for the channel.
-     * ASSIGN MODE is the parameter that determines how voice assignment will be handled when sounds overlap on identical note numbers in the same channel (i.e., repeatedly struck notes).
+     * `ASSIGN MODE` is the parameter that determines how voice assignment will be handled when sounds overlap on identical note numbers in the same channel (i.e., repeatedly struck notes).
      * This is initialized to a mode suitable for each Part, so for general purposes there is no need to change this.
      *
-     * 0 - Single: If the same note is played multiple times in succession, the previously-sounding note will be completely silenced, and then the new note will be sounded.
-     * 1 - LimitedMulti: If the same note is played multiple times in succession, the previously-sounding note will be continued to a certain extent even after the new note is sounded. (Default setting)
-     * 2 - FullMulti: If the same note is played multiple times in succession, the previously-sounding note(s) will continue sounding for their natural length even after the new note is sounded.
-     * We treat LimitedMulti like FullMulti
+     * - 0 - Single: If the same note is played multiple times in succession, the previously-sounding note will be completely silenced, and then the new note will be sounded.
+     * - 1 - LimitedMulti: If the same note is played multiple times in succession, the previously-sounding note will be continued to a certain extent even after the new note is sounded. (Default setting)
+     * - 2 - FullMulti: If the same note is played multiple times in succession, the previously-sounding note(s) will continue sounding for their natural length even after the new note is sounded.
+     *
+     * SpessaSynth treats LimitedMulti like FullMulti.
+     * Essentially Limited and Full are normal
+     * and Single is like `monophonicRetrigger` system parameter.
      */
     assignMode: number;
 
@@ -75,14 +83,14 @@ export interface ChannelMIDIParameter {
     /**
      * CC1 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
-     * Default is 16
+     * Default is 16.
      */
     cc1: MIDIController;
 
     /**
      * CC2 for GS controller matrix.
      * An arbitrary MIDI controller, which can be bound to any synthesis parameter.
-     * Default is 17
+     * Default is 17.
      */
     cc2: MIDIController;
 
@@ -90,6 +98,8 @@ export interface ChannelMIDIParameter {
      * Drum map for GS system exclusive tracking.
      * Only used for selecting the correct channel when setting drum parameters through sysEx,
      * as those don't specify the channel, but the drum number.
+     *
+     * The only values that are allowed are 0 (melodic) 1 or 2.
      */
     drumMap: number;
 }

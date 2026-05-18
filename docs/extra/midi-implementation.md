@@ -190,7 +190,7 @@ the original target of SpessaSynth.
 This can be useful as setting CC#1 to something like 1 (which is usually imperceptible),
 will disable the extra vibrato for this channel.
 
-[Custom vibrato can be disabled globally as well.](../spessa-synth-processor/master-parameter.md#customvibratolock)
+[Custom vibrato can be disabled globally as well.](../spessa-synth-processor/global-parameters.md#customvibratolock)
 
 ##### SoundFont2 NRPN
 

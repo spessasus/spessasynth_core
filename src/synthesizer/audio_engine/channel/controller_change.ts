@@ -38,8 +38,8 @@ export function controllerChange(
         if (this.lockedControllers[actualCCNum]) return;
 
         // Append the lower nibble to the main controller
-        this.midiControllers[actualCCNum] =
-            (this.midiControllers[actualCCNum] & 0x3f_80) | (value & 0x7f);
+        this._midiControllers[actualCCNum] =
+            (this._midiControllers[actualCCNum] & 0x3f_80) | (value & 0x7f);
 
         this.computeModulatorsAll(1, actualCCNum);
     }
@@ -48,8 +48,8 @@ export function controllerChange(
     // Apply the cc to the table (top 7 bits only, to not override LSB)
     // For consistency we also technically apply this to the LSB controllers directly,
     // But they are unused (except Parameter Numbers)
-    this.midiControllers[controller] =
-        (value << 7) | (this.midiControllers[controller] & 0x7f);
+    this._midiControllers[controller] =
+        (value << 7) | (this._midiControllers[controller] & 0x7f);
 
     // Interpret special CCs
     {
@@ -111,7 +111,7 @@ export function controllerChange(
                 // This is technically not a MIDI behavior,
                 // But some MIDI files only send MSB data:
                 // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
-                this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
+                this._midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = true;
                 break;
             }
@@ -124,14 +124,14 @@ export function controllerChange(
                 // This is technically not a MIDI behavior,
                 // But some MIDI files only send MSB data:
                 // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
-                this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
+                this._midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = false;
                 break;
             }
 
             case MIDIControllers.nonRegisteredParameterLSB: {
                 if (
-                    this.midiControllers[
+                    this._midiControllers[
                         MIDIControllers.nonRegisteredParameterMSB
                     ] >>
                         7 ===
@@ -167,7 +167,7 @@ export function controllerChange(
                 // This is technically not a MIDI behavior,
                 // But some MIDI files only send MSB data:
                 // https://github.com/spessasus/spessasynth_core/pull/78#discussion_r3233413622
-                this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
+                this._midiControllers[MIDIControllers.dataEntryMSB] = 0;
                 this.lastParameterIsRegistered = false;
                 break;
             }
@@ -186,7 +186,7 @@ export function controllerChange(
             case MIDIControllers.sustainPedal: {
                 if (value < 64) {
                     let vc = 0;
-                    if (this.voiceCount > 0)
+                    if (this._voiceCount > 0)
                         for (const v of this.synthCore.voices) {
                             if (
                                 v.channel === this.channel &&
@@ -195,7 +195,7 @@ export function controllerChange(
                             ) {
                                 v.isHeld = false;
                                 v.releaseVoice(this.synthCore.currentTime);
-                                if (++vc >= this.voiceCount) break; // We already checked all the voices
+                                if (++vc >= this._voiceCount) break; // We already checked all the voices
                             }
                         }
                 }
@@ -224,19 +224,4 @@ export function controllerChange(
         controller: controller,
         value: value
     });
-}
-
-/**
- * Locks or unlocks a given controller.
- * This prevents any changes to it until it's unlocked.
- * @param controller The MIDI controller number (0-127).
- * @param isLocked If the controller should be locked.
- */
-export function lockController(
-    this: MIDIChannel,
-    controller: MIDIController,
-    isLocked: boolean
-) {
-    // @ts-expect-error We only set it here.
-    this.lockedControllers[controller] = isLocked;
 }

@@ -1,6 +1,7 @@
 # NPM Exports
 
 This is a (non-exhaustive) list of exports in the NPM package.
+Note that types/intefaces are not present in this list.
 
 !!! Tip
 
@@ -11,9 +12,8 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 - `SpessaSynthProcessor` - the main synthesis engine.
 - `SpessaSynthSequencer` - the main sequencer engine.
-- `SynthesizerSnapshot` - the class for manipulating synthesizer snapshots.
-- `ChannelSnapshot` - a part of SynthesizerSnapshot, represents a single channel.
-- `KeyModifier` - for the `KeyModifierManager`.
+- `MIDIChannel` - the class representing a single MIDI channel.
+- `KeyModifier` - for the `KeyModifierManager`, a single key modification.
 
 ### Related Enums
 
@@ -57,6 +57,8 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - `BasicMIDI` - the base class for MIDI sequences.
 - `MIDIBuilder` - the MIDI file builder.
 - `MIDIMessage` - represents a single MIDI/meta/sysEx event.
+- `MIDIUtils` - utility functions for MIDI operations, such as analyzing System Exclusive Messages and creating them.
+- `MIDITrack` - represents a single MIDI track.
 
 ### Related enums
 

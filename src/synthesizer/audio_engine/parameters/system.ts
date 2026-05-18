@@ -36,7 +36,8 @@ export interface GlobalSystemParameter {
     autoAllocateVoices: boolean;
 
     /**
-     * The reverb gain, from 0 to any number. 1 is 100% reverb.
+     * The reverb effect gain.
+     * From 0 to any number. 1 is 100% reverb.
      */
     reverbGain: number;
 
@@ -49,7 +50,8 @@ export interface GlobalSystemParameter {
     reverbLock: boolean;
 
     /**
-     * The chorus gain, from 0 to any number. 1 is 100% chorus.
+     * The chorus effect gain.
+     * From 0 to any number. 1 is 100% chorus.
      */
     chorusGain: number;
 
@@ -62,7 +64,8 @@ export interface GlobalSystemParameter {
     chorusLock: boolean;
 
     /**
-     * The delay gain, from 0 to any number. 1 is 100% delay.
+     * The delay effect gain.
+     * From 0 to any number. 1 is 100% delay.
      */
     delayGain: number;
 
@@ -102,12 +105,14 @@ export interface GlobalSystemParameter {
 
     // Shared with channel
     /**
-     * The master gain, from 0 to any number. 1 is 100% volume.
+     * The master gain.
+     * From 0 to any number. 1 is 100% volume.
      */
     gain: number;
 
     /**
-     * The master pan, from -1 (left) to 1 (right). 0 is center.
+     * The master pan.
+     * From -1 (left) to 1 (right). 0 is center.
      */
     pan: number;
 

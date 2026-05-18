@@ -185,16 +185,16 @@ This event is triggered when a SysEx to display some text has been received.
 
 The data is a number array of the entire system exclusive, excluding the `F0` status byte.
 
-### `masterParameterChange`
+### `globalParamChange`
 
-This event is triggered when a master parameter changes.
+This event is triggered when a global system parameter changes.
 
-- `parameter`: `GlobalSystemParameter` - the master parameter type.
+- `parameter`: `GlobalSystemParameter` - the parameter type.
 - `value`: varies - the new value of this parameter.
 
 Note that this event usually triggers from the MIDI system change or user's change.
 
-[All master parameters can be found here](master-parameter.md)
+[All system parameters can be found here](global-parameters.md)
 
 ### `effectChange`
 

@@ -15,13 +15,14 @@ import { handleAWE32NRPN } from "./awe32_nrpn";
  */
 export function dataEntry(this: MIDIChannel) {
     // Stored in cc tabled as 14-bit
-    const dataValue = this.midiControllers[MIDIControllers.dataEntryMSB];
+    const dataValue = this._midiControllers[MIDIControllers.dataEntryMSB];
 
     // RPN Handling
     if (this.lastParameterIsRegistered) {
         const rpnValue =
-            this.midiControllers[MIDIControllers.registeredParameterMSB] |
-            (this.midiControllers[MIDIControllers.registeredParameterLSB] >> 7);
+            this._midiControllers[MIDIControllers.registeredParameterMSB] |
+            (this._midiControllers[MIDIControllers.registeredParameterLSB] >>
+                7);
         switch (rpnValue) {
             default: {
                 SpessaLog.info(
@@ -79,9 +80,9 @@ export function dataEntry(this: MIDIChannel) {
 
     // NRPN Handling
     const paramCoarse =
-        this.midiControllers[MIDIControllers.nonRegisteredParameterMSB] >> 7;
+        this._midiControllers[MIDIControllers.nonRegisteredParameterMSB] >> 7;
     const paramFine =
-        this.midiControllers[MIDIControllers.nonRegisteredParameterLSB] >> 7;
+        this._midiControllers[MIDIControllers.nonRegisteredParameterLSB] >> 7;
     const dataCoarse = dataValue >> 7;
     // Skip drums early
     if (

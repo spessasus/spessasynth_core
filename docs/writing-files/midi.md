@@ -162,7 +162,7 @@ const synth = new SpessaSynthProcessor(44100);
 // ...
 
 // get the snapshot and apply it
-const snapshot = SynthesizerSnapshot.create(synth);
+const snapshot = synth.getSnapshot();
 midi.applySnapshot(snapshot);
 
 // write midi

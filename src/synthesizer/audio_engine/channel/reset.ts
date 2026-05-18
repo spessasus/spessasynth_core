@@ -68,13 +68,13 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
             this.synthCore.callEvent("controllerChange", {
                 channel: this.channel,
                 controller: cc as MIDIController,
-                value: this.midiControllers[cc] >> 7
+                value: this._midiControllers[cc] >> 7
             });
             continue;
         }
         const resetValue = DEFAULT_MIDI_CONTROLLERS[cc];
         if (
-            this.midiControllers[cc] !== resetValue &&
+            this._midiControllers[cc] !== resetValue &&
             cc !== MIDIControllers.portamentoControl &&
             cc !== MIDIControllers.dataEntryMSB &&
             cc !== MIDIControllers.registeredParameterMSB &&
@@ -131,16 +131,16 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     // Reset Parameters (do not emit controller change)
     // We reset them here since in the loop, the data entries would come before params
     this.lastParameterIsRegistered = true;
-    this.midiControllers[MIDIControllers.nonRegisteredParameterLSB] =
+    this._midiControllers[MIDIControllers.nonRegisteredParameterLSB] =
         DEFAULT_NRPN << 7;
-    this.midiControllers[MIDIControllers.nonRegisteredParameterMSB] =
+    this._midiControllers[MIDIControllers.nonRegisteredParameterMSB] =
         DEFAULT_NRPN << 7;
-    this.midiControllers[MIDIControllers.registeredParameterLSB] =
+    this._midiControllers[MIDIControllers.registeredParameterLSB] =
         DEFAULT_RPN << 7;
-    this.midiControllers[MIDIControllers.registeredParameterMSB] =
+    this._midiControllers[MIDIControllers.registeredParameterMSB] =
         DEFAULT_RPN << 7;
-    this.midiControllers[MIDIControllers.dataEntryMSB] = 0;
-    this.midiControllers[MIDIControllers.dataEntryLSB] = 0;
+    this._midiControllers[MIDIControllers.dataEntryMSB] = 0;
+    this._midiControllers[MIDIControllers.dataEntryLSB] = 0;
 
     // Reset program
     this.setBankMSB(BankSelectHacks.getDefaultBank(this.channelSystem));
@@ -172,7 +172,7 @@ export function resetRP15(this: MIDIChannel) {
 
     for (const resetCC of RP_15_RESET_CC_NUMS) {
         const resetValue = DEFAULT_MIDI_CONTROLLERS[resetCC];
-        if (resetValue !== this.midiControllers[resetCC])
+        if (resetValue !== this._midiControllers[resetCC])
             this.controllerChange(resetCC, resetValue >> 7);
     }
 }

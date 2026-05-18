@@ -157,19 +157,19 @@ The INFO data is taken from the first sound bank.
 
     This method is _static_.
 
-### getDummySoundBankFile
+### getSampleSoundBankFile
 
 Creates a simple sound bank with a single saw wave preset.
 
 ```ts
-const sfBinary = await BasicSoundBank.getDummySoundBankFile();
+const sfBinary = BasicSoundBank.getSampleSoundBankFile();
 ```
 
 The returned value is an `ArrayBuffer` - the binary representation of an .sf2 file.
 
 !!! Note
 
-    This method is _static_ and _asynchronous_
+    This method is _static_
 
 ### copyFrom
 
