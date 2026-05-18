@@ -252,7 +252,7 @@ synth.stopAllChannels((force = false));
 
 ### setSystemParameter
 
-Set a [system parameter value.](global-parameters.md)
+Set a [system parameter value.](global-parameters.md#system)
 
 ```ts
 synth.setSystemParameter(type, value);

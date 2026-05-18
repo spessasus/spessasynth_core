@@ -92,7 +92,7 @@ Returns a MIDI Patch formatted string.
 
 ### toString
 
-Returns a MIDI Patch formatted string and preset's name combined.
+An alias for [`MIDIPatchTools.toFullMIDIString`](../spessa-synth-processor/midi-patch.md#tofullmidistring).
 
 ### toFlattenedInstrument
 

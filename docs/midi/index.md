@@ -373,13 +373,163 @@ The returned value is an `ArrayBuffer` - a binary representation of the file.
 
 ### modify
 
-A function for modifying MIDI files.
-See [Writing MIDI files](../writing-files/midi.md#modify) for more info.
+Allows easily modifying the sequence's programs and controllers.
+This is a very sophisticated method that supports various MIDI systems
+and inserts/deletes messages appropriately.
+
+This modifies the MIDI sequence _in-place_.
+
+```ts
+midi.modify({
+    options: ModifyMIDIOptions
+});
+```
+
+The `options` parameter is an object.
+All of its following properties are optional.
+
+#### channels
+
+`Map<number, ClearableParameter<ChannelModification>>`
+
+The channel changes.
+
+- Key: the MIDI channel number.
+- value:
+    - `"clear"` - all MIDI messages for this channel, such as Note On are removed.
+    - `ChannelModification` - modifies the channel.
+
+The `ChannelModification` interface is described below, all properties are also optional:
+
+##### controllers
+
+`Map<MIDIController, ClearableParameter<number>>`
+
+All controllers that should be modified for this channel.
+
+- Key: the MIDI controller number.
+- value:
+    - `"clear"` - all controller changes for this controller are removed.
+    - `number` - clear + sets the new controller at the start of the song, effectively locking them to the set value.
+
+##### patch
+
+`ClearableParameter<MIDIPatch>`
+
+The new program of this channel.
+
+- `"clear"` - all program changes for this channel are removed.
+- `MIDIPatch` - clear + sets the new patch according to the MIDI system at the start of the sequence.
+
+##### keyShift
+
+`number`
+
+The channel key shift in semitones.
+Note on/off numbers are shifted.
+
+##### fineTune
+
+`number`
+
+The channel tuning in cents.
+Tuned using RPN Fine Tune.
+Range is `[-100; 99.987]` cents.
+
+#### drumSetupParams
+
+`ClearableParameter<never>`
+
+The drum parameter changes.
+
+- `"clear"` - all existing drum parameter change MIDI messages are removed.
+- `never` - not yet implemented.
+
+#### reverbParams
+
+`ClearableParameter<ReverbProcessorSnapshot>`
+
+The desired GS reverb parameters.
+
+- `"clear"` - all existing parameter change MIDI messages are removed.
+- `ReverbProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+
+#### chorusParams
+
+`ClearableParameter<ChorusProcessorSnapshot>`
+
+The GS chorus parameters.
+
+- `"clear"` - all existing parameter change MIDI messages are cleared.
+- `ChorusProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+
+#### delayParams
+
+`ClearableParameter<DelayProcessorSnapshot>`
+
+The GS delay parameters.
+
+- `"clear"` - all existing parameter change MIDI messages are cleared.
+- `DelayProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+
+#### insertionParams
+
+The GS Insertion Effect parameters.
+
+- `"clear"` - all existing parameter change MIDI messages are cleared.
+- `InsertionProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+
+This interface is defined as follows:
+
+```ts
+interface InsertionProcessorSnapshot {
+    type: number;
+    /**
+     * Parameters for the effect, 255 means "no change"
+     */
+    params: Uint8Array;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of insertion sound that will be sent to the reverb.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToReverb: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of insertion sound that will be sent to the chorus.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToChorus: number;
+
+    /**
+     * 0-127
+     * This parameter sets the amount of insertion sound that will be sent to the delay.
+     * Higher values result in more sound being sent.
+     */
+    sendLevelToDelay: number;
+
+    /**
+     * A boolean list for channels that have the insertion effect enabled.
+     */
+    channels: boolean[];
+}
+```
 
 ### applySnapshot
 
-A function for applying a [Synthesizer snapshot](../spessa-synth-processor/synthesizer-snapshot.md) to a MIDI file.
-See [Writing MIDI files](../writing-files/midi.md) for more info.
+Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence _in place_.
+This means changing the programs and controllers if they are locked.
+
+```ts
+midi.applySnapshot(snapshot);
+```
+
+- snapshot - the `SynthesizerSnapshot` to use.
+
+For example, if channel 1 has locked preset on `Drawbar Organ`,
+this will remove all program changes for channel 1 and add one at the start to change the program to `Drawbar organ`.
 
 ### getName
 

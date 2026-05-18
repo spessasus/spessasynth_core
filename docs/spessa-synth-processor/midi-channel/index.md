@@ -2,93 +2,32 @@
 
 This class represents a single MIDI channel within a `SpessaSynthProcessor`.
 
+They are accessible through the `midiChannels` property of the synthesizer.
+
 ## Methods
 
-### resetPreset
+### setSystemParameter
 
-Resets the preset to the default value.
+Set a [system parameter value.](channel-parameters.md#system)
 
-### resetRP15
+```ts
+channel.setSystemParameter(type, value);
+```
 
-Resets controllers according to [RP-15 Recommended Practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)
+- type - the type of the parameter to set, a string of the parameter type.
+- value - the value of the parameter to set, depends on the type.
 
-### resetParameters
+### lockController
 
-Reset all parameters to their default values.
-This includes NRPN and RPN controllers, data entry state,
-and generator overrides and offsets.
+Locks or unlocks a given controller.
+This prevents any changes to it until it's unlocked.
 
-### dataEntryFine
+```ts
+channel.lockController(controller, isLocked);
+```
 
-Executes a data entry fine (LSB) change for the current channel.
-
-Parameters:
-
-- dataValue - The value to set for the data entry fine controller (0-127).
-
-### dataEntry
-
-Executes a data entry coarse (MSB) change for the current channel.
-
-Parameters:
-
-- dataValue - The value to set for the data entry coarse controller (0-127).
-
-### transposeChannel
-
-Transposes the channel by given amount of semitones.
-
-Parameters:
-
-- semitones - The number of semitones to transpose the channel by. Can be decimal.
-- force - Defaults to false, if true, it will force the transpose even if the channel is a drum channel.
-
-### setOctaveTuning
-
-Sets the octave tuning for a given channel.
-
-Parameters:
-
-- tuning - the tuning array of 12 values, each representing the tuning for a note in the octave.
-
-!!! Note
-
-    Cent tunings are relative.
-
-### modulationDepth
-
-Sets the modulation depth for the channel.
-
-Parameters:
-
-- cents - The modulation depth in cents to set.
-
-!!! Note
-
-    This method sets the modulation depth for the channel by converting the given cents value into a
-    multiplier. The MIDI specification assumes the default modulation depth is 50 cents,
-    but it may vary for different sound banks.
-    For example, if you want a modulation depth of 100 cents,
-    the multiplier will be 2,
-    which, for a preset with a depth of 50,
-    will create a total modulation depth of 100 cents.
-
-### fineTune
-
-Sets the channel's tuning.
-
-Parameters:
-
-- cents - The tuning in cents to set.
-- log - If true, logs the change to the console.
-
-### setPresetLock
-
-Locks or unlocks the preset from MIDI program changes.
-
-Parameters:
-
-locked - If the preset should be locked.
+- controller - `MIDIController` to lock.
+- isLocked - `boolean` if the controller should be locked.
 
 ### setDrums
 
@@ -102,35 +41,6 @@ Parameters:
 
     This executes a program change.
 
-### setPatch
-
-Sets the channel to a given MIDI patch.
-
-Parameters:
-
-- patch - the [MIDI Patch](../midi-patch.md) to set the channel to.
-
-!!! Note
-
-    This executes a program change.
-
-### setGSDrums
-
-Sets the GM/GS drum flag.
-
-Parameters:
-
-- drums - the new flag value.
-
-### killNote
-
-Stops a note nearly instantly.
-
-Parameters:
-
-- midiNote - the note to stop
-- releaseTime (defaults to -12000) - the release time of the note.
-
 ### stopAllNotes
 
 Stops all notes on the channel.
@@ -138,32 +48,6 @@ Stops all notes on the channel.
 Parameters:
 
 - force (default false) - If true, stops all notes immediately, otherwise applies release time.
-
-### muteChannel
-
-Mutes or unmutes a channel.
-
-Parameters:
-
-- isMuted - if the channel should be muted.
-
-### applySnapshot
-
-Applies a channel snapshot to this channel.
-
-```ts
-channel.applySnapshot(snapshot);
-```
-
-- snapshot - the `ChannelSnapshot` to apply.
-
-### getSnapshot
-
-Returns a `ChannelSnapshot` of this channel's current state.
-
-```ts
-const snapshot = channel.getSnapshot();
-```
 
 ## Properties
 
@@ -205,8 +89,10 @@ such as volume, pan, modulation, etc.
 
 ### systemParameters
 
-The channel's current [System Parameters](channel-parameters.md)
+The channel's current [system parameters](channel-parameters.md#system),
+stored as key: value. Readonly.
 
 ### midiParameters
 
-`Readonly<ChannelMIDIParameter>` - The channel's MIDI parameters.
+The channel's current MIDI parameters,
+stored as key: value. Readonly.

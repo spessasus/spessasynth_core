@@ -808,8 +808,9 @@ export class MIDIChannel {
     }
 
     /**
-     * Applies the snapshot to this `MIDIChannel` instance.
+     * Applies the `ChannelSnapshot` to this `MIDIChannel` instance.
      * @param snapshot The snapshot to apply.
+     * @internal
      */
     public applySnapshot(snapshot: ChannelSnapshot) {
         applySnapshot.call(this, snapshot);

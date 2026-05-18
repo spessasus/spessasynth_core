@@ -95,7 +95,7 @@ export interface ChannelModification {
     /**
      * The new program of this channel.
      * - `"clear"` - all program changes for this channel are removed.
-     * - `MIDIPatch` - clear + sets the new patch according to the MIDI system at the start of the song.
+     * - `MIDIPatch` - clear + sets the new patch according to the MIDI system at the start of the sequence.
      */
     patch?: ClearableParameter<MIDIPatch>;
 
@@ -108,7 +108,7 @@ export interface ChannelModification {
     /**
      * The channel tuning in cents.
      * Tuned using RPN Fine Tune.
-     * Range is [-100; 99.987] cents.
+     * Range is `[-100; 99.986]` cents.
      */
     fineTune?: number;
 }
@@ -124,7 +124,7 @@ export interface ModifyMIDIOptions {
     channels?: Map<number, ClearableParameter<ChannelModification>>;
     /**
      * The drum parameter changes.
-     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - `"clear"` - all existing drum parameter change MIDI messages are removed.
      * - `never` - not yet implemented.
      */
     drumSetupParams?: ClearableParameter<never>; // Only clear for now

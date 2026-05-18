@@ -439,8 +439,11 @@ export class BasicMIDI {
     }
 
     /**
-     * Allows easy editing of the file by removing channels, changing programs,
-     * changing controllers and transposing channels. Note that this modifies the MIDI *in-place*.
+     * Allows easily modifying the sequence's programs and controllers.
+     * This is a very sophisticated method that supports various MIDI systems
+     * and inserts/deletes messages appropriately.
+     *
+     * This modifies the MIDI sequence _in-place_.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
         modifyMIDIInternal(this, opts);
