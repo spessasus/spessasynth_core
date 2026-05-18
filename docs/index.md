@@ -14,8 +14,8 @@ _If you're looking for the SpessaSynth web app, it can be found [here](https://s
 
 !!! DANGER
 
-    SpessaSynth 3.27 and below is no longer supported!
-    [The migration guide for 4.0 is available here.](extra/4-0-migration-guide.md)
+    SpessaSynth below `4.3.0` is no longer supported!
+    Please consider updating to get the best performance and latest features.
 
 - [Getting started with spessasynth_core](getting-started/index.md)
 - [SpessaSynthProcessor](spessa-synth-processor/index.md) - Responsible for generating sound.
