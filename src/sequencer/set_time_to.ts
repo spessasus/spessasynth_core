@@ -33,7 +33,7 @@ const nonSkippableCCs = new Set<MIDIController>([
 
 interface ChannelStatus {
     /**
-     * NPRN tracking for controller changes
+     * NRPN tracking for controller changes
      */
     param: ParameterTracker;
     /**
