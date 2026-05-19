@@ -40,12 +40,18 @@ export class BasicSample {
     public sampleType: SampleType;
 
     /**
-     * Relative to the start of the sample in sample points.
+     * The sample's loop start index, inclusive.
+     * In sample data points, relative to the start of the sample.
+     *
+     * Minimum allowed value is 0.
      */
     public loopStart: number;
 
     /**
-     * Relative to the start of the sample in sample points.
+     * The sample's loop end index, exclusive.
+     * In sample data points, relative to the start of the sample.
+     *
+     * Maximum allowed value is the sample data length.
      */
     public loopEnd: number;
     /**
@@ -67,14 +73,14 @@ export class BasicSample {
     protected audioData?: Float32Array;
 
     /**
-     * The basic representation of a sample
-     * @param sampleName The sample's name
-     * @param sampleRate The sample's rate in Hz
-     * @param originalKey The sample's pitch as a MIDI note number
-     * @param pitchCorrection The sample's pitch correction in cents
-     * @param sampleType The sample's type, an enum that can indicate SF3
-     * @param loopStart The sample's loop start relative to the sample start in sample points
-     * @param loopEnd The sample's loop end relative to the sample start in sample points
+     * The basic representation of a sample.
+     * @param sampleName The sample's name.
+     * @param sampleRate The sample's rate in Hz.
+     * @param originalKey The sample's pitch as a MIDI note number.
+     * @param pitchCorrection The sample's pitch correction in cents.
+     * @param sampleType The sample's type, an enum that can indicate SF3.
+     * @param loopStart The sample's loop start relative to the sample start in sample points.
+     * @param loopEnd The sample's loop end relative to the sample start in sample points. Inclusive.
      */
     public constructor(
         sampleName: string,

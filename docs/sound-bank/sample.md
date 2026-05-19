@@ -57,11 +57,17 @@ The type of the sample, as defined per SF2 specification:
 
 ### loopStart
 
-The sample's loop start index. In sample data points, relative to the start of the sample.
+The sample's loop start index, inclusive.
+In sample data points, relative to the start of the sample.
+
+Minimum allowed value is 0.
 
 ### loopEnd
 
-The sample's loop end index. In sample data points, relative to the start of the sample.
+The sample's loop end index, exclusive.
+In sample data points, relative to the start of the sample.
+
+Maximum allowed value is the sample data length.
 
 ### linkedTo
 
