@@ -834,11 +834,11 @@ export class SynthesizerCore {
         this.insertionActive = false;
         this.insertionProcessor = this.insertionFallback;
         this.insertionProcessor.reset();
+        this.resetInsertionParams();
         this.insertionProcessor.sendLevelToReverb =
             (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
         this.insertionProcessor.sendLevelToChorus = 0;
         this.insertionProcessor.sendLevelToDelay = 0;
-        this.resetInsertionParams();
         this.callEvent("effectChange", {
             effect: "insertion",
             parameter: 0,
