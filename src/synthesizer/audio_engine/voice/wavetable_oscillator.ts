@@ -18,11 +18,12 @@ export abstract class WavetableOscillator {
     public playbackStep = 0;
     /**
      * Start position of the loop.
+     * Inclusive.
      */
     public loopStart = 0;
     /**
      * End position of the loop.
-     * INCLUSIVE!!
+     * Exclusive.
      */
     public loopEnd = 0;
     /**
@@ -32,6 +33,7 @@ export abstract class WavetableOscillator {
     public loopLength = 0;
     /**
      * End position of the sample.
+     * Exclusive
      */
     public end = 0;
     /**
@@ -65,19 +67,19 @@ export class LinearOscillator extends WavetableOscillator {
 
         if (this.isLooping) {
             for (let i = 0; i < sampleCount; i++) {
-                // Check for loop first
+                // Check for loop first (end is exclusive so it's `<=` and not `<`)
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
                 // Extreme playback rates:
                 // Sample can loop more than once per frame! (that's why this 'while' is here)
                 // Testcase: saw_and_square_wave.sf2
-                while (cursor > loopEnd) cursor -= loopLength;
+                while (cursor >= loopEnd) cursor -= loopLength;
 
                 // Grab the 2 nearest points
                 const floor = cursor | 0;
                 let ceil = floor + 1;
 
                 // Ensure that the point above does not go over the loop
-                if (ceil > loopEnd) ceil -= loopLength;
+                if (ceil >= loopEnd) ceil -= loopLength;
 
                 const fraction = cursor - floor;
 
@@ -129,14 +131,14 @@ export class NearestOscillator extends WavetableOscillator {
 
         if (this.isLooping) {
             for (let i = 0; i < sampleCount; i++) {
-                // Check for loop first
+                // Check for loop first (end is exclusive so it's `<=` and not `<`)
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
                 // Testcase for this type of loop checking: LiveHQ Classical Guitar finger off
                 // (5 long loop in mode 3)
                 // Extreme playback rates:
                 // Sample can loop more than once per frame! (that's why this 'while' is here)
                 // Testcase: saw_and_square_wave.sf2
-                while (cursor > loopEnd) cursor -= loopLength;
+                while (cursor >= loopEnd) cursor -= loopLength;
 
                 // Grab the nearest neighbor
                 outputBuffer[i] = sampleData[cursor | 0];
@@ -173,12 +175,12 @@ export class HermiteOscillator extends WavetableOscillator {
 
         if (this.isLooping) {
             for (let i = 0; i < sampleCount; i++) {
-                // Check for loop first
+                // Check for loop first (end is exclusive so it's `<=` and not `<`)
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
                 // Extreme playback rates:
                 // Sample can loop more than once per frame! (that's why this 'while' is here)
                 // Testcase: saw_and_square_wave.sf2
-                while (cursor > loopEnd) cursor -= loopLength;
+                while (cursor >= loopEnd) cursor -= loopLength;
 
                 // Grab the 4 points
                 const y0 = cursor | 0; // Point before the cursor.
@@ -190,9 +192,9 @@ export class HermiteOscillator extends WavetableOscillator {
                 // As it's floor of cur which is handled above
 
                 // Ensure that the points above do not go over the loop
-                if (y1 > loopEnd) y1 -= loopLength;
-                if (y2 > loopEnd) y2 -= loopLength;
-                if (y3 > loopEnd) y3 -= loopLength;
+                if (y1 >= loopEnd) y1 -= loopLength;
+                if (y2 >= loopEnd) y2 -= loopLength;
+                if (y3 >= loopEnd) y3 -= loopLength;
 
                 // Grab the samples
                 const xm1 = sampleData[y0];

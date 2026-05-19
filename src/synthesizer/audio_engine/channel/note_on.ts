@@ -283,6 +283,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             voice.modulatedGenerators[GeneratorTypes.startAddrsOffset] +
             voice.modulatedGenerators[GeneratorTypes.startAddrsCoarseOffset] *
                 32_768;
+        // This will be negative
         const endOffset =
             voice.modulatedGenerators[GeneratorTypes.endAddrOffset] +
             voice.modulatedGenerators[GeneratorTypes.endAddrsCoarseOffset] *
@@ -299,18 +300,20 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
                 32_768;
 
         // Clamp the sample offsets
-        const lastSample = cached.sampleData.length - 1;
-        voice.wavetable.cursor = clamp(cursorStartOffset, 0, lastSample);
-        voice.wavetable.end = clamp(lastSample + endOffset, 0, lastSample);
+        // End is exclusive, not inclusive.
+        // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
+        const endExclusive = cached.sampleData.length;
+        voice.wavetable.cursor = clamp(cursorStartOffset, 0, endExclusive - 1);
+        voice.wavetable.end = clamp(endExclusive + endOffset, 0, endExclusive);
         voice.wavetable.loopStart = clamp(
             cached.loopStart + loopStartOffset,
             0,
-            lastSample
+            endExclusive
         );
         voice.wavetable.loopEnd = clamp(
             cached.loopEnd + loopEndOffset,
             0,
-            lastSample
+            endExclusive
         );
         // Swap loops if needed
         if (voice.wavetable.loopEnd < voice.wavetable.loopStart) {
@@ -326,10 +329,8 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         ) {
             voice.loopingMode = 0;
         }
-        // LoopEnd is inclusive. Testcase:
-        // https://github.com/spessasus/spessasynth_core/issues/90
         voice.wavetable.loopLength =
-            voice.wavetable.loopEnd - voice.wavetable.loopStart + 1;
+            voice.wavetable.loopEnd - voice.wavetable.loopStart;
         voice.wavetable.isLooping =
             voice.loopingMode === 1 || voice.loopingMode === 3;
 
