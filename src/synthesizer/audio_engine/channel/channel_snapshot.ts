@@ -87,6 +87,8 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
 
     this.generators.offsets.set(snapshot.generators.offsets);
     this.generators.overrides.set(snapshot.generators.overrides);
+    this.generators.offsetsEnabled = snapshot.generators.offsetsEnabled;
+    this.generators.overridesEnabled = snapshot.generators.overridesEnabled;
 
     for (let i = 0; i < 128; i++)
         this.drumParams[i] = DrumParameters.copyFrom(snapshot.drumParams[i]);
