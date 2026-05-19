@@ -67,7 +67,10 @@ export class LinearOscillator extends WavetableOscillator {
             for (let i = 0; i < sampleCount; i++) {
                 // Check for loop first
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
-                if (cursor > loopEnd) cursor -= loopLength;
+                // Extreme playback rates:
+                // Sample can loop more than once per frame! (that's why this 'while' is here)
+                // Testcase: saw_and_square_wave.sf2
+                while (cursor > loopEnd) cursor -= loopLength;
 
                 // Grab the 2 nearest points
                 const floor = cursor | 0;
@@ -130,7 +133,10 @@ export class NearestOscillator extends WavetableOscillator {
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
                 // Testcase for this type of loop checking: LiveHQ Classical Guitar finger off
                 // (5 long loop in mode 3)
-                if (cursor > loopEnd) cursor -= loopLength;
+                // Extreme playback rates:
+                // Sample can loop more than once per frame! (that's why this 'while' is here)
+                // Testcase: saw_and_square_wave.sf2
+                while (cursor > loopEnd) cursor -= loopLength;
 
                 // Grab the nearest neighbor
                 outputBuffer[i] = sampleData[cursor | 0];
@@ -169,7 +175,10 @@ export class HermiteOscillator extends WavetableOscillator {
             for (let i = 0; i < sampleCount; i++) {
                 // Check for loop first
                 // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
-                if (cursor > loopEnd) cursor -= loopLength;
+                // Extreme playback rates:
+                // Sample can loop more than once per frame! (that's why this 'while' is here)
+                // Testcase: saw_and_square_wave.sf2
+                while (cursor > loopEnd) cursor -= loopLength;
 
                 // Grab the 4 points
                 const y0 = cursor | 0; // Point before the cursor.
