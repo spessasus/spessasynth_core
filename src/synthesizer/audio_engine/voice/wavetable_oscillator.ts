@@ -22,6 +22,7 @@ export abstract class WavetableOscillator {
     public loopStart = 0;
     /**
      * End position of the loop.
+     * INCLUSIVE!!
      */
     public loopEnd = 0;
     /**
@@ -59,22 +60,21 @@ export class LinearOscillator extends WavetableOscillator {
     ): boolean {
         const step = tuningRatio * this.playbackStep;
         const data = this.sampleData!;
-        const { loopEnd, loopLength, loopStart, end } = this;
+        const { loopEnd, loopLength, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             for (let i = 0; i < sampleCount; i++) {
-                // Check for loop
-                if (cursor > loopStart)
-                    cursor = loopStart + ((cursor - loopStart) % loopLength);
+                // Check for loop first
+                // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
+                if (cursor > loopEnd) cursor -= loopLength;
 
                 // Grab the 2 nearest points
                 const floor = cursor | 0;
                 let ceil = floor + 1;
 
-                if (ceil >= loopEnd) {
-                    ceil -= loopLength;
-                }
+                // Ensure that the point above does not go over the loop
+                if (ceil > loopEnd) ceil -= loopLength;
 
                 const fraction = cursor - floor;
 
@@ -121,16 +121,16 @@ export class NearestOscillator extends WavetableOscillator {
     ): boolean {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
-        const { loopLength, loopStart, end } = this;
+        const { loopEnd, loopLength, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             for (let i = 0; i < sampleCount; i++) {
-                // Check for loop
+                // Check for loop first
+                // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
                 // Testcase for this type of loop checking: LiveHQ Classical Guitar finger off
                 // (5 long loop in mode 3)
-                if (cursor > loopStart)
-                    cursor = loopStart + ((cursor - loopStart) % loopLength);
+                if (cursor > loopEnd) cursor -= loopLength;
 
                 // Grab the nearest neighbor
                 outputBuffer[i] = sampleData[cursor | 0];
@@ -162,14 +162,14 @@ export class HermiteOscillator extends WavetableOscillator {
     ): boolean {
         const step = tuningRatio * this.playbackStep;
         const sampleData = this.sampleData!;
-        const { loopEnd, loopLength, loopStart, end } = this;
+        const { loopEnd, loopLength, end } = this;
         let cursor = this.cursor;
 
         if (this.isLooping) {
             for (let i = 0; i < sampleCount; i++) {
-                // Check for loop
-                if (cursor > loopStart)
-                    cursor = loopStart + ((cursor - loopStart) % loopLength);
+                // Check for loop first
+                // Testcase: https://github.com/spessasus/spessasynth_core/issues/90
+                if (cursor > loopEnd) cursor -= loopLength;
 
                 // Grab the 4 points
                 const y0 = cursor | 0; // Point before the cursor.
@@ -179,15 +179,11 @@ export class HermiteOscillator extends WavetableOscillator {
                 const t = cursor - y0; // The distance from y0 to cursor [0;1]
                 // Y0 is not handled here
                 // As it's floor of cur which is handled above
-                if (y1 >= loopEnd) {
-                    y1 -= loopLength;
-                }
-                if (y2 >= loopEnd) {
-                    y2 -= loopLength;
-                }
-                if (y3 >= loopEnd) {
-                    y3 -= loopLength;
-                }
+
+                // Ensure that the points above do not go over the loop
+                if (y1 > loopEnd) y1 -= loopLength;
+                if (y2 > loopEnd) y2 -= loopLength;
+                if (y3 > loopEnd) y3 -= loopLength;
 
                 // Grab the samples
                 const xm1 = sampleData[y0];

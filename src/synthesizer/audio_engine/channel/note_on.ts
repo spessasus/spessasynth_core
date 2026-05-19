@@ -326,8 +326,10 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         ) {
             voice.loopingMode = 0;
         }
+        // LoopEnd is inclusive. Testcase:
+        // https://github.com/spessasus/spessasynth_core/issues/90
         voice.wavetable.loopLength =
-            voice.wavetable.loopEnd - voice.wavetable.loopStart;
+            voice.wavetable.loopEnd - voice.wavetable.loopStart + 1;
         voice.wavetable.isLooping =
             voice.loopingMode === 1 || voice.loopingMode === 3;
 
