@@ -65,7 +65,7 @@ export class SynthesizerCore {
     /**
      * Voices of this synthesizer, as a fixed voice pool.
      */
-    public readonly voices: Voice[];
+    public readonly voices: Voice[] = [];
     /**
      * All MIDI channels of the synthesizer.
      */
@@ -304,7 +304,6 @@ export class SynthesizerCore {
         this.resetInsertionParams(); // Initial setup
 
         // Initialize voices
-        this.voices = [];
         this.allocateNewVoices(this.systemParameters.voiceCap);
     }
 
@@ -426,12 +425,17 @@ export class SynthesizerCore {
         }
         // No match, assign priorities
         if (this.systemParameters.autoAllocateVoices) {
+            SpessaLog.info(
+                `%cAllocating a new voice, total count %c${this.systemParameters.voiceCap + 1}.`,
+                ConsoleColors.info,
+                ConsoleColors.value
+            );
             // Allocate a new voice and return it
             this.allocateNewVoices(1);
             const v = this.voices[this.voices.length - 1];
-            this.voices.push(v);
             this.systemParameters.voiceCap++;
-            SpessaLog.info("%cAllocating a new voice!", ConsoleColors.info);
+            // Prevent this voice from being stolen
+            v.priority = Infinity;
             return v;
         }
         this.assignVoicePriorities();

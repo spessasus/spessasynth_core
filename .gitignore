@@ -69,6 +69,9 @@ $RECYCLE.BIN/
 examples/node_modules/
 examples/package-lock.json
 examples/package.json
+tests/node_modules/
+tests/package-lock.json
+tests/package.json
 /test.js
 unused/
 /unused/chorus.js
