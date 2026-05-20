@@ -105,7 +105,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         ChannelMIDIParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
-        this._midiParameters
+        snapshot.midiParameters
     ) as MIDIParameterPair<keyof ChannelMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
@@ -116,7 +116,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         ChannelSystemParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
-        this._systemParameters
+        snapshot.systemParameters
     ) as SystemParameterPair<keyof ChannelSystemParameter>[]) {
         this.setSystemParameter(parameter, value);
     }
