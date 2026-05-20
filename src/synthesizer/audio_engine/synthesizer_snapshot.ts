@@ -84,7 +84,7 @@ export function applySnapshot(
         GlobalMIDIParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
-        this.midiParameters
+        snapshot.midiParameters
     ) as MIDIParameterPair<keyof GlobalMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
@@ -95,7 +95,7 @@ export function applySnapshot(
         GlobalSystemParameter[K]
     ];
     for (const [parameter, value] of Object.entries(
-        this.systemParameters
+        snapshot.systemParameters
     ) as SystemParameterPair<keyof GlobalSystemParameter>[]) {
         this.setSystemParameter(parameter, value);
     }
