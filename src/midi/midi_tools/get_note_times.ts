@@ -33,31 +33,31 @@ export function getNoteTimesInternal(
     const noteTimes: NoteTime[][] = [];
     // Flatten and sort by ticks
 
-    for (let i = 0; i < 16; i++) {
-        noteTimes.push([]);
-    }
+    for (let i = 0; i < 16; i++) noteTimes.push([]);
+
     let elapsedTime = 0;
     let oneTickToSeconds = 60 / (120 * midi.timeDivision);
     let i = 0;
     let unfinished = 0;
-    const unfinishedNotes: NoteTime[][] = [];
-    for (let i = 0; i < 16; i++) {
-        unfinishedNotes.push([]);
-    }
+    // Store notes that we started but didn't finish
+    // MIDI note: index to the note time
+    const unfinishedNotes: Map<number, number>[] = [];
+    for (let i = 0; i < 16; i++) unfinishedNotes.push(new Map());
+
     const noteOff = (midiNote: number, channel: number) => {
-        const noteIndex = unfinishedNotes[channel].findIndex(
-            (n) => n.midiNote === midiNote
-        );
-        const note = unfinishedNotes[channel][noteIndex];
-        if (note) {
-            const time = elapsedTime - note.start;
-            note.length = time;
-            if (channel === DEFAULT_PERCUSSION) {
-                note.length = Math.max(time, minDrumLength);
-            }
-            // Delete from unfinished
-            unfinishedNotes[channel].splice(noteIndex, 1);
-        }
+        const ch = unfinishedNotes[channel];
+        const noteIndex = ch.get(midiNote);
+
+        if (noteIndex === undefined) return;
+        const note = noteTimes[channel][noteIndex];
+
+        const time = elapsedTime - note.start;
+        note.length =
+            channel === DEFAULT_PERCUSSION
+                ? Math.max(time, minDrumLength)
+                : time;
+
+        ch.delete(midiNote);
         unfinished--;
     };
     const { timeline, tracks } = midi;
@@ -69,36 +69,34 @@ export function getNoteTimesInternal(
         const channel = event.statusByte & 0x0f;
 
         // Note off
-        if (status === 0x8) {
-            noteOff(event.data[0], channel);
-        }
+        if (status === 0x8) noteOff(event.data[0], channel);
         // Note on
         else if (status === 0x9) {
-            if (event.data[1] === 0) {
+            const midiNote = event.data[0];
+            const velocity = event.data[1];
+            if (velocity === 0) {
                 // Never mind, its note off
-                noteOff(event.data[0], channel);
+                noteOff(midiNote, channel);
             } else {
                 // Stop previous
-                noteOff(event.data[0], channel);
+                noteOff(midiNote, channel);
                 const noteTime = {
-                    midiNote: event.data[0],
+                    midiNote,
                     start: elapsedTime,
                     length: -1,
-                    velocity: event.data[1] / 127
+                    velocity
                 };
-                noteTimes[channel].push(noteTime);
-                unfinishedNotes[channel].push(noteTime);
+                const times = noteTimes[channel];
+                times.push(noteTime);
+                unfinishedNotes[channel].set(midiNote, times.length - 1);
                 unfinished++;
             }
         }
         // Set tempo
-        else if (event.statusByte === 0x51) {
+        else if (event.statusByte === 0x51)
             oneTickToSeconds = 60 / (getTempo(event) * midi.timeDivision);
-        }
 
-        if (++i >= timeline.length) {
-            break;
-        }
+        if (++i >= timeline.length) break;
 
         elapsedTime +=
             oneTickToSeconds *
@@ -108,13 +106,10 @@ export function getNoteTimesInternal(
     // Finish the unfinished notes
     if (unfinished > 0) {
         // For every channel, for every note that is unfinished (has -1 length)
-        for (const [channel, channelNotes] of unfinishedNotes.entries()) {
-            for (const note of channelNotes) {
-                const time = elapsedTime - note.start;
-                note.length = time;
-                if (channel === DEFAULT_PERCUSSION) {
-                    note.length = Math.max(time, minDrumLength);
-                }
+        for (let channel = 0; channel < unfinishedNotes.length; channel++) {
+            for (const noteIndex of unfinishedNotes[channel].values()) {
+                const note = noteTimes[channel][noteIndex];
+                note.length = elapsedTime - note.start;
             }
         }
     }

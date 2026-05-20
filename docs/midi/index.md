@@ -332,8 +332,8 @@ The returned value is an array of 16 arrays. Each of these represents one of the
 
 Each channel is a list of notes, represented as objects with properties:
 
-- midiNote - number - the MIDI key number,
-- velocity - number - the MIDI velocity,
+- midiNote - number - the MIDI key number.
+- velocity - number - the MIDI velocity.
 - start - number - start of the note, in seconds.
 - length - number - length of the note, in seconds.
 
