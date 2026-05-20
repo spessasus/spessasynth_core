@@ -125,6 +125,12 @@ export class Voice {
     public channel = 0;
 
     /**
+     * Grouping voices for specific Note On messages.
+     * Used for overlapping Note Ons.
+     */
+    public noteID = 0;
+
+    /**
      * MIDI note number of the voice.
      * Direct number from the Note On message and is
      * used for Note Off and external parameters:
@@ -280,7 +286,12 @@ export class Voice {
         }
     }
 
-    public setup(currentTime: number, channel: number, midiNote: number) {
+    public setup(
+        currentTime: number,
+        channel: number,
+        midiNote: number,
+        noteID: number
+    ) {
         // Remember to add new values here!!!
         // Clear state
         this.isActive = true;
@@ -300,5 +311,6 @@ export class Voice {
         this.startTime = currentTime;
         this.channel = channel;
         this.midiNote = midiNote;
+        this.noteID = noteID;
     }
 }

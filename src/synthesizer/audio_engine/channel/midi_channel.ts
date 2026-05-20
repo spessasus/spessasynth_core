@@ -225,6 +225,22 @@ export class MIDIChannel {
     }; // Copy, not set!
 
     /**
+     * Note On message tracking, for grouping voices for specific Note On messages.
+     * Used for overlapping Note Ons.
+     * MIDI note: current note on ID
+     * @protected
+     */
+    protected noteOnID = new Array<number>(128).fill(0);
+
+    /**
+     * Note Off message tracking, for grouping voices for specific Note On messages.
+     * Used for overlapping Note Ons.
+     * MIDI note: current note on ID
+     * @protected
+     */
+    protected noteOffID = new Array<number>(128).fill(0);
+
+    /**
      * If the last Parameter was RPN.
      * If false then the last parameter was NRPN.
      * @protected
@@ -449,6 +465,9 @@ export class MIDIChannel {
      * @param force If true, stops all notes immediately, otherwise applies release time.
      */
     public stopAllNotes(force = false) {
+        // Clear IDs
+        this.noteOnID.fill(0);
+        this.noteOffID.fill(0);
         if (force) {
             // Force stop all
             let vc = 0;
@@ -781,6 +800,8 @@ export class MIDIChannel {
      */
     public killNote(midiNote: number, releaseTime = -12_000) {
         let vc = 0;
+        this.noteOffID[midiNote] = 0;
+        this.noteOnID[midiNote] = 0;
         if (this._voiceCount > 0)
             for (const v of this.synthCore.voices) {
                 if (

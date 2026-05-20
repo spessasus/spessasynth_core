@@ -172,11 +172,13 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         if (voiceGain === 1) voiceGain = p.gain;
     }
 
+    const noteID = this.noteOnID[midiNote]++;
+
     // Add voices
     for (const cached of voices) {
         const voice = this.synthCore.assignVoice();
         const now = this.synthCore.currentTime;
-        voice.setup(now, this.channel, midiNote);
+        voice.setup(now, this.channel, midiNote, noteID);
 
         // Select the correct oscillator
         // Channel takes precedence
