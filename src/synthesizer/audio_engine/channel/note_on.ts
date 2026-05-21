@@ -113,7 +113,9 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
             for (const v of this.synthCore.voices) {
                 if (v.isActive && v.channel === this.channel) {
                     // No minimum note time, release ASAP
-                    v.exclusiveRelease(this.synthCore.currentTime, 0);
+                    // This handles all voices on that note
+                    this.killNote(v.midiNote);
+
                     if (++vc >= this._voiceCount) break; // We already checked all the voices
                 }
             }
