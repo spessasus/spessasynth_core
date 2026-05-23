@@ -47,20 +47,36 @@ export function processEventInternal(
     */
     switch (status) {
         case MIDIMessageTypes.noteOn: {
+            // Sanity check
+            let playingNotes = this.playingNotes[channel];
+            if (!playingNotes) {
+                while (this.playingNotes.length <= channel)
+                    this.playingNotes.push(new Map<number, number>());
+                playingNotes = this.playingNotes[channel];
+            }
+
             const velocity = event.data[1];
             if (velocity > 0) {
                 this.synth.noteOn(channel, event.data[0], velocity);
-                this.playingNotes[channel].set(event.data[0], velocity);
+                playingNotes.set(event.data[0], velocity);
             } else {
                 this.synth.noteOff(channel, event.data[0]);
-                this.playingNotes[channel].delete(event.data[0]);
+                playingNotes.delete(event.data[0]);
             }
             break;
         }
 
         case MIDIMessageTypes.noteOff: {
+            // Sanity check
+            let playingNotes = this.playingNotes[channel];
+            if (!playingNotes) {
+                while (this.playingNotes.length <= channel)
+                    this.playingNotes.push(new Map<number, number>());
+                playingNotes = this.playingNotes[channel];
+            }
+
             this.synth.noteOff(channel, event.data[0]);
-            this.playingNotes[channel].delete(event.data[0]);
+            playingNotes.delete(event.data[0]);
             break;
         }
 
