@@ -49,12 +49,25 @@ The panning of the channel.
 The channel key shift in semitones.
 Drum channels _DO NOT_ ignore this value.
 
+!!! Tip
+
+    Avoid setting this for drum channels as it may break the drum key mapping.
+
 ### fineTune
 
 `number`
 
 The channel tuning in cents.
 Drum channels _DO NOT_ ignore this value.
+
+!!! Tip
+
+    While the range of this parameter is unlimited, it is recommended to keep it in the range of -100 to 100 cents.
+    The values above that should be applied to `keyShift` instead.
+    For example, if the target value is 156, the recommended approach is:
+    - `keyShift` = 1
+    - `fineTune` = 56
+    Note that this approach shouldn't be taken for drum channels, as key shift will break them.
 
 ### interpolationType
 
