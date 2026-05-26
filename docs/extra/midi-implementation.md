@@ -8,8 +8,8 @@ This describes what messages SpessaSynth can receive.
 
 | Message           | Supported? | Notes                                                                                                                |
 | ----------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| Note On           | ✔️         |                                                                                                                      |
-| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification)                                                           |
+| Note On           | ✔️         | [More info](#overlapping-notes)                                                                                      |
+| Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification) [More info](#overlapping-notes)                           |
 | Poly Pressure     | ✔️         | Recognized, but no default behavior (Per SF2 specification). Has to be defined with modulators or System Exclusives. |
 | Controller Change | ✔️         | [More info](#default-supported-controllers)                                                                          |
 | Program Change    | ✔️         | [More info](../spessa-synth-processor/midi-patch.md).                                                                |
@@ -26,6 +26,24 @@ This describes what messages SpessaSynth can receive.
 | MIDI Stop         | ❌         | Not Applicable                                                                                                       |
 | Active Sense      | ❌         | Not Applicable                                                                                                       |
 | System Reset      | ✔️         | This message can only be received via MIDI commands as 0xFF in MIDI files means a meta message.                      |
+
+### Overlapping Notes
+
+As of 4.3.6 SpessaSynth supports overlapping MIDI notes (for example two consecutive Note On messages and two Note Off messages after),
+matching the behavior of Sound Canvases and XG synthesizers.
+Although overlapping notes are not technically permitted by the MIDI standard, some files [use them anyway](https://github.com/spessasus/spessasynth_core/issues/13).
+
+The implementation is FIFO - First In, First Out.
+The first voice that started playing on the note will be stopped upon receiving the Note Off.
+
+The following example describes the behavior:
+
+1. Program Change to 80 - Square Wave.
+2. Note On 60, Square Wave starts playing.
+3. Program Change to 81 - Saw Wave.
+4. Note On 60, Saw Wave starts playing on top of Square Wave.
+5. Note Off 60, Square Wave stops playing, only Saw Wave sounds.
+6. Note Off 60, Saw Wave stops playing.
 
 ### Per-Note Pitch Wheel
 
