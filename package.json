@@ -13,7 +13,7 @@
         "build": "npm run test:types && npm run build:fast",
         "format": "prettier . --write",
         "test:types": "npm run lint && tsc -b ",
-        "test:midi": "tsx tests/midi/midi_file/make_tests.ts",
+        "test:midi": "tsx tests/midi_file/make_tests.ts",
         "prepack": "npm run build:fast && rimraf -rf *.tgz",
         "prepublishOnly": "npm run format && npm run build",
         "prepare": "husky install"
