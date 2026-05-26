@@ -39,7 +39,8 @@ export interface ChannelMIDIParameter {
     /**
      * If the channel is in the poly mode.
      * - `true` - POLY ON - regular playback.
-     * - `false` - MONO ON - one note per channel, others are killed on Note On.
+     * - `false` - MONO ON - one note per channel,
+     * highest still pressed note is restored after releasing the currently playing one.
      */
     polyMode: boolean;
 

@@ -230,7 +230,7 @@ export class MIDIChannel {
      * MIDI note: current note on ID
      * @protected
      */
-    protected noteOnID = new Array<number>(128).fill(0);
+    protected readonly noteOnID = new Array<number>(128).fill(0);
 
     /**
      * Note Off message tracking, for grouping voices for specific Note On messages.
@@ -238,7 +238,7 @@ export class MIDIChannel {
      * MIDI note: current note on ID
      * @protected
      */
-    protected noteOffID = new Array<number>(128).fill(0);
+    protected readonly noteOffID = new Array<number>(128).fill(0);
 
     /**
      * If the last Parameter was RPN.
@@ -276,21 +276,41 @@ export class MIDIChannel {
     protected currentGain = 0;
 
     /**
-     * The last pressed note on this channel.
+     * The last pressed note on this channel for portamento tracking.
      * -1 means none.
      * This is not a `ChannelMIDIParameter` and is strictly internal,
      * mostly because we don't want to send events for every note on message.
      * It can be set with Portamento Control CC anyway.
      * @protected
      */
-    protected lastNote = -1;
+    protected lastPortamentoNote = -1;
     /**
      * If the portamento should be executed once regardless of Portamento on/off.
      * Adhering to the MIDI spec, CC#84 ignores on/off.
-     * This is also not a `ChannelMIDIParameter` for the same reason as `lastNote`
+     * This is also not a `ChannelMIDIParameter` for the same reason as `lastPortamentoNote`
      * @protected
      */
     protected portamentoForce = false;
+
+    /**
+     * The last pressed note on this channel in mono mode.
+     * Used for tracking and releasing this note on a new Note On event.
+     * -1 means none.
+     * @protected
+     */
+    protected lastMonoNote = -1;
+    /**
+     * The last pressed note's velocity on this channel in mono mode.
+     * @protected
+     */
+    protected lastMonoVelocity = 0;
+    /**
+     * For Mono Mode restoring notes.
+     * playingNotes[midiNote]
+     * @protected
+     */
+    protected readonly playingNotes = new Array<boolean>(128).fill(false);
+
     protected readonly generators: ChannelGenerators = {
         offsets: new Int16Array(GENERATORS_AMOUNT),
         offsetsEnabled: false,
@@ -468,6 +488,7 @@ export class MIDIChannel {
         // Clear IDs
         this.noteOnID.fill(0);
         this.noteOffID.fill(0);
+        this.playingNotes.fill(false);
         if (force) {
             // Force stop all
             let vc = 0;
@@ -840,7 +861,7 @@ export class MIDIChannel {
      * @param midiNote
      */
     public setLastNote(midiNote: number) {
-        this.lastNote = midiNote;
+        this.lastPortamentoNote = midiNote;
     }
 
     /**

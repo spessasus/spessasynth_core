@@ -205,7 +205,7 @@ export function controllerChange(
             case MIDIControllers.portamentoControl: {
                 // Force portamento (MIDI 1.0 specification, page 16)
                 // Even if portamento on/off (cc#65) is off
-                this.lastNote = value;
+                this.lastPortamentoNote = value;
                 this.portamentoForce = true;
                 break;
             }

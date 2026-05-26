@@ -663,8 +663,17 @@ Tuning a single note. Note that this can theoretically be used as per-note Pitch
 
 SpessaSynth's poly/mono mode implementation works like GS implementation:
 
-- Poly mode - regular playback, multiple notes are allowed on the channel
-- Mono mode - any note on message will immediately force all current voices on this channel to shut down.
+#### Poly Mode
+
+Poly Mode is regular playback, multiple notes are allowed on the channel.
+It is the default mode on all channels.
+
+#### Mono Mode
+
+Mono Mode allows only a single note on the channel.
+Any note on message will immediately force all current voices on this channel to shut down.
+Releasing a note while another one is held will retrigger the highest currently held note,
+with the velocity of the last Note On.
 
 ### Portamento Implementation
 
