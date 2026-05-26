@@ -139,8 +139,10 @@ export class SpessaSynthSequencer {
     public constructor(spessasynthProcessor: SpessaSynthProcessor) {
         this.synth = spessasynthProcessor;
         this.absoluteStartTime = this.synth.currentTime;
-        for (let i = 0; i < 16; i++)
-            this.playingNotes.push(new Map<number, number>());
+        // Use the actual count of the synth channels (as it may have grown)
+        this.playingNotes = this.synth.midiChannels.map(
+            () => new Map<number, number>()
+        );
     }
 
     protected _midiData?: BasicMIDI;

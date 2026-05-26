@@ -373,7 +373,7 @@ export class SpessaSynthProcessor {
     public applySnapshot(snapshot: SynthesizerSnapshot) {
         this.savedSnapshot = snapshot;
         applySnapshot.call(this.synthCore, snapshot);
-        this.reset();
+        // Don't reset here, I don't know why I put a reset here previously.
     }
 
     // noinspection JSUnusedGlobalSymbols

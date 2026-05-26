@@ -155,6 +155,14 @@ Drum channels ignore this value.
 The global tuning in cents.
 Drum channels ignore this value.
 
+!!! Tip
+
+    While the range of this parameter is unlimited, it is recommended to keep it in the range of -100 to 100 cents.
+    The values above that should be applied to `keyShift` instead.
+    For example, if the target value is 156, the recommended approach is:
+    - `keyShift` = 1
+    - `fineTune` = 56
+
 ### interpolationType
 
 `InterpolationType`/`number` (an enum called `InterpolationTypes` is provided with the library)
