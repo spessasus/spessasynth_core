@@ -1,0 +1,34 @@
+import * as fs from "node:fs/promises";
+import path from "node:path";
+import { BasicMIDI, SpessaLog } from "../../src";
+import { toISODateString } from "../../src/utils/date";
+
+// Process arguments
+const args = process.argv.slice(2);
+if (args.length !== 1) {
+    console.info("Usage: tsx index.ts <directory path>");
+    process.exit();
+}
+const midPath = args[0];
+
+SpessaLog.setLogLevel(false, false, false);
+
+const entries = await fs.readdir(midPath, { recursive: true });
+
+const dec = new TextDecoder();
+for (const entry of entries) {
+    const fullPath = path.join(midPath, entry);
+    const stat = await fs.stat(fullPath);
+
+    if (stat.isFile()) {
+        const bin = await fs.readFile(fullPath);
+        if (dec.decode(bin.buffer.slice(8, 12)) !== "RMID") continue;
+        const rmid = BasicMIDI.fromArrayBuffer(bin.buffer);
+        if (!rmid.rmidiInfo.creationDate) continue;
+        console.info(
+            dec.decode(rmid.rmidiInfo.creationDate),
+            "decoded as date ->",
+            toISODateString(rmid.getRMIDInfo("creationDate")!)
+        );
+    }
+}

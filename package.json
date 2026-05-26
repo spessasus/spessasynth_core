@@ -13,6 +13,7 @@
         "build": "npm run test:types && npm run build:fast",
         "format": "prettier . --write",
         "test:types": "npm run lint && tsc -b ",
+        "test:midi": "tsx tests/midi/midi_file/make_tests.ts",
         "prepack": "npm run build:fast && rimraf -rf *.tgz",
         "prepublishOnly": "npm run format && npm run build",
         "prepare": "husky install"
@@ -68,6 +69,7 @@
         "prettier": "^3.8.3",
         "rimraf": "^6.1.3",
         "tsdown": "^0.22.0",
+        "tsx": "^4.22.3",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.59.4"
     },
