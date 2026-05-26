@@ -6,10 +6,8 @@ const test = new MIDITestMaker("Mono Mode Test");
 const g = 480;
 
 function noteOn(note: number) {
-    if (note > 110) {
-        test.text("Notes OFF").wait(g * 2);
-        return;
-    }
+    if (note > 110) return;
+
     test.noteOn(note, 100).wait(g / 8);
     noteOn(note + 1);
     test.noteOff(note).wait(g / 8);
@@ -17,8 +15,7 @@ function noteOn(note: number) {
 
 test.programChange(1, 1, 80)
     .cc(MIDIControllers.monoModeOn, 0)
-    .text("Note depth tracking test")
-    .text("Notes ON");
+    .text("Note depth tracking test");
 
 noteOn(30);
 
@@ -37,6 +34,22 @@ test.wait(g * 2)
     .noteOff(55)
     .wait(g)
     .noteOff(60);
+
+test.wait(g * 2);
+
+test.text("Notes going out of order")
+    .noteOn(60, 127)
+    .wait(g)
+    .noteOn(55, 127)
+    .wait(g)
+    .noteOn(52, 127);
+
+test.wait(g * 2)
+    .noteOff(60)
+    .wait(g)
+    .noteOff(52)
+    .wait(g)
+    .noteOff(55);
 
 test.wait(g * 2);
 
