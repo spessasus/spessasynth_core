@@ -30,8 +30,9 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
     const sustain = this._midiControllers[MIDIControllers.sustainPedal] >= 8192;
     let vc = 0;
     const noteID = this.noteOffID[midiNote];
-    // Only
-    let updateNoteID = false;
+    // Only update if note on is above this
+    // Testcase: overlapping_notes_test (multiple note off)
+    if (noteID < this.noteOnID[midiNote]) this.noteOffID[midiNote]++;
     if (this._voiceCount > 0)
         for (const v of this.synthCore.voices) {
             if (
@@ -44,11 +45,9 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
                 if (sustain) v.isHeld = true;
                 else v.releaseVoice(this.synthCore.currentTime);
 
-                updateNoteID = true;
                 if (++vc >= this._voiceCount) break; // We already checked all the voices
             }
         }
-    if (updateNoteID) this.noteOffID[midiNote]++;
     this.synthCore.callEvent("noteOff", {
         midiNote,
         channel: this.channel

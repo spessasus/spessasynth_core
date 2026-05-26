@@ -22,6 +22,23 @@ test.programChange(1, 0, 80)
 
 test.wait(480);
 
+test.text("Multiple Note Off Test")
+    .noteOn(60, 120)
+    .wait(480)
+    .noteOff(60)
+    .wait(80)
+    .noteOff(60)
+    .wait(80)
+    .noteOff(60)
+    .wait(80)
+    .noteOff(60)
+    .wait(120)
+    .noteOn(60, 120)
+    .wait(480)
+    .noteOff(60);
+
+test.wait(480);
+
 // Mono mode test
 test.text("Mono Mode Test")
     .cc(MIDIControllers.monoModeOn, 0)
