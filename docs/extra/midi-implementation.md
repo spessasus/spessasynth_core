@@ -27,24 +27,6 @@ This describes what messages SpessaSynth can receive.
 | Active Sense      | ❌         | Not Applicable                                                                                                       |
 | System Reset      | ✔️         | This message can only be received via MIDI commands as 0xFF in MIDI files means a meta message.                      |
 
-### Overlapping Notes
-
-As of 4.3.6 SpessaSynth supports overlapping MIDI notes (for example two consecutive Note On messages and two Note Off messages after),
-matching the behavior of Sound Canvases and XG synthesizers.
-Although overlapping notes are not technically permitted by the MIDI standard, some files [use them anyway](https://github.com/spessasus/spessasynth_core/issues/13).
-
-The implementation is FIFO - First In, First Out.
-The first voice that started playing on the note will be stopped upon receiving the Note Off.
-
-The following example describes the behavior:
-
-1. Program Change to 80 - Square Wave.
-2. Note On 60, Square Wave starts playing.
-3. Program Change to 81 - Saw Wave.
-4. Note On 60, Saw Wave starts playing on top of Square Wave.
-5. Note Off 60, Square Wave stops playing, only Saw Wave sounds.
-6. Note Off 60, Saw Wave stops playing.
-
 ### Per-Note Pitch Wheel
 
 As of 4.1.0 SpessaSynth supports per-note Pitch Wheel as a part of the MIDI 2.0 specification.
@@ -676,6 +658,24 @@ Tuning a single octave, repeated across the entire MIDI range.
 Tuning a single note. Note that this can theoretically be used as per-note Pitch Wheel.
 
 ## Implementation Details
+
+### Overlapping Notes
+
+As of 4.3.6 SpessaSynth supports overlapping MIDI notes (for example two consecutive Note On messages and two Note Off messages after),
+matching the behavior of Sound Canvases and XG synthesizers.
+Although overlapping notes are not technically permitted by the MIDI standard, some files [use them anyway](https://github.com/spessasus/spessasynth_core/issues/13).
+
+The implementation is FIFO - First In, First Out.
+The first voice that started playing on the note will be stopped upon receiving the Note Off.
+
+The following example describes the behavior:
+
+1. Program Change to 80 - Square Wave.
+2. Note On 60, Square Wave starts playing.
+3. Program Change to 81 - Saw Wave.
+4. Note On 60, Saw Wave starts playing on top of Square Wave.
+5. Note Off 60, Square Wave stops playing, only Saw Wave sounds.
+6. Note Off 60, Saw Wave stops playing.
 
 ### Poly/Mono Implementation
 
