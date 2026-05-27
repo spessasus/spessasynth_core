@@ -17,8 +17,14 @@ const clamp = (num: number, min: number, max: number) =>
  * Sends a "MIDI Note on" message and starts a note.
  * @param midiNote The MIDI note number (0-127).
  * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
+ * @param emit If the note on should be updated and emitted (non-internal)
  */
-export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
+export function noteOn(
+    this: MIDIChannel,
+    midiNote: number,
+    velocity: number,
+    emit = true
+) {
     if (velocity < 1) {
         this.noteOff(midiNote);
         return;
@@ -74,7 +80,7 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
     );
 
     // Portamento
-    const previousNote = this.lastNote;
+    const previousNote = this.lastPortamentoNote;
     const portamentoEnabled =
         this.portamentoForce ||
         this._midiControllers[MIDIControllers.portamentoOnOff] >= 8192;
@@ -104,19 +110,16 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
 
     // Always track the last note, even if portamento isn't applied.
     // See: https://github.com/spessasus/spessasynth_core/issues/77
-    this.lastNote = midiNote;
+    this.lastPortamentoNote = midiNote;
+
+    this.playingNotes[midiNote] = true;
 
     // Mono mode
     if (!this._midiParameters.polyMode) {
-        let vc = 0;
-        if (this._voiceCount > 0)
-            for (const v of this.synthCore.voices) {
-                if (v.isActive && v.channel === this.channel) {
-                    // No minimum note time, release ASAP
-                    v.exclusiveRelease(this.synthCore.currentTime, 0);
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
-                }
-            }
+        if (this.lastMonoNote >= 0 && this.lastMonoNote !== midiNote)
+            this.killNote(this.lastMonoNote);
+        this.lastMonoNote = midiNote;
+        this.lastMonoVelocity = velocity;
     }
 
     // Get voices
@@ -172,11 +175,13 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         if (voiceGain === 1) voiceGain = p.gain;
     }
 
+    const noteID = emit ? this.noteOnID[midiNote]++ : this.noteOnID[midiNote];
+
     // Add voices
     for (const cached of voices) {
         const voice = this.synthCore.assignVoice();
         const now = this.synthCore.currentTime;
-        voice.setup(now, this.channel, midiNote);
+        voice.setup(now, this.channel, midiNote, noteID);
 
         // Select the correct oscillator
         // Channel takes precedence
@@ -356,9 +361,10 @@ export function noteOn(this: MIDIChannel, midiNote: number, velocity: number) {
         ); //  -500 to 500
     }
     this._voiceCount += voices.length;
-    this.synthCore.callEvent("noteOn", {
-        midiNote,
-        channel: this.channel,
-        velocity
-    });
+    if (emit)
+        this.synthCore.callEvent("noteOn", {
+            midiNote,
+            channel: this.channel,
+            velocity
+        });
 }

@@ -12,7 +12,7 @@ export function resetPortamento(this: MIDIChannel) {
     // Portamento has a quirk:
     // For XG, control is set to 60
     // For others, it's set to nothing (no portamento on first note-on)
-    this.lastNote = this.channelSystem === "xg" ? 60 : -1;
+    this.lastPortamentoNote = this.channelSystem === "xg" ? 60 : -1;
 }
 
 /**
@@ -126,6 +126,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.resetGeneratorOffsets();
     this.dynamicModulators.resetModulators();
     this.sf2NRPNGeneratorLSB = 0;
+    this.playingNotes.fill(false);
 
     // Reset Parameters (do not emit controller change)
     // We reset them here since in the loop, the data entries would come before params

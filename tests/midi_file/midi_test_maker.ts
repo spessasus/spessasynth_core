@@ -72,7 +72,7 @@ const DEFAULT_MIDI_TEST_OPTIONS: MIDITestOptions = {
 };
 
 export class MIDITestMaker extends MIDIBuilder {
-    public ticks;
+    private ticks;
     private readonly testName;
     private readonly channel;
 

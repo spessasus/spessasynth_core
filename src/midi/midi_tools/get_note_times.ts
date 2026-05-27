@@ -40,14 +40,17 @@ export function getNoteTimesInternal(
     let i = 0;
     let unfinished = 0;
     // Store notes that we started but didn't finish
-    // MIDI note: index to the note time
-    const unfinishedNotes: Map<number, number>[] = [];
+    // MIDI note: index to the note times (we accept multiple notes)
+    const unfinishedNotes: Map<number, number[]>[] = [];
     for (let i = 0; i < 16; i++) unfinishedNotes.push(new Map());
 
     const noteOff = (midiNote: number, channel: number) => {
         const ch = unfinishedNotes[channel];
-        const noteIndex = ch.get(midiNote);
+        const noteIndexes = ch.get(midiNote);
 
+        if (noteIndexes === undefined) return;
+        // FIFO, match behavior of the synth
+        const noteIndex = noteIndexes.shift();
         if (noteIndex === undefined) return;
         const note = noteTimes[channel][noteIndex];
 
@@ -56,8 +59,6 @@ export function getNoteTimesInternal(
             channel === DEFAULT_PERCUSSION
                 ? Math.max(time, minDrumLength)
                 : time;
-
-        ch.delete(midiNote);
         unfinished--;
     };
     const { timeline, tracks } = midi;
@@ -78,8 +79,6 @@ export function getNoteTimesInternal(
                 // Never mind, its note off
                 noteOff(midiNote, channel);
             } else {
-                // Stop previous
-                noteOff(midiNote, channel);
                 const noteTime = {
                     midiNote,
                     start: elapsedTime,
@@ -88,7 +87,10 @@ export function getNoteTimesInternal(
                 };
                 const times = noteTimes[channel];
                 times.push(noteTime);
-                unfinishedNotes[channel].set(midiNote, times.length - 1);
+                const unfinishedChannel = unfinishedNotes[channel];
+                if (!unfinishedChannel.has(midiNote))
+                    unfinishedChannel.set(midiNote, []);
+                unfinishedNotes[channel].get(midiNote)?.push(times.length - 1);
                 unfinished++;
             }
         }
@@ -98,18 +100,22 @@ export function getNoteTimesInternal(
 
         if (++i >= timeline.length) break;
 
+        const nextTimeline = timeline[i];
         elapsedTime +=
             oneTickToSeconds *
-            (tracks[timeline[i].tr].events[timeline[i].ev].ticks - event.ticks);
+            (tracks[nextTimeline.tr].events[nextTimeline.ev].ticks -
+                event.ticks);
     }
 
     // Finish the unfinished notes
     if (unfinished > 0) {
         // For every channel, for every note that is unfinished (has -1 length)
         for (let channel = 0; channel < unfinishedNotes.length; channel++) {
-            for (const noteIndex of unfinishedNotes[channel].values()) {
-                const note = noteTimes[channel][noteIndex];
-                note.length = elapsedTime - note.start;
+            for (const noteIndexes of unfinishedNotes[channel].values()) {
+                for (const noteIndex of noteIndexes) {
+                    const note = noteTimes[channel][noteIndex];
+                    note.length = elapsedTime - note.start;
+                }
             }
         }
     }
