@@ -163,6 +163,20 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // Velocity Sense Depth
+                case 0x0c: {
+                    ch.setMIDIParameter("velocitySenseDepth", data);
+                    SpessaLog.xgInfo("Velocity Sense Depth", data);
+                    return;
+                }
+
+                // Velocity Sense Offset
+                case 0x0d: {
+                    ch.setMIDIParameter("velocitySenseOffset", data);
+                    SpessaLog.xgInfo("Velocity Sense Offset", data);
+                    return;
+                }
+
                 // Pan position
                 case 0x0e: {
                     const pan = data;

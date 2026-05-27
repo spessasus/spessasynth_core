@@ -222,3 +222,39 @@ Only used for selecting the correct channel when setting drum parameters through
 as those don't specify the channel, but the drum number.
 
 The only values that are allowed are 0 (melodic) 1 or 2.
+
+### velocitySenseDepth
+
+`number`
+
+The relation between the input and the actual velocity.
+
+If Velo Depth is increased, small differences in your playing dynamics will make a large difference in the loudness of the sound.
+If Velo Depth is decreased, even large differences in your playing dynamics will make only a small difference in the loudness of the sound.
+
+Examples (with offset being set to normal):
+
+- 64 is normal.
+- 32 is half velocity at max volume.
+- 127 is max velocity at half volume.
+
+Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
+
+### velocitySenseOffset
+
+`number`
+
+The offset to add to the input velocity.
+
+If Velo Offset is set higher than 64, even softly played notes (i.e., notes with a low velocity)
+will be sounded loudly. If Velo Offset is set lower than 64,
+even strongly played notes (i.e., notes with a high velocity) will be sounded softly.
+
+Examples (with depth set to normal):
+
+- 64 is normal.
+- 32 is silent until half velocity, max velocity is half volume.
+- 96 starts at half volume and reaches max volume at half velocity.
+- 127 always forces velocity to max.
+
+Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.

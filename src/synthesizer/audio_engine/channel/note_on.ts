@@ -29,7 +29,6 @@ export function noteOn(
         this.noteOff(midiNote);
         return;
     }
-    velocity = clamp(velocity, 0, 127);
 
     const black = this.synthCore.systemParameters.blackMIDIMode;
     if (
@@ -43,6 +42,14 @@ export function noteOn(
     ) {
         return;
     }
+
+    // Apply Velocity Sense and clamp
+    let realVelocity = clamp(
+        velocity * (this._midiParameters.velocitySenseDepth / 64) +
+            (this._midiParameters.velocitySenseOffset - 64) * 2,
+        0,
+        127
+    );
 
     // Note which we should grab presets from (strictly internal)
     let soundBankNote = midiNote + this.currentKeyShift;
@@ -70,7 +77,7 @@ export function noteOn(
         midiNote
     );
     if (keyVel > -1) {
-        velocity = keyVel;
+        realVelocity = keyVel;
     }
 
     // Gain
@@ -126,7 +133,7 @@ export function noteOn(
     const voices = this.synthCore.getVoices(
         this.channel,
         soundBankNote,
-        velocity
+        realVelocity
     );
 
     // Overrides

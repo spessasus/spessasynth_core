@@ -701,6 +701,32 @@ export function rolandSystemExclusive(
                                     return;
                                 }
 
+                                case 0x1a: {
+                                    // Velocity Sense Depth
+                                    ch.setMIDIParameter(
+                                        "velocitySenseDepth",
+                                        data
+                                    );
+                                    SpessaLog.gsInfo(
+                                        "Velocity Sense Depth",
+                                        data
+                                    );
+                                    return;
+                                }
+
+                                case 0x1b: {
+                                    // Velocity Sense Offset
+                                    ch.setMIDIParameter(
+                                        "velocitySenseOffset",
+                                        data
+                                    );
+                                    SpessaLog.gsInfo(
+                                        "Velocity Sense Offset",
+                                        data
+                                    );
+                                    return;
+                                }
+
                                 // Pan position
                                 case 0x1c: {
                                     // 0 is random
