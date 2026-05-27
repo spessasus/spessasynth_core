@@ -43,13 +43,13 @@ export function noteOn(
         return;
     }
 
+    const transformed =
+        velocity * (this._midiParameters.velocitySenseDepth / 64) +
+        (this._midiParameters.velocitySenseOffset - 64);
+    console.log(velocity, transformed);
+
     // Apply Velocity Sense and clamp
-    velocity = clamp(
-        (velocity - 64) * (this._midiParameters.velocitySenseDepth / 64) +
-            this._midiParameters.velocitySenseOffset,
-        0,
-        127
-    );
+    velocity = clamp(transformed, 0, 127);
 
     // Note which we should grab presets from (strictly internal)
     let soundBankNote = midiNote + this.currentKeyShift;
