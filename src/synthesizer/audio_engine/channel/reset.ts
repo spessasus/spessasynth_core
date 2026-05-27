@@ -93,7 +93,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     if (!this.synthCore.systemParameters.insertionEffectLock)
         this.setMIDIParameter("efxAssign", false);
 
-    // Reset property parameters
+    // Reset MIDI parameters
     this.setMIDIParameter("rxChannel", this.channel);
     this.setMIDIParameter("assignMode", 2);
     this.setMIDIParameter("randomPan", false);
@@ -103,6 +103,9 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
         "drumMap",
         this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0
     );
+    this.setMIDIParameter("velocitySenseOffset", 64);
+    this.setMIDIParameter("velocitySenseDepth", 64);
+    // These have wrappers
     this.pitchWheel(8192);
     this.pitchWheelRange(2, false);
     this.keyShift(0, false);

@@ -29,7 +29,6 @@ export function noteOn(
         this.noteOff(midiNote);
         return;
     }
-    velocity = clamp(velocity, 0, 127);
 
     const black = this.synthCore.systemParameters.blackMIDIMode;
     if (
@@ -43,6 +42,14 @@ export function noteOn(
     ) {
         return;
     }
+
+    // Apply Velocity Sense and clamp
+    velocity = clamp(
+        (velocity - 64) * (this._midiParameters.velocitySenseDepth / 64) +
+            this._midiParameters.velocitySenseOffset,
+        0,
+        127
+    );
 
     // Note which we should grab presets from (strictly internal)
     let soundBankNote = midiNote + this.currentKeyShift;
