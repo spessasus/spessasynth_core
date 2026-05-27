@@ -185,8 +185,9 @@ export class SoundFontSample extends BasicSample {
         const convertedSigned16 = new Int16Array(this.s16leData.buffer);
 
         // Convert to float
-        for (const [i, element] of convertedSigned16.entries()) {
-            audioData[i] = element / 32_768;
+        const l = convertedSigned16.length;
+        for (let i = 0; i < l; i++) {
+            audioData[i] = convertedSigned16[i] / 32_768;
         }
 
         this.audioData = audioData;

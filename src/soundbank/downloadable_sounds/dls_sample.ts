@@ -28,8 +28,9 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     if (bytesPerSample === 2) {
         // Special optimized case for s16 (most common)
         const s16 = new Int16Array(data.buffer);
-        for (const [i, element] of s16.entries()) {
-            sampleData[i] = element / 32_768;
+        const s16l = s16.length;
+        for (let i = 0; i < s16l; i++) {
+            sampleData[i] = s16[i] / 32_768;
         }
     } else {
         for (let i = 0; i < sampleData.length; i++) {
