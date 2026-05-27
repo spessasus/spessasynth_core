@@ -396,6 +396,16 @@ These System Exclusives are equivalent to the following [MIDI controllers](#defa
 - TVA Decay Time = CC#75
 - TVA Release Time = CC#72
 
+##### Velocity Sense Depth
+
+Adjusts the way note velocity is transformed.
+See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysensedepth).
+
+##### Velocity Sense Offset
+
+Allows offsetting the note velocity
+See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysenseoffset).
+
 ##### CC1, CC2 Controller Number
 
 These two controllers can be bound in the [controller matrix](#patch-part-parameters-controllers)
@@ -524,12 +534,14 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | 07           | Part mode              | `0` = normal (melodic) part; any non-zero value turns the part into a drum part. In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. |
 | 08           | Note shift             | Channel note shift in semitones: `data − 64`. Ignored on drum parts.                                                                                                                            |
 | 0B           | Volume                 | Same as CC#7 (main volume).                                                                                                                                                                     |
+| 0C           | Velocity Sense Depth   | Adjusts the way note velocity is transformed. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysensedepth).                          |
+| 0D           | Velocity Sense Offset  | Allows offsetting the note velocity. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysenseoffset).                                  |
 | 0E           | Pan                    | Same as CC#10, except value `0` enables random pan for every new voice on that channel.                                                                                                         |
 | 12           | Chorus                 | Same as CC#93 (chorus send).                                                                                                                                                                    |
 | 13           | Reverb                 | Same as CC#91 (reverb send).                                                                                                                                                                    |
-| 15           | Vibrato Rate           | Same as CC#76.                                                                                                                                                                                  |
-| 16           | Vibrato Depth          | Same as CC#77.                                                                                                                                                                                  |
-| 17           | Vibrato Delay          | Same as CC#78.                                                                                                                                                                                  |
+| 15           | Vibrato Rate           | Same as CC#76 (vibrato rate).                                                                                                                                                                   |
+| 16           | Vibrato Depth          | Same as CC#77 (vibrato depth).                                                                                                                                                                  |
+| 17           | Vibrato Delay          | Same as CC#78 (vibrato delay).                                                                                                                                                                  |
 | 18           | Filter Cutoff          | Same as CC#74 (brightness).                                                                                                                                                                     |
 | 19           | Filter Resonance       | Same as CC#71 (filter resonance).                                                                                                                                                               |
 | 1A           | Attack Time            | Same as CC#73 (attack time).                                                                                                                                                                    |

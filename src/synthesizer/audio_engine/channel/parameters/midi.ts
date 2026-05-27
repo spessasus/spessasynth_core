@@ -106,29 +106,34 @@ export interface ChannelMIDIParameter {
 
     /**
      * The relation between the input and the actual velocity.
+     *
      * If Velo Depth is increased, small differences in your playing dynamics will make a large difference in the loudness of the sound.
      * If Velo Depth is decreased, even large differences in your playing dynamics will make only a small difference in the loudness of the sound.
      *
      * Examples (with offset being set to normal):
+     *
      * - 64 is normal.
      * - 32 is half velocity at max volume.
      * - 127 is max velocity at half volume.
      *
-     * See SC-8850 Manual page 56.
+     * Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
      */
     velocitySenseDepth: number;
     /**
+     * The offset to add to the input velocity.
+     *
      * If Velo Offset is set higher than 64, even softly played notes (i.e., notes with a low velocity)
      * will be sounded loudly. If Velo Offset is set lower than 64,
      * even strongly played notes (i.e., notes with a high velocity) will be sounded softly.
      *
-     * Examples (with depth set to normal)
+     * Examples (with depth set to normal):
+     *
      * - 64 is normal.
      * - 32 is silent until half velocity, max velocity is half volume.
      * - 96 starts at half volume and reaches max volume at half velocity.
      * - 127 always forces velocity to max.
      *
-     * See SC-8850 Manual page 56.
+     * Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
      */
     velocitySenseOffset: number;
 }
