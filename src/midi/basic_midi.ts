@@ -28,7 +28,7 @@ import {
 } from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
 import { parseSMFInternal } from "./read/midi";
-import { MIDIMessageTypes } from "./enums";
+import { MIDIControllers, MIDIMessageTypes } from "./enums";
 import type {
     GenericRange,
     PresetsWithKeyCombinations
@@ -720,23 +720,23 @@ export class BasicMIDI {
                         case MIDIMessageTypes.controllerChange: {
                             switch (e.data[0]) {
                                 // Touhou
-                                case 2:
+                                case MIDIControllers.breathController:
                                 // RPG Maker
-                                case 111: {
+                                case MIDIControllers.undefinedCC111LSB: {
                                     // For Touhou and RPG Maker, the data value must be 0.
                                     if (e.data[1] === 0) loopStart = e.ticks;
                                     break;
                                 }
                                 // EMIDI/XMI
-                                case 116: {
+                                case MIDIControllers.undefinedCC116LSB: {
                                     loopStart = e.ticks;
                                     break;
                                 }
 
                                 // Touhou
-                                case 4:
+                                case MIDIControllers.footController:
                                 // EMIDI/XMI
-                                case 117: {
+                                case MIDIControllers.undefinedCC117LSB: {
                                     // For Touhou loops, the data value must be 0.
                                     if (
                                         loopEnd === null &&
@@ -756,7 +756,7 @@ export class BasicMIDI {
                                     break;
                                 }
 
-                                case 0: {
+                                case MIDIControllers.bankSelect: {
                                     // Check RMID
                                     if (
                                         this.isDLSRMIDI &&
