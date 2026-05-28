@@ -245,10 +245,10 @@ synth.lockMIDIParameter(parameter, isLocked);
 Set a [Global System Parameter.](global-parameters.md#system)
 
 ```ts
-synth.setSystemParameter(type, value);
+synth.setSystemParameter(parameter, value);
 ```
 
-- type - the type of the parameter to set, a string of the parameter type.
+- parameter - the type of the parameter to set, a string of the parameter type.
 - value - the value of the parameter to set, depends on the type.
 
 ### reset

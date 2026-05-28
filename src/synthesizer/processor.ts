@@ -361,14 +361,14 @@ export class SpessaSynthProcessor {
 
     /**
      * Sets a system parameter of the synthesizer.
-     * @param type The type of the system parameter to set.
+     * @param parameter The type of the system parameter to set.
      * @param value The value to set for the system parameter.
      */
     public setSystemParameter<P extends keyof GlobalSystemParameter>(
-        type: P,
+        parameter: P,
         value: GlobalSystemParameter[P]
     ) {
-        this.synthCore.setSystemParameter(type, value);
+        this.synthCore.setSystemParameter(parameter, value);
     }
 
     /**
