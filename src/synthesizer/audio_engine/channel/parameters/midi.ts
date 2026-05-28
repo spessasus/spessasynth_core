@@ -1,4 +1,7 @@
 import type { MIDIController } from "../../../../midi/enums";
+import type { MIDIChannel } from "../midi_channel";
+import { ModulatorControllerSources } from "../../../../soundbank/enums";
+import type { ChannelMIDIParameterChange } from "../types";
 
 export interface ChannelMIDIParameter {
     /**
@@ -157,3 +160,41 @@ export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     velocitySenseDepth: 64,
     velocitySenseOffset: 64
 };
+
+/**
+ * Sets a channel MIDI parameter of the synthesizer.
+ * @param parameter The type of the channel MIDI parameter to set.
+ * @param value The value to set for the channel MIDI parameter.
+ * @internal
+ */
+export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
+    this: MIDIChannel,
+    parameter: P,
+    value: ChannelMIDIParameter[P]
+) {
+    // @ts-expect-error This is the only place where we set them
+    this._midiParameters[parameter] = value;
+
+    switch (parameter) {
+        case "pitchWheel": {
+            this.computeModulatorsAll(0, ModulatorControllerSources.pitchWheel);
+            break;
+        }
+
+        case "pressure": {
+            this.computeModulatorsAll(
+                0,
+                ModulatorControllerSources.channelPressure
+            );
+            break;
+        }
+    }
+
+    this.updateInternalParams();
+
+    this.synthCore.callEvent("channelParamChange", {
+        channel: this.channel,
+        parameter,
+        value
+    } as ChannelMIDIParameterChange);
+}

@@ -35,9 +35,9 @@ import {
 import type { ChannelGenerators } from "./awe32_nrpn";
 import {
     type ChannelMIDIParameter,
-    DEFAULT_CHANNEL_MIDI_PARAMETERS
+    DEFAULT_CHANNEL_MIDI_PARAMETERS,
+    setMIDIParameterInternal
 } from "./parameters/midi";
-import type { ChannelMIDIParameterChange } from "./types";
 import {
     type ChannelSystemParameter,
     DEFAULT_CHANNEL_SYSTEM_PARAMETERS,
@@ -180,6 +180,16 @@ export class MIDIChannel {
      * @internal
      */
     public readonly renderVoice = renderVoice.bind(this);
+
+    /**
+     * Sets a channel MIDI parameter of the synthesizer.
+     * @param parameter The type of the channel MIDI parameter to set.
+     * @param value The value to set for the channel MIDI parameter.
+     * @internal
+     */
+    public readonly setMIDIParameter: typeof setMIDIParameterInternal =
+        setMIDIParameterInternal.bind(this);
+
     /**
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
@@ -507,47 +517,6 @@ export class MIDIChannel {
             channel: this.channel,
             force
         });
-    }
-
-    /**
-     * Sets a channel MIDI parameter of the synthesizer.
-     * @param parameter The type of the channel MIDI parameter to set.
-     * @param value The value to set for the channel MIDI parameter.
-     * @internal
-     */
-    public setMIDIParameter<P extends keyof ChannelMIDIParameter>(
-        this: MIDIChannel,
-        parameter: P,
-        value: ChannelMIDIParameter[P]
-    ) {
-        // @ts-expect-error This is the only place where we set them
-        this._midiParameters[parameter] = value;
-
-        switch (parameter) {
-            case "pitchWheel": {
-                this.computeModulatorsAll(
-                    0,
-                    ModulatorControllerSources.pitchWheel
-                );
-                break;
-            }
-
-            case "pressure": {
-                this.computeModulatorsAll(
-                    0,
-                    ModulatorControllerSources.channelPressure
-                );
-                break;
-            }
-        }
-
-        this.updateInternalParams();
-
-        this.synthCore.callEvent("channelParamChange", {
-            channel: this.channel,
-            parameter,
-            value
-        } as ChannelMIDIParameterChange);
     }
 
     /*

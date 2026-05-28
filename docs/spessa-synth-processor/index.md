@@ -246,8 +246,10 @@ This will reset all controllers to their default values,
 except for the locked controllers.
 
 ```ts
-synth.reset();
+synth.reset(system);
 ```
+
+- system, optional - The `MIDISystem` to reset the synthesizer to. Defaults to `gs`.
 
 ### applySnapshot
 

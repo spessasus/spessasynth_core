@@ -61,18 +61,3 @@ export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
         value
     } as GlobalMIDIParameterChangeCallback);
 }
-
-/**
- * Resets all global MIDI parameters to their default values.
- * @param system the MIDI system to set when resetting.
- */
-export function resetMIDIParametersInternal(
-    this: SynthesizerCore,
-    system: MIDISystem
-) {
-    this.setMIDIParameter("gain", 1);
-    this.setMIDIParameter("pan", 0);
-    this.setMIDIParameter("keyShift", 0);
-    this.setMIDIParameter("fineTune", 0);
-    this.setMIDIParameter("system", system);
-}

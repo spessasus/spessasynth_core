@@ -47,7 +47,6 @@ import { SpessaSynthDelay } from "./effects/delay/delay";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
-    resetMIDIParametersInternal,
     setMIDIParameterInternal
 } from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
@@ -202,8 +201,6 @@ export class SynthesizerCore {
      */
     protected readonly setMIDIParameter: typeof setMIDIParameterInternal =
         setMIDIParameterInternal.bind(this);
-    protected readonly resetMIDIParameters: typeof resetMIDIParametersInternal =
-        resetMIDIParametersInternal.bind(this);
     /**
      * The fallback processor when the requested insertion is not available.
      */
@@ -544,11 +541,17 @@ export class SynthesizerCore {
      * Executes a full system reset of the synthesizer.
      * This will reset all controllers to their default values,
      * except for the locked controllers.
+     * @param system The MIDI system to reset the synthesizer to. Defaults to `gs`.
      */
     public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
         // Call here because there are returns in this function.
         this.callEvent("reset", system);
-        this.resetMIDIParameters(system);
+        // Reset MIDI parameters
+        this.setMIDIParameter("system", system);
+        this.setMIDIParameter("gain", 1);
+        this.setMIDIParameter("pan", 0);
+        this.setMIDIParameter("keyShift", 0);
+        this.setMIDIParameter("fineTune", 0);
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
         this.portSelectChannelOffset = 0;
