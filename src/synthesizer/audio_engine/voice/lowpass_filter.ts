@@ -113,11 +113,11 @@ export class LowpassFilter {
     public static initCache(sampleRate: number) {
         LowpassFilter.smoothingConstant =
             FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
-        // Precompute all the cutoffs for 0q (most common)
+        // Precompute selected cutoffs for 0q (most common)
         const dummy = new LowpassFilter(sampleRate);
         dummy.resonanceCb = 0;
-        // Sf spec section 8.1.3: initialFilterFc ranges from 1500 to 13,500 cents
-        for (let i = 1500; i < 13_500; i++) {
+        // 8000 is roughly 830 Hz and 13,500 is max
+        for (let i = 8000; i < 13_500; i++) {
             dummy.currentInitialFc = i;
             dummy.calculateCoefficients(i);
         }
