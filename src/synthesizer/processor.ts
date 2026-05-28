@@ -192,7 +192,7 @@ export class SpessaSynthProcessor {
      */
     private readonly synthCore: SynthesizerCore;
     /**
-     * Tor applying the snapshot after an override sound bank too.
+     * For applying the snapshot after an override sound bank too.
      */
     private savedSnapshot?: SynthesizerSnapshot;
 

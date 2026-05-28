@@ -589,7 +589,7 @@ export class SynthesizerCore {
     }
 
     /**
-     * The main rendering pipeline, renders all voices the processes the effects:
+     * The main rendering pipeline, renders all voices and processes the effects:
      * ```
      *                   ┌────────────────────────────────┐
      *                   │        Voice Processor         │

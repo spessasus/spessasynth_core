@@ -1,7 +1,7 @@
 ## This is the MIDI file parsing folder.
 
 The code here is responsible for parsing the MIDI files and interpreting the messages.
-All the events are defined in the `midi_message.js` file.
+All the events are defined in the `midi_message.ts` file.
 
 ### MIDI Classes hierarchy
 

@@ -19,7 +19,7 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 
     No Web or Node APIs can be used in the library code. All of the source code must be able to run on both the Web and in Node.js.
 
-    Examples and tests are intended for the Node.js environment _only_, the may use Node.js APIs.
+    Examples and tests are intended for the Node.js environment _only_, they may use Node.js APIs.
 
 ### Preparation
 
