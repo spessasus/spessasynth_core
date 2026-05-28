@@ -43,7 +43,13 @@ export function dataEntry(this: MIDIChannel) {
                 // Therefore, something like "64" won't work,
                 // So we divide it by 128 which is essentially the same here
                 // But it allows for fractional pitch wheel range!
-                this.pitchWheelRange(dataValue / 128);
+                const range = dataValue / 128;
+                this.setMIDIParameter("pitchWheelRange", range);
+                SpessaLog.coolInfo(
+                    `Pitch Wheel Range for ${this.channel}`,
+                    range,
+                    "semitones"
+                );
                 break;
             }
 
@@ -51,7 +57,8 @@ export function dataEntry(this: MIDIChannel) {
             case RegisteredParameterTypes.coarseTuning: {
                 // Semitones, discard LSB
                 const semitones = (dataValue >> 7) - 64;
-                this.keyShift(semitones);
+                this.setMIDIParameter("keyShift", semitones);
+                SpessaLog.coolInfo(`Key shift for ${this.channel}`, semitones);
                 break;
             }
 
@@ -59,14 +66,26 @@ export function dataEntry(this: MIDIChannel) {
             case RegisteredParameterTypes.fineTuning: {
                 const finalTuning = dataValue - 8192;
                 // Resolution is 100/8192 cents
-                this.fineTune(finalTuning / 81.92);
+                const cents = finalTuning / 81.92;
+                this.setMIDIParameter("fineTune", cents);
+                SpessaLog.coolInfo(
+                    `Fine tuning for ${this.channel}`,
+                    Math.round(cents),
+                    "cents"
+                );
                 break;
             }
 
             // Modulation depth
             case RegisteredParameterTypes.modulationDepth: {
                 // Cents, so data / 128 * 100 is data / 1.28
-                this.modulationDepth(dataValue / 1.28);
+                const cents = dataValue / 1.28;
+                this.setMIDIParameter("modulationDepth", cents);
+                SpessaLog.coolInfo(
+                    `Modulation depth for ${this.channel}`,
+                    Math.round(cents),
+                    "cents"
+                );
                 break;
             }
 

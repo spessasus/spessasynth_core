@@ -94,7 +94,12 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
         this.setMIDIParameter("efxAssign", false);
 
     // Reset MIDI parameters
+    this.setMIDIParameter("pressure", 0);
+    this.setMIDIParameter("pitchWheelRange", 2);
+    this.setMIDIParameter("modulationDepth", 50);
     this.setMIDIParameter("rxChannel", this.channel);
+    this.setMIDIParameter("keyShift", 0);
+    this.setMIDIParameter("fineTune", 0);
     this.setMIDIParameter("assignMode", 2);
     this.setMIDIParameter("randomPan", false);
     this.setMIDIParameter("cc1", 0x10);
@@ -105,13 +110,8 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     );
     this.setMIDIParameter("velocitySenseOffset", 64);
     this.setMIDIParameter("velocitySenseDepth", 64);
-    // These have wrappers
+    // This one has a wrapper, for per-note pitch wheel
     this.pitchWheel(8192);
-    this.pitchWheelRange(2, false);
-    this.keyShift(0, false);
-    this.fineTune(0, false);
-    this.setMIDIParameter("pressure", 0);
-    this.modulationDepth(50, false);
     // Do not reset user transpose!
 
     // Reset poly/mono mode

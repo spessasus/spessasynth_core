@@ -686,7 +686,8 @@ export function rolandSystemExclusive(
                                 case 0x16: {
                                     // This is the pitch key shift sysex
                                     const keyShift = data - 64;
-                                    ch.keyShift(keyShift);
+                                    ch.setMIDIParameter("keyShift", keyShift);
+                                    SpessaLog.gsInfo("Key Shift", keyShift);
                                     return;
                                 }
 
@@ -795,8 +796,13 @@ export function rolandSystemExclusive(
                                     // Fine tune
                                     // 0-16384
                                     const tune = (data << 7) | syx[8];
-                                    const tuneCents = (tune - 8192) / 81.92;
-                                    ch.fineTune(tuneCents);
+                                    const cents = (tune - 8192) / 81.92;
+                                    ch.setMIDIParameter("fineTune", cents);
+                                    SpessaLog.gsInfo(
+                                        "Fine tuning for ${channel}",
+                                        Math.round(cents),
+                                        "cents"
+                                    );
                                     break;
                                 }
 
@@ -931,7 +937,15 @@ export function rolandSystemExclusive(
                                         // If the source is a mod wheel, it's a strange way of setting the modulation depth
                                         // Testcase: J-Cycle.mid (it affects gm.dls which uses LFO1 for modulation)
                                         const cents = (data / 127) * 600;
-                                        ch.modulationDepth(cents);
+                                        ch.setMIDIParameter(
+                                            "modulationDepth",
+                                            cents
+                                        );
+                                        SpessaLog.gsInfo(
+                                            `Modulation depth for ${channel}`,
+                                            Math.round(cents),
+                                            "cents"
+                                        );
                                         break;
                                     }
                                     ch.dynamicModulators.setupReceiver(
@@ -953,7 +967,15 @@ export function rolandSystemExclusive(
                                         // If the source is a pitch wheel, it's a strange way of setting the pitch wheel range
                                         // Testcase: th07_03.mid
                                         const centeredValue = data - 64;
-                                        ch.pitchWheelRange(centeredValue);
+                                        ch.setMIDIParameter(
+                                            "pitchWheelRange",
+                                            centeredValue
+                                        );
+                                        SpessaLog.gsInfo(
+                                            `Pitch Wheel Range for ${channel}`,
+                                            centeredValue,
+                                            "semitones"
+                                        );
                                         break;
                                     }
                                     ch.dynamicModulators.setupReceiver(

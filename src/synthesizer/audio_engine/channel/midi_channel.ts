@@ -22,8 +22,6 @@ import {
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
 import { type BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
-import { SpessaLog } from "../../../utils/loggin";
-import { ConsoleColors } from "../../../utils/other";
 import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
@@ -474,12 +472,6 @@ export class MIDIChannel {
         this.programChange(this.patch.program);
     }
 
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-     */
-
     /**
      * Stops all notes on the channel.
      * @param force If true, stops all notes immediately, otherwise applies release time.
@@ -558,6 +550,12 @@ export class MIDIChannel {
         } as ChannelMIDIParameterChange);
     }
 
+    /*
+    =================
+    END OF PUBLIC API
+    =================
+     */
+
     /**
      * @internal
      */
@@ -579,73 +577,6 @@ export class MIDIChannel {
         for (let i = 0; i < 128; i++) {
             this.octaveTuning[i] = tuning[i % 12];
         }
-    }
-
-    /**
-     * Sets the modulation depth for the channel.
-     * @param cents The modulation depth in cents to set.
-     * @param log If true, logs the change to the console.
-     * @remarks
-     * This method sets the modulation depth for the channel by converting the given cents value into a
-     * multiplier. The MIDI specification assumes the default modulation depth is 50 cents,
-     * but it may vary for different sound banks.
-     * For example, if you want a modulation depth of 100 cents,
-     * the multiplier will be 2,
-     * which, for a preset with a depth of 50,
-     * will create a total modulation depth of 100 cents.
-     * @internal
-     */
-    public modulationDepth(cents: number, log = true) {
-        this.setMIDIParameter("modulationDepth", cents / 50);
-        if (!log) return;
-        SpessaLog.info(
-            `%cChannel ${this.channel} modulation depth. Cents: %c${Math.round(cents)}`,
-            ConsoleColors.info,
-            ConsoleColors.value
-        );
-    }
-
-    /**
-     * Sets the channel's key shift (MIDI).
-     * @param shift the key shift.
-     * @param log If true, logs the change to the console.
-     * @internal
-     */
-    public keyShift(shift: number, log = true) {
-        // Drum channels ignore key shift
-        // Testcase: th07_19_user_gm.mid
-        // Reset to 0 just to be sure
-        if (this._drumChannel) shift = 0;
-        if (this._midiParameters.keyShift === shift) return;
-        this.setMIDIParameter("keyShift", shift);
-        if (!log) return;
-        SpessaLog.info(
-            `%cKey shift for %c${this.channel}%c is now set to %c${shift}.`,
-            ConsoleColors.info,
-            ConsoleColors.recognized,
-            ConsoleColors.info,
-            ConsoleColors.value
-        );
-    }
-
-    /**
-     * Sets the channel's tuning.
-     * @param cents The tuning in cents to set.
-     * @param log If true, logs the change to the console.
-     * @internal
-     */
-    public fineTune(cents: number, log = true) {
-        this.setMIDIParameter("fineTune", cents);
-        if (!log) return;
-
-        SpessaLog.info(
-            `%cFine tuning for %c${this.channel}%c is now set to %c${Math.round(cents)}%c cents.`,
-            ConsoleColors.info,
-            ConsoleColors.recognized,
-            ConsoleColors.info,
-            ConsoleColors.value,
-            ConsoleColors.info
-        );
     }
 
     /**
@@ -673,7 +604,6 @@ export class MIDIChannel {
         }
     }
 
-    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets the pressure of the given note on a specific channel.
      * This is used for polyphonic pressure (aftertouch).
@@ -708,22 +638,6 @@ export class MIDIChannel {
     }
 
     /**
-     * Sets the pitch wheel range for this channel.
-     * @param range range in semitones.
-     * @param log If true, logs the change to the console.
-     * @internal
-     */
-    public pitchWheelRange(range: number, log = true) {
-        this.setMIDIParameter("pitchWheelRange", range);
-        if (!log) return;
-        SpessaLog.coolInfo(
-            `Pitch Wheel Range for ${this.channel}`,
-            range,
-            "semitones"
-        );
-    }
-
-    /**
      * @internal
      */
     public updateInternalParams() {
@@ -735,7 +649,9 @@ export class MIDIChannel {
         // - System -> System Parameter
         // - MIDI -> MIDI Parameter
 
-        // Only Channel System is processed for drum channels
+        // Only Channel System is processed for drum channels.
+        // Drum channels ignore key shift
+        // Testcase: th07_19_user_gm.mid
         const currentKeyShift = this._drumChannel
             ? channelSystem.keyShift
             : // Global System
@@ -976,7 +892,6 @@ export class MIDIChannel {
             return;
 
         this._drumChannel = isDrum;
-        // Update transpose (clear on drums)
-        this.keyShift(this._midiParameters.keyShift, false);
+        this.updateInternalParams();
     }
 }

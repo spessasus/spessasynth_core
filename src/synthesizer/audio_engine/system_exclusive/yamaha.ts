@@ -153,7 +153,8 @@ export function yamahaSystemExclusive(
                 // Note shift
                 case 0x08: {
                     const keyShift = data - 64;
-                    ch.keyShift(keyShift);
+                    ch.setMIDIParameter("keyShift", keyShift);
+                    SpessaLog.xgInfo("Key Shift", keyShift);
                     break;
                 }
 
@@ -253,7 +254,12 @@ export function yamahaSystemExclusive(
                 case 0x23: {
                     // Bend pitch control (pitch wheel range)
                     const centeredValue = data - 64;
-                    ch.pitchWheelRange(centeredValue);
+                    ch.setMIDIParameter("pitchWheelRange", centeredValue);
+                    SpessaLog.xgInfo(
+                        `Pitch Wheel Range for ${channel}`,
+                        centeredValue,
+                        "semitones"
+                    );
                 }
             }
             return;

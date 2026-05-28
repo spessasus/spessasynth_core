@@ -17,7 +17,8 @@ export interface ChannelMIDIParameter {
     pitchWheelRange: number;
 
     /**
-     * The multiplier of the modulation wheel modulator.
+     * The modulation depth in cents.
+     * This is internally converted to a multiplier by dividing by 50.
      *
      * The MIDI specification assumes the default modulation depth is 50 cents,
      * but it may vary for different sound banks.
@@ -142,7 +143,7 @@ export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     pitchWheel: 8192,
     pitchWheelRange: 2,
     pressure: 0,
-    modulationDepth: 1,
+    modulationDepth: 50,
     rxChannel: 0,
     polyMode: true,
     keyShift: 0,

@@ -63,7 +63,17 @@ export function computeModulator(
 
     // Modulation depth
     if (modulator.isModWheelModulator)
-        computedValue *= this._midiParameters.modulationDepth;
+        /*
+        The modulation Depth is in cents, convert to a multiplier.
+        
+        The MIDI specification assumes the default modulation depth is 50 cents,
+        but it may vary for different sound banks.
+        For example, if you want a modulation depth of 100 cents,
+        the multiplier will be 2,
+        which, for a preset with a depth of 50,
+        will create a total modulation depth of 100 cents.
+         */
+        computedValue *= this._midiParameters.modulationDepth / 50;
 
     voice.modulatorValues[modulatorIndex] = computedValue;
     return computedValue;

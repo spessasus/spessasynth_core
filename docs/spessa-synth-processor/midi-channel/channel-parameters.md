@@ -130,7 +130,8 @@ The current pitch wheel range, in semitones.
 
 `number`
 
-The multiplier of the modulation wheel modulator.
+The modulation depth in cents.
+This is internally converted to a multiplier by dividing by 50.
 
 The MIDI specification assumes the default modulation depth is 50 cents,
 but it may vary for different sound banks.
