@@ -191,7 +191,8 @@ Where a new note will kill the previous one if it is still playing.
 ## MIDI
 
 MIDI Parameters can only be changed via MIDI messages,
-and not via the API. They get reset via MIDI reset messages.
+and not via the API. They get reset via MIDI reset messages,
+can be locked and have an associated event.
 
 An object called `DEFAULT_GLOBAL_MIDI_PARAMETERS` is provided with the library,
 containing the defaults.

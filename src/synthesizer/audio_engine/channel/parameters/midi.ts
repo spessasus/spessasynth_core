@@ -172,6 +172,7 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
     parameter: P,
     value: ChannelMIDIParameter[P]
 ) {
+    if (this.lockedMIDIParameters[parameter]) return;
     // @ts-expect-error This is the only place where we set them
     this._midiParameters[parameter] = value;
 
@@ -197,4 +198,18 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
         parameter,
         value
     } as ChannelMIDIParameterChange);
+}
+
+/**
+ * Locks or unlocks a given Channel MIDI Parameter.
+ * This prevents any changes to it until it's unlocked.
+ * @param parameter The Channel MIDI Parameter to lock.
+ * @param isLocked If the parameter should be locked.
+ */
+export function lockMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
+    this: MIDIChannel,
+    parameter: P,
+    isLocked: boolean
+) {
+    this.lockedMIDIParameters[parameter] = isLocked;
 }

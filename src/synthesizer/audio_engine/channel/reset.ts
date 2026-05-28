@@ -8,13 +8,6 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { MIDIChannel } from "./midi_channel";
 
-export function resetPortamento(this: MIDIChannel) {
-    // Portamento has a quirk:
-    // For XG, control is set to 60
-    // For others, it's set to nothing (no portamento on first note-on)
-    this.lastPortamentoNote = this.channelSystem === "xg" ? 60 : -1;
-}
-
 /**
  * An array with the default MIDI controller values.
  * Note that these are 14-bit, requiring a 7-bit shift to the right for 7-bit values!
@@ -98,6 +91,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.setMIDIParameter("pitchWheelRange", 2);
     this.setMIDIParameter("modulationDepth", 50);
     this.setMIDIParameter("rxChannel", this.channel);
+    this.setMIDIParameter("polyMode", true);
     this.setMIDIParameter("keyShift", 0);
     this.setMIDIParameter("fineTune", 0);
     this.setMIDIParameter("assignMode", 2);
@@ -112,18 +106,16 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.setMIDIParameter("velocitySenseDepth", 64);
     // This one has a wrapper, for per-note pitch wheel
     this.pitchWheel(8192);
-    // Do not reset user transpose!
-
-    // Reset poly/mono mode
-    if (
-        !this.lockedControllers[MIDIControllers.monoModeOn] &&
-        !this.lockedControllers[MIDIControllers.polyModeOn]
-    )
-        this.setMIDIParameter("polyMode", true);
 
     // Reset various other things
     this.octaveTuning.fill(0);
-    resetPortamento.call(this);
+
+    // Reset portamento:
+    // Portamento has a quirk:
+    // For XG, control is set to 60
+    // For others, it's set to nothing (no portamento on first note-on)
+    this.lastPortamentoNote = this.channelSystem === "xg" ? 60 : -1;
+
     this.resetDrumParams();
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();

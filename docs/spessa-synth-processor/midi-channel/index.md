@@ -17,6 +17,18 @@ channel.setSystemParameter(type, value);
 - type - the type of the parameter to set, a string of the parameter type.
 - value - the value of the parameter to set, depends on the type.
 
+### lockMIDIParameter
+
+Locks or unlocks a given [Channel MIDI Parameter.](channel-parameters.md#midi)
+This prevents any changes to it until it's unlocked.
+
+```ts
+channel.lockMIDIParameter(parameter, isLocked);
+```
+
+- parameter - the Channel MIDI Parameter to lock, a string of the parameter type.
+- isLocked - if the parameter should be locked, boolean.
+
 ### lockController
 
 Locks or unlocks a given controller.

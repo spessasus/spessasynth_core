@@ -34,7 +34,7 @@ that affect the entire synthesizer.
 They are MIDI Parameters, meaning that they can only be changed via MIDI messages,
 and not via the API. They get reset via MIDI reset messages.
 
-They also have an associated event.
+They also have an associated event and can be locked.
 
 Examples:
 
@@ -73,7 +73,7 @@ that affect a single MIDI channel.
 They are MIDI Parameters, meaning that they can only be changed via MIDI messages,
 and not via the API. They get reset via MIDI reset messages.
 
-They also have an associated event.
+They also have an associated event and can be locked.
 
 Examples:
 

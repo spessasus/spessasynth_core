@@ -52,6 +52,7 @@ export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
     parameter: P,
     value: GlobalMIDIParameter[P]
 ) {
+    if (this.lockedMIDIParameters[parameter]) return;
     this.midiParameters[parameter] = value;
 
     for (const ch of this.midiChannels) ch.updateInternalParams();
@@ -60,4 +61,18 @@ export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
         parameter,
         value
     } as GlobalMIDIParameterChangeCallback);
+}
+
+/**
+ * Locks or unlocks a given Global MIDI Parameter.
+ * This prevents any changes to it until it's unlocked.
+ * @param parameter The Global MIDI Parameter to lock.
+ * @param isLocked If the parameter should be locked.
+ */
+export function lockMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
+    this: SynthesizerCore,
+    parameter: P,
+    isLocked: boolean
+) {
+    this.lockedMIDIParameters[parameter] = isLocked;
 }

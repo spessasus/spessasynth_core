@@ -345,6 +345,20 @@ export class SpessaSynthProcessor {
         return undefined;
     };
 
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Locks or unlocks a given Global MIDI Parameter.
+     * This prevents any changes to it until it's unlocked.
+     * @param parameter The Global MIDI Parameter to lock.
+     * @param isLocked If the parameter should be locked.
+     */
+    public lockMIDIParameter<P extends keyof GlobalMIDIParameter>(
+        parameter: P,
+        isLocked: boolean
+    ) {
+        this.synthCore.lockMIDIParameter(parameter, isLocked);
+    }
+
     /**
      * Sets a system parameter of the synthesizer.
      * @param type The type of the system parameter to set.

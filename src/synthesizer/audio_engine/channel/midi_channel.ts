@@ -36,6 +36,7 @@ import type { ChannelGenerators } from "./awe32_nrpn";
 import {
     type ChannelMIDIParameter,
     DEFAULT_CHANNEL_MIDI_PARAMETERS,
+    lockMIDIParameterInternal,
     setMIDIParameterInternal
 } from "./parameters/midi";
 import {
@@ -55,15 +56,6 @@ export class MIDIChannel {
      * @internal
      */
     public readonly pitchWheels = new Int16Array(128).fill(8192);
-    /**
-     * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
-     * (i.e., not allowed changing).
-     * A locked controller cannot be modified.
-     * @internal
-     */
-    public readonly lockedControllers = new Array(CONTROLLER_TABLE_SIZE).fill(
-        false
-    ) as boolean[];
     /**
      * Parameters for each drum instrument.
      * @internal
@@ -120,6 +112,17 @@ export class MIDIChannel {
      */
     public readonly setSystemParameter: typeof setSystemParameterInternal =
         setSystemParameterInternal.bind(this);
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Locks or unlocks a given Channel MIDI Parameter.
+     * This prevents any changes to it until it's unlocked.
+     * @param parameter The Channel MIDI Parameter to lock.
+     * @param isLocked If the parameter should be locked.
+     */
+    public readonly lockMIDIParameter: typeof lockMIDIParameterInternal =
+        lockMIDIParameterInternal.bind(this);
+
     /*
     =================
     END OF PUBLIC API
@@ -180,7 +183,6 @@ export class MIDIChannel {
      * @internal
      */
     public readonly renderVoice = renderVoice.bind(this);
-
     /**
      * Sets a channel MIDI parameter of the synthesizer.
      * @param parameter The type of the channel MIDI parameter to set.
@@ -189,7 +191,15 @@ export class MIDIChannel {
      */
     public readonly setMIDIParameter: typeof setMIDIParameterInternal =
         setMIDIParameterInternal.bind(this);
-
+    /**
+     * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
+     * (i.e., not allowed changing).
+     * A locked controller cannot be modified.
+     * @internal
+     */
+    protected readonly lockedControllers = new Array(
+        CONTROLLER_TABLE_SIZE
+    ).fill(false) as boolean[];
     /**
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
@@ -221,6 +231,22 @@ export class MIDIChannel {
      * @internal
      */
     protected readonly dataEntry = dataEntry.bind(this);
+
+    /**
+     * An object indicating if a Channel MIDI parameter, at the equivalent key, is locked
+     * (i.e., not allowed changing).
+     * A locked parameter cannot be modified.
+     * @internal
+     */
+    protected readonly lockedMIDIParameters = Object.fromEntries(
+        // This funky code takes DEFAULT_PARAMETERS and sets the values to false
+        (
+            Object.keys(
+                DEFAULT_CHANNEL_MIDI_PARAMETERS
+            ) as (keyof ChannelMIDIParameter)[]
+        ).map((key) => [key, false])
+    ) as Record<keyof ChannelMIDIParameter, boolean>;
+
     protected readonly _midiParameters: Readonly<ChannelMIDIParameter> = {
         ...DEFAULT_CHANNEL_MIDI_PARAMETERS
     };
