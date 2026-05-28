@@ -19,8 +19,9 @@ export interface SynthesizerSnapshot {
      */
     keyMappings: (KeyModifier | undefined)[][];
 
-    systemParameters: GlobalSystemParameter;
     midiParameters: GlobalMIDIParameter;
+    lockedMIDIParameters: Record<keyof GlobalMIDIParameter, boolean>;
+    systemParameters: GlobalSystemParameter;
 
     reverbProcessor: ReverbProcessorSnapshot;
     chorusProcessor: ChorusProcessorSnapshot;
@@ -88,6 +89,11 @@ export function applySnapshot(
     ) as MIDIParameterPair<keyof GlobalMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
+    for (const [parameter, isLocked] of Object.entries(
+        snapshot.lockedMIDIParameters
+    ) as [keyof GlobalMIDIParameter, boolean][]) {
+        this.lockMIDIParameter(parameter, isLocked);
+    }
 
     // Restore system parameters last
     type SystemParameterPair<K extends keyof GlobalSystemParameter> = [
@@ -106,6 +112,7 @@ export function getSynthesizerSnapshot(
 ): SynthesizerSnapshot {
     return {
         midiParameters: { ...this.midiParameters },
+        lockedMIDIParameters: { ...this.lockedMIDIParameters },
         systemParameters: { ...this.systemParameters },
         midiChannels: this.midiChannels.map((c) => c.getSnapshot()),
         keyMappings: this.keyModifierManager.getMappings(),
