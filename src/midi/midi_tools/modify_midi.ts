@@ -1,5 +1,4 @@
 import { MIDIMessage } from "../midi_message";
-import { IndexedByteArray } from "../../utils/indexed_array";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 
@@ -9,7 +8,6 @@ import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
     type MIDIController,
     MIDIControllers,
-    type MIDIMessageType,
     MIDIMessageTypes
 } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
@@ -59,19 +57,6 @@ const delayAddressMap: DelayProcessorSnapshot = {
     feedback: 0x59,
     sendLevelToReverb: 0x5a
 };
-
-function getControllerChange(
-    channel: number,
-    cc: number,
-    value: number,
-    ticks: number
-): MIDIMessage {
-    return new MIDIMessage(
-        ticks,
-        (MIDIMessageTypes.controllerChange | (channel % 16)) as MIDIMessageType,
-        new IndexedByteArray([cc, value])
-    );
-}
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
@@ -402,11 +387,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                     if (channelChange.controllers)
                         for (const [cc, value] of channelChange.controllers) {
                             if (value === "clear") continue;
-                            const ccChange = getControllerChange(
+                            const ccChange = MIDIMessage.controllerChange(
+                                e.ticks,
                                 midiChannel,
                                 cc,
-                                value,
-                                e.ticks
+                                value
                             );
                             addEventBefore(ccChange);
                         }
@@ -417,29 +402,29 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         // 64 is the center, 96 = 50 cents up
                         const data =
                             Math.floor(channelStatus.fineTune * 81.92) + 8192;
-                        const rpnCoarse = getControllerChange(
+                        const rpnCoarse = MIDIMessage.controllerChange(
+                            e.ticks,
                             midiChannel,
                             MIDIControllers.registeredParameterMSB,
-                            0,
-                            e.ticks
+                            0
                         );
-                        const rpnFine = getControllerChange(
+                        const rpnFine = MIDIMessage.controllerChange(
+                            e.ticks,
                             midiChannel,
                             MIDIControllers.registeredParameterLSB,
-                            1,
-                            e.ticks
+                            1
                         );
-                        const dataEntryCoarse = getControllerChange(
+                        const dataEntryCoarse = MIDIMessage.controllerChange(
+                            e.ticks,
                             channel,
                             MIDIControllers.dataEntryMSB,
-                            (data >> 7) & 0x7f,
-                            e.ticks
+                            (data >> 7) & 0x7f
                         );
-                        const dataEntryFine = getControllerChange(
+                        const dataEntryFine = MIDIMessage.controllerChange(
+                            e.ticks,
                             midiChannel,
                             MIDIControllers.dataEntryLSB,
-                            data & 0x7f,
-                            e.ticks
+                            data & 0x7f
                         );
                         addEventBefore(dataEntryFine);
                         addEventBefore(dataEntryCoarse);
@@ -467,22 +452,21 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         const desiredProgram = patch.program;
 
                         // Add program change
-                        const programChange = new MIDIMessage(
+                        const programChange = MIDIMessage.programChange(
                             e.ticks,
-                            (MIDIMessageTypes.programChange |
-                                midiChannel) as MIDIMessageType,
-                            new IndexedByteArray([desiredProgram])
+                            midiChannel,
+                            desiredProgram
                         );
                         addEventBefore(programChange);
 
                         const addBank = (isLSB: boolean, v: number) => {
-                            const bankChange = getControllerChange(
+                            const bankChange = MIDIMessage.controllerChange(
+                                e.ticks,
                                 midiChannel,
                                 isLSB
                                     ? MIDIControllers.bankSelectLSB
                                     : MIDIControllers.bankSelect,
-                                v,
-                                e.ticks
+                                v
                             );
                             addEventBefore(bankChange);
                         };
@@ -517,8 +501,16 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                 ConsoleColors.recognized,
                                 ConsoleColors.value
                             );
+                            const chanAddress =
+                                0x10 | MIDIUtils.channelToSyx(midiChannel);
                             addEventBefore(
-                                MIDIUtils.gsDrumChange(e.ticks, midiChannel, 1)
+                                MIDIUtils.gsMessage(
+                                    e.ticks,
+                                    40,
+                                    chanAddress,
+                                    0x15,
+                                    [1]
+                                )
                             );
                         }
                     }

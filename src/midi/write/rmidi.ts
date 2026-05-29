@@ -6,11 +6,7 @@ import { ConsoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import {
-    MIDIControllers,
-    type MIDIMessageType,
-    MIDIMessageTypes
-} from "../enums";
+import { MIDIControllers, MIDIMessageTypes } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
@@ -110,11 +106,11 @@ function correctBankOffsetInternal(
                 case "Controller Change": {
                     // Replace the system exclusive with a regular controller change
                     const t = mid.tracks[trackNum];
-                    const newEvent = new MIDIMessage(
+                    const newEvent = MIDIMessage.controllerChange(
                         e.ticks,
-                        (MIDIMessageTypes.controllerChange |
-                            syx.channel) as MIDIMessageType,
-                        new Uint8Array([syx.controller, syx.value])
+                        syx.channel,
+                        syx.controller,
+                        syx.value
                     );
                     t.events[eventIndexes[trackNum]] = newEvent;
                     e = newEvent;
@@ -129,11 +125,10 @@ function correctBankOffsetInternal(
                 case "Program Change": {
                     // Replace the system exclusive with a regular program
                     const t = mid.tracks[trackNum];
-                    const newEvent = new MIDIMessage(
+                    const newEvent = MIDIMessage.programChange(
                         e.ticks,
-                        (MIDIMessageTypes.programChange |
-                            syx.channel) as MIDIMessageType,
-                        new Uint8Array([syx.value])
+                        syx.channel,
+                        syx.value
                     );
                     t.events[eventIndexes[trackNum]] = newEvent;
                     e = newEvent;
@@ -251,11 +246,10 @@ function correctBankOffsetInternal(
             ).program;
             track.addEvents(
                 programIndex,
-                new MIDIMessage(
+                MIDIMessage.programChange(
                     programTicks,
-                    (MIDIMessageTypes.programChange |
-                        midiChannel) as MIDIMessageType,
-                    new IndexedByteArray([targetProgram])
+                    midiChannel,
+                    targetProgram
                 )
             );
             indexToAdd = programIndex;
@@ -282,11 +276,11 @@ function correctBankOffsetInternal(
         );
         track.addEvents(
             indexToAdd,
-            new MIDIMessage(
+            MIDIMessage.controllerChange(
                 ticks,
-                (MIDIMessageTypes.controllerChange |
-                    midiChannel) as MIDIMessageType,
-                new IndexedByteArray([MIDIControllers.bankSelect, targetBank])
+                midiChannel,
+                MIDIControllers.bankSelect,
+                targetBank
             )
         );
     }

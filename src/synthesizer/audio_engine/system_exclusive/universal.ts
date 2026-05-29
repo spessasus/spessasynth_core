@@ -45,7 +45,9 @@ export function universalSystemExclusive(
                 case 0x01: {
                     // Master volume
                     const vol = (syx[5] << 7) | syx[4];
-                    this.setMIDIParameter("gain", vol / 16_383);
+                    // It corresponds to CC volume, so volume is squared.
+                    const gain = Math.pow(vol / 16_383, 2);
+                    this.setMIDIParameter("gain", gain);
                     SpessaLog.gmInfo("Master Volume", vol);
                     break;
                 }
@@ -63,7 +65,7 @@ export function universalSystemExclusive(
 
                 case 0x03: {
                     // Fine-tuning
-                    const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
+                    const tuningValue = ((syx[5] << 7) | syx[4]) - 8192;
                     const cents = tuningValue / 81.92; // [-100;+99] cents range
                     this.setMIDIParameter("fineTune", cents);
                     SpessaLog.gmInfo("Master Fine Tuning", cents, "cents");
