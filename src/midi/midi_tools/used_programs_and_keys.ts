@@ -168,7 +168,10 @@ export function getUsedProgramsAndKeys(
                             event
                         );
                         // RPN#02 Coarse Tune is key-shift according to GM2 section 3.4.3
-                        if (analyzed?.type === "Key Shift")
+                        if (
+                            analyzed?.type === "Channel MIDI Param" &&
+                            analyzed.parameter === "keyShift"
+                        )
                             // Drum channels ignore key shift
                             // Testcase: th07_19_user_gm.mid
                             ch.keyShift = ch.isDrum ? 0 : analyzed.value;
@@ -230,54 +233,26 @@ export function getUsedProgramsAndKeys(
                             break;
                         }
 
-                        // Check for XG
-                        case "XG Reset": {
-                            reset("xg");
-                            SpessaLog.info(
-                                "%cXG on detected!",
-                                ConsoleColors.recognized
-                            );
+                        case "Global MIDI Param": {
+                            if (syx.parameter === "keyShift") {
+                                masterKeyShift = syx.value;
+                            } else if (syx.parameter === "system") {
+                                reset(syx.value);
+                                SpessaLog.info(
+                                    `%c${syx.value.toUpperCase()} on detected!`,
+                                    ConsoleColors.recognized
+                                );
+                            }
                             break;
                         }
 
-                        case "GM2 On": {
-                            reset("gm2");
-                            SpessaLog.info(
-                                "%cGM2 on detected!",
-                                ConsoleColors.recognized
-                            );
-                            break;
-                        }
-
-                        case "GM On": {
-                            reset("gm");
-                            SpessaLog.info(
-                                "%cGM on detected!",
-                                ConsoleColors.recognized
-                            );
-                            break;
-                        }
-
-                        case "GM Off":
-                        case "GS Reset": {
-                            reset("gs");
-                            SpessaLog.info(
-                                "%cGS on detected!",
-                                ConsoleColors.recognized
-                            );
-                            break;
-                        }
-
-                        case "Master Key Shift": {
-                            masterKeyShift = syx.value;
-                            break;
-                        }
-
-                        case "Key Shift": {
-                            const ch = channels[syx.channel];
-                            // Drum channels ignore key shift
-                            // Testcase: th07_19_user_gm.mid
-                            ch.keyShift = ch.isDrum ? 0 : syx.value;
+                        case "Channel MIDI Param": {
+                            if (syx.parameter === "keyShift") {
+                                const ch = channels[syx.channel];
+                                // Drum channels ignore key shift
+                                // Testcase: th07_19_user_gm.mid
+                                ch.keyShift = ch.isDrum ? 0 : syx.value;
+                            }
                             break;
                         }
 

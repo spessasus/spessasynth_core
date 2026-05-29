@@ -93,31 +93,18 @@ function correctBankOffsetInternal(
                     return;
                 }
 
-                // Check for XG
-                case "XG Reset": {
-                    system = "xg";
-                    return;
-                }
-
-                case "GS Reset": {
-                    system = "gs";
-                    return;
-                }
-
-                case "GM Off":
-                case "GM On": {
-                    // We do not want gm1
-                    system = "gm";
-                    unwantedSystems.push({
-                        tNum: trackNum,
-                        e: e
-                    });
-                    return;
-                }
-
-                case "GM2 On": {
-                    system = "gm2";
-                    return;
+                case "Global MIDI Param": {
+                    if (syx.parameter === "system") {
+                        system = syx.value;
+                        if (syx.value === "gm") {
+                            // We do not want gm1
+                            unwantedSystems.push({
+                                tNum: trackNum,
+                                e: e
+                            });
+                        }
+                    }
+                    break;
                 }
 
                 case "Controller Change": {

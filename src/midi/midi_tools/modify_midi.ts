@@ -629,8 +629,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                     break;
                                 }
 
-                                case "Fine Tune": {
-                                    if (channelStatus.fineTune) {
+                                case "Channel MIDI Param": {
+                                    if (
+                                        data.parameter === "keyShift" &&
+                                        channelStatus.fineTune
+                                    ) {
                                         if (channelStatus.isFirstNoteOn) {
                                             // No note-on yet. Then use it as relative!
                                             const newTune =
@@ -650,7 +653,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                         // We're tuning it ourselves, BEGONE!
                                         deleteParameter(channel);
                                     }
-                                    return;
+                                    break;
                                 }
                             }
 
@@ -679,86 +682,6 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                 const syx = MIDIUtils.analyzeSysEx(e.data);
                 switch (syx.type) {
                     default: {
-                        return;
-                    }
-
-                    case "XG Reset": {
-                        SpessaLog.info(
-                            "%cXG system on detected",
-                            ConsoleColors.info
-                        );
-
-                        system = "xg";
-                        addedGs = true; // Flag as true so gs won't get added
-                        resetTrack = trackNum;
-                        resetIndex = index;
-                        // Reset NRPN (accuracy + prevent deletion before reset)
-                        for (const ch of channelStatuses) {
-                            ch.param.reset();
-                            ch.clearedParams = {
-                                pLSB: true,
-                                pMSB: true,
-                                data: true
-                            };
-                        }
-                        return;
-                    }
-
-                    case "GM2 On": {
-                        SpessaLog.info(
-                            "%cGM2 system on detected",
-                            ConsoleColors.info
-                        );
-
-                        system = "gm2";
-                        addedGs = true; // Flag as true so gs won't get added
-                        resetTrack = trackNum;
-                        resetIndex = index;
-                        // Reset NRPN (accuracy + prevent deletion before reset)
-                        for (const ch of channelStatuses) {
-                            ch.param.reset();
-                            ch.clearedParams = {
-                                pLSB: true,
-                                pMSB: true,
-                                data: true
-                            };
-                        }
-                        return;
-                    }
-
-                    case "GS Reset": {
-                        // Check for GS on
-                        // That's a GS on, we're done here
-                        SpessaLog.info(
-                            "%cGS on detected!",
-                            ConsoleColors.recognized
-                        );
-
-                        addedGs = true;
-                        resetTrack = trackNum;
-                        resetIndex = index;
-                        // Reset NRPN (accuracy + prevent deletion before reset)
-                        for (const ch of channelStatuses) {
-                            ch.param.reset();
-                            ch.clearedParams = {
-                                pLSB: true,
-                                pMSB: true,
-                                data: true
-                            };
-                        }
-                        return;
-                    }
-
-                    case "GM Off":
-                    case "GM On": {
-                        // Check for GM on
-                        // That's a GM1 system change, remove it!
-                        SpessaLog.info(
-                            "%cGM on detected, removing!",
-                            ConsoleColors.info
-                        );
-                        deleteThisEvent();
-                        addedGs = false;
                         return;
                     }
 
@@ -805,25 +728,114 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         return;
                     }
 
-                    case "Fine Tune": {
-                        const syxChannel = channelChanges.get(
-                            syx.channel + portOffset
-                        );
-                        const syxStatus =
-                            channelStatuses[syx.channel + portOffset];
-                        if (syxStatus.isFirstNoteOn && syxChannel) {
-                            // No note-on yet. Then use it as relative!
-                            const newTune = syxStatus.fineTune + syx.value;
-                            syxStatus.keyShift += Math.trunc(newTune / 100);
-                            syxStatus.fineTune = newTune % 100;
-                            SpessaLog.info(
-                                `%cFine tuning already present on ${syx.channel + portOffset}, ` +
-                                    `new relative tune: %c${newTune} cents`,
-                                ConsoleColors.info,
-                                ConsoleColors.recognized
-                            );
-                            deleteThisEvent();
+                    case "Global MIDI Param": {
+                        if (syx.parameter === "system") {
+                            switch (syx.value) {
+                                case "xg": {
+                                    SpessaLog.info(
+                                        "%cXG system on detected",
+                                        ConsoleColors.info
+                                    );
+
+                                    system = "xg";
+                                    addedGs = true; // Flag as true so gs won't get added
+                                    resetTrack = trackNum;
+                                    resetIndex = index;
+                                    // Reset NRPN (accuracy + prevent deletion before reset)
+                                    for (const ch of channelStatuses) {
+                                        ch.param.reset();
+                                        ch.clearedParams = {
+                                            pLSB: true,
+                                            pMSB: true,
+                                            data: true
+                                        };
+                                    }
+                                    return;
+                                }
+
+                                case "gm2": {
+                                    SpessaLog.info(
+                                        "%cGM2 system on detected",
+                                        ConsoleColors.info
+                                    );
+
+                                    system = "gm2";
+                                    addedGs = true; // Flag as true so gs won't get added
+                                    resetTrack = trackNum;
+                                    resetIndex = index;
+                                    // Reset NRPN (accuracy + prevent deletion before reset)
+                                    for (const ch of channelStatuses) {
+                                        ch.param.reset();
+                                        ch.clearedParams = {
+                                            pLSB: true,
+                                            pMSB: true,
+                                            data: true
+                                        };
+                                    }
+                                    return;
+                                }
+
+                                case "gs": {
+                                    // Check for GS on
+                                    // That's a GS on, we're done here
+                                    SpessaLog.info(
+                                        "%cGS on detected!",
+                                        ConsoleColors.recognized
+                                    );
+
+                                    addedGs = true;
+                                    resetTrack = trackNum;
+                                    resetIndex = index;
+                                    // Reset NRPN (accuracy + prevent deletion before reset)
+                                    for (const ch of channelStatuses) {
+                                        ch.param.reset();
+                                        ch.clearedParams = {
+                                            pLSB: true,
+                                            pMSB: true,
+                                            data: true
+                                        };
+                                    }
+                                    return;
+                                }
+                                case "gm": {
+                                    // Check for GM on
+                                    // That's a GM1 system change, remove it!
+                                    SpessaLog.info(
+                                        "%cGM on detected, removing!",
+                                        ConsoleColors.info
+                                    );
+                                    deleteThisEvent();
+                                    addedGs = false;
+                                    return;
+                                }
+                            }
                         }
+                        break;
+                    }
+
+                    case "Channel MIDI Param": {
+                        if (syx.parameter === "fineTune") {
+                            const syxChannel = channelChanges.get(
+                                syx.channel + portOffset
+                            );
+                            const syxStatus =
+                                channelStatuses[syx.channel + portOffset];
+                            if (syxStatus.isFirstNoteOn && syxChannel) {
+                                // No note-on yet. Then use it as relative!
+                                const newTune = syxStatus.fineTune + syx.value;
+                                syxStatus.keyShift += Math.trunc(newTune / 100);
+                                syxStatus.fineTune = newTune % 100;
+                                SpessaLog.info(
+                                    `%cFine tuning already present on ${syx.channel + portOffset}, ` +
+                                        `new relative tune: %c${newTune} cents`,
+                                    ConsoleColors.info,
+                                    ConsoleColors.recognized
+                                );
+                                deleteThisEvent();
+                            }
+                            break;
+                        }
+
                         break;
                     }
 

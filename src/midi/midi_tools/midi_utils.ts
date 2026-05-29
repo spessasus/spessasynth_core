@@ -9,14 +9,28 @@ import {
 } from "../enums";
 
 import type { SysExAcceptedArray } from "../types";
+import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
+import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+
+type GlobalMIDIParameterMessage = {
+    [P in keyof GlobalMIDIParameter]: {
+        type: "Global MIDI Param";
+        parameter: P;
+        value: GlobalMIDIParameter[P];
+    };
+}[keyof GlobalMIDIParameter];
+
+type ChannelMIDIParameterMessage = {
+    [P in keyof ChannelMIDIParameter]: {
+        type: "Channel MIDI Param";
+        parameter: P;
+        value: ChannelMIDIParameter[P];
+        channel: number;
+    };
+}[keyof ChannelMIDIParameter];
 
 export type AnalyzedMIDIMessage =
     | { type: "Other" }
-    | { type: "XG Reset" }
-    | { type: "GM On" }
-    | { type: "GM Off" }
-    | { type: "GM2 On" }
-    | { type: "GS Reset" }
     | { type: "Reverb Param" }
     | { type: "Chorus Param" }
     | { type: "Delay Param" }
@@ -31,12 +45,8 @@ export type AnalyzedMIDIMessage =
           value: number;
           channel: number;
       }
-    | { type: "Master Key Shift"; value: number }
-    | { type: "Key Shift"; value: number; channel: number }
-    // Value in cents
-    | { type: "Master Fine Tune"; value: number }
-    // Value in cents
-    | { type: "Fine Tune"; value: number; channel: number };
+    | GlobalMIDIParameterMessage
+    | ChannelMIDIParameterMessage;
 
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedMIDIMessage;
 
@@ -95,16 +105,18 @@ export class MIDIUtils {
 
             case RegisteredParameterTypes.fineTuning: {
                 return {
-                    type: "Fine Tune",
+                    type: "Channel MIDI Param",
                     channel,
+                    parameter: "fineTune",
                     value: (value - 8192) / 81.92
                 };
             }
 
             case RegisteredParameterTypes.coarseTuning: {
                 return {
-                    type: "Key Shift",
+                    type: "Channel MIDI Param",
                     channel,
+                    parameter: "keyShift",
                     value: (value >> 7) - 64
                 };
             }
@@ -339,7 +351,8 @@ export class MIDIUtils {
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
                     const cents = tuningValue / 81.92; // [-100;+99] cents range
                     return {
-                        type: "Master Fine Tune",
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
                         value: cents
                     };
                 }
@@ -347,7 +360,8 @@ export class MIDIUtils {
                 case 0x04: {
                     // Master Coarse Tuning
                     return {
-                        type: "Master Key Shift",
+                        type: "Global MIDI Param",
+                        parameter: "keyShift",
                         value: syx[5] - 64
                     };
                 }
@@ -413,15 +427,27 @@ export class MIDIUtils {
             }
 
             case 0x01: {
-                return { type: "GM On" };
+                return {
+                    type: "Global MIDI Param",
+                    parameter: "system",
+                    value: "gm"
+                };
             }
 
             case 0x02: {
-                return { type: "GM Off" };
+                return {
+                    type: "Global MIDI Param",
+                    parameter: "system",
+                    value: "gm"
+                };
             }
 
             case 0x03: {
-                return { type: "GM2 On" };
+                return {
+                    type: "Global MIDI Param",
+                    parameter: "system",
+                    value: "gm2"
+                };
             }
         }
     }
@@ -450,21 +476,30 @@ export class MIDIUtils {
                         (syx[9] & 15);
                     const cents = (tune - 1024) / 10;
                     return {
-                        type: "Master Fine Tune",
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
                         value: cents
                     };
                 }
 
                 case 0x06: {
                     // TRANSPOSE
-                    return { type: "Master Key Shift", value: data - 64 };
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "keyShift",
+                        value: data - 64
+                    };
                 }
 
                 // XG SYSTEM ON
                 case 0x7e:
                 // ALL PARAMETER RESET
                 case 0x7f: {
-                    return { type: "XG Reset" };
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "system",
+                        value: "xg"
+                    };
                 }
             }
         }
@@ -543,7 +578,12 @@ export class MIDIUtils {
 
                 case 0x08: {
                     // Note shift
-                    return { type: "Key Shift", channel, value: data - 64 };
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "keyShift",
+                        value: data - 64
+                    };
                 }
 
                 case 0x0b: {
@@ -702,12 +742,20 @@ export class MIDIUtils {
                     switch (data) {
                         case 0x00: {
                             // GS Reset/Mode-1
-                            return { type: "GS Reset" };
+                            return {
+                                type: "Global MIDI Param",
+                                parameter: "system",
+                                value: "gs"
+                            };
                         }
 
                         case 0x7f: {
                             // GS Off, default to gm
-                            return { type: "GM On" };
+                            return {
+                                type: "Global MIDI Param",
+                                parameter: "system",
+                                value: "gm"
+                            };
                         }
                     }
                     return OTHER;
@@ -718,7 +766,11 @@ export class MIDIUtils {
                     const tune =
                         (data << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
                     const cents = (tune - 1024) / 10;
-                    return { type: "Master Fine Tune", value: cents };
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
+                        value: cents
+                    };
                 }
             }
         }
@@ -727,7 +779,11 @@ export class MIDIUtils {
         if (a1 !== 0x40) return OTHER;
 
         if (a2 === 0x00 && a3 === 0x05)
-            return { type: "Master Key Shift", value: data - 64 };
+            return {
+                type: "Global MIDI Param",
+                parameter: "keyShift",
+                value: data - 64
+            };
 
         // Effects
         if (a2 === 0x01) {
@@ -780,8 +836,9 @@ export class MIDIUtils {
 
                 case 0x16: {
                     return {
-                        type: "Key Shift",
+                        type: "Channel MIDI Param",
                         channel,
+                        parameter: "keyShift",
                         value: data - 64
                     };
                 }
@@ -832,8 +889,9 @@ export class MIDIUtils {
                     const tune = (data << 7) | syx[8];
                     const tuneCents = (tune - 8192) / 81.92;
                     return {
-                        type: "Fine Tune",
+                        type: "Channel MIDI Param",
                         channel,
+                        parameter: "fineTune",
                         value: tuneCents
                     };
                 }
