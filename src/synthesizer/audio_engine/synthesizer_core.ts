@@ -846,8 +846,7 @@ export class SynthesizerCore {
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {
         return {
             type: this.insertionProcessor.type,
-            params: this.insertionParams.slice(),
-            channels: this.midiChannels.map((c) => c.midiParameters.efxAssign)
+            params: this.insertionParams.slice()
         };
     }
 

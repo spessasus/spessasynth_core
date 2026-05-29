@@ -107,6 +107,10 @@ This effect is modified using MIDI system exclusive messages, so
 the recommended use case would be setting
 the insertion effect type and parameters then locking it to prevent changes by MIDI files.
 
+!!! Warning
+
+    To lock the channel insertion assign, lock the [`efxAssign` MIDI Parameter](midi-channel/channel-parameters.md#efxassign) instead.
+
 ### drumLock
 
 `boolean`

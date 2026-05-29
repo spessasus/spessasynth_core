@@ -82,15 +82,13 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
             );
         }
     }
-    // Reset insertion
-    if (!this.synthCore.systemParameters.insertionEffectLock)
-        this.setMIDIParameter("efxAssign", false);
 
     // Reset MIDI parameters (locked will remain in place)
     this.setMIDIParameter("pressure", 0);
     this.setMIDIParameter("pitchWheelRange", 2);
     this.setMIDIParameter("modulationDepth", 50);
     this.setMIDIParameter("rxChannel", this.channel);
+    this.setMIDIParameter("efxAssign", false);
     this.setMIDIParameter("polyMode", true);
     this.setMIDIParameter("keyShift", 0);
     this.setMIDIParameter("fineTune", 0);

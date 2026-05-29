@@ -302,7 +302,7 @@ function correctBankOffsetInternal(
         if (mid.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName)
             index++;
 
-        mid.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
+        mid.tracks[0].addEvents(index, MIDIUtils.reset(0, "gs"));
     }
     mid.flush();
 }

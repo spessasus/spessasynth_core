@@ -78,10 +78,12 @@ export interface GlobalSystemParameter {
     delayLock: boolean;
 
     /**
-     * If the synthesizer should prevent changing the insertion effect type and parameters (including enabling/disabling it on channels).
+     * If the synthesizer should prevent changing the insertion effect type and parameters.
      * This effect is modified using MIDI system exclusive messages, so
      * the recommended use case would be setting
      * the insertion effect type and parameters then locking it to prevent changes by MIDI files.
+     *
+     * To lock the channel insertion assign, lock the `efxAssign` parameter instead.
      */
     insertionEffectLock: boolean;
 

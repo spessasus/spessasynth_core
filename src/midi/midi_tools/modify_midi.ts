@@ -878,7 +878,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         ) {
             index++;
         }
-        midi.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
+        midi.tracks[0].addEvents(index, MIDIUtils.reset(0, "gs"));
         resetTrack = 0;
         resetIndex = index;
         SpessaLog.info("%cGS on not detected. Adding it.", ConsoleColors.info);
@@ -973,22 +973,6 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
 
     if (insertionParams && insertionParams !== "clear") {
         const p = insertionParams;
-
-        for (let channel = 0; channel < p.channels.length; channel++) {
-            if (p.channels[channel]) {
-                targetTrack.addEvents(
-                    targetTicks,
-                    MIDIUtils.gsMessage(
-                        targetTicks,
-                        0x40,
-                        0x40 | MIDIUtils.channelToSyx(channel),
-                        0x22,
-                        [1]
-                    )
-                );
-            }
-        }
-
         // Params and sends
         for (let param = 0; param < p.params.length; param++) {
             const value = p.params[param];

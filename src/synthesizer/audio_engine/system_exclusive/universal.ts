@@ -45,7 +45,7 @@ export function universalSystemExclusive(
                 case 0x01: {
                     // Master volume
                     const vol = (syx[5] << 7) | syx[4];
-                    this.setMIDIParameter("gain", vol / 16_384);
+                    this.setMIDIParameter("gain", vol / 16_383);
                     SpessaLog.gmInfo("Master Volume", vol);
                     break;
                 }

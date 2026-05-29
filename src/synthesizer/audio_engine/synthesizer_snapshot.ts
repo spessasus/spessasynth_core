@@ -58,25 +58,14 @@ export function applySnapshot(
     // Restore insertion
     const is = snapshot.insertionProcessor;
     this.systemExclusive(
-        MIDIUtils.gsData(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
+        MIDIUtils.gs(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
     );
 
     for (let i = 0; i < is.params.length; i++) {
         if (is.params[i] !== 255)
             this.systemExclusive(
-                MIDIUtils.gsData(0x40, 0x03, 3 + i, [is.params[i]])
+                MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]])
             );
-    }
-
-    for (let channel = 0; channel < is.channels.length; channel++) {
-        this.systemExclusive(
-            MIDIUtils.gsData(
-                0x40,
-                0x40 | MIDIUtils.channelToSyx(channel),
-                0x22,
-                [is.channels[channel] ? 1 : 0]
-            )
-        );
     }
 
     // Restore MIDI parameters

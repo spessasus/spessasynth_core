@@ -1076,11 +1076,6 @@ export function rolandSystemExclusive(
                                 }
 
                                 case 0x22: {
-                                    if (
-                                        this.systemParameters
-                                            .insertionEffectLock
-                                    )
-                                        return;
                                     // EFX assign
                                     const efx = data === 1;
                                     ch.setMIDIParameter("efxAssign", efx);

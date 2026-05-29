@@ -11,6 +11,7 @@ import {
 import type { SysExAcceptedArray } from "../types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { MIDISystem } from "../../soundbank/types";
 
 type GlobalMIDIParameterMessage = {
     [P in keyof GlobalMIDIParameter]: {
@@ -282,7 +283,7 @@ export class MIDIUtils {
      * @param a3 Address 3
      * @param data Data, can be multiple bytes.
      */
-    public static gsData(a1: number, a2: number, a3: number, data: number[]) {
+    public static gs(a1: number, a2: number, a3: number, data: number[]) {
         // Calculate checksum
         // SC 8850 manual, page 245
         const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
@@ -302,6 +303,19 @@ export class MIDIUtils {
     }
 
     /**
+     * Turns raw SysEx bytes (without the 0xF0 status byte) into a `MIDIMessage`.
+     * @param ticks The tick time of the message.
+     * @param data The data for the message, without the 0xF0 status byte.
+     */
+    public static syx(ticks: number, data: number[]) {
+        return new MIDIMessage(
+            ticks,
+            MIDIMessageTypes.systemExclusive,
+            new Uint8Array(data)
+        );
+    }
+
+    /**
      * Gets a GS System Exclusive MIDI message.
      * @param ticks The tick time of the message.
      * @param a1 Address 1
@@ -316,11 +330,45 @@ export class MIDIUtils {
         a3: number,
         data: number[]
     ) {
-        return new MIDIMessage(
-            ticks,
-            MIDIMessageTypes.systemExclusive,
-            new Uint8Array(this.gsData(a1, a2, a3, data))
-        );
+        return this.syx(ticks, this.gs(a1, a2, a3, data));
+    }
+
+    /**
+     * Gets raw XG System Exclusive message bytes, without the 0xF0 status byte.
+     * @param a1 Address 1
+     * @param a2 Address 2
+     * @param a3 Address 3
+     * @param data Data, can be multiple bytes.
+     */
+    public static xg(a1: number, a2: number, a3: number, data: number[]) {
+        return [
+            0x43, // Yamaha
+            0x10, // Device ID (defaults to 16 on Yamaha)
+            0x4c, // XG
+            a1,
+            a2,
+            a3,
+            ...data,
+            0xf7 // End of exclusive
+        ];
+    }
+
+    /**
+     * Gets a XG System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
+     * @param a1 Address 1
+     * @param a2 Address 2
+     * @param a3 Address 3
+     * @param data Data, can be multiple bytes.
+     */
+    public static xgMessage(
+        ticks: number,
+        a1: number,
+        a2: number,
+        a3: number,
+        data: number[]
+    ) {
+        return this.syx(ticks, this.xg(a1, a2, a3, data));
     }
 
     /**
@@ -340,17 +388,52 @@ export class MIDIUtils {
     }
 
     /**
-     * Gets a GS reset message System Exclusive MIDI message.
+     * Gets a selected reset System Exclusive MIDI message.
      * @param ticks The tick time of the message.
+     * @param system The system to reset into.
      */
-    public static gsReset(ticks: number): MIDIMessage {
-        return this.gsMessage(
-            ticks,
-            0x40, // System parameter - Address
-            0x00, // Global mode parameter -  Address
-            0x7f, // MODE SET - Address
-            [0x00] // 00 = GS Reset - Data
-        );
+    public static reset(ticks: number, system: MIDISystem) {
+        switch (system) {
+            case "gs": {
+                return this.gsMessage(
+                    ticks,
+                    0x40, // System parameter - Address
+                    0x00, // Global mode parameter -  Address
+                    0x7f, // MODE SET - Address
+                    [0x00] // 00 = GS Reset - Data
+                );
+            }
+
+            case "xg": {
+                return this.xgMessage(
+                    ticks,
+                    0x00, // System parameter - Address
+                    0x00, // Global mode parameter -  Address
+                    0x7e, // XG On
+                    [0x00] // 00 = GS Reset - Data
+                );
+            }
+
+            case "gm": {
+                return this.syx(ticks, [
+                    0x7e, // Universal Non-Realtime
+                    0x7f, // Broadcast
+                    0x09, // General MIDI
+                    0x01, // General MIDI 1 On
+                    0x7f // End of exclusive
+                ]);
+            }
+
+            case "gm2": {
+                return this.syx(ticks, [
+                    0x7e, // Universal Non-Realtime
+                    0x7f, // Broadcast
+                    0x09, // General MIDI
+                    0x03, // General MIDI 2 On
+                    0x7f // End of exclusive
+                ]);
+            }
+        }
     }
 
     private static analyzeGM(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
@@ -367,7 +450,7 @@ export class MIDIUtils {
 
                 case 0x01: {
                     // Master Volume
-                    const value = (syx[5] << 7) | syx[4];
+                    const value = ((syx[5] << 7) | syx[4]) / 16_383;
                     return {
                         type: "Global MIDI Param",
                         parameter: "gain",
