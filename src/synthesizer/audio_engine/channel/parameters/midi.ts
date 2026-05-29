@@ -123,6 +123,7 @@ export interface ChannelMIDIParameter {
      * Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
      */
     velocitySenseDepth: number;
+
     /**
      * The offset to add to the input velocity.
      *
