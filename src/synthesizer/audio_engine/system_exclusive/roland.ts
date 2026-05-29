@@ -687,7 +687,10 @@ export function rolandSystemExclusive(
                                     // This is the pitch key shift sysex
                                     const keyShift = data - 64;
                                     ch.setMIDIParameter("keyShift", keyShift);
-                                    SpessaLog.gsInfo("Key Shift", keyShift);
+                                    SpessaLog.gsInfo(
+                                        `Key Shift for ${channel}`,
+                                        keyShift
+                                    );
                                     return;
                                 }
 
@@ -709,7 +712,7 @@ export function rolandSystemExclusive(
                                         data
                                     );
                                     SpessaLog.gsInfo(
-                                        "Velocity Sense Depth",
+                                        `Velocity Sense Depth for ${channel}`,
                                         data
                                     );
                                     return;
@@ -722,7 +725,7 @@ export function rolandSystemExclusive(
                                         data
                                     );
                                     SpessaLog.gsInfo(
-                                        "Velocity Sense Offset",
+                                        `Velocity Sense Offset for ${channel}`,
                                         data
                                     );
                                     return;
@@ -755,7 +758,7 @@ export function rolandSystemExclusive(
                                         data as MIDIController
                                     );
                                     SpessaLog.gsInfo(
-                                        "CC1 Controller Number",
+                                        `CC1 Controller Number for ${channel}`,
                                         data
                                     );
                                     break;
@@ -768,7 +771,7 @@ export function rolandSystemExclusive(
                                         data as MIDIController
                                     );
                                     SpessaLog.gsInfo(
-                                        "CC2 Controller Number",
+                                        `CC2 Controller Number for ${channel}`,
                                         data
                                     );
                                     break;
@@ -799,7 +802,7 @@ export function rolandSystemExclusive(
                                     const cents = (tune - 8192) / 81.92;
                                     ch.setMIDIParameter("fineTune", cents);
                                     SpessaLog.gsInfo(
-                                        "Fine tuning for ${channel}",
+                                        `Fine tuning for ${channel}`,
                                         Math.round(cents),
                                         "cents"
                                     );
@@ -899,7 +902,7 @@ export function rolandSystemExclusive(
                                     }
                                     ch.setOctaveTuning(newTuning);
                                     SpessaLog.gsInfo(
-                                        `Octave Scale Tuning on ${channel}`,
+                                        `Octave Scale Tuning for ${channel}`,
                                         newTuning.join(", ")
                                     );
                                     break;

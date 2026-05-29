@@ -154,7 +154,7 @@ export function yamahaSystemExclusive(
                 case 0x08: {
                     const keyShift = data - 64;
                     ch.setMIDIParameter("keyShift", keyShift);
-                    SpessaLog.xgInfo("Key Shift", keyShift);
+                    SpessaLog.xgInfo(`Key Shift on ${channel}`, keyShift);
                     break;
                 }
 
@@ -167,14 +167,20 @@ export function yamahaSystemExclusive(
                 // Velocity Sense Depth
                 case 0x0c: {
                     ch.setMIDIParameter("velocitySenseDepth", data);
-                    SpessaLog.xgInfo("Velocity Sense Depth", data);
+                    SpessaLog.xgInfo(
+                        `Velocity Sense Depth on ${channel}`,
+                        data
+                    );
                     return;
                 }
 
                 // Velocity Sense Offset
                 case 0x0d: {
                     ch.setMIDIParameter("velocitySenseOffset", data);
-                    SpessaLog.xgInfo("Velocity Sense Offset", data);
+                    SpessaLog.xgInfo(
+                        `Velocity Sense Offset on ${channel}`,
+                        data
+                    );
                     return;
                 }
 
