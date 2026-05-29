@@ -280,6 +280,7 @@ Resets the synthesizer and switches it to GS mode. (GS reset)
 ##### Patch Name
 
 Treated as recognized, decoded name is logged to console if verbose output is enabled.
+A `displayMessage` event will be emitted with the System Exclusive data.
 
 ##### Reverb Parameters
 

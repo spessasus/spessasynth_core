@@ -86,7 +86,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     if (!this.synthCore.systemParameters.insertionEffectLock)
         this.setMIDIParameter("efxAssign", false);
 
-    // Reset MIDI parameters
+    // Reset MIDI parameters (locked will remain in place)
     this.setMIDIParameter("pressure", 0);
     this.setMIDIParameter("pitchWheelRange", 2);
     this.setMIDIParameter("modulationDepth", 50);

@@ -66,6 +66,7 @@ export function rolandSystemExclusive(
                                 case 0x04: {
                                     // Roland GS master volume
                                     SpessaLog.gsInfo("Master Volume", data);
+                                    this.setMIDIParameter("gain", data / 127);
                                     break;
                                 }
 
@@ -89,7 +90,8 @@ export function rolandSystemExclusive(
                                     SpessaLog.gsInfo("Master Pan", data);
                                     this.setMIDIParameter(
                                         "pan",
-                                        (data - 64) / 64
+                                        // 63, it ranges from 1 to 127, NOT 0 to 127!
+                                        (data - 64) / 63
                                     );
                                     break;
                                 }
@@ -150,14 +152,14 @@ export function rolandSystemExclusive(
                                 }
 
                                 case 0x00: {
-                                    // Patch name. cool!
-                                    // Not sure what to do with it, but let's log it!
+                                    // Patch name
                                     const patchName = readBinaryString(
                                         syx,
                                         16,
                                         7
                                     );
                                     SpessaLog.gsInfo("Patch name", patchName);
+                                    this.callEvent("displayMessage", [...syx]);
                                     break;
                                 }
                                 // Reverb

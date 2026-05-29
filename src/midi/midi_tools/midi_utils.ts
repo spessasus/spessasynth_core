@@ -103,6 +103,15 @@ export class MIDIUtils {
                 return OTHER;
             }
 
+            case RegisteredParameterTypes.pitchWheelRange: {
+                return {
+                    type: "Channel MIDI Param",
+                    channel,
+                    parameter: "pitchWheelRange",
+                    value: value / 128
+                };
+            }
+
             case RegisteredParameterTypes.fineTuning: {
                 return {
                     type: "Channel MIDI Param",
@@ -118,6 +127,16 @@ export class MIDIUtils {
                     channel,
                     parameter: "keyShift",
                     value: (value >> 7) - 64
+                };
+            }
+
+            case RegisteredParameterTypes.modulationDepth: {
+                return {
+                    type: "Channel MIDI Param",
+                    channel,
+                    parameter: "modulationDepth",
+                    // Cents, so data / 128 * 100 is data / 1.28
+                    value: value / 1.28
                 };
             }
         }
@@ -346,14 +365,37 @@ export class MIDIUtils {
                     return OTHER;
                 }
 
+                case 0x01: {
+                    // Master Volume
+                    const value = (syx[5] << 7) | syx[4];
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "gain",
+                        value
+                    };
+                }
+
+                case 0x02: {
+                    // Master Balance
+                    // Complete MIDI 1.0 Detailed Specification page 57
+                    // This is not specified in GM2 spec for some reason
+                    const balance = (syx[5] << 7) | syx[4];
+                    const value = (balance - 8192) / 8192;
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "pan",
+                        value
+                    };
+                }
+
                 case 0x03: {
                     // Master Fine-Tuning
                     const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
-                    const cents = tuningValue / 81.92; // [-100;+99] cents range
+                    const value = tuningValue / 81.92; // [-100;+99] cents range
                     return {
                         type: "Global MIDI Param",
                         parameter: "fineTune",
-                        value: cents
+                        value
                     };
                 }
 
@@ -737,6 +779,46 @@ export class MIDIUtils {
             a2 === 0x00 // System Parameter
         ) {
             switch (a3) {
+                // Master Tune
+                case 0x00: {
+                    const tune =
+                        (data << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
+                    const cents = (tune - 1024) / 10;
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
+                        value: cents
+                    };
+                }
+
+                // Master Volume
+                case 0x04: {
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "gain",
+                        value: data / 127
+                    };
+                }
+
+                // Master Key-Shift
+                case 0x05: {
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "keyShift",
+                        value: data - 64
+                    };
+                }
+
+                // Master Pan
+                case 0x06: {
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "pan",
+                        // 63, it ranges from 1 to 127, NOT 0 to 127!
+                        value: (data - 64) / 63
+                    };
+                }
+
                 // MODE SET
                 case 0x7f: {
                     switch (data) {
@@ -759,18 +841,6 @@ export class MIDIUtils {
                         }
                     }
                     return OTHER;
-                }
-
-                // Master Tune
-                case 0x00: {
-                    const tune =
-                        (data << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
-                    const cents = (tune - 1024) / 10;
-                    return {
-                        type: "Global MIDI Param",
-                        parameter: "fineTune",
-                        value: cents
-                    };
                 }
             }
         }
@@ -816,13 +886,20 @@ export class MIDIUtils {
                 case 0x13: {
                     // Mono/poly
                     return {
-                        type: "Controller Change",
+                        type: "Channel MIDI Param",
                         channel,
-                        controller:
-                            data === 1
-                                ? MIDIControllers.polyModeOn
-                                : MIDIControllers.monoModeOn,
-                        value: 0
+                        parameter: "polyMode",
+                        value: data === 1
+                    };
+                }
+
+                case 0x14: {
+                    // Assign mode
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "assignMode",
+                        value: data
                     };
                 }
 
@@ -853,6 +930,26 @@ export class MIDIUtils {
                     };
                 }
 
+                case 0x1a: {
+                    // Velocity Sense Depth
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "velocitySenseDepth",
+                        value: data
+                    };
+                }
+
+                case 0x1b: {
+                    // Velocity Sense Offset
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "velocitySenseOffset",
+                        value: data
+                    };
+                }
+
                 case 0x1c: {
                     // Pan position
                     return {
@@ -860,6 +957,26 @@ export class MIDIUtils {
                         channel,
                         controller: MIDIControllers.pan,
                         value: data
+                    };
+                }
+
+                case 0x1f: {
+                    // CC1 Controller number
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "cc1",
+                        value: data as MIDIController
+                    };
+                }
+
+                case 0x20: {
+                    // CC2 Controller number
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "cc2",
+                        value: data as MIDIController
                     };
                 }
 
@@ -1008,7 +1125,12 @@ export class MIDIUtils {
                 }
 
                 case 0x22: {
-                    return { type: "Insertion Param" };
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "efxAssign",
+                        value: data === 1
+                    };
                 }
             }
         }
