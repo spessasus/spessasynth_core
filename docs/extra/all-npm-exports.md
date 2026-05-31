@@ -51,7 +51,7 @@ This is a (non-exhaustive) list of exports in the NPM package.
 
 - `ModulatorControllerSources` - an enum for modulator sources as defined in SF2 specification.
 - `ModulatorCurveTypes` - an enum for modulator curve types as defined in the SF2 specification.
-- `ModulatortransformTypes` - an enum for modulator transform types as defined in the SF2 specification. Only 2 values.
+- `ModulatorTransformTypes` - an enum for modulator transform types as defined in the SF2 specification. Only 2 values.
 - `GeneratorTypes` - an enum for all the generators in the SF2 specification, along with a few internal ones.
 - `GeneratorLimits` - an object, the key specifies the type, the value is min, max and def (default) values for this
   generator.
@@ -76,7 +76,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 ### Others
 
 - `IndexedByteArray` - an Uint8Array with an internal counter called `currentIndex`. Extensively used in the library.
-- `RIFFChunk` - a utility class for reading and writing RIFF chunks.
 - `audioToWav` - a function that converts PCM audio data to a WAV file.
 - `SpessaLog` - the log manager for `spessasynth_core`.
 - `SpessaSynthCoreUtils` - some utilities and byte functions of the library, used by `spessasynth_lib` and might be useful

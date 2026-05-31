@@ -193,7 +193,7 @@ export class BasicMIDI {
      * It supports Standard MIDI Files (SMF), RIFF MIDI (RMIDI), and Extensible Music Format (XMF).
      * It also handles embedded soundbanks in RMIDI files.
      * If the file is an RMIDI file, it will extract the embedded soundbank and store
-     * it in the `embeddedSoundFont` property of the BasicMIDI instance.
+     * it in the `embeddedSoundBank` property of the BasicMIDI instance.
      * If the file is an XMF file, it will parse the XMF structure and extract the MIDI data.
      */
     public static fromArrayBuffer(
