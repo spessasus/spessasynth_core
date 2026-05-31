@@ -67,9 +67,9 @@ export function applySnapshotInternal(
         ) as {
             [K in keyof ChannelMIDIParameter]: [K, ChannelMIDIParameter[K]];
         }[keyof ChannelMIDIParameter][]) {
-            if (!channelSnapshot.lockedMIDIParameters[parameter]) continue;
-            // Strange cast, but works?
-            midiParams[parameter] = value as never;
+            if (channelSnapshot.lockedMIDIParameters[parameter])
+                // Strange cast, but works?
+                midiParams[parameter] = value as never;
         }
 
         channels.set(channelNumber, {
@@ -92,9 +92,9 @@ export function applySnapshotInternal(
     ) as {
         [K in keyof GlobalMIDIParameter]: [K, GlobalMIDIParameter[K]];
     }[keyof GlobalMIDIParameter][]) {
-        if (!snapshot.lockedMIDIParameters[parameter]) continue;
-        // Strange cast, but works?
-        midiParams[parameter] = value as never;
+        if (snapshot.lockedMIDIParameters[parameter])
+            // Strange cast, but works?
+            midiParams[parameter] = value as never;
     }
 
     midi.modify({
