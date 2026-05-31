@@ -3,6 +3,7 @@ import {
     type MIDIController,
     MIDIControllers,
     MIDIMessageTypes,
+    type MIDISystem,
     MIDIUtils
 } from "../../src";
 import fs from "node:fs/promises";
@@ -64,11 +65,13 @@ class EFXTest {
 interface MIDITestOptions {
     startTicks: number;
     channel: number;
+    system: MIDISystem;
 }
 
 const DEFAULT_MIDI_TEST_OPTIONS: MIDITestOptions = {
     startTicks: 480,
-    channel: 0
+    channel: 0,
+    system: "gs"
 };
 
 export class MIDITestMaker extends MIDIBuilder {
@@ -88,7 +91,7 @@ export class MIDITestMaker extends MIDIBuilder {
         this.ticks = o.startTicks;
         this.testName = name;
         this.fileName = name.replaceAll(" ", "_").toLowerCase();
-        this.tracks[0].addEvents(0, MIDIUtils.gsReset(0));
+        this.tracks[0].addEvents(0, MIDIUtils.reset(0, o.system));
     }
 
     public efx(typeMSB: number, typeLSB: number) {
@@ -176,7 +179,7 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public gs(a1: number, a2: number, a3: number, data: number[]) {
-        this.systemExclusive(this.ticks, 0, MIDIUtils.gsData(a1, a2, a3, data));
+        this.systemExclusive(this.ticks, 0, MIDIUtils.gs(a1, a2, a3, data));
         return this;
     }
 

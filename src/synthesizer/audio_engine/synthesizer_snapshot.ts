@@ -19,8 +19,9 @@ export interface SynthesizerSnapshot {
      */
     keyMappings: (KeyModifier | undefined)[][];
 
-    systemParameters: GlobalSystemParameter;
     midiParameters: GlobalMIDIParameter;
+    lockedMIDIParameters: Record<keyof GlobalMIDIParameter, boolean>;
+    systemParameters: GlobalSystemParameter;
 
     reverbProcessor: ReverbProcessorSnapshot;
     chorusProcessor: ChorusProcessorSnapshot;
@@ -57,25 +58,14 @@ export function applySnapshot(
     // Restore insertion
     const is = snapshot.insertionProcessor;
     this.systemExclusive(
-        MIDIUtils.gsData(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
+        MIDIUtils.gs(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
     );
 
     for (let i = 0; i < is.params.length; i++) {
         if (is.params[i] !== 255)
             this.systemExclusive(
-                MIDIUtils.gsData(0x40, 0x03, 3 + i, [is.params[i]])
+                MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]])
             );
-    }
-
-    for (let channel = 0; channel < is.channels.length; channel++) {
-        this.systemExclusive(
-            MIDIUtils.gsData(
-                0x40,
-                0x40 | MIDIUtils.channelToSyx(channel),
-                0x22,
-                [is.channels[channel] ? 1 : 0]
-            )
-        );
     }
 
     // Restore MIDI parameters
@@ -87,6 +77,11 @@ export function applySnapshot(
         snapshot.midiParameters
     ) as MIDIParameterPair<keyof GlobalMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
+    }
+    for (const [parameter, isLocked] of Object.entries(
+        snapshot.lockedMIDIParameters
+    ) as [keyof GlobalMIDIParameter, boolean][]) {
+        this.lockMIDIParameter(parameter, isLocked);
     }
 
     // Restore system parameters last
@@ -106,6 +101,7 @@ export function getSynthesizerSnapshot(
 ): SynthesizerSnapshot {
     return {
         midiParameters: { ...this.midiParameters },
+        lockedMIDIParameters: { ...this.lockedMIDIParameters },
         systemParameters: { ...this.systemParameters },
         midiChannels: this.midiChannels.map((c) => c.getSnapshot()),
         keyMappings: this.keyModifierManager.getMappings(),

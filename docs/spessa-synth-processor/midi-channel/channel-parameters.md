@@ -103,7 +103,8 @@ Overrides the global parameter if set.
 ## MIDI
 
 MIDI Parameters can only be changed via MIDI messages,
-and not via the API. They get reset via MIDI reset messages.
+and not via the API. They get reset via MIDI reset messages,
+can be locked and have an associated event.
 
 An object called `DEFAULT_CHANNEL_MIDI_PARAMETERS` is provided with the library,
 containing the defaults.

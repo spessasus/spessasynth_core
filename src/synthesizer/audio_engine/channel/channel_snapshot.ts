@@ -30,6 +30,7 @@ export interface ChannelSnapshot {
     generators: ChannelGenerators;
 
     midiParameters: ChannelMIDIParameter;
+    lockedMIDIParameters: Record<keyof ChannelMIDIParameter, boolean>;
     systemParameters: ChannelSystemParameter;
     octaveTuning: Int8Array;
 
@@ -37,7 +38,7 @@ export interface ChannelSnapshot {
 
     drumParams: DrumParameterSnapshot[];
     drumChannel: boolean;
-    channelNumber: number;
+    channel: number;
 }
 
 export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
@@ -63,13 +64,16 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         midiParameters: {
             ...this._midiParameters
         },
+        lockedMIDIParameters: {
+            ...this.lockedMIDIParameters
+        },
         systemParameters: { ...this._systemParameters },
         octaveTuning: this.octaveTuning.slice(),
         perNotePitch: this.perNotePitch,
 
         drumParams: this.drumParams.map((d) => ({ ...d })),
         drumChannel: this._drumChannel,
-        channelNumber: this.channel
+        channel: this.channel
     };
 }
 
@@ -108,6 +112,11 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         snapshot.midiParameters
     ) as MIDIParameterPair<keyof ChannelMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
+    }
+    for (const [parameter, isLocked] of Object.entries(
+        snapshot.lockedMIDIParameters
+    ) as [keyof ChannelMIDIParameter, boolean][]) {
+        this.lockMIDIParameter(parameter, isLocked);
     }
 
     // Restore system parameters last

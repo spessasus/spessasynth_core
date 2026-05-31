@@ -193,7 +193,7 @@ export class BasicMIDI {
      * It supports Standard MIDI Files (SMF), RIFF MIDI (RMIDI), and Extensible Music Format (XMF).
      * It also handles embedded soundbanks in RMIDI files.
      * If the file is an RMIDI file, it will extract the embedded soundbank and store
-     * it in the `embeddedSoundFont` property of the BasicMIDI instance.
+     * it in the `embeddedSoundBank` property of the BasicMIDI instance.
      * If the file is an XMF file, it will parse the XMF structure and extract the MIDI data.
      */
     public static fromArrayBuffer(
@@ -452,7 +452,9 @@ export class BasicMIDI {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
-     * Note that this ignores the MIDI parameters and only applies system parameter tuning.
+     *
+     * Note that System Parameters `fineTune` and `keyShift` are passed to the relative tuning parameters of the channels.
+     * Only locked MIDI parameters and controllers are applied.
      * @param snapshot the snapshot to apply.
      */
     public applySnapshot(snapshot: SynthesizerSnapshot) {

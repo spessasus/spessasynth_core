@@ -455,7 +455,7 @@ export class SpessaSynthSequencer {
             return;
         }
         this.sendMIDISysEx(
-            MIDIUtils.gsData(
+            MIDIUtils.gs(
                 0x40, // System parameter - Address
                 0x00, // Global mode parameter -  Address
                 0x7f, // MODE SET - Address

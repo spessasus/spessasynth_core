@@ -2,43 +2,57 @@ import { MIDIMessage } from "../midi_message";
 import {
     type MIDIController,
     MIDIControllers,
-    MIDIMessageTypes,
     NonRegisteredLSB,
     NonRegisteredMSB,
     RegisteredParameterTypes
 } from "../enums";
 
 import type { SysExAcceptedArray } from "../types";
+import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
+import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { MIDISystem } from "../../soundbank/types";
 
-export type AnalyzedMIDIMessage =
+type GlobalMIDIParameterMessage = {
+    [P in keyof GlobalMIDIParameter]: {
+        type: "Global MIDI Param";
+        parameter: P;
+        value: GlobalMIDIParameter[P];
+    };
+}[keyof GlobalMIDIParameter];
+
+type ChannelMIDIParameterMessage = {
+    [P in keyof ChannelMIDIParameter]: {
+        type: "Channel MIDI Param";
+        parameter: P;
+        value: ChannelMIDIParameter[P];
+        channel: number;
+    };
+}[keyof ChannelMIDIParameter];
+
+type AnalyzedParameter =
     | { type: "Other" }
-    | { type: "XG Reset" }
-    | { type: "GM On" }
-    | { type: "GM Off" }
-    | { type: "GM2 On" }
-    | { type: "GS Reset" }
-    | { type: "Reverb Param" }
-    | { type: "Chorus Param" }
-    | { type: "Delay Param" }
-    | { type: "Variation Param" }
-    | { type: "Insertion Param" }
-    | { type: "Drums On"; channel: number; isDrum: boolean }
-    | { type: "Drum Setup" }
-    | { type: "Program Change"; channel: number; value: number }
     | {
           type: "Controller Change";
           controller: MIDIController;
           value: number;
           channel: number;
       }
-    | { type: "Master Key Shift"; value: number }
-    | { type: "Key Shift"; value: number; channel: number }
-    // Value in cents
-    | { type: "Master Fine Tune"; value: number }
-    // Value in cents
-    | { type: "Fine Tune"; value: number; channel: number };
+    | ChannelMIDIParameterMessage
+    | { type: "Drum Setup" };
 
-const OTHER = Object.freeze({ type: "Other" }) as AnalyzedMIDIMessage;
+export type AnalyzedMIDIMessage =
+    | AnalyzedParameter
+    | { type: "Reverb Param" }
+    | { type: "Chorus Param" }
+    | { type: "Delay Param" }
+    | { type: "Variation Param" }
+    | { type: "Insertion Param" }
+    | { type: "Drums On"; channel: number; isDrum: boolean }
+    | { type: "Program Change"; channel: number; value: number }
+    | { type: "Display Data" }
+    | GlobalMIDIParameterMessage;
+
+const OTHER = Object.freeze({ type: "Other" }) as AnalyzedParameter;
 
 /**
  * A general purpose class for handling MIDI messages.
@@ -87,25 +101,46 @@ export class MIDIUtils {
         channel: number,
         rpn: number,
         value: number
-    ): AnalyzedMIDIMessage {
+    ): AnalyzedParameter {
         switch (rpn) {
             default: {
                 return OTHER;
             }
 
+            case RegisteredParameterTypes.pitchWheelRange: {
+                return {
+                    type: "Channel MIDI Param",
+                    channel,
+                    parameter: "pitchWheelRange",
+                    value: value / 128
+                };
+            }
+
             case RegisteredParameterTypes.fineTuning: {
                 return {
-                    type: "Fine Tune",
+                    type: "Channel MIDI Param",
                     channel,
+                    parameter: "fineTune",
                     value: (value - 8192) / 81.92
                 };
             }
 
             case RegisteredParameterTypes.coarseTuning: {
                 return {
-                    type: "Key Shift",
+                    type: "Channel MIDI Param",
                     channel,
+                    parameter: "keyShift",
                     value: (value >> 7) - 64
+                };
+            }
+
+            case RegisteredParameterTypes.modulationDepth: {
+                return {
+                    type: "Channel MIDI Param",
+                    channel,
+                    parameter: "modulationDepth",
+                    // Cents, so data / 128 * 100 is data / 1.28
+                    value: value / 1.28
                 };
             }
         }
@@ -122,7 +157,7 @@ export class MIDIUtils {
         channel: number,
         nrpn: number,
         value: number
-    ): AnalyzedMIDIMessage {
+    ): AnalyzedParameter {
         const msb = nrpn >> 7;
         const lsb = nrpn & 0x7f;
         switch (msb) {
@@ -225,6 +260,388 @@ export class MIDIUtils {
     }
 
     /**
+     * Returns a list of MIDI events needed to set the given parameter.
+     * @param ticks The ticks for all events.
+     * @param system If the message has multiple ways of setting it,
+     * this selects the preferred way. Otherwise, it prefers Universal (GM).
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     */
+    public static setGlobalMIDIParameter<P extends keyof GlobalMIDIParameter>(
+        ticks: number,
+        system: MIDISystem,
+        parameter: P,
+        value: GlobalMIDIParameter[P]
+    ): MIDIMessage[] {
+        switch (parameter) {
+            case "system": {
+                // Well, we set the system so we don't care about the current one
+                return [MIDIUtils.reset(ticks, value as MIDISystem)];
+            }
+
+            case "keyShift": {
+                // Three ways of setting it: GM. XG and GS.
+                switch (system) {
+                    default: {
+                        // GM2 and GM are the same here
+                        // Master Coarse Tuning
+                        return [
+                            MIDIUtils.deviceControlMessage(ticks, 0x04, [
+                                0x00, // LSB is not used for key shift
+                                (value as number) + 64
+                            ])
+                        ];
+                    }
+
+                    case "xg": {
+                        // Transpose
+                        return [
+                            MIDIUtils.xgMessage(ticks, 0x00, 0x00, 0x06, [
+                                (value as number) + 64
+                            ])
+                        ];
+                    }
+
+                    case "gs": {
+                        // Master Key-Shift
+                        return [
+                            MIDIUtils.gsMessage(ticks, 0x40, 0x00, 0x05, [
+                                (value as number) + 64
+                            ])
+                        ];
+                    }
+                }
+            }
+
+            case "fineTune": {
+                // Again, all three systems have their own way of setting it, and they are all different
+                switch (system) {
+                    default: {
+                        // GM tunes in 14-bit numbers, how nice!
+                        const tuneValue = Math.floor(
+                            (value as number) * 81.92 + 8192
+                        );
+                        return [
+                            MIDIUtils.deviceControlMessage(ticks, 0x03, [
+                                tuneValue & 0x7f, // LSB
+                                (tuneValue >> 7) & 0x7f // MSB
+                            ])
+                        ];
+                    }
+
+                    case "xg": {
+                        // -102.4 to 102.3, in 0.1 cent steps
+                        // Real range is 0 to 2047 with 1024 as center
+                        const tuneValue = Math.floor(
+                            (value as number) * 10 + 1024
+                        );
+                        return [
+                            MIDIUtils.xgMessage(ticks, 0x00, 0x00, 0x00, [
+                                (tuneValue >> 12) & 0x0f,
+                                (tuneValue >> 8) & 0x0f,
+                                (tuneValue >> 4) & 0x0f,
+                                tuneValue & 0x0f
+                            ])
+                        ];
+                    }
+
+                    case "gs": {
+                        // Gs is -100 cents to 100 cents, 0.1 cent steps
+                        // Real range is 24 to 2024, so narrower than XG
+                        const tuneValue = Math.floor(
+                            (value as number) * 10 + 1024
+                        );
+                        return [
+                            MIDIUtils.gsMessage(ticks, 0x40, 0x00, 0x00, [
+                                (tuneValue >> 12) & 0x0f,
+                                (tuneValue >> 8) & 0x0f,
+                                (tuneValue >> 4) & 0x0f,
+                                tuneValue & 0x0f
+                            ])
+                        ];
+                    }
+                }
+            }
+
+            case "gain": {
+                // All three once more!
+                switch (system) {
+                    default: {
+                        // MIDI Master Volume corresponds to CC volume, so the effective volume is squared.
+                        // Reverse that here
+                        const gainValue = Math.floor(
+                            Math.sqrt(value as number) * 16_383
+                        );
+                        return [
+                            MIDIUtils.deviceControlMessage(ticks, 0x01, [
+                                gainValue & 0x7f, // LSB
+                                (gainValue >> 7) & 0x7f // MSB
+                            ])
+                        ];
+                    }
+
+                    case "xg": {
+                        const gainValue = Math.floor((value as number) * 127);
+                        return [
+                            MIDIUtils.xgMessage(ticks, 0x00, 0x00, 0x04, [
+                                gainValue
+                            ])
+                        ];
+                    }
+
+                    case "gs": {
+                        // GS
+                        const gainValue = Math.floor((value as number) * 127);
+                        return [
+                            MIDIUtils.gsMessage(ticks, 0x40, 0x00, 0x04, [
+                                gainValue
+                            ])
+                        ];
+                    }
+                }
+            }
+
+            case "pan": {
+                // Only GM and GS, XG doesn't have a pan message?
+                switch (system) {
+                    default: {
+                        // Master Balance message
+                        const balance =
+                            Math.floor((value as number) * 8192) + 8192;
+
+                        return [
+                            MIDIUtils.deviceControlMessage(ticks, 0x02, [
+                                balance & 0x7f, // LSB
+                                (balance >> 7) & 0x7f // MSB
+                            ])
+                        ];
+                    }
+
+                    case "gs": {
+                        // 63, it ranges from 1 to 127, NOT 0 to 127!
+                        const balance = Math.floor((value as number) * 63) + 64;
+                        return [
+                            MIDIUtils.gsMessage(ticks, 0x40, 0x00, 0x06, [
+                                balance
+                            ])
+                        ];
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a list of MIDI events needed to set the given parameter.
+     * @param ticks The ticks for all events.
+     * @param channel The channel number.
+     * @param system If the message has multiple ways of setting it,
+     * this selects the preferred way. Otherwise, it prefers Universal (GM).
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     * @returns The list of `MIDIMessage`s that set the parameter.
+     */
+    public static setChannelMIDIParameter<P extends keyof ChannelMIDIParameter>(
+        ticks: number,
+        channel: number,
+        system: MIDISystem,
+        parameter: P,
+        value: ChannelMIDIParameter[P]
+    ): MIDIMessage[] {
+        channel %= 16;
+        const gsChannel = MIDIUtils.channelToSyx(channel);
+        switch (parameter) {
+            case "pressure": {
+                return [
+                    MIDIMessage.channelPressure(ticks, channel, value as number)
+                ];
+            }
+
+            case "pitchWheel": {
+                return [
+                    MIDIMessage.pitchWheel(ticks, channel, value as number)
+                ];
+            }
+
+            case "pitchWheelRange": {
+                return MIDIMessage.registeredParameter(
+                    ticks,
+                    channel,
+                    RegisteredParameterTypes.pitchWheelRange,
+                    Math.floor((value as number) * 128)
+                );
+            }
+
+            case "modulationDepth": {
+                return MIDIMessage.registeredParameter(
+                    ticks,
+                    channel,
+                    RegisteredParameterTypes.modulationDepth,
+                    // Cents, so data / 128 * 100 is data / 1.28
+                    Math.floor((value as number) * 1.28)
+                );
+            }
+
+            case "rxChannel": {
+                return system === "xg"
+                    ? [
+                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x04, [
+                              value as number
+                          ])
+                      ]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x02,
+                              [value as number]
+                          )
+                      ];
+            }
+
+            case "polyMode": {
+                return value
+                    ? [
+                          MIDIMessage.controllerChange(
+                              ticks,
+                              channel,
+                              MIDIControllers.polyModeOn,
+                              0
+                          )
+                      ]
+                    : [
+                          MIDIMessage.controllerChange(
+                              ticks,
+                              channel,
+                              MIDIControllers.monoModeOn,
+                              0
+                          )
+                      ];
+            }
+
+            case "keyShift": {
+                // Prefer RPN as it's universal
+                return MIDIMessage.registeredParameter(
+                    ticks,
+                    channel,
+                    RegisteredParameterTypes.coarseTuning,
+                    ((value as number) + 64) << 7
+                );
+            }
+
+            case "fineTune": {
+                // Prefer RPN as it's universal
+                return MIDIMessage.registeredParameter(
+                    ticks,
+                    channel,
+                    RegisteredParameterTypes.fineTuning,
+                    // Resolution is 100/8192 cents
+                    Math.floor((value as number) * 81.92 + 8192)
+                );
+            }
+
+            case "randomPan": {
+                // Only set via SysEx in both GS and XG (value 0 means random pan)
+                return system === "xg"
+                    ? [MIDIUtils.xgMessage(ticks, 0x08, channel, 0x0e, [0])]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x1c,
+                              [0]
+                          )
+                      ];
+            }
+
+            case "assignMode": {
+                // GS only
+                return [
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x14, [
+                        value as number
+                    ])
+                ];
+            }
+
+            case "efxAssign": {
+                // GS only (again)
+                return [
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x22, [
+                        value as number
+                    ])
+                ];
+            }
+
+            case "cc1": {
+                // GS only!!! (again!)
+                return [
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x1f, [
+                        value as number
+                    ])
+                ];
+            }
+
+            case "cc2": {
+                // The same as cc1, just different address
+                return [
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x20, [
+                        value as number
+                    ])
+                ];
+            }
+
+            case "drumMap": {
+                // GS only, it's called "USE FOR RHYTHM PART" there
+                return [
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x15, [
+                        value as number
+                    ])
+                ];
+            }
+
+            case "velocitySenseDepth": {
+                return system === "xg"
+                    ? [
+                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x0c, [
+                              value as number
+                          ])
+                      ]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x1a,
+                              [value as number]
+                          )
+                      ];
+            }
+
+            case "velocitySenseOffset": {
+                // Similar to above
+                return system === "xg"
+                    ? [
+                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x0d, [
+                              value as number
+                          ])
+                      ]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x1b,
+                              [value as number]
+                          )
+                      ];
+            }
+            // That's it!
+        }
+    }
+
+    /**
      * Converts GS/XG "part number" to MIDI channel number.
      * @param part The part number.
      */
@@ -251,7 +668,7 @@ export class MIDIUtils {
      * @param a3 Address 3
      * @param data Data, can be multiple bytes.
      */
-    public static gsData(a1: number, a2: number, a3: number, data: number[]) {
+    public static gs(a1: number, a2: number, a3: number, data: number[]) {
         // Calculate checksum
         // SC 8850 manual, page 245
         const sum = a1 + a2 + a3 + data.reduce((sum, cur) => sum + cur, 0);
@@ -285,41 +702,127 @@ export class MIDIUtils {
         a3: number,
         data: number[]
     ) {
-        return new MIDIMessage(
-            ticks,
-            MIDIMessageTypes.systemExclusive,
-            new Uint8Array(this.gsData(a1, a2, a3, data))
-        );
+        return MIDIMessage.systemExclusive(ticks, this.gs(a1, a2, a3, data));
     }
 
     /**
-     * Gets a GS reset message System Exclusive MIDI message.
-     * @param ticks The tick time of the message.
-     * @param channel The MIDI channel number.
-     * @param drumMap The drum map to use. 0 turns the channel into a melodic channel,
-     * while other values turn it into a drum channel.
+     * Gets raw XG System Exclusive message bytes, without the 0xF0 status byte.
+     * @param a1 Address 1
+     * @param a2 Address 2
+     * @param a3 Address 3
+     * @param data Data, can be multiple bytes.
      */
-    public static gsDrumChange(
+    public static xg(a1: number, a2: number, a3: number, data: number[]) {
+        return [
+            0x43, // Yamaha
+            0x10, // Device ID (defaults to 16 on Yamaha)
+            0x4c, // XG
+            a1,
+            a2,
+            a3,
+            ...data,
+            0xf7 // End of exclusive
+        ];
+    }
+
+    /**
+     * Gets a XG System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
+     * @param a1 Address 1
+     * @param a2 Address 2
+     * @param a3 Address 3
+     * @param data Data, can be multiple bytes.
+     */
+    public static xgMessage(
         ticks: number,
-        channel: number,
-        drumMap: 0 | 1 | 2
-    ): MIDIMessage {
-        const chanAddress = 0x10 | this.channelToSyx(channel);
-        return this.gsMessage(ticks, 40, chanAddress, 0x15, [drumMap]);
+        a1: number,
+        a2: number,
+        a3: number,
+        data: number[]
+    ) {
+        return MIDIMessage.systemExclusive(ticks, this.xg(a1, a2, a3, data));
     }
 
     /**
-     * Gets a GS reset message System Exclusive MIDI message.
-     * @param ticks The tick time of the message.
+     * Gets a raw Device Control System Exclusive message bytes, without the 0xF0 status byte.
+     * @param subID The sub ID.
+     * @param data Data, can be multiple bytes.
      */
-    public static gsReset(ticks: number): MIDIMessage {
-        return this.gsMessage(
+    public static deviceControl(subID: number, data: number[]) {
+        return [
+            0x7f, // Universal realtime
+            0x7f, // Device ID (broadcast)
+            0x04, // Device Control
+            subID,
+            ...data,
+            0xf7 // End of exclusive
+        ];
+    }
+
+    /**
+     * Gets a Device Control System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
+     * @param subID The sub ID.
+     * @param data Data, can be multiple bytes.
+     */
+    public static deviceControlMessage(
+        ticks: number,
+        subID: number,
+        data: number[]
+    ) {
+        return MIDIMessage.systemExclusive(
             ticks,
-            0x40, // System parameter - Address
-            0x00, // Global mode parameter -  Address
-            0x7f, // MODE SET - Address
-            [0x00] // 00 = GS Reset - Data
+            this.deviceControl(subID, data)
         );
+    }
+
+    /**
+     * Gets a selected reset System Exclusive MIDI message.
+     * @param ticks The tick time of the message.
+     * @param system The system to reset into.
+     */
+    public static reset(ticks: number, system: MIDISystem) {
+        switch (system) {
+            case "gs": {
+                return this.gsMessage(
+                    ticks,
+                    0x40, // System parameter - Address
+                    0x00, // Global mode parameter -  Address
+                    0x7f, // MODE SET - Address
+                    [0x00] // 00 = GS Reset - Data
+                );
+            }
+
+            case "xg": {
+                return this.xgMessage(
+                    ticks,
+                    0x00, // System parameter - Address
+                    0x00, // Global mode parameter -  Address
+                    0x7e, // XG On
+                    [0x00] // 00 = GS Reset - Data
+                );
+            }
+
+            case "gm": {
+                return MIDIMessage.systemExclusive(ticks, [
+                    0x7e, // Universal Non-Realtime
+                    0x7f, // Broadcast
+                    0x09, // General MIDI
+                    0x01, // General MIDI 1 On
+                    0x7f // End of exclusive
+                ]);
+            }
+
+            case "gm2": {
+                return MIDIMessage.systemExclusive(ticks, [
+                    0x7e, // Universal Non-Realtime
+                    0x7f, // Broadcast
+                    0x09, // General MIDI
+                    0x03, // General MIDI 2 On
+                    0x7f // End of exclusive
+                ]);
+            }
+        }
     }
 
     private static analyzeGM(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
@@ -334,20 +837,47 @@ export class MIDIUtils {
                     return OTHER;
                 }
 
+                case 0x01: {
+                    // Master Volume
+                    const value = ((syx[5] << 7) | syx[4]) / 16_383;
+                    // It corresponds to CC volume, so volume is squared.
+                    const gain = Math.pow(value, 2);
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "gain",
+                        value: gain
+                    };
+                }
+
+                case 0x02: {
+                    // Master Balance
+                    // Complete MIDI 1.0 Detailed Specification page 57
+                    // This is not specified in GM2 spec for some reason
+                    const balance = (syx[5] << 7) | syx[4];
+                    const value = (balance - 8192) / 8192;
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "pan",
+                        value
+                    };
+                }
+
                 case 0x03: {
                     // Master Fine-Tuning
-                    const tuningValue = ((syx[5] << 7) | syx[6]) - 8192;
-                    const cents = tuningValue / 81.92; // [-100;+99] cents range
+                    const tuningValue = ((syx[5] << 7) | syx[4]) - 8192;
+                    const value = tuningValue / 81.92; // [-100;+99] cents range
                     return {
-                        type: "Master Fine Tune",
-                        value: cents
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
+                        value
                     };
                 }
 
                 case 0x04: {
                     // Master Coarse Tuning
                     return {
-                        type: "Master Key Shift",
+                        type: "Global MIDI Param",
+                        parameter: "keyShift",
                         value: syx[5] - 64
                     };
                 }
@@ -413,15 +943,27 @@ export class MIDIUtils {
             }
 
             case 0x01: {
-                return { type: "GM On" };
+                return {
+                    type: "Global MIDI Param",
+                    parameter: "system",
+                    value: "gm"
+                };
             }
 
             case 0x02: {
-                return { type: "GM Off" };
+                return {
+                    type: "Global MIDI Param",
+                    parameter: "system",
+                    value: "gm"
+                };
             }
 
             case 0x03: {
-                return { type: "GM2 On" };
+                return {
+                    type: "Global MIDI Param",
+                    parameter: "system",
+                    value: "gm2"
+                };
             }
         }
     }
@@ -433,6 +975,13 @@ export class MIDIUtils {
         const a2 = syx[4]; // Address 2
         const a3 = syx[5]; // Address 3
         const data = syx[6];
+
+        if (
+            a1 === 0x06 || // Display letters
+            a1 === 0x07 // Display bitmap
+        ) {
+            return { type: "Display Data" };
+        }
 
         if (a1 === 0x00 && a2 === 0x00) {
             // XG SYSTEM
@@ -450,21 +999,30 @@ export class MIDIUtils {
                         (syx[9] & 15);
                     const cents = (tune - 1024) / 10;
                     return {
-                        type: "Master Fine Tune",
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
                         value: cents
                     };
                 }
 
                 case 0x06: {
                     // TRANSPOSE
-                    return { type: "Master Key Shift", value: data - 64 };
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "keyShift",
+                        value: data - 64
+                    };
                 }
 
                 // XG SYSTEM ON
                 case 0x7e:
                 // ALL PARAMETER RESET
                 case 0x7f: {
-                    return { type: "XG Reset" };
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "system",
+                        value: "xg"
+                    };
                 }
             }
         }
@@ -543,7 +1101,12 @@ export class MIDIUtils {
 
                 case 0x08: {
                     // Note shift
-                    return { type: "Key Shift", channel, value: data - 64 };
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "keyShift",
+                        value: data - 64
+                    };
                 }
 
                 case 0x0b: {
@@ -677,12 +1240,22 @@ export class MIDIUtils {
     private static analyzeGS(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
         if (
             syx.length < 10 ||
-            // Model ID (GS)
-            syx[2] !== 0x42 ||
             // 0x12: DT1 (Device Transmit)
             syx[3] !== 0x12
         )
-            return OTHER; // Something else
+            return OTHER; // Corrupted?
+
+        if (
+            // Model ID (Display Data)
+            syx[2] === 0x45
+        )
+            return { type: "Display Data" };
+
+        if (
+            // Model ID (GS)
+            syx[2] !== 0x42
+        )
+            return OTHER;
 
         // Address
         const a1 = syx[4];
@@ -697,28 +1270,68 @@ export class MIDIUtils {
             a2 === 0x00 // System Parameter
         ) {
             switch (a3) {
-                // MODE SET
-                case 0x7f: {
-                    switch (data) {
-                        case 0x00: {
-                            // GS Reset/Mode-1
-                            return { type: "GS Reset" };
-                        }
-
-                        case 0x7f: {
-                            // GS Off, default to gm
-                            return { type: "GM On" };
-                        }
-                    }
-                    return OTHER;
-                }
-
                 // Master Tune
                 case 0x00: {
                     const tune =
                         (data << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
                     const cents = (tune - 1024) / 10;
-                    return { type: "Master Fine Tune", value: cents };
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "fineTune",
+                        value: cents
+                    };
+                }
+
+                // Master Volume
+                case 0x04: {
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "gain",
+                        value: data / 127
+                    };
+                }
+
+                // Master Key-Shift
+                case 0x05: {
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "keyShift",
+                        value: data - 64
+                    };
+                }
+
+                // Master Pan
+                case 0x06: {
+                    return {
+                        type: "Global MIDI Param",
+                        parameter: "pan",
+                        // 63, it ranges from 1 to 127, NOT 0 to 127!
+                        value: (data - 64) / 63
+                    };
+                }
+
+                // MODE SET
+                case 0x7f: {
+                    switch (data) {
+                        case 0x00: {
+                            // GS Reset/Mode-1
+                            return {
+                                type: "Global MIDI Param",
+                                parameter: "system",
+                                value: "gs"
+                            };
+                        }
+
+                        case 0x7f: {
+                            // GS Off, default to gm
+                            return {
+                                type: "Global MIDI Param",
+                                parameter: "system",
+                                value: "gm"
+                            };
+                        }
+                    }
+                    return OTHER;
                 }
             }
         }
@@ -727,7 +1340,11 @@ export class MIDIUtils {
         if (a1 !== 0x40) return OTHER;
 
         if (a2 === 0x00 && a3 === 0x05)
-            return { type: "Master Key Shift", value: data - 64 };
+            return {
+                type: "Global MIDI Param",
+                parameter: "keyShift",
+                value: data - 64
+            };
 
         // Effects
         if (a2 === 0x01) {
@@ -760,13 +1377,20 @@ export class MIDIUtils {
                 case 0x13: {
                     // Mono/poly
                     return {
-                        type: "Controller Change",
+                        type: "Channel MIDI Param",
                         channel,
-                        controller:
-                            data === 1
-                                ? MIDIControllers.polyModeOn
-                                : MIDIControllers.monoModeOn,
-                        value: 0
+                        parameter: "polyMode",
+                        value: data === 1
+                    };
+                }
+
+                case 0x14: {
+                    // Assign mode
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "assignMode",
+                        value: data
                     };
                 }
 
@@ -780,8 +1404,9 @@ export class MIDIUtils {
 
                 case 0x16: {
                     return {
-                        type: "Key Shift",
+                        type: "Channel MIDI Param",
                         channel,
+                        parameter: "keyShift",
                         value: data - 64
                     };
                 }
@@ -796,6 +1421,26 @@ export class MIDIUtils {
                     };
                 }
 
+                case 0x1a: {
+                    // Velocity Sense Depth
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "velocitySenseDepth",
+                        value: data
+                    };
+                }
+
+                case 0x1b: {
+                    // Velocity Sense Offset
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "velocitySenseOffset",
+                        value: data
+                    };
+                }
+
                 case 0x1c: {
                     // Pan position
                     return {
@@ -803,6 +1448,26 @@ export class MIDIUtils {
                         channel,
                         controller: MIDIControllers.pan,
                         value: data
+                    };
+                }
+
+                case 0x1f: {
+                    // CC1 Controller number
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "cc1",
+                        value: data as MIDIController
+                    };
+                }
+
+                case 0x20: {
+                    // CC2 Controller number
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "cc2",
+                        value: data as MIDIController
                     };
                 }
 
@@ -832,8 +1497,9 @@ export class MIDIUtils {
                     const tune = (data << 7) | syx[8];
                     const tuneCents = (tune - 8192) / 81.92;
                     return {
-                        type: "Fine Tune",
+                        type: "Channel MIDI Param",
                         channel,
+                        parameter: "fineTune",
                         value: tuneCents
                     };
                 }
@@ -950,7 +1616,12 @@ export class MIDIUtils {
                 }
 
                 case 0x22: {
-                    return { type: "Insertion Param" };
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "efxAssign",
+                        value: data === 1
+                    };
                 }
             }
         }

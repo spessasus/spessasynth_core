@@ -228,15 +228,27 @@ synth.processMessage(message, (channnelOffset = 0), (options = null));
       Absolute time in synth's current time.
       A value less than the current time causes the message to get executed immediately.
 
+### lockMIDIParameter
+
+Locks or unlocks a given [Global MIDI Parameter.](global-parameters.md#midi)
+This prevents any changes to it until it's unlocked.
+
+```ts
+synth.lockMIDIParameter(parameter, isLocked);
+```
+
+- parameter - the Global MIDI Parameter to lock, a string of the parameter type.
+- isLocked - if the parameter should be locked, boolean.
+
 ### setSystemParameter
 
 Set a [Global System Parameter.](global-parameters.md#system)
 
 ```ts
-synth.setSystemParameter(type, value);
+synth.setSystemParameter(parameter, value);
 ```
 
-- type - the type of the parameter to set, a string of the parameter type.
+- parameter - the type of the parameter to set, a string of the parameter type.
 - value - the value of the parameter to set, depends on the type.
 
 ### reset

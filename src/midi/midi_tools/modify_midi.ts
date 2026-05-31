@@ -1,5 +1,4 @@
 import { MIDIMessage } from "../midi_message";
-import { IndexedByteArray } from "../../utils/indexed_array";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 
@@ -9,7 +8,6 @@ import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
     type MIDIController,
     MIDIControllers,
-    type MIDIMessageType,
     MIDIMessageTypes
 } from "../enums";
 import type { BasicMIDI } from "../basic_midi";
@@ -26,6 +24,8 @@ import type {
 import { MIDIUtils } from "./midi_utils";
 import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
+import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -60,19 +60,6 @@ const delayAddressMap: DelayProcessorSnapshot = {
     sendLevelToReverb: 0x5a
 };
 
-function getControllerChange(
-    channel: number,
-    cc: number,
-    value: number,
-    ticks: number
-): MIDIMessage {
-    return new MIDIMessage(
-        ticks,
-        (MIDIMessageTypes.controllerChange | (channel % 16)) as MIDIMessageType,
-        new IndexedByteArray([cc, value])
-    );
-}
-
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
  * Essentially:
@@ -100,8 +87,24 @@ export interface ChannelModification {
     patch?: ClearableParameter<MIDIPatch>;
 
     /**
+     * The new MIDI parameters of this channel.
+     * - Key: the MIDI parameter name.
+     * - value:
+     *   - `"clear"` - all changes for this parameter are removed.
+     *   - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
+     */
+    midiParams?: {
+        [P in keyof ChannelMIDIParameter]?: ClearableParameter<
+            ChannelMIDIParameter[P]
+        >;
+    };
+
+    /**
      * The channel key shift in semitones.
      * Note on/off numbers are shifted.
+     *
+     * This differs from the `keyShift` MIDI Parameter in that it shifts the actual note numbers,
+     * and doesn't delete or overwrite existing shifts.
      */
     keyShift?: number;
 
@@ -109,6 +112,10 @@ export interface ChannelModification {
      * The channel tuning in cents.
      * Tuned using RPN Fine Tune.
      * Range is `[-100; 99.986]` cents.
+     *
+     * This differs from the `fineTune` MIDI Parameter
+     * in that it is relative to the tuning applied in the MIDI file,
+     * and it does not overwrite it.
      */
     fineTune?: number;
 }
@@ -128,6 +135,21 @@ export interface ModifyMIDIOptions {
      * - `never` - not yet implemented.
      */
     drumSetupParams?: ClearableParameter<never>; // Only clear for now
+    /**
+     * The global MIDI parameter changes.
+     * - Key: the MIDI parameter name.
+     * - value:
+     *   - `"clear"` - all changes for this parameter are removed.
+     *   - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
+     *
+     * Please note that `"clear"` is not supported for the `system` parameter,
+     * as it may cause issues with the MIDI system detection and reset insertion.
+     */
+    midiParams?: {
+        [P in keyof GlobalMIDIParameter]?: ClearableParameter<
+            GlobalMIDIParameter[P]
+        >;
+    };
     /**
      * The desired GS reverb parameters.
      * - `"clear"` - all existing parameter change MIDI messages are removed.
@@ -192,8 +214,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     }
 
     // Go through all events one by one
-    let system: MIDISystem = "gs";
-    let addedGs = false;
+    let system: MIDISystem =
+        (opts.midiParams?.system === "clear"
+            ? undefined
+            : opts.midiParams?.system) ?? "gs";
+    let addedReset = false;
     // Track reset position to insert effects right after
     let resetTrack = 0;
     let resetIndex = 0;
@@ -256,10 +281,17 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         };
 
         // Semitones, for easier access rather than having to do "?? 0"
-        keyShift: number;
+        readonly keyShift: number;
 
         // Cents, for easier access rather than having to do "?? 0"
         fineTune: number;
+
+        // Since tuning has to be applied relatively,
+        // We need to track the currently applied tuning
+        currentFineTune: number;
+
+        // Same case as with above, since total tune may exceed the RPN range.
+        currentKeyShift: number;
     }
 
     const channelsAmount = midiPortChannelOffset;
@@ -274,7 +306,9 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                 data: true
             },
             keyShift: channelChanges.get(i)?.keyShift ?? 0,
-            fineTune: channelChanges.get(i)?.fineTune ?? 0
+            fineTune: channelChanges.get(i)?.fineTune ?? 0,
+            currentFineTune: 0,
+            currentKeyShift: 0
         });
     }
 
@@ -354,9 +388,21 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             }
         };
 
-        const addEventBefore = (e: MIDIMessage, offset = 0) => {
-            track.addEvents(index + offset, e);
+        const addEventBefore = (e: MIDIMessage) => {
+            track.addEvents(index, e);
             eventIndexes[trackNum]++;
+        };
+
+        /**
+         * This function adds the events IN ORDER they are in the array,
+         * So the first event in the array will end up as the first one before the current event.
+         * @param events
+         */
+        const addEventsBefore = (...events: MIDIMessage[]) => {
+            // Reversed, because we're adding before, so the first event in the array should be the last one added.
+            for (let i = events.length - 1; i >= 0; i--) {
+                addEventBefore(events[i]);
+            }
         };
 
         const portOffset = midiPortChannelOffsets[midiPorts[trackNum]] || 0;
@@ -393,6 +439,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                 if (channelStatus.isFirstNoteOn) {
                     channelStatus.isFirstNoteOn = false;
                     // All right, so this is the first note on for this channel
+                    // Order is effectively reversed since we're adding events before
 
                     // First: controllers
                     // Because FSMP does not like program changes after cc changes in embedded midis
@@ -402,49 +449,38 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                     if (channelChange.controllers)
                         for (const [cc, value] of channelChange.controllers) {
                             if (value === "clear") continue;
-                            const ccChange = getControllerChange(
+                            const ccChange = MIDIMessage.controllerChange(
+                                e.ticks,
                                 midiChannel,
                                 cc,
-                                value,
-                                e.ticks
+                                value
                             );
                             addEventBefore(ccChange);
                         }
 
-                    // Tuning
-                    if (channelStatus.fineTune !== 0) {
-                        // Add rpn
-                        // 64 is the center, 96 = 50 cents up
-                        const data =
-                            Math.floor(channelStatus.fineTune * 81.92) + 8192;
-                        const rpnCoarse = getControllerChange(
-                            midiChannel,
-                            MIDIControllers.registeredParameterMSB,
-                            0,
-                            e.ticks
+                    // Apply relative tuning (`fineTune`)
+                    if (
+                        channelChange.midiParams?.fineTune !== undefined &&
+                        channelChange.midiParams.fineTune !== "clear"
+                    ) {
+                        // Add the relative tuning to the absolute MIDI param
+                        const newTune =
+                            channelStatus.fineTune +
+                            channelChange.midiParams.fineTune;
+                        channelStatus.currentKeyShift = Math.trunc(
+                            newTune / 100
                         );
-                        const rpnFine = getControllerChange(
-                            midiChannel,
-                            MIDIControllers.registeredParameterLSB,
-                            1,
-                            e.ticks
+                        channelChange.midiParams.fineTune = newTune % 100;
+                    } else {
+                        // Make the relative tuning be set in MIDI parameters
+                        const newTune =
+                            channelStatus.fineTune +
+                            channelStatus.currentFineTune;
+                        channelStatus.currentKeyShift = Math.trunc(
+                            newTune / 100
                         );
-                        const dataEntryCoarse = getControllerChange(
-                            channel,
-                            MIDIControllers.dataEntryMSB,
-                            (data >> 7) & 0x7f,
-                            e.ticks
-                        );
-                        const dataEntryFine = getControllerChange(
-                            midiChannel,
-                            MIDIControllers.dataEntryLSB,
-                            data & 0x7f,
-                            e.ticks
-                        );
-                        addEventBefore(dataEntryFine);
-                        addEventBefore(dataEntryCoarse);
-                        addEventBefore(rpnFine);
-                        addEventBefore(rpnCoarse);
+                        channelChange.midiParams ??= {};
+                        channelChange.midiParams.fineTune = newTune % 100;
                     }
 
                     // Program change
@@ -467,22 +503,21 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         const desiredProgram = patch.program;
 
                         // Add program change
-                        const programChange = new MIDIMessage(
+                        const programChange = MIDIMessage.programChange(
                             e.ticks,
-                            (MIDIMessageTypes.programChange |
-                                midiChannel) as MIDIMessageType,
-                            new IndexedByteArray([desiredProgram])
+                            midiChannel,
+                            desiredProgram
                         );
                         addEventBefore(programChange);
 
                         const addBank = (isLSB: boolean, v: number) => {
-                            const bankChange = getControllerChange(
+                            const bankChange = MIDIMessage.controllerChange(
+                                e.ticks,
                                 midiChannel,
                                 isLSB
                                     ? MIDIControllers.bankSelectLSB
                                     : MIDIControllers.bankSelect,
-                                v,
-                                e.ticks
+                                v
                             );
                             addEventBefore(bankChange);
                         };
@@ -517,20 +552,53 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                 ConsoleColors.recognized,
                                 ConsoleColors.value
                             );
+                            const chanAddress =
+                                0x10 | MIDIUtils.channelToSyx(midiChannel);
                             addEventBefore(
-                                MIDIUtils.gsDrumChange(e.ticks, midiChannel, 1)
+                                MIDIUtils.gsMessage(
+                                    e.ticks,
+                                    40,
+                                    chanAddress,
+                                    0x15,
+                                    [1]
+                                )
+                            );
+                        }
+                    }
+
+                    // Add MIDI parameters
+                    if (channelChange.midiParams) {
+                        for (const [param, value] of Object.entries(
+                            channelChange.midiParams
+                        ) as {
+                            [P in keyof ChannelMIDIParameter]: [
+                                P,
+                                ClearableParameter<ChannelMIDIParameter[P]>
+                            ];
+                        }[keyof ChannelMIDIParameter][]) {
+                            if (value === "clear") continue;
+                            addEventsBefore(
+                                ...MIDIUtils.setChannelMIDIParameter(
+                                    e.ticks,
+                                    midiChannel,
+                                    system,
+                                    param,
+                                    value
+                                )
                             );
                         }
                     }
                 }
                 // Transpose key (for zero it won't change anyway)
-                e.data[0] += channelStatus.keyShift;
+                e.data[0] +=
+                    channelStatus.keyShift + channelStatus.currentKeyShift;
                 break;
             }
 
             case MIDIMessageTypes.noteOff: {
                 if (!channelChange) break;
-                e.data[0] += channelStatus.keyShift;
+                e.data[0] +=
+                    channelStatus.keyShift + channelStatus.currentKeyShift;
                 break;
             }
 
@@ -540,6 +608,24 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                     // This channel has program change. BEGONE!
                     deleteThisEvent();
                     return;
+                }
+                break;
+            }
+
+            case MIDIMessageTypes.pitchWheel: {
+                // Do we delete it?
+                if (channelChange?.midiParams?.pitchWheel) {
+                    // Locked, remove
+                    deleteThisEvent();
+                }
+                break;
+            }
+
+            case MIDIMessageTypes.channelPressure: {
+                // Do we delete it?
+                if (channelChange?.midiParams?.pressure) {
+                    // Locked, remove
+                    deleteThisEvent();
                 }
                 break;
             }
@@ -629,28 +715,55 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                     break;
                                 }
 
-                                case "Fine Tune": {
-                                    if (channelStatus.fineTune) {
-                                        if (channelStatus.isFirstNoteOn) {
-                                            // No note-on yet. Then use it as relative!
-                                            const newTune =
-                                                channelStatus.fineTune +
-                                                data.value;
-                                            channelStatus.keyShift +=
-                                                Math.trunc(newTune / 100);
-                                            channelStatus.fineTune =
-                                                newTune % 100;
-                                            SpessaLog.info(
-                                                `%cFine tuning already present on ${channel}, ` +
-                                                    `new relative tune: %c${newTune} cents`,
-                                                ConsoleColors.info,
-                                                ConsoleColors.recognized
-                                            );
-                                        }
-                                        // We're tuning it ourselves, BEGONE!
+                                case "Channel MIDI Param": {
+                                    if (
+                                        data.parameter === "fineTune" &&
+                                        channelStatus.fineTune
+                                    ) {
+                                        channelStatus.currentFineTune =
+                                            data.value;
+                                        // Add the relative fine tune to the existing one
+                                        const newTune =
+                                            channelStatus.fineTune + data.value;
+
+                                        channelStatus.currentKeyShift =
+                                            Math.trunc(newTune / 100);
+                                        const targetTune = newTune % 100;
+
+                                        SpessaLog.info(
+                                            `%cFine tuning already present on ${channel}%c (${data.value})%c, ` +
+                                                `new relative tune: %c${newTune}%c cents. Key shift: %c${channelStatus.currentKeyShift}%c semitones. ` +
+                                                `Actual RPN value to set: %c${targetTune} cents.`,
+                                            ConsoleColors.info,
+                                            ConsoleColors.recognized,
+                                            ConsoleColors.info,
+                                            ConsoleColors.value,
+                                            ConsoleColors.info,
+                                            ConsoleColors.value,
+                                            ConsoleColors.info,
+                                            ConsoleColors.value
+                                        );
+
+                                        // And update this tuning
+                                        // This event is either data MSB or LSB, so update appropriately
+                                        const updatedData =
+                                            Math.floor(targetTune * 81.92) +
+                                            8192;
+                                        e.data[1] =
+                                            ccNum ===
+                                            MIDIControllers.dataEntryMSB
+                                                ? updatedData >> 7
+                                                : updatedData & 0x7f;
+                                    } else if (
+                                        channelChange?.midiParams?.[
+                                            data.parameter
+                                        ]
+                                    ) {
+                                        // Locked, remove
+                                        // We don't remove fineTune because we can adjust it relatively
                                         deleteParameter(channel);
                                     }
-                                    return;
+                                    break;
                                 }
                             }
 
@@ -679,86 +792,6 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                 const syx = MIDIUtils.analyzeSysEx(e.data);
                 switch (syx.type) {
                     default: {
-                        return;
-                    }
-
-                    case "XG Reset": {
-                        SpessaLog.info(
-                            "%cXG system on detected",
-                            ConsoleColors.info
-                        );
-
-                        system = "xg";
-                        addedGs = true; // Flag as true so gs won't get added
-                        resetTrack = trackNum;
-                        resetIndex = index;
-                        // Reset NRPN (accuracy + prevent deletion before reset)
-                        for (const ch of channelStatuses) {
-                            ch.param.reset();
-                            ch.clearedParams = {
-                                pLSB: true,
-                                pMSB: true,
-                                data: true
-                            };
-                        }
-                        return;
-                    }
-
-                    case "GM2 On": {
-                        SpessaLog.info(
-                            "%cGM2 system on detected",
-                            ConsoleColors.info
-                        );
-
-                        system = "gm2";
-                        addedGs = true; // Flag as true so gs won't get added
-                        resetTrack = trackNum;
-                        resetIndex = index;
-                        // Reset NRPN (accuracy + prevent deletion before reset)
-                        for (const ch of channelStatuses) {
-                            ch.param.reset();
-                            ch.clearedParams = {
-                                pLSB: true,
-                                pMSB: true,
-                                data: true
-                            };
-                        }
-                        return;
-                    }
-
-                    case "GS Reset": {
-                        // Check for GS on
-                        // That's a GS on, we're done here
-                        SpessaLog.info(
-                            "%cGS on detected!",
-                            ConsoleColors.recognized
-                        );
-
-                        addedGs = true;
-                        resetTrack = trackNum;
-                        resetIndex = index;
-                        // Reset NRPN (accuracy + prevent deletion before reset)
-                        for (const ch of channelStatuses) {
-                            ch.param.reset();
-                            ch.clearedParams = {
-                                pLSB: true,
-                                pMSB: true,
-                                data: true
-                            };
-                        }
-                        return;
-                    }
-
-                    case "GM Off":
-                    case "GM On": {
-                        // Check for GM on
-                        // That's a GM1 system change, remove it!
-                        SpessaLog.info(
-                            "%cGM on detected, removing!",
-                            ConsoleColors.info
-                        );
-                        deleteThisEvent();
-                        addedGs = false;
                         return;
                     }
 
@@ -805,25 +838,126 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         return;
                     }
 
-                    case "Fine Tune": {
+                    case "Global MIDI Param": {
+                        if (opts.midiParams?.[syx.parameter]) {
+                            // Locked, remove
+                            deleteThisEvent();
+                            return;
+                        }
+                        if (syx.parameter === "system") {
+                            switch (syx.value) {
+                                case "xg": {
+                                    SpessaLog.info(
+                                        "%cXG system on detected",
+                                        ConsoleColors.info
+                                    );
+
+                                    system = "xg";
+                                    addedReset = true; // Flag as true so reset won't get added
+                                    resetTrack = trackNum;
+                                    resetIndex = index;
+                                    // Reset NRPN (accuracy + prevent deletion before reset)
+                                    for (const ch of channelStatuses) {
+                                        ch.param.reset();
+                                        ch.clearedParams = {
+                                            pLSB: true,
+                                            pMSB: true,
+                                            data: true
+                                        };
+                                    }
+                                    return;
+                                }
+
+                                case "gm2": {
+                                    SpessaLog.info(
+                                        "%cGM2 system on detected",
+                                        ConsoleColors.info
+                                    );
+
+                                    system = "gm2";
+                                    addedReset = true; // Flag as true so reset won't get added
+                                    resetTrack = trackNum;
+                                    resetIndex = index;
+                                    // Reset NRPN (accuracy + prevent deletion before reset)
+                                    for (const ch of channelStatuses) {
+                                        ch.param.reset();
+                                        ch.clearedParams = {
+                                            pLSB: true,
+                                            pMSB: true,
+                                            data: true
+                                        };
+                                    }
+                                    return;
+                                }
+
+                                case "gs": {
+                                    // Check for GS on
+                                    // That's a GS on, we're done here
+                                    SpessaLog.info(
+                                        "%cGS on detected!",
+                                        ConsoleColors.recognized
+                                    );
+
+                                    addedReset = true;
+                                    resetTrack = trackNum;
+                                    resetIndex = index;
+                                    // Reset NRPN (accuracy + prevent deletion before reset)
+                                    for (const ch of channelStatuses) {
+                                        ch.param.reset();
+                                        ch.clearedParams = {
+                                            pLSB: true,
+                                            pMSB: true,
+                                            data: true
+                                        };
+                                    }
+                                    return;
+                                }
+                                case "gm": {
+                                    // Check for GM on
+                                    // That's a GM1 system change, remove it!
+                                    SpessaLog.info(
+                                        "%cGM on detected, removing!",
+                                        ConsoleColors.info
+                                    );
+                                    deleteThisEvent();
+                                    addedReset = false;
+                                    return;
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    case "Channel MIDI Param": {
                         const syxChannel = channelChanges.get(
                             syx.channel + portOffset
                         );
-                        const syxStatus =
-                            channelStatuses[syx.channel + portOffset];
-                        if (syxStatus.isFirstNoteOn && syxChannel) {
-                            // No note-on yet. Then use it as relative!
-                            const newTune = syxStatus.fineTune + syx.value;
-                            syxStatus.keyShift += Math.trunc(newTune / 100);
-                            syxStatus.fineTune = newTune % 100;
-                            SpessaLog.info(
-                                `%cFine tuning already present on ${syx.channel + portOffset}, ` +
-                                    `new relative tune: %c${newTune} cents`,
-                                ConsoleColors.info,
-                                ConsoleColors.recognized
-                            );
+                        if (syxChannel?.midiParams?.[syx.parameter]) {
+                            // Locked, remove
                             deleteThisEvent();
+                            return;
                         }
+                        if (syx.parameter === "fineTune") {
+                            const syxStatus =
+                                channelStatuses[syx.channel + portOffset];
+                            if (syxStatus.isFirstNoteOn && syxChannel) {
+                                // No note-on yet. Then use it as relative!
+                                const newTune = syxStatus.fineTune + syx.value;
+                                syxStatus.currentKeyShift = Math.trunc(
+                                    newTune / 100
+                                );
+                                syxStatus.fineTune = newTune % 100;
+                                SpessaLog.info(
+                                    `%cFine tuning already present on ${syx.channel + portOffset}, ` +
+                                        `new relative tune: %c${newTune} cents`,
+                                    ConsoleColors.info,
+                                    ConsoleColors.recognized
+                                );
+                                deleteThisEvent();
+                            }
+                            break;
+                        }
+
                         break;
                     }
 
@@ -854,30 +988,57 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         }
     });
 
-    // Check for GS reset and insert it to ensure that a reset always exists.
+    // Check for reset and insert it to ensure that a reset always exists.
     if (
-        !addedGs &&
+        !addedReset &&
         [...channelChanges.values()].some((c) => c.patch && c.patch !== "clear")
     ) {
-        // Gs is not on, add it on the first track at index 0 (or 1 if track name is first)
+        // There's no reset, add it on the first track at index 0 (or 1 if track name is first)
         let index = 0;
         if (
             midi.tracks[0].events[0].statusByte === MIDIMessageTypes.trackName
         ) {
             index++;
         }
-        midi.tracks[0].addEvents(index, MIDIUtils.gsReset(0));
+        // Add the requested system or GS. Clear breaks everything so we don't care.
+        const targetSystem =
+            (opts.midiParams?.system === "clear"
+                ? undefined
+                : opts.midiParams?.system) ?? "gs";
+        midi.tracks[0].addEvents(index, MIDIUtils.reset(0, targetSystem));
         resetTrack = 0;
         resetIndex = index;
-        SpessaLog.info("%cGS on not detected. Adding it.", ConsoleColors.info);
+        system = targetSystem;
+        SpessaLog.info(
+            `%c${targetSystem} reset on not detected. Adding it.`,
+            ConsoleColors.info
+        );
     }
 
-    // Add effects
     const targetTicks = Math.max(0, midi.firstNoteOn);
     // Insert right after reset
     const targetTrack = midi.tracks[resetTrack];
     const targetIndex = resetIndex + 1;
 
+    // Add MIDI parameters
+    for (const param of Object.keys(
+        opts.midiParams ?? {}
+    ) as (keyof GlobalMIDIParameter)[]) {
+        if (param === "system") continue;
+        const value = opts.midiParams?.[param];
+        if (!value || value === "clear") continue;
+        targetTrack.addEvents(
+            targetIndex,
+            ...MIDIUtils.setGlobalMIDIParameter(
+                targetTicks,
+                system,
+                param,
+                value
+            )
+        );
+    }
+
+    // Add effects
     if (reverbParams && reverbParams !== "clear") {
         const m = reverbAddressMap;
         const p = reverbParams;
@@ -961,22 +1122,6 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
 
     if (insertionParams && insertionParams !== "clear") {
         const p = insertionParams;
-
-        for (let channel = 0; channel < p.channels.length; channel++) {
-            if (p.channels[channel]) {
-                targetTrack.addEvents(
-                    targetTicks,
-                    MIDIUtils.gsMessage(
-                        targetTicks,
-                        0x40,
-                        0x40 | MIDIUtils.channelToSyx(channel),
-                        0x22,
-                        [1]
-                    )
-                );
-            }
-        }
-
         // Params and sends
         for (let param = 0; param < p.params.length; param++) {
             const value = p.params[param];

@@ -299,11 +299,6 @@ export interface InsertionProcessorSnapshot {
      * 20 parameters for the effect, 255 means "no change" + 3 effect sends (index 20, 21, 22)
      */
     params: Uint8Array;
-
-    /**
-     * A boolean list for channels that have the insertion effect enabled.
-     */
-    channels: boolean[];
 }
 
 export type InsertionProcessorConstructor = new (

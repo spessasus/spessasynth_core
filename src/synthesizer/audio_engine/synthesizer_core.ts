@@ -47,6 +47,7 @@ import { SpessaSynthDelay } from "./effects/delay/delay";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
+    lockMIDIParameterInternal,
     setMIDIParameterInternal
 } from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
@@ -118,6 +119,22 @@ export class SynthesizerCore {
      * -1 means no change.
      */
     public readonly tunings = new Float32Array(128 * 128).fill(-1);
+
+    /**
+     * An object indicating if a Global MIDI parameter, at the equivalent key, is locked
+     * (i.e., not allowed changing).
+     * A locked parameter cannot be modified.
+     * @internal
+     */
+    public readonly lockedMIDIParameters = Object.fromEntries(
+        // This funky code takes DEFAULT_PARAMETERS and sets the values to false
+        (
+            Object.keys(
+                DEFAULT_GLOBAL_MIDI_PARAMETERS
+            ) as (keyof GlobalMIDIParameter)[]
+        ).map((key) => [key, false])
+    ) as Record<keyof GlobalMIDIParameter, boolean>;
+
     /**
      * The global MIDI parameters of the synthesizer.
      */
@@ -168,6 +185,16 @@ export class SynthesizerCore {
      * Nesting is calculated in getCachedVoiceIndex, returns a list of voices for this note.
      */
     public readonly cachedVoices = new Map<number, CachedVoiceList>();
+
+    /**
+     * Locks or unlocks a given Global MIDI Parameter.
+     * This prevents any changes to it until it's unlocked.
+     * @param parameter The Global MIDI Parameter to lock.
+     * @param isLocked If the parameter should be locked.
+     */
+    public readonly lockMIDIParameter: typeof lockMIDIParameterInternal =
+        lockMIDIParameterInternal.bind(this);
+
     /**
      * Sets a system parameter of the synthesizer.
      * @param type The type of the system parameter to set.
@@ -819,8 +846,7 @@ export class SynthesizerCore {
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {
         return {
             type: this.insertionProcessor.type,
-            params: this.insertionParams.slice(),
-            channels: this.midiChannels.map((c) => c.midiParameters.efxAssign)
+            params: this.insertionParams.slice()
         };
     }
 

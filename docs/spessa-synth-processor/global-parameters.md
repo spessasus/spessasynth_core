@@ -107,6 +107,10 @@ This effect is modified using MIDI system exclusive messages, so
 the recommended use case would be setting
 the insertion effect type and parameters then locking it to prevent changes by MIDI files.
 
+!!! Warning
+
+    To lock the channel insertion assign, lock the [`efxAssign` MIDI Parameter](midi-channel/channel-parameters.md#efxassign) instead.
+
 ### drumLock
 
 `boolean`
@@ -191,7 +195,8 @@ Where a new note will kill the previous one if it is still playing.
 ## MIDI
 
 MIDI Parameters can only be changed via MIDI messages,
-and not via the API. They get reset via MIDI reset messages.
+and not via the API. They get reset via MIDI reset messages,
+can be locked and have an associated event.
 
 An object called `DEFAULT_GLOBAL_MIDI_PARAMETERS` is provided with the library,
 containing the defaults.
