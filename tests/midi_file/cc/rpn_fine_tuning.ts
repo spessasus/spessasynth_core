@@ -1,5 +1,4 @@
 import { MIDITestMaker } from "../midi_test_maker";
-import { SpessaLog } from "../../../src";
 
 const test = new MIDITestMaker("RPN Fine Tuning Test");
 
@@ -15,7 +14,6 @@ while (pitch < 16_383) {
 
 test.flush();
 
-SpessaLog.setLogLevel(true, true, true);
 test.modify({
     channels: new Map([
         [
