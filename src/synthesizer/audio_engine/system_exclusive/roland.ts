@@ -87,12 +87,11 @@ export function rolandSystemExclusive(
 
                                 case 0x06: {
                                     // Roland master pan
-                                    SpessaLog.gsInfo("Master Pan", data);
-                                    this.setMIDIParameter(
-                                        "pan",
-                                        // 63, it ranges from 1 to 127, NOT 0 to 127!
-                                        (data - 64) / 63
-                                    );
+                                    // 63, it ranges from 1 to 127, NOT 0 to 127!
+                                    const pan = (data - 64) / 63;
+
+                                    SpessaLog.gsInfo("Master Pan", pan);
+                                    this.setMIDIParameter("pan", pan);
                                     break;
                                 }
 

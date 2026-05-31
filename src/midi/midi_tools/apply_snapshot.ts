@@ -4,10 +4,14 @@ import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { type MIDIController, MIDIControllers } from "../enums";
 import { CONTROLLER_TABLE_SIZE } from "../../synthesizer/audio_engine/synth_constants";
 import type { ChannelModification, ClearableParameter } from "./modify_midi";
+import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 
 /**
- * Modifies the sequence according to the locked presets and controllers in the given snapshot.
- * Note that this ignores the MIDI parameters and only applies system parameter tuning.
+ * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
+ *
+ * Note that System Parameters `fineTune` and `keyShift` are passed to the relative tuning parameters of the channels.
+ * Only locked MIDI parameters and controllers are applied.
  */
 export function applySnapshotInternal(
     midi: BasicMIDI,
@@ -52,13 +56,47 @@ export function applySnapshotInternal(
             controllers.set(ccNumber as MIDIController, targetValue);
         }
 
+        const midiParams = {} as {
+            [P in keyof ChannelMIDIParameter]?: ClearableParameter<
+                ChannelMIDIParameter[P]
+            >;
+        };
+
+        for (const [parameter, value] of Object.entries(
+            channelSnapshot.midiParameters
+        ) as {
+            [K in keyof ChannelMIDIParameter]: [K, ChannelMIDIParameter[K]];
+        }[keyof ChannelMIDIParameter][]) {
+            if (!channelSnapshot.lockedMIDIParameters[parameter]) continue;
+            // Strange cast, but works?
+            midiParams[parameter] = value as never;
+        }
+
         channels.set(channelNumber, {
             keyShift,
             fineTune,
             patch,
-            controllers
+            controllers,
+            midiParams
         });
     }
+
+    const midiParams = {} as {
+        [P in keyof GlobalMIDIParameter]?: ClearableParameter<
+            GlobalMIDIParameter[P]
+        >;
+    };
+
+    for (const [parameter, value] of Object.entries(
+        snapshot.midiParameters
+    ) as {
+        [K in keyof GlobalMIDIParameter]: [K, GlobalMIDIParameter[K]];
+    }[keyof GlobalMIDIParameter][]) {
+        if (!snapshot.lockedMIDIParameters[parameter]) continue;
+        // Strange cast, but works?
+        midiParams[parameter] = value as never;
+    }
+
     midi.modify({
         channels,
         drumSetupParams: snapshot.systemParameters.drumLock
@@ -75,6 +113,7 @@ export function applySnapshotInternal(
             : undefined,
         insertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor
-            : undefined
+            : undefined,
+        midiParams
     });
 }

@@ -139,6 +139,14 @@ export class MIDIMessage {
         parameter: number,
         value: number
     ) {
+        if (
+            parameter > 16_383 ||
+            parameter < 0 ||
+            value > 16_383 ||
+            value < 0
+        ) {
+            throw new Error("Parameter and value must be between 0 and 16383.");
+        }
         return [
             MIDIMessage.controllerChange(
                 ticks,

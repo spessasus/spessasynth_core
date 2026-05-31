@@ -522,7 +522,10 @@ interface InsertionProcessorSnapshot {
 Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence _in place_.
 This means changing the programs and controllers if they are locked.
 
-It also applies all applicable `SystemParameters` such as `fineTune` or `fineTune`.
+!!! Note
+
+    System Parameters `fineTune` and `keyShift` are passed to the relative tuning parameters of the channels.
+    MIDI Parameters are passed directly.
 
 ```ts
 midi.applySnapshot(snapshot);

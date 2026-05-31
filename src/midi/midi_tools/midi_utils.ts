@@ -29,26 +29,30 @@ type ChannelMIDIParameterMessage = {
     };
 }[keyof ChannelMIDIParameter];
 
-export type AnalyzedMIDIMessage =
+type AnalyzedParameter =
     | { type: "Other" }
-    | { type: "Reverb Param" }
-    | { type: "Chorus Param" }
-    | { type: "Delay Param" }
-    | { type: "Variation Param" }
-    | { type: "Insertion Param" }
-    | { type: "Drums On"; channel: number; isDrum: boolean }
-    | { type: "Drum Setup" }
-    | { type: "Program Change"; channel: number; value: number }
     | {
           type: "Controller Change";
           controller: MIDIController;
           value: number;
           channel: number;
       }
-    | GlobalMIDIParameterMessage
-    | ChannelMIDIParameterMessage;
+    | ChannelMIDIParameterMessage
+    | { type: "Drum Setup" };
 
-const OTHER = Object.freeze({ type: "Other" }) as AnalyzedMIDIMessage;
+export type AnalyzedMIDIMessage =
+    | AnalyzedParameter
+    | { type: "Reverb Param" }
+    | { type: "Chorus Param" }
+    | { type: "Delay Param" }
+    | { type: "Variation Param" }
+    | { type: "Insertion Param" }
+    | { type: "Drums On"; channel: number; isDrum: boolean }
+    | { type: "Program Change"; channel: number; value: number }
+    | { type: "Display Data" }
+    | GlobalMIDIParameterMessage;
+
+const OTHER = Object.freeze({ type: "Other" }) as AnalyzedParameter;
 
 /**
  * A general purpose class for handling MIDI messages.
@@ -97,7 +101,7 @@ export class MIDIUtils {
         channel: number,
         rpn: number,
         value: number
-    ): AnalyzedMIDIMessage {
+    ): AnalyzedParameter {
         switch (rpn) {
             default: {
                 return OTHER;
@@ -153,7 +157,7 @@ export class MIDIUtils {
         channel: number,
         nrpn: number,
         value: number
-    ): AnalyzedMIDIMessage {
+    ): AnalyzedParameter {
         const msb = nrpn >> 7;
         const lsb = nrpn & 0x7f;
         switch (msb) {
@@ -259,7 +263,7 @@ export class MIDIUtils {
      * Returns a list of MIDI events needed to set the given parameter.
      * @param ticks The ticks for all events.
      * @param system If the message has multiple ways of setting it,
-     * this selects the preferred way. Otherwise, it prefers GS.
+     * this selects the preferred way. Otherwise, it prefers Universal (GM).
      * @param parameter The parameter to set.
      * @param value The value to set it to.
      */
@@ -278,8 +282,7 @@ export class MIDIUtils {
             case "keyShift": {
                 // Three ways of setting it: GM. XG and GS.
                 switch (system) {
-                    case "gm2":
-                    case "gm": {
+                    default: {
                         // GM2 and GM are the same here
                         // Master Coarse Tuning
                         return [
@@ -299,8 +302,7 @@ export class MIDIUtils {
                         ];
                     }
 
-                    default: {
-                        // GS
+                    case "gs": {
                         // Master Key-Shift
                         return [
                             MIDIUtils.gsMessage(ticks, 0x40, 0x00, 0x05, [
@@ -314,8 +316,7 @@ export class MIDIUtils {
             case "fineTune": {
                 // Again, all three systems have their own way of setting it, and they are all different
                 switch (system) {
-                    case "gm2":
-                    case "gm": {
+                    default: {
                         // GM tunes in 14-bit numbers, how nice!
                         const tuneValue = Math.floor(
                             (value as number) * 81.92 + 8192
@@ -344,7 +345,7 @@ export class MIDIUtils {
                         ];
                     }
 
-                    default: {
+                    case "gs": {
                         // Gs is -100 cents to 100 cents, 0.1 cent steps
                         // Real range is 24 to 2024, so narrower than XG
                         const tuneValue = Math.floor(
@@ -365,8 +366,7 @@ export class MIDIUtils {
             case "gain": {
                 // All three once more!
                 switch (system) {
-                    case "gm2":
-                    case "gm": {
+                    default: {
                         // MIDI Master Volume corresponds to CC volume, so the effective volume is squared.
                         // Reverse that here
                         const gainValue = Math.floor(
@@ -389,7 +389,7 @@ export class MIDIUtils {
                         ];
                     }
 
-                    default: {
+                    case "gs": {
                         // GS
                         const gainValue = Math.floor((value as number) * 127);
                         return [
@@ -404,10 +404,10 @@ export class MIDIUtils {
             case "pan": {
                 // Only GM and GS, XG doesn't have a pan message?
                 switch (system) {
-                    case "gm2":
-                    case "gm": {
+                    default: {
                         // Master Balance message
-                        const balance = Math.floor((value as number) * 8192);
+                        const balance =
+                            Math.floor((value as number) * 8192) + 8192;
 
                         return [
                             MIDIUtils.deviceControlMessage(ticks, 0x02, [
@@ -417,7 +417,7 @@ export class MIDIUtils {
                         ];
                     }
 
-                    default: {
+                    case "gs": {
                         // 63, it ranges from 1 to 127, NOT 0 to 127!
                         const balance = Math.floor((value as number) * 63) + 64;
                         return [
@@ -436,7 +436,7 @@ export class MIDIUtils {
      * @param ticks The ticks for all events.
      * @param channel The channel number.
      * @param system If the message has multiple ways of setting it,
-     * this selects the preferred way. Otherwise, it prefers GS.
+     * this selects the preferred way. Otherwise, it prefers Universal (GM).
      * @param parameter The parameter to set.
      * @param value The value to set it to.
      * @returns The list of `MIDIMessage`s that set the parameter.
@@ -449,6 +449,7 @@ export class MIDIUtils {
         value: ChannelMIDIParameter[P]
     ): MIDIMessage[] {
         channel %= 16;
+        const gsChannel = MIDIUtils.channelToSyx(channel);
         switch (parameter) {
             case "pressure": {
                 return [
@@ -492,7 +493,7 @@ export class MIDIUtils {
                           MIDIUtils.gsMessage(
                               ticks,
                               0x40,
-                              0x10 | MIDIUtils.syxToChannel(channel),
+                              0x10 | gsChannel,
                               0x02,
                               [value as number]
                           )
@@ -548,7 +549,7 @@ export class MIDIUtils {
                           MIDIUtils.gsMessage(
                               ticks,
                               0x40,
-                              0x10 | MIDIUtils.syxToChannel(channel),
+                              0x10 | gsChannel,
                               0x1c,
                               [0]
                           )
@@ -558,65 +559,45 @@ export class MIDIUtils {
             case "assignMode": {
                 // GS only
                 return [
-                    MIDIUtils.gsMessage(
-                        ticks,
-                        0x40,
-                        0x10 | MIDIUtils.syxToChannel(channel),
-                        0x14,
-                        [value as number]
-                    )
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x14, [
+                        value as number
+                    ])
                 ];
             }
 
             case "efxAssign": {
                 // GS only (again)
                 return [
-                    MIDIUtils.gsMessage(
-                        ticks,
-                        0x40,
-                        0x10 | MIDIUtils.syxToChannel(channel),
-                        0x22,
-                        [value as number]
-                    )
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x22, [
+                        value as number
+                    ])
                 ];
             }
 
             case "cc1": {
                 // GS only!!! (again!)
                 return [
-                    MIDIUtils.gsMessage(
-                        ticks,
-                        0x40,
-                        0x10 | MIDIUtils.syxToChannel(channel),
-                        0x1f,
-                        [value as number]
-                    )
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x1f, [
+                        value as number
+                    ])
                 ];
             }
 
             case "cc2": {
                 // The same as cc1, just different address
                 return [
-                    MIDIUtils.gsMessage(
-                        ticks,
-                        0x40,
-                        0x10 | MIDIUtils.syxToChannel(channel),
-                        0x20,
-                        [value as number]
-                    )
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x20, [
+                        value as number
+                    ])
                 ];
             }
 
             case "drumMap": {
                 // GS only, it's called "USE FOR RHYTHM PART" there
                 return [
-                    MIDIUtils.gsMessage(
-                        ticks,
-                        0x40,
-                        0x10 | MIDIUtils.syxToChannel(channel),
-                        0x15,
-                        [value as number]
-                    )
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x15, [
+                        value as number
+                    ])
                 ];
             }
 
@@ -631,7 +612,7 @@ export class MIDIUtils {
                           MIDIUtils.gsMessage(
                               ticks,
                               0x40,
-                              0x10 | MIDIUtils.syxToChannel(channel),
+                              0x10 | gsChannel,
                               0x1a,
                               [value as number]
                           )
@@ -650,7 +631,7 @@ export class MIDIUtils {
                           MIDIUtils.gsMessage(
                               ticks,
                               0x40,
-                              0x10 | MIDIUtils.syxToChannel(channel),
+                              0x10 | gsChannel,
                               0x1b,
                               [value as number]
                           )
@@ -995,6 +976,13 @@ export class MIDIUtils {
         const a3 = syx[5]; // Address 3
         const data = syx[6];
 
+        if (
+            a1 === 0x06 || // Display letters
+            a1 === 0x07 // Display bitmap
+        ) {
+            return { type: "Display Data" };
+        }
+
         if (a1 === 0x00 && a2 === 0x00) {
             // XG SYSTEM
             switch (a3) {
@@ -1252,12 +1240,22 @@ export class MIDIUtils {
     private static analyzeGS(syx: SysExAcceptedArray): AnalyzedMIDIMessage {
         if (
             syx.length < 10 ||
-            // Model ID (GS)
-            syx[2] !== 0x42 ||
             // 0x12: DT1 (Device Transmit)
             syx[3] !== 0x12
         )
-            return OTHER; // Something else
+            return OTHER; // Corrupted?
+
+        if (
+            // Model ID (Display Data)
+            syx[2] === 0x45
+        )
+            return { type: "Display Data" };
+
+        if (
+            // Model ID (GS)
+            syx[2] !== 0x42
+        )
+            return OTHER;
 
         // Address
         const a1 = syx[4];
