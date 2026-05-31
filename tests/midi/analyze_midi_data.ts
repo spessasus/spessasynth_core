@@ -158,6 +158,10 @@ for (const t of timeline) {
                     default: {
                         // Log without type
                         const { type, ...values } = analyzed;
+                        if (Object.keys(values).length === 0) {
+                            console.info(`${analyzed.type} System Exclusive.`);
+                            break;
+                        }
                         console.info(
                             `${analyzed.type} System Exclusive:`,
                             values
