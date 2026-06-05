@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+    - name: "Question"
+      url: "https://github.com/spessasus/spessasynth_core/discussions/new?category=q-a"
+      about: "Something is unclear? Ask a question!"
+    - name: "Documentation"
+      url: "https://spessasus.github.io/spessasynth_core/"
+      about: "Visit the `spessasynth_core` documentation!"
