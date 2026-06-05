@@ -356,18 +356,9 @@ See [implementation details](#polymono-implementation).
 
 ##### Assign mode
 
-Assign Mode is the parameter that determines how voice assignment will be
-handled when sounds overlap on identical note numbers in the same channel
-(i.e., repeatedly struck notes).
-This is initialized to a mode suitable for each Part,
-so for general purposes there is no need to change this.
-Modes:
+`assignMode` MIDI Parameter.
 
-- Single: If the same note is played multiple times in succession, the previously-sounding note will be completely silenced, and then the new note will be sounded.
-- LimitedMulti: If the same note is played multiple times in succession, the previously-sounding note will be continued to a certain extent even after the new note is sounded. (Default setting)
-- FullMulti: If the same note is played multiple times in succession, the previously-sounding note(s) will continue sounding for their natural length even after the new note is sounded.
-
-Note that SpessaSynth treats LimitedMulti like FullMulti.
+[Read more about it here](../spessa-synth-processor/midi-channel/channel-parameters.md#assignmode)
 
 ##### Use for Rhythm Part
 
@@ -525,30 +516,31 @@ Part (channel) parameters set a specific parameter for a specific channel.
 
     Parts above the current channel number are discarded. To avoid this, add more channels to the synthesizer.
 
-| Number (hex) | Name                   | Description                                                                                                                                                                                     |
-| ------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01           | Bank Select MSB        | Same as CC#0 (bank select).                                                                                                                                                                     |
-| 02           | Bank Select LSB        | Same as CC#32 (bank select LSB).                                                                                                                                                                |
-| 03           | Program Change         | Same as a MIDI Program Change on that part's channel.                                                                                                                                           |
-| 04           | Receive channel number | Sets which MIDI channel the part listens on, like GS _Rx. Channel_. Enables layering two parts on one incoming channel.                                                                         |
-| 05           | Poly/mono mode         | `1` = polyphonic, other values = monophonic. See [poly/mono implementation](#polymono-implementation).                                                                                          |
-| 07           | Part mode              | `0` = normal (melodic) part; any non-zero value turns the part into a drum part. In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. |
-| 08           | Note shift             | Channel note shift in semitones: `data − 64`. Ignored on drum parts.                                                                                                                            |
-| 0B           | Volume                 | Same as CC#7 (main volume).                                                                                                                                                                     |
-| 0C           | Velocity Sense Depth   | Adjusts the way note velocity is transformed. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysensedepth).                          |
-| 0D           | Velocity Sense Offset  | Allows offsetting the note velocity. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysenseoffset).                                  |
-| 0E           | Pan                    | Same as CC#10, except value `0` enables random pan for every new voice on that channel.                                                                                                         |
-| 12           | Chorus                 | Same as CC#93 (chorus send).                                                                                                                                                                    |
-| 13           | Reverb                 | Same as CC#91 (reverb send).                                                                                                                                                                    |
-| 15           | Vibrato Rate           | Same as CC#76 (vibrato rate).                                                                                                                                                                   |
-| 16           | Vibrato Depth          | Same as CC#77 (vibrato depth).                                                                                                                                                                  |
-| 17           | Vibrato Delay          | Same as CC#78 (vibrato delay).                                                                                                                                                                  |
-| 18           | Filter Cutoff          | Same as CC#74 (brightness).                                                                                                                                                                     |
-| 19           | Filter Resonance       | Same as CC#71 (filter resonance).                                                                                                                                                               |
-| 1A           | Attack Time            | Same as CC#73 (attack time).                                                                                                                                                                    |
-| 1B           | Decay Time             | Same as CC#75 (decay time).                                                                                                                                                                     |
-| 1C           | Release Time           | Same as CC#72 (release time).                                                                                                                                                                   |
-| 23           | Bend Pitch Control     | Treated as pitch wheel range.                                                                                                                                                                   |
+| Number (hex) | Name                           | Description                                                                                                                                                                                     |
+| ------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01           | Bank Select MSB                | Same as CC#0 (bank select).                                                                                                                                                                     |
+| 02           | Bank Select LSB                | Same as CC#32 (bank select LSB).                                                                                                                                                                |
+| 03           | Program Change                 | Same as a MIDI Program Change on that part's channel.                                                                                                                                           |
+| 04           | Receive channel number         | Sets which MIDI channel the part listens on, like GS _Rx. Channel_. Enables layering two parts on one incoming channel.                                                                         |
+| 05           | Poly/mono mode                 | `1` = polyphonic, other values = monophonic. See [poly/mono implementation](#polymono-implementation).                                                                                          |
+| 06           | Same Note Number Key on Assign | Adjusts how mutliple notes on the same note number work. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#assignmode)                        |
+| 07           | Part mode                      | `0` = normal (melodic) part; any non-zero value turns the part into a drum part. In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. |
+| 08           | Note shift                     | Channel note shift in semitones: `data − 64`. Ignored on drum parts.                                                                                                                            |
+| 0B           | Volume                         | Same as CC#7 (main volume).                                                                                                                                                                     |
+| 0C           | Velocity Sense Depth           | Adjusts the way note velocity is transformed. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysensedepth).                          |
+| 0D           | Velocity Sense Offset          | Allows offsetting the note velocity. See the [corresponding MIDI Parameter](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysenseoffset).                                  |
+| 0E           | Pan                            | Same as CC#10, except value `0` enables random pan for every new voice on that channel.                                                                                                         |
+| 12           | Chorus                         | Same as CC#93 (chorus send).                                                                                                                                                                    |
+| 13           | Reverb                         | Same as CC#91 (reverb send).                                                                                                                                                                    |
+| 15           | Vibrato Rate                   | Same as CC#76 (vibrato rate).                                                                                                                                                                   |
+| 16           | Vibrato Depth                  | Same as CC#77 (vibrato depth).                                                                                                                                                                  |
+| 17           | Vibrato Delay                  | Same as CC#78 (vibrato delay).                                                                                                                                                                  |
+| 18           | Filter Cutoff                  | Same as CC#74 (brightness).                                                                                                                                                                     |
+| 19           | Filter Resonance               | Same as CC#71 (filter resonance).                                                                                                                                                               |
+| 1A           | Attack Time                    | Same as CC#73 (attack time).                                                                                                                                                                    |
+| 1B           | Decay Time                     | Same as CC#75 (decay time).                                                                                                                                                                     |
+| 1C           | Release Time                   | Same as CC#72 (release time).                                                                                                                                                                   |
+| 23           | Bend Pitch Control             | Treated as pitch wheel range.                                                                                                                                                                   |
 
 #### Drum Setup
 

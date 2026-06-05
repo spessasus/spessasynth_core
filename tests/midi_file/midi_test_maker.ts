@@ -1,4 +1,5 @@
 import {
+    type ChannelMIDIParameter,
     MIDIBuilder,
     type MIDIController,
     MIDIControllers,
@@ -76,8 +77,10 @@ const DEFAULT_MIDI_TEST_OPTIONS: MIDITestOptions = {
 
 export class MIDITestMaker extends MIDIBuilder {
     private ticks;
+    private readonly track;
     private readonly testName;
     private readonly channel;
+    private system;
 
     public constructor(
         name: string,
@@ -91,7 +94,35 @@ export class MIDITestMaker extends MIDIBuilder {
         this.ticks = o.startTicks;
         this.testName = name;
         this.fileName = name.replaceAll(" ", "_").toLowerCase();
-        this.tracks[0].addEvents(0, MIDIUtils.reset(0, o.system));
+        this.system = o.system;
+        this.track = this.tracks[0];
+        this.track.addEvents(0, MIDIUtils.reset(0, o.system));
+    }
+
+    public reset(system: MIDISystem) {
+        this.track.addEvents(
+            this.track.events.length,
+            MIDIUtils.reset(this.ticks, system)
+        );
+        this.system = system;
+        return this.wait(480);
+    }
+
+    public setChannelMIDIParameter<P extends keyof ChannelMIDIParameter>(
+        param: P,
+        value: ChannelMIDIParameter[P]
+    ) {
+        this.track.addEvents(
+            this.track.events.length,
+            ...MIDIUtils.setChannelMIDIParameter(
+                this.ticks,
+                this.channel,
+                this.system,
+                param,
+                value
+            )
+        );
+        return this;
     }
 
     public efx(typeMSB: number, typeLSB: number) {
@@ -180,6 +211,11 @@ export class MIDITestMaker extends MIDIBuilder {
 
     public gs(a1: number, a2: number, a3: number, data: number[]) {
         this.systemExclusive(this.ticks, 0, MIDIUtils.gs(a1, a2, a3, data));
+        return this;
+    }
+
+    public xg(a1: number, a2: number, a3: number, data: number[]) {
+        this.systemExclusive(this.ticks, 0, MIDIUtils.xg(a1, a2, a3, data));
         return this;
     }
 

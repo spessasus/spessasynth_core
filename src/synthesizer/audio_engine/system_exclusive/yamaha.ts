@@ -139,6 +139,16 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // Same note number key on assign
+                case 0x06: {
+                    ch.setMIDIParameter("assignMode", data);
+                    SpessaLog.xgInfo(
+                        `Same Note Number Key On Assign on ${channel}`,
+                        data
+                    );
+                    break;
+                }
+
                 // Part mode
                 case 0x07: {
                     const drums = data !== 0;

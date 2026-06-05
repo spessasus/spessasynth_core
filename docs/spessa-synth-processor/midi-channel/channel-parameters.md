@@ -181,17 +181,18 @@ Enables random panning for every note played on this channel.
 
 `number`
 
-Assign mode for the channel.
-`ASSIGN MODE` is the parameter that determines how voice assignment will be handled when sounds overlap on identical note numbers in the same channel (i.e., repeatedly struck notes).
-This is initialized to a mode suitable for each Part, so for general purposes there is no need to change this.
+Assign mode for the channel:
 
-- 0 - Single: If the same note is played multiple times in succession, the previously-sounding note will be completely silenced, and then the new note will be sounded.
-- 1 - LimitedMulti: If the same note is played multiple times in succession, the previously-sounding note will be continued to a certain extent even after the new note is sounded. (Default setting)
-- 2 - FullMulti: If the same note is played multiple times in succession, the previously-sounding note(s) will continue sounding for their natural length even after the new note is sounded.
+- `0` - A new note will kill the previous one if it is still playing.
+- Any other value - A new note will not kill the previous notes (default).
 
-SpessaSynth treats LimitedMulti like FullMulti.
-Essentially Limited and Full are normal
-and Single is like `monophonicRetrigger` system parameter.
+While GS and XG differentiate 1 (Limited Multi for GS/Multi for XG) and 2 (Full Multi for GS/Inst (for Drum)),
+SpessaSynth treats them both as full Multi. (no note killing is performed)
+
+This may be useful for emulating SC-55 hi-hat cutoff or MSGS note cutoff.
+
+Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 238 for more description.
+Note that `SAME NOTE NUMBER KEY ON ASSIGN` in XG is also recognized as assign mode.
 
 ### efxAssign
 

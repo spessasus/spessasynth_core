@@ -16,6 +16,7 @@
       <excludeFolder url="file://$MODULE_DIR$/tests/files" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
       <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/generated" />
+      <excludePattern pattern=".eslintcache" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

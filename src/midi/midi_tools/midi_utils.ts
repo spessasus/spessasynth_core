@@ -557,12 +557,29 @@ export class MIDIUtils {
             }
 
             case "assignMode": {
-                // GS only
-                return [
-                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x14, [
-                        value as number
-                    ])
-                ];
+                // XG/GS only
+                switch (system) {
+                    default:
+                    case "gs": {
+                        return [
+                            MIDIUtils.gsMessage(
+                                ticks,
+                                0x40,
+                                0x10 | gsChannel,
+                                0x14,
+                                [value as number]
+                            )
+                        ];
+                    }
+
+                    case "xg": {
+                        return [
+                            MIDIUtils.xgMessage(ticks, 0x08, channel, 0x06, [
+                                value as number
+                            ])
+                        ];
+                    }
+                }
             }
 
             case "efxAssign": {
@@ -1087,6 +1104,16 @@ export class MIDIUtils {
                                 ? MIDIControllers.polyModeOn
                                 : MIDIControllers.monoModeOn,
                         value: 0
+                    };
+                }
+
+                case 0x06: {
+                    // Same Note Number Key On Assign
+                    return {
+                        type: "Channel MIDI Param",
+                        channel,
+                        parameter: "assignMode",
+                        value: data
                     };
                 }
 
