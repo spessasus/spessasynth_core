@@ -36,6 +36,15 @@ It only needs to be awaited once, globally. Then all banks can be loaded synchro
 
     this property is _static_.
 
+### type
+
+The type of the sound bank that was loaded, either `sf2` or `dls`.
+
+!!! Note
+
+    SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
+    The type is still `sf2`.
+
 ### soundBankInfo
 
 The metadata of this sound bank as an object with properties described below.

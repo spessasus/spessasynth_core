@@ -38,6 +38,15 @@ export class BasicSoundBank {
     public static isSF3DecoderReady: Promise<boolean> = stbvorbis.isInitialized;
 
     /**
+     * The type of the sound bank that was loaded.
+     * Either `sf2` for SoundFont2/SoundFont3 or `dls` for DownLoadable Sounds.
+     *
+     * Please note that SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
+     * The type is still `sf2`.
+     */
+    public readonly type: "sf2" | "dls";
+
+    /**
      * Sound bank's info.
      */
     public soundBankInfo: SoundBankInfoData = {
@@ -77,6 +86,10 @@ export class BasicSoundBank {
      * If the sound bank has custom default modulators (DMOD).
      */
     public customDefaultModulators = false;
+
+    public constructor(type: "sf2" | "dls" = "sf2") {
+        this.type = type;
+    }
 
     private _isXGBank = false;
 

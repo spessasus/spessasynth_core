@@ -444,7 +444,7 @@ export class DownloadableSounds extends DLSVerifier {
      */
     public toSF(): BasicSoundBank {
         SpessaLog.group("%cConverting DLS to SF2...", ConsoleColors.info);
-        const soundBank = new BasicSoundBank();
+        const soundBank = new BasicSoundBank("dls");
 
         soundBank.soundBankInfo.version.minor = 4;
         soundBank.soundBankInfo.version.major = 2;

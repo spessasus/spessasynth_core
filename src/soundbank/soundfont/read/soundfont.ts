@@ -34,7 +34,7 @@ export class SoundFont2 extends BasicSoundBank {
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
     public constructor(arrayBuffer: ArrayBuffer, warnDeprecated = true) {
-        super();
+        super("sf2");
         if (warnDeprecated) {
             throw new Error(
                 "Using the constructor directly is deprecated. Use SoundBankLoader.fromArrayBuffer() instead."
