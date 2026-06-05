@@ -5,4 +5,4 @@ contact_links:
       about: "Something is unclear? Ask a question!"
     - name: "Documentation"
       url: "https://spessasus.github.io/spessasynth_core/"
-      about: "Visit the `spessasynth_core` documentation!"
+      about: "Visit the complete API documentation!"
