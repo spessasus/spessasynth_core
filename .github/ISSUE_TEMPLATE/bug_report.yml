@@ -47,10 +47,13 @@ body:
       id: os
       attributes:
           label: Environment
-          description: Which environment you are on?
+          description: In which environment are you using the library?
           options:
-              - Web browser (Which one?)
+              - Web browser, with spessasynth_lib
+              - Web browser, w/o spessasynth_lib
               - Node.js
+              - Bun
+              - Deno
               - Other (please specify in additional info)
       validations:
           required: false
