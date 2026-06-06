@@ -2,8 +2,6 @@
 
 SpessaSynth 4.0 brings the full bank LSB support in the API.
 
-## Description
-
 The system now operates on _MIDI Patches_ - a way of selecting MIDI presets using 4 properties,
 compatible with GM, GS, XG and GM2.
 The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.

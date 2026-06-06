@@ -9,7 +9,7 @@ These are the parameters that affect the entire synthesizer.
 
 ## System
 
-System Parameters can only be changed via the API,
+Global System Parameters are parameters that can only be changed via the API,
 and not via MIDI messages.
 
 An object called `DEFAULT_GLOBAL_SYSTEM_PARAMETERS` is provided with the library,
@@ -198,7 +198,7 @@ Where a new note will kill the previous one if it is still playing.
 
 ## MIDI
 
-MIDI Parameters can only be changed via MIDI messages,
+Global MIDI Parameters are parameters that can only be changed via MIDI messages,
 and not via the API. They get reset via MIDI reset messages,
 can be locked and have an associated event.
 

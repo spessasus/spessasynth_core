@@ -104,7 +104,7 @@ These are the default modulators, as defined by the SF2.04 specification.
 
 !!! Note
 
-    The [velocity to filter modulator is intentionally disabled](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont#fluidsynths-implementation-details-of-the-soundfont-2-spec).
+    The [velocity to filter modulator is intentionally disabled](https://www.fluidsynth.org/wiki/SoundFont/#fluidsynths-implementation-details-of-the-soundfont-2-spec).
 
 | Source                       | Source Transform          | Secondary source                           | Destination          | Transform amount |
 | ---------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |

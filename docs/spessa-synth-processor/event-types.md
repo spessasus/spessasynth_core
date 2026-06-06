@@ -1,4 +1,4 @@
-# Processor Event Types
+# Event Types
 
 This page serves as a detailed reference to all the event types `SpessaSynthProcessor` emits.
 

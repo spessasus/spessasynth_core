@@ -9,7 +9,7 @@ These are the parameters that affect the single MIDI channel.
 
 ## System
 
-System Parameters can only be changed via the API,
+Channel System Parameters are parameters that can only be changed via the API,
 and not via MIDI messages.
 
 An object called `DEFAULT_CHANNEL_SYSTEM_PARAMETERS` is provided with the library,
@@ -102,7 +102,7 @@ Overrides the global parameter if set.
 
 ## MIDI
 
-MIDI Parameters can only be changed via MIDI messages,
+Channel MIDI Parameters are parameters that can only be changed via MIDI messages,
 and not via the API. They get reset via MIDI reset messages,
 can be locked and have an associated event.
 
@@ -146,7 +146,12 @@ will create a total modulation depth of 100 cents.
 `number`
 
 The channel's receiving number (0-based index).
-This allows triggering multiple parts (channels) with a single note message.
+This allows triggering multiple parts (channels) with a single note message,
+effectively making multiple channels act as one.
+
+!!! Note
+
+    The `DEFAULT_CHANNEL_MIDI_PARAMETERS` reports the default as 0, but it is initialized with the corresponding channel's number.
 
 ### polyMode
 

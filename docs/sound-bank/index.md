@@ -11,7 +11,7 @@ It also contains support for `.dls` files.
 ### Specifications
 
 - [SoundFont2 Specification](http://www.synthfont.com/sfspec24.pdf)
-- [SoundFont3 Description](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format)
+- [SoundFont3 Description](https://www.fluidsynth.org/wiki/SoundFont3Format)
 - [DLS Level 2 Specification](https://midi.org/dls)
 
 ## Initialization
