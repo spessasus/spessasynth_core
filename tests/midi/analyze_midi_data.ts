@@ -181,7 +181,7 @@ for (const t of timeline) {
                                 analyzed.parameter
                             } = ${
                                 typeof analyzed.value === "number"
-                                    ? Math.round(analyzed.value)
+                                    ? Math.round(analyzed.value * 100) / 100
                                     : analyzed.value
                             }`
                         );

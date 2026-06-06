@@ -1369,13 +1369,6 @@ export class MIDIUtils {
         // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
         if (a1 !== 0x40 && a1 !== 0x50) return OTHER;
 
-        if (a2 === 0x00 && a3 === 0x05)
-            return {
-                type: "Global MIDI Param",
-                parameter: "keyShift",
-                value: data - 64
-            };
-
         // Effects
         if (a2 === 0x01) {
             if (a3 >= 0x30 && a3 <= 0x37) return { type: "Reverb Param" };

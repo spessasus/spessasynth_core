@@ -1,5 +1,6 @@
 import {
     type ChannelMIDIParameter,
+    type GlobalMIDIParameter,
     MIDIBuilder,
     type MIDIController,
     MIDIControllers,
@@ -103,12 +104,29 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public reset(system: MIDISystem) {
+        this.text(`${system.toUpperCase()} RESET`);
         this.track.addEvents(
             this.track.events.length,
             MIDIUtils.reset(this.ticks, system)
         );
         this.system = system;
         return this.wait(480);
+    }
+
+    public setGlobalMIDIParameter<P extends keyof GlobalMIDIParameter>(
+        param: P,
+        value: GlobalMIDIParameter[P]
+    ) {
+        this.track.addEvents(
+            this.track.events.length,
+            ...MIDIUtils.setGlobalMIDIParameter(
+                this.ticks,
+                this.system,
+                param,
+                value
+            )
+        );
+        return this;
     }
 
     public setChannelMIDIParameter<P extends keyof ChannelMIDIParameter>(
@@ -139,7 +157,12 @@ export class MIDITestMaker extends MIDIBuilder {
 
     public text(text: string) {
         const enc = new TextEncoder();
-        super.addEvent(this.ticks, 0, MIDIMessageTypes.text, enc.encode(text));
+        super.addEvent(
+            this.ticks,
+            0,
+            MIDIMessageTypes.text,
+            enc.encode(text + "\n")
+        );
         return this;
     }
 

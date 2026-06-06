@@ -83,7 +83,10 @@ export function rolandSystemExclusive(
                                 case 0x04: {
                                     // Roland GS master volume
                                     SpessaLog.gsInfo("Master Volume", data);
-                                    this.setMIDIParameter("gain", data / 127);
+                                    this.setMIDIParameter(
+                                        "gain",
+                                        Math.pow(data / 127, 2)
+                                    );
                                     break;
                                 }
 
