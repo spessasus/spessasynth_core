@@ -924,8 +924,8 @@ export class MIDIUtils {
                                     return OTHER;
                                 }
 
-                                case 0x01:
-                                case 0x02: {
+                                case 0x00:
+                                case 0x01: {
                                     return {
                                         type: "Reverb Param"
                                     };
@@ -941,6 +941,7 @@ export class MIDIUtils {
                                     return OTHER;
                                 }
 
+                                case 0x00:
                                 case 0x01:
                                 case 0x02:
                                 case 0x03:
