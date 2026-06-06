@@ -48,7 +48,7 @@ midi.modify({
     midiParams: {
         keyShift: -2,
         fineTune: 30,
-        gain: 0.7,
+        volume: 0.7,
         pan: -0.7
     },
     channels

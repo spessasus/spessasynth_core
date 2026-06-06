@@ -691,7 +691,8 @@ export class MIDIChannel {
             // Global System
             globalSystem.gain *
             // Global MIDI
-            globalMIDI.gain *
+            // It corresponds to CC volume, so volume is squared.
+            Math.pow(globalMIDI.volume, 2) *
             // Channel System
             channelSystem.gain;
         // Channel MIDI are the volume/expression controllers

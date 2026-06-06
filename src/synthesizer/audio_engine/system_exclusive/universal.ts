@@ -45,9 +45,7 @@ export function universalSystemExclusive(
                 case 0x01: {
                     // Master volume
                     const vol = (syx[5] << 7) | syx[4];
-                    // It corresponds to CC volume, so volume is squared.
-                    const gain = Math.pow(vol / 16_383, 2);
-                    this.setMIDIParameter("gain", gain);
+                    this.setMIDIParameter("volume", vol / 16_383);
                     SpessaLog.gmInfo("Master Volume", vol);
                     break;
                 }

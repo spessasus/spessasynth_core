@@ -115,6 +115,8 @@ export interface GlobalSystemParameter {
     /**
      * The master pan.
      * From -1 (left) to 1 (right). 0 is center.
+     *
+     * This uses the cosine panning law, so the perceived loudness remains constant as the pan changes.
      */
     pan: number;
 

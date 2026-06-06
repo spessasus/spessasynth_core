@@ -22,20 +22,24 @@ export interface GlobalMIDIParameter {
     fineTune: number;
 
     /**
-     * The master gain.
-     * From 0 to any number. 1 is 100% volume.
+     * The master volume.
+     * From 0 (silent) to 1 (full volume).
+     *
+     * This differs from the `gain` system parameter in that it is squared internally.
      */
-    gain: number;
+    volume: number;
 
     /**
      * The master pan.
      * From -1 (left) to 1 (right). 0 is center.
+     *
+     * This uses the cosine panning law, so the perceived loudness remains constant as the pan changes.
      */
     pan: number;
 }
 
 export const DEFAULT_GLOBAL_MIDI_PARAMETERS: GlobalMIDIParameter = {
-    gain: 1,
+    volume: 1,
     pan: 0,
     keyShift: 0,
     fineTune: 0,

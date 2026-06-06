@@ -575,7 +575,7 @@ export class SynthesizerCore {
         this.callEvent("reset", system);
         // Reset MIDI parameters
         this.setMIDIParameter("system", system);
-        this.setMIDIParameter("gain", 1);
+        this.setMIDIParameter("volume", 1);
         this.setMIDIParameter("pan", 0);
         this.setMIDIParameter("keyShift", 0);
         this.setMIDIParameter("fineTune", 0);

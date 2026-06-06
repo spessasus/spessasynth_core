@@ -83,10 +83,7 @@ export function rolandSystemExclusive(
                                 case 0x04: {
                                     // Roland GS master volume
                                     SpessaLog.gsInfo("Master Volume", data);
-                                    this.setMIDIParameter(
-                                        "gain",
-                                        Math.pow(data / 127, 2)
-                                    );
+                                    this.setMIDIParameter("volume", data / 127);
                                     break;
                                 }
 
@@ -1311,10 +1308,11 @@ export function rolandSystemExclusive(
             }
 
             // Some Roland
+            // This sysEx gets emitted by Falcosoft MIDI Player
             case 0x16: {
                 if (syx[4] === 0x10) {
                     // This is a roland master volume message
-                    this.setMIDIParameter("gain", syx[7] / 100);
+                    this.setMIDIParameter("volume", syx[7] / 100);
                     SpessaLog.coolInfo("Roland Master Volume Control", syx[7]);
                     return;
                 } else {

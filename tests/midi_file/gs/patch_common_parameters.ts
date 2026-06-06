@@ -21,12 +21,12 @@ test.wait(960).text("MASTER VOLUME");
 test.noteOn(60, 127);
 
 for (let volume = 0; volume <= 127; volume += 1) {
-    test.setGlobalMIDIParameter("gain", volume / 127)
+    test.setGlobalMIDIParameter("volume", volume / 127)
         .text(`Master volume = ${volume}`)
         .wait(20);
 }
 test.noteOff(60);
-test.setGlobalMIDIParameter("gain", 1);
+test.setGlobalMIDIParameter("volume", 1);
 
 test.wait(960).text("MASTER KEY-SHIFT");
 

@@ -40,7 +40,7 @@ export function yamahaSystemExclusive(
 
                 // Master volume
                 case 0x04: {
-                    this.setMIDIParameter("gain", data / 127);
+                    this.setMIDIParameter("volume", data / 127);
                     SpessaLog.xgInfo("Master Volume", data);
                     break;
                 }
@@ -48,7 +48,7 @@ export function yamahaSystemExclusive(
                 // Master attenuation
                 case 0x05: {
                     const vol = 127 - data;
-                    this.setMIDIParameter("gain", vol / 127);
+                    this.setMIDIParameter("volume", vol / 127);
                     SpessaLog.xgInfo("Master Attenuation", data);
                     break;
                 }

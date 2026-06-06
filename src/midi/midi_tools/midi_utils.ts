@@ -363,14 +363,12 @@ export class MIDIUtils {
                 }
             }
 
-            case "gain": {
+            case "volume": {
                 // All three once more!
                 switch (system) {
                     default: {
-                        // MIDI Master Volume corresponds to CC volume, so the effective volume is squared.
-                        // Reverse that here
                         const gainValue = Math.floor(
-                            Math.sqrt(value as number) * 16_383
+                            (value as number) * 16_383
                         );
                         return [
                             MIDIUtils.deviceControlMessage(ticks, 0x01, [
@@ -861,7 +859,7 @@ export class MIDIUtils {
                     const gain = Math.pow(value, 2);
                     return {
                         type: "Global MIDI Param",
-                        parameter: "gain",
+                        parameter: "volume",
                         value: gain
                     };
                 }
@@ -1314,7 +1312,7 @@ export class MIDIUtils {
                 case 0x04: {
                     return {
                         type: "Global MIDI Param",
-                        parameter: "gain",
+                        parameter: "volume",
                         value: data / 127
                     };
                 }
