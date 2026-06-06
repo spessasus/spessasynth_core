@@ -120,7 +120,7 @@ for (const t of timeline) {
 
                             case "Other": {
                                 console.info(
-                                    `[UNR ] N/RPN: param ${(ch.tracker.paramMSB.v << 7).toString(16)} ${ch.tracker.paramLSB.v.toString(16)}`
+                                    `[UNREC] N/RPN: param ${(ch.tracker.paramMSB.v << 7).toString(16)} ${ch.tracker.paramLSB.v.toString(16)}`
                                 );
                                 break;
                             }
@@ -159,7 +159,9 @@ for (const t of timeline) {
                         // Log without type
                         const { type, ...values } = analyzed;
                         if (Object.keys(values).length === 0) {
-                            console.info(`${analyzed.type} System Exclusive.`);
+                            console.info(
+                                `[OTHER] ${analyzed.type} System Exclusive.`
+                            );
                             break;
                         }
                         console.info(
@@ -171,7 +173,10 @@ for (const t of timeline) {
                     }
 
                     case "Other": {
-                        console.info("[UNR ] SysEx:", arrayToHexString(e.data));
+                        console.info(
+                            "[UNREC] SysEx:",
+                            arrayToHexString(e.data)
+                        );
                         break;
                     }
 
@@ -194,7 +199,7 @@ for (const t of timeline) {
                                 analyzed.parameter
                             } = ${
                                 typeof analyzed.value === "number"
-                                    ? Math.round(analyzed.value)
+                                    ? Math.round(analyzed.value * 100) / 100
                                     : analyzed.value
                             }`
                         );
