@@ -65,12 +65,14 @@ class EFXTest {
 
 interface MIDITestOptions {
     startTicks: number;
+    timeDivision: number;
     channel: number;
     system: MIDISystem;
 }
 
 const DEFAULT_MIDI_TEST_OPTIONS: MIDITestOptions = {
     startTicks: 480,
+    timeDivision: 480,
     channel: 0,
     system: "gs"
 };
@@ -86,10 +88,11 @@ export class MIDITestMaker extends MIDIBuilder {
         name: string,
         options: Partial<MIDITestOptions> = DEFAULT_MIDI_TEST_OPTIONS
     ) {
-        super({
-            name
-        });
         const o = fillWithDefaults(options, DEFAULT_MIDI_TEST_OPTIONS);
+        super({
+            name,
+            timeDivision: o.timeDivision
+        });
         this.channel = o.channel;
         this.ticks = o.startTicks;
         this.testName = name;
