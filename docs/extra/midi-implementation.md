@@ -257,6 +257,8 @@ These are global parameters, affecting the entire synthesizer.
 
 Resets the synthesizer and switches it to GS mode. (GS reset)
 
+Note that value `01` is defined as `Double Module Mode` and makes the synthesizer ensure that it has at least 32 channels.
+
 ##### Master Tune
 
 Master fine tune of the synthesizer.

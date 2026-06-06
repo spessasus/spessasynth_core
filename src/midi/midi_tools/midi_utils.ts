@@ -1340,8 +1340,10 @@ export class MIDIUtils {
                 // MODE SET
                 case 0x7f: {
                     switch (data) {
-                        case 0x00: {
-                            // GS Reset/Mode-1
+                        // GS Reset/Mode-1 (Single Module Mode)
+                        case 0x00:
+                        // GS Reset/Mode-2 (Double Module Mode)
+                        case 0x01: {
                             return {
                                 type: "Global MIDI Param",
                                 parameter: "system",
@@ -1364,7 +1366,8 @@ export class MIDIUtils {
         }
 
         if (a1 === 0x41) return { type: "Drum Setup" };
-        if (a1 !== 0x40) return OTHER;
+        // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
+        if (a1 !== 0x40 && a1 !== 0x50) return OTHER;
 
         if (a2 === 0x00 && a3 === 0x05)
             return {

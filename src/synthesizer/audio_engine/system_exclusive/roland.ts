@@ -34,7 +34,19 @@ export function rolandSystemExclusive(
                     // Sanity check
                     const data = Math.min(syx[7], 127);
                     // SYSTEM MODE SET
-                    if (a1 === 0 && a2 === 0 && a3 === 0x7f && data === 0x00) {
+                    if (
+                        a1 === 0 &&
+                        a2 === 0 &&
+                        a3 === 0x7f &&
+                        (data === 0x00 || data === 0x01)
+                    ) {
+                        if (data === 0x01) {
+                            // Double module mode, ensure at least 32 channels
+                            SpessaLog.gsInfo("Mode", "Double Module");
+                            while (this.midiChannels.length < 32) {
+                                this.createMIDIChannel(true);
+                            }
+                        }
                         // This is a GS reset
                         SpessaLog.coolInfo("MIDI System", "Roland GS");
                         this.reset("gs");
@@ -42,7 +54,12 @@ export function rolandSystemExclusive(
                     }
 
                     // Patch Parameter
-                    if (a1 === 0x40) {
+                    if (a1 === 0x40 || a1 === 0x50) {
+                        // 50 means BLOCK B (+16 channels)
+                        // Testcase: 95043-2.KYC.mid
+                        if (a1 === 0x50) {
+                            channelOffset += 16;
+                        }
                         // System Parameter
                         if (a2 === 0x00) {
                             switch (a3) {
@@ -615,6 +632,13 @@ export function rolandSystemExclusive(
                                 channelOffset;
                             // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                             const ch = this.midiChannels[channel];
+                            if (!ch) {
+                                SpessaLog.gsFail(
+                                    `Patch Parameter for ${channel}`,
+                                    syx,
+                                    "Invalid channel number"
+                                );
+                            }
                             switch (a3) {
                                 default: {
                                     // This is some other GS sysex...
@@ -1091,7 +1115,9 @@ export function rolandSystemExclusive(
                         return;
                     }
                     // Drum setup
-                    if (a1 === 0x41) {
+                    if (a1 === 0x41 || a1 === 0x51) {
+                        // 51 means BLOCK B (+16 channels)
+                        // Testcase: 95043-2.KYC.mid
                         if (this.systemParameters.drumLock) return;
                         const map = (a2 >> 4) + 1;
                         const drumKey = a3;
