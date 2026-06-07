@@ -20,6 +20,7 @@ type GlobalMIDIParameterMessage = {
     };
 }[keyof GlobalMIDIParameter];
 
+// Channel number may be above 15
 type ChannelMIDIParameterMessage = {
     [P in keyof ChannelMIDIParameter]: {
         type: "Channel MIDI Param";
@@ -28,7 +29,7 @@ type ChannelMIDIParameterMessage = {
         channel: number;
     };
 }[keyof ChannelMIDIParameter];
-
+// Channel number may be above 15
 type AnalyzedParameter =
     | { type: "Other" }
     | {
@@ -1056,9 +1057,6 @@ export class MIDIUtils {
         // XG MULTI PART
         if (a1 === 0x08 /* A2 is the channel number*/) {
             const channel = a2;
-            // Avoid invalid channels
-            if (channel >= 16) return OTHER;
-
             switch (a3) {
                 default: {
                     return OTHER;
@@ -1368,6 +1366,9 @@ export class MIDIUtils {
         // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
         if (a1 !== 0x40 && a1 !== 0x50) return OTHER;
 
+        // Block B is the second 16-channel set
+        const channelOffset = a1 === 0x50 ? 16 : 0;
+
         // Effects
         if (a2 === 0x01) {
             if (a3 >= 0x30 && a3 <= 0x37) return { type: "Reverb Param" };
@@ -1381,7 +1382,7 @@ export class MIDIUtils {
 
         // Patch parameter
         if (a2 >> 4 === 1) {
-            const channel = MIDIUtils.syxToChannel(a2 & 0x0f);
+            const channel = MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 default: {
                     return OTHER;
@@ -1620,7 +1621,7 @@ export class MIDIUtils {
 
         // Patch Parameter Tone Map
         if (a2 >> 4 === 4) {
-            const channel = MIDIUtils.syxToChannel(a2 & 0x0f);
+            const channel = MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
             switch (a3) {
                 default: {
                     return OTHER;

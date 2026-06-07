@@ -179,6 +179,8 @@ export function setTimeToInternal(
 
                     case "Controller Change": {
                         const { controller, value, channel } = analyzed;
+                        // Channel number may be above 15
+                        if (channel >= channelsToSave) break;
                         // Empty tracks cannot controller change
                         if (
                             this._midiData.isMultiPort &&

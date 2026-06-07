@@ -85,6 +85,8 @@ function correctBankOffsetInternal(
                 // Check for drum sysex
                 case "Drums On": {
                     const sysexChannel = syx.channel + portOffset;
+                    // Ensure check as syx.channel may be above 15
+                    if (!channels[sysexChannel]) return;
                     channels[sysexChannel].isDrum = syx.isDrum;
                     return;
                 }
@@ -106,6 +108,8 @@ function correctBankOffsetInternal(
                 case "Controller Change": {
                     // Replace the system exclusive with a regular controller change
                     const t = mid.tracks[trackNum];
+                    // Channel number may be above 15
+                    if (syx.channel >= 16) return;
                     const newEvent = MIDIMessage.controllerChange(
                         e.ticks,
                         syx.channel,
@@ -123,6 +127,8 @@ function correctBankOffsetInternal(
                 }
 
                 case "Program Change": {
+                    // Channel number may be above 15
+                    if (syx.channel >= 16) return;
                     // Replace the system exclusive with a regular program
                     const t = mid.tracks[trackNum];
                     const newEvent = MIDIMessage.programChange(

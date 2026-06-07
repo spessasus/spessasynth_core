@@ -249,6 +249,8 @@ export function getUsedProgramsAndKeys(
                         case "Channel MIDI Param": {
                             if (syx.parameter === "keyShift") {
                                 const ch = channels[syx.channel];
+                                // Channel may be above 15
+                                if (!ch) break;
                                 // Drum channels ignore key shift
                                 // Testcase: th07_19_user_gm.mid
                                 ch.keyShift = ch.isDrum ? 0 : syx.value;
@@ -258,6 +260,8 @@ export function getUsedProgramsAndKeys(
 
                         case "Drums On": {
                             const sysexChannel = syx.channel + channelOffset;
+                            // Channel may be above 15
+                            if (!channels[sysexChannel]) break;
                             channels[sysexChannel].isDrum = syx.isDrum;
                             break;
                         }
@@ -265,6 +269,8 @@ export function getUsedProgramsAndKeys(
                         case "Program Change": {
                             const sysexChannel = syx.channel + channelOffset;
                             const ch = channels[sysexChannel];
+                            // Channel may be above 15
+                            if (!ch) break;
                             ch.preset = soundBank.getPreset(
                                 {
                                     bankMSB: ch.bankMSB,
@@ -279,14 +285,17 @@ export function getUsedProgramsAndKeys(
 
                         case "Controller Change": {
                             const sysexChannel = syx.channel + channelOffset;
+                            const ch = channels[sysexChannel];
+                            // Channel may be above 15
+                            if (!ch) break;
                             if (
                                 syx.controller === MIDIControllers.bankSelectLSB
                             )
-                                channels[sysexChannel].bankLSB = syx.value;
+                                ch.bankLSB = syx.value;
                             else if (
                                 syx.controller === MIDIControllers.bankSelect
                             )
-                                channels[sysexChannel].bankMSB = syx.value;
+                                ch.bankMSB = syx.value;
                         }
                     }
                 }

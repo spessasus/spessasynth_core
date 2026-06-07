@@ -940,7 +940,12 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         if (syx.parameter === "fineTune") {
                             const syxStatus =
                                 channelStatuses[syx.channel + portOffset];
-                            if (syxStatus.isFirstNoteOn && syxChannel) {
+                            if (
+                                // Syx.channel may be above 15, check if it exists
+                                syxStatus &&
+                                syxStatus.isFirstNoteOn &&
+                                syxChannel
+                            ) {
                                 // No note-on yet. Then use it as relative!
                                 const newTune = syxStatus.fineTune + syx.value;
                                 syxStatus.currentKeyShift = Math.trunc(
