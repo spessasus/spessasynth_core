@@ -1129,13 +1129,13 @@ export function rolandSystemExclusive(
                             }
 
                             case 0x0: {
-                                // Drum map name. cool!
-                                // Not sure what to do with it, but let's log it!
+                                // Drum map name
                                 const patchName = readBinaryString(syx, 12, 7);
                                 SpessaLog.gsInfo(
-                                    `Patch Name for MAP${map}`,
+                                    `Drum Map Name for MAP${map}`,
                                     patchName
                                 );
+                                this.callEvent("displayMessage", [...syx]);
                                 break;
                             }
 
@@ -1289,20 +1289,9 @@ export function rolandSystemExclusive(
                 // 0x45: GS Display Data
                 // Check for embedded copyright
                 // (Roland SC display sysex) http://www.bandtrax.com.au/sysex.htm
-
-                if (
-                    syx[4] === 0x10 // Sound Canvas Display
-                ) {
-                    if (syx[5] === 0x00) {
-                        // Display letters
-                        this.callEvent("displayMessage", [...syx]);
-                    } else if (syx[5] === 0x01) {
-                        // Matrix display
-                        this.callEvent("displayMessage", [...syx]);
-                    } else {
-                        // This is some other GS sysex...
-                        SpessaLog.gsFail("Display Data", syx);
-                    }
+                // Sound Canvas Display
+                if (syx[4] === 0x10) {
+                    this.callEvent("displayMessage", [...syx]);
                 }
                 return;
             }

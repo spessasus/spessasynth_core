@@ -255,10 +255,8 @@ Below are the supported Roland GS messages.
 
 #### Display Data
 
-| Name               | Description                                                                                                                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Displayed Letter   | The text that Sound Canvas MIDIs display on the device. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
-| Displayed Dot Data | Dot matrix display data for the Sound Canvas devices. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data.   |
+All messages with address of `0x10 xx xx` are recognized.
+A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data.
 
 #### System Parameters
 
@@ -283,7 +281,7 @@ These are global parameters, affecting the entire synthesizer.
 | MASTER VOLUME    | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume).                                                                                                                          |
 | MASTER KEY-SHIFT | Sets the Global MIDI Parameter [`keyShift`](../spessa-synth-processor/global-parameters.md#keyshift_1).                                                                                                                    |
 | MASTER PAN       | Sets the Global MIDI Parameter [`pan`](../spessa-synth-processor/global-parameters.md#pan_1).                                                                                                                              |
-| MODE SET         | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system) to `gs`.                                                                                       |
+| MODE SET         | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gs`.                                                                                     |
 | PATCH NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
 
 ##### Reverb
@@ -398,18 +396,18 @@ The following messages allow to tune drum instruments.
 A drum instrument is defined as a single MIDI key in the drum preset.
 These search for a matching drum channel with the correct `drumMap` Channel MIDI Parameter.
 
-| Name                | Description                                                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| DRUM MAP NAME       | The name is recognized and logged to console.                                                                                 |
-| PLAY NOTE NUMBER    | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                       |
-| LEVEL               | The drum's loudness. These are normalized against 120 (`gain = data / 120`).                                                  |
-| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                     |
-| PANPOT              | Pan position of the instrument, except value `0` enables random panning for every note. (multiplicative of channel)           |
-| REVERB SEND LEVEL   | Reverb send level of the instrument. (multiplicative of channel)                                                              |
-| CHORUS SEND LEVEL   | Chorus send level of the instrument. (multiplicative of channel)                                                              |
-| Rx. NOTE OFF        | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off. |
-| Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                              |
-| DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                               |
+| Name                | Description                                                                                                                                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DRUM MAP NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
+| PLAY NOTE NUMBER    | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                                                                                    |
+| LEVEL               | The drum's loudness. These are normalized against 120 (`gain = data / 120`).                                                                                                                                               |
+| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                                                                                                                  |
+| PANPOT              | Pan position of the instrument, except value `0` enables random panning for every note. (multiplicative of channel)                                                                                                        |
+| REVERB SEND LEVEL   | Reverb send level of the instrument. (multiplicative of channel)                                                                                                                                                           |
+| CHORUS SEND LEVEL   | Chorus send level of the instrument. (multiplicative of channel)                                                                                                                                                           |
+| Rx. NOTE OFF        | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                                                                                              |
+| Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                                           |
+| DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                                            |
 
 ### Yamaha XG
 
@@ -420,14 +418,14 @@ Below are the supported Yamaha XG System Exclusive messages.
 
 These are global parameters, affecting the entire synthesizer.
 
-| Name                | Description                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| MASTER TUNE         | Sets the Global MIDI Parameter [`fineTune`](../spessa-synth-processor/global-parameters.md#finetune_1).                              |
-| MASTER VOLUME       | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume).                                    |
-| MASTER ATTENUATOR   | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume) with an inverted value.             |
-| MASTER TRANSPOSE    | Sets the Global MIDI Parameter [`keyShift`](../spessa-synth-processor/global-parameters.md#keyshift_1)                               |
-| XG SYSTEM ON        | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system) to `xg`. |
-| ALL PARAMETER RESET | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system) to `xg`. |
+| Name                | Description                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| MASTER TUNE         | Sets the Global MIDI Parameter [`fineTune`](../spessa-synth-processor/global-parameters.md#finetune_1).                                |
+| MASTER VOLUME       | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume).                                      |
+| MASTER ATTENUATOR   | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume) with an inverted value.               |
+| MASTER TRANSPOSE    | Sets the Global MIDI Parameter [`keyShift`](../spessa-synth-processor/global-parameters.md#keyshift_1)                                 |
+| XG SYSTEM ON        | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `xg`. |
+| ALL PARAMETER RESET | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `xg`. |
 
 #### Reverb, chorus, and variation block
 
@@ -528,11 +526,11 @@ Below are the supported Universal System Exclusive messages.
 
 #### General MIDI
 
-| Name          | Description                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| GM System Off | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system) to `gs`.  |
-| GM1 System On | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system) to `gm`.  |
-| GM2 System On | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system) to `gm2`. |
+| Name          | Description                                                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| GM System Off | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gs`.  |
+| GM1 System On | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gm`.  |
+| GM2 System On | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gm2`. |
 
 #### MIDI Tuning Standard
 

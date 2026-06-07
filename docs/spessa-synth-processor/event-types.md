@@ -160,6 +160,14 @@ This event is triggered when a SysEx to display some text has been received.
 
 The data is a number array of the entire system exclusive, **excluding the `F0` status byte.**
 
+Notable messages that can trigger this event:
+
+- All messages with GS Model ID of `0x45` (Display Data)
+- GS Patch Name
+- GS Drum Map Name
+- XG Display Letter
+- XG Display Bitmap
+
 ### `globalParamChange`
 
 This event is triggered when a [Global MIDI Parameter](global-parameters.md#midi) changes.
