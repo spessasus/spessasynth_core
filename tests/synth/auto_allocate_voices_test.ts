@@ -1,4 +1,5 @@
 import {
+    audioToWav,
     BasicMIDI,
     SoundBankLoader,
     SpessaLog,
@@ -6,8 +7,6 @@ import {
     SpessaSynthSequencer
 } from "../../src";
 import * as fs from "node:fs/promises";
-import { Readable } from "node:stream";
-import Speaker from "speaker"; // Process arguments
 
 // Process arguments
 const args = process.argv.slice(2);
@@ -47,33 +46,33 @@ seq.play();
 seq.loopCount = Infinity;
 
 const bufSize = 128;
+// Prepare the output buffers
+const sampleCount = Math.ceil(sampleRate * (midi.duration + 2));
+const outLeft = new Float32Array(sampleCount);
+const outRight = new Float32Array(sampleCount);
 
-const audioStream = new Readable({
-    read() {
-        const left = new Float32Array(bufSize);
-        const right = new Float32Array(bufSize);
-        seq.processTick();
-        synth.process(left, right);
-
-        const interleaved = new Float32Array(left.length * 2);
-        for (let i = 0; i < left.length; i++) {
-            interleaved[i * 2] = left[i];
-            interleaved[i * 2 + 1] = right[i];
-        }
-
-        const buffer = Buffer.alloc(interleaved.length * 4);
-        for (let i = 0; i < interleaved.length; i++) {
-            buffer.writeFloatLE(interleaved[i], i * 4);
-        }
-        this.push(buffer);
+let filledSamples = 0;
+let i = 0;
+const durationRounded = Math.floor(seq.midiData!.duration * 100) / 100;
+while (filledSamples < sampleCount) {
+    // Process sequencer
+    seq.processTick();
+    // Render
+    const bufferSize = Math.min(bufSize, sampleCount - filledSamples);
+    synth.process(outLeft, outRight, filledSamples, bufferSize);
+    filledSamples += bufferSize;
+    i++;
+    // Log progress
+    if (i % 100 === 0) {
+        console.info(
+            "Rendered",
+            Math.floor(seq.currentTime * 100) / 100,
+            "/",
+            durationRounded
+        );
     }
-});
+}
 
-const speaker = new Speaker({
-    sampleRate: 44_100,
-    channels: 2,
-    bitDepth: 32,
-    // @ts-expect-error badly typed package (again)
-    float: true
-});
-audioStream.pipe(speaker);
+const wave = audioToWav([outLeft, outRight], sampleRate);
+await fs.writeFile("result.wav", new Uint8Array(wave));
+console.info(`File written to result.wav`);
