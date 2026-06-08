@@ -18,7 +18,7 @@ const pkg = {
     keywords: [],
     author: "",
     license: "ISC",
-    type: "commonjs",
+    type: "module",
     dependencies: {
         midi: "^2.0.0",
         speaker: "^0.5.5"
