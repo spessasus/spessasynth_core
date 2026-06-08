@@ -62,7 +62,7 @@ You can find all examples in the `examples` directory in this repository.
 
 !!! Note
 
-    The `midi_player_node` example requires the `speaker` package to be installed (`npm install speaker`)
+    To run these examples, run `npm run install:examples` in the root directory.
 
 ### MIDI to WAV converter
 
