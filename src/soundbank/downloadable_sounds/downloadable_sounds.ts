@@ -53,7 +53,7 @@ export class DownloadableSounds extends DLSVerifier {
         SpessaLog.group("%cParsing DLS file...", ConsoleColors.info);
 
         // Read the main chunk
-        const firstChunk = RIFFChunk.read(dataArray, false);
+        const firstChunk = RIFFChunk.read(dataArray, false, false);
         this.verifyHeader(firstChunk, "RIFF");
         this.verifyText(
             readBinaryStringIndexed(dataArray, 4).toLowerCase(),

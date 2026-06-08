@@ -2,7 +2,7 @@
 
 This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
 
-It also contains support for `.dls` files.
+It also contains support for `.dls` files and experimental read support for [64-bit SFE](https://github.com/SFe-Team-was-taken/SFE)
 
 !!! Tip
 

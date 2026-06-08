@@ -1,6 +1,42 @@
 import type { IndexedByteArray } from "../indexed_array";
 
 /**
+ * Reads the number as little endian from an IndexedByteArray. Uses BigInt to go above 32 bytes.
+ * @param dataArray the array to read from.
+ * @param bytesAmount the number of bytes to read.
+ * @returns the number.
+ */
+export function readLE64Indexed(
+    dataArray: IndexedByteArray,
+    bytesAmount: number
+) {
+    const res = readLE64(dataArray, bytesAmount, dataArray.currentIndex);
+    dataArray.currentIndex += bytesAmount;
+    return res;
+}
+
+/**
+ * Reads the number as little endian. Uses BigInt to go above 32 bytes.
+ * @param dataArray the array to read from.
+ * @param bytesAmount the number of bytes to read.
+ * @param offset the offset to start reading at.
+ * @returns the number.
+ */
+export function readLE64(
+    dataArray: number[] | ArrayLike<number>,
+    bytesAmount: number,
+    offset = 0
+) {
+    let out = 0n;
+
+    for (let i = 0; i < bytesAmount; i++) {
+        out |= BigInt(dataArray[offset + i]) << BigInt(i * 8);
+    }
+
+    return Number(out);
+}
+
+/**
  * Reads the number as little endian from an IndexedByteArray.
  * @param dataArray the array to read from.
  * @param bytesAmount the number of bytes to read.
