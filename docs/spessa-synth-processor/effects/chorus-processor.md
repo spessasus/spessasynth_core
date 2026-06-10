@@ -1,10 +1,12 @@
-# Chorus Processor
+# Chorus Processor (GS)
 
 Chorus broadens the spatial image of the sound, adding depth and richness.
 
+This is a Roland GS-compatible chorus interface.
+
 ## Editing the parameters
 
-Editing the parameters can be done via GS system exclusive messages or by accessing the `.chorusProcessor` property.
+Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing the `.chorusProcessor` property.
 
 !!! Tip
 

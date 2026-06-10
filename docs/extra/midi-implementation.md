@@ -342,7 +342,9 @@ Part (channel) parameters set a specific parameter for a specific channel.
 
 !!! Warning
 
-    Parts above the current channel number are discarded. To avoid this, add more channels to the synthesizer.
+    GS can refer up to 32 channels, the top 16 can be accessed with `0x50` instead of `0x40` for the "BLOCK B".
+
+    Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
 | Name                              | Description                                                                                                                                                                           |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -438,7 +440,9 @@ Part (channel) parameters set a specific parameter for a specific channel.
 
 !!! Warning
 
-    Parts above the current channel number are discarded. To avoid this, add more channels to the synthesizer.
+    XG part (channel) number may range from 0 to 64.
+
+    Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
 | Name                           | Description                                                                                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

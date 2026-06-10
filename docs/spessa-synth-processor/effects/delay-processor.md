@@ -3,6 +3,12 @@
 Delay creates echoes. It is also possible to give depth and width to a sound by adding
 a short delay to the original sound.
 
+This is a Roland GS-compatible delay interface.
+
+!!! Note
+
+    Delay is disabled in XG mode.
+
 ## Editing the parameters
 
 Editing the parameters can be done via GS system exclusive messages or by accessing the `.delayProcessor` property.
