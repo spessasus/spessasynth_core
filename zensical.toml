@@ -66,8 +66,8 @@ nav = [
             "spessa-synth-processor/event-types.md",
             { "Effects" = [
                 "spessa-synth-processor/effects/reverb-processor.md",
-                "spessa-synth-processor/effects//chorus-processor.md",
-                "spessa-synth-processor/effects//delay-processor.md"
+                "spessa-synth-processor/effects/chorus-processor.md",
+                "spessa-synth-processor/effects/delay-processor.md"
             ] },
         ] },
         { "SpessaSynthSequencer" = [

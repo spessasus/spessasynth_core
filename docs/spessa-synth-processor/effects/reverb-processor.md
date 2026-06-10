@@ -3,9 +3,11 @@
 Reverb is an effect that adds reverberation to a sound, as you would hear in a concert
 hall.
 
+This is a Roland GS-compatible reverb interface.
+
 ## Editing the parameters
 
-Editing the parameters can be done via GS system exclusive messages or by accessing the `.reverbProcessor` property.
+Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing the `.reverbProcessor` property.
 
 !!! Tip
 
