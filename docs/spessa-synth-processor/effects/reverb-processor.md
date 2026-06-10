@@ -1,4 +1,4 @@
-# Reverb Processor
+# Reverb Processor (GS)
 
 Reverb is an effect that adds reverberation to a sound, as you would hear in a concert
 hall.
