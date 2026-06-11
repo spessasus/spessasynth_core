@@ -146,7 +146,7 @@ export class BasicSoundBank {
         sample.name = "Saw";
         sample.originalKey = 65;
         sample.pitchCorrection = 20;
-        sample.loopEnd = 127;
+        sample.loopEnd = 128;
         sample.setAudioData(sampleData, 44_100);
         font.addSamples(sample);
 
@@ -170,7 +170,7 @@ export class BasicSoundBank {
 
         font.addPresets(preset);
 
-        font.soundBankInfo.name = "Dummy";
+        font.soundBankInfo.name = "SpessaSynth Sample Sound Bank";
         font.flush();
         return font.writeSF2();
     }
