@@ -13,7 +13,8 @@ import type { ExtendedSF2Chunks } from "./types";
 export function getSHDR(
     bank: BasicSoundBank,
     smplStartOffsets: number[],
-    smplEndOffsets: number[]
+    smplEndOffsets: number[],
+    rf64: boolean
 ): ExtendedSF2Chunks {
     const sampleLength = 46;
     const shdrSize = sampleLength * (bank.samples.length + 1); // +1 because EOP
@@ -69,8 +70,8 @@ export function getSHDR(
     // Write EOS and zero everything else
     writeBinaryStringIndexed(shdrData, "EOS", sampleLength);
     writeBinaryStringIndexed(xshdrData, "EOS", sampleLength);
-    const shdr = RIFFChunk.write("shdr", shdrData);
-    const xshdr = RIFFChunk.write("shdr", xshdrData);
+    const shdr = RIFFChunk.write("shdr", shdrData, rf64);
+    const xshdr = RIFFChunk.write("shdr", xshdrData, rf64);
     return {
         pdta: shdr,
         xdta: xshdr

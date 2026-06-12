@@ -15,7 +15,11 @@ import {
     SPESSASYNTH_DEFAULT_MODULATORS
 } from "../../basic_soundbank/modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
-import type { SF2InfoFourCC, SoundFont2WriteOptions } from "../../types";
+import type {
+    SF2InfoFourCC,
+    SFEWriteOptions,
+    SoundFont2WriteOptions
+} from "../../types";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { ExtendedSF2Chunks } from "./types";
 import { writeSF2Elements } from "./write_sf2_elements";
@@ -24,6 +28,11 @@ import { toISODateString } from "../../../utils/date";
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     writeDefaultModulators: true,
     writeExtendedLimits: true,
+    software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
+};
+
+export const DEFAULT_SFE_WRITE_OPTIONS: SFEWriteOptions = {
+    rf64: true,
     software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
 };
 
@@ -41,6 +50,48 @@ export function writeSF2Internal(
         writeOptions,
         DEFAULT_SF2_WRITE_OPTIONS
     );
+    return writeSF(
+        bank,
+        options.software,
+        options.writeDefaultModulators,
+        options.writeExtendedLimits,
+        false,
+        false
+    );
+}
+
+/**
+ * Writes the sound bank as an SFE 4 file.
+ * @param bank
+ * @param writeOptions the options for writing.
+ * @returns the binary file data.
+ */
+export function writeSFEInternal(
+    bank: BasicSoundBank,
+    writeOptions: Partial<SFEWriteOptions>
+) {
+    const options = fillWithDefaults(writeOptions, DEFAULT_SFE_WRITE_OPTIONS);
+    return writeSF(bank, options.software, true, true, true, true);
+}
+
+/**
+ * General writing function for both SFE and SF2.
+ * @param bank the bank
+ * @param software software param
+ * @param writeDefaultModulators SFE + SF2 compatible
+ * @param writeExtendedLimits SFE + SF2 compatible
+ * @param writeBankLSB SFE Only
+ * @param rf64 SFE Only
+ * @internal
+ */
+function writeSF(
+    bank: BasicSoundBank,
+    software: string,
+    writeDefaultModulators: boolean,
+    writeExtendedLimits: boolean,
+    writeBankLSB: boolean,
+    rf64: boolean
+) {
     SpessaLog.groupCollapsed("%cSaving soundbank...", ConsoleColors.info);
     SpessaLog.group("%cWriting INFO...", ConsoleColors.info);
     /**
@@ -54,7 +105,8 @@ export function writeSF2Internal(
         infoArrays.push(
             ...RIFFChunk.getParts(
                 type,
-                [getStringBytes(data, true, true)] // Pad with zero and ensure even length
+                [getStringBytes(data, true, true)], // Pad with zero and ensure even length
+                rf64
             )
         );
     };
@@ -68,7 +120,7 @@ export function writeSF2Internal(
         const ifilData = new IndexedByteArray(4);
         writeWord(ifilData, info.version.major);
         writeWord(ifilData, info.version.minor);
-        infoArrays.push(RIFFChunk.write("ifil", ifilData));
+        infoArrays.push(RIFFChunk.write("ifil", ifilData, rf64));
     }
     writeSF2Info("isng", info.soundEngine);
     writeSF2Info("INAM", info.name);
@@ -88,7 +140,6 @@ export function writeSF2Internal(
         ? (info?.comment ? info.comment + "\n" : "") + info.subject
         : info?.comment;
     writeSF2Info("ICMT", commentText);
-    const software = options.software;
     writeSF2Info("ISFT", software);
 
     // Do not write unchanged default modulators
@@ -99,7 +150,7 @@ export function writeSF2Internal(
             )
     );
 
-    if (unchangedDefaultModulators && options?.writeDefaultModulators) {
+    if (unchangedDefaultModulators && writeDefaultModulators) {
         const mods = bank.defaultModulators;
         SpessaLog.info(
             `%cWriting %c${mods.length}%c default modulators...`,
@@ -124,24 +175,24 @@ export function writeSF2Internal(
     // Write sdta
     const smplStartOffsets: number[] = [];
     const smplEndOffsets: number[] = [];
-    const sdtaChunk = getSDTA(bank, smplStartOffsets, smplEndOffsets);
+    const sdtaChunk = getSDTA(bank, smplStartOffsets, smplEndOffsets, rf64);
 
     SpessaLog.info("%cWriting PDTA...", ConsoleColors.info);
     // Write pdta
     // Go in reverse so the indexes are correct
     // Instruments
     SpessaLog.info("%cWriting SHDR...", ConsoleColors.info);
-    const shdrChunk = getSHDR(bank, smplStartOffsets, smplEndOffsets);
+    const shdrChunk = getSHDR(bank, smplStartOffsets, smplEndOffsets, rf64);
 
     // Note:
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
 
     SpessaLog.group("%cWriting instruments...", ConsoleColors.info);
-    const instData = writeSF2Elements(bank, false);
+    const instData = writeSF2Elements(bank, rf64, false);
     SpessaLog.groupEnd();
 
     SpessaLog.group("%cWriting presets...", ConsoleColors.info);
-    const presData = writeSF2Elements(bank, true);
+    const presData = writeSF2Elements(bank, rf64, true, writeBankLSB);
     SpessaLog.groupEnd();
 
     const chunks: ExtendedSF2Chunks[] = [
@@ -159,11 +210,12 @@ export function writeSF2Internal(
     const pdtaChunk = RIFFChunk.getParts(
         "pdta",
         chunks.map((c) => c.pdta),
+        rf64,
         true
     );
 
     const writeXdta =
-        options.writeExtendedLimits &&
+        writeExtendedLimits &&
         (instData.writeXdta ||
             presData.writeXdta ||
             bank.presets.some((p) => p.name.length > 20) ||
@@ -181,20 +233,25 @@ export function writeSF2Internal(
             ...RIFFChunk.getParts(
                 "xdta",
                 chunks.map((c) => c.xdta),
+                rf64,
                 true
             )
         );
     }
 
-    const infoChunk = RIFFChunk.getParts("INFO", infoArrays, true);
+    const infoChunk = RIFFChunk.getParts("INFO", infoArrays, rf64, true);
     SpessaLog.info("%cWriting the output file...", ConsoleColors.info);
     // Finally, combine everything
-    const main = RIFFChunk.writeParts("RIFF", [
-        getStringBytes("sfbk"),
-        ...infoChunk,
-        ...sdtaChunk,
-        ...pdtaChunk
-    ]);
+    const main = RIFFChunk.writeParts(
+        rf64 ? "RIFS" : "RIFF",
+        [
+            getStringBytes(writeBankLSB ? "sfen" : "sfbk"),
+            ...infoChunk,
+            ...sdtaChunk,
+            ...pdtaChunk
+        ],
+        rf64
+    );
     SpessaLog.info(
         `%cSaved successfully! Final file size: %c${main.length}`,
         ConsoleColors.info,

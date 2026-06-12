@@ -266,6 +266,18 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
  */
 export type DLSWriteOptions = SoundBankWriteOptions;
 
+/**
+ * Options for writing an SFE 4 file.
+ */
+export interface SFEWriteOptions extends SoundBankWriteOptions {
+    /**
+     * If the RIFS (64-bit RIFF chunks) should be used.
+     * Increases maximum size from 4GB to effectively infinite.
+     * Recommended, since SFE 4 is effectively incompatible with SF2.
+     */
+    rf64: boolean;
+}
+
 export interface GenericRange {
     min: number;
     max: number;

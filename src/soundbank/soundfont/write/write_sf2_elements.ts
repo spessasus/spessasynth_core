@@ -16,7 +16,10 @@ import { writeWord } from "../../../utils/byte_functions/little_endian";
 
 export function writeSF2Elements(
     bank: BasicSoundBank,
-    isPreset = false
+    rf64: boolean,
+    isPreset: boolean,
+    // Preset only
+    writeBankLSB = false
 ): {
     gen: ExtendedSF2Chunks;
     mod: ExtendedSF2Chunks;
@@ -99,7 +102,8 @@ export function writeSF2Elements(
         xdta: new IndexedByteArray(hdrSize)
     };
 
-    for (const [i, el] of elements.entries()) el.write(hdrData, zoneIndexes[i]);
+    for (const [i, el] of elements.entries())
+        el.write(hdrData, zoneIndexes[i], writeBankLSB);
 
     // Write terminal header records
     if (isPreset) {
@@ -125,28 +129,30 @@ export function writeSF2Elements(
         writeXdta:
             Math.max(currentGenIndex, currentModIndex, zoneIndex) > 0xff_ff,
         gen: {
-            pdta: RIFFChunk.write(genHeader, genData),
+            pdta: RIFFChunk.write(genHeader, genData, rf64),
             // Same as pmod, this chunk includes only the terminal generator record to allow reuse of the pdta parser.
             xdta: RIFFChunk.write(
                 modHeader,
-                new IndexedByteArray(GEN_BYTE_SIZE)
+                new IndexedByteArray(GEN_BYTE_SIZE),
+                rf64
             )
         },
         mod: {
-            pdta: RIFFChunk.write(modHeader, modData),
+            pdta: RIFFChunk.write(modHeader, modData, rf64),
             // This chunk exists solely to preserve parser compatibility and contains only the terminal modulator record.
             xdta: RIFFChunk.write(
                 modHeader,
-                new IndexedByteArray(MOD_BYTE_SIZE)
+                new IndexedByteArray(MOD_BYTE_SIZE),
+                rf64
             )
         },
         bag: {
-            pdta: RIFFChunk.write(bagHeader, bagData.pdta),
-            xdta: RIFFChunk.write(bagHeader, bagData.xdta)
+            pdta: RIFFChunk.write(bagHeader, bagData.pdta, rf64),
+            xdta: RIFFChunk.write(bagHeader, bagData.xdta, rf64)
         },
         hdr: {
-            pdta: RIFFChunk.write(hdrHeader, hdrData.pdta),
-            xdta: RIFFChunk.write(hdrHeader, hdrData.xdta)
+            pdta: RIFFChunk.write(hdrHeader, hdrData.pdta, rf64),
+            xdta: RIFFChunk.write(hdrHeader, hdrData.xdta, rf64)
         }
     };
 }

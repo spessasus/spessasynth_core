@@ -363,6 +363,7 @@ export class DownloadableSounds extends DLSVerifier {
         const lins = RIFFChunk.getParts(
             "lins",
             this.instruments.map((i) => i.write()),
+            false,
             true
         );
         SpessaLog.info("%cSuccess!", ConsoleColors.recognized);
@@ -392,7 +393,7 @@ export class DownloadableSounds extends DLSVerifier {
             samples.push(...out);
             written++;
         }
-        const wvpl = RIFFChunk.getParts("wvpl", samples, true);
+        const wvpl = RIFFChunk.getParts("wvpl", samples, false, true);
         SpessaLog.info("%cSucceeded!", ConsoleColors.recognized);
 
         // Write ptbl
@@ -431,7 +432,7 @@ export class DownloadableSounds extends DLSVerifier {
             ...lins,
             ptbl,
             ...wvpl,
-            ...RIFFChunk.getParts("INFO", infos, true)
+            ...RIFFChunk.getParts("INFO", infos, false, true)
         ]);
 
         SpessaLog.info("%cSaved successfully!", ConsoleColors.recognized);

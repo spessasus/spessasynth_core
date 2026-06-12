@@ -519,8 +519,14 @@ export class BasicPreset implements MIDIPatchFull {
      * Writes the SF2 header
      * @param phdrData
      * @param index
+     * @param writeLSB
+     * @internal
      */
-    public write(phdrData: ExtendedSF2Chunks, index: number) {
+    public write(
+        phdrData: ExtendedSF2Chunks,
+        index: number,
+        writeLSB: boolean
+    ) {
         SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
         writeBinaryStringIndexed(phdrData.pdta, this.name.slice(0, 20), 20);
@@ -528,12 +534,20 @@ export class BasicPreset implements MIDIPatchFull {
 
         writeWord(phdrData.pdta, this.program);
         let wBank = this.bankMSB;
-        if (this.isGMGSDrum) {
-            // Drum flag
-            wBank = 0x80;
-        } else if (this.bankMSB === 0) {
-            // If bank MSB is zero, write bank LSB (XG)
-            wBank = this.bankLSB;
+        if (writeLSB) {
+            wBank = (this.bankMSB & 0x7f) | ((this.bankLSB & 0x7f) << 8);
+            if (this.isGMGSDrum) {
+                // Drum flag
+                wBank |= 0x80;
+            }
+        } else {
+            if (this.isGMGSDrum) {
+                // Drum flag
+                wBank = 0x80;
+            } else if (this.bankMSB === 0) {
+                // If bank MSB is zero, write bank LSB (XG)
+                wBank = this.bankLSB;
+            }
         }
         writeWord(phdrData.pdta, wBank);
         // Skip wBank and wProgram

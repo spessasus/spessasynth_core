@@ -2,7 +2,9 @@ import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import {
     DEFAULT_SF2_WRITE_OPTIONS,
-    writeSF2Internal
+    DEFAULT_SFE_WRITE_OPTIONS,
+    writeSF2Internal,
+    writeSFEInternal
 } from "../soundfont/write/write";
 import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
 import { BasicSample, EmptySample } from "./basic_sample";
@@ -17,6 +19,7 @@ import type {
     PresetsWithKeyCombinations,
     SetSampleFormatOptions,
     SF2VersionTag,
+    SFEWriteOptions,
     SoundBankInfoData,
     SoundFont2WriteOptions
 } from "../types";
@@ -39,12 +42,12 @@ export class BasicSoundBank {
 
     /**
      * The type of the sound bank that was loaded.
-     * Either `sf2` for SoundFont2/SoundFont3 or `dls` for DownLoadable Sounds.
+     * Either `sf2` for SoundFont2/SoundFont3 or `dls` for DownLoadable Sounds or `sfe` for SF-Enhanced.
      *
      * Please note that SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
      * The type is still `sf2`.
      */
-    public readonly type: "sf2" | "dls";
+    public readonly type: "sf2" | "dls" | "sfe";
 
     /**
      * Sound bank's info.
@@ -87,7 +90,7 @@ export class BasicSoundBank {
      */
     public customDefaultModulators = false;
 
-    public constructor(type: "sf2" | "dls" = "sf2") {
+    public constructor(type: "sf2" | "sfe" | "dls" = "sf2") {
         this.type = type;
     }
 
@@ -309,6 +312,19 @@ export class BasicSoundBank {
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
     ) {
         return writeSF2Internal(this, writeOptions);
+    }
+
+    /**
+     * Writes the sound bank as an [SFE 4](https://sfe-team-was-taken.github.io/SFE/) file.
+     * This enables features such as bank LSB and RIFF64.
+     * Note that spessasynth is currently the only software that can read these files.
+     * @param writeOptions the options for writing.
+     * @returns the binary file data.
+     */
+    public writeSFE(
+        writeOptions: Partial<SFEWriteOptions> = DEFAULT_SFE_WRITE_OPTIONS
+    ) {
+        return writeSFEInternal(this, writeOptions);
     }
 
     public addPresets(...presets: BasicPreset[]) {

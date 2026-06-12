@@ -94,6 +94,7 @@ export function writeLittleEndianIndexed(
 
 /**
  * Writes a WORD (SHORT)
+ * 16 bits.
  */
 export function writeWord(dataArray: IndexedByteArray, word: number) {
     dataArray[dataArray.currentIndex++] = word & 0xff;
@@ -102,9 +103,21 @@ export function writeWord(dataArray: IndexedByteArray, word: number) {
 
 /**
  * Writes a DWORD (INT)
+ * 32 bits.
  */
 export function writeDword(dataArray: IndexedByteArray, dword: number) {
     writeLittleEndianIndexed(dataArray, dword, 4);
+}
+
+/**
+ * Writes a QWORD (LONG)
+ * 64 bits.
+ */
+export function writeQword(dataArray: IndexedByteArray, qword: number) {
+    const qb = BigInt(qword);
+    for (let i = 0n; i < 8n; i++) {
+        dataArray[dataArray.currentIndex++] = Number((qb >> (i * 8n)) & 0xffn);
+    }
 }
 
 /**

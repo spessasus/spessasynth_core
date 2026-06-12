@@ -33,19 +33,10 @@ export class SoundFont2 extends BasicSoundBank {
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
-    public constructor(arrayBuffer: ArrayBuffer, warnDeprecated = true) {
-        super("sf2");
-        if (warnDeprecated) {
-            throw new Error(
-                "Using the constructor directly is deprecated. Use SoundBankLoader.fromArrayBuffer() instead."
-            );
-        }
+    public constructor(arrayBuffer: ArrayBuffer, sfe: boolean) {
+        super(sfe ? "sfe" : "sf2");
         const mainFileArray = new IndexedByteArray(arrayBuffer);
         SpessaLog.group("%cParsing a SoundFont2 file...", ConsoleColors.info);
-        if (!mainFileArray) {
-            SpessaLog.groupEnd();
-            this.parsingError("No data provided!");
-        }
 
         // Read RIFF header
         const fourCC = readBinaryString(mainFileArray, 4).toLowerCase();

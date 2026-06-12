@@ -162,7 +162,12 @@ export class DownloadableSoundsSample extends DLSVerifier {
             ConsoleColors.value,
             ConsoleColors.recognized
         );
-        return RIFFChunk.getParts("wave", [fmt, wsmp, ...data, info], true);
+        return RIFFChunk.getParts(
+            "wave",
+            [fmt, wsmp, ...data, info],
+            false,
+            true
+        );
     }
 
     private writeFmt() {

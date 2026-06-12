@@ -37,33 +37,44 @@ export function audioToWav(
     if (infoOn) {
         const encoder = new TextEncoder();
         const infoChunks = [
-            RIFFChunk.write(
-                "ICMT",
+            RIFFChunk.writeParts("ICMT", [
                 encoder.encode("Created with SpessaSynth"),
-                true
-            )
+                [0]
+            ])
         ];
         if (metadata.artist) {
             infoChunks.push(
-                RIFFChunk.write("IART", encoder.encode(metadata.artist), true)
+                RIFFChunk.writeParts("IART", [
+                    encoder.encode(metadata.artist),
+                    [0]
+                ])
             );
         }
         if (metadata.album) {
             infoChunks.push(
-                RIFFChunk.write("IPRD", encoder.encode(metadata.album), true)
+                RIFFChunk.writeParts("IPRD", [
+                    encoder.encode(metadata.album),
+                    [0]
+                ])
             );
         }
         if (metadata.genre) {
             infoChunks.push(
-                RIFFChunk.write("IGNR", encoder.encode(metadata.genre), true)
+                RIFFChunk.writeParts("IGNR", [
+                    encoder.encode(metadata.genre),
+                    [0]
+                ])
             );
         }
         if (metadata.title) {
             infoChunks.push(
-                RIFFChunk.write("INAM", encoder.encode(metadata.title), true)
+                RIFFChunk.writeParts("INAM", [
+                    encoder.encode(metadata.title),
+                    [0]
+                ])
             );
         }
-        infoChunk = RIFFChunk.writeParts("INFO", infoChunks, true);
+        infoChunk = RIFFChunk.writeParts("INFO", infoChunks, false, true);
     }
 
     // Prepare CUE chunk
