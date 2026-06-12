@@ -129,7 +129,7 @@ function writeSF(
         const ifilData = new IndexedByteArray(4);
         writeWord(ifilData, info.romVersion.major);
         writeWord(ifilData, info.romVersion.minor);
-        infoArrays.push(RIFFChunk.write("iver", ifilData));
+        infoArrays.push(RIFFChunk.write("iver", ifilData, rf64));
     }
     writeSF2Info("ICRD", toISODateString(info.creationDate));
     writeSF2Info("IENG", info.engineer);
@@ -167,7 +167,7 @@ function writeSF(
         // Terminal modulator, is zero
         writeLittleEndianIndexed(dmodData, 0, MOD_BYTE_SIZE);
 
-        infoArrays.push(...RIFFChunk.getParts("DMOD", [dmodData]));
+        infoArrays.push(...RIFFChunk.getParts("DMOD", [dmodData], rf64));
     }
 
     SpessaLog.groupEnd();
