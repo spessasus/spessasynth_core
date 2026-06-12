@@ -373,7 +373,7 @@ export class BasicSample {
             SpessaLog.warn(
                 `Error decoding sample ${this.name}: ${error as Error}`
             );
-            return new Float32Array(this.loopEnd + 1);
+            return new Float32Array(this.loopEnd);
         }
     }
 }

@@ -1,4 +1,4 @@
-# Delay Processor
+# Delay Processor (GS)
 
 Delay creates echoes. It is also possible to give depth and width to a sound by adding
 a short delay to the original sound.
