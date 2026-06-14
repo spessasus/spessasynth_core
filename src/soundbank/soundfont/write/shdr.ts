@@ -20,11 +20,26 @@ export function getSHDR(
     const shdrData = new IndexedByteArray(shdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
+    const encoder = new TextEncoder();
     let maxSampleLink = 0;
-    for (const [index, sample] of bank.samples.entries()) {
-        // Sample name
-        writeBinaryStringIndexed(shdrData, sample.name.slice(0, 20), 20);
-        writeBinaryStringIndexed(xshdrData, sample.name.slice(20), 20);
+    bank.samples.forEach((sample, index) => {
+        const encodedText = encoder.encode(sample.name);
+        if (encodedText.length <= 20)
+        {
+            shdrData.set(encodedText,shdrData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            shdrData.set(encodedText.slice(0,20),shdrData.currentIndex);
+            xshdrData.set(encodedText.slice(20),xshdrData.currentIndex);
+        } 
+        else 
+        {
+            shdrData.set(encodedText.slice(0,20),shdrData.currentIndex);
+            xshdrData.set(encodedText.slice(20,40),xshdrData.currentIndex);
+        }
+        shdrData.currentIndex += 20;
+        xshdrData.currentIndex += 20;
         // Start offset
         const dwStart = smplStartOffsets[index];
         writeDword(shdrData, dwStart);

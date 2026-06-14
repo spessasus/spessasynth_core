@@ -92,7 +92,9 @@ export type SF2ChunkFourCC =
     | "ibag"
     | "imod"
     | "igen"
-    | "shdr";
+    | "shdr"
+    | "ISFe"
+    ;
 
 export type DLSInfoFourCC = GenericBankInfoFourCC | "ISBJ";
 
@@ -259,6 +261,16 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
      * Note that it will only be written needed.
      */
     writeExtendedLimits: boolean;
+
+    /**
+     * Soundbank version.
+     */
+    bankVersion: SFVersion;
+
+    /**
+     * Use 64-bit. Only recommended if supported.
+     */
+    use64Bit: boolean;
 }
 
 /**
@@ -295,3 +307,41 @@ export type PresetsWithKeyCombinations = Map<
     Map<number, Set<number>>
 >;
 export type MIDISystem = "gm" | "gm2" | "gs" | "xg";
+
+export type SFVersion =
+    | "soundfont2"
+    | "sfe-4.0";
+
+export interface SFeFeatureFlag {
+    /**
+     * Feature flag branch number 
+     */
+    branch: number;
+    /**
+     * Feature flag leaf number
+     */
+    leaf: number;
+    /**
+     * Feature flags
+     */
+    flags: number;
+}
+
+export interface FeatureFlagList {
+    /**
+     * Feature flag branch number 
+     */
+    branch: number;
+    /**
+     * Feature flag leaf number
+     */
+    leaf: number;
+    /**
+     * Feature flags
+     */
+    flags: number;
+    /**
+     * Feature flags
+     */
+    featureName: string;
+}

@@ -1,7 +1,8 @@
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
-import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { decodeUtf8 } from "../../../utils/byte_functions/string";
 import { BasicInstrument } from "../../basic_soundbank/basic_instrument";
+import { IndexedByteArray } from "../../../utils/indexed_array";
 import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import type { Generator } from "../../basic_soundbank/generator";
@@ -21,10 +22,24 @@ export class SoundFontInstrument extends BasicInstrument {
     /**
      * Creates an instrument
      */
-    public constructor(instrumentChunk: RIFFChunk) {
+    public constructor(instChunk: RIFFChunk, xinstChunk: RIFFChunk | undefined) {
         super();
-        this.name = readBinaryStringIndexed(instrumentChunk.data, 20);
-        this.zoneStartIndex = readLittleEndianIndexed(instrumentChunk.data, 2);
+
+        const instNameArray = new IndexedByteArray(40);
+        instNameArray.set(instChunk.data.slice(instChunk.data.currentIndex, instChunk.data.currentIndex + 20), 0)
+        instChunk.data.currentIndex += 20;
+        if (xinstChunk) {
+            instNameArray.set(xinstChunk.data.slice(xinstChunk.data.currentIndex, xinstChunk.data.currentIndex + 20), 20);
+            xinstChunk.data.currentIndex += 20;
+        }
+        const decodedName = decodeUtf8(instNameArray) ?? "Instrument";
+        this.name = decodedName;
+        this.zoneStartIndex = readLittleEndianIndexed(instChunk.data, 2);
+        if (xinstChunk)
+        {
+            const xZoneStartIndex = readLittleEndianIndexed(xinstChunk.data, 2);
+            this.zoneStartIndex += xZoneStartIndex << 16;
+        }
     }
 
     public createSoundFontZone(
@@ -58,12 +73,20 @@ export class SoundFontInstrument extends BasicInstrument {
  * Reads the instruments
  */
 export function readInstruments(
-    instrumentChunk: RIFFChunk
+    instrumentChunk: RIFFChunk,
+    useXdta = false,
+    xdtaChunk: RIFFChunk | undefined = undefined,
+    is64Bit = false
 ): SoundFontInstrument[] {
+    console.log(is64Bit);
     const instruments: SoundFontInstrument[] = [];
     while (instrumentChunk.data.length > instrumentChunk.data.currentIndex) {
-        const instrument = new SoundFontInstrument(instrumentChunk);
-
+        let instrument;
+        if (useXdta && xdtaChunk) {
+            instrument = new SoundFontInstrument(instrumentChunk, xdtaChunk);
+        } else {
+            instrument = new SoundFontInstrument(instrumentChunk, undefined);
+        }
         if (instruments.length > 0) {
             const previous = instruments[instruments.length - 1];
             previous.zonesCount =

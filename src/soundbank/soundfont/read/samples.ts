@@ -1,10 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
-import {
-    readLittleEndianIndexed,
-    signedInt8
-} from "../../../utils/byte_functions/little_endian";
+import { readLittleEndianIndexed, signedInt8 } from "../../../utils/byte_functions/little_endian";
 import { SpessaLog } from "../../../utils/loggin";
-import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { readBinaryString, decodeUtf8 } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
 import { ConsoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
@@ -95,19 +92,59 @@ export class SoundFontSample extends BasicSample {
         // SF2Pack (entire smpl vorbis)
         if (sampleDataArray instanceof IndexedByteArray) {
             if (compressed) {
+                const sampleData: Uint8Array<ArrayBufferLike> = sampleDataArray.slice(
+                    this.startByteOffset / 2 + smplStart,
+                    this.endByteOffset / 2 + smplStart
+                )
+                // Read sample header. Currently only vorbis is supported.
+                const sampleHeader: string = readBinaryString(sampleData, 4, 0);   
+
+                switch(sampleHeader)
+                {
+                    default:
+                        throw new Error(`Unsupported sample type: ${sampleHeader}`);
+                    case "OggS": {
+                        const hdr: string = readBinaryString(sampleData, 7, 29);
+                        switch(hdr)
+                        {
+                            default:
+                                throw new Error(`Unsupported sample type: ${hdr}`);
+                                break;
+
+                            case "pusHead":
+                                // Opus
+                                throw new Error(`Opus is currently unsupported. More information at https://github.com/SFe-Team-was-taken/SFeReferenceImplementation_Core/issues/1.`);
+                                break;
+
+                            case "vorbis":
+                                // Vorbis - supported
+                        }
+                        break;
+                    }
+                    case "fLaC":
+                        // FLAC
+                        throw new Error(`FLAC is currently unsupported. More information at https://github.com/SFe-Team-was-taken/SFeReferenceImplementation_Core/issues/1.`);
+                        break;
+                    case "RIFF": {
+                        const wave: string = readBinaryString(sampleData, 4, 8);
+                        if(wave !== "WAVE"){
+                            throw new Error(`Unsupported sample type: ${wave}`);
+                        } else {
+                            // WAV
+                        }
+                    }
+                }
+                
                 // Correct loop points
                 this.loopStart += this.startByteOffset / 2;
                 this.loopEnd += this.startByteOffset / 2;
 
-                // Copy the compressed data, it can be preserved during writing
+                // Copy the compressed/containerised data, it can be preserved during writing
                 this.setCompressedData(
-                    sampleDataArray.slice(
-                        this.startByteOffset / 2 + smplStart,
-                        this.endByteOffset / 2 + smplStart
-                    )
+                    sampleData
                 );
             } else {
-                // Regular sf2 s16le
+                // Regular sf2 s16le 
                 this.s16leData = sampleDataArray.slice(
                     smplStart + this.startByteOffset,
                     smplStart + this.endByteOffset
@@ -210,18 +247,38 @@ export class SoundFontSample extends BasicSample {
 export function readSamples(
     sampleHeadersChunk: RIFFChunk,
     smplChunkData: IndexedByteArray | Float32Array,
-    linkSamples = true
+    linkSamples = true,
+    useXdta = false,
+    xdtaChunk: RIFFChunk | undefined = undefined,
+    is64Bit = false,
+    sfeMajorVersion = 4,
 ): SoundFontSample[] {
     const samples: SoundFontSample[] = [];
     let index = 0;
+    let xdtaChunkData;
+    let uncontainerisedSamples = false;
+    let mixedSamples = false;
+    if (useXdta && xdtaChunk) {
+        xdtaChunkData = xdtaChunk.data;
+    } else {
+        xdtaChunkData = undefined;
+    }
     while (
         sampleHeadersChunk.data.length > sampleHeadersChunk.data.currentIndex
     ) {
         const sample = readSample(
             index,
             sampleHeadersChunk.data,
-            smplChunkData
+            smplChunkData,
+            useXdta,
+            xdtaChunkData,
+            is64Bit
         );
+        if (!sample.isCompressed && sfeMajorVersion >= 4 && !uncontainerisedSamples) {
+            uncontainerisedSamples = true;
+        } else if (sample.isCompressed && sfeMajorVersion >= 4 && uncontainerisedSamples) {
+            mixedSamples = true;
+        }
         samples.push(sample);
         index++;
     }
@@ -233,6 +290,13 @@ export function readSamples(
         for (const s of samples) s.getLinkedSample(samples);
     }
 
+    if (uncontainerisedSamples) {
+        SpessaLog.warn("This SFe bank contains uncontainerised samples. Future SFe sample features may not be usable.");
+    }
+    if (mixedSamples) {
+        SpessaLog.warn("This SFe bank contains mixed sample containerisation, which has been deprecated.");
+    }
+
     return samples;
 }
 
@@ -242,10 +306,22 @@ export function readSamples(
 function readSample(
     index: number,
     sampleHeaderData: IndexedByteArray,
-    smplArrayData: IndexedByteArray | Float32Array
+    smplArrayData: IndexedByteArray | Float32Array,
+    useXdta: boolean,
+    xdtaChunkData: IndexedByteArray | undefined,
+    is64Bit: boolean
 ): SoundFontSample {
     // Read the sample name
-    const sampleName = readBinaryStringIndexed(sampleHeaderData, 20);
+    console.log(is64Bit);
+    const sampleNameArray = new IndexedByteArray(40);
+    sampleNameArray.set(sampleHeaderData.slice(sampleHeaderData.currentIndex, sampleHeaderData.currentIndex + 20), 0)
+    sampleHeaderData.currentIndex += 20;
+    if (useXdta && xdtaChunkData)
+    {
+        sampleNameArray.set(xdtaChunkData.slice(xdtaChunkData.currentIndex, xdtaChunkData.currentIndex + 20), 20)
+        xdtaChunkData.currentIndex += 20;
+    }
+    const sampleName = decodeUtf8(sampleNameArray) ?? "Sample";
 
     // Read the sample start index
     const sampleStartIndex = readLittleEndianIndexed(sampleHeaderData, 4) * 2;
@@ -274,13 +350,24 @@ function readSample(
         sampleHeaderData[sampleHeaderData.currentIndex++]
     );
 
+    // Skip 22 bytes on xdta for now 
+    if (useXdta && xdtaChunkData) {
+        xdtaChunkData.currentIndex += 22;
+    }
     // Read the link to the other channel
-    const sampleLink = readLittleEndianIndexed(sampleHeaderData, 2);
+    let sampleLink = readLittleEndianIndexed(sampleHeaderData, 2);
+    if (useXdta && xdtaChunkData) {
+       sampleLink += (readLittleEndianIndexed(xdtaChunkData, 2) << 16);
+    }
     const sampleType = readLittleEndianIndexed(
         sampleHeaderData,
         2
     ) as SampleType;
 
+    // Skip 2 bytes on xdta for now 
+    if (useXdta && xdtaChunkData) {
+        xdtaChunkData.currentIndex += 2;
+    }
     return new SoundFontSample(
         sampleName,
         sampleStartIndex,

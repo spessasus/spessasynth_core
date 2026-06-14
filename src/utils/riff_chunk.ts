@@ -1,7 +1,8 @@
 import { IndexedByteArray } from "./indexed_array";
 import {
     readLittleEndianIndexed,
-    writeDword
+    writeDword,
+    writeQword
 } from "./byte_functions/little_endian";
 import {
     getStringBytes,

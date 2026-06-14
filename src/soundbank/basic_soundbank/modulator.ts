@@ -271,6 +271,17 @@ const defaultSoundFont2Modulators = [
     new DecodedModulator(0x00_dd, 0x0, GeneratorTypes.chorusEffectsSend, 200, 0)
 ];
 
+const sf24VelFcModulator = [
+    // SF2.04 velocity to filter cutoff
+    new DecodedModulator(0x0102, 0x0, generatorTypes.initialFilterFc, -2400, 0)
+];
+
+const sf21VelFcModulator = [
+    // SF2.01 velocity to filter cutoff
+    // Not in use currently
+    new DecodedModulator(0x0502, 0x0, generatorTypes.initialFilterFc, -2400, 0)
+];
+
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
     // Cc 73 (attack time) to volEnv attack
@@ -390,4 +401,12 @@ const defaultSpessaSynthModulators = [
 export const SPESSASYNTH_DEFAULT_MODULATORS: Modulator[] = [
     ...defaultSoundFont2Modulators,
     ...defaultSpessaSynthModulators
-];
+]
+export const SOUNDFONT24_DEFAULT_MODULATORS: Modulator[] = [
+    ...defaultSoundFont2Modulators,
+    ...sf24VelFcModulator
+]
+export const SOUNDFONT21_DEFAULT_MODULATORS: Modulator[] = [
+    ...defaultSoundFont2Modulators,
+    ...sf21VelFcModulator
+]

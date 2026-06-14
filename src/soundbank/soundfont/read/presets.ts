@@ -1,7 +1,8 @@
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
-import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { decodeUtf8 } from "../../../utils/byte_functions/string";
 import { BasicPreset } from "../../basic_soundbank/basic_preset";
+import { IndexedByteArray } from "../../../utils/indexed_array";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { BasicInstrument } from "../../basic_soundbank/basic_instrument";
 import type { Modulator } from "../../basic_soundbank/modulator";
@@ -20,22 +21,46 @@ export class SoundFontPreset extends BasicPreset {
     /**
      * Creates a preset
      */
-    public constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank) {
+    public constructor(presetChunk: RIFFChunk, sf2: BasicSoundBank, xphdrChunk: RIFFChunk | undefined) {
         super(sf2);
-        this.name = readBinaryStringIndexed(presetChunk.data, 20);
 
-        this.program = readLittleEndianIndexed(presetChunk.data, 2);
+        const presetNameArray = new IndexedByteArray(40);
+        presetNameArray.set(presetChunk.data.slice(presetChunk.data.currentIndex, presetChunk.data.currentIndex + 20), 0)
+        presetChunk.data.currentIndex += 20;
+        if (xphdrChunk) {
+            presetNameArray.set(xphdrChunk.data.slice(xphdrChunk.data.currentIndex, xphdrChunk.data.currentIndex + 20), 20);
+            xphdrChunk.data.currentIndex += 20;
+        }
+        const decodedName = decodeUtf8(presetNameArray) ?? "Preset";
+        this.name = decodedName.replace(
+            /\d{3}:\d{3}/,
+            ""
+        ); // Remove those pesky "000:001"
+
+        this.program = readLittleEndianIndexed(presetChunk.data, 2); 
         const wBank = readLittleEndianIndexed(presetChunk.data, 2);
         this.bankMSB = wBank & 0x7f;
         this.isGMGSDrum = (wBank & 0x80) > 0;
         this.bankLSB = wBank >> 8;
+        // Skip wProgram and wBank on xdta for now 
+        if (xphdrChunk) {
+            xphdrChunk.data.currentIndex += 4;
+        }
 
         this.zoneStartIndex = readLittleEndianIndexed(presetChunk.data, 2);
-
+        if (xphdrChunk)
+        {
+            const xZoneStartIndex = readLittleEndianIndexed(xphdrChunk.data, 2);
+            this.zoneStartIndex += xZoneStartIndex << 16;
+        }
         // Read the dword
         this.library = readLittleEndianIndexed(presetChunk.data, 4);
         this.genre = readLittleEndianIndexed(presetChunk.data, 4);
         this.morphology = readLittleEndianIndexed(presetChunk.data, 4);
+        // Skip unused variables
+        if (xphdrChunk) {
+            xphdrChunk.data.currentIndex += 12;
+        }
     }
 
     public createSoundFontZone(
@@ -70,11 +95,20 @@ export class SoundFontPreset extends BasicPreset {
  */
 export function readPresets(
     presetChunk: RIFFChunk,
-    parent: BasicSoundBank
+    parent: BasicSoundBank,
+    useXdta = false,
+    xdtaChunk: RIFFChunk | undefined = undefined,
+    is64Bit = false
 ): SoundFontPreset[] {
+    console.log(is64Bit);
     const presets: SoundFontPreset[] = [];
     while (presetChunk.data.length > presetChunk.data.currentIndex) {
-        const preset = new SoundFontPreset(presetChunk, parent);
+        let preset;
+        if (useXdta && xdtaChunk) {
+            preset = new SoundFontPreset(presetChunk, parent, xdtaChunk);
+        } else {
+            preset = new SoundFontPreset(presetChunk, parent, undefined);
+        }
         if (presets.length > 0) {
             const previous = presets[presets.length - 1];
             previous.zonesCount =

@@ -9,7 +9,6 @@ import {
 } from "./generator_types";
 import { Modulator } from "./modulator";
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
-import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import { ConsoleColors } from "../../utils/other";
 import { BasicZone } from "./basic_zone";
@@ -303,9 +302,25 @@ export class BasicInstrument {
 
     public write(instData: ExtendedSF2Chunks, index: number) {
         SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
-        // Split up the name
-        writeBinaryStringIndexed(instData.pdta, this.name.slice(0, 20), 20);
-        writeBinaryStringIndexed(instData.xdta, this.name.slice(20), 20);
+        // Encode to UTF-8
+        const encoder = new TextEncoder();
+        const encodedText = encoder.encode(this.name);
+        if (encodedText.length <= 20)
+        {
+            instData.pdta.set(encodedText,instData.pdta.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            instData.pdta.set(encodedText.slice(0,20),instData.pdta.currentIndex);
+            instData.xdta.set(encodedText.slice(20),instData.xdta.currentIndex);
+        } 
+        else 
+        {
+            instData.pdta.set(encodedText.slice(0,20),instData.pdta.currentIndex);
+            instData.xdta.set(encodedText.slice(20,40),instData.xdta.currentIndex);
+        }
+        instData.pdta.currentIndex += 20;
+        instData.xdta.currentIndex += 20;        
         // Inst start index
         writeWord(instData.pdta, index & 0xff_ff);
         writeWord(instData.xdta, index >>> 16);

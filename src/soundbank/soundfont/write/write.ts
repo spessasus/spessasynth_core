@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
-import { ConsoleColors } from "../../../utils/other";
+import { ConsoleColors, isNonZero } from "../../../utils/other";
 import { getSDTA } from "./sdta";
 import { getSHDR } from "./shdr";
 import {
@@ -24,6 +24,8 @@ import { toISODateString } from "../../../utils/date";
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     writeDefaultModulators: true,
     writeExtendedLimits: true,
+    bankVersion: "sfe-4.0",
+    use64Bit: false,
     software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
 };
 
@@ -51,6 +53,8 @@ export function writeSF2Internal(
     const writeSF2Info = (type: SF2InfoFourCC, data?: string) => {
         if (!data) return;
 
+        // Todo: Reimplement proper versioning
+        
         infoArrays.push(
             ...RIFFChunk.getParts(
                 type,
@@ -162,13 +166,16 @@ export function writeSF2Internal(
         true
     );
 
+    console.log(shdrChunk);
+    // Check the chunk's xdta for usable information
+    // Hopefully this doesn't break actual xdta implementation
+    const xdtaDataPresent = chunks.map((c) => c.xdta.every(isNonZero));;
     const writeXdta =
         options.writeExtendedLimits &&
         (instData.writeXdta ||
             presData.writeXdta ||
-            bank.presets.some((p) => p.name.length > 20) ||
-            bank.instruments.some((i) => i.name.length > 20) ||
-            bank.samples.some((s) => s.name.length > 20));
+            xdtaDataPresent
+        )
 
     if (writeXdta) {
         SpessaLog.info(

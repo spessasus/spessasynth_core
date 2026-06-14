@@ -44,3 +44,9 @@ export const ConsoleColors = {
     recognized: "color: lime",
     value: "color: yellow; background-color: black;"
 };
+/**
+ * Returns true if non-zero 
+ */
+export function isNonZero(element: number) {
+    return element !== 0;
+}

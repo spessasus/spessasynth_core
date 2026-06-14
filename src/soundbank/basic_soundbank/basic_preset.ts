@@ -20,7 +20,6 @@ import {
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
-import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import {
     writeDword,
     writeWord
@@ -523,8 +522,25 @@ export class BasicPreset implements MIDIPatchFull {
     public write(phdrData: ExtendedSF2Chunks, index: number) {
         SpessaLog.info(`%cWriting ${this.name}...`, ConsoleColors.info);
         // Split up the name
-        writeBinaryStringIndexed(phdrData.pdta, this.name.slice(0, 20), 20);
-        writeBinaryStringIndexed(phdrData.xdta, this.name.slice(20), 20);
+        // Encode to UTF-8
+        const encoder = new TextEncoder();
+        const encodedText = encoder.encode(this.name);
+        if (encodedText.length <= 20)
+        {
+            phdrData.pdta.set(encodedText,phdrData.pdta.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            phdrData.pdta.set(encodedText.slice(0,20),phdrData.pdta.currentIndex);
+            phdrData.xdta.set(encodedText.slice(20),phdrData.xdta.currentIndex);
+        } 
+        else 
+        {
+            phdrData.pdta.set(encodedText.slice(0,20),phdrData.pdta.currentIndex);
+            phdrData.xdta.set(encodedText.slice(20,40),phdrData.xdta.currentIndex);
+        }
+        phdrData.pdta.currentIndex += 20;
+        phdrData.xdta.currentIndex += 20;   
 
         writeWord(phdrData.pdta, this.program);
         let wBank = this.bankMSB;
