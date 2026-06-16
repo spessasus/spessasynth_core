@@ -186,7 +186,7 @@ export class DownloadableSoundsInstrument
         const chunks: Uint8Array[] = [this.writeHeader()];
 
         const regionChunks = this.regions.flatMap((r) => r.write());
-        chunks.push(...RIFFChunk.getParts("lrgn", regionChunks, true));
+        chunks.push(...RIFFChunk.getParts("lrgn", regionChunks, false, true));
 
         // This will mostly be false as SF2 -> DLS can't have both global and local regions,
         // So it only has global, hence this check.
@@ -200,7 +200,7 @@ export class DownloadableSoundsInstrument
         SpessaLog.groupEnd();
         // This one can explode in length (causing a maximum argument crash),
         // So keep as writeParts, not getParts
-        return RIFFChunk.writeParts("ins ", chunks, true);
+        return RIFFChunk.writeParts("ins ", chunks, false, true);
     }
 
     /**

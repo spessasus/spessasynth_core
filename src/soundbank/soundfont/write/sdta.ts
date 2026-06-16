@@ -17,6 +17,7 @@ export function getSDTA(
     bank: BasicSoundBank,
     smplStartOffsets: number[],
     smplEndOffsets: number[],
+    rf64: boolean,
     progressFunction?: ProgressFunction
 ) {
     // Write smpl: write int16 data of each sample linearly
@@ -49,8 +50,8 @@ export function getSDTA(
         if (!s.isCompressed) sampleData.push(new Uint8Array(92));
     }
 
-    const smpl = RIFFChunk.getParts("smpl", sampleData);
-    const sdta = RIFFChunk.getParts("sdta", smpl, true);
+    const smpl = RIFFChunk.getParts("smpl", sampleData, rf64);
+    const sdta = RIFFChunk.getParts("sdta", smpl, rf64, true);
 
     let offset = 0;
     // Write out

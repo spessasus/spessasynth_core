@@ -449,7 +449,7 @@ export function writeRMIDIInternal(
     return RIFFChunk.writeParts("RIFF", [
         getStringBytes("RMID"),
         RIFFChunk.write("data", newMid),
-        RIFFChunk.writeParts("INFO", infoContent, true),
+        RIFFChunk.writeParts("INFO", infoContent, false, true),
         new IndexedByteArray(soundBankBinary)
     ]).buffer;
 }

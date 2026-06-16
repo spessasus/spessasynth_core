@@ -2,7 +2,7 @@
 
 This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
 
-It also contains support for `.dls` files.
+It also contains support for `.dls` files and experimental read support for [64-bit SFE](https://github.com/SFe-Team-was-taken/SFE)
 
 !!! Tip
 
@@ -270,6 +270,30 @@ const binary = soundBank.writeSF2(options);
     - `progressFunction` - [See this for a detailed explanation](#progressfunction)
     - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
       This field indicates the last software that was used to edit this sound bank.
+
+!!! Warning
+
+    This method is memory and CPU intensive with large sound banks, especially if compression is enabled.
+
+### writeSFE
+
+Writes the sound bank as an [SFE 4](https://sfe-team-was-taken.github.io/SFE/) file.
+This enables features such as bank LSB and RIFF64.
+
+!!! Note
+
+    Spessasynth is currently the only software that can read these files.
+
+```ts
+const binary = soundBank.writeSFE(options);
+```
+
+- `options` - An optional object (all properties are optional):
+    - `progressFunction` - [See this for a detailed explanation](#progressfunction)
+    - `software` - A `string`, the `ISFT` field to set when writing. If unset, "SpessaSynth" is written.
+      This field indicates the last software that was used to edit this sound bank.
+    - `rf64` - If the RIFS (64-bit RIFF chunks) should be used. Increases maximum size from 4GB to effectively infinite.
+      Recommended, since SFE 4 is effectively incompatible with SF2.
 
 !!! Warning
 

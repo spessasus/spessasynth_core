@@ -44,7 +44,7 @@ export function parseRMIDIInternal(
     // Keep loading chunks until we get the "SFBK" header
     while (binaryData.currentIndex < binaryData.length) {
         const startIndex = binaryData.currentIndex;
-        const currentChunk = RIFFChunk.read(binaryData, true);
+        const currentChunk = RIFFChunk.read(binaryData);
         if (currentChunk.header === "RIFF") {
             const type = readBinaryStringIndexed(
                 currentChunk.data,
@@ -76,7 +76,7 @@ export function parseRMIDIInternal(
                     ConsoleColors.recognized
                 );
                 while (currentChunk.data.currentIndex < currentChunk.size) {
-                    const infoChunk = RIFFChunk.read(currentChunk.data, true);
+                    const infoChunk = RIFFChunk.read(currentChunk.data);
                     const headerTyped = infoChunk.header as RMIDInfoFourCC;
                     const infoData = infoChunk.data;
                     switch (headerTyped) {

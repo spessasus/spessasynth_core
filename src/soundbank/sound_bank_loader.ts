@@ -11,13 +11,28 @@ export class SoundBankLoader {
      * @returns The loaded sound bank, a BasicSoundBank instance.
      */
     public static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
-        const check = buffer.slice(8, 12);
-        const a = new IndexedByteArray(check);
-        const id = readBinaryStringIndexed(a, 4).toLowerCase();
+        const riffCheck = buffer.slice(0, 4);
+        const riffText = readBinaryStringIndexed(
+            new IndexedByteArray(riffCheck),
+            4
+        );
+        if (riffText !== "RIFF" && riffText !== "RIFS") {
+            throw new Error(
+                `Expected 'RIFF' or 'RIFS' header, got '${riffText}'`
+            );
+        }
+
+        const rf64 = riffText === "RIFS";
+
+        const check = rf64 ? buffer.slice(12, 16) : buffer.slice(8, 12);
+        const id = readBinaryStringIndexed(
+            new IndexedByteArray(check),
+            4
+        ).toLowerCase();
         if (id === "dls ") {
             return this.loadDLS(buffer);
         }
-        return new SoundFont2(buffer, false);
+        return new SoundFont2(buffer, id === "sfen");
     }
 
     private static loadDLS(buffer: ArrayBuffer) {

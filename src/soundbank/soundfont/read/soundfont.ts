@@ -33,31 +33,23 @@ export class SoundFont2 extends BasicSoundBank {
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
-    public constructor(arrayBuffer: ArrayBuffer, warnDeprecated = true) {
-        super("sf2");
-        if (warnDeprecated) {
-            throw new Error(
-                "Using the constructor directly is deprecated. Use SoundBankLoader.fromArrayBuffer() instead."
-            );
-        }
+    public constructor(arrayBuffer: ArrayBuffer, sfe: boolean) {
+        super(sfe ? "sfe" : "sf2");
         const mainFileArray = new IndexedByteArray(arrayBuffer);
         SpessaLog.group("%cParsing a SoundFont2 file...", ConsoleColors.info);
-        if (!mainFileArray) {
-            SpessaLog.groupEnd();
-            this.parsingError("No data provided!");
-        }
 
-        // Read the main chunk
-        const firstChunk = RIFFChunk.read(mainFileArray, false);
-        this.verifyHeader(firstChunk, "riff");
+        // Read RIFF header
+        const fourCC = readBinaryString(mainFileArray, 4).toLowerCase();
+        this.verifyTexts(fourCC, ["riff", "rifs"]);
+        const rf64 = fourCC === "rifs";
+        if (rf64)
+            SpessaLog.info("%cRIFF64 Detected!", ConsoleColors.recognized);
+
+        // Read the main chunk (don't verify as we just did)
+        RIFFChunk.read(mainFileArray, rf64, false);
 
         const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
-        if (type !== "sfbk" && type !== "sfpk") {
-            SpessaLog.groupEnd();
-            throw new SyntaxError(
-                `Invalid soundFont! Expected "sfbk" or "sfpk" got "${type}"`
-            );
-        }
+        this.verifyTexts(type, ["sfbk", "sfpk", "sfen"]);
         /*
         Some SF2Pack description:
         this is essentially sf2, but the entire smpl chunk is compressed (we only support Ogg Vorbis here)
@@ -66,20 +58,15 @@ export class SoundFont2 extends BasicSoundBank {
         const isSF2Pack = type === "sfpk";
 
         // INFO
-        const infoChunk = RIFFChunk.read(mainFileArray);
+        const infoChunk = RIFFChunk.read(mainFileArray, rf64);
         this.verifyHeader(infoChunk, "list");
         const infoString = readBinaryStringIndexed(infoChunk.data, 4);
-        if (infoString !== "INFO") {
-            SpessaLog.groupEnd();
-            throw new SyntaxError(
-                `Invalid soundFont! Expected "INFO" got "${infoString}"`
-            );
-        }
+        this.verifyText(infoString, "info");
 
         let xdtaChunk: RIFFChunk | undefined;
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
-            const chunk = RIFFChunk.read(infoChunk.data);
+            const chunk = RIFFChunk.read(infoChunk.data, rf64);
             const text = readBinaryString(chunk.data, chunk.data.length);
             // Special cases
             const headerTyped = chunk.header as SF2InfoFourCC;
@@ -185,25 +172,25 @@ export class SoundFont2 extends BasicSoundBank {
         }> = {};
         if (xdtaChunk !== undefined) {
             // Read the hydra chunks
-            xChunks.phdr = RIFFChunk.read(xdtaChunk.data);
-            xChunks.pbag = RIFFChunk.read(xdtaChunk.data);
-            xChunks.pmod = RIFFChunk.read(xdtaChunk.data);
-            xChunks.pgen = RIFFChunk.read(xdtaChunk.data);
-            xChunks.inst = RIFFChunk.read(xdtaChunk.data);
-            xChunks.ibag = RIFFChunk.read(xdtaChunk.data);
-            xChunks.imod = RIFFChunk.read(xdtaChunk.data);
-            xChunks.igen = RIFFChunk.read(xdtaChunk.data);
-            xChunks.shdr = RIFFChunk.read(xdtaChunk.data);
+            xChunks.phdr = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.pbag = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.pmod = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.pgen = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.inst = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.ibag = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.imod = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.igen = RIFFChunk.read(xdtaChunk.data, rf64);
+            xChunks.shdr = RIFFChunk.read(xdtaChunk.data, rf64);
         }
 
         // SDTA
-        const sdtaChunk = RIFFChunk.read(mainFileArray, false);
+        const sdtaChunk = RIFFChunk.read(mainFileArray, rf64, false);
         this.verifyHeader(sdtaChunk, "list");
         this.verifyText(readBinaryStringIndexed(mainFileArray, 4), "sdta");
 
         // Smpl
         SpessaLog.info("%cVerifying smpl chunk...", ConsoleColors.warn);
-        const sampleDataChunk = RIFFChunk.read(mainFileArray, false);
+        const sampleDataChunk = RIFFChunk.read(mainFileArray, rf64, false);
         this.verifyHeader(sampleDataChunk, "smpl");
         let sampleData: IndexedByteArray | Float32Array;
         // SF2Pack: the entire data is compressed
@@ -216,7 +203,10 @@ export class SoundFont2 extends BasicSoundBank {
                 sampleData = stbvorbis.decode(
                     mainFileArray.buffer.slice(
                         mainFileArray.currentIndex,
-                        mainFileArray.currentIndex + sdtaChunk.size - 12
+                        mainFileArray.currentIndex +
+                            sdtaChunk.size -
+                            4 -
+                            sdtaChunk.headerSize
                     )
                 ).data[0];
             } catch (error) {
@@ -237,44 +227,44 @@ export class SoundFont2 extends BasicSoundBank {
         }
 
         SpessaLog.info(
-            `%cSkipping sample chunk, length: %c${sdtaChunk.size - 12}`,
+            `%cSkipping sample chunk, length: %c${sdtaChunk.size - 4 - sdtaChunk.headerSize}`,
             ConsoleColors.info,
             ConsoleColors.value
         );
-        mainFileArray.currentIndex += sdtaChunk.size - 12;
+        mainFileArray.currentIndex += sdtaChunk.size - 4 - sdtaChunk.headerSize;
 
         // PDTA
         SpessaLog.info("%cLoading preset data chunk...", ConsoleColors.warn);
-        const presetChunk = RIFFChunk.read(mainFileArray);
+        const presetChunk = RIFFChunk.read(mainFileArray, rf64);
         this.verifyHeader(presetChunk, "list");
         readBinaryStringIndexed(presetChunk.data, 4);
 
         // Read the hydra chunks
-        const phdrChunk = RIFFChunk.read(presetChunk.data);
+        const phdrChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(phdrChunk, "phdr");
 
-        const pbagChunk = RIFFChunk.read(presetChunk.data);
+        const pbagChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(pbagChunk, "pbag");
 
-        const pmodChunk = RIFFChunk.read(presetChunk.data);
+        const pmodChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(pmodChunk, "pmod");
 
-        const pgenChunk = RIFFChunk.read(presetChunk.data);
+        const pgenChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(pgenChunk, "pgen");
 
-        const instChunk = RIFFChunk.read(presetChunk.data);
+        const instChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(instChunk, "inst");
 
-        const ibagChunk = RIFFChunk.read(presetChunk.data);
+        const ibagChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(ibagChunk, "ibag");
 
-        const imodChunk = RIFFChunk.read(presetChunk.data);
+        const imodChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(imodChunk, "imod");
 
-        const igenChunk = RIFFChunk.read(presetChunk.data);
+        const igenChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(igenChunk, "igen");
 
-        const shdrChunk = RIFFChunk.read(presetChunk.data);
+        const shdrChunk = RIFFChunk.read(presetChunk.data, rf64);
         this.verifyHeader(shdrChunk, "shdr");
 
         SpessaLog.info("%cParsing samples...", ConsoleColors.info);
@@ -439,6 +429,15 @@ export class SoundFont2 extends BasicSoundBank {
             SpessaLog.groupEnd();
             this.parsingError(
                 `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"\``
+            );
+        }
+    }
+
+    protected verifyTexts(text: string, expected: string[]) {
+        if (!expected.includes(text.toLowerCase())) {
+            SpessaLog.groupEnd();
+            this.parsingError(
+                `Invalid FourCC: Expected ${expected.map((s) => `"${s}"`).join(", ")} but got "${text.toLowerCase()}"`
             );
         }
     }
