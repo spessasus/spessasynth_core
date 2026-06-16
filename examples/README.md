@@ -1,10 +1,11 @@
 ## spessasynth_core examples
 
-To run these examples, run `npm run install:examples` in the root directory.
-
-Then do `tsc your_example.ts` to run one of the examples.
+To run one of these examples, do `tsx your_example.ts`.
 
 Make sure to run the examples in the root directory of this repository!
+
+> [!WARNING]
+> `ffmpeg` must be installed to run the real-time playback examples.
 
 ### Note to self
 

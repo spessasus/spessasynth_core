@@ -1,4 +1,34 @@
-# Getting started
+# Getting started with `spessasynth_core`
+
+!!! Tip
+
+    If you encounter any errors in this documentation, please **open an issue!**
+
+## `spessasynth_core` vs `spessasynth_lib`
+
+There are two similar libraries: `spessasynth_lib` and `spessasynth_core`:
+
+- `spessasynth_core` is the main library that contains all MIDI, SF2,DLS parsing and synthesis engine. It can run in any JS environment.
+- `spessasynth_lib` builds on top of `spessasynth_core`,
+  relying on `WebAudioAPI` and `WebMIDIAPI`
+  to add easy-to-use wrappers for the `SpessaSynthProcessor` and `SpessaSynthSequencer`.
+
+So:
+
+### Use `spessasynth_lib` if:
+
+- You want to play MIDI files in the browser without much work.
+- You don't want to have to program your own audio processor.
+- The default effects are good enough for you.
+- You don't need direct access to the audio engine.
+
+### Use `spessasynth_core` if:
+
+- You want access to raw PCM samples.
+- You want custom effect processors.
+- You need full control over the audio.
+- You don't need `spessasynth_lib` wrappers.
+- You don't have access to the WebAudioAPI.
 
 ## Installation
 

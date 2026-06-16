@@ -7,8 +7,9 @@ import {
 } from "../src";
 import * as fs from "node:fs/promises";
 import { Readable } from "node:stream";
-import Speaker from "speaker"; // Process arguments
+import * as child_process from "node:child_process";
 
+console.info("This example needs ffmpeg to be installed on your computer.");
 // Process arguments
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -23,20 +24,27 @@ const mid = await fs.readFile(midPath);
 
 const sampleRate = 44_100;
 SpessaLog.setLogLevel(true, true, true);
+
+// Initialize the synthesizer
 console.info("Initializing synthesizer...");
 const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false
 });
+
+// Load sound bank
 synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
 await synth.processorInitialized;
 
+// Initialize the sequencer
+const seq = new SpessaSynthSequencer(synth);
+
+// Load MIDI
 console.info("Parsing MIDI file...");
 const midi = BasicMIDI.fromArrayBuffer(mid.buffer);
 console.info(`Now playing: ${midi.getName()}`);
-const seq = new SpessaSynthSequencer(synth);
 seq.loadNewSongList([midi]);
 seq.play();
 seq.loopCount = Infinity;
@@ -56,19 +64,32 @@ const audioStream = new Readable({
             interleaved[i * 2 + 1] = right[i];
         }
 
-        const buffer = Buffer.alloc(interleaved.length * 4); // 4 bytes per float
-        for (let i = 0; i < interleaved.length; i++) {
-            buffer.writeFloatLE(interleaved[i], i * 4);
-        }
-        this.push(buffer);
+        this.push(
+            Buffer.from(
+                interleaved.buffer,
+                interleaved.byteOffset,
+                interleaved.byteLength
+            )
+        );
     }
 });
 
-const speaker = new Speaker({
-    sampleRate: 44_100,
-    channels: 2,
-    bitDepth: 32,
-    // @ts-expect-error badly typed package (again)
-    float: true
-});
-audioStream.pipe(speaker);
+// Spawn ffplay to play directly to the speakers
+const speakers = child_process.spawn(
+    "ffplay",
+    [
+        "-f",
+        "f32le",
+        "-sample_rate",
+        sampleRate.toString(),
+        "-ch_layout",
+        "stereo",
+        "-nodisp",
+        "-"
+    ],
+    {
+        stdio: ["pipe"]
+    }
+);
+
+audioStream.pipe(speakers.stdin);

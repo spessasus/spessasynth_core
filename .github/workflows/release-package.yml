@@ -29,11 +29,5 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            # These depend on the `speaker` package which will not install in CI environments
-            - name: Remove Examples
-              # Leave tsconfig.json so it compiles
-              run: |
-                  find examples/ -type f ! -name '*.json' -delete
-
             - name: Build and publish to npm registry
               run: npm publish --provenance --access public
