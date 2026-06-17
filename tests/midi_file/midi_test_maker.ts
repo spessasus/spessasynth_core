@@ -205,15 +205,28 @@ export class MIDITestMaker extends MIDIBuilder {
         tickStep = 480,
         dataStep = 1
     ) {
-        let data = from;
-        while (data <= to) {
-            const v = Math.min(data, to);
-            this.text(`CC Sweep ${cc} = ${v}`);
-            this.cc(cc, v);
-            this.ticks += tickStep;
-            data += dataStep;
+        const step = Math.abs(dataStep);
+
+        if (from <= to) {
+            let data = from;
+
+            while (data <= to) {
+                this.text(`CC Sweep ${cc} = ${data}`);
+                this.cc(cc, data);
+                this.ticks += tickStep;
+                data += step;
+            }
+        } else {
+            let data = from;
+
+            while (data >= to) {
+                this.text(`CC Sweep ${cc} = ${data}`);
+                this.cc(cc, data);
+                this.ticks += tickStep;
+                data -= step;
+            }
         }
-        this.cc(cc, Math.min(data, to));
+
         return this;
     }
 
