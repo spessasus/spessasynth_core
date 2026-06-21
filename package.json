@@ -82,6 +82,7 @@
         "*.{json,md,yml,yaml}": "prettier --write"
     },
     "allowScripts": {
-        "esbuild@0.28.0": true
+        "esbuild@0.28.0": true,
+        "midi@2.0.0": true
     }
 }
