@@ -18,13 +18,17 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Setup Node
               uses: actions/setup-node@v6
               with:
                   node-version: latest
                   registry-url: https://registry.npmjs.org
+
+                  # midi requires ALSA to install, which is not in GH actions. It's only used for examples anyway.
+            - name: Remove midi dependency
+              run: npm uninstall midi
 
             - name: Install dependencies
               run: npm ci
