@@ -77,17 +77,18 @@ export class DynamicModulatorManager {
         const normalizedNotCentered = data / 127;
         switch (addr3 & 0x0f) {
             case 0x00: {
+                const v = Math.min(24, Math.max(24, centeredValue));
                 // Pitch Control
                 this.setModulator(
                     source as ModulatorControllerSource,
                     isCC,
                     GeneratorTypes.fineTune,
-                    centeredValue * 100,
+                    v * 100,
                     bipolar
                 );
                 SpessaLog.coolInfo(
                     `Channel ${this.channel} ${sourceName} pitch control`,
-                    centeredValue,
+                    v,
                     "semitones"
                 );
                 break;

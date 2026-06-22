@@ -1,5 +1,5 @@
 import { MIDITestMaker } from "../midi_test_maker";
-import { MIDIControllers } from "../../../src";
+import { MIDIControllers, RegisteredParameterTypes } from "../../../src";
 
 // TODO: Finish
 const test = new MIDITestMaker("GS Controller matrix comparison");
@@ -22,6 +22,16 @@ function sweepGSMatrix(name: string, a3: number, v: number) {
 }
 
 test.text("PITCH CONTROL Test");
+test.text("Pitch Wheel - baseline")
+    .rpn(0, 24 << 7)
+    .noteOn(60, 127)
+    .sweepPitch(0, 8192, 30, 32)
+    .wait(480)
+    .sweepPitch(8192, 16_383, 30, 32)
+    .noteOff(60)
+    .pitch(8192)
+    .rpn(RegisteredParameterTypes.pitchWheelRange, 2 << 7)
+    .wait(480);
 sweepGSMatrix("CC1 PITCH CONTROL -24 [semitones]", 0x40, 0x28);
 sweepGSMatrix("CC1 PITCH CONTROL +24 [semitones]", 0x40, 0x58);
 sweepGSMatrix("CC1 PITCH CONTROL +64 [semitones]", 0x40, 127);
@@ -32,7 +42,7 @@ test.programChange(1, 1, 80);
 test.text("TVF CONTROL Test");
 test.text("CC#74 - baseline (filter, lower half)")
     .noteOn(60, 127)
-    .sweepCC(MIDIControllers.brightness, 0, 64, 60)
+    .sweepCC(MIDIControllers.brightness, 64, 0, 60)
     .noteOff(60)
     .cc(MIDIControllers.brightness, 64)
     .wait(480);

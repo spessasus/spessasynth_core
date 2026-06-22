@@ -155,6 +155,15 @@ export class MIDITestMaker extends MIDIBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param value 14-bit
+     */
+    public pitch(value: number) {
+        super.pitchWheel(this.ticks, 0, this.channel, value);
+        return this;
+    }
+
     public text(text: string) {
         const enc = new TextEncoder();
         super.addEvent(
@@ -230,6 +239,30 @@ export class MIDITestMaker extends MIDIBuilder {
         return this;
     }
 
+    public sweepPitch(from: number, to: number, tickStep = 480, dataStep = 1) {
+        const step = Math.abs(dataStep);
+
+        if (from <= to) {
+            let data = from;
+
+            while (data <= to) {
+                this.pitch(data);
+                this.ticks += tickStep;
+                data += step;
+            }
+        } else {
+            let data = from;
+
+            while (data >= to) {
+                this.pitch(data);
+                this.ticks += tickStep;
+                data -= step;
+            }
+        }
+
+        return this;
+    }
+
     public programChange(msb: number, lsb: number, program: number) {
         this.text(`Program change ${msb}:${lsb} - ${program}`);
         this.cc(MIDIControllers.bankSelectLSB, lsb);
@@ -259,6 +292,7 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public rpn(rpn: number, val: number) {
+        this.text(`RPN ${rpn.toString(16)} = ${val.toString(16)}`);
         this.registeredParameter(this.ticks, 0, this.channel, rpn, val);
         return this;
     }
