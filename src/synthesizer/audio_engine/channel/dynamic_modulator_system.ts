@@ -77,7 +77,7 @@ export class DynamicModulatorManager {
         const normalizedNotCentered = data / 127;
         switch (addr3 & 0x0f) {
             case 0x00: {
-                const v = Math.min(24, Math.max(24, centeredValue));
+                const v = Math.min(24, Math.max(-24, centeredValue));
                 // Pitch Control
                 this.setModulator(
                     source as ModulatorControllerSource,
