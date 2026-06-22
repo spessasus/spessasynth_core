@@ -1,6 +1,7 @@
 import path from "node:path";
 import * as child_process from "node:child_process";
 import * as os from "node:os";
+import * as worker_threads from "node:worker_threads";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 import {
@@ -25,31 +26,12 @@ const FSMP_LOCATION = path.join(
     "Desktop/clutter/MidiPlayer x86/"
 );
 
-console.warn(
-    `
-==============WARNING===============
-Only tested on Linux,
-may work with Windows.
-Detected OS: ${os.platform()}
-Renders all files with spessasynth
-and VSTi reference.
-Normalized and FLAC.
-Uses wine and Falcosoft MIDI Player.
-FFmpeg is required as well.
-====================================
-`
-);
-
 // For spessasynth rendering
 const SF_OUT_DIR = "spessa";
 const SF_RATE = 48_000;
 const SF_TAIL = 2;
 const BUFFER_SIZE = 128;
 const TRIM_THRESHOLD = 0.0005;
-
-console.info(`FSMP Location: ${FSMP_LOCATION}`);
-console.info(`SF Location: ${SF_LOCATION}`);
-const isWindows = os.platform() === "win32";
 
 // Out dir -> configuration preset number (suffix), like "scvaRender_003.ini"
 const RENDERS = {
@@ -154,6 +136,84 @@ function wavToFlac(wavBuffer: Buffer) {
     });
 }
 
+if (!worker_threads.isMainThread) {
+    // Worker thread logic here
+
+    interface WorkerData {
+        file: string;
+        midiDir: string;
+        outputDir: string;
+    }
+
+    // Extract the data passed from the main thread
+    const { file, midiDir, outputDir } =
+        worker_threads.workerData as WorkerData;
+
+    const sfBin = await fs.readFile(SF_LOCATION);
+    const sf = SoundBankLoader.fromArrayBuffer(sfBin.buffer);
+
+    const inputPath = path.join(midiDir, file);
+    const midiBin = await fs.readFile(inputPath);
+    const midi = BasicMIDI.fromArrayBuffer(midiBin.buffer);
+    const sampleCount = SF_RATE * (midi.duration + SF_TAIL);
+
+    const synth = new SpessaSynthProcessor(SF_RATE, {
+        eventsEnabled: false,
+        maxBufferSize: BUFFER_SIZE
+    });
+    synth.soundBankManager.addSoundBank(sf, "main");
+    const seq = new SpessaSynthSequencer(synth);
+    seq.loadNewSongList([midi]);
+    seq.play();
+
+    const outLeft = new Float32Array(sampleCount);
+    const outRight = new Float32Array(sampleCount);
+
+    let filledSamples = 0;
+    while (filledSamples < sampleCount) {
+        seq.processTick();
+        const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
+        synth.process(outLeft, outRight, filledSamples, bufferSize);
+        filledSamples += bufferSize;
+    }
+
+    const name = "SPESSA_" + path.basename(inputPath, path.extname(inputPath));
+    const outputName = `${name}.flac`;
+    const wavBuffer = Buffer.from(audioToWav([outLeft, outRight], SF_RATE));
+    const outputPath = path.join(outputDir, outputName);
+
+    const flacBuffer = await wavToFlac(wavBuffer);
+    await fs.writeFile(outputPath, flacBuffer);
+
+    // Tell the main thread that we are done
+    worker_threads.parentPort?.postMessage("done");
+
+    process.exit(0);
+}
+
+console.warn(
+    `
+==============WARNING===================
+    Only tested on Linux,
+    may work with Windows.
+    
+    Detected OS: ${os.platform()}
+    Renders all files with spessasynth
+    and VSTi reference.
+    
+    Normalized and FLAC.
+    Uses wine and Falcosoft MIDI Player,
+    FFmpeg is required as well.
+
+    VSTi only renders changed files.
+========================================
+`
+);
+
+console.info(`FSMP Location: ${FSMP_LOCATION}`);
+console.info(`SF Location: ${SF_LOCATION}`);
+console.info("\n");
+const isWindows = os.platform() === "win32";
 const dirname = import.meta.dirname;
 
 const rootDir = path.join(dirname, "../..");
@@ -175,7 +235,11 @@ try {
 const checksums = JSON.parse(checksumsJson) as Record<string, string>;
 
 console.info("Building test files...");
-child_process.execSync("npm run test:midi", { stdio: "inherit", cwd: rootDir });
+child_process.execSync("npm run test:midi", {
+    stdio: "ignore",
+    cwd: rootDir
+});
+console.info("Done.");
 
 console.group("Comparing checksums...");
 const midiFiles = await fs.readdir(midiDir);
@@ -196,7 +260,7 @@ console.groupEnd();
 
 console.info(`Beginning render. Files to render: ${filesToRender.length}`);
 let totalRendered = 0;
-console.group("Rendering with VSTi");
+console.group("Rendering with VSTi...");
 for (const [targetDirname, presetNumber] of Object.entries(RENDERS)) {
     const outputDir = path.join(outDir, targetDirname);
     await fs.mkdir(outputDir, { recursive: true });
@@ -246,7 +310,7 @@ for (const [targetDirname, presetNumber] of Object.entries(RENDERS)) {
         const fileBin = await fs.readFile(renderedPath);
         await fs.rm(renderedPath);
         const { sampleData, sampleRate } = readWav(fileBin.buffer);
-        console.info("Trimming silence and normalizing");
+        console.info("Trimming silence and normalizing...");
 
         // Trim leading silence
         const frames = sampleData[0].length;
@@ -282,66 +346,43 @@ for (const [targetDirname, presetNumber] of Object.entries(RENDERS)) {
 console.info("VSTi render completed.\n");
 console.groupEnd();
 
-console.group("Rendering with spessasynth");
-
-const sfBin = await fs.readFile(SF_LOCATION);
-const sf = SoundBankLoader.fromArrayBuffer(sfBin.buffer);
+console.group("Rendering with spessasynth...");
 
 const outputDir = path.join(outDir, SF_OUT_DIR);
 await fs.mkdir(outputDir, { recursive: true });
-let done = 0;
+
+function runWorker(file: string) {
+    return new Promise<void>((resolve, reject) => {
+        // Import.meta.filename points to this file
+        const worker = new worker_threads.Worker(import.meta.filename, {
+            workerData: {
+                file,
+                midiDir,
+                outputDir
+            }
+        });
+
+        worker.on("message", () => resolve());
+        worker.on("error", reject);
+        worker.on("exit", (code) => {
+            if (code !== 0)
+                reject(new Error(`Worker stopped with exit code ${code}`));
+        });
+    });
+}
+
+console.info(`Queueing ${midiFiles.length} files for render.`);
+console.time("Spessasynth render completed in");
 
 await Promise.all(
     midiFiles.map(async (file) => {
-        console.info(
-            `\n(${done}/${filesToRender.length}) Rendering ${file} for spessa`
-        );
-        const inputPath = path.join(midiDir, file);
-        const midiBin = await fs.readFile(inputPath);
-        const midi = BasicMIDI.fromArrayBuffer(midiBin.buffer);
-        const sampleCount = SF_RATE * (midi.duration + SF_TAIL);
-
-        const synth = new SpessaSynthProcessor(SF_RATE, {
-            eventsEnabled: false,
-            maxBufferSize: BUFFER_SIZE
-        });
-        synth.soundBankManager.addSoundBank(sf, "main");
-        const seq = new SpessaSynthSequencer(synth);
-        seq.loadNewSongList([midi]);
-        seq.play();
-
-        const outLeft = new Float32Array(sampleCount);
-        const outRight = new Float32Array(sampleCount);
-
-        const doneLabel = `${file} rendered in`;
-        console.time(doneLabel);
-
-        let filledSamples = 0;
-        while (filledSamples < sampleCount) {
-            seq.processTick();
-            const bufferSize = Math.min(
-                BUFFER_SIZE,
-                sampleCount - filledSamples
-            );
-            synth.process(outLeft, outRight, filledSamples, bufferSize);
-            filledSamples += bufferSize;
-        }
-
-        done++;
+        await runWorker(file);
         totalRendered++;
-        console.timeEnd(doneLabel);
-
-        const name =
-            "SPESSA_" + path.basename(inputPath, path.extname(inputPath));
-        const outputName = `${name}.flac`;
-        const wavBuffer = Buffer.from(audioToWav([outLeft, outRight], SF_RATE));
-        const outputPath = path.join(outputDir, outputName);
-        const flacBuffer = await wavToFlac(wavBuffer);
-        await fs.writeFile(outputPath, flacBuffer);
+        console.info(`Finished rendering ${file}`);
     })
 );
 
-console.info("spessasynth render completed.\n");
+console.timeEnd("Spessasynth render completed in");
 console.groupEnd();
 
 console.info("Writing checksums...");
