@@ -28,8 +28,9 @@ test.text("CC#74 Max")
 test.text("CC#74 Sweep, top half")
     .noteOn(60, 127)
     .sweepCC(MIDIControllers.brightness, 64, 127, 20)
-    .noteOff(60)
     .cc(MIDIControllers.brightness, 64)
+    .wait(480)
+    .noteOff(60)
     .wait(480);
 
 test.text("CC#74 Sweep")
@@ -43,8 +44,9 @@ test.text("CC#74 Sweep, CC#74 = 127")
     .cc(MIDIControllers.filterResonance, 127)
     .noteOn(60, 127)
     .sweepCC(MIDIControllers.brightness, 0, 127, 10)
-    .noteOff(60)
     .cc(MIDIControllers.brightness, 64)
+    .wait(480)
+    .noteOff(60)
     .wait(480);
 
 test.text("CC#71 sweep")
