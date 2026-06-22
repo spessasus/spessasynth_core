@@ -14,6 +14,7 @@
         "format": "prettier . --write",
         "test:types": "npm run lint && tsc -b ",
         "test:midi": "tsx tests/midi_file/make_tests.ts",
+        "test:midi:render": "tsx tests/midi_file/render_tests.ts",
         "prepublishOnly": "npm run format && npm run build",
         "prepare": "husky install"
     },

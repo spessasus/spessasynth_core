@@ -5,7 +5,11 @@ import { pathToFileURL } from "node:url";
 const TESTS_DIR = import.meta.dirname;
 const OUT_DIR = path.resolve(TESTS_DIR, "generated");
 
-const SKIP_FILES = new Set(["make_tests.ts", "midi_test_maker.ts"]);
+const topLevel = await fs.readdir(TESTS_DIR, { withFileTypes: true });
+
+const SKIP_FILES = new Set(
+    topLevel.filter((f) => f.isFile()).map((f) => f.name)
+);
 const SKIP_DIRS = new Set(["node_modules", "files"]);
 
 async function findTestFiles(dir: string) {
@@ -50,4 +54,4 @@ for (const file of testFiles) {
 }
 
 console.info();
-console.info(`Done: ${generated} test MIDI files files generated.`);
+console.info(`Done: ${generated} test MIDI files generated.`);

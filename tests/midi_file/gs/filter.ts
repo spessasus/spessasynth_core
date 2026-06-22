@@ -7,7 +7,9 @@ const test = new MIDITestMaker("GS Filter Test");
 test.programChange(1, 1, 80)
     .cc(MIDIControllers.reverbDepth, 0)
     .cc(MIDIControllers.mainVolume, 127)
-    .cc(MIDIControllers.vibratoDepth, 0);
+    .cc(MIDIControllers.vibratoDepth, 0)
+    .cc(MIDIControllers.vibratoRate, 0)
+    .cc(MIDIControllers.vibratoDelay, 127);
 
 test.text("MG Square").note(60, 127, 960).wait(480);
 
