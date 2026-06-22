@@ -15,7 +15,7 @@ test.text("88Pro MAP STANDARD");
 let pitch = 50;
 while (pitch <= 70) {
     test.text(`Pitch = ${pitch}`)
-        .nrpn((0x18 << 7) | MIDI_NOTE, pitch << 7)
+        .nrpn((0x18 << 7) | MIDI_NOTE, pitch)
         .cc(MIDIControllers.dataEntryMSB, pitch)
         .wait(240)
         .noteOn(MIDI_NOTE, 120)
@@ -34,7 +34,7 @@ test.text("SC-55 MAP STANDARD");
 pitch = 50;
 while (pitch <= 70) {
     test.text(`Pitch = ${pitch}`)
-        .nrpn((0x18 << 7) | MIDI_NOTE, pitch << 7)
+        .nrpn((0x18 << 7) | MIDI_NOTE, pitch)
         .wait(240)
         .noteOn(MIDI_NOTE, 120)
         .wait(80)

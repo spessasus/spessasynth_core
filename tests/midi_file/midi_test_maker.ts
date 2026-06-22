@@ -239,6 +239,46 @@ export class MIDITestMaker extends MIDIBuilder {
         return this;
     }
 
+    /**
+     * Range supports 7-bit only
+     * @param nrpn
+     * @param from 7-bit
+     * @param to 7-bit
+     * @param tickStep
+     * @param dataStep
+     */
+    public sweepNrpn(
+        nrpn: number,
+        from: number,
+        to: number,
+        tickStep = 480,
+        dataStep = 1
+    ) {
+        const step = Math.abs(dataStep);
+
+        if (from <= to) {
+            let data = from;
+
+            while (data <= to) {
+                this.text(`NRPN Sweep ${nrpn.toString(16)} = ${data}`);
+                this.nrpn(nrpn, data);
+                this.ticks += tickStep;
+                data += step;
+            }
+        } else {
+            let data = from;
+
+            while (data >= to) {
+                this.text(`CC Sweep ${nrpn.toString(16)} = ${data}`);
+                this.nrpn(nrpn, data);
+                this.ticks += tickStep;
+                data -= step;
+            }
+        }
+
+        return this;
+    }
+
     public sweepPitch(from: number, to: number, tickStep = 480, dataStep = 1) {
         const step = Math.abs(dataStep);
 
@@ -297,8 +337,19 @@ export class MIDITestMaker extends MIDIBuilder {
         return this;
     }
 
+    /**
+     * Value is 7-bit only
+     * @param nrpn
+     * @param val 7-bit only
+     */
     public nrpn(nrpn: number, val: number) {
-        this.nonRegisteredParameter(this.ticks, 0, this.channel, nrpn, val);
+        this.nonRegisteredParameter(
+            this.ticks,
+            0,
+            this.channel,
+            nrpn,
+            val << 7
+        );
         return this;
     }
 

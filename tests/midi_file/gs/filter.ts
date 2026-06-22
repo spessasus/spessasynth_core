@@ -14,44 +14,44 @@ test.programChange(1, 1, 80)
 test.text("MG Square").note(60, 127, 960).wait(480);
 
 test.text("CC#71 = 0")
-    .cc(MIDIControllers.filterResonance, 0)
+    .nrpn(0xa1, 0)
     .note(60, 127, 960)
-    .cc(MIDIControllers.filterResonance, 64)
+    .nrpn(0xa1, 64)
     .wait(480);
 
 test.text("CC#74 Max")
-    .cc(MIDIControllers.brightness, 127)
+    .nrpn(0xa0, 127)
     .note(60, 127, 960)
-    .cc(MIDIControllers.brightness, 64)
+    .nrpn(0xa0, 64)
     .wait(480);
 
 test.text("CC#74 Sweep, top half")
     .noteOn(60, 127)
-    .sweepCC(MIDIControllers.brightness, 64, 127, 20)
-    .cc(MIDIControllers.brightness, 64)
+    .sweepNrpn(0xa0, 64, 127, 20)
+    .nrpn(0xa0, 64)
     .wait(480)
     .noteOff(60)
     .wait(480);
 
 test.text("CC#74 Sweep")
     .noteOn(60, 127)
-    .sweepCC(MIDIControllers.brightness, 0, 127, 10)
+    .sweepNrpn(0xa0, 0, 127, 10)
     .noteOff(60)
-    .cc(MIDIControllers.brightness, 64)
+    .nrpn(0xa0, 64)
     .wait(480);
 
 test.text("CC#74 Sweep, CC#74 = 127")
-    .cc(MIDIControllers.filterResonance, 127)
+    .nrpn(0xa1, 127)
     .noteOn(60, 127)
-    .sweepCC(MIDIControllers.brightness, 0, 127, 10)
-    .cc(MIDIControllers.brightness, 64)
+    .sweepNrpn(0xa0, 0, 127, 10)
+    .nrpn(0xa0, 64)
     .wait(480)
     .noteOff(60)
     .wait(480);
 
 test.text("CC#71 sweep")
     .noteOn(60, 127)
-    .sweepCC(MIDIControllers.filterResonance, 0, 127, 10)
+    .sweepNrpn(0xa1, 0, 127, 10)
     .noteOff(60);
 
 await test.make();
