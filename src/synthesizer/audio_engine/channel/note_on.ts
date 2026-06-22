@@ -45,8 +45,10 @@ export function noteOn(
 
     // Apply Velocity Sense and clamp
     let realVelocity = clamp(
-        velocity * (this._midiParameters.velocitySenseDepth / 64) +
-            (this._midiParameters.velocitySenseOffset - 64) * 2,
+        Math.floor(
+            velocity * (this._midiParameters.velocitySenseDepth / 64) +
+                (this._midiParameters.velocitySenseOffset - 64) * 2
+        ),
         0,
         127
     );
