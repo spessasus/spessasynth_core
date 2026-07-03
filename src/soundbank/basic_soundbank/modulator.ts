@@ -341,21 +341,6 @@ const defaultSpessaSynthModulators = [
         250,
         0
     ),
-
-    // Cc 67 (soft pedal) to attenuation
-    new DecodedModulator(
-        getModSourceEnum(
-            ModulatorCurveTypes.switch,
-            false,
-            false,
-            true,
-            MIDIControllers.softPedal
-        ), // Switch unipolar positive 67
-        0x0, // No controller
-        GeneratorTypes.initialAttenuation,
-        50,
-        0
-    ),
     // Cc 67 (soft pedal) to filter fc
     new DecodedModulator(
         getModSourceEnum(
@@ -367,22 +352,7 @@ const defaultSpessaSynthModulators = [
         ), // Switch unipolar positive 67
         0x0, // No controller
         GeneratorTypes.initialFilterFc,
-        -2400,
-        0
-    ),
-
-    // Cc 8 (balance) to pan
-    new DecodedModulator(
-        getModSourceEnum(
-            ModulatorCurveTypes.linear,
-            true,
-            false,
-            true,
-            MIDIControllers.balance
-        ), // Linear bipolar positive 8
-        0x0, // No controller
-        GeneratorTypes.pan,
-        500,
+        -1200,
         0
     )
 ];

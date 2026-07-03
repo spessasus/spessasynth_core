@@ -102,6 +102,8 @@ Note: cB - centibels, 1/10 of a decibel.
 
 These are the default modulators, as defined by the SF2.04 specification.
 
+`-` denotes source enumeration `0x0` (no controller linear unipolar positive).
+
 !!! Note
 
     The [velocity to filter modulator is intentionally disabled](https://www.fluidsynth.org/wiki/SoundFont/#fluidsynths-implementation-details-of-the-soundfont-2-spec).
@@ -125,9 +127,7 @@ SpessaSynth applies a few extra modulators for extended compatibility with vario
 | Source                       | Source Transform         | Secondary source | Destination              | Transform amount |
 | ---------------------------- | ------------------------ | ---------------- | ------------------------ | ---------------- |
 | **Poly Pressure**            | Positive Unipolar Linear | -                | Vibrato LFO to pitch     | 50 cents         |
-| **CC 8** (Balance)           | Positive Bipolar Linear  | -                | Pan                      | 500 percent      |
-| **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial attenuation      | 50 cB            |
-| **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -2400 abs cents  |
+| **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -1200 abs cents  |
 | **CC 71** (Filter Resonance) | Positive Bipolar Linear  | -                | Initial Filter Resonance | 250 cB           |
 | **CC 72** (Vol Env Attack)   | Positive Bipolar Convex  | -                | Volume envelope attack   | 6000 timecents   |
 | **CC 73** (Vol Env Release)  | Positive Bipolar Linear  | -                | Volume envelope release  | 3600 timecents   |
