@@ -226,6 +226,10 @@ export class BasicSample {
                 `${sample.name} is linked tp ${sample.linkedSample.name}. Unlink it first.`
             );
         }
+        // Testcase: pc98_ym2608.sf2
+        if (this === sample)
+            throw new Error(`${sample.name} cannot be linked to itself.`);
+
         this.linkedSample = sample;
         sample.linkedSample = this;
         switch (type) {

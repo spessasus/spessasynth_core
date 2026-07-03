@@ -139,6 +139,13 @@ export class SoundFontSample extends BasicSample {
                     ConsoleColors.warn
                 );
                 this.unlinkSample();
+            } else if (linked === this) {
+                // Testcase: pc98_ym2608.sf2
+                SpessaLog.info(
+                    `%cInvalid linked sample for ${this.name}: linked to itself.`,
+                    ConsoleColors.warn
+                );
+                this.unlinkSample();
             } else {
                 this.setLinkedSample(linked, this.sampleType);
             }

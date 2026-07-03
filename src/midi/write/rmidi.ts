@@ -26,6 +26,17 @@ interface ChannelStatus {
     lastBank?: MIDIMessage;
     lastBankLSB?: MIDIMessage;
     hasBankSelect: boolean;
+    /**
+     * In rare cases (example: shop3.mid)
+     * program change on a track, while the notes are on a separate track.
+     * The "usedChannels" tracking only treats track as using the channel if there are note messages.
+     * Since the editor sees that the track has
+     * "no program change" (because there are no program changes in "used" tracks)
+     * it adds a default program change which might mess with the separated one.
+     * Ensure that we track these and the loop that runs after the tracking doesn't miss them.
+     */
+    programChangeTrack?: number;
+    programChangeIndex?: number;
 }
 
 /**
@@ -57,7 +68,9 @@ function correctBankOffsetInternal(
             isDrum: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
             lastBank: undefined,
             lastBankLSB: undefined,
-            hasBankSelect: false
+            hasBankSelect: false,
+            programChangeTrack: undefined,
+            programChangeIndex: undefined
         });
     }
 
@@ -175,6 +188,12 @@ function correctBankOffsetInternal(
             );
             // Set the program number
             e.data[0] = targetPreset.program;
+            // Track the change
+            ch.program = targetPreset.program;
+            // Track the trackNum for optionally adding a bank select
+            // Nullish assignment so we track the first change only
+            ch.programChangeTrack ??= trackNum;
+            ch.programChangeIndex ??= eventIndexes[trackNum];
 
             if (targetPreset.isGMGSDrum && BankSelectHacks.isSystemXG(system))
                 // GM/GS drums returned, leave as is
@@ -214,25 +233,32 @@ function correctBankOffsetInternal(
 
         // Find the first program change (for the given channel)
         const midiChannel = chNum % 16;
-        const status = MIDIMessageTypes.programChange | midiChannel;
         // Find track with this channel being used
         const portOffset = Math.floor(chNum / 16) * 16;
         const port = mid.portChannelOffsetMap.indexOf(portOffset);
-        const track = mid.tracks.find(
+        // Channel can be split across different tracks (example: shop3.mid, musescore)
+        const tracksUsedByChannel = mid.tracks.filter(
             (t) => t.port === port && t.channels.has(midiChannel)
         );
-        if (track === undefined)
+        if (tracksUsedByChannel.length === 0)
             // This channel is not used at all
             continue;
 
-        let indexToAdd = track.events.findIndex((e) => e.statusByte === status);
-        if (indexToAdd === -1) {
+        // Across all tracks this channel is used in, find the index that interests us
+        // Check if we tracked a program change
+        let foundTrack = ch.programChangeTrack
+            ? mid.tracks[ch.programChangeTrack]
+            : undefined;
+        let indexToAdd = ch.programChangeIndex ?? -1;
+        if (!foundTrack) {
             // No program change...
             // Add programs if they are missing from the track
             // (need them to activate bank 1 for the embedded soundfont)
-            const programIndex = track.events.findIndex(
+            // Add it to the first track the program is used in
+            const programChangeTrack = tracksUsedByChannel[0];
+            const programIndex = programChangeTrack.events.findIndex(
                 (e) =>
-                    e.statusByte > 0x80 &&
+                    e.statusByte >= 0x80 &&
                     e.statusByte < 0xf0 &&
                     (e.statusByte & 0xf) === midiChannel
             );
@@ -240,7 +266,7 @@ function correctBankOffsetInternal(
                 // No voices??? skip
                 continue;
 
-            const programTicks = track.events[programIndex].ticks;
+            const programTicks = programChangeTrack.events[programIndex].ticks;
             const targetProgram = soundBank.getPreset(
                 {
                     bankMSB: 0,
@@ -250,7 +276,12 @@ function correctBankOffsetInternal(
                 },
                 system
             ).program;
-            track.addEvents(
+            SpessaLog.info(
+                `%cAdding default program change for %c${chNum}`,
+                ConsoleColors.info,
+                ConsoleColors.recognized
+            );
+            programChangeTrack.addEvents(
                 programIndex,
                 MIDIMessage.programChange(
                     programTicks,
@@ -259,13 +290,10 @@ function correctBankOffsetInternal(
                 )
             );
             indexToAdd = programIndex;
+            foundTrack = programChangeTrack;
         }
-        SpessaLog.info(
-            `%cAdding bank select for %c${chNum}`,
-            ConsoleColors.info,
-            ConsoleColors.recognized
-        );
-        const ticks = track.events[indexToAdd].ticks;
+
+        const ticks = foundTrack.events[indexToAdd].ticks;
         const targetPreset = soundBank.getPreset(
             {
                 bankLSB: 0,
@@ -275,12 +303,20 @@ function correctBankOffsetInternal(
             },
             system
         );
+
+        SpessaLog.info(
+            `%cAdding bank select for %c${chNum}%c Targeting preset: %c${targetPreset.toString()}`,
+            ConsoleColors.info,
+            ConsoleColors.recognized,
+            ConsoleColors.info,
+            ConsoleColors.recognized
+        );
         const targetBank = BankSelectHacks.addBankOffset(
             targetPreset.bankMSB,
             bankOffset,
             system === "xg"
         );
-        track.addEvents(
+        foundTrack.addEvents(
             indexToAdd,
             MIDIMessage.controllerChange(
                 ticks,
