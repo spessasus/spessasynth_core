@@ -6,6 +6,23 @@ import {
     SpessaSynthSequencer
 } from "../../src";
 import fs from "node:fs/promises";
+import path from "node:path";
+
+const fileName = `performance-test-${new Date().toISOString()}.txt`;
+
+const LOG_PATH = path.join(import.meta.dirname, "../files/other/", fileName);
+
+async function writeLog(data: string) {
+    let file = "";
+    try {
+        file = await fs.readFile(LOG_PATH, { encoding: "utf-8" });
+    } catch {
+        // Pass
+    }
+    file += data.replaceAll("\n", "") + "\n";
+    await fs.writeFile(LOG_PATH, file, { encoding: "utf-8" });
+    console.info(data);
+}
 
 export async function runPerformanceTest(
     sfPath: string,
@@ -35,7 +52,7 @@ export async function runPerformanceTest(
         seq.play();
         let filledSamples = 0;
 
-        console.info(`Rendering MIDI. Pass ${i} / ${passes}`);
+        await writeLog(`Rendering MIDI. Pass ${i} / ${passes}`);
         const start = performance.now();
         while (filledSamples < sampleCount) {
             // Process sequencer
@@ -49,11 +66,12 @@ export async function runPerformanceTest(
             filledSamples += bufferSize;
         }
         const time = performance.now() - start;
-        console.info(`Pass ${i}: ${Math.floor(time)}ms`);
+        await writeLog(`Pass ${i}: ${Math.floor(time)}ms`);
         times.push(time);
     }
     const avg = times.reduce((sum, i) => sum + i, 0) / times.length;
-    console.info(`Average time: ${Math.floor(avg)}ms`);
+    await writeLog(`Average time: ${Math.floor(avg)}ms`);
+    console.info("File written to", LOG_PATH);
 }
 
 if (import.meta.main) {
