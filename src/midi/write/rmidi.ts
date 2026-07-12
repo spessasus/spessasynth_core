@@ -89,74 +89,89 @@ function correctBankOffsetInternal(
             return;
 
         if (status === MIDIMessageTypes.systemExclusive) {
-            const syx = MIDIUtils.analyzeSysEx(e.data);
-            switch (syx.type) {
-                default: {
-                    return;
-                }
-
-                // Check for drum sysex
-                case "Drums On": {
-                    const sysexChannel = syx.channel + portOffset;
-                    // Ensure check as syx.channel may be above 15
-                    if (!channels[sysexChannel]) return;
-                    channels[sysexChannel].isDrum = syx.isDrum;
-                    return;
-                }
-
-                case "Global MIDI Param": {
-                    if (syx.parameter === "system") {
-                        system = syx.value;
-                        if (syx.value === "gm") {
-                            // We do not want gm1
-                            unwantedSystems.push({
-                                tNum: trackNum,
-                                e: e
-                            });
-                        }
+            const syxs = MIDIUtils.analyzeSysEx(e.data);
+            // There's only one event to replace, so we might need to add more at the end.
+            let replaced = false;
+            for (const syx of syxs) {
+                switch (syx.type) {
+                    default: {
+                        break;
                     }
-                    break;
-                }
 
-                case "Controller Change": {
-                    // Replace the system exclusive with a regular controller change
-                    const t = mid.tracks[trackNum];
-                    // Channel number may be above 15
-                    if (syx.channel >= 16) return;
-                    const newEvent = MIDIMessage.controllerChange(
-                        e.ticks,
-                        syx.channel,
-                        syx.controller,
-                        syx.value
-                    );
-                    t.events[eventIndexes[trackNum]] = newEvent;
-                    e = newEvent;
-                    SpessaLog.info(
-                        "%cReplaced a system exclusive with controller change!",
-                        ConsoleColors.info
-                    );
+                    // Check for drum sysex
+                    case "Drums On": {
+                        const sysexChannel = syx.channel + portOffset;
+                        // Ensure check as syx.channel may be above 15
+                        if (!channels[sysexChannel]) break;
+                        channels[sysexChannel].isDrum = syx.isDrum;
 
-                    break; // Do not return, keep parsing
-                }
+                        break;
+                    }
 
-                case "Program Change": {
-                    // Channel number may be above 15
-                    if (syx.channel >= 16) return;
-                    // Replace the system exclusive with a regular program
-                    const t = mid.tracks[trackNum];
-                    const newEvent = MIDIMessage.programChange(
-                        e.ticks,
-                        syx.channel,
-                        syx.value
-                    );
-                    t.events[eventIndexes[trackNum]] = newEvent;
-                    e = newEvent;
-                    SpessaLog.info(
-                        "%cReplaced a system exclusive with program change!",
-                        ConsoleColors.info
-                    );
+                    case "Global MIDI Param": {
+                        if (syx.parameter === "system") {
+                            system = syx.value;
+                            if (syx.value === "gm") {
+                                // We do not want gm1
+                                unwantedSystems.push({
+                                    tNum: trackNum,
+                                    e: e
+                                });
+                            }
+                        }
+                        break;
+                    }
 
-                    break; // Do not return, keep parsing
+                    case "Controller Change": {
+                        // Replace the system exclusive with a regular controller change
+                        const t = mid.tracks[trackNum];
+                        // Channel number may be above 15
+                        if (syx.channel >= 16) break;
+                        const newEvent = MIDIMessage.controllerChange(
+                            e.ticks,
+                            syx.channel,
+                            syx.controller,
+                            syx.value
+                        );
+                        if (replaced) {
+                            t.addEvents(eventIndexes[trackNum] + 1, newEvent);
+                        } else {
+                            t.events[eventIndexes[trackNum]] = newEvent;
+                            replaced = true;
+                        }
+                        e = newEvent;
+                        SpessaLog.info(
+                            "%cReplaced a system exclusive with controller change!",
+                            ConsoleColors.info
+                        );
+
+                        break; // Do not return, keep parsing
+                    }
+
+                    case "Program Change": {
+                        // Channel number may be above 15
+                        if (syx.channel >= 16) break;
+                        // Replace the system exclusive with a regular program
+                        const t = mid.tracks[trackNum];
+                        const newEvent = MIDIMessage.programChange(
+                            e.ticks,
+                            syx.channel,
+                            syx.value
+                        );
+                        if (replaced) {
+                            t.addEvents(eventIndexes[trackNum] + 1, newEvent);
+                        } else {
+                            t.events[eventIndexes[trackNum]] = newEvent;
+                            replaced = true;
+                        }
+                        e = newEvent;
+                        SpessaLog.info(
+                            "%cReplaced a system exclusive with program change!",
+                            ConsoleColors.info
+                        );
+
+                        break; // Do not return, keep parsing
+                    }
                 }
             }
         }

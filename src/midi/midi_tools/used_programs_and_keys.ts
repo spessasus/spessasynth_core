@@ -226,8 +226,9 @@ export function getUsedProgramsAndKeys(
 
             case MIDIMessageTypes.systemExclusive: {
                 // Check for drum sysex
-                {
-                    const syx = MIDIUtils.analyzeSysEx(e.data);
+
+                const syxs = MIDIUtils.analyzeSysEx(e.data);
+                for (const syx of syxs) {
                     switch (syx.type) {
                         default: {
                             break;
