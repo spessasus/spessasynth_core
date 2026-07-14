@@ -16,12 +16,28 @@ import type {
     StopAllCallback
 } from "./audio_engine/channel/types";
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
-import type { MIDISystem } from "../soundbank/types";
+import type { MIDISystem, VoiceParameters } from "../soundbank/types";
+import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
  */
 type DisplayMessageData = number[];
+
+export interface SoundBankManagerListEntry {
+    /**
+     * The unique string identifier of the sound bank.
+     */
+    id: string;
+    /**
+     * The sound bank itself.
+     */
+    soundBank: BasicSoundBank;
+    /**
+     * The bank MSB offset for this sound bank.
+     */
+    bankOffset: number;
+}
 
 export type GlobalMIDIParameterChangeCallback = {
     [P in keyof GlobalMIDIParameter]: {
@@ -233,3 +249,17 @@ export {
     type DelayProcessor,
     type ReverbProcessor
 } from "./audio_engine/effects/types";
+
+/**
+ * A generic synthesizer patch that can return voice parameters.
+ * This is used for the virtual GS user drum preset.
+ */
+export interface SynthesizerPatch extends MIDIPatchFull {
+    /**
+     * Returns the voice synthesis data for this preset.
+     * @param midiNote the MIDI note number.
+     * @param velocity the MIDI velocity.
+     * @returns the returned sound data.
+     */
+    getVoiceParameters(midiNote: number, velocity: number): VoiceParameters[];
+}

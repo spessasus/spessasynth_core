@@ -282,7 +282,9 @@ for a given sound bank (used for capital tone fallback).
 const used = midi.getUsedProgramsAndKeys(soundBank);
 ```
 
-- soundBank - `BasicSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
+- soundBank - `CallableSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
+  Anything that implements the `getPreset` method of `BasicSoundBank`.
+  This can be used to provide custom selectors and sound bank lists.
 
 The returned value is `PresetWithKeyCombinations` which is `Map<BasicPreset, Map<number, Set<number>>`. That is:
 

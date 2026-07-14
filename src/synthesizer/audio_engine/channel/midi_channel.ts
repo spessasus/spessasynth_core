@@ -21,7 +21,6 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import { type BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
@@ -46,6 +45,8 @@ import {
 } from "./parameters/system";
 import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
+
+import type { SynthesizerPatch } from "../../types";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -85,7 +86,7 @@ export class MIDIChannel {
      * The preset currently assigned to the channel.
      * Note that this may be undefined in some cases.
      */
-    public preset?: BasicPreset;
+    public preset?: SynthesizerPatch;
     /**
      * Indicates the MIDI system when the preset was locked.
      * @internal
@@ -360,7 +361,7 @@ export class MIDIChannel {
      */
     public constructor(
         synthProps: SynthesizerCore,
-        preset: BasicPreset | undefined,
+        preset: SynthesizerPatch | undefined,
         channelNumber: number
     ) {
         this.synthCore = synthProps;

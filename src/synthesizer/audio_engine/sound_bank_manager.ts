@@ -1,7 +1,4 @@
-import type {
-    MIDISystem,
-    SoundBankManagerListEntry
-} from "../../soundbank/types";
+import type { MIDISystem } from "../../soundbank/types";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
 import { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import {
@@ -11,8 +8,12 @@ import {
 } from "../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { SpessaLog } from "../../utils/loggin";
+import type { SoundBankManagerListEntry, SynthesizerPatch } from "../types";
 
-class SoundBankManagerPreset extends BasicPreset {
+/**
+ * A modified version of basic preset that seamlessly integrates bank offset.
+ */
+class SoundBankManagerPreset extends BasicPreset implements SynthesizerPatch {
     public constructor(p: BasicPreset, offset: number) {
         super(p.parentSoundBank, p.globalZone);
         this.bankMSB = BankSelectHacks.addBankOffset(p.bankMSB, offset, true);
@@ -36,7 +37,7 @@ export class SoundBankManager {
     public soundBankList: SoundBankManagerListEntry[] = [];
     private readonly presetListChangeCallback: () => unknown;
 
-    private selectablePresetList: SoundBankManagerPreset[] = [];
+    private selectablePresetList: SynthesizerPatch[] = [];
 
     /**
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
@@ -124,7 +125,7 @@ export class SoundBankManager {
     public getPreset(
         patch: MIDIPatch,
         system: MIDISystem
-    ): BasicPreset | undefined {
+    ): SynthesizerPatch | undefined {
         if (
             this.soundBankList.length === 0 ||
             this.selectablePresetList.length === 0

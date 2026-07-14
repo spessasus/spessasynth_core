@@ -1,4 +1,9 @@
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import type {
+    MIDIPatch,
+    MIDIPatchFull
+} from "../soundbank/basic_soundbank/midi_patch";
+import type { MIDISystem } from "../soundbank/types";
 
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.
@@ -194,3 +199,14 @@ export type SysExAcceptedArray =
     | Uint8Array
     | Int8Array
     | Uint8ClampedArray;
+
+/**
+ * A sound bank that has patches of type T instead of a fixed `BasicPreset`.
+ * (Used in SoundBankManager)
+ */
+export interface CallableSoundBank<T extends MIDIPatchFull> {
+    /**
+     * Get the appropriate preset.
+     */
+    getPreset(patch: MIDIPatch, system: MIDISystem): T | undefined;
+}

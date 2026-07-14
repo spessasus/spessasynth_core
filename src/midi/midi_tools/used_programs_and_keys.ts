@@ -3,23 +3,22 @@ import { ConsoleColors } from "../../utils/other";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
 import { MIDIUtils } from "./midi_utils";
 import type { BasicMIDI } from "../basic_midi";
-import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
-import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import {
     type MIDIController,
     MIDIControllers,
     MIDIMessageTypes
 } from "../enums";
-import type { SoundBankManager } from "../../synthesizer/audio_engine/sound_bank_manager";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import type {
     MIDISystem,
     PresetsWithKeyCombinations
 } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
+import type { MIDIPatchFull } from "../../soundbank/basic_soundbank/midi_patch";
+import type { CallableSoundBank } from "../types";
 
-interface InternalChannelType {
-    preset?: BasicPreset;
+interface InternalChannelType<T extends MIDIPatchFull> {
+    preset?: T;
     bankMSB: number;
     bankLSB: number;
     param: ParameterTracker;
@@ -30,13 +29,13 @@ interface InternalChannelType {
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank.
  * @param mid
- * @param soundBank the sound bank.
+ * @param soundBank the sound bank/sound bank manager. Anything that implements the `getPreset` method of `BasicSoundBank`.
  * @returns  Map<patch, Map<midiNote, Set<velocity>>>
  */
-export function getUsedProgramsAndKeys(
+export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
     mid: BasicMIDI,
-    soundBank: BasicSoundBank | SoundBankManager
-): PresetsWithKeyCombinations {
+    soundBank: CallableSoundBank<T>
+): PresetsWithKeyCombinations<T> {
     SpessaLog.groupCollapsed(
         "%cSearching for all used programs and keys...",
         ConsoleColors.info
@@ -46,7 +45,7 @@ export function getUsedProgramsAndKeys(
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
 
     // Track channels and systems
-    const channels: InternalChannelType[] = [];
+    const channels: InternalChannelType<T>[] = [];
     let system: MIDISystem = "gs";
     let masterKeyShift = 0;
     const reset = (sys: MIDISystem) => {
@@ -86,10 +85,7 @@ export function getUsedProgramsAndKeys(
      * Find all programs used and key-velocity combos in them
      * bank:program each has a map of midiNote -> set of velocities.
      */
-    const usedProgramsAndKeys = new Map<
-        BasicPreset,
-        Map<number, Set<number>>
-    >();
+    const usedProgramsAndKeys = new Map<T, Map<number, Set<number>>>();
 
     const ports = mid.tracks.map((t) => t.port);
 

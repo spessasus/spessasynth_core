@@ -34,7 +34,8 @@ import {
     type DelayProcessor,
     type InsertionProcessor,
     type InsertionProcessorConstructor,
-    type InsertionProcessorSnapshot
+    type InsertionProcessorSnapshot,
+    type SynthesizerPatch
 } from "../exports";
 import { LowpassFilter } from "./voice/lowpass_filter";
 
@@ -154,11 +155,11 @@ export class SynthesizerCore {
     /**
      * Synth's default (reset) preset.
      */
-    public defaultPreset: BasicPreset | undefined;
+    public defaultPreset: SynthesizerPatch | undefined;
     /**
      * Synth's default (reset) drum preset.
      */
-    public drumPreset: BasicPreset | undefined;
+    public drumPreset: SynthesizerPatch | undefined;
     /**
      * Gain smoothing factor, adjusted to the sample rate.
      */
@@ -794,7 +795,7 @@ export class SynthesizerCore {
      * @returns Output is an array of voices.
      */
     public getVoicesForPreset(
-        preset: BasicPreset,
+        preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
     ): CachedVoiceList {
