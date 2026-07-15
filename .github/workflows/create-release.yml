@@ -1,0 +1,70 @@
+name: Create GitHub Release
+
+on:
+    push:
+        tags:
+            - "v*"
+
+    workflow_dispatch:
+
+concurrency:
+    group: "github-release"
+    cancel-in-progress: true
+
+jobs:
+    create-release:
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: write
+            packages: write
+            id-token: write
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Get previous release tag
+              id: prev-tag
+              run: |
+                  TAG="${GITHUB_REF#refs/tags/}"
+                  PREV_TAG=$(git tag --sort=-version:refname | grep -A1 "^${TAG}$" | tail -1)
+                  if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "$TAG" ]; then
+                      PREV_TAG=$(git rev-list --max-parents=0 HEAD | head -1)
+                      echo "is_first=true" >> "$GITHUB_OUTPUT"
+                  fi
+                  echo "prev_tag=${PREV_TAG}" >> "$GITHUB_OUTPUT"
+                  echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+            - name: Generate release notes
+              run: |
+                  TAG="${{ steps.prev-tag.outputs.tag }}"
+                  PREV_TAG="${{ steps.prev-tag.outputs.prev_tag }}"
+                  IS_FIRST="${{ steps.prev-tag.outputs.is_first }}"
+
+                  {
+                      echo "## What's Changed"
+                      echo ""
+                      if [ "$IS_FIRST" = "true" ]; then
+                          git log --pretty=format:"- %s (\`%h\`)" HEAD
+                      else
+                          git log --pretty=format:"- %s (\`%h\`)" "${PREV_TAG}..${TAG}"
+                      fi
+                      echo ""
+                      echo ""
+                      echo "---"
+                      echo ""
+                      echo "Please note that **only the latest version of spessasynth_core is supported.**"
+                      echo ""
+                      echo "Please make sure you are up to date before reporting issues."
+                  } > release_body.md
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v3
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  body_path: release_body.md
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

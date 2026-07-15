@@ -25,6 +25,7 @@ import {
 import { systemExclusiveInternal } from "./system_exclusive/system_exclusive";
 import {
     type MIDIController,
+    MIDIControllers,
     type MIDIMessageType,
     MIDIMessageTypes
 } from "../../midi/enums";
@@ -590,7 +591,6 @@ export class SynthesizerCore {
         this.setChorusMacro(2);
         // Delay1 default
         this.setDelayMacro(0);
-        if (!this.systemParameters.delayLock) this.delayActive = false;
         this.resetInsertion();
 
         // Avoid crashing
@@ -599,6 +599,13 @@ export class SynthesizerCore {
         // Reset channels
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
+
+        // Delay may only be disabled if variations are all set to 0,
+        // They can still be set after a reset due to locking.
+        if (!this.systemParameters.delayLock)
+            this.delayActive = this.midiChannels.some(
+                (c) => c.midiControllers[MIDIControllers.variationDepth] > 0
+            );
     }
 
     public process(
