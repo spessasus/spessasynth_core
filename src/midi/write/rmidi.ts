@@ -80,7 +80,7 @@ function correctBankOffsetInternal(
             ports[trackNum] = e.data[0];
             return;
         }
-        const status = e.statusByte & 0xf0;
+        let status = e.statusByte & 0xf0;
         if (
             status !== MIDIMessageTypes.controllerChange &&
             status !== MIDIMessageTypes.programChange &&
@@ -175,6 +175,9 @@ function correctBankOffsetInternal(
                 }
             }
         }
+
+        // Event might have been replaced in sysex analysis
+        status = e.statusByte & 0xf0;
 
         // Program change
         const chNum = (e.statusByte & 0xf) + portOffset;
