@@ -63,4 +63,7 @@ jobs:
               uses: softprops/action-gh-release@v3
               with:
                   body_path: release_body.md
-                  generate_release_notes: true
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
