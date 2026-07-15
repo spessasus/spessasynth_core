@@ -331,12 +331,13 @@ export function setTimeToInternal(
         // Restoring saved controllers
         // Every controller that has changed
         for (let i = 0; i < CONTROLLER_TABLE_SIZE; i++) {
-            const value = ch.controllers[i] >> 7;
+            // 14-bit, defaults are also 14-bit
+            const value = ch.controllers[i];
             if (
                 value !== DEFAULT_MIDI_CONTROLLERS[i] &&
                 !nonSkippableCCs.has(i as MIDIController)
             ) {
-                this.sendMIDICC(channel, i as MIDIController, value);
+                this.sendMIDICC(channel, i as MIDIController, value >> 7);
             }
         }
     }

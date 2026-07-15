@@ -635,7 +635,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                     const ccNum = e.data[0] as MIDIController;
                     const value = e.data[1];
                     const change = channelChange?.controllers?.get(ccNum);
-                    if (change) {
+                    if (change !== undefined) {
                         // This controller is locked, BEGONE CHANGE!
                         deleteThisEvent();
                         return;
@@ -698,7 +698,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                                     const channel = data.channel;
                                     const change =
                                         channelChange?.controllers?.get(ccNum);
-                                    if (change) {
+                                    if (change !== undefined) {
                                         // This controller is locked, BEGONE CHANGE!
                                         deleteParameter(channel);
                                         return;
@@ -1015,6 +1015,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     // Check for reset and insert it to ensure that a reset always exists.
     if (
         !addedReset &&
+        // And only when we add changes, removing them does not warrant the need for a gs reset
         [...channelChanges.values()].some((c) => c.patch && c.patch !== "clear")
     ) {
         // There's no reset, add it on the first track at index 0 (or 1 if track name is first)
