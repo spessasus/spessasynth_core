@@ -584,8 +584,9 @@ export class MIDIUtils {
             case "efxAssign": {
                 // GS only (again)
                 return [
-                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x22, [
-                        value as number
+                    MIDIUtils.gsMessage(ticks, 0x40, 0x40 | gsChannel, 0x22, [
+                        // Value is boolean
+                        value ? 1 : 0
                     ])
                 ];
             }
