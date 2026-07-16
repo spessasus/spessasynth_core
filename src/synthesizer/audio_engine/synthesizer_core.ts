@@ -297,6 +297,9 @@ export class SynthesizerCore {
         this.setSystemParameter("effectsEnabled", options.effectsEnabled);
         this.setSystemParameter("eventsEnabled", options.eventsEnabled);
         this.maxBufferSize = options.maxBufferSize;
+
+        // For GS user drum set
+        this.soundBankManager.systemGetter = () => this.midiParameters.system;
         // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
         // Volume  smoothing factor
         this.gainSmoothingFactor =
