@@ -9,6 +9,7 @@ import {
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { SpessaLog } from "../../utils/loggin";
 import type { SoundBankManagerListEntry, SynthesizerPatch } from "../types";
+import { UserDrumSet } from "./custom_drum_set";
 
 /**
  * A modified version of basic preset that seamlessly integrates bank offset.
@@ -35,6 +36,12 @@ export class SoundBankManager {
      * All the sound banks, ordered from the most important to the least.
      */
     public soundBankList: SoundBankManagerListEntry[] = [];
+    /**
+     * The two GS user drum sets, available on programs 65 and 66.
+     * These override any sound bank presets at those program numbers.
+     * Note that these are not selectable in XG mode (implied by the bank selection system)
+     */
+    public readonly userDrumSets: readonly [UserDrumSet, UserDrumSet];
     private readonly presetListChangeCallback: () => unknown;
 
     private selectablePresetList: SynthesizerPatch[] = [];
@@ -45,6 +52,15 @@ export class SoundBankManager {
      */
     public constructor(presetListChangeCallback: () => unknown) {
         this.presetListChangeCallback = presetListChangeCallback;
+
+        // Patch resolver for GS user drum
+        const resolvePatch = (patch: MIDIPatch) =>
+            this.getPreset(patch, this.systemGetter());
+
+        this.userDrumSets = [
+            new UserDrumSet(65, "User Drum Set 1", resolvePatch),
+            new UserDrumSet(66, "User Drum Set 2", resolvePatch)
+        ];
     }
 
     private _presetList: MIDIPatchFull[] = [];
@@ -74,6 +90,12 @@ export class SoundBankManager {
         );
         this.generatePresetList();
     }
+
+    /**
+     * A getter that returns the current MIDI system.
+     * Used by the custom drum sets to resolve patches.
+     */
+    public systemGetter: () => MIDISystem = () => "gs";
 
     /**
      * Deletes a given sound bank by its ID.
@@ -146,12 +168,32 @@ export class SoundBankManager {
             s.soundBank.destroySoundBank();
         }
         this.soundBankList = [];
+        this.selectablePresetList = [];
+        this._presetList = [];
     }
 
     private generatePresetList() {
-        const presetList = new Array<SoundBankManagerPreset>();
+        const presetList = new Array<SynthesizerPatch>();
 
         const addedPresets = new Set<string>();
+
+        const totalPresets = this.soundBankList.reduce(
+            (sum, cur) => sum + cur.soundBank.presets.length,
+            0
+        );
+
+        // If there are no presets, don't report as having GS user drums
+        if (totalPresets > 0) {
+            // Add custom drum sets first so they take priority
+            for (const drumSet of this.userDrumSets) {
+                const key = MIDIPatchTools.toMIDIString(drumSet);
+                if (!addedPresets.has(key)) {
+                    addedPresets.add(key);
+                    presetList.push(drumSet);
+                }
+            }
+        }
+
         for (const s of this.soundBankList) {
             const bank = s.soundBank;
             const bankOffset = s.bankOffset;
