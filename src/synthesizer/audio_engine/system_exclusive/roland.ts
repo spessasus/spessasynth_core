@@ -1214,6 +1214,61 @@ export function rolandSystemExclusive(
                     }
                     return;
                 }
+                // User drum set
+                if (a1 === 0x21) {
+                    const drumSetNumber = a2 >> 4;
+                    const drumSet =
+                        this.soundBankManager.userDrumSets[drumSetNumber];
+                    const midiNote = a3;
+                    const command = a2 & 0xf;
+                    switch (command) {
+                        default: {
+                            SpessaLog.gsFail("User Drum set", syx);
+                            return;
+                        }
+
+                        // User drum set name
+                        case 0: {
+                            const newName = readBinaryString(syx, 12, 7);
+                            drumSet.name = newName;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} name`,
+                                newName
+                            );
+                            return;
+                        }
+
+                        // Source drum set
+                        case 0xa: {
+                            drumSet.setSourceMap(midiNote, data);
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} source drum set for ${midiNote}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        // Program number
+                        case 0xb: {
+                            drumSet.setSourceProgram(midiNote, data);
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} source program for ${midiNote}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        // Source note number
+                        case 0xc: {
+                            drumSet.setSourceNote(midiNote, data);
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} source note for ${midiNote}`,
+                                data
+                            );
+                            return;
+                        }
+                    }
+                }
                 // This is some other GS sysex...
                 SpessaLog.gsFail("System Exclusive", syx);
                 return;

@@ -55,24 +55,39 @@ export class UserDrumSet implements SynthesizerPatch {
         this.name = name;
         this.resolvePatch = resolvePatch;
 
-        this.reset();
+        for (let i = 0; i < 128; i++) {
+            this.keyBindings.push({
+                patch: { ...DEFAULT_DRUM_PATCH },
+                key: i
+            });
+        }
     }
 
     /**
-     * Sets the key binding for a given MIDI key.
-     * @param midiKey the MIDI key to bind (0-127).
-     * @param targetPatch the MIDI patch to use for this key.
-     * @param targetKey the key to play from the target patch (0-127).
+     * Sets the source note number for a specific drum key.
+     * @param midiNote The drum key to edit.
+     * @param sourceNote The MIDI source note number.
      */
-    public setKeyBinding(
-        midiKey: number,
-        targetPatch: MIDIPatch,
-        targetKey: number
-    ): void {
-        this.keyBindings[midiKey] = {
-            patch: { ...targetPatch },
-            key: targetKey
-        };
+    public setSourceNote(midiNote: number, sourceNote: number) {
+        this.keyBindings[midiNote].key = sourceNote;
+    }
+
+    /**
+     * Sets the source program number for a specific drum key.
+     * @param midiNote The drum key to edit.
+     * @param sourceProgram The MIDI source program number.
+     */
+    public setSourceProgram(midiNote: number, sourceProgram: number) {
+        this.keyBindings[midiNote].patch.program = sourceProgram;
+    }
+
+    /**
+     * Sets the source MAP (bank LSB) number for a specific drum key.
+     * @param midiNote The drum key to edit.
+     * @param sourceMap The MIDI source MAP (bank LSB) number.
+     */
+    public setSourceMap(midiNote: number, sourceMap: number) {
+        this.keyBindings[midiNote].patch.bankLSB = sourceMap;
     }
 
     /**
