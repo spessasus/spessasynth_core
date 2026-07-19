@@ -21,6 +21,20 @@ export class SpessaLog {
     public static groupEnabled = false;
 
     /**
+     * The log functions that get called with the data.
+     * By default, they use `console` object.
+     *
+     * This may be overridden to capture the spessasynth log data.
+     */
+    public static logFunctions = {
+        info: console.info.bind(console),
+        warn: console.warn.bind(console),
+        group: console.group.bind(console),
+        groupEnd: console.groupEnd.bind(console),
+        groupCollapsed: console.groupCollapsed.bind(console)
+    };
+
+    /**
      * Enables or disables logging.
      * @param enableInfo enables info.
      * @param enableWarn enables warning.
@@ -37,23 +51,23 @@ export class SpessaLog {
     }
 
     public static info(...message: unknown[]) {
-        if (this.infoEnabled) console.info(...message);
+        if (this.infoEnabled) this.logFunctions.info(...message);
     }
 
     public static warn(...message: unknown[]) {
-        if (this.warnEnabled) console.warn(...message);
+        if (this.warnEnabled) this.logFunctions.warn(...message);
     }
 
     public static group(...message: unknown[]) {
-        if (this.groupEnabled) console.group(...message);
+        if (this.groupEnabled) this.logFunctions.group(...message);
     }
 
     public static groupCollapsed(...message: unknown[]) {
-        if (this.groupEnabled) console.groupCollapsed(...message);
+        if (this.groupEnabled) this.logFunctions.groupCollapsed(...message);
     }
 
     public static groupEnd() {
-        if (this.groupEnabled) console.groupEnd();
+        if (this.groupEnabled) this.logFunctions.groupEnd();
     }
 
     /**

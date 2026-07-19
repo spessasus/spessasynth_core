@@ -24,6 +24,22 @@ All the input variables are booleans corresponding to the things SpessaSynth log
 - Warnings - all messages unrecognized by the synthesizer, other warnings
 - group - the groups for parsing the sound banks and MIDI files.
 
+### logFunctions
+
+An object with four functions representing the console functions.
+The log functions that get called with the data.
+By default, they use `console` object.
+
+This may be overridden to capture the spessasynth log data.
+
+The properties are:
+
+- `info`
+- `warn`
+- `group`
+- `groupCollapsed`
+- `groupEnd`
+
 ### infoEnabled
 
 The most verbose log level, prints out a lot of small details.
