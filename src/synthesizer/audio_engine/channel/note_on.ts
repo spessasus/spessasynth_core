@@ -9,6 +9,7 @@ import { MIDIControllers } from "../../../midi/enums";
 import { Modulator } from "../../../soundbank/basic_soundbank/modulator";
 import { timecentsToSeconds } from "../voice/unit_converter";
 import { SpessaLog } from "../../../utils/loggin";
+import { randomGenerator } from "../../../utils/other";
 
 const clamp = (num: number, min: number, max: number) =>
     Math.max(min, Math.min(max, num));
@@ -148,7 +149,7 @@ export function noteOn(
     let delaySend = 1;
     if (this._midiParameters.randomPan) {
         // The range is -500 to 500
-        panOverride = Math.round(Math.random() * 1000 - 500);
+        panOverride = Math.round(randomGenerator() * 1000 - 500);
     }
 
     // Drum parameters
@@ -162,7 +163,7 @@ export function noteOn(
         if (drumPan !== 0) {
             if (drumPan === -64) {
                 // Random pan
-                panOverride = Math.round(Math.random() * 1000 - 500);
+                panOverride = Math.round(randomGenerator() * 1000 - 500);
             } else {
                 const channelPan =
                     (this._midiControllers[MIDIControllers.pan] >> 7) - 64;
