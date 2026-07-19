@@ -1145,7 +1145,16 @@ export class MIDIUtils {
                 }
 
                 case 0x0e: {
-                    // Pan
+                    // Pan, except for random,
+                    // Which is a different parameter
+                    if (data === 0) {
+                        return {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "randomPan",
+                            value: true
+                        };
+                    }
                     return {
                         type: "Controller Change",
                         channel,
@@ -1466,7 +1475,16 @@ export class MIDIUtils {
                 }
 
                 case 0x1c: {
-                    // Pan position
+                    // Pan position, except for random,
+                    // Which is a different parameter
+                    if (data === 0) {
+                        return {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "randomPan",
+                            value: true
+                        };
+                    }
                     return {
                         type: "Controller Change",
                         channel,
