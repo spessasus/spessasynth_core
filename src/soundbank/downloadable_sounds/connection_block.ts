@@ -570,6 +570,11 @@ export class ConnectionBlock {
                 return;
             }
 
+            case DLSDestinations.keyNum: {
+                zone.setGenerator(GeneratorTypes.keyNum, value);
+                break;
+            }
+
             case DLSDestinations.pan: {
                 zone.setGenerator(GeneratorTypes.pan, value);
                 break;
@@ -863,7 +868,7 @@ export class ConnectionBlock {
                 return GeneratorTypes.fineTune;
             }
             case DLSDestinations.keyNum: {
-                return GeneratorTypes.overridingRootKey;
+                return GeneratorTypes.keyNum;
             }
 
             // Vol env

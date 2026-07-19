@@ -165,6 +165,7 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
         return RIFFChunk.getParts(
             this.mode === "dls2" ? "lar2" : "lart",
             art2,
+            false,
             true
         );
     }
