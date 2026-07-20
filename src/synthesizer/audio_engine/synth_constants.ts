@@ -66,3 +66,13 @@ export const DEFAULT_RPN = 0x7f;
  * No NRPN is bound to 0 0, while 0x7f MSB is AWE32!
  */
 export const DEFAULT_NRPN = 0;
+
+/**
+ * The program number of GS User Drum Set 1.
+ */
+export const GS_USER_DRUM_1 = 64;
+
+/**
+ * The program number of GS User Drum Set 2.
+ */
+export const GS_USER_DRUM_2 = 65;

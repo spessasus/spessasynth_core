@@ -11,7 +11,10 @@ import {
     setSystemParameterInternal
 } from "./parameters/system";
 import { Voice } from "./voice/voice";
-import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../../soundbank/basic_soundbank/midi_patch";
 import { CachedVoice } from "./voice/voice_cache";
 import { SpessaLog } from "../../utils/loggin";
 import { MIDIChannel } from "./channel/midi_channel";
@@ -599,6 +602,9 @@ export class SynthesizerCore {
         // Avoid crashing
         if (!this.drumPreset || !this.defaultPreset) return;
 
+        // Reset GS user drums
+        this.soundBankManager.reset();
+
         // Reset channels
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
@@ -852,6 +858,20 @@ export class SynthesizerCore {
         eventData: SynthProcessorEventData[K]
     ) {
         this.eventCallbackHandler(eventName, eventData);
+    }
+
+    // Bad code... make sure to call only when necessary!!!
+    public purgeCachedPatch(patch: MIDIPatch) {
+        for (let midiNote = 0; midiNote < 128; midiNote++) {
+            for (let velocity = 0; velocity < 128; velocity++) {
+                this.cachedVoices.delete(
+                    this.getCachedVoiceIndex(patch, midiNote, velocity)
+                );
+            }
+        }
+        SpessaLog.info(
+            `Purging cached patch ${MIDIPatchTools.toMIDIString(patch)}`
+        );
     }
 
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {

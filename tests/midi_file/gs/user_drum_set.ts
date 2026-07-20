@@ -40,14 +40,14 @@ test.gs(0x21, 0x01, 36, [60]) // PLAY NOTE = -4
     .gs(0x21, 0x0c, 36, [36]); // SOURCE NOTE NUMBER = 36
 
 // Note 38:
-test.gs(0x21, 0x01, 38, [52]) // PLAY NOTE = -12
+test.gs(0x21, 0x01, 38, [64]) // PLAY NOTE = 0
     .gs(0x21, 0x02, 38, [64]) // LEVEL = 64
     .gs(0x21, 0x04, 38, [64]) // PAN = 64 (UNCHANGED)
     .gs(0x21, 0x05, 38, [127]) // REVERB = 127
     .gs(0x21, 0x06, 38, [127]) // CHORUS = 127
     .gs(0x21, 0x09, 38, [127]) // DELAY = 127
-    .gs(0x21, 0x0a, 38, [3]) // MAP = 3 (SC-88Pro)
-    .gs(0x21, 0x0b, 38, [26]) // PROGRAM NUMBER = 46 (ANALOG)
+    .gs(0x21, 0x0a, 38, [3]) // MAP = 1 (SC-55)
+    .gs(0x21, 0x0b, 38, [25]) // PROGRAM NUMBER = 25 (ANALOG)
     .gs(0x21, 0x0c, 38, [46]); // SOURCE NOTE NUMBER = 46
 
 // Note 40:
@@ -62,6 +62,7 @@ test.gs(0x21, 0x01, 40, [40]) // PLAY NOTE = -24
     .gs(0x21, 0x0c, 40, [49]); // SOURCE NOTE NUMBER = 49
 
 test.text("Parameters changed, no program change, effects set to MAX")
+    .text("The drums should NOT BE MODIFIED (other than effects)")
     .cc(MIDIControllers.reverbDepth, 127)
     .cc(MIDIControllers.chorusDepth, 127)
     .cc(MIDIControllers.variationDepth, 127);
@@ -69,6 +70,7 @@ test.text("Parameters changed, no program change, effects set to MAX")
 seq();
 
 test.text("Executing a program change")
+    .text("The drums should BE MODIFIED")
     .programChange(0, 0, 64)
     .cc(MIDIControllers.reverbDepth, 0)
     .cc(MIDIControllers.mainVolume, 127);

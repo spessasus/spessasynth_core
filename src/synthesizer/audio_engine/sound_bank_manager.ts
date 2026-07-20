@@ -9,7 +9,8 @@ import {
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { SpessaLog } from "../../utils/loggin";
 import type { SoundBankManagerListEntry, SynthesizerPatch } from "../types";
-import { UserDrumSet } from "./custom_drum_set";
+import { UserDrumSet } from "./user_drum_set";
+import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "./synth_constants";
 
 /**
  * A modified version of basic preset that seamlessly integrates bank offset.
@@ -58,8 +59,8 @@ export class SoundBankManager {
             this.getPreset(patch, this.systemGetter());
 
         this.userDrumSets = [
-            new UserDrumSet(65, "User Drum Set 1", resolvePatch),
-            new UserDrumSet(66, "User Drum Set 2", resolvePatch)
+            new UserDrumSet(GS_USER_DRUM_1, "User Drum Set 1", resolvePatch),
+            new UserDrumSet(GS_USER_DRUM_2, "User Drum Set 2", resolvePatch)
         ];
     }
 
@@ -92,8 +93,17 @@ export class SoundBankManager {
     }
 
     /**
+     * @internal
+     * Resets the sound bank properties that are controllable by MIDI.
+     */
+    public reset() {
+        for (const userDrum of this.userDrumSets) userDrum.reset();
+    }
+
+    /**
      * A getter that returns the current MIDI system.
      * Used by the custom drum sets to resolve patches.
+     * @internal
      */
     public systemGetter: () => MIDISystem = () => "gs";
 

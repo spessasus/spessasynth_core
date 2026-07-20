@@ -1,6 +1,7 @@
 import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
+import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
 
 const DEFAULT_DRUM_PATCH: MIDIPatch = {
     bankLSB: 0,
@@ -119,6 +120,13 @@ export class UserDrumSet implements SynthesizerPatch {
             // No match, no sound
             return [];
         }
-        return resolvedPatch.getVoiceParameters(binding.key, velocity);
+        const params = resolvedPatch.getVoiceParameters(binding.key, velocity);
+
+        // Ensure that the key sounds as intended, similarly to 'PGAL' DLS chunk alias
+        for (const p of params) {
+            if (p.generators[GeneratorTypes.keyNum] < 0)
+                p.generators[GeneratorTypes.keyNum] = binding.key;
+        }
+        return params;
     }
 }
