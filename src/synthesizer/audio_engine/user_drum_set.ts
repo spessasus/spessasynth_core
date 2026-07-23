@@ -1,7 +1,13 @@
-import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
+import { DrumParameters } from "./channel/drum_parameters";
+import { DEFAULT_DRUM_REVERB } from "./channel/reset";
+import { SpessaLog } from "../../utils/loggin";
 
 const DEFAULT_DRUM_PATCH: MIDIPatch = {
     bankLSB: 0,
@@ -9,6 +15,10 @@ const DEFAULT_DRUM_PATCH: MIDIPatch = {
     program: 0,
     isGMGSDrum: true
 };
+
+/**
+ * TODO: add to MIDIUtils and add support for bulk dump
+ */
 
 /**
  * A GS User drum set that allows mapping each MIDI key to a different preset and key.
@@ -29,7 +39,11 @@ export class UserDrumSet implements SynthesizerPatch {
      * The key bindings for this drum set.
      * Index is the MIDI key, value is the bound patch and target key.
      */
-    private readonly keyBindings: { patch: MIDIPatch; key: number }[] = [];
+    public readonly keyBindings: {
+        patch: MIDIPatch;
+        key: number;
+        params: DrumParameters;
+    }[] = [];
 
     /**
      * Callback that resolves a `MIDIPatch` to a `SynthesizerPatch`.
@@ -59,7 +73,8 @@ export class UserDrumSet implements SynthesizerPatch {
         for (let i = 0; i < 128; i++) {
             this.keyBindings.push({
                 patch: { ...DEFAULT_DRUM_PATCH },
-                key: i
+                key: i,
+                params: new DrumParameters()
             });
         }
     }
@@ -97,10 +112,18 @@ export class UserDrumSet implements SynthesizerPatch {
     public reset(): void {
         // Initialize all 128 keys to the default drum patch
         for (let i = 0; i < 128; i++) {
-            this.keyBindings[i] = {
-                patch: { ...DEFAULT_DRUM_PATCH },
-                key: i
-            };
+            this.keyBindings[i].patch = { ...DEFAULT_DRUM_PATCH };
+            this.keyBindings[i].key = i;
+            const p = this.keyBindings[i].params;
+            p.pitch = 0;
+            p.gain = 1;
+            p.exclusiveClass = 0;
+            p.pan = 64;
+            p.reverbGain = DEFAULT_DRUM_REVERB[i] / 127;
+            p.chorusGain = 0;
+            p.delayGain = 0; // No drums have delay
+            p.rxNoteOn = true;
+            p.rxNoteOff = false;
         }
     }
 
@@ -120,6 +143,11 @@ export class UserDrumSet implements SynthesizerPatch {
             // No match, no sound
             return [];
         }
+        SpessaLog.info(
+            "Resolving patch for",
+            MIDIPatchTools.toMIDIString(binding.patch),
+            resolvedPatch.name
+        );
         const params = resolvedPatch.getVoiceParameters(binding.key, velocity);
 
         // Ensure that the key sounds as intended, similarly to 'PGAL' DLS chunk alias

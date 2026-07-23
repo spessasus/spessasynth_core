@@ -410,6 +410,28 @@ These search for a matching drum channel with the correct `drumMap` Channel MIDI
 | Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                                           |
 | DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                                            |
 
+#### User Drum set
+
+The following messages allow to create a custom drum instrument, by setting which key from which drum set is bound to a specific key in the user drum set.
+Then the parameters above may also be applied to the key.
+Instruments are available on programs 64 and 65 in GS mode.
+
+| Name                   | Description                                                                                                                                                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| USER DRUM MAP NAME     | Treated as recognized, decoded name is logged to console if verbose output is enabled. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
+| PLAY NOTE NUMBER       | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                                                                                    |
+| LEVEL                  | The drum's loudness. These are normalized against 120 (`gain = data / 120`).                                                                                                                                               |
+| ASSIGN GROUP NUMBER    | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                                                                                                                  |
+| PANPOT                 | Pan position of the instrument, except value `0` enables random panning for every note. (multiplicative of channel)                                                                                                        |
+| REVERB SEND LEVEL      | Reverb send level of the instrument. (multiplicative of channel)                                                                                                                                                           |
+| CHORUS SEND LEVEL      | Chorus send level of the instrument. (multiplicative of channel)                                                                                                                                                           |
+| Rx. NOTE OFF           | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                                                                                              |
+| Rx. NOTE ON            | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                                           |
+| DELAY SEND LEVEL       | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                                            |
+| SOURCE DRUM SET# (MAP) | Bank LSB number of the source drum set for this key. (GS map)                                                                                                                                                              |
+| (PG#: Program number)  | The program number of the source drum set for this key.                                                                                                                                                                    |
+| SOURCE NOTE NUMBER     | The MIDI note number of the source drum set for this key.                                                                                                                                                                  |
+
 ### Yamaha XG
 
 SpessaSynth has decent support for the XG standard, but it does not include any effects.

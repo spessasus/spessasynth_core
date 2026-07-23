@@ -1219,7 +1219,7 @@ export function rolandSystemExclusive(
                     const drumSetNumber = a2 >> 4;
                     const drumSet =
                         this.soundBankManager.userDrumSets[drumSetNumber];
-                    const midiNote = a3;
+                    const drumKey = a3;
                     const command = a2 & 0xf;
                     switch (command) {
                         default: {
@@ -1238,11 +1238,114 @@ export function rolandSystemExclusive(
                             return;
                         }
 
+                        case 0x1: {
+                            // Here it's relative to 60, not 64 like NRPN. For some reason...
+                            const pitch = data - 60;
+
+                            // Use the full 100 cents here as we choose the correct pitch (50 or 100 cents) when committing changes
+                            const binding = drumSet.keyBindings[drumKey];
+                            binding.params.pitch = pitch * 100;
+
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Pitch, key ${drumKey}`,
+                                pitch
+                            );
+                            return;
+                        }
+
+                        case 0x2: {
+                            // Drum Level
+                            drumSet.keyBindings[drumKey].params.gain =
+                                data / 120;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Level, key ${drumKey}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        case 0x3: {
+                            // Drum Assign Group (exclusive class)
+                            drumSet.keyBindings[drumKey].params.exclusiveClass =
+                                data;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Assign Group, key ${drumKey}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        case 0x4: {
+                            // Pan
+                            drumSet.keyBindings[drumKey].params.pan = data;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Pan, key ${drumKey}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        case 0x5: {
+                            // Reverb
+                            drumSet.keyBindings[drumKey].params.reverbGain =
+                                data / 127;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Reverb, key ${drumKey}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        case 0x6: {
+                            // Chorus
+                            drumSet.keyBindings[drumKey].params.chorusGain =
+                                data / 127;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Chorus, key ${drumKey}`,
+                                data
+                            );
+                            return;
+                        }
+
+                        case 0x7: {
+                            // Receive Note Off
+                            drumSet.keyBindings[drumKey].params.rxNoteOff =
+                                data === 1;
+
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Note Off, key ${drumKey}`,
+                                data === 1 ? "ON" : "OFF"
+                            );
+                            return;
+                        }
+
+                        case 0x8: {
+                            // Receive Note On
+                            drumSet.keyBindings[drumKey].params.rxNoteOn =
+                                data === 1;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Note On, key ${drumKey}`,
+                                data === 1 ? "ON" : "OFF"
+                            );
+                            return;
+                        }
+
+                        case 0x9: {
+                            // Delay
+                            drumSet.keyBindings[drumKey].params.delayGain =
+                                data / 127;
+                            SpessaLog.gsInfo(
+                                `User Drum Set ${drumSetNumber} Delay, key ${drumKey}`,
+                                data
+                            );
+                            return;
+                        }
+
                         // Source drum set
                         case 0xa: {
-                            drumSet.setSourceMap(midiNote, data);
+                            drumSet.setSourceMap(drumKey, data);
                             SpessaLog.gsInfo(
-                                `User Drum Set ${drumSetNumber} source drum set for ${midiNote}`,
+                                `User Drum Set ${drumSetNumber} source drum set for ${drumKey}`,
                                 data
                             );
                             return;
@@ -1250,9 +1353,9 @@ export function rolandSystemExclusive(
 
                         // Program number
                         case 0xb: {
-                            drumSet.setSourceProgram(midiNote, data);
+                            drumSet.setSourceProgram(drumKey, data);
                             SpessaLog.gsInfo(
-                                `User Drum Set ${drumSetNumber} source program for ${midiNote}`,
+                                `User Drum Set ${drumSetNumber} source program for ${drumKey}`,
                                 data
                             );
                             return;
@@ -1260,9 +1363,9 @@ export function rolandSystemExclusive(
 
                         // Source note number
                         case 0xc: {
-                            drumSet.setSourceNote(midiNote, data);
+                            drumSet.setSourceNote(drumKey, data);
                             SpessaLog.gsInfo(
-                                `User Drum Set ${drumSetNumber} source note for ${midiNote}`,
+                                `User Drum Set ${drumSetNumber} source note for ${drumKey}`,
                                 data
                             );
                             return;

@@ -11,10 +11,7 @@ import {
     setSystemParameterInternal
 } from "./parameters/system";
 import { Voice } from "./voice/voice";
-import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../../soundbank/basic_soundbank/midi_patch";
+import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { CachedVoice } from "./voice/voice_cache";
 import { SpessaLog } from "../../utils/loggin";
 import { MIDIChannel } from "./channel/midi_channel";
@@ -869,9 +866,6 @@ export class SynthesizerCore {
                 );
             }
         }
-        SpessaLog.info(
-            `Purging cached patch ${MIDIPatchTools.toMIDIString(patch)}`
-        );
     }
 
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {

@@ -181,6 +181,7 @@ export function noteOn(
         reverbSend = p.reverbGain;
         chorusSend = p.chorusGain;
         delaySend = p.delayGain;
+        this.synthCore.delayActive ||= delaySend > 0;
         // 1 is no override
         if (voiceGain === 1) voiceGain = p.gain;
     }

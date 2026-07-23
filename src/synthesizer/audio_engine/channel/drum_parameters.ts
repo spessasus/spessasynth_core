@@ -54,6 +54,24 @@ export class DrumParameters {
         d.pan = p.pan;
         d.rxNoteOff = p.rxNoteOff;
         d.rxNoteOn = p.rxNoteOn;
+        d.delayGain = p.delayGain;
         return d;
+    }
+
+    /**
+     * Copies the drum data into a specified drum parameter instance.
+     * @param source the drum parameter instance to copy from.
+     * @param dest the drum parameter instance to copy into.
+     */
+    public static copyInto(source: DrumParameters, dest: DrumParameters) {
+        dest.pitch = source.pitch;
+        dest.chorusGain = source.chorusGain;
+        dest.reverbGain = source.reverbGain;
+        dest.exclusiveClass = source.exclusiveClass;
+        dest.gain = source.gain;
+        dest.pan = source.pan;
+        dest.rxNoteOff = source.rxNoteOff;
+        dest.rxNoteOn = source.rxNoteOn;
+        dest.delayGain = source.delayGain;
     }
 }
