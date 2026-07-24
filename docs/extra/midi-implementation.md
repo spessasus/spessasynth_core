@@ -432,6 +432,12 @@ Instruments are available on programs 64 and 65 in GS mode.
 | (PG#: Program number)  | The program number of the source drum set for this key.                                                                                                                                                                    |
 | SOURCE NOTE NUMBER     | The MIDI note number of the source drum set for this key.                                                                                                                                                                  |
 
+#### Bulk Dump
+
+Bulk dump messages allow to set many parameters in one message.
+
+SpessaSynth currently recognizes the bulk dump messages for User Drum Set only.
+
 ### Yamaha XG
 
 SpessaSynth has decent support for the XG standard, but it does not include any effects.

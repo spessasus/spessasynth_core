@@ -1756,165 +1756,109 @@ export class MIDIUtils {
 
         // User Drum Set
         if (a1 === 0x21) {
-            const program = 64 + (a2 >> 4);
-            switch (a2 & 0xf) {
-                // Play Note
+            return [this.handleSingleUserDrum(a2, a3, data)];
+        }
+
+        // User Drum Set Bulk Dump
+        if (a1 === 0x29) {
+            const dataLength = syx.length - 9;
+            // See the corresponding code in synth sysEx handler for comments
+
+            let actualDrumParam: number;
+            switch (a2 & 0x0f) {
+                default: {
+                    return [OTHER];
+                }
+
+                case 0x0: {
+                    actualDrumParam = 1;
+                    break;
+                }
+
                 case 0x1: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "pitchCoarse",
-                            value: data - 60
-                        }
-                    ];
+                    actualDrumParam = 2;
+                    break;
                 }
 
-                // Level
                 case 0x2: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "level",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 3;
+                    break;
                 }
 
-                // Assign group
                 case 0x3: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "assignGroup",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 4;
+                    break;
                 }
 
-                // Pan
                 case 0x4: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "pan",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 5;
+                    break;
                 }
 
-                // Reverb Send
                 case 0x5: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "reverbSend",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 6;
+                    break;
                 }
 
-                // Chorus Send
                 case 0x6: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "chorusSend",
-                            value: data
-                        }
-                    ];
+                    const address2Off = (a2 & 0xf0) | 7;
+                    const address2On = (a2 & 0xf0) | 8;
+                    const analyzed = new Array<AnalyzedMIDIMessage>();
+                    for (let midiNote = 0; midiNote < dataLength; midiNote++) {
+                        analyzed.push(
+                            this.handleSingleUserDrum(
+                                address2Off,
+                                midiNote,
+                                syx[midiNote + 7] & 0xf
+                            ),
+                            this.handleSingleUserDrum(
+                                address2On,
+                                midiNote,
+                                syx[midiNote + 7] >> 4
+                            )
+                        );
+                    }
+                    return analyzed;
                 }
 
-                // Rx. Note Off
                 case 0x7: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "rxNoteOff",
-                            value: data === 1
-                        }
-                    ];
+                    actualDrumParam = 9;
+                    break;
                 }
 
-                // Rx. Note On
                 case 0x8: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "rxNoteOn",
-                            value: data === 1
-                        }
-                    ];
+                    actualDrumParam = 0xa;
+                    break;
                 }
 
-                // Delay Send Level
                 case 0x9: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "variationSend",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 0xb;
+                    break;
                 }
 
-                // Source Drum Set Map
                 case 0xa: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "sourceDrumSet",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 0xc;
+                    break;
                 }
 
-                // Program Number
                 case 0xb: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "program",
-                            value: data
-                        }
-                    ];
-                }
-
-                // Source Note Number
-                case 0xc: {
-                    return [
-                        {
-                            type: "User Drum Setup",
-                            key: a3,
-                            program,
-                            parameter: "sourceNoteNumber",
-                            value: data
-                        }
-                    ];
+                    actualDrumParam = 0;
+                    break;
                 }
             }
-            return [OTHER];
+
+            const address2 = (a2 & 0xf0) | actualDrumParam;
+            const analyzed = new Array<AnalyzedMIDIMessage>();
+            for (let midiNote = 0; midiNote < dataLength; midiNote++) {
+                analyzed.push(
+                    this.handleSingleUserDrum(
+                        address2,
+                        midiNote,
+                        syx[midiNote + 7]
+                    )
+                );
+            }
+            return analyzed;
         }
 
         // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
@@ -2271,5 +2215,147 @@ export class MIDIUtils {
         }
 
         return [OTHER];
+    }
+
+    private static handleSingleUserDrum(
+        a2: number,
+        a3: number,
+        data: number
+    ): AnalyzedMIDIMessage {
+        const program = 64 + (a2 >> 4);
+        switch (a2 & 0xf) {
+            // Play Note
+            case 0x1: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "pitchCoarse",
+                    value: data - 60
+                };
+            }
+
+            // Level
+            case 0x2: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "level",
+                    value: data
+                };
+            }
+
+            // Assign group
+            case 0x3: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "assignGroup",
+                    value: data
+                };
+            }
+
+            // Pan
+            case 0x4: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "pan",
+                    value: data
+                };
+            }
+
+            // Reverb Send
+            case 0x5: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "reverbSend",
+                    value: data
+                };
+            }
+
+            // Chorus Send
+            case 0x6: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "chorusSend",
+                    value: data
+                };
+            }
+
+            // Rx. Note Off
+            case 0x7: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "rxNoteOff",
+                    value: data === 1
+                };
+            }
+
+            // Rx. Note On
+            case 0x8: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "rxNoteOn",
+                    value: data === 1
+                };
+            }
+
+            // Delay Send Level
+            case 0x9: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "variationSend",
+                    value: data
+                };
+            }
+
+            // Source Drum Set Map
+            case 0xa: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "sourceDrumSet",
+                    value: data
+                };
+            }
+
+            // Program Number
+            case 0xb: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "program",
+                    value: data
+                };
+            }
+
+            // Source Note Number
+            case 0xc: {
+                return {
+                    type: "User Drum Setup",
+                    key: a3,
+                    program,
+                    parameter: "sourceNoteNumber",
+                    value: data
+                };
+            }
+        }
+        return OTHER;
     }
 }

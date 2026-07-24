@@ -1,13 +1,9 @@
-import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../../soundbank/basic_soundbank/midi_patch";
+import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
 import { DrumParameters } from "./channel/drum_parameters";
 import { DEFAULT_DRUM_REVERB } from "./channel/reset";
-import { SpessaLog } from "../../utils/loggin";
 
 const DEFAULT_DRUM_PATCH: MIDIPatch = {
     bankLSB: 0,
@@ -17,7 +13,7 @@ const DEFAULT_DRUM_PATCH: MIDIPatch = {
 };
 
 /**
- * TODO: add to MIDIUtils and add support for bulk dump
+ * TODO: add to MIDIUtils set and add to MIDI editor
  */
 
 /**
@@ -144,11 +140,6 @@ export class UserDrumSet implements SynthesizerPatch {
             // No match, no sound
             return [];
         }
-        SpessaLog.info(
-            "Resolving patch for",
-            MIDIPatchTools.toMIDIString(binding.patch),
-            resolvedPatch.name
-        );
         const params = resolvedPatch.getVoiceParameters(binding.key, velocity);
 
         // Ensure that the key sounds as intended, similarly to 'PGAL' DLS chunk alias
