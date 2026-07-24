@@ -107,7 +107,7 @@ export function dataEntry(this: MIDIChannel) {
     if (
         this.synthCore.systemParameters.drumLock &&
         paramCoarse >= NonRegisteredMSB.drumPitch &&
-        paramCoarse <= NonRegisteredMSB.drumDelay
+        paramCoarse <= NonRegisteredMSB.drumVariation
     )
         return;
     switch (paramCoarse) {
@@ -266,30 +266,30 @@ export function dataEntry(this: MIDIChannel) {
              */
             const pitch =
                 this.channelSystem === "xg" || this.patch.bankLSB === 1
-                    ? (dataCoarse - 64) * 100
-                    : (dataCoarse - 64) * 50;
-            this.drumParams[paramFine].pitch = pitch;
+                    ? dataCoarse - 64
+                    : (dataCoarse - 64) * 0.5;
+            this.drumParams[paramFine].pitchCoarse = pitch;
             SpessaLog.coolInfo(
                 `Drum ${paramFine} pitch for ${this.channel}`,
                 pitch,
-                "cents"
+                "semitones"
             );
             break;
         }
 
         case NonRegisteredMSB.drumPitchFine: {
             const pitch = dataCoarse - 64;
-            this.drumParams[paramFine].pitch += pitch;
+            this.drumParams[paramFine].pitchFine = pitch;
             SpessaLog.coolInfo(
                 `Drum ${paramFine} pitch fine for ${this.channel}`,
-                this.drumParams[paramFine].pitch,
+                pitch,
                 "cents"
             );
             break;
         }
 
         case NonRegisteredMSB.drumLevel: {
-            this.drumParams[paramFine].gain = dataCoarse / 120;
+            this.drumParams[paramFine].level = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${paramFine} level for ${this.channel}`,
                 dataCoarse,
@@ -301,7 +301,7 @@ export function dataEntry(this: MIDIChannel) {
         case NonRegisteredMSB.drumPan: {
             this.drumParams[paramFine].pan = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} pan for ${this.channel}`,
+                `Drum ${paramFine} Pan for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -309,9 +309,9 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumReverb: {
-            this.drumParams[paramFine].reverbGain = dataCoarse / 127;
+            this.drumParams[paramFine].reverbSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} reverb level for ${this.channel}`,
+                `Drum ${paramFine} Reverb Send for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -319,19 +319,19 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumChorus: {
-            this.drumParams[paramFine].chorusGain = dataCoarse / 127;
+            this.drumParams[paramFine].chorusSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} chorus level for ${this.channel}`,
+                `Drum ${paramFine} Chorus Send for ${this.channel}`,
                 dataCoarse,
                 ""
             );
             break;
         }
 
-        case NonRegisteredMSB.drumDelay: {
-            this.drumParams[paramFine].delayGain = dataCoarse / 127;
+        case NonRegisteredMSB.drumVariation: {
+            this.drumParams[paramFine].variationSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} delay level for ${this.channel}`,
+                `Drum ${paramFine} Variation Send for ${this.channel}`,
                 dataValue,
                 ""
             );

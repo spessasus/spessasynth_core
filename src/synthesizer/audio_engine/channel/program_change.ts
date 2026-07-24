@@ -52,7 +52,8 @@ export function programChange(this: MIDIChannel, program: number) {
                 // SC-55 uses 100 cents, SC-88 and above is 50
                 // Refer to source binding and do it here
                 const binding = preset.keyBindings[i];
-                binding.params.pitch *= binding.patch.bankLSB === 1 ? 1 : 0.5;
+                binding.params.pitchCoarse *=
+                    binding.patch.bankLSB === 1 ? 1 : 0.5;
                 DrumParameters.copyInto(binding.params, this.drumParams[i]);
             }
         } else {

@@ -224,19 +224,19 @@ export class Voice {
     public pitchOffset = 0;
 
     /**
-     * Reverb send of the voice, used for drum parts, otherwise 1.
+     * Reverb gain of the voice, used for drum parts, otherwise 1.
      */
-    public reverbSend = 1;
+    public reverbGain = 1;
 
     /**
-     * Chorus send of the voice, used for drum parts, otherwise 1.
+     * Chorus gain of the voice, used for drum parts, otherwise 1.
      */
-    public chorusSend = 1;
+    public chorusGain = 1;
 
     /**
-     * Delay send of the voice, used for drum parts, otherwise 1.
+     * Delay/variation gain of the voice, used for drum parts, otherwise 1.
      */
-    public delaySend = 1;
+    public variationGain = 1;
 
     /**
      * Exclusive class number for hi-hats etc.

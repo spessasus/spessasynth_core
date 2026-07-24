@@ -115,15 +115,16 @@ export class UserDrumSet implements SynthesizerPatch {
             this.keyBindings[i].patch = { ...DEFAULT_DRUM_PATCH };
             this.keyBindings[i].key = i;
             const p = this.keyBindings[i].params;
-            p.pitch = 0;
-            p.gain = 1;
-            p.exclusiveClass = 0;
+            p.pitchCoarse = 0;
+            p.pitchFine = 0;
+            p.level = 120;
+            p.assignGroup = 0;
             p.pan = 64;
-            p.reverbGain = DEFAULT_DRUM_REVERB[i] / 127;
-            p.chorusGain = 0;
-            p.delayGain = 0; // No drums have delay
+            p.reverbSend = DEFAULT_DRUM_REVERB[i];
+            p.chorusSend = 0;
             p.rxNoteOn = true;
             p.rxNoteOff = false;
+            p.variationSend = 0;
         }
     }
 

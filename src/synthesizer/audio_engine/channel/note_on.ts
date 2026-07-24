@@ -144,9 +144,9 @@ export function noteOn(
     let panOverride = 0;
     let exclusiveOverride = 0;
     let pitchOffset = 0;
-    let reverbSend = 1;
-    let chorusSend = 1;
-    let delaySend = 1;
+    let reverbGain = 1;
+    let chorusGain = 1;
+    let variationGain = 1;
     if (this._midiParameters.randomPan) {
         // The range is -500 to 500
         panOverride = Math.round(randomGenerator() * 1000 - 500);
@@ -176,14 +176,14 @@ export function noteOn(
             }
         }
 
-        pitchOffset = p.pitch;
-        exclusiveOverride = p.exclusiveClass;
-        reverbSend = p.reverbGain;
-        chorusSend = p.chorusGain;
-        delaySend = p.delayGain;
-        this.synthCore.delayActive ||= delaySend > 0;
+        pitchOffset = p.pitchFine + p.pitchCoarse * 100;
+        exclusiveOverride = p.assignGroup;
+        reverbGain = p.reverbSend / 127;
+        chorusGain = p.chorusSend / 127;
+        variationGain = p.variationSend / 127;
+        this.synthCore.delayActive ||= variationGain > 0;
         // 1 is no override
-        if (voiceGain === 1) voiceGain = p.gain;
+        if (voiceGain === 1) voiceGain = p.level / 120;
     }
 
     const noteID = emit ? this.noteOnID[midiNote]++ : this.noteOnID[midiNote];
@@ -358,9 +358,9 @@ export function noteOn(
         voice.overridePan = panOverride;
         voice.gainModifier = voiceGain;
         voice.pitchOffset = pitchOffset;
-        voice.reverbSend = reverbSend;
-        voice.chorusSend = chorusSend;
-        voice.delaySend = delaySend;
+        voice.reverbGain = reverbGain;
+        voice.chorusGain = chorusGain;
+        voice.variationGain = variationGain;
 
         // Set initial pan to avoid split second changing from middle to the correct value
         voice.currentPan = Math.max(

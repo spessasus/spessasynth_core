@@ -8,18 +8,6 @@ import type { MIDIController } from "../../../midi/enums";
 import type { MIDISystem } from "../../../soundbank/types";
 import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
 
-export interface DrumParameterSnapshot {
-    pitch: number;
-    gain: number;
-    exclusiveClass: number;
-    pan: number;
-    reverbGain: number;
-    chorusGain: number;
-    delayGain: number;
-    rxNoteOn: boolean;
-    rxNoteOff: boolean;
-}
-
 export interface ChannelSnapshot {
     patch?: MIDIPatchFull;
     lockedSystem: MIDISystem;
@@ -36,7 +24,7 @@ export interface ChannelSnapshot {
 
     perNotePitch: boolean;
 
-    drumParams: DrumParameterSnapshot[];
+    drumParams: DrumParameters[];
     drumChannel: boolean;
     channel: number;
 }
@@ -71,7 +59,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         octaveTuning: this.octaveTuning.slice(),
         perNotePitch: this.perNotePitch,
 
-        drumParams: this.drumParams.map((d) => ({ ...d })),
+        drumParams: this.drumParams.map((d) => DrumParameters.copyFrom(d)),
         drumChannel: this._drumChannel,
         channel: this.channel
     };
@@ -95,7 +83,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     this.generators.overridesEnabled = snapshot.generators.overridesEnabled;
 
     for (let i = 0; i < 128; i++)
-        this.drumParams[i] = DrumParameters.copyFrom(snapshot.drumParams[i]);
+        DrumParameters.copyInto(snapshot.drumParams[i], this.drumParams[i]);
 
     // Disable to set patch
     // Restored in system params

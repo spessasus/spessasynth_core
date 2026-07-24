@@ -11,6 +11,7 @@ import type { SysExAcceptedArray } from "../types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
+import type { DrumParameters } from "../../synthesizer/audio_engine/channel/drum_parameters";
 
 type GlobalMIDIParameterMessage = {
     [P in keyof GlobalMIDIParameter]: {
@@ -29,6 +30,13 @@ type ChannelMIDIParameterMessage = {
         channel: number;
     };
 }[keyof ChannelMIDIParameter];
+
+interface UserDrumParameters extends DrumParameters {
+    sourceDrumSet: number;
+    program: number;
+    sourceNoteNumber: number;
+}
+
 // Channel number may be above 15
 type AnalyzedParameter =
     | { type: "Other" }
@@ -39,7 +47,23 @@ type AnalyzedParameter =
           channel: number;
       }
     | ChannelMIDIParameterMessage
-    | { type: "Drum Setup" };
+    | {
+          [K in keyof DrumParameters]: {
+              type: "Drum Setup";
+              key: number;
+              param: K;
+              value: DrumParameters[K];
+          };
+      }[keyof DrumParameters]
+    | {
+          [K in keyof UserDrumParameters]: {
+              type: "User Drum Setup";
+              key: number;
+              program: number;
+              param: K;
+              value: UserDrumParameters[K];
+          };
+      }[keyof UserDrumParameters];
 
 export type AnalyzedMIDIMessage =
     | AnalyzedParameter
@@ -248,15 +272,61 @@ export class MIDIUtils {
                 }
             }
 
-            case NonRegisteredMSB.drumPitch:
-            case NonRegisteredMSB.drumPitchFine:
-            case NonRegisteredMSB.drumLevel:
-            case NonRegisteredMSB.drumPan:
-            case NonRegisteredMSB.drumReverb:
-            case NonRegisteredMSB.drumChorus:
-            case NonRegisteredMSB.drumDelay: {
+            case NonRegisteredMSB.drumPitch: {
                 return {
-                    type: "Drum Setup"
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "pitchCoarse",
+                    value: value - 64
+                };
+            }
+            case NonRegisteredMSB.drumPitchFine: {
+                return {
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "pitchFine",
+                    value: value - 64
+                };
+            }
+            case NonRegisteredMSB.drumLevel: {
+                return {
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "level",
+                    value
+                };
+            }
+            case NonRegisteredMSB.drumPan: {
+                return {
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "pan",
+                    value
+                };
+            }
+            case NonRegisteredMSB.drumReverb: {
+                return {
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "reverbSend",
+                    value
+                };
+            }
+
+            case NonRegisteredMSB.drumChorus: {
+                return {
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "chorusSend",
+                    value
+                };
+            }
+            case NonRegisteredMSB.drumVariation: {
+                return {
+                    type: "Drum Setup",
+                    key: lsb,
+                    param: "variationSend",
+                    value
                 };
             }
         }
@@ -1330,7 +1400,129 @@ export class MIDIUtils {
         }
 
         // Drum part setup
-        if (a1 >> 4 === 3) return [{ type: "Drum Setup" }];
+        if (a1 >> 4 === 3) {
+            switch (a3) {
+                // Pitch coarse
+                case 0x00: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "pitchCoarse",
+                            value: data - 64
+                        }
+                    ];
+                }
+
+                // Pitch fine
+                case 0x01: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "pitchFine",
+                            value: data - 64
+                        }
+                    ];
+                }
+
+                // Level
+                case 0x02: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "level",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Assign Group
+                case 0x03: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "assignGroup",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Pan
+                case 0x04: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "pan",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Reverb Send
+                case 0x05: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "reverbSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Chorus Send
+                case 0x06: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "chorusSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Variation Send
+                case 0x07: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "variationSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Rev Note Off
+                case 0x09: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "rxNoteOff",
+                            value: data === 1
+                        }
+                    ];
+                }
+
+                // Rev Note On
+                case 0x0a: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a2,
+                            param: "rxNoteOn",
+                            value: data === 1
+                        }
+                    ];
+                }
+            }
+        }
 
         return [OTHER];
     }
@@ -1448,7 +1640,131 @@ export class MIDIUtils {
             }
         }
 
-        if (a1 === 0x41) return [{ type: "Drum Setup" }];
+        // Drum Setup
+        if (a1 === 0x41) {
+            switch (a2 & 0xf) {
+                // Play Note Number (Pitch Coarse)
+                case 0x1: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "pitchCoarse",
+                            value: data - 60
+                        }
+                    ];
+                }
+
+                // Level
+                case 0x2: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "level",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Assign Group
+                case 0x3: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "assignGroup",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Pan
+                case 0x4: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "pan",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Reverb Send
+                case 0x5: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "reverbSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Chorus Send
+                case 0x6: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "chorusSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Rx. Note Off
+                case 0x7: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "rxNoteOff",
+                            value: data === 1
+                        }
+                    ];
+                }
+
+                // Rx. Note On
+                case 0x8: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "rxNoteOn",
+                            value: data === 1
+                        }
+                    ];
+                }
+
+                // Delay Send Level
+                case 0x9: {
+                    return [
+                        {
+                            type: "Drum Setup",
+                            key: a3,
+                            param: "variationSend",
+                            value: data
+                        }
+                    ];
+                }
+            }
+            return [OTHER];
+        }
+
+        // User Drum Set
+        if (a1 === 0x21) {
+            const program = 64 + (a2 >> 4);
+            if ((a2 & 0xf) === 0)
+                // Drum map name is other
+                return [OTHER];
+            // TODO
+            void program;
+            return [OTHER];
+        }
+
         // 0x40 -> Part Parameters, 0x50 -> Part Parameters (BLOCK B) Testcase: 95043-2.KYC.mid
         if (a1 !== 0x40 && a1 !== 0x50) return [OTHER];
 

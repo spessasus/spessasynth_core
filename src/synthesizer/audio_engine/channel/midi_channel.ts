@@ -61,7 +61,11 @@ export class MIDIChannel {
      * Parameters for each drum instrument.
      * @internal
      */
-    public readonly drumParams: DrumParameters[] = [];
+    public readonly drumParams: readonly DrumParameters[] = Array.from(
+        { length: 128 },
+        // eslint-disable-next-line unicorn/consistent-function-scoping
+        () => new DrumParameters()
+    );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      * @internal
@@ -370,11 +374,9 @@ export class MIDIChannel {
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
         this.dynamicModulators = new DynamicModulatorManager(channelNumber);
+        // Init
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
-        for (let i = 0; i < 128; i++) {
-            this.drumParams.push(new DrumParameters());
-        }
         this.resetDrumParams();
     }
 
@@ -840,16 +842,18 @@ export class MIDIChannel {
             return;
         for (let i = 0; i < 128; i++) {
             const p = this.drumParams[i];
-            p.pitch = 0;
-            p.gain = 1;
-            p.exclusiveClass = 0;
+            p.pitchCoarse = 0;
+            p.pitchFine = 0;
+            p.level = 120;
+            p.assignGroup = 0;
             p.pan = 64;
-            p.reverbGain = DEFAULT_DRUM_REVERB[i] / 127;
-            p.chorusGain =
-                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] / 127 : 0; // Mirror reverb on XG only, GS has no chorus by default
-            p.delayGain = 0; // No drums have delay
+            p.reverbSend = DEFAULT_DRUM_REVERB[i];
+            p.chorusSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0; // Mirror reverb on XG only, GS has no chorus by default
             p.rxNoteOn = true;
             p.rxNoteOff = false;
+            p.variationSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0;
         }
     }
 

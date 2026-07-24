@@ -1098,8 +1098,8 @@ export function rolandSystemExclusive(
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
                                 // Apply same thing: SC-55 uses 100 cents, SC-88 and above is 50
-                                ch.drumParams[drumKey].pitch =
-                                    pitch * (ch.patch.bankLSB === 1 ? 100 : 50);
+                                ch.drumParams[drumKey].pitchCoarse =
+                                    pitch * (ch.patch.bankLSB === 1 ? 1 : 0.5);
                             }
                             SpessaLog.gsInfo(
                                 `Drum Pitch for MAP${map}, key ${drumKey}`,
@@ -1112,7 +1112,7 @@ export function rolandSystemExclusive(
                             // Drum Level
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].gain = data / 120;
+                                ch.drumParams[drumKey].level = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Level for MAP${map}, key ${drumKey}`,
@@ -1125,7 +1125,7 @@ export function rolandSystemExclusive(
                             // Drum Assign Group (exclusive class)
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].exclusiveClass = data;
+                                ch.drumParams[drumKey].assignGroup = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Assign Group for MAP${map}, key ${drumKey}`,
@@ -1151,7 +1151,7 @@ export function rolandSystemExclusive(
                             // Reverb
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].reverbGain = data / 127;
+                                ch.drumParams[drumKey].reverbSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Reverb for MAP${map}, key ${drumKey}`,
@@ -1164,7 +1164,7 @@ export function rolandSystemExclusive(
                             // Chorus
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].chorusGain = data / 127;
+                                ch.drumParams[drumKey].chorusSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Chorus for MAP${map}, key ${drumKey}`,
@@ -1203,7 +1203,7 @@ export function rolandSystemExclusive(
                             // Delay
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].delayGain = data / 127;
+                                ch.drumParams[drumKey].variationSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Delay for MAP${map}, key ${drumKey}`,
@@ -1244,7 +1244,7 @@ export function rolandSystemExclusive(
 
                             // Use the full 100 cents here as we choose the correct pitch (50 or 100 cents) when committing changes
                             const binding = drumSet.keyBindings[drumKey];
-                            binding.params.pitch = pitch * 100;
+                            binding.params.pitchCoarse = pitch;
 
                             SpessaLog.gsInfo(
                                 `User Drum Set ${drumSetNumber} Pitch, key ${drumKey}`,
@@ -1255,8 +1255,7 @@ export function rolandSystemExclusive(
 
                         case 0x2: {
                             // Drum Level
-                            drumSet.keyBindings[drumKey].params.gain =
-                                data / 120;
+                            drumSet.keyBindings[drumKey].params.level = data;
                             SpessaLog.gsInfo(
                                 `User Drum Set ${drumSetNumber} Level, key ${drumKey}`,
                                 data
@@ -1266,7 +1265,7 @@ export function rolandSystemExclusive(
 
                         case 0x3: {
                             // Drum Assign Group (exclusive class)
-                            drumSet.keyBindings[drumKey].params.exclusiveClass =
+                            drumSet.keyBindings[drumKey].params.assignGroup =
                                 data;
                             SpessaLog.gsInfo(
                                 `User Drum Set ${drumSetNumber} Assign Group, key ${drumKey}`,
@@ -1287,8 +1286,8 @@ export function rolandSystemExclusive(
 
                         case 0x5: {
                             // Reverb
-                            drumSet.keyBindings[drumKey].params.reverbGain =
-                                data / 127;
+                            drumSet.keyBindings[drumKey].params.reverbSend =
+                                data;
                             SpessaLog.gsInfo(
                                 `User Drum Set ${drumSetNumber} Reverb, key ${drumKey}`,
                                 data
@@ -1298,8 +1297,8 @@ export function rolandSystemExclusive(
 
                         case 0x6: {
                             // Chorus
-                            drumSet.keyBindings[drumKey].params.chorusGain =
-                                data / 127;
+                            drumSet.keyBindings[drumKey].params.chorusSend =
+                                data;
                             SpessaLog.gsInfo(
                                 `User Drum Set ${drumSetNumber} Chorus, key ${drumKey}`,
                                 data
@@ -1332,8 +1331,8 @@ export function rolandSystemExclusive(
 
                         case 0x9: {
                             // Delay
-                            drumSet.keyBindings[drumKey].params.delayGain =
-                                data / 127;
+                            drumSet.keyBindings[drumKey].params.variationSend =
+                                data;
                             SpessaLog.gsInfo(
                                 `User Drum Set ${drumSetNumber} Delay, key ${drumKey}`,
                                 data

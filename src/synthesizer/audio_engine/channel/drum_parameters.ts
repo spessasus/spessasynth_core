@@ -3,33 +3,42 @@
  */
 export class DrumParameters {
     /**
+     * Pitch offset in semitones.
+     * May be floating point! (GS half-semitone coarse tune resolution)
+     */
+    public pitchCoarse = 0;
+
+    /**
      * Pitch offset in cents.
      */
-    public pitch = 0;
+    public pitchFine = 0;
+
     /**
-     * Gain multiplier.
+     * Level in 0 - 127 range.
      */
-    public gain = 1;
+    public level = 1;
+
     /**
      * Exclusive class override.
      */
-    public exclusiveClass = 0;
+    public assignGroup = 0;
     /**
      * Pan, 1-64-127, 0 is random. This adds to the channel pan!
      */
     public pan = 64;
     /**
-     * Reverb multiplier.
+     * Reverb send level 0-127
      */
-    public reverbGain = 0;
+    public reverbSend = 127;
     /**
-     * Chorus multiplier.
+     * Chorus send level 0-127
      */
-    public chorusGain = 1;
+    public chorusSend = 127;
+
     /**
-     * Delay multiplier.
+     * Variation/delay send level 0-127
      */
-    public delayGain = 1;
+    public variationSend = 127;
 
     /**
      * If note on should be received.
@@ -46,15 +55,16 @@ export class DrumParameters {
 
     public static copyFrom(p: DrumParameters) {
         const d = new DrumParameters();
-        d.pitch = p.pitch;
-        d.chorusGain = p.chorusGain;
-        d.reverbGain = p.reverbGain;
-        d.exclusiveClass = p.exclusiveClass;
-        d.gain = p.gain;
+        d.pitchCoarse = p.pitchCoarse;
+        d.pitchFine = p.pitchFine;
+        d.level = p.level;
+        d.assignGroup = p.assignGroup;
         d.pan = p.pan;
+        d.reverbSend = p.reverbSend;
+        d.chorusSend = p.chorusSend;
+        d.variationSend = p.variationSend;
         d.rxNoteOff = p.rxNoteOff;
         d.rxNoteOn = p.rxNoteOn;
-        d.delayGain = p.delayGain;
         return d;
     }
 
@@ -64,14 +74,15 @@ export class DrumParameters {
      * @param dest the drum parameter instance to copy into.
      */
     public static copyInto(source: DrumParameters, dest: DrumParameters) {
-        dest.pitch = source.pitch;
-        dest.chorusGain = source.chorusGain;
-        dest.reverbGain = source.reverbGain;
-        dest.exclusiveClass = source.exclusiveClass;
-        dest.gain = source.gain;
+        dest.pitchCoarse = source.pitchCoarse;
+        dest.pitchFine = source.pitchFine;
+        dest.level = source.level;
+        dest.assignGroup = source.assignGroup;
         dest.pan = source.pan;
+        dest.reverbSend = source.reverbSend;
+        dest.chorusSend = source.chorusSend;
+        dest.variationSend = source.variationSend;
         dest.rxNoteOff = source.rxNoteOff;
         dest.rxNoteOn = source.rxNoteOn;
-        dest.delayGain = source.delayGain;
     }
 }
