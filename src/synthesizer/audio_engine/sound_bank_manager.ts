@@ -93,14 +93,6 @@ export class SoundBankManager {
     }
 
     /**
-     * @internal
-     * Resets the sound bank properties that are controllable by MIDI.
-     */
-    public reset() {
-        for (const userDrum of this.userDrumSets) userDrum.reset();
-    }
-
-    /**
      * A getter that returns the current MIDI system.
      * Used by the custom drum sets to resolve patches.
      * @internal

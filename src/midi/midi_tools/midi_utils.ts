@@ -51,7 +51,7 @@ type AnalyzedParameter =
           [K in keyof DrumParameters]: {
               type: "Drum Setup";
               key: number;
-              param: K;
+              parameter: K;
               value: DrumParameters[K];
           };
       }[keyof DrumParameters]
@@ -60,7 +60,7 @@ type AnalyzedParameter =
               type: "User Drum Setup";
               key: number;
               program: number;
-              param: K;
+              parameter: K;
               value: UserDrumParameters[K];
           };
       }[keyof UserDrumParameters];
@@ -276,7 +276,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "pitchCoarse",
+                    parameter: "pitchCoarse",
                     value: value - 64
                 };
             }
@@ -284,7 +284,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "pitchFine",
+                    parameter: "pitchFine",
                     value: value - 64
                 };
             }
@@ -292,7 +292,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "level",
+                    parameter: "level",
                     value
                 };
             }
@@ -300,7 +300,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "pan",
+                    parameter: "pan",
                     value
                 };
             }
@@ -308,7 +308,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "reverbSend",
+                    parameter: "reverbSend",
                     value
                 };
             }
@@ -317,7 +317,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "chorusSend",
+                    parameter: "chorusSend",
                     value
                 };
             }
@@ -325,7 +325,7 @@ export class MIDIUtils {
                 return {
                     type: "Drum Setup",
                     key: lsb,
-                    param: "variationSend",
+                    parameter: "variationSend",
                     value
                 };
             }
@@ -1408,7 +1408,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "pitchCoarse",
+                            parameter: "pitchCoarse",
                             value: data - 64
                         }
                     ];
@@ -1420,7 +1420,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "pitchFine",
+                            parameter: "pitchFine",
                             value: data - 64
                         }
                     ];
@@ -1432,7 +1432,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "level",
+                            parameter: "level",
                             value: data
                         }
                     ];
@@ -1444,7 +1444,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "assignGroup",
+                            parameter: "assignGroup",
                             value: data
                         }
                     ];
@@ -1456,7 +1456,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "pan",
+                            parameter: "pan",
                             value: data
                         }
                     ];
@@ -1468,7 +1468,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "reverbSend",
+                            parameter: "reverbSend",
                             value: data
                         }
                     ];
@@ -1480,7 +1480,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "chorusSend",
+                            parameter: "chorusSend",
                             value: data
                         }
                     ];
@@ -1492,7 +1492,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "variationSend",
+                            parameter: "variationSend",
                             value: data
                         }
                     ];
@@ -1504,7 +1504,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "rxNoteOff",
+                            parameter: "rxNoteOff",
                             value: data === 1
                         }
                     ];
@@ -1516,7 +1516,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a2,
-                            param: "rxNoteOn",
+                            parameter: "rxNoteOn",
                             value: data === 1
                         }
                     ];
@@ -1649,7 +1649,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "pitchCoarse",
+                            parameter: "pitchCoarse",
                             value: data - 60
                         }
                     ];
@@ -1661,7 +1661,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "level",
+                            parameter: "level",
                             value: data
                         }
                     ];
@@ -1673,7 +1673,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "assignGroup",
+                            parameter: "assignGroup",
                             value: data
                         }
                     ];
@@ -1685,7 +1685,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "pan",
+                            parameter: "pan",
                             value: data
                         }
                     ];
@@ -1697,7 +1697,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "reverbSend",
+                            parameter: "reverbSend",
                             value: data
                         }
                     ];
@@ -1709,7 +1709,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "chorusSend",
+                            parameter: "chorusSend",
                             value: data
                         }
                     ];
@@ -1721,7 +1721,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "rxNoteOff",
+                            parameter: "rxNoteOff",
                             value: data === 1
                         }
                     ];
@@ -1733,7 +1733,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "rxNoteOn",
+                            parameter: "rxNoteOn",
                             value: data === 1
                         }
                     ];
@@ -1745,7 +1745,7 @@ export class MIDIUtils {
                         {
                             type: "Drum Setup",
                             key: a3,
-                            param: "variationSend",
+                            parameter: "variationSend",
                             value: data
                         }
                     ];
@@ -1757,11 +1757,163 @@ export class MIDIUtils {
         // User Drum Set
         if (a1 === 0x21) {
             const program = 64 + (a2 >> 4);
-            if ((a2 & 0xf) === 0)
-                // Drum map name is other
-                return [OTHER];
-            // TODO
-            void program;
+            switch (a2 & 0xf) {
+                // Play Note
+                case 0x1: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "pitchCoarse",
+                            value: data - 60
+                        }
+                    ];
+                }
+
+                // Level
+                case 0x2: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "level",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Assign group
+                case 0x3: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "assignGroup",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Pan
+                case 0x4: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "pan",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Reverb Send
+                case 0x5: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "reverbSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Chorus Send
+                case 0x6: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "chorusSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Rx. Note Off
+                case 0x7: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "rxNoteOff",
+                            value: data === 1
+                        }
+                    ];
+                }
+
+                // Rx. Note On
+                case 0x8: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "rxNoteOn",
+                            value: data === 1
+                        }
+                    ];
+                }
+
+                // Delay Send Level
+                case 0x9: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "variationSend",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Source Drum Set Map
+                case 0xa: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "sourceDrumSet",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Program Number
+                case 0xb: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "program",
+                            value: data
+                        }
+                    ];
+                }
+
+                // Source Note Number
+                case 0xc: {
+                    return [
+                        {
+                            type: "User Drum Setup",
+                            key: a3,
+                            program,
+                            parameter: "sourceNoteNumber",
+                            value: data
+                        }
+                    ];
+                }
+            }
             return [OTHER];
         }
 

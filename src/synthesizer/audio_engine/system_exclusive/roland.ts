@@ -1216,6 +1216,7 @@ export function rolandSystemExclusive(
                 }
                 // User drum set
                 if (a1 === 0x21) {
+                    if (this.systemParameters.userDrumLock) return;
                     const drumSetNumber = a2 >> 4;
                     const drumSet =
                         this.soundBankManager.userDrumSets[drumSetNumber];

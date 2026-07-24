@@ -120,6 +120,15 @@ These params are modified using MIDI system exclusive messages or NRPN, so
 the recommended use case would be setting
 the drum parameters then locking it to prevent changes by MIDI files.
 
+### userDrumLock
+
+`boolean`
+
+If the synthesizer should prevent editing of the User Drum Set (GS only) parameters.
+These params are modified using MIDI system exclusive messages or NRPN, so
+the recommended use case would be setting
+the User Drum Set parameters then locking it to prevent changes by MIDI files.
+
 ### blackMIDIMode
 
 `boolean`

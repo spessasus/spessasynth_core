@@ -42,7 +42,9 @@ export function programChange(this: MIDIChannel, program: number) {
     // See the corresponding test in MIDI tests.
     if (
         preset.isGMGSDrum &&
-        (preset.program === GS_USER_DRUM_1 || preset.program === GS_USER_DRUM_2)
+        (preset.program === GS_USER_DRUM_1 ||
+            preset.program === GS_USER_DRUM_2) &&
+        !this.synthCore.systemParameters.userDrumLock
     ) {
         // Purge cache for this preset to cache the new drum voice data
         this.synthCore.purgeCachedPatch(preset);

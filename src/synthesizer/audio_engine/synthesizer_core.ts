@@ -600,7 +600,9 @@ export class SynthesizerCore {
         if (!this.drumPreset || !this.defaultPreset) return;
 
         // Reset GS user drums
-        this.soundBankManager.reset();
+        if (!this.systemParameters.userDrumLock)
+            for (const userDrum of this.soundBankManager.userDrumSets)
+                userDrum.reset();
 
         // Reset channels
         // Do not send CC changes as we call reset
