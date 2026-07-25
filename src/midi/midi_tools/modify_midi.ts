@@ -26,7 +26,8 @@ import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
-import type { UserDrumParameter } from "../types";
+
+import type { UserDrumSetParameter } from "../drum_parameters";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -135,8 +136,8 @@ export interface ChannelModification {
 export type UserDrumModification = Map<
     number,
     ClearableParameter<{
-        [P in keyof UserDrumParameter]?: ClearableParameter<
-            UserDrumParameter[P]
+        [P in keyof UserDrumSetParameter]?: ClearableParameter<
+            UserDrumSetParameter[P]
         >;
     }>
 >;
@@ -1269,11 +1270,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             if (params === "clear") continue;
 
             for (const [param, value] of Object.entries(params) as {
-                [K in keyof UserDrumParameter]: [
+                [K in keyof UserDrumSetParameter]: [
                     K,
-                    ClearableParameter<UserDrumParameter[K]>
+                    ClearableParameter<UserDrumSetParameter[K]>
                 ];
-            }[keyof UserDrumParameter][]) {
+            }[keyof UserDrumSetParameter][]) {
                 // Parameter cleared
                 if (value === "clear" || value === undefined) continue;
                 targetTrack.addEvents(
@@ -1296,11 +1297,11 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             if (params === "clear") continue;
 
             for (const [param, value] of Object.entries(params) as {
-                [K in keyof UserDrumParameter]: [
+                [K in keyof UserDrumSetParameter]: [
                     K,
-                    ClearableParameter<UserDrumParameter[K]>
+                    ClearableParameter<UserDrumSetParameter[K]>
                 ];
-            }[keyof UserDrumParameter][]) {
+            }[keyof UserDrumSetParameter][]) {
                 // Parameter cleared
                 if (value === "clear" || value === undefined) continue;
                 targetTrack.addEvents(

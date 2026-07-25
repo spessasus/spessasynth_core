@@ -2,18 +2,14 @@ import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
-import { DrumParameter } from "./channel/drum_parameters";
+import {
+    DrumParameterUtils,
+    type UserDrumSetParameter
+} from "../../midi/drum_parameters";
 import { DEFAULT_DRUM_REVERB } from "./channel/reset";
 
-const DEFAULT_DRUM_PATCH: MIDIPatch = {
-    bankLSB: 0,
-    bankMSB: 0,
-    program: 0,
-    isGMGSDrum: true
-};
-
 /**
- * TODO: add to snapshot and used keys detection
+ * TODO: used keys detection
  */
 
 /**
@@ -23,7 +19,7 @@ const DEFAULT_DRUM_PATCH: MIDIPatch = {
  * and a specific key within that patch.
  */
 export class UserDrumSet implements SynthesizerPatch {
-    // MIDIPatch full fields
+    // MIDIPatchFull fields
     public program;
     public readonly bankMSB = 0;
     public readonly bankLSB = 0;
@@ -32,14 +28,10 @@ export class UserDrumSet implements SynthesizerPatch {
     public isDrum = true;
 
     /**
-     * The key bindings for this drum set.
-     * Index is the MIDI key, value is the bound patch and target key.
+     * The key parameters for this drum set.
+     * Index is the MIDI key, value are the parameters for this key.
      */
-    public readonly keyBindings: {
-        patch: MIDIPatch;
-        key: number;
-        params: DrumParameter;
-    }[] = [];
+    public readonly keyParams: UserDrumSetParameter[] = [];
 
     /**
      * Callback that resolves a `MIDIPatch` to a `SynthesizerPatch`.
@@ -50,6 +42,13 @@ export class UserDrumSet implements SynthesizerPatch {
     ) => SynthesizerPatch | undefined;
 
     private readonly defaultName;
+
+    private readonly tempPatch: MIDIPatch = {
+        bankLSB: 0,
+        bankMSB: 0,
+        program: 0,
+        isGMGSDrum: true
+    };
 
     /**
      * Creates a new custom drum set.
@@ -70,52 +69,22 @@ export class UserDrumSet implements SynthesizerPatch {
         this.resolvePatch = resolvePatch;
 
         for (let i = 0; i < 128; i++) {
-            this.keyBindings.push({
-                patch: { ...DEFAULT_DRUM_PATCH },
-                key: i,
-                params: new DrumParameter()
+            this.keyParams.push({
+                ...DrumParameterUtils.DEFAULT_USER_DATA,
+                // This property is based on the note number
+                sourceNoteNumber: i
             });
         }
     }
-
-    /**
-     * Sets the source note number for a specific drum key.
-     * @param midiNote The drum key to edit.
-     * @param sourceNote The MIDI source note number.
-     */
-    public setSourceNote(midiNote: number, sourceNote: number) {
-        this.keyBindings[midiNote].key = sourceNote;
-    }
-
-    /**
-     * Sets the source program number for a specific drum key.
-     * @param midiNote The drum key to edit.
-     * @param sourceProgram The MIDI source program number.
-     */
-    public setSourceProgram(midiNote: number, sourceProgram: number) {
-        this.keyBindings[midiNote].patch.program = sourceProgram;
-    }
-
-    /**
-     * Sets the source MAP (bank LSB) number for a specific drum key.
-     * @param midiNote The drum key to edit.
-     * @param sourceMap The MIDI source MAP (bank LSB) number.
-     */
-    public setSourceMap(midiNote: number, sourceMap: number) {
-        this.keyBindings[midiNote].patch.bankLSB = sourceMap;
-    }
-
     /**
      * Resets the drum set.
      */
     public reset(): void {
-        console.log("RESET", this.defaultName);
         // Initialize all 128 keys to the default drum patch
         for (let i = 0; i < 128; i++) {
-            this.keyBindings[i].patch = { ...DEFAULT_DRUM_PATCH };
-            this.keyBindings[i].key = i;
-            const p = this.keyBindings[i].params;
+            const p = this.keyParams[i];
             p.pitchCoarse = 0;
+            // Unused, shouldn't matter
             p.pitchFine = 0;
             p.level = 120;
             p.assignGroup = 0;
@@ -125,8 +94,19 @@ export class UserDrumSet implements SynthesizerPatch {
             p.rxNoteOn = true;
             p.rxNoteOff = false;
             p.variationSend = 0;
+
+            p.sourceNoteNumber = i;
+            p.sourceDrumSet = 0;
+            p.program = 0;
         }
         this.name = this.defaultName;
+    }
+
+    /**
+     * Gets a snapshot of this User Drum Set instance.
+     */
+    public getSnapshot(): UserDrumSetParameter[] {
+        return this.keyParams.map((param) => ({ ...param }));
     }
 
     /**
@@ -139,18 +119,23 @@ export class UserDrumSet implements SynthesizerPatch {
         midiNote: number,
         velocity: number
     ): VoiceParameters[] {
-        const binding = this.keyBindings[midiNote];
-        const resolvedPatch = this.resolvePatch(binding.patch);
+        const binding = this.keyParams[midiNote];
+        this.tempPatch.bankLSB = binding.sourceDrumSet;
+        this.tempPatch.program = binding.program;
+        const resolvedPatch = this.resolvePatch(this.tempPatch);
         if (!resolvedPatch) {
             // No match, no sound
             return [];
         }
-        const params = resolvedPatch.getVoiceParameters(binding.key, velocity);
+        const params = resolvedPatch.getVoiceParameters(
+            binding.sourceNoteNumber,
+            velocity
+        );
 
         // Ensure that the key sounds as intended, similarly to 'PGAL' DLS chunk alias
         for (const p of params) {
             if (p.generators[GeneratorTypes.keyNum] < 0)
-                p.generators[GeneratorTypes.keyNum] = binding.key;
+                p.generators[GeneratorTypes.keyNum] = binding.sourceNoteNumber;
         }
         return params;
     }

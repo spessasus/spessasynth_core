@@ -39,8 +39,7 @@ function handleUserDrum(
             const pitch = data - 60;
 
             // Use the full 100 cents here as we choose the correct pitch (50 or 100 cents) when committing changes
-            const binding = drumSet.keyBindings[drumKey];
-            binding.params.pitchCoarse = pitch;
+            drumSet.keyParams[drumKey].pitchCoarse = pitch;
 
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Pitch, key ${drumKey}`,
@@ -51,7 +50,7 @@ function handleUserDrum(
 
         case 0x2: {
             // Drum Level
-            drumSet.keyBindings[drumKey].params.level = data;
+            drumSet.keyParams[drumKey].level = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Level, key ${drumKey}`,
                 data
@@ -61,7 +60,7 @@ function handleUserDrum(
 
         case 0x3: {
             // Drum Assign Group (exclusive class)
-            drumSet.keyBindings[drumKey].params.assignGroup = data;
+            drumSet.keyParams[drumKey].assignGroup = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Assign Group, key ${drumKey}`,
                 data
@@ -71,7 +70,7 @@ function handleUserDrum(
 
         case 0x4: {
             // Pan
-            drumSet.keyBindings[drumKey].params.pan = data;
+            drumSet.keyParams[drumKey].pan = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Pan, key ${drumKey}`,
                 data
@@ -81,7 +80,7 @@ function handleUserDrum(
 
         case 0x5: {
             // Reverb
-            drumSet.keyBindings[drumKey].params.reverbSend = data;
+            drumSet.keyParams[drumKey].reverbSend = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Reverb, key ${drumKey}`,
                 data
@@ -91,7 +90,7 @@ function handleUserDrum(
 
         case 0x6: {
             // Chorus
-            drumSet.keyBindings[drumKey].params.chorusSend = data;
+            drumSet.keyParams[drumKey].chorusSend = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Chorus, key ${drumKey}`,
                 data
@@ -101,7 +100,7 @@ function handleUserDrum(
 
         case 0x7: {
             // Receive Note Off
-            drumSet.keyBindings[drumKey].params.rxNoteOff = data === 1;
+            drumSet.keyParams[drumKey].rxNoteOff = data === 1;
 
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Note Off, key ${drumKey}`,
@@ -112,7 +111,7 @@ function handleUserDrum(
 
         case 0x8: {
             // Receive Note On
-            drumSet.keyBindings[drumKey].params.rxNoteOn = true; // Data === 1;
+            drumSet.keyParams[drumKey].rxNoteOn = true; // Data === 1;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Note On, key ${drumKey}`,
                 data === 1 ? "ON" : "OFF"
@@ -122,7 +121,7 @@ function handleUserDrum(
 
         case 0x9: {
             // Delay
-            drumSet.keyBindings[drumKey].params.variationSend = data;
+            drumSet.keyParams[drumKey].variationSend = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} Delay, key ${drumKey}`,
                 data
@@ -132,7 +131,7 @@ function handleUserDrum(
 
         // Source drum set
         case 0xa: {
-            drumSet.setSourceMap(drumKey, data);
+            drumSet.keyParams[drumKey].sourceDrumSet = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} source drum set for ${drumKey}`,
                 data
@@ -142,7 +141,7 @@ function handleUserDrum(
 
         // Program number
         case 0xb: {
-            drumSet.setSourceProgram(drumKey, data);
+            drumSet.keyParams[drumKey].program = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} source program for ${drumKey}`,
                 data
@@ -152,7 +151,7 @@ function handleUserDrum(
 
         // Source note number
         case 0xc: {
-            drumSet.setSourceNote(drumKey, data);
+            drumSet.keyParams[drumKey].sourceNoteNumber = data;
             SpessaLog.gsInfo(
                 `User Drum Set ${drumSetNumber} source note for ${drumKey}`,
                 data

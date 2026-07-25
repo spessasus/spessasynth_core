@@ -473,7 +473,7 @@ All modifications for this User Drum Set. This is a `Map` object.
 - value:
     - `"clear"` - all modifications for this note are removed.
     - `object` - partial parameter changes for this note:
-        - Key: User Drum Set parameter name. (`UserDrumParameter` property)
+        - Key: User Drum Set parameter name. (`UserDrumSetParameter` property)
         - value:
             - `"clear"` - all changes for this parameter are removed.
             - `specific value` - clear + insert a message setting this after a reset.

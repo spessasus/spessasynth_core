@@ -2,7 +2,7 @@ import type { MIDIChannel } from "./midi_channel";
 import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "../synth_constants";
 import { UserDrumSet } from "../user_drum_set";
 import { SpessaLog } from "../../../utils/loggin";
-import { DrumParameter } from "./drum_parameters";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import { ConsoleColors } from "../../../utils/other";
 
 /**
@@ -55,13 +55,12 @@ export function programChange(this: MIDIChannel, program: number) {
         this.synthCore.purgeCachedPatch(preset);
         // Copy drum param data
         if (preset instanceof UserDrumSet) {
-            for (let i = 0; i < preset.keyBindings.length; i++) {
+            for (let i = 0; i < preset.keyParams.length; i++) {
                 // SC-55 uses 100 cents, SC-88 and above is 50
                 // Refer to source binding and do it here
-                const binding = preset.keyBindings[i];
-                binding.params.pitchCoarse *=
-                    binding.patch.bankLSB === 1 ? 1 : 0.5;
-                DrumParameter.copyInto(binding.params, this.drumParams[i]);
+                const binding = preset.keyParams[i];
+                binding.pitchCoarse *= binding.sourceDrumSet === 1 ? 1 : 0.5;
+                DrumParameterUtils.copyInto(binding, this.drumParams[i]);
             }
         } else {
             SpessaLog.warn(

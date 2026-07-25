@@ -1,5 +1,8 @@
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
-import { DrumParameter } from "./drum_parameters";
+import {
+    type DrumParameter,
+    DrumParameterUtils
+} from "../../../midi/drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./awe32_nrpn";
 import type { ChannelSystemParameter } from "./parameters/system";
@@ -59,7 +62,7 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         octaveTuning: this.octaveTuning.slice(),
         perNotePitch: this.perNotePitch,
 
-        drumParams: this.drumParams.map((d) => DrumParameter.copyFrom(d)),
+        drumParams: this.drumParams.map((d) => ({ ...d })),
         drumChannel: this._drumChannel,
         channel: this.channel
     };
@@ -83,7 +86,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     this.generators.overridesEnabled = snapshot.generators.overridesEnabled;
 
     for (let i = 0; i < 128; i++)
-        DrumParameter.copyInto(snapshot.drumParams[i], this.drumParams[i]);
+        DrumParameterUtils.copyInto(snapshot.drumParams[i], this.drumParams[i]);
 
     // Disable to set patch
     // Restored in system params

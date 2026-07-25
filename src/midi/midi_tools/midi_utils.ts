@@ -7,11 +7,11 @@ import {
     RegisteredParameterTypes
 } from "../enums";
 
-import type { SysExAcceptedArray, UserDrumParameter } from "../types";
+import type { SysExAcceptedArray } from "../types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
-import type { DrumParameter } from "../../synthesizer/audio_engine/channel/drum_parameters";
+import type { DrumParameter, UserDrumSetParameter } from "../drum_parameters";
 
 type GlobalMIDIParameterMessage = {
     [P in keyof GlobalMIDIParameter]: {
@@ -31,8 +31,10 @@ type ChannelMIDIParameterMessage = {
     };
 }[keyof ChannelMIDIParameter];
 
-const userDrumParamMap: Record<keyof UserDrumParameter, number> = {
+const userDrumParamMap: Record<keyof UserDrumSetParameter, number> = {
     pitchCoarse: 1,
+    // Should never be used
+    pitchFine: 127,
     level: 2,
     assignGroup: 3,
     pan: 4,
@@ -77,14 +79,14 @@ export type AnalyzedMIDIMessage =
     | { type: "Display Data" }
     | GlobalMIDIParameterMessage
     | {
-          [K in keyof UserDrumParameter]: {
+          [K in keyof UserDrumSetParameter]: {
               type: "User Drum Setup";
               drumSet: number;
               midiNote: number;
               parameter: K;
-              value: UserDrumParameter[K];
+              value: UserDrumSetParameter[K];
           };
-      }[keyof UserDrumParameter];
+      }[keyof UserDrumSetParameter];
 
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedParameter;
 
@@ -748,12 +750,12 @@ export class MIDIUtils {
      * @param value The value to set it to.
      * @returns The `MIDIMessage` that sets the parameter.
      */
-    public static setUserDrumParameter<P extends keyof UserDrumParameter>(
+    public static setUserDrumParameter<P extends keyof UserDrumSetParameter>(
         ticks: number,
         drumSet: number,
         midiNote: number,
         parameter: P,
-        value: UserDrumParameter[P]
+        value: UserDrumSetParameter[P]
     ): MIDIMessage {
         drumSet %= 2;
         const a2Param = userDrumParamMap[parameter];
