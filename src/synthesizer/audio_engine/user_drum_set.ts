@@ -2,7 +2,7 @@ import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
-import { DrumParameters } from "./channel/drum_parameters";
+import { DrumParameter } from "./channel/drum_parameters";
 import { DEFAULT_DRUM_REVERB } from "./channel/reset";
 
 const DEFAULT_DRUM_PATCH: MIDIPatch = {
@@ -13,7 +13,7 @@ const DEFAULT_DRUM_PATCH: MIDIPatch = {
 };
 
 /**
- * TODO: add to MIDIUtils set and add to MIDI editor
+ * TODO: add to snapshot and used keys detection
  */
 
 /**
@@ -38,7 +38,7 @@ export class UserDrumSet implements SynthesizerPatch {
     public readonly keyBindings: {
         patch: MIDIPatch;
         key: number;
-        params: DrumParameters;
+        params: DrumParameter;
     }[] = [];
 
     /**
@@ -48,6 +48,8 @@ export class UserDrumSet implements SynthesizerPatch {
     private readonly resolvePatch: (
         patch: MIDIPatch
     ) => SynthesizerPatch | undefined;
+
+    private readonly defaultName;
 
     /**
      * Creates a new custom drum set.
@@ -64,13 +66,14 @@ export class UserDrumSet implements SynthesizerPatch {
     ) {
         this.program = program;
         this.name = name;
+        this.defaultName = name;
         this.resolvePatch = resolvePatch;
 
         for (let i = 0; i < 128; i++) {
             this.keyBindings.push({
                 patch: { ...DEFAULT_DRUM_PATCH },
                 key: i,
-                params: new DrumParameters()
+                params: new DrumParameter()
             });
         }
     }
@@ -103,9 +106,10 @@ export class UserDrumSet implements SynthesizerPatch {
     }
 
     /**
-     * Resets all key bindings to the default GM/GS drum patch.
+     * Resets the drum set.
      */
     public reset(): void {
+        console.log("RESET", this.defaultName);
         // Initialize all 128 keys to the default drum patch
         for (let i = 0; i < 128; i++) {
             this.keyBindings[i].patch = { ...DEFAULT_DRUM_PATCH };
@@ -122,6 +126,7 @@ export class UserDrumSet implements SynthesizerPatch {
             p.rxNoteOff = false;
             p.variationSend = 0;
         }
+        this.name = this.defaultName;
     }
 
     /**

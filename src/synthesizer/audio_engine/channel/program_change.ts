@@ -2,7 +2,8 @@ import type { MIDIChannel } from "./midi_channel";
 import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "../synth_constants";
 import { UserDrumSet } from "../user_drum_set";
 import { SpessaLog } from "../../../utils/loggin";
-import { DrumParameters } from "./drum_parameters";
+import { DrumParameter } from "./drum_parameters";
+import { ConsoleColors } from "../../../utils/other";
 
 /**
  * Changes the program (preset) of the channel.
@@ -46,6 +47,10 @@ export function programChange(this: MIDIChannel, program: number) {
             preset.program === GS_USER_DRUM_2) &&
         !this.synthCore.systemParameters.userDrumLock
     ) {
+        SpessaLog.info(
+            `%cCommitting changes to User Drum Set ${preset.program - 63}!`,
+            ConsoleColors.info
+        );
         // Purge cache for this preset to cache the new drum voice data
         this.synthCore.purgeCachedPatch(preset);
         // Copy drum param data
@@ -56,7 +61,7 @@ export function programChange(this: MIDIChannel, program: number) {
                 const binding = preset.keyBindings[i];
                 binding.params.pitchCoarse *=
                     binding.patch.bankLSB === 1 ? 1 : 0.5;
-                DrumParameters.copyInto(binding.params, this.drumParams[i]);
+                DrumParameter.copyInto(binding.params, this.drumParams[i]);
             }
         } else {
             SpessaLog.warn(

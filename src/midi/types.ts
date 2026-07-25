@@ -4,6 +4,7 @@ import type {
     MIDIPatchFull
 } from "../soundbank/basic_soundbank/midi_patch";
 import type { MIDISystem } from "../soundbank/types";
+import type { DrumParameterData } from "../synthesizer/audio_engine/channel/drum_parameters";
 
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.
@@ -209,4 +210,22 @@ export interface CallableSoundBank<T extends MIDIPatchFull> {
      * Get the appropriate preset.
      */
     getPreset(patch: MIDIPatch, system: MIDISystem): T | undefined;
+}
+
+export interface UserDrumParameter extends Omit<
+    DrumParameterData,
+    "pitchFine"
+> {
+    /**
+     * The source drum set bank LSB number.
+     */
+    sourceDrumSet: number;
+    /**
+     * The MIDI program number of the source drum set.
+     */
+    program: number;
+    /**
+     * The MIDI key number from the source drum set to bind.
+     */
+    sourceNoteNumber: number;
 }

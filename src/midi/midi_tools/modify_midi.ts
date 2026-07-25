@@ -26,6 +26,7 @@ import type { MIDISystem } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
+import type { UserDrumParameter } from "../types";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -120,6 +121,26 @@ export interface ChannelModification {
     fineTune?: number;
 }
 
+/**
+ * All modifications for this User Drum Set.
+ * - Key: the MIDI note number for the note to modify.
+ * - value:
+ *   - `"clear"` - all modifications for this note are removed.
+ *   - `object` - partial parameter changes for this note:
+ *     - Key: User Drum Set parameter name.
+ *     - value:
+ *       - `"clear"` - all changes for this parameter are removed.
+ *       - `specific value` - clear + insert a message setting this after a reset.
+ */
+export type UserDrumModification = Map<
+    number,
+    ClearableParameter<{
+        [P in keyof UserDrumParameter]?: ClearableParameter<
+            UserDrumParameter[P]
+        >;
+    }>
+>;
+
 export interface ModifyMIDIOptions {
     /**
      * The channel changes.
@@ -129,6 +150,18 @@ export interface ModifyMIDIOptions {
      *   - `ChannelModification` - modifies the channel.
      */
     channels?: Map<number, ClearableParameter<ChannelModification>>;
+    /**
+     * The User Drum Set 1 changes. (MIDI program 64).
+     * - `"clear"` - all existing User Drum Set 1 changes are removed.
+     * - `UserDrumModification` - modifies the drum set.
+     */
+    userDrumSet1Params?: ClearableParameter<UserDrumModification>;
+    /**
+     * The User Drum Set 2 changes.(MIDI program 65).
+     * - `"clear"` - all existing User Drum Set 2 changes are removed.
+     * - `UserDrumModification` - modifies the drum set.
+     */
+    userDrumSet2Params?: ClearableParameter<UserDrumModification>;
     /**
      * The drum parameter changes.
      * - `"clear"` - all existing drum parameter change MIDI messages are removed.
@@ -191,14 +224,27 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         reverbParams,
         chorusParams,
         delayParams,
-        insertionParams
+        insertionParams,
+        userDrumSet1Params,
+        userDrumSet2Params
     } = opts;
 
-    SpessaLog.info("Desired channel changes", channels);
-    SpessaLog.info("Desired reverb parameters", reverbParams);
-    SpessaLog.info("Desired chorus parameters", chorusParams);
-    SpessaLog.info("Desired delay parameters", delayParams);
-    SpessaLog.info("Desired insertion parameters", insertionParams);
+    if (channels) SpessaLog.info("Desired channel changes", channels);
+    if (reverbParams) SpessaLog.info("Desired reverb parameters", reverbParams);
+    if (chorusParams) SpessaLog.info("Desired chorus parameters", chorusParams);
+    if (delayParams) SpessaLog.info("Desired delay parameters", delayParams);
+    if (insertionParams)
+        SpessaLog.info("Desired insertion parameters", insertionParams);
+    if (userDrumSet1Params)
+        SpessaLog.info(
+            "Desired User Drum Set 1 parameters",
+            userDrumSet1Params
+        );
+    if (userDrumSet2Params)
+        SpessaLog.info(
+            "Desired User Drum Set 2 parameters",
+            userDrumSet2Params
+        );
 
     // Optimizations
     const clearDrumParams = opts.drumSetupParams === "clear";
@@ -312,6 +358,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         });
     }
 
+    // Main editing loop is here
     midi.iterate((e, trackNum, eventIndexes) => {
         const track = midi.tracks[trackNum];
         const index = eventIndexes[trackNum];
@@ -1005,6 +1052,35 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                             }
                             break;
                         }
+
+                        case "User Drum Setup": {
+                            const params =
+                                syx.drumSet === 0
+                                    ? userDrumSet1Params
+                                    : userDrumSet2Params;
+                            if (!params) return;
+                            // Clear whole drum set?
+                            if (params === "clear") {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+                            const noteParams = params.get(syx.midiNote);
+                            // Clear this note?
+                            if (noteParams === "clear") {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+
+                            // Clear this parameter on this note?
+                            // Either clear or set value clears it
+                            if (noteParams?.[syx.parameter] !== undefined) {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+                        }
                     }
                 }
                 return;
@@ -1044,6 +1120,21 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     // Insert right after reset
     const targetTrack = midi.tracks[resetTrack];
     const targetIndex = resetIndex + 1;
+
+    /*
+    ---
+    MIDI RESET
+    Here is the code that inserts all parameters after a reset
+    ---
+     */
+    SpessaLog.info(
+        `%cInserting after reset detected on track %c${resetTrack}%c on index %c${targetIndex}%c!`,
+        ConsoleColors.recognized,
+        ConsoleColors.value,
+        ConsoleColors.recognized,
+        ConsoleColors.value,
+        ConsoleColors.recognized
+    );
 
     // Add MIDI parameters
     for (const param of Object.keys(
@@ -1169,6 +1260,63 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             ])
         );
     }
+
+    // User Drum parameters
+
+    if (userDrumSet1Params && userDrumSet1Params !== "clear") {
+        for (const [midiNote, params] of userDrumSet1Params) {
+            // Note cleared
+            if (params === "clear") continue;
+
+            for (const [param, value] of Object.entries(params) as {
+                [K in keyof UserDrumParameter]: [
+                    K,
+                    ClearableParameter<UserDrumParameter[K]>
+                ];
+            }[keyof UserDrumParameter][]) {
+                // Parameter cleared
+                if (value === "clear" || value === undefined) continue;
+                targetTrack.addEvents(
+                    targetIndex,
+                    MIDIUtils.setUserDrumParameter(
+                        targetTicks,
+                        0,
+                        midiNote,
+                        param,
+                        value
+                    )
+                );
+            }
+        }
+    }
+
+    if (userDrumSet2Params && userDrumSet2Params !== "clear") {
+        for (const [midiNote, params] of userDrumSet2Params) {
+            // Note cleared
+            if (params === "clear") continue;
+
+            for (const [param, value] of Object.entries(params) as {
+                [K in keyof UserDrumParameter]: [
+                    K,
+                    ClearableParameter<UserDrumParameter[K]>
+                ];
+            }[keyof UserDrumParameter][]) {
+                // Parameter cleared
+                if (value === "clear" || value === undefined) continue;
+                targetTrack.addEvents(
+                    targetIndex,
+                    MIDIUtils.setUserDrumParameter(
+                        targetTicks,
+                        1,
+                        midiNote,
+                        param,
+                        value
+                    )
+                );
+            }
+        }
+    }
+
     midi.flush();
     SpessaLog.groupEnd();
 }

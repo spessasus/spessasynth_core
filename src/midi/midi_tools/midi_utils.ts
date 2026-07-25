@@ -7,11 +7,11 @@ import {
     RegisteredParameterTypes
 } from "../enums";
 
-import type { SysExAcceptedArray } from "../types";
+import type { SysExAcceptedArray, UserDrumParameter } from "../types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
-import type { DrumParameters } from "../../synthesizer/audio_engine/channel/drum_parameters";
+import type { DrumParameter } from "../../synthesizer/audio_engine/channel/drum_parameters";
 
 type GlobalMIDIParameterMessage = {
     [P in keyof GlobalMIDIParameter]: {
@@ -31,11 +31,20 @@ type ChannelMIDIParameterMessage = {
     };
 }[keyof ChannelMIDIParameter];
 
-interface UserDrumParameters extends DrumParameters {
-    sourceDrumSet: number;
-    program: number;
-    sourceNoteNumber: number;
-}
+const userDrumParamMap: Record<keyof UserDrumParameter, number> = {
+    pitchCoarse: 1,
+    level: 2,
+    assignGroup: 3,
+    pan: 4,
+    reverbSend: 5,
+    chorusSend: 6,
+    rxNoteOff: 7,
+    rxNoteOn: 8,
+    variationSend: 9,
+    sourceDrumSet: 0xa,
+    program: 0xb,
+    sourceNoteNumber: 0xc
+};
 
 // Channel number may be above 15
 type AnalyzedParameter =
@@ -48,22 +57,13 @@ type AnalyzedParameter =
       }
     | ChannelMIDIParameterMessage
     | {
-          [K in keyof DrumParameters]: {
+          [K in keyof DrumParameter]: {
               type: "Drum Setup";
               key: number;
               parameter: K;
-              value: DrumParameters[K];
+              value: DrumParameter[K];
           };
-      }[keyof DrumParameters]
-    | {
-          [K in keyof UserDrumParameters]: {
-              type: "User Drum Setup";
-              key: number;
-              program: number;
-              parameter: K;
-              value: UserDrumParameters[K];
-          };
-      }[keyof UserDrumParameters];
+      }[keyof DrumParameter];
 
 export type AnalyzedMIDIMessage =
     | AnalyzedParameter
@@ -75,7 +75,16 @@ export type AnalyzedMIDIMessage =
     | { type: "Drums On"; channel: number; isDrum: boolean }
     | { type: "Program Change"; channel: number; value: number }
     | { type: "Display Data" }
-    | GlobalMIDIParameterMessage;
+    | GlobalMIDIParameterMessage
+    | {
+          [K in keyof UserDrumParameter]: {
+              type: "User Drum Setup";
+              drumSet: number;
+              midiNote: number;
+              parameter: K;
+              value: UserDrumParameter[K];
+          };
+      }[keyof UserDrumParameter];
 
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedParameter;
 
@@ -728,6 +737,33 @@ export class MIDIUtils {
             }
             // That's it!
         }
+    }
+
+    /**
+     * Returns a  MIDI event needed to set the given GS User Drum Set parameter.
+     * @param ticks The ticks for all events.
+     * @param drumSet The drum set to modify, either 0 or 1.
+     * @param midiNote The MIDI note number of the drum key to modify.
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     * @returns The `MIDIMessage` that sets the parameter.
+     */
+    public static setUserDrumParameter<P extends keyof UserDrumParameter>(
+        ticks: number,
+        drumSet: number,
+        midiNote: number,
+        parameter: P,
+        value: UserDrumParameter[P]
+    ): MIDIMessage {
+        drumSet %= 2;
+        const a2Param = userDrumParamMap[parameter];
+        if (a2Param === undefined) {
+            throw new Error(`Invalid parameter ${parameter}`);
+        }
+        const a2 = (drumSet << 4) | a2Param;
+        return this.gsMessage(ticks, 0x21, a2, midiNote, [
+            typeof value === "number" ? value : value ? 1 : 0
+        ]);
     }
 
     /**
@@ -2222,14 +2258,14 @@ export class MIDIUtils {
         a3: number,
         data: number
     ): AnalyzedMIDIMessage {
-        const program = 64 + (a2 >> 4);
+        const drumSet = 64 + (a2 >> 4);
         switch (a2 & 0xf) {
             // Play Note
             case 0x1: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "pitchCoarse",
                     value: data - 60
                 };
@@ -2239,8 +2275,8 @@ export class MIDIUtils {
             case 0x2: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "level",
                     value: data
                 };
@@ -2250,8 +2286,8 @@ export class MIDIUtils {
             case 0x3: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "assignGroup",
                     value: data
                 };
@@ -2261,8 +2297,8 @@ export class MIDIUtils {
             case 0x4: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "pan",
                     value: data
                 };
@@ -2272,8 +2308,8 @@ export class MIDIUtils {
             case 0x5: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "reverbSend",
                     value: data
                 };
@@ -2283,8 +2319,8 @@ export class MIDIUtils {
             case 0x6: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "chorusSend",
                     value: data
                 };
@@ -2294,8 +2330,8 @@ export class MIDIUtils {
             case 0x7: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "rxNoteOff",
                     value: data === 1
                 };
@@ -2305,8 +2341,8 @@ export class MIDIUtils {
             case 0x8: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "rxNoteOn",
                     value: data === 1
                 };
@@ -2316,8 +2352,8 @@ export class MIDIUtils {
             case 0x9: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "variationSend",
                     value: data
                 };
@@ -2327,8 +2363,8 @@ export class MIDIUtils {
             case 0xa: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "sourceDrumSet",
                     value: data
                 };
@@ -2338,8 +2374,8 @@ export class MIDIUtils {
             case 0xb: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "program",
                     value: data
                 };
@@ -2349,8 +2385,8 @@ export class MIDIUtils {
             case 0xc: {
                 return {
                     type: "User Drum Setup",
-                    key: a3,
-                    program,
+                    midiNote: a3,
+                    drumSet,
                     parameter: "sourceNoteNumber",
                     value: data
                 };

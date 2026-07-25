@@ -1,49 +1,49 @@
-/**
- * Represents a single drum instrument's XG/GS parameters.
- */
-export class DrumParameters {
+export interface DrumParameterData {
     /**
-     * Pitch offset in semitones.
+     * Pitch offset in semitones. Relative value.
      * May be floating point! (GS half-semitone coarse tune resolution)
      */
-    public pitchCoarse = 0;
+    pitchCoarse: number;
 
     /**
-     * Pitch offset in cents.
+     * Pitch offset in cents. Relative value.
      */
-    public pitchFine = 0;
+    pitchFine: number;
 
     /**
      * Level in 0 - 127 range.
      */
-    public level = 1;
+    level: number;
 
     /**
      * Exclusive class override.
      */
-    public assignGroup = 0;
+    assignGroup: number;
+
     /**
      * Pan, 1-64-127, 0 is random. This adds to the channel pan!
      */
-    public pan = 64;
+    pan: number;
+
     /**
      * Reverb send level 0-127
      */
-    public reverbSend = 127;
+    reverbSend: number;
+
     /**
      * Chorus send level 0-127
      */
-    public chorusSend = 127;
+    chorusSend: number;
 
     /**
      * Variation/delay send level 0-127
      */
-    public variationSend = 127;
+    variationSend: number;
 
     /**
      * If note on should be received.
      */
-    public rxNoteOn = true;
+    rxNoteOn: boolean;
 
     /**
      * If note off should be received.
@@ -51,10 +51,26 @@ export class DrumParameters {
      * Due to the way sound banks implement drums (as 100s release time),
      * this means killing the voice on note off, not releasing it.
      */
+    rxNoteOff: boolean;
+}
+
+/**
+ * Represents a single drum instrument's XG/GS parameters.
+ */
+export class DrumParameter implements DrumParameterData {
+    public pitchCoarse = 0;
+    public pitchFine = 0;
+    public level = 127;
+    public assignGroup = 0;
+    public pan = 64;
+    public reverbSend = 127;
+    public chorusSend = 127;
+    public variationSend = 127;
+    public rxNoteOn = true;
     public rxNoteOff = false;
 
-    public static copyFrom(p: DrumParameters) {
-        const d = new DrumParameters();
+    public static copyFrom(p: DrumParameter) {
+        const d = new DrumParameter();
         d.pitchCoarse = p.pitchCoarse;
         d.pitchFine = p.pitchFine;
         d.level = p.level;
@@ -73,7 +89,7 @@ export class DrumParameters {
      * @param source the drum parameter instance to copy from.
      * @param dest the drum parameter instance to copy into.
      */
-    public static copyInto(source: DrumParameters, dest: DrumParameters) {
+    public static copyInto(source: DrumParameter, dest: DrumParameter) {
         dest.pitchCoarse = source.pitchCoarse;
         dest.pitchFine = source.pitchFine;
         dest.level = source.level;

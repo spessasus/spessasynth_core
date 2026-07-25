@@ -25,7 +25,7 @@ import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
-import { DrumParameters } from "./drum_parameters";
+import { DrumParameter } from "./drum_parameters";
 import {
     applySnapshot,
     type ChannelSnapshot,
@@ -61,10 +61,10 @@ export class MIDIChannel {
      * Parameters for each drum instrument.
      * @internal
      */
-    public readonly drumParams: readonly DrumParameters[] = Array.from(
+    public readonly drumParams: readonly DrumParameter[] = Array.from(
         { length: 128 },
         // eslint-disable-next-line unicorn/consistent-function-scoping
-        () => new DrumParameters()
+        () => new DrumParameter()
     );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
