@@ -1594,12 +1594,42 @@ export class MIDIUtils {
         const a3 = syx[6];
         const data = syx[7];
 
-        // GS reset check
-        if (
-            // Address 1 is 0x00 for SC-88 SYSTEM MODE SET and 0x40 for SC-55 MODE SET
-            (a1 === 0x00 || a1 === 0x40) &&
-            a2 === 0x00 // System Parameter
-        ) {
+        // System Parameters
+        // MODE SET
+        // This has been separated from 40 00 because 00 00 05 was erroneously
+        // Decoded as "master key shift" even though it means "SC-88 output assign"
+        // Testcase: FADED88.mid
+        if (a1 === 0x00 && a2 === 0x00 && a3 === 0x7f) {
+            switch (data) {
+                // GS Reset/Mode-1 (Single Module Mode)
+                case 0x00:
+                // GS Reset/Mode-2 (Double Module Mode)
+                case 0x01: {
+                    return [
+                        {
+                            type: "Global MIDI Param",
+                            parameter: "system",
+                            value: "gs"
+                        }
+                    ];
+                }
+
+                case 0x7f: {
+                    // GS Off, default to gm
+                    return [
+                        {
+                            type: "Global MIDI Param",
+                            parameter: "system",
+                            value: "gm"
+                        }
+                    ];
+                }
+            }
+            return [OTHER];
+        }
+
+        // Patch common parameters
+        if (a1 === 0x40 && a2 === 0x00) {
             switch (a3) {
                 // Master Tune
                 case 0x00: {

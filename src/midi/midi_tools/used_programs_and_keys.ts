@@ -314,6 +314,12 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                         case "Global MIDI Param": {
                             if (syx.parameter === "keyShift") {
                                 masterKeyShift = syx.value;
+                                SpessaLog.info(
+                                    `%cMaster Key-Shift of %c${syx.value}%c on detected!`,
+                                    ConsoleColors.recognized,
+                                    ConsoleColors.value,
+                                    ConsoleColors.recognized
+                                );
                             } else if (syx.parameter === "system") {
                                 reset(syx.value);
                                 SpessaLog.info(
