@@ -12,6 +12,13 @@ import { DEFAULT_DRUM_REVERB } from "./channel/reset";
  * TODO: used keys detection
  */
 
+const FALLBACK_PATCH: MIDIPatch = {
+    bankMSB: 0,
+    bankLSB: 0,
+    isGMGSDrum: true,
+    program: 0
+};
+
 /**
  * A GS User drum set that allows mapping each MIDI key to a different preset and key.
  * This is used for the virtual GS user drum preset.
@@ -122,10 +129,13 @@ export class UserDrumSet implements SynthesizerPatch {
         const binding = this.keyParams[midiNote];
         this.tempPatch.bankLSB = binding.sourceDrumSet;
         this.tempPatch.program = binding.program;
-        const resolvedPatch = this.resolvePatch(this.tempPatch);
+        let resolvedPatch = this.resolvePatch(this.tempPatch);
         if (!resolvedPatch) {
-            // No match, no sound
-            return [];
+            resolvedPatch = this.resolvePatch(FALLBACK_PATCH);
+            if (!resolvedPatch) {
+                // No drums at all
+                return [];
+            }
         }
         const params = resolvedPatch.getVoiceParameters(
             binding.sourceNoteNumber,
