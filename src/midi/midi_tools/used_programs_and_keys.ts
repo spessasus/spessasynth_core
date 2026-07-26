@@ -384,9 +384,11 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                             const set = userDrumSets[syx.drumSet];
                             let param = set.memoryParams.get(syx.midiNote);
                             if (!param) {
-                                param = DrumParameterUtils.getDefaultUserData(
-                                    syx.midiNote
-                                );
+                                param = {
+                                    ...DrumParameterUtils.DEFAULT_USER_DATA[
+                                        syx.midiNote
+                                    ]
+                                };
                                 set.memoryParams.set(syx.midiNote, param);
                             }
                             param[syx.parameter] = syx.value as never;

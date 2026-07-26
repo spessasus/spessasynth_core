@@ -3,7 +3,6 @@ import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
 import { DrumParameterUtils } from "../../midi/drum_parameters";
-import { DEFAULT_DRUM_REVERB } from "./channel/reset";
 import type { UserDrumSetParameter } from "../../midi/types";
 
 const FALLBACK_PATCH: MIDIPatch = {
@@ -67,7 +66,9 @@ export class UserDrumSet implements SynthesizerPatch {
         this.resolvePatch = resolvePatch;
 
         for (let i = 0; i < 128; i++) {
-            this.keyParams.push(DrumParameterUtils.getDefaultUserData(i));
+            this.keyParams.push({
+                ...DrumParameterUtils.DEFAULT_USER_DATA[i]
+            });
         }
         // Correct init
         this.reset();
@@ -78,22 +79,10 @@ export class UserDrumSet implements SynthesizerPatch {
     public reset(): void {
         // Initialize all 128 keys to the default drum patch
         for (let i = 0; i < 128; i++) {
-            const p = this.keyParams[i];
-            p.pitchCoarse = 0;
-            // Unused, shouldn't matter
-            p.pitchFine = 0;
-            p.level = 120;
-            p.assignGroup = 0;
-            p.pan = 64;
-            p.reverbSend = DEFAULT_DRUM_REVERB[i];
-            p.chorusSend = 0;
-            p.rxNoteOn = true;
-            p.rxNoteOff = false;
-            p.variationSend = 0;
-
-            p.sourceNoteNumber = i;
-            p.sourceDrumSet = 0;
-            p.program = 0;
+            DrumParameterUtils.copyIntoUser(
+                DrumParameterUtils.DEFAULT_USER_DATA[i],
+                this.keyParams[i]
+            );
         }
     }
 

@@ -65,7 +65,7 @@ export class MIDIChannel {
     public readonly drumParams: readonly DrumParameter[] = Array.from(
         { length: 128 },
         // eslint-disable-next-line unicorn/consistent-function-scoping
-        () => ({ ...DrumParameterUtils.DEFAULT_DATA })
+        (_, i) => ({ ...DrumParameterUtils.DEFAULT_DATA[i] })
     );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
