@@ -768,10 +768,19 @@ export class MIDIUtils {
         if (a2Param === undefined) {
             throw new Error(`Invalid parameter ${parameter}`);
         }
+
+        // PLAY NOTE is relative to 60 and not 0, but pitchCoarse is relative to 0
+        const midiValue: number =
+            parameter === "pitchCoarse"
+                ? 60 + (value as number)
+                : typeof value === "number"
+                  ? value
+                  : value
+                    ? 1
+                    : 0;
+
         const a2 = (drumSet << 4) | a2Param;
-        return this.gsMessage(ticks, 0x21, a2, midiNote, [
-            typeof value === "number" ? value : value ? 1 : 0
-        ]);
+        return this.gsMessage(ticks, 0x21, a2, midiNote, [midiValue]);
     }
 
     /**
