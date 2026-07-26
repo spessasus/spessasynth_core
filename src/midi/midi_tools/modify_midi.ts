@@ -27,7 +27,7 @@ import { ParameterTracker } from "./parameter_tracker";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 
-import type { UserDrumSetParameter } from "../drum_parameters";
+import type { UserDrumSetParameter } from "../types";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,

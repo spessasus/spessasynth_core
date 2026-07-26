@@ -6,16 +6,13 @@ const test = new MIDITestMaker("GS User Drum Set Test", {
 });
 
 function seq() {
-    test.noteOn(36, 127)
-        .noteOff(36)
+    test.note(36, 127, 0)
         .wait(480)
 
-        .noteOn(38, 127)
-        .noteOff(38)
+        .note(38, 127, 0)
         .wait(480)
 
-        .noteOn(40, 127)
-        .noteOff(40)
+        .note(40, 127, 0)
         .wait(1280);
 }
 
@@ -77,4 +74,8 @@ test.text("Executing a program change")
 
 seq();
 
+test.text("Binding a drum instrument to itself")
+    .gs(0x21, 0x0b, 50, [64]) // PROGRAM NUMBER = 64 (USER DRUM SET 1)
+    .gs(0x21, 0x0c, 50, [50]) // SOURCE NOTE NUMBER = 50
+    .note(50, 120, 0);
 await test.make();

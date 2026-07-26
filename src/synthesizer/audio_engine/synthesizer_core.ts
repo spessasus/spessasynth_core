@@ -54,8 +54,11 @@ import {
     setMIDIParameterInternal
 } from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
-import type { SysExAcceptedArray } from "../../midi/types";
-import type { UserDrumSetParameter } from "../../midi/drum_parameters"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+import type {
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../../midi/types";
+// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;

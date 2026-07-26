@@ -19,11 +19,8 @@ import type {
 } from "../../soundbank/types";
 import { ParameterTracker } from "./parameter_tracker";
 import type { MIDIPatchFull } from "../../soundbank/basic_soundbank/midi_patch";
-import type { CallableSoundBank } from "../types";
-import {
-    DrumParameterUtils,
-    type UserDrumSetParameter
-} from "../drum_parameters";
+import type { CallableSoundBank, UserDrumSetParameter } from "../types";
+import { DrumParameterUtils } from "../drum_parameters";
 
 interface InternalChannelType<T extends MIDIPatchFull> {
     preset?: T;
@@ -387,10 +384,9 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                             const set = userDrumSets[syx.drumSet];
                             let param = set.memoryParams.get(syx.midiNote);
                             if (!param) {
-                                param = {
-                                    ...DrumParameterUtils.DEFAULT_USER_DATA,
-                                    sourceNoteNumber: syx.midiNote
-                                };
+                                param = DrumParameterUtils.getDefaultUserData(
+                                    syx.midiNote
+                                );
                                 set.memoryParams.set(syx.midiNote, param);
                             }
                             param[syx.parameter] = syx.value as never;

@@ -1,8 +1,5 @@
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
-import {
-    type DrumParameter,
-    DrumParameterUtils
-} from "../../../midi/drum_parameters";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./awe32_nrpn";
 import type { ChannelSystemParameter } from "./parameters/system";
@@ -10,6 +7,7 @@ import type { ChannelMIDIParameter } from "./parameters/midi";
 import type { MIDIController } from "../../../midi/enums";
 import type { MIDISystem } from "../../../soundbank/types";
 import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
+import type { DrumParameter } from "../../../midi/types";
 
 export interface ChannelSnapshot {
     patch?: MIDIPatchFull;

@@ -1,76 +1,4 @@
-/**
- * Represents a single drum instrument's XG/GS parameters.
- */
-export interface DrumParameter {
-    /**
-     * Pitch offset in semitones. Relative value.
-     * May be floating point! (GS half-semitone coarse tune resolution)
-     */
-    pitchCoarse: number;
-
-    /**
-     * Pitch offset in cents. Relative value.
-     */
-    pitchFine: number;
-
-    /**
-     * Level in 0 - 127 range.
-     */
-    level: number;
-
-    /**
-     * Exclusive class override.
-     */
-    assignGroup: number;
-
-    /**
-     * Pan, 1-64-127, 0 is random. This adds to the channel pan!
-     */
-    pan: number;
-
-    /**
-     * Reverb send level 0-127
-     */
-    reverbSend: number;
-
-    /**
-     * Chorus send level 0-127
-     */
-    chorusSend: number;
-
-    /**
-     * Variation/delay send level 0-127
-     */
-    variationSend: number;
-
-    /**
-     * If note on should be received.
-     */
-    rxNoteOn: boolean;
-
-    /**
-     * If note off should be received.
-     * Note:
-     * Due to the way sound banks implement drums (as 100s release time),
-     * this means killing the voice on note off, not releasing it.
-     */
-    rxNoteOff: boolean;
-}
-
-export interface UserDrumSetParameter extends DrumParameter {
-    /**
-     * The source drum set bank LSB number.
-     */
-    sourceDrumSet: number;
-    /**
-     * The MIDI program number of the source drum set.
-     */
-    program: number;
-    /**
-     * The MIDI key number from the source drum set to bind.
-     */
-    sourceNoteNumber: number;
-}
+import type { DrumParameter, UserDrumSetParameter } from "./types";
 
 export class DrumParameterUtils {
     public static readonly DEFAULT_DATA: DrumParameter = {
@@ -86,12 +14,20 @@ export class DrumParameterUtils {
         rxNoteOff: false
     };
 
-    public static readonly DEFAULT_USER_DATA: UserDrumSetParameter = {
+    private static readonly DEFAULT_USER_DATA: UserDrumSetParameter = {
         ...this.DEFAULT_DATA,
-        sourceDrumSet: 0,
+        // Defaults to GS
+        sourceDrumSet: 2,
         sourceNoteNumber: 0,
         program: 0
     };
+
+    public static getDefaultUserData(midiNote: number): UserDrumSetParameter {
+        return {
+            ...this.DEFAULT_USER_DATA,
+            sourceNoteNumber: midiNote
+        };
+    }
 
     /**
      * Copies the drum data into a specified drum parameter instance.

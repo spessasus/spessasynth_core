@@ -18,7 +18,7 @@ import type {
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type { MIDISystem, VoiceParameters } from "../soundbank/types";
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
-import type { UserDrumSetParameter } from "../midi/drum_parameters";
+import type { UserDrumSetParameter } from "../midi/types";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!

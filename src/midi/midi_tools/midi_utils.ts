@@ -7,11 +7,14 @@ import {
     RegisteredParameterTypes
 } from "../enums";
 
-import type { SysExAcceptedArray } from "../types";
+import type {
+    DrumParameter,
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
-import type { DrumParameter, UserDrumSetParameter } from "../drum_parameters";
 
 type GlobalMIDIParameterMessage = {
     [P in keyof GlobalMIDIParameter]: {

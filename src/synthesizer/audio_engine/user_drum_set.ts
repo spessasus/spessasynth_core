@@ -2,11 +2,9 @@ import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import type { VoiceParameters } from "../../soundbank/types";
 import type { SynthesizerPatch } from "../types";
 import { GeneratorTypes } from "../../soundbank/basic_soundbank/generator_types";
-import {
-    DrumParameterUtils,
-    type UserDrumSetParameter
-} from "../../midi/drum_parameters";
+import { DrumParameterUtils } from "../../midi/drum_parameters";
 import { DEFAULT_DRUM_REVERB } from "./channel/reset";
+import type { UserDrumSetParameter } from "../../midi/types";
 
 const FALLBACK_PATCH: MIDIPatch = {
     bankMSB: 0,
@@ -69,12 +67,10 @@ export class UserDrumSet implements SynthesizerPatch {
         this.resolvePatch = resolvePatch;
 
         for (let i = 0; i < 128; i++) {
-            this.keyParams.push({
-                ...DrumParameterUtils.DEFAULT_USER_DATA,
-                // This property is based on the note number
-                sourceNoteNumber: i
-            });
+            this.keyParams.push(DrumParameterUtils.getDefaultUserData(i));
         }
+        // Correct init
+        this.reset();
     }
     /**
      * Resets the drum set.
@@ -122,7 +118,8 @@ export class UserDrumSet implements SynthesizerPatch {
         this.tempPatch.bankLSB = binding.sourceDrumSet;
         this.tempPatch.program = binding.program;
         let resolvedPatch = this.resolvePatch(this.tempPatch);
-        if (!resolvedPatch) {
+        // Protect from binding to self as well
+        if (!resolvedPatch || resolvedPatch === this) {
             resolvedPatch = this.resolvePatch(FALLBACK_PATCH);
             if (!resolvedPatch) {
                 // No drums at all

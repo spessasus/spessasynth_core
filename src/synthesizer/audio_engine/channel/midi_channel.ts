@@ -46,10 +46,8 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
 import type { SynthesizerPatch } from "../../types";
-import {
-    type DrumParameter,
-    DrumParameterUtils
-} from "../../../midi/drum_parameters";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
+import type { DrumParameter } from "../../../midi/types";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.

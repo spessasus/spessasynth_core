@@ -11,10 +11,8 @@ import type { SynthesizerCore } from "./synthesizer_core";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
-import {
-    DrumParameterUtils,
-    type UserDrumSetParameter
-} from "../../midi/drum_parameters";
+import { DrumParameterUtils } from "../../midi/drum_parameters";
+import type { UserDrumSetParameter } from "../../midi/types";
 
 export interface SynthesizerSnapshot {
     midiChannels: ChannelSnapshot[];
