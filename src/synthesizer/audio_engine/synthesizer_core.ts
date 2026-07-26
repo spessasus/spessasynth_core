@@ -2,7 +2,8 @@ import type {
     CachedVoiceList,
     SynthMethodOptions,
     SynthProcessorEventData,
-    SynthProcessorOptions
+    SynthProcessorOptions,
+    UserDrumSetChangeCallback
 } from "../types";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import {
@@ -54,6 +55,7 @@ import {
 } from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
 import type { SysExAcceptedArray } from "../../midi/types";
+import type { UserDrumSetParameter } from "../../midi/drum_parameters"; // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -868,6 +870,26 @@ export class SynthesizerCore {
                 );
             }
         }
+    }
+
+    protected setUserDrumSetParam<K extends keyof UserDrumSetParameter>(
+        drumSet: number,
+        midiNote: number,
+        parameter: K,
+        value: UserDrumSetParameter[K]
+    ) {
+        const set = this.soundBankManager.userDrumSets[drumSet];
+        set.keyParams[midiNote][parameter] = value;
+        this.callEvent("userDrumSetChange", {
+            midiNote,
+            drumSet,
+            parameter,
+            value
+        } as UserDrumSetChangeCallback);
+        SpessaLog.gsInfo(
+            `User Drum Set ${drumSet} ${parameter}, key ${midiNote}`,
+            value.toString()
+        );
     }
 
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {

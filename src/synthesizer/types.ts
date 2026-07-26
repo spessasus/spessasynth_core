@@ -18,6 +18,7 @@ import type {
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type { MIDISystem, VoiceParameters } from "../soundbank/types";
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import type { UserDrumSetParameter } from "../midi/drum_parameters";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
@@ -120,6 +121,30 @@ export type EffectChangeCallback =
           value: number;
       };
 
+export type UserDrumSetChangeCallback = {
+    [P in keyof UserDrumSetParameter]: {
+        /**
+         * The drum set that was changed. 0 means User Drum Set 1, and 1 means User Drum Set 2.
+         */
+        drumSet: number;
+
+        /**
+         * The MIDI note number that has been changed in the drum set.
+         */
+        midiNote: number;
+
+        /**
+         * The parameter that was changed.
+         */
+        parameter: P;
+
+        /**
+         * The new value of this parameter.
+         */
+        value: UserDrumSetParameter[P];
+    };
+}[keyof UserDrumSetParameter];
+
 export interface SynthProcessorEventData {
     /**
      * This event fires when a note is played.
@@ -176,6 +201,11 @@ export interface SynthProcessorEventData {
      * This event fires when an effect processor is modified.
      */
     effectChange: EffectChangeCallback;
+
+    /**
+     * This event fires when a GS User Drum Set is modified.
+     */
+    userDrumSetChange: UserDrumSetChangeCallback;
 }
 
 export type SynthProcessorEvent = {

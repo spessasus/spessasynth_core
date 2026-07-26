@@ -27,7 +27,7 @@ export class UserDrumSet implements SynthesizerPatch {
     public readonly bankMSB = 0;
     public readonly bankLSB = 0;
     public readonly isGMGSDrum = true;
-    public name;
+    public readonly name;
     public isDrum = true;
 
     /**
@@ -43,8 +43,6 @@ export class UserDrumSet implements SynthesizerPatch {
     private readonly resolvePatch: (
         patch: MIDIPatch
     ) => SynthesizerPatch | undefined;
-
-    private readonly defaultName;
 
     private readonly tempPatch: MIDIPatch = {
         bankLSB: 0,
@@ -68,7 +66,6 @@ export class UserDrumSet implements SynthesizerPatch {
     ) {
         this.program = program;
         this.name = name;
-        this.defaultName = name;
         this.resolvePatch = resolvePatch;
 
         for (let i = 0; i < 128; i++) {
@@ -102,7 +99,6 @@ export class UserDrumSet implements SynthesizerPatch {
             p.sourceDrumSet = 0;
             p.program = 0;
         }
-        this.name = this.defaultName;
     }
 
     /**

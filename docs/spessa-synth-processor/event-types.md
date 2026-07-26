@@ -20,6 +20,7 @@ This page serves as a detailed reference to all the event types `SpessaSynthProc
 | `globalParamChange`  | A global MIDI Parameter has been changed.       |
 | `channelParamChange` | A channel MIDI Parameter has been changed.      |
 | `effectChange`       | An effect parameter has been changed.           |
+| `userDrumSetChange`  | A GS User Drum Set has been changed.            |
 
 !!! Note
 
@@ -211,11 +212,14 @@ for example:
 - `0x16` - EFX param 20 (usually level)
 - `0x17` - EFX send to reverb
   For these, the value is a 7-bit number set via the system exclusive.
+- `value`: `number` - the new value for the given parameter.
 
-There are two exceptions:
+### `userDrumSetChange`
 
-- `-1` - the channel has ENABLED the effect.
-- `-2` - the channel has DISABLED the effect.
-  For both of these cases, `value` is the channel number.
+This event is triggered when a GS User Drum Set changes.
 
-`value`: `number` - the new value for the given parameter.
+- `drumset`: `number` - the drum set that was changed. 0 means User Drum Set 1, and 1 means User Drum Set 2.
+- `parameter`: `UserDrumSetParameter` - the parameter type (string)
+- `value`: varies - the new value of this parameter.
+
+Refer to [this table](../extra/midi-implementation.md#user-drum-set) for the names of parameters.

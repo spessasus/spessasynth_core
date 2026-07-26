@@ -16,9 +16,8 @@ function handleUserDrum(
     syx: SysExAcceptedArray
 ) {
     if (this.systemParameters.userDrumLock) return;
-    const drumSetNumber = a2 >> 4;
-    const drumSet = this.soundBankManager.userDrumSets[drumSetNumber];
-    const drumKey = a3;
+    const drumSet = a2 >> 4;
+    const midiNote = a3;
     const command = a2 & 0xf;
     switch (command) {
         default: {
@@ -29,8 +28,8 @@ function handleUserDrum(
         // User drum set name
         case 0: {
             const newName = readBinaryString(syx, 12, 7).trim();
-            drumSet.name = newName;
-            SpessaLog.gsInfo(`User Drum Set ${drumSetNumber} Name`, newName);
+            SpessaLog.gsInfo(`User Drum Set ${drumSet} Name`, newName);
+            this.callEvent("displayMessage", [...syx]);
             return;
         }
 
@@ -39,121 +38,81 @@ function handleUserDrum(
             const pitch = data - 60;
 
             // Use the full 100 cents here as we choose the correct pitch (50 or 100 cents) when committing changes
-            drumSet.keyParams[drumKey].pitchCoarse = pitch;
-
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Pitch, key ${drumKey}`,
-                pitch
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "pitchCoarse", pitch);
             return;
         }
 
         case 0x2: {
             // Drum Level
-            drumSet.keyParams[drumKey].level = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Level, key ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "level", data);
             return;
         }
 
         case 0x3: {
             // Drum Assign Group (exclusive class)
-            drumSet.keyParams[drumKey].assignGroup = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Assign Group, key ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "assignGroup", data);
             return;
         }
 
         case 0x4: {
             // Pan
-            drumSet.keyParams[drumKey].pan = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Pan, key ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "pan", data);
             return;
         }
 
         case 0x5: {
             // Reverb
-            drumSet.keyParams[drumKey].reverbSend = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Reverb, key ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "reverbSend", data);
             return;
         }
 
         case 0x6: {
             // Chorus
-            drumSet.keyParams[drumKey].chorusSend = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Chorus, key ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "chorusSend", data);
             return;
         }
 
         case 0x7: {
             // Receive Note Off
-            drumSet.keyParams[drumKey].rxNoteOff = data === 1;
-
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Note Off, key ${drumKey}`,
-                data === 1 ? "ON" : "OFF"
+            this.setUserDrumSetParam(
+                drumSet,
+                midiNote,
+                "rxNoteOff",
+                data === 1
             );
             return;
         }
 
         case 0x8: {
             // Receive Note On
-            drumSet.keyParams[drumKey].rxNoteOn = true; // Data === 1;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Note On, key ${drumKey}`,
-                data === 1 ? "ON" : "OFF"
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "rxNoteOn", data === 1);
             return;
         }
 
         case 0x9: {
             // Delay
-            drumSet.keyParams[drumKey].variationSend = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} Delay, key ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "variationSend", data);
             return;
         }
 
         // Source drum set
         case 0xa: {
-            drumSet.keyParams[drumKey].sourceDrumSet = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} source drum set for ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "sourceDrumSet", data);
             return;
         }
 
         // Program number
         case 0xb: {
-            drumSet.keyParams[drumKey].program = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} source program for ${drumKey}`,
-                data
-            );
+            this.setUserDrumSetParam(drumSet, midiNote, "program", data);
             return;
         }
 
         // Source note number
         case 0xc: {
-            drumSet.keyParams[drumKey].sourceNoteNumber = data;
-            SpessaLog.gsInfo(
-                `User Drum Set ${drumSetNumber} source note for ${drumKey}`,
+            this.setUserDrumSetParam(
+                drumSet,
+                midiNote,
+                "sourceNoteNumber",
                 data
             );
             return;

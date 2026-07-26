@@ -21,7 +21,9 @@ function getBind(
         midiNote,
         {
             program,
-            level
+            level,
+            sourceDrumSet: 3,
+            sourceNoteNumber: midiNote
         }
     ] as const;
 }
