@@ -882,6 +882,11 @@ export class SynthesizerCore {
         value: UserDrumSetParameter[K]
     ) {
         const set = this.soundBankManager.userDrumSets[drumSet];
+        // Optimization for bulk dump
+        // Testcase FADED88.mid
+        if (set.keyParams[midiNote][parameter] === value) {
+            return;
+        }
         set.keyParams[midiNote][parameter] = value;
         this.callEvent("userDrumSetChange", {
             midiNote,

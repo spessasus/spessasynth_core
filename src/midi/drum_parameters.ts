@@ -12,8 +12,8 @@ export class DrumParameterUtils {
             assignGroup: 0,
             pan: 64,
             reverbSend: DEFAULT_DRUM_REVERB[i],
-            chorusSend: 127,
-            variationSend: 127,
+            chorusSend: 0,
+            variationSend: 0,
             rxNoteOn: true,
             rxNoteOff: false
         })
