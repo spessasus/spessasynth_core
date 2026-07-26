@@ -4,7 +4,11 @@ import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
 import { ConsoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
-import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
+import {
+    DEFAULT_PERCUSSION,
+    GS_USER_DRUM_1,
+    GS_USER_DRUM_2
+} from "../../synthesizer/audio_engine/synth_constants";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { MIDIControllers, MIDIMessageTypes } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
@@ -195,6 +199,18 @@ function correctBankOffsetInternal(
                 ),
                 isGMGSDrum: ch.isDrum
             };
+
+            if (
+                patch.isGMGSDrum &&
+                (patch.program === GS_USER_DRUM_1 ||
+                    patch.program === GS_USER_DRUM_2)
+            ) {
+                SpessaLog.info(
+                    `%cGS User Drum Set detected on ${chNum}. Leaving as is!`,
+                    ConsoleColors.info
+                );
+                return;
+            }
             const targetPreset = soundBank.getPreset(patch, system);
             SpessaLog.info(
                 `%cInput patch: %c${MIDIPatchTools.toMIDIString(patch)}%c. Channel %c${chNum}%c. Changing patch to ${targetPreset.toString()}.`,

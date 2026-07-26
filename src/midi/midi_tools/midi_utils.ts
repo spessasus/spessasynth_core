@@ -81,6 +81,9 @@ export type AnalyzedMIDIMessage =
     | {
           [K in keyof UserDrumSetParameter]: {
               type: "User Drum Setup";
+              /**
+               * 0-based
+               */
               drumSet: number;
               midiNote: number;
               parameter: K;
@@ -2260,7 +2263,7 @@ export class MIDIUtils {
         a3: number,
         data: number
     ): AnalyzedMIDIMessage {
-        const drumSet = 64 + (a2 >> 4);
+        const drumSet = a2 >> 4;
         switch (a2 & 0xf) {
             // Play Note
             case 0x1: {

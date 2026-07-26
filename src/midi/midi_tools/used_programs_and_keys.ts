@@ -1,6 +1,10 @@
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
-import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
+import {
+    DEFAULT_PERCUSSION,
+    GS_USER_DRUM_1,
+    GS_USER_DRUM_2
+} from "../../synthesizer/audio_engine/synth_constants";
 import { MIDIUtils } from "./midi_utils";
 import type { BasicMIDI } from "../basic_midi";
 import {
@@ -16,6 +20,10 @@ import type {
 import { ParameterTracker } from "./parameter_tracker";
 import type { MIDIPatchFull } from "../../soundbank/basic_soundbank/midi_patch";
 import type { CallableSoundBank } from "../types";
+import {
+    DrumParameterUtils,
+    type UserDrumSetParameter
+} from "../drum_parameters";
 
 interface InternalChannelType<T extends MIDIPatchFull> {
     preset?: T;
@@ -24,6 +32,15 @@ interface InternalChannelType<T extends MIDIPatchFull> {
     param: ParameterTracker;
     isDrum: boolean;
     keyShift: number;
+    // -1 = none, 0 - set 1, 1 - set 2
+    userDrumSetActive: number;
+}
+
+interface UserDrumSetState {
+    // Currently active params
+    activeParams: Map<number, UserDrumSetParameter>;
+    // In memory, will be active on program change
+    memoryParams: Map<number, UserDrumSetParameter>;
 }
 
 /**
@@ -44,6 +61,17 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
     // Make sure to care about ports and drums.
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
 
+    const userDrumSets: UserDrumSetState[] = [
+        {
+            memoryParams: new Map(),
+            activeParams: new Map()
+        },
+        {
+            memoryParams: new Map(),
+            activeParams: new Map()
+        }
+    ];
+
     // Track channels and systems
     const channels: InternalChannelType<T>[] = [];
     let system: MIDISystem = "gs";
@@ -58,6 +86,11 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             ch.bankLSB = 0;
             ch.keyShift = 0;
             ch.param.reset();
+            ch.userDrumSetActive = -1;
+        }
+        for (const set of userDrumSets) {
+            set.memoryParams.clear();
+            set.activeParams.clear();
         }
     };
 
@@ -77,7 +110,8 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             bankLSB: 0,
             param: new ParameterTracker(i),
             isDrum,
-            keyShift: 0
+            keyShift: 0,
+            userDrumSetActive: -1
         });
     }
 
@@ -127,15 +161,31 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             case MIDIMessageTypes.programChange: {
                 const channel = (e.statusByte & 0xf) + channelOffset;
                 const ch = channels[channel];
-                ch.preset = soundBank.getPreset(
-                    {
-                        bankMSB: ch.bankMSB,
-                        bankLSB: ch.bankLSB,
-                        program: e.data[0],
-                        isGMGSDrum: ch.isDrum
-                    },
-                    system
-                );
+                const target = {
+                    bankMSB: ch.bankMSB,
+                    bankLSB: ch.bankLSB,
+                    program: e.data[0],
+                    isGMGSDrum: ch.isDrum
+                };
+                if (
+                    target.isGMGSDrum &&
+                    (target.program === GS_USER_DRUM_1 ||
+                        target.program === GS_USER_DRUM_2)
+                ) {
+                    // Commit changes made to user drums
+                    SpessaLog.info(
+                        `%cGS User Drum Set detected on ${channel}!`,
+                        ConsoleColors.recognized
+                    );
+                    ch.userDrumSetActive = target.program - GS_USER_DRUM_1;
+                    const set = userDrumSets[ch.userDrumSetActive];
+                    for (const [key, value] of set.memoryParams) {
+                        set.activeParams.set(key, value);
+                    }
+                } else {
+                    ch.userDrumSetActive = -1;
+                    ch.preset = soundBank.getPreset(target, system);
+                }
                 break;
             }
 
@@ -198,18 +248,49 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                 // That's a note off
                 if (e.data[1] === 0) continue;
 
-                // If there's no preset, ignore
-                if (!ch.preset) continue;
+                let midiNote =
+                    e.data[0] + (ch.isDrum ? 0 : masterKeyShift) + ch.keyShift;
+                let preset = ch.preset;
 
-                // Add the preset to the used list if it does not exist
-                let keysForPreset = usedProgramsAndKeys.get(ch.preset);
-                if (!keysForPreset) {
-                    keysForPreset = new Map<number, Set<number>>();
-                    usedProgramsAndKeys.set(ch.preset, keysForPreset);
+                // User drum set
+                if (ch.userDrumSetActive !== -1) {
+                    const set = userDrumSets[ch.userDrumSetActive];
+                    const key = set.activeParams.get(midiNote);
+                    if (key) {
+                        preset = soundBank.getPreset(
+                            {
+                                program: key.program,
+                                bankLSB: key.sourceDrumSet,
+                                bankMSB: 0,
+                                isGMGSDrum: true
+                            },
+                            system
+                        );
+                        midiNote = key.sourceNoteNumber;
+                    } else {
+                        // No binding, default to any gs drum
+                        preset = soundBank.getPreset(
+                            {
+                                program: 0,
+                                bankLSB: 0,
+                                bankMSB: 0,
+                                isGMGSDrum: true
+                            },
+                            system
+                        );
+                    }
                 }
 
-                const midiNote =
-                    e.data[0] + (ch.isDrum ? 0 : masterKeyShift) + ch.keyShift;
+                // If there's no preset, ignore
+                if (!preset) continue;
+
+                // Add the preset to the used list if it does not exist
+                let keysForPreset = usedProgramsAndKeys.get(preset);
+                if (!keysForPreset) {
+                    keysForPreset = new Map<number, Set<number>>();
+                    usedProgramsAndKeys.set(preset, keysForPreset);
+                }
+
                 let velocities = keysForPreset.get(midiNote);
                 // Add the key with an empty list of velocities to the preset
                 if (!velocities) {
@@ -293,6 +374,20 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                                 syx.controller === MIDIControllers.bankSelect
                             )
                                 ch.bankMSB = syx.value;
+                            break;
+                        }
+
+                        case "User Drum Setup": {
+                            const set = userDrumSets[syx.drumSet];
+                            let param = set.memoryParams.get(syx.midiNote);
+                            if (!param) {
+                                param = {
+                                    ...DrumParameterUtils.DEFAULT_USER_DATA,
+                                    sourceNoteNumber: syx.midiNote
+                                };
+                                set.memoryParams.set(syx.midiNote, param);
+                            }
+                            param[syx.parameter] = syx.value as never;
                         }
                     }
                 }

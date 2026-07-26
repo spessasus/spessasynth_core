@@ -8,10 +8,6 @@ import {
 } from "../../midi/drum_parameters";
 import { DEFAULT_DRUM_REVERB } from "./channel/reset";
 
-/**
- * TODO: used keys detection
- */
-
 const FALLBACK_PATCH: MIDIPatch = {
     bankMSB: 0,
     bankLSB: 0,
