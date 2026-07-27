@@ -191,7 +191,7 @@ export const NonRegisteredMSB = {
     drumPan: 0x1c,
     drumReverb: 0x1d,
     drumChorus: 0x1e,
-    drumDelay: 0x1f,
+    drumVariation: 0x1f,
 
     awe32: 0x7f,
     SF2: 120

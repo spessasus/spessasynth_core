@@ -2,7 +2,8 @@ import type {
     CachedVoiceList,
     SynthMethodOptions,
     SynthProcessorEventData,
-    SynthProcessorOptions
+    SynthProcessorOptions,
+    UserDrumSetChangeCallback
 } from "../types";
 import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
 import {
@@ -11,7 +12,7 @@ import {
     setSystemParameterInternal
 } from "./parameters/system";
 import { Voice } from "./voice/voice";
-import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { CachedVoice } from "./voice/voice_cache";
 import { SpessaLog } from "../../utils/loggin";
 import { MIDIChannel } from "./channel/midi_channel";
@@ -35,7 +36,8 @@ import {
     type DelayProcessor,
     type InsertionProcessor,
     type InsertionProcessorConstructor,
-    type InsertionProcessorSnapshot
+    type InsertionProcessorSnapshot,
+    type SynthesizerPatch
 } from "../exports";
 import { LowpassFilter } from "./voice/lowpass_filter";
 
@@ -52,7 +54,11 @@ import {
     setMIDIParameterInternal
 } from "./parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
-import type { SysExAcceptedArray } from "../../midi/types";
+import type {
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../../midi/types";
+// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 
 // Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
 const GAIN_SMOOTHING_FACTOR = 0.01;
@@ -155,11 +161,11 @@ export class SynthesizerCore {
     /**
      * Synth's default (reset) preset.
      */
-    public defaultPreset: BasicPreset | undefined;
+    public defaultPreset: SynthesizerPatch | undefined;
     /**
      * Synth's default (reset) drum preset.
      */
-    public drumPreset: BasicPreset | undefined;
+    public drumPreset: SynthesizerPatch | undefined;
     /**
      * Gain smoothing factor, adjusted to the sample rate.
      */
@@ -296,6 +302,9 @@ export class SynthesizerCore {
         this.setSystemParameter("effectsEnabled", options.effectsEnabled);
         this.setSystemParameter("eventsEnabled", options.eventsEnabled);
         this.maxBufferSize = options.maxBufferSize;
+
+        // For GS user drum set
+        this.soundBankManager.systemGetter = () => this.midiParameters.system;
         // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
         // Volume  smoothing factor
         this.gainSmoothingFactor =
@@ -595,6 +604,11 @@ export class SynthesizerCore {
         // Avoid crashing
         if (!this.drumPreset || !this.defaultPreset) return;
 
+        // Reset GS user drums
+        if (!this.systemParameters.userDrumLock)
+            for (const userDrum of this.soundBankManager.userDrumSets)
+                userDrum.reset();
+
         // Reset channels
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
@@ -801,7 +815,7 @@ export class SynthesizerCore {
      * @returns Output is an array of voices.
      */
     public getVoicesForPreset(
-        preset: BasicPreset,
+        preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
     ): CachedVoiceList {
@@ -848,6 +862,42 @@ export class SynthesizerCore {
         eventData: SynthProcessorEventData[K]
     ) {
         this.eventCallbackHandler(eventName, eventData);
+    }
+
+    // Bad code... make sure to call only when necessary!!!
+    public purgeCachedPatch(patch: MIDIPatch) {
+        for (let midiNote = 0; midiNote < 128; midiNote++) {
+            for (let velocity = 0; velocity < 128; velocity++) {
+                this.cachedVoices.delete(
+                    this.getCachedVoiceIndex(patch, midiNote, velocity)
+                );
+            }
+        }
+    }
+
+    protected setUserDrumSetParam<K extends keyof UserDrumSetParameter>(
+        drumSet: number,
+        midiNote: number,
+        parameter: K,
+        value: UserDrumSetParameter[K]
+    ) {
+        const set = this.soundBankManager.userDrumSets[drumSet];
+        // Optimization for bulk dump
+        // Testcase FADED88.mid
+        if (set.keyParams[midiNote][parameter] === value) {
+            return;
+        }
+        set.keyParams[midiNote][parameter] = value;
+        this.callEvent("userDrumSetChange", {
+            midiNote,
+            drumSet,
+            parameter,
+            value
+        } as UserDrumSetChangeCallback);
+        SpessaLog.gsInfo(
+            `User Drum Set ${drumSet} ${parameter}, key ${midiNote}`,
+            value.toString()
+        );
     }
 
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {

@@ -2,4 +2,9 @@
 **/*.d.ts
 dist/
 tests/files
+tests/midi_file/rendered
+tests/midi_file/generated
 .husky
+*.wav
+*.opus
+*.mid

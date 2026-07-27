@@ -282,7 +282,9 @@ for a given sound bank (used for capital tone fallback).
 const used = midi.getUsedProgramsAndKeys(soundBank);
 ```
 
-- soundBank - `BasicSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
+- soundBank - `CallableSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
+  Anything that implements the `getPreset` method of `BasicSoundBank`.
+  This can be used to provide custom selectors and sound bank lists.
 
 The returned value is `PresetWithKeyCombinations` which is `Map<BasicPreset, Map<number, Set<number>>`. That is:
 
@@ -444,6 +446,37 @@ The drum parameter changes.
 
 - `"clear"` - all existing drum parameter change MIDI messages are removed.
 - `never` - not yet implemented.
+
+#### userDrumSet1Params
+
+`ClearableParameter<UserDrumModification>`
+
+The User Drum Set 1 changes. (MIDI program 64).
+
+- `"clear"` - all existing User Drum Set 1 changes are removed.
+- `UserDrumModification` - modifies the drum set.
+
+#### userDrumSet2Params
+
+`ClearableParameter<UserDrumModification>`
+
+The User Drum Set 2 changes. (MIDI program 65).
+
+- `"clear"` - all existing User Drum Set 2 changes are removed.
+- `UserDrumModification` - modifies the drum set.
+
+The `UserDrumModification` type is described below:
+
+All modifications for this User Drum Set. This is a `Map` object.
+
+- Key: the MIDI note number for the note to modify.
+- value:
+    - `"clear"` - all modifications for this note are removed.
+    - `object` - partial parameter changes for this note:
+        - Key: User Drum Set parameter name. (`UserDrumSetParameter` property)
+        - value:
+            - `"clear"` - all changes for this parameter are removed.
+            - `specific value` - clear + insert a message setting this after a reset.
 
 #### reverbParams
 

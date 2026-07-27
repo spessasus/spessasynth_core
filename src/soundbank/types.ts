@@ -1,26 +1,10 @@
-import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
 import type { ModulatorControllerSource } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
-import type { BasicPreset } from "./basic_soundbank/basic_preset";
 import type { DLSLoopType } from "./downloadable_sounds/enums";
-
-export interface SoundBankManagerListEntry {
-    /**
-     * The unique string identifier of the sound bank.
-     */
-    id: string;
-    /**
-     * The sound bank itself.
-     */
-    soundBank: BasicSoundBank;
-    /**
-     * The bank MSB offset for this sound bank.
-     */
-    bankOffset: number;
-}
+import type { MIDIPatchFull } from "./basic_soundbank/midi_patch";
 
 export interface SF2Channel {
     /**
@@ -302,8 +286,8 @@ export interface DLSLoop {
  *   - Key: The MIDI note number.
  *   - Value: A set of matching velocities for this note number.
  */
-export type PresetsWithKeyCombinations = Map<
-    BasicPreset,
+export type PresetsWithKeyCombinations<T extends MIDIPatchFull> = Map<
+    T,
     Map<number, Set<number>>
 >;
 export type MIDISystem = "gm" | "gm2" | "gs" | "xg";

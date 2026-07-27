@@ -50,8 +50,9 @@ export const SPESSA_BUFSIZE = 128;
  * This is needed because effects (regular ones) are send straight from the mono signal, whereas
  * insertion effects receive the panned audio (twice), which reduces gain by a factor of cos(pi/4) * cos(pi/4) (master pan + voice pan).
  * This reverses it.
+ * 1 / Math.cos(Math.PI / 4) ** 2 == 2
  */
-export const EFX_SENDS_GAIN_CORRECTION = 1 / Math.cos(Math.PI / 4) ** 2;
+export const EFX_SENDS_GAIN_CORRECTION = 2;
 
 /**
  * The amount of MIDI controllers (127)
@@ -66,3 +67,13 @@ export const DEFAULT_RPN = 0x7f;
  * No NRPN is bound to 0 0, while 0x7f MSB is AWE32!
  */
 export const DEFAULT_NRPN = 0;
+
+/**
+ * The program number of GS User Drum Set 1.
+ */
+export const GS_USER_DRUM_1 = 64;
+
+/**
+ * The program number of GS User Drum Set 2.
+ */
+export const GS_USER_DRUM_2 = 65;

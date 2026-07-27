@@ -21,12 +21,10 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import { type BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
-import { DrumParameters } from "./drum_parameters";
 import {
     applySnapshot,
     type ChannelSnapshot,
@@ -47,6 +45,10 @@ import {
 import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
+import type { SynthesizerPatch } from "../../types";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
+import type { DrumParameter } from "../../../midi/types";
+
 /**
  * This class represents a single MIDI Channel within the synthesizer.
  */
@@ -60,7 +62,11 @@ export class MIDIChannel {
      * Parameters for each drum instrument.
      * @internal
      */
-    public readonly drumParams: DrumParameters[] = [];
+    public readonly drumParams: readonly DrumParameter[] = Array.from(
+        { length: 128 },
+        // eslint-disable-next-line unicorn/consistent-function-scoping
+        (_, i) => ({ ...DrumParameterUtils.DEFAULT_DATA[i] })
+    );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      * @internal
@@ -85,7 +91,7 @@ export class MIDIChannel {
      * The preset currently assigned to the channel.
      * Note that this may be undefined in some cases.
      */
-    public preset?: BasicPreset;
+    public preset?: SynthesizerPatch;
     /**
      * Indicates the MIDI system when the preset was locked.
      * @internal
@@ -360,7 +366,7 @@ export class MIDIChannel {
      */
     public constructor(
         synthProps: SynthesizerCore,
-        preset: BasicPreset | undefined,
+        preset: SynthesizerPatch | undefined,
         channelNumber: number
     ) {
         this.synthCore = synthProps;
@@ -369,11 +375,9 @@ export class MIDIChannel {
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
         this.dynamicModulators = new DynamicModulatorManager(channelNumber);
+        // Init
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
-        for (let i = 0; i < 128; i++) {
-            this.drumParams.push(new DrumParameters());
-        }
         this.resetDrumParams();
     }
 
@@ -839,16 +843,11 @@ export class MIDIChannel {
             return;
         for (let i = 0; i < 128; i++) {
             const p = this.drumParams[i];
-            p.pitch = 0;
-            p.gain = 1;
-            p.exclusiveClass = 0;
-            p.pan = 64;
-            p.reverbGain = DEFAULT_DRUM_REVERB[i] / 127;
-            p.chorusGain =
-                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] / 127 : 0; // Mirror reverb on XG only, GS has no chorus by default
-            p.delayGain = 0; // No drums have delay
-            p.rxNoteOn = true;
-            p.rxNoteOff = false;
+            DrumParameterUtils.copyInto(p, DrumParameterUtils.DEFAULT_DATA[i]);
+            p.chorusSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0; // Mirror reverb on XG only, GS has no chorus by default
+            p.variationSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0;
         }
     }
 

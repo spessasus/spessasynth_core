@@ -27,6 +27,8 @@ import { ParameterTracker } from "./parameter_tracker";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 
+import type { UserDrumSetParameter } from "../types";
+
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
     preLowpass: 0x32,
@@ -120,6 +122,26 @@ export interface ChannelModification {
     fineTune?: number;
 }
 
+/**
+ * All modifications for this User Drum Set.
+ * - Key: the MIDI note number for the note to modify.
+ * - value:
+ *   - `"clear"` - all modifications for this note are removed.
+ *   - `object` - partial parameter changes for this note:
+ *     - Key: User Drum Set parameter name.
+ *     - value:
+ *       - `"clear"` - all changes for this parameter are removed.
+ *       - `specific value` - clear + insert a message setting this after a reset.
+ */
+export type UserDrumModification = Map<
+    number,
+    ClearableParameter<{
+        [P in keyof UserDrumSetParameter]?: ClearableParameter<
+            UserDrumSetParameter[P]
+        >;
+    }>
+>;
+
 export interface ModifyMIDIOptions {
     /**
      * The channel changes.
@@ -129,6 +151,16 @@ export interface ModifyMIDIOptions {
      *   - `ChannelModification` - modifies the channel.
      */
     channels?: Map<number, ClearableParameter<ChannelModification>>;
+
+    /**
+     * The User Drum Set changes.
+     * - Key: the User Drum Set number, 0 based.
+     * 0 is the User Drum Set 1 located at MIDI program 64, and 1 is User Drum Set 2 located at MIDI program 65.
+     * - value:
+     *   - `"clear"` - all existing changes for this drum set are removed.
+     *   - `UserDrumModification` - modifies the drum set.
+     */
+    userDrumSetParams?: Map<number, ClearableParameter<UserDrumModification>>;
     /**
      * The drum parameter changes.
      * - `"clear"` - all existing drum parameter change MIDI messages are removed.
@@ -191,14 +223,23 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         reverbParams,
         chorusParams,
         delayParams,
-        insertionParams
+        insertionParams,
+        userDrumSetParams
     } = opts;
 
-    SpessaLog.info("Desired channel changes", channels);
-    SpessaLog.info("Desired reverb parameters", reverbParams);
-    SpessaLog.info("Desired chorus parameters", chorusParams);
-    SpessaLog.info("Desired delay parameters", delayParams);
-    SpessaLog.info("Desired insertion parameters", insertionParams);
+    if (channels) SpessaLog.info("Desired channel changes", channels);
+    if (reverbParams) SpessaLog.info("Desired reverb parameters", reverbParams);
+    if (chorusParams) SpessaLog.info("Desired chorus parameters", chorusParams);
+    if (delayParams) SpessaLog.info("Desired delay parameters", delayParams);
+    if (insertionParams)
+        SpessaLog.info("Desired insertion parameters", insertionParams);
+    if (userDrumSetParams)
+        for (const [drumSet, params] of userDrumSetParams) {
+            SpessaLog.info(
+                `Desired User Drum Set ${drumSet + 1} parameters`,
+                params
+            );
+        }
 
     // Optimizations
     const clearDrumParams = opts.drumSetupParams === "clear";
@@ -312,6 +353,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         });
     }
 
+    // Main editing loop is here
     midi.iterate((e, trackNum, eventIndexes) => {
         const track = midi.tracks[trackNum];
         const index = eventIndexes[trackNum];
@@ -789,206 +831,251 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const syx = MIDIUtils.analyzeSysEx(e.data);
-                switch (syx.type) {
-                    default: {
-                        return;
-                    }
-
-                    case "Drum Setup": {
-                        // Drum setup
-                        if (clearDrumParams) deleteThisEvent();
-                        return;
-                    }
-
-                    case "Reverb Param": {
-                        // Delete all reverb params since we're setting new ones
-                        if (reverbParams) deleteThisEvent();
-
-                        return;
-                    }
-
-                    case "Chorus Param": {
-                        // Delete all chorus params since we're setting new ones
-                        if (chorusParams) deleteThisEvent();
-                        return;
-                    }
-
-                    case "Delay Param": {
-                        // Delete all delay params since we're setting new ones
-                        if (delayParams) deleteThisEvent();
-                        return;
-                    }
-
-                    case "Insertion Param": {
-                        // Delete all insertion params since we're setting new ones
-                        if (insertionParams) deleteThisEvent();
-                        return;
-                    }
-
-                    case "Program Change": {
-                        // SysEx can change programs
-                        // Do we delete it?
-                        if (
-                            channelChanges.get(syx.channel + portOffset)?.patch
-                        ) {
-                            // This channel has program change. BEGONE!
-                            deleteThisEvent();
-                        }
-                        return;
-                    }
-
-                    case "Global MIDI Param": {
-                        if (opts.midiParams?.[syx.parameter]) {
-                            // Locked, remove
-                            deleteThisEvent();
-                            return;
-                        }
-                        if (syx.parameter === "system") {
-                            switch (syx.value) {
-                                case "xg": {
-                                    SpessaLog.info(
-                                        "%cXG system on detected",
-                                        ConsoleColors.info
-                                    );
-
-                                    system = "xg";
-                                    addedReset = true; // Flag as true so reset won't get added
-                                    resetTrack = trackNum;
-                                    resetIndex = index;
-                                    // Reset NRPN (accuracy + prevent deletion before reset)
-                                    for (const ch of channelStatuses) {
-                                        ch.param.reset();
-                                        ch.clearedParams = {
-                                            pLSB: true,
-                                            pMSB: true,
-                                            data: true
-                                        };
-                                    }
-                                    return;
-                                }
-
-                                case "gm2": {
-                                    SpessaLog.info(
-                                        "%cGM2 system on detected",
-                                        ConsoleColors.info
-                                    );
-
-                                    system = "gm2";
-                                    addedReset = true; // Flag as true so reset won't get added
-                                    resetTrack = trackNum;
-                                    resetIndex = index;
-                                    // Reset NRPN (accuracy + prevent deletion before reset)
-                                    for (const ch of channelStatuses) {
-                                        ch.param.reset();
-                                        ch.clearedParams = {
-                                            pLSB: true,
-                                            pMSB: true,
-                                            data: true
-                                        };
-                                    }
-                                    return;
-                                }
-
-                                case "gs": {
-                                    // Check for GS on
-                                    // That's a GS on, we're done here
-                                    SpessaLog.info(
-                                        "%cGS on detected!",
-                                        ConsoleColors.recognized
-                                    );
-
-                                    addedReset = true;
-                                    resetTrack = trackNum;
-                                    resetIndex = index;
-                                    // Reset NRPN (accuracy + prevent deletion before reset)
-                                    for (const ch of channelStatuses) {
-                                        ch.param.reset();
-                                        ch.clearedParams = {
-                                            pLSB: true,
-                                            pMSB: true,
-                                            data: true
-                                        };
-                                    }
-                                    return;
-                                }
-                                case "gm": {
-                                    // Check for GM on
-                                    // That's a GM1 system change, remove it!
-                                    SpessaLog.info(
-                                        "%cGM on detected, removing!",
-                                        ConsoleColors.info
-                                    );
-                                    deleteThisEvent();
-                                    addedReset = false;
-                                    return;
-                                }
-                            }
-                        }
-                        break;
-                    }
-
-                    case "Channel MIDI Param": {
-                        const syxChannel = channelChanges.get(
-                            syx.channel + portOffset
-                        );
-                        if (syxChannel?.midiParams?.[syx.parameter]) {
-                            // Locked, remove
-                            deleteThisEvent();
-                            return;
-                        }
-                        if (syx.parameter === "fineTune") {
-                            const syxStatus =
-                                channelStatuses[syx.channel + portOffset];
-                            if (
-                                // Syx.channel may be above 15, check if it exists
-                                syxStatus &&
-                                syxStatus.isFirstNoteOn &&
-                                syxChannel
-                            ) {
-                                // No note-on yet. Then use it as relative!
-                                const newTune = syxStatus.fineTune + syx.value;
-                                syxStatus.currentKeyShift = Math.trunc(
-                                    newTune / 100
-                                );
-                                syxStatus.fineTune = newTune % 100;
-                                SpessaLog.info(
-                                    `%cFine tuning already present on ${syx.channel + portOffset}, ` +
-                                        `new relative tune: %c${newTune} cents`,
-                                    ConsoleColors.info,
-                                    ConsoleColors.recognized
-                                );
+                const syxs = MIDIUtils.analyzeSysEx(e.data);
+                for (const syx of syxs) {
+                    switch (syx.type) {
+                        case "Drum Setup": {
+                            // Drum setup
+                            if (clearDrumParams) {
                                 deleteThisEvent();
+                                return;
                             }
                             break;
                         }
 
-                        break;
-                    }
+                        case "Reverb Param": {
+                            // Delete all reverb params since we're setting new ones
+                            if (reverbParams) {
+                                deleteThisEvent();
+                                return;
+                            }
+                            break;
+                        }
 
-                    case "Controller Change": {
-                        // SysEx can change controllers too!
-                        const ccNum = syx.controller;
-                        const syxChannel = channelChanges.get(
-                            syx.channel + portOffset
-                        );
-                        const changes = syxChannel?.controllers?.get(ccNum);
-                        if (changes !== undefined) {
-                            // This controller is locked, BEGONE CHANGE!
-                            deleteThisEvent();
-                            return;
+                        case "Chorus Param": {
+                            // Delete all chorus params since we're setting new ones
+                            if (chorusParams) {
+                                deleteThisEvent();
+                                return;
+                            }
+                            break;
                         }
-                        if (
-                            (ccNum === MIDIControllers.bankSelect ||
-                                ccNum === MIDIControllers.bankSelectLSB) &&
-                            syxChannel?.patch
-                        ) {
-                            // BEGONE!
-                            deleteThisEvent();
+
+                        case "Delay Param": {
+                            // Delete all delay params since we're setting new ones
+                            if (delayParams) {
+                                deleteThisEvent();
+                                return;
+                            }
+                            break;
                         }
-                        return;
+
+                        case "Insertion Param": {
+                            // Delete all insertion params since we're setting new ones
+                            if (insertionParams) {
+                                deleteThisEvent();
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "Program Change": {
+                            // SysEx can change programs
+                            // Do we delete it?
+                            if (
+                                channelChanges.get(syx.channel + portOffset)
+                                    ?.patch
+                            ) {
+                                // This channel has program change. BEGONE!
+                                deleteThisEvent();
+
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "Global MIDI Param": {
+                            if (opts.midiParams?.[syx.parameter]) {
+                                // Locked, remove
+                                deleteThisEvent();
+                                return;
+                            }
+                            if (syx.parameter === "system") {
+                                switch (syx.value) {
+                                    case "xg": {
+                                        SpessaLog.info(
+                                            "%cXG system on detected",
+                                            ConsoleColors.info
+                                        );
+
+                                        system = "xg";
+                                        addedReset = true; // Flag as true so reset won't get added
+                                        resetTrack = trackNum;
+                                        resetIndex = index;
+                                        // Reset NRPN (accuracy + prevent deletion before reset)
+                                        for (const ch of channelStatuses) {
+                                            ch.param.reset();
+                                            ch.clearedParams = {
+                                                pLSB: true,
+                                                pMSB: true,
+                                                data: true
+                                            };
+                                        }
+                                        break;
+                                    }
+
+                                    case "gm2": {
+                                        SpessaLog.info(
+                                            "%cGM2 system on detected",
+                                            ConsoleColors.info
+                                        );
+
+                                        system = "gm2";
+                                        addedReset = true; // Flag as true so reset won't get added
+                                        resetTrack = trackNum;
+                                        resetIndex = index;
+                                        // Reset NRPN (accuracy + prevent deletion before reset)
+                                        for (const ch of channelStatuses) {
+                                            ch.param.reset();
+                                            ch.clearedParams = {
+                                                pLSB: true,
+                                                pMSB: true,
+                                                data: true
+                                            };
+                                        }
+                                        break;
+                                    }
+
+                                    case "gs": {
+                                        // Check for GS on
+                                        // That's a GS on, we're done here
+                                        SpessaLog.info(
+                                            "%cGS on detected!",
+                                            ConsoleColors.recognized
+                                        );
+
+                                        addedReset = true;
+                                        resetTrack = trackNum;
+                                        resetIndex = index;
+                                        // Reset NRPN (accuracy + prevent deletion before reset)
+                                        for (const ch of channelStatuses) {
+                                            ch.param.reset();
+                                            ch.clearedParams = {
+                                                pLSB: true,
+                                                pMSB: true,
+                                                data: true
+                                            };
+                                        }
+                                        break;
+                                    }
+                                    case "gm": {
+                                        // Check for GM on
+                                        // That's a GM1 system change, remove it!
+                                        SpessaLog.info(
+                                            "%cGM on detected, removing!",
+                                            ConsoleColors.info
+                                        );
+                                        deleteThisEvent();
+                                        addedReset = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        }
+
+                        case "Channel MIDI Param": {
+                            const syxChannel = channelChanges.get(
+                                syx.channel + portOffset
+                            );
+                            if (syxChannel?.midiParams?.[syx.parameter]) {
+                                // Locked, remove
+                                deleteThisEvent();
+                                return;
+                            }
+                            if (syx.parameter === "fineTune") {
+                                const syxStatus =
+                                    channelStatuses[syx.channel + portOffset];
+                                if (
+                                    // Syx.channel may be above 15, check if it exists
+                                    syxStatus &&
+                                    syxStatus.isFirstNoteOn &&
+                                    syxChannel
+                                ) {
+                                    // No note-on yet. Then use it as relative!
+                                    const newTune =
+                                        syxStatus.fineTune + syx.value;
+                                    syxStatus.currentKeyShift = Math.trunc(
+                                        newTune / 100
+                                    );
+                                    syxStatus.fineTune = newTune % 100;
+                                    SpessaLog.info(
+                                        `%cFine tuning already present on ${syx.channel + portOffset}, ` +
+                                            `new relative tune: %c${newTune} cents`,
+                                        ConsoleColors.info,
+                                        ConsoleColors.recognized
+                                    );
+                                    deleteThisEvent();
+                                    return;
+                                }
+                                break;
+                            }
+
+                            break;
+                        }
+
+                        case "Controller Change": {
+                            // SysEx can change controllers too!
+                            const ccNum = syx.controller;
+                            const syxChannel = channelChanges.get(
+                                syx.channel + portOffset
+                            );
+                            const changes = syxChannel?.controllers?.get(ccNum);
+                            if (changes !== undefined) {
+                                // This controller is locked, BEGONE CHANGE!
+                                deleteThisEvent();
+                                return;
+                            }
+                            if (
+                                (ccNum === MIDIControllers.bankSelect ||
+                                    ccNum === MIDIControllers.bankSelectLSB) &&
+                                syxChannel?.patch
+                            ) {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "User Drum Setup": {
+                            const params = userDrumSetParams?.get(syx.drumSet);
+                            if (!params) return;
+                            // Clear whole drum set?
+                            if (params === "clear") {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+                            const noteParams = params.get(syx.midiNote);
+                            // Clear this note?
+                            if (noteParams === "clear") {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+
+                            // Clear this parameter on this note?
+                            // Either clear or set value clears it
+                            if (noteParams?.[syx.parameter] !== undefined) {
+                                // BEGONE!
+                                deleteThisEvent();
+                                return;
+                            }
+                        }
                     }
                 }
+                return;
             }
         }
     });
@@ -1025,6 +1112,21 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     // Insert right after reset
     const targetTrack = midi.tracks[resetTrack];
     const targetIndex = resetIndex + 1;
+
+    /*
+    ---
+    MIDI RESET
+    Here is the code that inserts all parameters after a reset
+    ---
+     */
+    SpessaLog.info(
+        `%cInserting after reset detected on track %c${resetTrack}%c on index %c${targetIndex}%c!`,
+        ConsoleColors.recognized,
+        ConsoleColors.value,
+        ConsoleColors.recognized,
+        ConsoleColors.value,
+        ConsoleColors.recognized
+    );
 
     // Add MIDI parameters
     for (const param of Object.keys(
@@ -1150,6 +1252,38 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
             ])
         );
     }
+
+    // User Drum parameters
+    if (userDrumSetParams)
+        for (const [drumSet, params] of userDrumSetParams) {
+            if (params !== "clear") {
+                for (const [midiNote, noteParams] of params) {
+                    // Note cleared
+                    if (noteParams === "clear") continue;
+
+                    for (const [param, value] of Object.entries(noteParams) as {
+                        [K in keyof UserDrumSetParameter]: [
+                            K,
+                            ClearableParameter<UserDrumSetParameter[K]>
+                        ];
+                    }[keyof UserDrumSetParameter][]) {
+                        // Parameter cleared
+                        if (value === "clear" || value === undefined) continue;
+                        targetTrack.addEvents(
+                            targetIndex,
+                            MIDIUtils.setUserDrumParameter(
+                                targetTicks,
+                                drumSet,
+                                midiNote,
+                                param,
+                                value
+                            )
+                        );
+                    }
+                }
+            }
+        }
+
     midi.flush();
     SpessaLog.groupEnd();
 }

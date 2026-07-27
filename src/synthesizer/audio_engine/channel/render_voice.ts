@@ -356,7 +356,7 @@ export function renderVoice(
 
     // Disable reverb and chorus if necessary
     const reverbSend =
-        modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbSend;
+        modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbGain;
     if (reverbSend > 0) {
         const reverbGain =
             systemParameters.reverbGain * outputGain * (reverbSend / 1000);
@@ -368,7 +368,7 @@ export function renderVoice(
     }
 
     const chorusSend =
-        modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusSend;
+        modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusGain;
     if (chorusSend > 0) {
         const chorusGain =
             systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
@@ -381,7 +381,7 @@ export function renderVoice(
     if (core.delayActive) {
         const delaySend =
             this._midiControllers[MIDIControllers.variationDepth] *
-            voice.delaySend;
+            voice.variationGain;
         if (delaySend > 0) {
             const delayGain =
                 outputGain *

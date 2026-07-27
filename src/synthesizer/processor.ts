@@ -10,6 +10,7 @@ import {
     type SynthesizerSnapshot
 } from "./audio_engine/synthesizer_snapshot";
 import type {
+    SynthesizerPatch,
     SynthMethodOptions,
     SynthProcessorEvent,
     SynthProcessorEventData,
@@ -489,7 +490,7 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public getVoicesForPreset(
-        preset: BasicPreset,
+        preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
     ) {
