@@ -44,23 +44,28 @@ midi.modify({
         ]
     ]),
 
-    userDrumSet1Params: new Map([
-        // Kick
-        getBind(36, 30),
-        // Snare
-        getBind(40, 17),
-        // Cymbal
-        getBind(42, 24),
-        getBind(46, 30, 70),
-        // Crash
-        getBind(49, 16),
-        // Toms
-        getBind(41, 8),
-        getBind(43, 8),
-        getBind(45, 8),
-        getBind(47, 8),
-        getBind(48, 8),
-        getBind(50, 8)
+    userDrumSetParams: new Map([
+        [
+            0,
+            new Map([
+                // Kick
+                getBind(36, 30),
+                // Snare
+                getBind(40, 17),
+                // Cymbal
+                getBind(42, 24),
+                getBind(46, 30, 70),
+                // Crash
+                getBind(49, 16),
+                // Toms
+                getBind(41, 8),
+                getBind(43, 8),
+                getBind(45, 8),
+                getBind(47, 8),
+                getBind(48, 8),
+                getBind(50, 8)
+            ])
+        ]
     ])
 });
 

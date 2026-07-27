@@ -103,34 +103,23 @@ export function applySnapshotInternal(
     }
 
     // User Drum set
-    let userDrumSet1Params: UserDrumModification | undefined = undefined;
+    const userDrumSetParams = new Map<number, UserDrumModification>();
     if (snapshot.systemParameters.userDrumLock) {
-        // Only set the ones that were changed
-        userDrumSet1Params = new Map();
         for (
-            let midiNote = 0;
-            midiNote < snapshot.userDrumSet1.length;
-            midiNote++
+            let drumSetNumber = 0;
+            drumSetNumber < snapshot.userDrumSets.length;
+            drumSetNumber++
         ) {
-            const param = snapshot.userDrumSet1[midiNote];
-            if (!DrumParameterUtils.isUserDefault(param, midiNote)) {
-                userDrumSet1Params.set(midiNote, { ...param });
+            const userDrumSet = snapshot.userDrumSets[drumSetNumber];
+            // Only set the ones that were changed
+            const drumSetParams: UserDrumModification = new Map();
+            for (let midiNote = 0; midiNote < userDrumSet.length; midiNote++) {
+                const param = userDrumSet[midiNote];
+                if (!DrumParameterUtils.isUserDefault(param, midiNote)) {
+                    drumSetParams.set(midiNote, { ...param });
+                }
             }
-        }
-    }
-    let userDrumSet2Params: UserDrumModification | undefined = undefined;
-    if (snapshot.systemParameters.userDrumLock) {
-        // Only set the ones that were changed
-        userDrumSet2Params = new Map();
-        for (
-            let midiNote = 0;
-            midiNote < snapshot.userDrumSet2.length;
-            midiNote++
-        ) {
-            const param = snapshot.userDrumSet2[midiNote];
-            if (!DrumParameterUtils.isUserDefault(param, midiNote)) {
-                userDrumSet2Params.set(midiNote, { ...param });
-            }
+            userDrumSetParams.set(drumSetNumber, drumSetParams);
         }
     }
 
@@ -151,8 +140,7 @@ export function applySnapshotInternal(
         insertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor
             : undefined,
-        userDrumSet1Params,
-        userDrumSet2Params,
+        userDrumSetParams,
         midiParams
     });
 }

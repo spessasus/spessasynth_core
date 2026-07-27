@@ -31,8 +31,7 @@ export interface SynthesizerSnapshot {
     delayProcessor: DelayProcessorSnapshot;
     insertionProcessor: InsertionProcessorSnapshot;
 
-    userDrumSet1: UserDrumSetParameter[];
-    userDrumSet2: UserDrumSetParameter[];
+    userDrumSets: UserDrumSetParameter[][];
 }
 
 export function applySnapshot(
@@ -75,19 +74,14 @@ export function applySnapshot(
     }
 
     // Restore user drum sets
-    const ud1 = snapshot.userDrumSet1;
-    for (let midiNote = 0; midiNote < ud1.length; midiNote++) {
-        DrumParameterUtils.copyIntoUser(
-            ud1[midiNote],
-            this.soundBankManager.userDrumSets[0].keyParams[midiNote]
-        );
-    }
-    const ud2 = snapshot.userDrumSet2;
-    for (let midiNote = 0; midiNote < ud2.length; midiNote++) {
-        DrumParameterUtils.copyIntoUser(
-            ud2[midiNote],
-            this.soundBankManager.userDrumSets[1].keyParams[midiNote]
-        );
+    for (let drumSet = 0; drumSet < snapshot.userDrumSets.length; drumSet++) {
+        const userDrumSet = snapshot.userDrumSets[drumSet];
+        for (let midiNote = 0; midiNote < userDrumSet.length; midiNote++) {
+            DrumParameterUtils.copyIntoUser(
+                userDrumSet[midiNote],
+                this.soundBankManager.userDrumSets[drumSet].keyParams[midiNote]
+            );
+        }
     }
 
     // Restore MIDI parameters
@@ -131,7 +125,8 @@ export function getSynthesizerSnapshot(
         chorusProcessor: this.chorusProcessor.getSnapshot(),
         delayProcessor: this.delayProcessor.getSnapshot(),
         insertionProcessor: this.getInsertionSnapshot(),
-        userDrumSet1: this.soundBankManager.userDrumSets[0].getSnapshot(),
-        userDrumSet2: this.soundBankManager.userDrumSets[1].getSnapshot()
+        userDrumSets: this.soundBankManager.userDrumSets.map((d) =>
+            d.getSnapshot()
+        )
     };
 }

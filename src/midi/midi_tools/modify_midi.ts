@@ -151,18 +151,16 @@ export interface ModifyMIDIOptions {
      *   - `ChannelModification` - modifies the channel.
      */
     channels?: Map<number, ClearableParameter<ChannelModification>>;
+
     /**
-     * The User Drum Set 1 changes. (MIDI program 64).
-     * - `"clear"` - all existing User Drum Set 1 changes are removed.
-     * - `UserDrumModification` - modifies the drum set.
+     * The User Drum Set changes.
+     * - Key: the User Drum Set number, 0 based.
+     * 0 is the User Drum Set 1 located at MIDI program 64, and 1 is User Drum Set 2 located at MIDI program 65.
+     * - value:
+     *   - `"clear"` - all existing changes for this drum set are removed.
+     *   - `UserDrumModification` - modifies the drum set.
      */
-    userDrumSet1Params?: ClearableParameter<UserDrumModification>;
-    /**
-     * The User Drum Set 2 changes.(MIDI program 65).
-     * - `"clear"` - all existing User Drum Set 2 changes are removed.
-     * - `UserDrumModification` - modifies the drum set.
-     */
-    userDrumSet2Params?: ClearableParameter<UserDrumModification>;
+    userDrumSetParams?: Map<number, ClearableParameter<UserDrumModification>>;
     /**
      * The drum parameter changes.
      * - `"clear"` - all existing drum parameter change MIDI messages are removed.
@@ -226,8 +224,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
         chorusParams,
         delayParams,
         insertionParams,
-        userDrumSet1Params,
-        userDrumSet2Params
+        userDrumSetParams
     } = opts;
 
     if (channels) SpessaLog.info("Desired channel changes", channels);
@@ -236,16 +233,13 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     if (delayParams) SpessaLog.info("Desired delay parameters", delayParams);
     if (insertionParams)
         SpessaLog.info("Desired insertion parameters", insertionParams);
-    if (userDrumSet1Params)
-        SpessaLog.info(
-            "Desired User Drum Set 1 parameters",
-            userDrumSet1Params
-        );
-    if (userDrumSet2Params)
-        SpessaLog.info(
-            "Desired User Drum Set 2 parameters",
-            userDrumSet2Params
-        );
+    if (userDrumSetParams)
+        for (const [drumSet, params] of userDrumSetParams) {
+            SpessaLog.info(
+                `Desired User Drum Set ${drumSet + 1} parameters`,
+                params
+            );
+        }
 
     // Optimizations
     const clearDrumParams = opts.drumSetupParams === "clear";
@@ -1055,10 +1049,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                         }
 
                         case "User Drum Setup": {
-                            const params =
-                                syx.drumSet === 0
-                                    ? userDrumSet1Params
-                                    : userDrumSet2Params;
+                            const params = userDrumSetParams?.get(syx.drumSet);
                             if (!params) return;
                             // Clear whole drum set?
                             if (params === "clear") {
@@ -1263,60 +1254,35 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
     }
 
     // User Drum parameters
+    if (userDrumSetParams)
+        for (const [drumSet, params] of userDrumSetParams) {
+            if (params !== "clear") {
+                for (const [midiNote, noteParams] of params) {
+                    // Note cleared
+                    if (noteParams === "clear") continue;
 
-    if (userDrumSet1Params && userDrumSet1Params !== "clear") {
-        for (const [midiNote, params] of userDrumSet1Params) {
-            // Note cleared
-            if (params === "clear") continue;
-
-            for (const [param, value] of Object.entries(params) as {
-                [K in keyof UserDrumSetParameter]: [
-                    K,
-                    ClearableParameter<UserDrumSetParameter[K]>
-                ];
-            }[keyof UserDrumSetParameter][]) {
-                // Parameter cleared
-                if (value === "clear" || value === undefined) continue;
-                targetTrack.addEvents(
-                    targetIndex,
-                    MIDIUtils.setUserDrumParameter(
-                        targetTicks,
-                        0,
-                        midiNote,
-                        param,
-                        value
-                    )
-                );
+                    for (const [param, value] of Object.entries(noteParams) as {
+                        [K in keyof UserDrumSetParameter]: [
+                            K,
+                            ClearableParameter<UserDrumSetParameter[K]>
+                        ];
+                    }[keyof UserDrumSetParameter][]) {
+                        // Parameter cleared
+                        if (value === "clear" || value === undefined) continue;
+                        targetTrack.addEvents(
+                            targetIndex,
+                            MIDIUtils.setUserDrumParameter(
+                                targetTicks,
+                                drumSet,
+                                midiNote,
+                                param,
+                                value
+                            )
+                        );
+                    }
+                }
             }
         }
-    }
-
-    if (userDrumSet2Params && userDrumSet2Params !== "clear") {
-        for (const [midiNote, params] of userDrumSet2Params) {
-            // Note cleared
-            if (params === "clear") continue;
-
-            for (const [param, value] of Object.entries(params) as {
-                [K in keyof UserDrumSetParameter]: [
-                    K,
-                    ClearableParameter<UserDrumSetParameter[K]>
-                ];
-            }[keyof UserDrumSetParameter][]) {
-                // Parameter cleared
-                if (value === "clear" || value === undefined) continue;
-                targetTrack.addEvents(
-                    targetIndex,
-                    MIDIUtils.setUserDrumParameter(
-                        targetTicks,
-                        1,
-                        midiNote,
-                        param,
-                        value
-                    )
-                );
-            }
-        }
-    }
 
     midi.flush();
     SpessaLog.groupEnd();
