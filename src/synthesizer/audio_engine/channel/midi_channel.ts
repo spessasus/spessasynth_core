@@ -843,7 +843,7 @@ export class MIDIChannel {
             return;
         for (let i = 0; i < 128; i++) {
             const p = this.drumParams[i];
-            DrumParameterUtils.copyInto(p, DrumParameterUtils.DEFAULT_DATA[i]);
+            DrumParameterUtils.copyInto(DrumParameterUtils.DEFAULT_DATA[i], p);
             p.chorusSend =
                 this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0; // Mirror reverb on XG only, GS has no chorus by default
             p.variationSend =
