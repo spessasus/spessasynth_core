@@ -22,6 +22,7 @@ export class DelayLine {
 
     public set time(value: number) {
         this._time = Math.min(this.bufferLength, value) | 0;
+        this.clear();
     }
 
     public clear() {
