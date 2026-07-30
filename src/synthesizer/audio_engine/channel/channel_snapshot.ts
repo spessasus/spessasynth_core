@@ -97,11 +97,22 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
         K,
         ChannelMIDIParameter[K]
     ];
+
+    // Unlock them first
+    for (const parameter of Object.keys(
+        snapshot.lockedMIDIParameters
+    ) as (keyof ChannelMIDIParameter)[]) {
+        this.lockMIDIParameter(parameter, false);
+    }
+
+    // Then set
     for (const [parameter, value] of Object.entries(
         snapshot.midiParameters
     ) as MIDIParameterPair<keyof ChannelMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
+
+    // Then re-lock!
     for (const [parameter, isLocked] of Object.entries(
         snapshot.lockedMIDIParameters
     ) as [keyof ChannelMIDIParameter, boolean][]) {

@@ -257,11 +257,6 @@ export function rolandSystemExclusive(
                         if (isChorus && this.systemParameters.chorusLock)
                             return;
                         if (isDelay && this.systemParameters.delayLock) return;
-                        /*
-                            0x40 - chorus to delay
-                            enable delay that way
-                             */
-                        this.delayActive ||= a3 === 0x40 || isDelay;
 
                         switch (a3) {
                             default: {
@@ -450,6 +445,7 @@ export function rolandSystemExclusive(
                             case 0x40: {
                                 // Chorus send level to delay
                                 this.chorusProcessor.sendLevelToDelay = data;
+                                this.updateActiveEffects();
                                 SpessaLog.gsInfo(
                                     "Chorus Send Level To Delay",
                                     data
@@ -683,7 +679,7 @@ export function rolandSystemExclusive(
                                 // Divide, insertions use 0-1
                                 this.insertionProcessor.sendLevelToDelay =
                                     (data / 127) * EFX_SENDS_GAIN_CORRECTION;
-                                this.delayActive = true;
+                                this.updateActiveEffects();
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Delay",
                                     data
@@ -1167,11 +1163,11 @@ export function rolandSystemExclusive(
                                 // EFX assign
                                 const efx = data === 1;
                                 ch.setMIDIParameter("efxAssign", efx);
-                                this.insertionActive ||= efx;
                                 SpessaLog.gsInfo(
                                     `EFX assign for ${channel}`,
                                     efx ? "EFX" : "BYPASS"
                                 );
+                                this.updateActiveEffects();
                             }
                         }
                         return;

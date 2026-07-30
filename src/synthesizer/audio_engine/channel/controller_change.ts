@@ -101,7 +101,7 @@ export function controllerChange(
             }
 
             case MIDIControllers.variationDepth: {
-                this.synthCore.delayActive = true;
+                this.synthCore.updateActiveEffects();
                 break;
             }
 
