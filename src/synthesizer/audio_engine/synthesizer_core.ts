@@ -599,12 +599,8 @@ export class SynthesizerCore {
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
 
-        // Delay may only be disabled if variations are all set to 0,
-        // They can still be set after a reset due to locking.
-        if (!this.systemParameters.delayLock)
-            this.delayActive = this.midiChannels.some(
-                (c) => c.midiControllers[MIDIControllers.variationDepth] > 0
-            );
+        // Update if the effects should still be active.
+        this.updateActiveEffects();
     }
 
     public process(
@@ -850,6 +846,29 @@ export class SynthesizerCore {
         this.eventCallbackHandler(eventName, eventData);
     }
 
+    /**
+     * @internal
+     * Checks if we can disable insertion and delay effects.
+     */
+    public updateActiveEffects() {
+        if (!this.systemParameters.insertionEffectLock)
+            this.insertionActive = this.midiChannels.some(
+                (c) => c.midiParameters.efxAssign
+            );
+        if (!this.systemParameters.delayLock)
+            this.delayActive =
+                this.midiParameters.system === "xg"
+                    ? false
+                    : this.chorusProcessor.sendLevelToDelay > 0 ||
+                      this.insertionProcessor.sendLevelToDelay > 0 ||
+                      this.midiChannels.some(
+                          (c) =>
+                              c.midiControllers[
+                                  MIDIControllers.variationDepth
+                              ] > 0
+                      );
+    }
+
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {
         return {
             type: this.insertionProcessor.type,
@@ -867,7 +886,6 @@ export class SynthesizerCore {
 
     protected resetInsertion() {
         if (this.systemParameters.insertionEffectLock) return;
-        this.insertionActive = false;
         this.insertionProcessor = this.insertionFallback;
         this.insertionProcessor.reset();
         this.resetInsertionParams();

@@ -73,11 +73,22 @@ export function applySnapshot(
         K,
         GlobalMIDIParameter[K]
     ];
+
+    // Unlock them first
+    for (const parameter of Object.keys(
+        snapshot.lockedMIDIParameters
+    ) as (keyof GlobalMIDIParameter)[]) {
+        this.lockMIDIParameter(parameter, false);
+    }
+
+    // Then set
     for (const [parameter, value] of Object.entries(
         snapshot.midiParameters
     ) as MIDIParameterPair<keyof GlobalMIDIParameter>[]) {
         this.setMIDIParameter(parameter, value);
     }
+
+    // Then re-lock!
     for (const [parameter, isLocked] of Object.entries(
         snapshot.lockedMIDIParameters
     ) as [keyof GlobalMIDIParameter, boolean][]) {
@@ -94,6 +105,9 @@ export function applySnapshot(
     ) as SystemParameterPair<keyof GlobalSystemParameter>[]) {
         this.setSystemParameter(parameter, value);
     }
+
+    // Then update active effects
+    this.updateActiveEffects();
 }
 
 export function getSynthesizerSnapshot(
