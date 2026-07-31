@@ -46,7 +46,7 @@ import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
 import type { SynthesizerPatch } from "../../types";
-import { DrumParameterUtils } from "../../../midi/drum_parameters";
+import { DrumParameterUtils as DrumParameterUtilities } from "../../../midi/drum_parameters";
 import type { DrumParameter } from "../../../midi/types";
 
 /**
@@ -58,6 +58,14 @@ export class MIDIChannel {
      * @internal
      */
     public readonly pitchWheels = new Int16Array(128).fill(8192);
+
+    /**
+     * An array of poly pressure values for the channel.
+     * Poly pressure persists across notes and is set like
+     * @internal
+     */
+    public readonly polyPressures = new Uint8Array(128);
+
     /**
      * Parameters for each drum instrument.
      * @internal
@@ -65,7 +73,7 @@ export class MIDIChannel {
     public readonly drumParams: readonly DrumParameter[] = Array.from(
         { length: 128 },
         // eslint-disable-next-line unicorn/consistent-function-scoping
-        (_, i) => ({ ...DrumParameterUtils.DEFAULT_DATA[i] })
+        (_, index) => ({ ...DrumParameterUtilities.DEFAULT_DATA[index] })
     );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
@@ -365,11 +373,11 @@ export class MIDIChannel {
      * @internal
      */
     public constructor(
-        synthProps: SynthesizerCore,
+        synthProperties: SynthesizerCore,
         preset: SynthesizerPatch | undefined,
         channelNumber: number
     ) {
-        this.synthCore = synthProps;
+        this.synthCore = synthProperties;
         this.preset = preset;
         this.channel = channelNumber;
         // @ts-expect-error Rx Channel init here!
@@ -573,8 +581,8 @@ export class MIDIChannel {
         if (tuning.length !== 12) {
             throw new Error("Tuning is not the length of 12.");
         }
-        for (let i = 0; i < 128; i++) {
-            this.octaveTuning[i] = tuning[i % 12];
+        for (let index = 0; index < 128; index++) {
+            this.octaveTuning[index] = tuning[index % 12];
         }
     }
 
@@ -612,23 +620,8 @@ export class MIDIChannel {
      */
     public polyPressure(midiNote: number, pressure: number) {
         // Note to self: don't use computeModulatorsAll here as we're setting the pressure!
-        let vc = 0;
-        if (this._voiceCount > 0)
-            for (const v of this.synthCore.voices) {
-                if (
-                    v.isActive &&
-                    v.channel === this.channel &&
-                    v.midiNote === midiNote
-                ) {
-                    v.pressure = pressure;
-                    this.computeModulators(
-                        v,
-                        0,
-                        ModulatorControllerSources.polyPressure
-                    );
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
-                }
-            }
+        this.polyPressures[midiNote] = pressure;
+        this.computeModulatorsAll(0, ModulatorControllerSources.polyPressure);
         this.synthCore.callEvent("polyPressure", {
             channel: this.channel,
             midiNote: midiNote,
@@ -841,16 +834,21 @@ export class MIDIChannel {
     protected resetDrumParams() {
         if (this.synthCore.systemParameters.drumLock || !this._drumChannel)
             return;
-        for (let i = 0; i < 128; i++) {
-            const p = this.drumParams[i];
-            DrumParameterUtils.copyInto(DrumParameterUtils.DEFAULT_DATA[i], p);
+        for (let index = 0; index < 128; index++) {
+            const p = this.drumParams[index];
+            DrumParameterUtilities.copyInto(DrumParameterUtilities.DEFAULT_DATA[index], p);
             p.chorusSend =
-                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0; // Mirror reverb on XG only, GS has no chorus by default
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0; // Mirror reverb on XG only, GS has no chorus by default
             p.variationSend =
-                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] : 0;
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0;
         }
     }
 
+    /**
+     *
+     * @param sourceUsesCC what modulators should be computed, -1 means all, 0 means modulator source enum 1 means midi controller.
+     * @param sourceIndex
+     */
     protected computeModulatorsAll(
         sourceUsesCC: -1 | 0 | 1,
         sourceIndex: number

@@ -13,6 +13,11 @@ export interface SF2Channel {
     midiControllers: Int16Array;
 
     /**
+     * Poly Pressures for all 128 notes.
+     */
+    polyPressures: Uint8Array;
+
+    /**
      * Other MIDI parameters.
      */
     midiParameters: {

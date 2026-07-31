@@ -160,11 +160,6 @@ export class Voice {
     public rootKey = 0;
 
     /**
-     * The pressure of the voice
-     */
-    public pressure = 0;
-
-    /**
      * Linear gain of the voice. Used with Key Modifiers.
      */
     public gainModifier = 1;
@@ -299,7 +294,6 @@ export class Voice {
         this.hasRendered = false;
         this.isHeld = false;
         this.releaseStartTime = Infinity;
-        this.pressure = 0;
         this.overrideReleaseVolEnv = 0;
         this.portamentoDuration = 0;
         this.portamentoFromKey = -1;

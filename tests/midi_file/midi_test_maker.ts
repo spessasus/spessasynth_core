@@ -6,7 +6,7 @@ import {
     MIDIControllers,
     MIDIMessageTypes,
     type MIDISystem,
-    MIDIUtils
+    MIDIUtils as MIDIUtilities
 } from "../../src";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -29,7 +29,7 @@ class EFXTest {
         // EFX to channel
         this.builder.gs(
             0x40,
-            0x40 | MIDIUtils.channelToSyx(channel),
+            0x40 | MIDIUtilities.channelToSyx(channel),
             0x22,
             [1]
         );
@@ -48,18 +48,18 @@ class EFXTest {
     }
 
     public sweepParam(
-        param: number,
+        parameter: number,
         from: number,
         to: number,
         tickStep = 480,
         dataStep = 1
     ) {
-        this.builder.sweepGS(0x40, 0x03, param, from, to, tickStep, dataStep);
+        this.builder.sweepGS(0x40, 0x03, parameter, from, to, tickStep, dataStep);
         return this;
     }
 
-    public setParam(param: number, value: number) {
-        this.builder.gs(0x40, 0x03, param, [value]);
+    public setParam(parameter: number, value: number) {
+        this.builder.gs(0x40, 0x03, parameter, [value]);
         return this;
     }
 }
@@ -67,6 +67,7 @@ class EFXTest {
 interface MIDITestOptions {
     startTicks: number;
     timeDivision: number;
+    tempo: number;
     channel: number;
     system: MIDISystem;
 }
@@ -74,6 +75,7 @@ interface MIDITestOptions {
 const DEFAULT_MIDI_TEST_OPTIONS: MIDITestOptions = {
     startTicks: 480,
     timeDivision: 480,
+    tempo: 120,
     channel: 0,
     system: "gs"
 };
@@ -92,7 +94,8 @@ export class MIDITestMaker extends MIDIBuilder {
         const o = fillWithDefaults(options, DEFAULT_MIDI_TEST_OPTIONS);
         super({
             name,
-            timeDivision: o.timeDivision
+            timeDivision: o.timeDivision,
+            initialTempo: o.tempo
         });
         this.channel = o.channel;
         this.ticks = o.startTicks;
@@ -100,29 +103,29 @@ export class MIDITestMaker extends MIDIBuilder {
         this.fileName = name.replaceAll(" ", "_").toLowerCase();
         this.system = o.system;
         this.track = this.tracks[0];
-        this.track.addEvents(0, MIDIUtils.reset(0, o.system));
+        this.track.addEvents(0, MIDIUtilities.reset(0, o.system));
     }
 
     public reset(system: MIDISystem) {
         this.text(`${system.toUpperCase()} RESET`);
         this.track.addEvents(
             this.track.events.length,
-            MIDIUtils.reset(this.ticks, system)
+            MIDIUtilities.reset(this.ticks, system)
         );
         this.system = system;
         return this.wait(480);
     }
 
     public setGlobalMIDIParameter<P extends keyof GlobalMIDIParameter>(
-        param: P,
+        parameter: P,
         value: GlobalMIDIParameter[P]
     ) {
         this.track.addEvents(
             this.track.events.length,
-            ...MIDIUtils.setGlobalMIDIParameter(
+            ...MIDIUtilities.setGlobalMIDIParameter(
                 this.ticks,
                 this.system,
-                param,
+                parameter,
                 value
             )
         );
@@ -130,16 +133,16 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public setChannelMIDIParameter<P extends keyof ChannelMIDIParameter>(
-        param: P,
+        parameter: P,
         value: ChannelMIDIParameter[P]
     ) {
         this.track.addEvents(
             this.track.events.length,
-            ...MIDIUtils.setChannelMIDIParameter(
+            ...MIDIUtilities.setChannelMIDIParameter(
                 this.ticks,
                 this.channel,
                 this.system,
-                param,
+                parameter,
                 value
             )
         );
@@ -161,6 +164,16 @@ export class MIDITestMaker extends MIDIBuilder {
      */
     public pitch(value: number) {
         super.pitchWheel(this.ticks, 0, this.channel, value);
+        return this;
+    }
+
+    /**
+     * Poly Pressure
+     * @param midiNote
+     * @param value
+     */
+    public poly(midiNote: number, value: number) {
+        super.polyPressure(this.ticks, 0, this.channel, midiNote, value);
         return this;
     }
 
@@ -322,18 +335,18 @@ export class MIDITestMaker extends MIDIBuilder {
     }
 
     public gs(a1: number, a2: number, a3: number, data: number[]) {
-        this.systemExclusive(this.ticks, 0, MIDIUtils.gs(a1, a2, a3, data));
+        this.systemExclusive(this.ticks, 0, MIDIUtilities.gs(a1, a2, a3, data));
         return this;
     }
 
     public xg(a1: number, a2: number, a3: number, data: number[]) {
-        this.systemExclusive(this.ticks, 0, MIDIUtils.xg(a1, a2, a3, data));
+        this.systemExclusive(this.ticks, 0, MIDIUtilities.xg(a1, a2, a3, data));
         return this;
     }
 
-    public rpn(rpn: number, val: number) {
-        this.text(`RPN ${rpn.toString(16)} = ${val.toString(16)}`);
-        this.registeredParameter(this.ticks, 0, this.channel, rpn, val);
+    public rpn(rpn: number, value: number) {
+        this.text(`RPN ${rpn.toString(16)} = ${value.toString(16)}`);
+        this.registeredParameter(this.ticks, 0, this.channel, rpn, value);
         return this;
     }
 
@@ -342,13 +355,13 @@ export class MIDITestMaker extends MIDIBuilder {
      * @param nrpn
      * @param val 7-bit only
      */
-    public nrpn(nrpn: number, val: number) {
+    public nrpn(nrpn: number, value: number) {
         this.nonRegisteredParameter(
             this.ticks,
             0,
             this.channel,
             nrpn,
-            val << 7
+            value << 7
         );
         return this;
     }

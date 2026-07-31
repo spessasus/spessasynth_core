@@ -98,24 +98,28 @@ export function dataEntry(this: MIDIChannel) {
     }
 
     // NRPN Handling
-    const paramCoarse =
+    const parameterCoarse =
         this._midiControllers[MIDIControllers.nonRegisteredParameterMSB] >> 7;
-    const paramFine =
+    const parameterFine =
         this._midiControllers[MIDIControllers.nonRegisteredParameterLSB] >> 7;
+    if (parameterCoarse === 0x7f && parameterFine === 0x7f) {
+        // Hardcoded NRPN NULL to avoid AWE32 errors
+        return;
+    }
     const dataCoarse = dataValue >> 7;
     // Skip drums early
     if (
         this.synthCore.systemParameters.drumLock &&
-        paramCoarse >= NonRegisteredMSB.drumPitch &&
-        paramCoarse <= NonRegisteredMSB.drumVariation
+        parameterCoarse >= NonRegisteredMSB.drumPitch &&
+        parameterCoarse <= NonRegisteredMSB.drumVariation
     )
         return;
-    switch (paramCoarse) {
+    switch (parameterCoarse) {
         default: {
             SpessaLog.info(
-                `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse
+                `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${parameterCoarse
                     .toString(16)
-                    .toUpperCase()} 0x${paramFine
+                    .toUpperCase()} 0x${parameterFine
                     .toString(16)
                     .toUpperCase()})%c data value: %c${dataCoarse}`,
                 ConsoleColors.warn,
@@ -130,13 +134,13 @@ export function dataEntry(this: MIDIChannel) {
 
         // Part parameters
         case NonRegisteredMSB.partParameter: {
-            const paramLock =
+            const parameterLock =
                 this._systemParameters.nrpnParamLock ??
                 this.synthCore.systemParameters.nrpnParamLock;
-            switch (paramFine) {
+            switch (parameterFine) {
                 default: {
                     SpessaLog.info(
-                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse.toString(16)} 0x${paramFine.toString(
+                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${parameterCoarse.toString(16)} 0x${parameterFine.toString(
                             16
                         )})%c data value: %c${dataCoarse}`,
                         ConsoleColors.warn,
@@ -178,7 +182,7 @@ export function dataEntry(this: MIDIChannel) {
 
                 // Filter cutoff
                 case NonRegisteredLSB.tvfCutoffFrequency: {
-                    if (paramLock) return;
+                    if (parameterLock) return;
                     // Affect the "brightness" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.brightness,
@@ -193,7 +197,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 case NonRegisteredLSB.tvfResonance: {
-                    if (paramLock) return;
+                    if (parameterLock) return;
                     // Affect the "resonance" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.filterResonance,
@@ -209,7 +213,7 @@ export function dataEntry(this: MIDIChannel) {
 
                 // Attack time
                 case NonRegisteredLSB.envelopeAttackTime: {
-                    if (paramLock) return;
+                    if (parameterLock) return;
                     // Affect the "attack time" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.attackTime,
@@ -225,7 +229,7 @@ export function dataEntry(this: MIDIChannel) {
 
                 // Decay time
                 case NonRegisteredLSB.envelopeDecayTime: {
-                    if (paramLock) return;
+                    if (parameterLock) return;
                     // Affect the "decay time" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.decayTime,
@@ -241,7 +245,7 @@ export function dataEntry(this: MIDIChannel) {
 
                 // Release time
                 case NonRegisteredLSB.envelopeReleaseTime: {
-                    if (paramLock) return;
+                    if (parameterLock) return;
                     // Affect the "release time" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.releaseTime,
@@ -268,9 +272,9 @@ export function dataEntry(this: MIDIChannel) {
                 this.channelSystem === "xg" || this.patch.bankLSB === 1
                     ? dataCoarse - 64
                     : (dataCoarse - 64) * 0.5;
-            this.drumParams[paramFine].pitchCoarse = pitch;
+            this.drumParams[parameterFine].pitchCoarse = pitch;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} pitch for ${this.channel}`,
+                `Drum ${parameterFine} pitch for ${this.channel}`,
                 pitch,
                 "semitones"
             );
@@ -279,9 +283,9 @@ export function dataEntry(this: MIDIChannel) {
 
         case NonRegisteredMSB.drumPitchFine: {
             const pitch = dataCoarse - 64;
-            this.drumParams[paramFine].pitchFine = pitch;
+            this.drumParams[parameterFine].pitchFine = pitch;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} pitch fine for ${this.channel}`,
+                `Drum ${parameterFine} pitch fine for ${this.channel}`,
                 pitch,
                 "cents"
             );
@@ -289,9 +293,9 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumLevel: {
-            this.drumParams[paramFine].level = dataCoarse;
+            this.drumParams[parameterFine].level = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} level for ${this.channel}`,
+                `Drum ${parameterFine} level for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -299,9 +303,9 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumPan: {
-            this.drumParams[paramFine].pan = dataCoarse;
+            this.drumParams[parameterFine].pan = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} Pan for ${this.channel}`,
+                `Drum ${parameterFine} Pan for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -309,9 +313,9 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumReverb: {
-            this.drumParams[paramFine].reverbSend = dataCoarse;
+            this.drumParams[parameterFine].reverbSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} Reverb Send for ${this.channel}`,
+                `Drum ${parameterFine} Reverb Send for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -319,9 +323,9 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumChorus: {
-            this.drumParams[paramFine].chorusSend = dataCoarse;
+            this.drumParams[parameterFine].chorusSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} Chorus Send for ${this.channel}`,
+                `Drum ${parameterFine} Chorus Send for ${this.channel}`,
                 dataCoarse,
                 ""
             );
@@ -329,9 +333,9 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.drumVariation: {
-            this.drumParams[paramFine].variationSend = dataCoarse;
+            this.drumParams[parameterFine].variationSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} Variation Send for ${this.channel}`,
+                `Drum ${parameterFine} Variation Send for ${this.channel}`,
                 dataValue,
                 ""
             );
@@ -339,13 +343,13 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         case NonRegisteredMSB.awe32: {
-            handleAWE32NRPN.call(this, paramFine, dataValue);
+            handleAWE32NRPN.call(this, parameterFine, dataValue);
             break;
         }
 
         // SF2 NRPN
         case NonRegisteredMSB.SF2: {
-            if (paramFine > 100) {
+            if (parameterFine > 100) {
                 // Sf spec:
                 // Note that NRPN Select LSB greater than 100 are for setup only, and should not be used on their own to select a
                 // Generator parameter.

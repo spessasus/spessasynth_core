@@ -64,9 +64,9 @@ export const CONTROLLER_TABLE_SIZE = 128;
  */
 export const DEFAULT_RPN = 0x7f;
 /**
- * No NRPN is bound to 0 0, while 0x7f MSB is AWE32!
+ * Per MIDI spec, avoids handling AWE32 in data entry code.
  */
-export const DEFAULT_NRPN = 0;
+export const DEFAULT_NRPN = 127;
 
 /**
  * The program number of GS User Drum Set 1.
