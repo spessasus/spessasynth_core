@@ -1,4 +1,4 @@
-import { MIDITestMaker } from "../midi_test_maker";
+import { MIDITestMaker } from "../../midi_file/midi_test_maker";
 
 const test = new MIDITestMaker("RPN Fine Tuning Test");
 
