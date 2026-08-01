@@ -61,7 +61,7 @@ export class MIDIChannel {
 
     /**
      * An array of poly pressure values for the channel.
-     * Poly pressure persists across notes and is set like
+     * Poly pressure persists across notes, much like per-note pitch wheels.
      * @internal
      */
     public readonly polyPressures = new Uint8Array(128);
@@ -836,7 +836,10 @@ export class MIDIChannel {
             return;
         for (let index = 0; index < 128; index++) {
             const p = this.drumParams[index];
-            DrumParameterUtilities.copyInto(DrumParameterUtilities.DEFAULT_DATA[index], p);
+            DrumParameterUtilities.copyInto(
+                DrumParameterUtilities.DEFAULT_DATA[index],
+                p
+            );
             p.chorusSend =
                 this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0; // Mirror reverb on XG only, GS has no chorus by default
             p.variationSend =
