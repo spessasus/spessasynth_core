@@ -298,6 +298,28 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
+    /**
+     * Adds a new Channel Pressure event.
+     * @param ticks the tick time of the event.
+     * @param track the track to use.
+     * @param channel the channel to use.
+     * @param pressure the pressure (0 - 127)
+     */
+    public channelPressure(
+        ticks: number,
+        track: number,
+        channel: number,
+        pressure: number
+    ) {
+        channel %= 16;
+        this.addEvent(
+            ticks,
+            track,
+            (MIDIMessageTypes.channelPressure | channel) as MIDIMessageType,
+            [pressure & 0x7f]
+        );
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new System Exclusive.

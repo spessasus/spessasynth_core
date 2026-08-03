@@ -54,7 +54,15 @@ class EFXTest {
         tickStep = 480,
         dataStep = 1
     ) {
-        this.builder.sweepGS(0x40, 0x03, parameter, from, to, tickStep, dataStep);
+        this.builder.sweepGS(
+            0x40,
+            0x03,
+            parameter,
+            from,
+            to,
+            tickStep,
+            dataStep
+        );
         return this;
     }
 
@@ -174,6 +182,15 @@ export class MIDITestMaker extends MIDIBuilder {
      */
     public poly(midiNote: number, value: number) {
         super.polyPressure(this.ticks, 0, this.channel, midiNote, value);
+        return this;
+    }
+
+    /**
+     * Channel pressure
+     * @param value
+     */
+    public pressure(value: number) {
+        super.channelPressure(this.ticks, 0, this.channel, value);
         return this;
     }
 
@@ -353,7 +370,7 @@ export class MIDITestMaker extends MIDIBuilder {
     /**
      * Value is 7-bit only
      * @param nrpn
-     * @param val 7-bit only
+     * @param value 7-bit only
      */
     public nrpn(nrpn: number, value: number) {
         this.nonRegisteredParameter(

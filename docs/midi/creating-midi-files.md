@@ -160,6 +160,19 @@ mid.polyPressure(ticks, track, channel, midiNote, pressure);
 - `midiNote` - `number` - the MIDI note number to apply the pressure to.
 - `pressure` - `number` - the pressure (0 - 127)
 
+### channelPressure
+
+Adds a new "Channel Pressure" message.
+
+```ts
+mid.channelPressure(ticks, track, channel, pressure);
+```
+
+- `ticks` - `number` - the tick time of the event.
+- `track` - `number` - the track to use.
+- `channel` - `number` - the channel to use.
+- `pressure` - `number` - the pressure (0 - 127)
+
 ### systemExclusive
 
 Adds a new "System Exclusive" message.

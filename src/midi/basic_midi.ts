@@ -1,7 +1,4 @@
-import {
-    getStringBytes,
-    readBinaryString
-} from "../utils/byte_functions/string";
+import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaLog } from "../utils/loggin";
@@ -22,17 +19,11 @@ import type {
     TempoChange,
     TimelineEvent
 } from "./types";
-import {
-    modifyMIDIInternal,
-    type ModifyMIDIOptions
-} from "./midi_tools/modify_midi";
+import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
 import { parseSMFInternal } from "./read/midi";
 import { MIDIControllers, MIDIMessageTypes } from "./enums";
-import type {
-    GenericRange,
-    PresetsWithKeyCombinations
-} from "../soundbank/types";
+import type { GenericRange, PresetsWithKeyCombinations } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString, toISODateString } from "../utils/date";
@@ -446,7 +437,8 @@ export class BasicMIDI {
      * This modifies the MIDI sequence _in-place_.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
-        modifyMIDIInternal(this, opts);
+        const editor = new MIDIEditor(this, opts);
+        editor.apply();
     }
 
     // noinspection JSUnusedGlobalSymbols
