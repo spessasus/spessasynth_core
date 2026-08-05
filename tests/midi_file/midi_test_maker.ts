@@ -92,7 +92,7 @@ export class MIDITestMaker extends MIDIBuilder {
     private ticks;
     private readonly track;
     private readonly testName;
-    private readonly channel;
+    private channel;
     private system;
 
     public constructor(
@@ -112,6 +112,11 @@ export class MIDITestMaker extends MIDIBuilder {
         this.system = o.system;
         this.track = this.tracks[0];
         this.track.addEvents(0, MIDIUtilities.reset(0, o.system));
+    }
+
+    public switchChannel(channel: number) {
+        this.channel = channel;
+        return this;
     }
 
     public reset(system: MIDISystem) {

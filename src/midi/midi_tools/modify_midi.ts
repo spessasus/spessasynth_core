@@ -545,7 +545,14 @@ export class MIDIEditor {
         const channelChange = this.channelChanges.get(channel);
         switch (status) {
             case MIDIMessageTypes.noteOn: {
-                this.handleNoteOn(e, channel);
+                // Is it first?
+                if (channelStatus.isFirstNoteOn) {
+                    this.firstNoteOn(e.ticks, channel);
+                    channelStatus.isFirstNoteOn = false;
+                }
+                // Transpose key (for zero it won't change anyway)
+                e.data[0] +=
+                    channelStatus.keyShift + channelStatus.currentKeyShift;
                 break;
             }
 
@@ -886,160 +893,147 @@ export class MIDIEditor {
         }
     }
 
-    private handleNoteOn(e: MIDIMessage, channel: number) {
+    private firstNoteOn(ticks: number, channel: number) {
         const channelChange = this.channelChanges.get(channel);
         // Make sure that we want to modify this channel at all
         if (!channelChange) return;
         const channelStatus = this.channelStatuses[channel];
         const midiChannel = channel % 16;
 
-        // Is it first?
-        if (channelStatus.isFirstNoteOn) {
-            channelStatus.isFirstNoteOn = false;
-            // All right, so this is the first note on for this channel
-            // The order is:
-            // - patch selection
-            // - relative fine tune
-            // - controllers
-            // - parameters
+        // All right, so this is the first note on for this channel
+        // The order is:
+        // - patch selection
+        // - relative fine tune
+        // - controllers
+        // - parameters
 
-            // Program change
-            const patch = channelChange.patch;
-            if (patch && patch !== "clear") {
-                SpessaLog.info(
-                    `%cSetting %c${channel}%c to %c${MIDIPatchTools.toMIDIString(patch)}%c. Track num: %c${this.trackNum}`,
-                    ConsoleColors.info,
-                    ConsoleColors.recognized,
-                    ConsoleColors.info,
-                    ConsoleColors.recognized,
-                    ConsoleColors.info,
-                    ConsoleColors.recognized
-                );
+        // Program change
+        const patch = channelChange.patch;
+        if (patch && patch !== "clear") {
+            SpessaLog.info(
+                `%cSetting %c${channel}%c to %c${MIDIPatchTools.toMIDIString(patch)}%c. Track num: %c${this.trackNum}`,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info,
+                ConsoleColors.recognized
+            );
 
-                let desiredBankMSB = patch.bankMSB;
-                let desiredBankLSB = patch.bankLSB;
-                const desiredProgram = patch.program;
+            let desiredBankMSB = patch.bankMSB;
+            let desiredBankLSB = patch.bankLSB;
+            const desiredProgram = patch.program;
 
-                // The output event order is: drums -> msb -> lsb -> program change
-                if (
-                    patch.isGMGSDrum &&
-                    !BankSelectHacks.isSystemXG(this.system) &&
-                    midiChannel !== DEFAULT_PERCUSSION
-                ) {
-                    // Add gs drum change first
-                    SpessaLog.info(
-                        `%cAdding GS Drum change on track %c${this.trackNum}`,
-                        ConsoleColors.recognized,
-                        ConsoleColors.value
-                    );
-                    this.addEventsBefore(
-                        ...MIDIUtils.setChannelMIDIParameter(
-                            e.ticks,
-                            midiChannel,
-                            "gs",
-                            "drumMap",
-                            1
-                        )
-                    );
-                }
-
-                if (
-                    BankSelectHacks.isSystemXG(this.system) &&
-                    patch.isGMGSDrum
-                ) {
-                    // Best I can do is XG drums
-                    SpessaLog.info(
-                        `%cAdding XG Drum change on track %c${this.trackNum}`,
-                        ConsoleColors.recognized,
-                        ConsoleColors.value
-                    );
-                    desiredBankMSB = BankSelectHacks.getDrumBank(this.system);
-                    desiredBankLSB = 0;
-                }
-
-                // Add bank change (MSB first)
-                this.addEventsBefore(
-                    MIDIMessage.controllerChange(
-                        e.ticks,
-                        midiChannel,
-                        MIDIControllers.bankSelect,
-                        desiredBankMSB
-                    ),
-                    MIDIMessage.controllerChange(
-                        e.ticks,
-                        midiChannel,
-                        MIDIControllers.bankSelectLSB,
-                        desiredBankLSB
-                    )
-                );
-
-                // Add program change
-                this.addEventsBefore(
-                    MIDIMessage.programChange(
-                        e.ticks,
-                        midiChannel,
-                        desiredProgram
-                    )
-                );
-            }
-
-            // Apply relative tuning (`fineTune`)
+            // The output event order is: drums -> msb -> lsb -> program change
             if (
-                channelChange.midiParams?.fineTune !== undefined &&
-                channelChange.midiParams.fineTune !== "clear"
+                patch.isGMGSDrum &&
+                !BankSelectHacks.isSystemXG(this.system) &&
+                midiChannel !== DEFAULT_PERCUSSION
             ) {
-                // Add the relative tuning to the absolute MIDI param
-                const newTune =
-                    channelStatus.fineTune + channelChange.midiParams.fineTune;
-                channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-                channelChange.midiParams.fineTune = newTune % 100;
-            } else if (channelStatus.fineTune !== 0) {
-                // Make the relative tuning be set in MIDI parameters
-                const newTune =
-                    channelStatus.fineTune + channelStatus.currentFineTune;
-                channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-                channelChange.midiParams ??= {};
-                channelChange.midiParams.fineTune = newTune % 100;
+                // Add gs drum change first
+                SpessaLog.info(
+                    `%cAdding GS Drum change on track %c${this.trackNum}`,
+                    ConsoleColors.recognized,
+                    ConsoleColors.value
+                );
+                this.addEventsBefore(
+                    ...MIDIUtils.setChannelMIDIParameter(
+                        ticks,
+                        midiChannel,
+                        "gs",
+                        "drumMap",
+                        1
+                    )
+                );
             }
 
-            // Add controllers
-            if (channelChange.controllers)
-                for (const [cc, value] of channelChange.controllers) {
-                    if (value === "clear") continue;
-                    const ccChange = MIDIMessage.controllerChange(
-                        e.ticks,
-                        midiChannel,
-                        cc,
-                        value
-                    );
-                    this.addEventsBefore(ccChange);
-                }
+            if (BankSelectHacks.isSystemXG(this.system) && patch.isGMGSDrum) {
+                // Best I can do is XG drums
+                SpessaLog.info(
+                    `%cAdding XG Drum change on track %c${this.trackNum}`,
+                    ConsoleColors.recognized,
+                    ConsoleColors.value
+                );
+                desiredBankMSB = BankSelectHacks.getDrumBank(this.system);
+                desiredBankLSB = 0;
+            }
 
-            // Add MIDI parameters
-            if (channelChange.midiParams) {
-                for (const [param, value] of Object.entries(
-                    channelChange.midiParams
-                ) as {
-                    [P in keyof ChannelMIDIParameter]: [
-                        P,
-                        ClearableParameter<ChannelMIDIParameter[P]>
-                    ];
-                }[keyof ChannelMIDIParameter][]) {
-                    if (value === "clear") continue;
-                    this.addEventsBefore(
-                        ...MIDIUtils.setChannelMIDIParameter(
-                            e.ticks,
-                            midiChannel,
-                            this.system,
-                            param,
-                            value
-                        )
-                    );
-                }
+            // Add bank change (MSB first)
+            this.addEventsBefore(
+                MIDIMessage.controllerChange(
+                    ticks,
+                    midiChannel,
+                    MIDIControllers.bankSelect,
+                    desiredBankMSB
+                ),
+                MIDIMessage.controllerChange(
+                    ticks,
+                    midiChannel,
+                    MIDIControllers.bankSelectLSB,
+                    desiredBankLSB
+                )
+            );
+
+            // Add program change
+            this.addEventsBefore(
+                MIDIMessage.programChange(ticks, midiChannel, desiredProgram)
+            );
+        }
+
+        // Apply relative tuning (`fineTune`)
+        if (
+            channelChange.midiParams?.fineTune !== undefined &&
+            channelChange.midiParams.fineTune !== "clear"
+        ) {
+            // Add the relative tuning to the absolute MIDI param
+            const newTune =
+                channelStatus.fineTune + channelChange.midiParams.fineTune;
+            channelStatus.currentKeyShift = Math.trunc(newTune / 100);
+            channelChange.midiParams.fineTune = newTune % 100;
+        } else if (channelStatus.fineTune !== 0) {
+            // Make the relative tuning be set in MIDI parameters
+            const newTune =
+                channelStatus.fineTune + channelStatus.currentFineTune;
+            channelStatus.currentKeyShift = Math.trunc(newTune / 100);
+            channelChange.midiParams ??= {};
+            channelChange.midiParams.fineTune = newTune % 100;
+        }
+
+        // Add controllers
+        if (channelChange.controllers)
+            for (const [cc, value] of channelChange.controllers) {
+                if (value === "clear") continue;
+                const ccChange = MIDIMessage.controllerChange(
+                    ticks,
+                    midiChannel,
+                    cc,
+                    value
+                );
+                this.addEventsBefore(ccChange);
+            }
+
+        // Add MIDI parameters
+        if (channelChange.midiParams) {
+            for (const [param, value] of Object.entries(
+                channelChange.midiParams
+            ) as {
+                [P in keyof ChannelMIDIParameter]: [
+                    P,
+                    ClearableParameter<ChannelMIDIParameter[P]>
+                ];
+            }[keyof ChannelMIDIParameter][]) {
+                if (value === "clear") continue;
+                this.addEventsBefore(
+                    ...MIDIUtils.setChannelMIDIParameter(
+                        ticks,
+                        midiChannel,
+                        this.system,
+                        param,
+                        value
+                    )
+                );
             }
         }
-        // Transpose key (for zero it won't change anyway)
-        e.data[0] += channelStatus.keyShift + channelStatus.currentKeyShift;
     }
 
     private handleReset(system: MIDISystem) {

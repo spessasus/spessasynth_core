@@ -1,6 +1,6 @@
 import {
-    MIDIControllers,
     BasicMIDI,
+    MIDIControllers,
     MIDIMessageTypes,
     MIDIUtils
 } from "../../../src";
@@ -12,10 +12,13 @@ export function logEventsTest(midi: BasicMIDI) {
         console.group(`Track ${track.name}, events: ${track.events.length}`);
 
         for (const event of track.events) {
-            switch (event.statusByte) {
+            const ch = event.statusByte & 0xf;
+            const status = event.statusByte & 0xf0;
+            switch (status) {
                 case MIDIMessageTypes.controllerChange: {
                     console.info(
-                        "Controller change",
+                        `Controller change on`,
+                        ch,
                         (
                             Object.keys(
                                 MIDIControllers
@@ -45,7 +48,8 @@ export function logEventsTest(midi: BasicMIDI) {
                             Object.keys(
                                 MIDIMessageTypes
                             ) as (keyof typeof MIDIMessageTypes)[]
-                        ).find((k) => MIDIMessageTypes[k] === event.statusByte),
+                        ).find((k) => MIDIMessageTypes[k] === status) ??
+                            event.statusByte.toString(16),
                         arrayToHexString(event.data)
                     );
                 }
