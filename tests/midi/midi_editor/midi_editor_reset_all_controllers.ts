@@ -1,5 +1,5 @@
+import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../../midi_file/midi_test_maker";
-import { MIDIControllers, MIDIMessage } from "../../../src";
 import { logEventsTest } from "./log_events";
 
 // TODO: Implement this in MIDI editor after confirming no regresions
@@ -44,4 +44,4 @@ test.modify({
     ])
 });
 
-logEventsTest(test.tracks[0].events as MIDIMessage[]);
+logEventsTest(test);

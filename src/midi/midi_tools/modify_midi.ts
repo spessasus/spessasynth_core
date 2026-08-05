@@ -1,31 +1,31 @@
-import { MIDIMessage } from "../midi_message";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
+import { MIDIMessage } from "../midi_message";
 
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
 
-import { BankSelectHacks } from "../../utils/midi_hacks";
-import {
-    type MIDIController,
-    MIDIControllers,
-    MIDIMessageTypes
-} from "../enums";
-import type { BasicMIDI } from "../basic_midi";
 import {
     type MIDIPatch,
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
+import type { MIDISystem } from "../../soundbank/types";
+import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type {
     ChorusProcessorSnapshot,
     DelayProcessorSnapshot,
     InsertionProcessorSnapshot,
     ReverbProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
-import { type AnalyzedMIDIMessage, MIDIUtils } from "./midi_utils";
-import type { MIDISystem } from "../../soundbank/types";
-import { ParameterTracker } from "./parameter_tracker";
-import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
+import { BankSelectHacks } from "../../utils/midi_hacks";
+import type { BasicMIDI } from "../basic_midi";
+import {
+    type MIDIController,
+    MIDIControllers,
+    MIDIMessageTypes
+} from "../enums";
+import { type AnalyzedMIDIMessage, MIDIUtils } from "./midi_utils";
+import { ParameterTracker } from "./parameter_tracker";
 
 import type { UserDrumSetParameter } from "../types";
 
@@ -773,9 +773,10 @@ export class MIDIEditor {
         value: number,
         channel: number
     ) {
+        // Change may be undefined but don't check, because we may encounter a "clear Drum param" request while the channel is not changed
+        // This still involves removing the drum NRPN
+        // Also param tracking
         const channelChange = this.channelChanges.get(channel);
-        // Make sure that we want to modify this channel at all
-        if (!channelChange) return;
         const channelStatus = this.channelStatuses[channel];
 
         const index = this.eventIndexes[this.trackNum];
@@ -883,43 +884,11 @@ export class MIDIEditor {
         if (channelStatus.isFirstNoteOn) {
             channelStatus.isFirstNoteOn = false;
             // All right, so this is the first note on for this channel
-            // Order is effectively reversed since we're adding events before
-
-            // First: controllers
-            // Because FSMP does not like program changes after cc changes in embedded midis
-            // And since we use splice,
-            // Controllers get added first, then programs before them.
-            // Now add controllers
-            if (channelChange.controllers)
-                for (const [cc, value] of channelChange.controllers) {
-                    if (value === "clear") continue;
-                    const ccChange = MIDIMessage.controllerChange(
-                        e.ticks,
-                        midiChannel,
-                        cc,
-                        value
-                    );
-                    this.addEventsBefore(ccChange);
-                }
-
-            // Apply relative tuning (`fineTune`)
-            if (
-                channelChange.midiParams?.fineTune !== undefined &&
-                channelChange.midiParams.fineTune !== "clear"
-            ) {
-                // Add the relative tuning to the absolute MIDI param
-                const newTune =
-                    channelStatus.fineTune + channelChange.midiParams.fineTune;
-                channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-                channelChange.midiParams.fineTune = newTune % 100;
-            } else {
-                // Make the relative tuning be set in MIDI parameters
-                const newTune =
-                    channelStatus.fineTune + channelStatus.currentFineTune;
-                channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-                channelChange.midiParams ??= {};
-                channelChange.midiParams.fineTune = newTune % 100;
-            }
+            // The order is:
+            // - patch selection
+            // - relative fine tune
+            // - controllers
+            // - parameters
 
             // Program change
             const patch = channelChange.patch;
@@ -1000,6 +969,38 @@ export class MIDIEditor {
                     )
                 );
             }
+
+            // Apply relative tuning (`fineTune`)
+            if (
+                channelChange.midiParams?.fineTune !== undefined &&
+                channelChange.midiParams.fineTune !== "clear"
+            ) {
+                // Add the relative tuning to the absolute MIDI param
+                const newTune =
+                    channelStatus.fineTune + channelChange.midiParams.fineTune;
+                channelStatus.currentKeyShift = Math.trunc(newTune / 100);
+                channelChange.midiParams.fineTune = newTune % 100;
+            } else {
+                // Make the relative tuning be set in MIDI parameters
+                const newTune =
+                    channelStatus.fineTune + channelStatus.currentFineTune;
+                channelStatus.currentKeyShift = Math.trunc(newTune / 100);
+                channelChange.midiParams ??= {};
+                channelChange.midiParams.fineTune = newTune % 100;
+            }
+
+            // Add controllers
+            if (channelChange.controllers)
+                for (const [cc, value] of channelChange.controllers) {
+                    if (value === "clear") continue;
+                    const ccChange = MIDIMessage.controllerChange(
+                        e.ticks,
+                        midiChannel,
+                        cc,
+                        value
+                    );
+                    this.addEventsBefore(ccChange);
+                }
 
             // Add MIDI parameters
             if (channelChange.midiParams) {
