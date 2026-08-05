@@ -1,10 +1,6 @@
-import {
-    MIDIControllers,
-    RegisteredParameterTypes,
-    SpessaLog
-} from "../../../src";
+import { MIDIControllers, RegisteredParameterTypes } from "../../../src";
 import { MIDITestMaker } from "../../midi_file/midi_test_maker";
-import { logEventsTest } from "./log_events";
+import { runMIDIEditorTest } from "./run_midi_editor_test";
 
 const midi = new MIDITestMaker("MIDI Editor Insertion order", {
     system: "gm"
@@ -17,13 +13,8 @@ midi.note(50, 127)
 
 midi.flush();
 
-console.info("\n\n\n--- BEFORE ---");
-logEventsTest(midi);
-
-SpessaLog.setLogLevel(true, true, true);
-
 // The event order should match the code, esp. data entries being after registered parameters
-midi.modify({
+runMIDIEditorTest(midi, {
     channels: new Map([
         [
             0,
@@ -66,5 +57,3 @@ midi.modify({
         time: 64
     }
 });
-console.info("\n\n\n--- AFTER ---");
-logEventsTest(midi);

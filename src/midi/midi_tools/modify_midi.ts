@@ -423,9 +423,8 @@ export class MIDIEditor {
      */
     private deleteThisEvent() {
         this.midi.tracks[this.trackNum].deleteEvent(
-            this.eventIndexes[this.trackNum]
+            this.eventIndexes[this.trackNum]--
         );
-        this.eventIndexes[this.trackNum]--;
     }
 
     private deleteCurrentEvent() {
@@ -452,25 +451,18 @@ export class MIDIEditor {
         const msb = p.paramMSB;
         const lsb = p.paramLSB;
 
-        SpessaLog.info(
-            `%cClearing Non/Registered Parameter on ${ch.channel}. ` +
-                `Clear MSB: %c${ch.clearedParams.pMSB}%c, ` +
-                `clear LSB: %c${ch.clearedParams.pLSB}%c, ` +
-                `clear data: %c${ch.clearedParams.data}.`,
-            ConsoleColors.info,
-            ConsoleColors.recognized,
-            ConsoleColors.info,
-            ConsoleColors.recognized,
-            ConsoleColors.info,
-            ConsoleColors.recognized
-        );
-
         // Delete the current data entry event first.
         // This is safe because it's the event currently being processed in the loop,
         // Meaning its index is always higher than or equal
         // To the cached MSB/LSB (on a different track).
         if (!ch.clearedParams.data) {
             this.deleteThisEvent();
+            SpessaLog.info(
+                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Current data entry + params)`,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info
+            );
 
             // Shift the events down if they are on the same track (very likely)
             if (this.trackNum === msb.track && index < msb.event) msb.event--;
@@ -490,6 +482,13 @@ export class MIDIEditor {
 
             // Flag MSB as deleted
             ch.clearedParams.pMSB = true;
+
+            SpessaLog.info(
+                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Data entry MSB)`,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info
+            );
         }
 
         if (!ch.clearedParams.pLSB) {
@@ -499,6 +498,13 @@ export class MIDIEditor {
 
             // Flag LSB as deleted
             ch.clearedParams.pLSB = true;
+
+            SpessaLog.info(
+                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Data entry LSB)`,
+                ConsoleColors.info,
+                ConsoleColors.recognized,
+                ConsoleColors.info
+            );
         }
     }
 
@@ -752,6 +758,13 @@ export class MIDIEditor {
             const e = this.midi.tracks[this.trackNum].events[index];
 
             this.deleteCurrentEvent();
+
+            // Don't update tuning if no notes have played.
+            if (channelStatus.isFirstNoteOn) {
+                return;
+            }
+
+            // And update this tuning
             this.addEventsBefore(
                 ...MIDIUtils.setChannelMIDIParameter(
                     e.ticks,
@@ -907,7 +920,7 @@ export class MIDIEditor {
                 let desiredBankLSB = patch.bankLSB;
                 const desiredProgram = patch.program;
 
-                // The output event order is: drums -> lsb -> msb -> program change
+                // The output event order is: drums -> msb -> lsb -> program change
                 if (
                     patch.isGMGSDrum &&
                     !BankSelectHacks.isSystemXG(this.system) &&
@@ -944,19 +957,19 @@ export class MIDIEditor {
                     desiredBankLSB = 0;
                 }
 
-                // Add bank change (LSB first)
+                // Add bank change (MSB first)
                 this.addEventsBefore(
-                    MIDIMessage.controllerChange(
-                        e.ticks,
-                        midiChannel,
-                        MIDIControllers.bankSelectLSB,
-                        desiredBankLSB
-                    ),
                     MIDIMessage.controllerChange(
                         e.ticks,
                         midiChannel,
                         MIDIControllers.bankSelect,
                         desiredBankMSB
+                    ),
+                    MIDIMessage.controllerChange(
+                        e.ticks,
+                        midiChannel,
+                        MIDIControllers.bankSelectLSB,
+                        desiredBankLSB
                     )
                 );
 
@@ -980,7 +993,7 @@ export class MIDIEditor {
                     channelStatus.fineTune + channelChange.midiParams.fineTune;
                 channelStatus.currentKeyShift = Math.trunc(newTune / 100);
                 channelChange.midiParams.fineTune = newTune % 100;
-            } else {
+            } else if (channelStatus.fineTune !== 0) {
                 // Make the relative tuning be set in MIDI parameters
                 const newTune =
                     channelStatus.fineTune + channelStatus.currentFineTune;
