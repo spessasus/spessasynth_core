@@ -427,6 +427,34 @@ export class MIDIEditor {
         );
     }
 
+    /**
+     * Deletes an event from a track and keeps every cached RPN/NRPN parameter
+     * event index valid.
+     *
+     * The parameter trackers cache absolute event indexes so a whole N/RPN group can be removed later. Whenever
+     * an event is deleted, the loop position and every cached index that comes
+     * after the deleted event must shift down by one, otherwise a later cleanup
+     * would delete the wrong events.
+     * Testcase: midi_editor_nrpn_test.ts (Case: interleaved NRPN between channels)
+     * @param track The track to delete the event from.
+     * @param index The index of the event to delete.
+     * @private
+     */
+    private deleteTrackEvent(track: number, index: number) {
+        this.midi.tracks[track].deleteEvent(index);
+
+        // Move the loop back if we deleted the current (or a previous) event.
+        // This prevents it from skipping over the shifted events.
+        if (index <= this.eventIndexes[track]) {
+            this.eventIndexes[track]--;
+        }
+
+        // Update all trackers accordingly
+        for (const channelStatus of this.channelStatuses) {
+            channelStatus.param.deleteEvent(track, index);
+        }
+    }
+
     private deleteCurrentEvent() {
         if (this.currentParameterChannel !== -1) {
             this.deleteCurrentParameter();
@@ -436,7 +464,6 @@ export class MIDIEditor {
     }
 
     private deleteCurrentParameter() {
-        const index = this.eventIndexes[this.trackNum];
         const ch = this.channelStatuses[this.currentParameterChannel];
         // Delete the parameter selection pair + the data entry that we're currently processing.
         // We don't wait for lsb as it's not required to arrive :-(
@@ -458,33 +485,29 @@ export class MIDIEditor {
         if (!ch.clearedParams.data) {
             this.deleteThisEvent();
             SpessaLog.info(
-                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Current data entry + params)`,
+                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Current data entry)`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
                 ConsoleColors.info
             );
 
-            // Shift the events down if they are on the same track (very likely)
-            if (this.trackNum === msb.track && index < msb.event) msb.event--;
-            if (this.trackNum === lsb.track && index < lsb.event) lsb.event--;
-
             // Flag data as deleted
             ch.clearedParams.data = true;
         }
 
-        if (!ch.clearedParams.pMSB) {
-            // Delete data MSB
-            this.midi.tracks[msb.track].deleteEvent(msb.event);
-            this.eventIndexes[msb.track]--;
+        // Delete params
 
-            // Shift the LSB down if they are on the same track (very likely)
-            if (msb.track === lsb.track && msb.event < lsb.event) lsb.event--;
+        // The cached MSB/LSB indexes are kept valid by `deleteTrackEvent`.
+        // It shifts all cached indexes whenever an event is deleted.
+        if (!ch.clearedParams.pMSB) {
+            // Delete param MSB
+            this.deleteTrackEvent(msb.track, msb.event);
 
             // Flag MSB as deleted
             ch.clearedParams.pMSB = true;
 
             SpessaLog.info(
-                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Data entry MSB)`,
+                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Param MSB)`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
                 ConsoleColors.info
@@ -492,15 +515,14 @@ export class MIDIEditor {
         }
 
         if (!ch.clearedParams.pLSB) {
-            // Delete data LSB
-            this.midi.tracks[lsb.track].deleteEvent(lsb.event);
-            this.eventIndexes[lsb.track]--;
+            // Delete param LSB
+            this.deleteTrackEvent(lsb.track, lsb.event);
 
             // Flag LSB as deleted
             ch.clearedParams.pLSB = true;
 
             SpessaLog.info(
-                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Data entry LSB)`,
+                `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Param LSB)`,
                 ConsoleColors.info,
                 ConsoleColors.recognized,
                 ConsoleColors.info

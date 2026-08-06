@@ -13,7 +13,10 @@ export function logEventsTest(midi: BasicMIDI) {
 
         for (const event of track.events) {
             const ch = event.statusByte & 0xf;
-            const status = event.statusByte & 0xf0;
+            const status =
+                event.statusByte < 0x80
+                    ? event.statusByte
+                    : event.statusByte & 0xf0;
             switch (status) {
                 case MIDIMessageTypes.controllerChange: {
                     console.info(
