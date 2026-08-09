@@ -1,6 +1,6 @@
 {
     "name": "spessasynth_core",
-    "version": "4.3.16",
+    "version": "4.3.17",
     "description": "MIDI and SoundFont2/DLS library with no compromises",
     "type": "module",
     "main": "dist/index.js",
@@ -16,7 +16,9 @@
         "test:midi": "tsx tests/midi_file/make_tests.ts",
         "test:midi:render": "tsx tests/midi_file/render_tests.ts",
         "prepublishOnly": "npm run format && npm run build",
-        "prepare": "husky install"
+        "prepare": "husky install",
+        "dev:vorbis": "npm uninstall stb-vorbis; npm install ../stb-vorbis",
+        "release:vorbis": "npm uninstall stb-vorbis; npm install stb-vorbis"
     },
     "repository": {
         "type": "git",
@@ -85,5 +87,8 @@
     "allowScripts": {
         "esbuild@0.28.0": true,
         "midi@2.0.0": true
+    },
+    "dependencies": {
+        "stb-vorbis": "latest"
     }
 }

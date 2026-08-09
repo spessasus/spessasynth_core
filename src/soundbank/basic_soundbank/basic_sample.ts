@@ -1,9 +1,9 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
-import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { type SampleType, SampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
 import type { SampleEncodingFunction } from "../types";
 import { SpessaLog } from "../../utils/loggin";
+import { StbVorbis } from "stb-vorbis";
 
 // Should be reasonable for most cases
 const RESAMPLE_RATE = 48_000;
@@ -354,14 +354,26 @@ export class BasicSample {
             throw new Error("Compressed data is missing.");
         }
         try {
-            const vorbis = stbvorbis.decode(this.compressedData);
-            const decoded = vorbis.data[0];
-            if (decoded === undefined) {
+            const vorbis = StbVorbis.decode(this.compressedData);
+            if (vorbis.sampleRate !== this.sampleRate) {
                 SpessaLog.warn(
-                    `Error decoding sample ${this.name}: Vorbis decode returned undefined.`
+                    `Sample ${this.name}: Sample rate mismatch. Expected ${this.sampleRate}, got ${vorbis.sampleRate}.`
                 );
-                return new Float32Array(0);
             }
+
+            if (vorbis.channels.length === 0) {
+                SpessaLog.warn(
+                    `Error decoding sample ${this.name}: No channels!`
+                );
+                // Do not error out, fill with silence
+                return new Float32Array(this.loopEnd);
+            } else if (vorbis.channels.length > 1) {
+                SpessaLog.warn(
+                    `Sample ${this.name}: Returned ${vorbis.channels.length} channels instead of mono.`
+                );
+            }
+
+            const decoded = vorbis.channels[0];
             // Clip
             // Because vorbis can go above 1 sometimes
             for (let i = 0; i < decoded.length; i++) {

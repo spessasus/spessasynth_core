@@ -13,7 +13,6 @@ import {
     readBinaryString,
     readBinaryStringIndexed
 } from "../../../utils/byte_functions/string";
-import { stbvorbis } from "../../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
@@ -21,6 +20,7 @@ import type { SF2InfoFourCC } from "../../types";
 import type { Generator } from "../../basic_soundbank/generator";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import { parseDateString } from "../../../utils/date";
+import { StbVorbis } from "stb-vorbis";
 
 /**
  * Soundfont.ts
@@ -199,8 +199,9 @@ export class SoundFont2 extends BasicSoundBank {
                 "%cSF2Pack detected, attempting to decode the smpl chunk...",
                 ConsoleColors.info
             );
+            let vorbis;
             try {
-                sampleData = stbvorbis.decode(
+                vorbis = StbVorbis.decode(
                     mainFileArray.buffer.slice(
                         mainFileArray.currentIndex,
                         mainFileArray.currentIndex +
@@ -208,7 +209,7 @@ export class SoundFont2 extends BasicSoundBank {
                             4 -
                             sdtaChunk.headerSize
                     )
-                ).data[0];
+                );
             } catch (error) {
                 SpessaLog.groupEnd();
                 throw new Error(
@@ -216,6 +217,12 @@ export class SoundFont2 extends BasicSoundBank {
                     { cause: error }
                 );
             }
+            if (vorbis.channels.length !== 1) {
+                throw new Error(
+                    `The encoded sample data must be mono, received ${vorbis.channels.length} channels.`
+                );
+            }
+            sampleData = vorbis.channels[0];
             SpessaLog.info(
                 `%cDecoded the smpl chunk! Length: %c${sampleData.length}`,
                 ConsoleColors.info,

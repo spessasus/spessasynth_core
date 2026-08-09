@@ -11,7 +11,6 @@ import { BasicSample, EmptySample } from "./basic_sample";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 
 import type {
     DLSWriteOptions,
@@ -34,6 +33,7 @@ import {
     DownloadableSounds
 } from "../downloadable_sounds/downloadable_sounds";
 import { Generator } from "./generator";
+import { StbVorbis } from "stb-vorbis";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -42,7 +42,7 @@ export class BasicSoundBank {
     /**
      * Indicates if the SF3/SF2Pack decoder is ready.
      */
-    public static isSF3DecoderReady: Promise<boolean> = stbvorbis.isInitialized;
+    public static isSF3DecoderReady: Promise<void> = StbVorbis.ready;
 
     /**
      * The type of the sound bank that was loaded.

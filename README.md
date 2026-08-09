@@ -50,7 +50,7 @@ and reworked, more powerful API!
 - **Flexible:** _It's not just a MIDI player!_
 - **Easy to Use:** _Basic setup is
   just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
-- **No dependencies:** _Batteries included!_
+- **No external dependencies:** _Only vorbis decoder for SF3 support!_
 - **Full TypeScript definitions:** _Autocompletion in IDEs!_
 
 ### Powerful MIDI Synthesizer
@@ -203,7 +203,6 @@ and reworked, more powerful API!
 - [Polyphone](https://github.com/davy7125/polyphone/) - for the soundfont testing and editing tool
 - [Meltysynth](https://github.com/sinshu/meltysynth) - for the initial low-pass filter implementation
 - [RecordingBlogs](https://www.recordingblogs.com/) - for detailed explanations on MIDI messages
-- [stbvorbis.js](https://github.com/hajimehoshi/stbvorbis.js) - for the Vorbis decoder
 - [fflate](https://github.com/101arrowz/fflate) - for the MIT DEFLATE implementation
 - [tsup](https://github.com/egoist/tsup) - for the TypeScript bundler
 - [foo_midi](https://github.com/stuerp/foo_midi) - for useful resources on XMF file format
