@@ -1,7 +1,6 @@
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
 import { EMBEDDED_SOUND_BANK_ID } from "./audio_engine/synth_constants";
-import { stbvorbis } from "../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import {
@@ -28,6 +27,7 @@ import type { MIDIChannel } from "./audio_engine/channel/midi_channel";
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type { MIDISystem } from "../soundbank/types";
 import type { SysExAcceptedArray } from "../midi/types";
+import { BasicSoundBank } from "../soundbank/exports";
 
 /**
  * Processor.ts
@@ -39,8 +39,7 @@ export class SpessaSynthProcessor {
     /**
      * Controls if the processor is fully initialized.
      */
-    public readonly processorInitialized: Promise<boolean> =
-        stbvorbis.isInitialized;
+    public readonly processorInitialized = BasicSoundBank.isSF3DecoderReady;
     /**
      * Sample rate in Hertz.
      */
