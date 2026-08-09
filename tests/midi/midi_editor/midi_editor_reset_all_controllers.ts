@@ -2,7 +2,6 @@ import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../../midi_file/midi_test_maker";
 import { logEventsTest } from "./log_events";
 
-// TODO: Implement this in MIDI editor after confirming no regresions
 const test = new MIDITestMaker("Reset All Controllers MIDI Editor Handling");
 test.text("This test checks if the MIDI editor correctly handles CC#121");
 
@@ -45,3 +44,5 @@ test.modify({
 });
 
 logEventsTest(test);
+
+await test.make();

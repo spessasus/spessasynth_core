@@ -28,6 +28,7 @@ import { type AnalyzedMIDIMessage, MIDIUtils } from "./midi_utils";
 import { ParameterTracker } from "./parameter_tracker";
 
 import type { UserDrumSetParameter } from "../types";
+import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
 
 const reverbAddressMap: ReverbProcessorSnapshot = {
     character: 0x31,
@@ -411,6 +412,21 @@ export class MIDIEditor {
         for (const item of events) {
             this.midi.tracks[this.trackNum].addEvents(
                 this.eventIndexes[this.trackNum],
+                item
+            );
+            this.eventIndexes[this.trackNum]++;
+        }
+    }
+
+    /**
+     * This function adds the events after the current one IN ORDER they are in the array,
+     * So the first event in the array will end up as the first one after the current event.
+     * @param events
+     */
+    private addEventsAfter(...events: MIDIMessage[]) {
+        for (const item of events) {
+            this.midi.tracks[this.trackNum].addEvents(
+                this.eventIndexes[this.trackNum] + 1,
                 item
             );
             this.eventIndexes[this.trackNum]++;
@@ -909,8 +925,91 @@ export class MIDIEditor {
                 return;
             }
 
+            case MIDIControllers.resetAllControllers: {
+                this.handleResetAllControllers(channel);
+                return;
+            }
+
             default: {
                 return;
+            }
+        }
+    }
+    /**
+     * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
+     * Reset controllers according to RP-15 Recommended Practice.
+     *
+     * From the PDF:
+     * Upon receipt of Reset All Controllers message (Controller #121) the following actions are taken
+     *  for the specified MIDI channel:
+     *  Set Expression (#11) to 127.
+     *  Set Modulation (#1) to 0.
+     *  Set Pedals (#64, #65, #66, #67) to 0.
+     *  Set Registered and Non-registered parameter number LSB and MSB
+     *  (#98-#101) to null value (127)
+     *  Set pitch bender to center (64/0)
+     *  Reset channel pressure to 0
+     *  Reset polyphonic pressure for all notes to 0.
+     *  Do NOT reset Bank Select (#0/#32)
+     *  Do NOT reset Volume (#7)
+     *  Do NOT reset Pan (#10)
+     *  Do NOT reset Program Change.
+     *  Do NOT reset Effect Controllers (#91-#95)
+     *  Do NOT reset Sound Controllers
+     *  (#70-#79)
+     *  Do NOT reset other channel mode messages (#120-#127).
+     *  Do NOT reset registered or non-registered parameters.
+     *  Any other controllers that a device can respond to should be set to 0, or the behavior should
+     *  be specified and/or documented. If the manufacturer does not want the Reset All Controllers
+     *  message to affect a particular controller, that is also permissible, as long as the behavior is
+     *  documented.
+     *
+     *  Note:
+     *  GS/XG only reset the specified CCs above.
+     */
+    private handleResetAllControllers(channel: number) {
+        const track = this.midi.tracks[this.trackNum];
+        // Add after
+        const index = this.eventIndexes[this.trackNum] + 1;
+        const ticks = track.events[index].ticks;
+        const channelChange = this.channelChanges.get(channel);
+        if (!channelChange) return;
+
+        // Restore MIDI parameters
+        if (
+            channelChange.midiParams?.pitchWheel &&
+            channelChange.midiParams?.pitchWheel !== "clear"
+        ) {
+            this.addEventsAfter(
+                ...MIDIUtils.setChannelMIDIParameter(
+                    ticks,
+                    channel,
+                    this.system,
+                    "pitchWheel",
+                    channelChange.midiParams.pitchWheel
+                )
+            );
+        }
+        if (
+            channelChange.midiParams?.pressure &&
+            channelChange.midiParams?.pressure !== "clear"
+        ) {
+            this.addEventsAfter(
+                ...MIDIUtils.setChannelMIDIParameter(
+                    ticks,
+                    channel,
+                    this.system,
+                    "pressure",
+                    channelChange.midiParams.pressure
+                )
+            );
+        }
+        for (const cc of RP_15_RESET_CC_NUMS) {
+            const value = channelChange.controllers?.get(cc);
+            if (value && value !== "clear") {
+                this.addEventsAfter(
+                    MIDIMessage.controllerChange(ticks, channel, cc, value)
+                );
             }
         }
     }
