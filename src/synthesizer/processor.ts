@@ -40,7 +40,7 @@ export class SpessaSynthProcessor {
     /**
      * Controls if the processor is fully initialized.
      */
-    public readonly processorInitialized = BasicSoundBank.isSF3DecoderReady;
+    public readonly ready = BasicSoundBank.ready;
     /**
      * Sample rate in Hertz.
      */
@@ -242,7 +242,7 @@ export class SpessaSynthProcessor {
             // Don't send events as we're creating the initial channels
             this.synthCore.createMIDIChannel(false);
         }
-        void this.processorInitialized.then(() => {
+        void this.ready.then(() => {
             SpessaLog.info("%cSpessaSynth is ready!", ConsoleColors.recognized);
         });
     }

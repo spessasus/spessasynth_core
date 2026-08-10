@@ -42,7 +42,7 @@ export class BasicSoundBank {
     /**
      * Indicates if the SF3/SF2Pack decoder is ready.
      */
-    public static isSF3DecoderReady: Promise<void> = StbVorbis.ready;
+    public static ready: Promise<void> = StbVorbis.ready;
 
     /**
      * The type of the sound bank that was loaded.

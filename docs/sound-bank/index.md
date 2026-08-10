@@ -26,7 +26,7 @@ The returned value is the parsed `BasicSoundBank`, described below.
 
 ## Properties
 
-### isSF3DecoderReady
+### ready
 
 A Promise object indicating if the SF3/SF2Pack decoder is ready.
 Make sure to await it if you are loading SF3/SF2Pack files.

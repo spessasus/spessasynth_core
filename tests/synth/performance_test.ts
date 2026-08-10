@@ -46,7 +46,7 @@ export async function runPerformanceTest(
             eventsEnabled: false
         });
         synth.soundBankManager.addSoundBank(sbk, "main");
-        await synth.processorInitialized;
+        await synth.ready;
         const seq = new SpessaSynthSequencer(synth);
         seq.loadNewSongList([midi]);
         seq.play();

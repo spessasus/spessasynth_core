@@ -248,7 +248,7 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(soundBank, "main");
-await synth.processorInitialized;
+await synth.ready;
 // Enable verbose information during render
 SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count

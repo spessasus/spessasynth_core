@@ -32,7 +32,7 @@ synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
-await synth.processorInitialized;
+await synth.ready;
 
 // Initialize the MIDI inputs
 const input = new midi.Input();

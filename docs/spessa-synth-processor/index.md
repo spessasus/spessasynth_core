@@ -311,7 +311,7 @@ Clear the synthesizer's voice cache.
 
 ## Properties
 
-### processorInitialized
+### ready
 
 A `Promise` that must be awaited before the processor can be used with a compressed sound bank.
 
