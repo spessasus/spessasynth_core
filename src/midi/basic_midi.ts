@@ -41,6 +41,7 @@ import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { parseRMIDIInternal } from "./read/rmidi";
 import { loadXMF } from "./read/xmf";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
+import { removeEMIDINonGMTracksInternal } from "./midi_tools/emidi";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -447,6 +448,24 @@ export class BasicMIDI {
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
         modifyMIDIInternal(this, opts);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Removes the tracks that EMIDI designates for a device other than
+     * General MIDI.
+     *
+     * An EMIDI song built for several synthesizers carries one copy of its
+     * content per target, each marked with a Track Designation controller,
+     * so playing it as plain General MIDI sounds every copy at once. Tracks
+     * that carry no designation are left alone, so this is a no-op on a file
+     * that is not EMIDI.
+     *
+     * This modifies the MIDI sequence _in-place_.
+     * @returns the number of tracks removed.
+     */
+    public removeEMIDINonGMTracks(): number {
+        return removeEMIDINonGMTracksInternal(this);
     }
 
     // noinspection JSUnusedGlobalSymbols
