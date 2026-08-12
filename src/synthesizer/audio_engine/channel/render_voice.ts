@@ -331,8 +331,12 @@ export function renderVoice(
     const gainLeft = panTableLeft[index] * outputGain;
     const gainRight = panTableRight[index] * outputGain;
 
-    if (this._midiParameters.efxAssign) {
-        // Straight into the insertion EFX!
+    // Straight into the insertion EFX, but only if it is active
+    if (
+        this._midiParameters.efxAssign &&
+        systemParameters.effectsEnabled &&
+        core.insertionActive
+    ) {
         const insertionL = core.insertionInputL;
         const insertionR = core.insertionInputR;
         for (let i = 0; i < sampleCount; i++) {

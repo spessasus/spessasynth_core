@@ -224,6 +224,10 @@ export class SynthesizerCore {
      */
     public readonly delayProcessor: DelayProcessor;
     /**
+     * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
+     */
+    public insertionActive = false;
+    /**
      * A sysEx may set a "Part" (channel) to receive on a different channel number.
      * This slows down the access, so this toggle tracks if it's enabled or not.
      */
@@ -248,10 +252,6 @@ export class SynthesizerCore {
      * The key is the EFX type stored as MSB << 8 | LSB
      */
     protected readonly insertionEffects = new Map<number, InsertionProcessor>();
-    /**
-     * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
-     */
-    protected insertionActive = false;
     /**
      * For F5 system exclusive.
      */
