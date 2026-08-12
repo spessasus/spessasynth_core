@@ -245,7 +245,7 @@ export class SynthesizerCore {
     /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      */
-    protected insertionActive = false;
+    public insertionActive = false;
     /**
      * For F5 system exclusive.
      */

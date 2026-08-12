@@ -331,7 +331,14 @@ export function renderVoice(
     const gainLeft = panTableLeft[index] * outputGain;
     const gainRight = panTableRight[index] * outputGain;
 
-    if (this._midiParameters.efxAssign) {
+    // Route into the insertion bus only if it will be processed this block.
+    // Otherwise that buffer is neither cleared nor read.
+    // Losing the channel is not what disabling the effects should mean.
+    if (
+        this._midiParameters.efxAssign &&
+        systemParameters.effectsEnabled &&
+        core.insertionActive
+    ) {
         // Straight into the insertion EFX!
         const insertionL = core.insertionInputL;
         const insertionR = core.insertionInputR;
