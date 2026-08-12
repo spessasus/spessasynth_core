@@ -297,6 +297,12 @@ export class Voice {
         this.overrideReleaseVolEnv = 0;
         this.portamentoDuration = 0;
         this.portamentoFromKey = -1;
+        /* The tuning ratio is only recomputed when the rounded cents change,
+         * so a stale pair left by the previous note on this voice would be
+         * reused as-is whenever the new note rounds to the same cents.
+         */
+        this.tuningCents = 0;
+        this.tuningRatio = 1;
         // Important, these start at 1/4 way there!
         this.vibLfoPhase = 0.25;
         this.modLfoPhase = 0.25;
