@@ -230,6 +230,13 @@ export class VolumeEnvelope {
         this.state = 0;
         this.sampleTime = 0;
         this.outputGain = 0;
+        /* Voices are recycled, so the envelope has to start from its initial
+         * values rather than from wherever the previous note left it.
+         */
+        this.attenuationCb = CB_SILENCE;
+        this.releaseStartCb = CB_SILENCE;
+        this.releaseStartTimeSamples = 0;
+        this.releaseDuration = 0;
         this.canEndOnSilentSustain =
             voice.modulatedGenerators[GeneratorTypes.sustainVolEnv] >=
             PERCEIVED_CB_SILENCE;
