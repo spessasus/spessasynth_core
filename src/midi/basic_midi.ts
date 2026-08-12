@@ -730,7 +730,9 @@ export class BasicMIDI {
                                     break;
                                 }
                                 // EMIDI/XMI
-                                case MIDIControllers.undefinedCC116LSB: {
+                                case MIDIControllers.undefinedCC116LSB:
+                                // EMIDI global loop
+                                case MIDIControllers.undefinedCC118LSB: {
                                     loopStart = e.ticks;
                                     break;
                                 }
@@ -738,7 +740,9 @@ export class BasicMIDI {
                                 // Touhou
                                 case MIDIControllers.footController:
                                 // EMIDI/XMI
-                                case MIDIControllers.undefinedCC117LSB: {
+                                case MIDIControllers.undefinedCC117LSB:
+                                // EMIDI global loop
+                                case MIDIControllers.undefinedCC119LSB: {
                                     // For Touhou loops, the data value must be 0.
                                     if (
                                         loopEnd === null &&
