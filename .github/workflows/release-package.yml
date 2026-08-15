@@ -35,8 +35,3 @@ jobs:
 
             - name: Build and publish to npm registry
               run: npm publish --provenance --access public
-
-            - name: Deprecate old versions
-              run: npm deprecate "spessasynth_core@<${GITHUB_REF_NAME#v}" "Only the latest version of spessasynth_core is supported."
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
