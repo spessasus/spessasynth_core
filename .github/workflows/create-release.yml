@@ -48,9 +48,9 @@ jobs:
                       echo "## What's Changed"
                       echo ""
                       if [ "$IS_FIRST" = "true" ]; then
-                          git log --pretty=format:"- %s (\`%h\`)" HEAD
+                          git log --pretty=format:"- %s (\`%h\`)" HEAD^ 2>/dev/null || git log --pretty=format:"- %s (\`%h\`)" HEAD
                       else
-                          git log --pretty=format:"- %s (\`%h\`)" "${PREV_TAG}..${TAG}"
+                          git log --pretty=format:"- %s (\`%h\`)" "${PREV_TAG}..${TAG}^"
                       fi
                       echo ""
                       echo ""
