@@ -58,30 +58,14 @@ export class SpessaSynthProcessor {
      * @param right the right output channel.
      * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
      * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
+     * @param channelOutputs optional stereo channel outputs for visualization _only_. These shouldn't be added to the direct outputs.
      */
     public readonly process: (
         left: Float32Array,
         right: Float32Array,
         startIndex?: number,
-        sampleCount?: number
-    ) => void;
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`.
-     * All float arrays must have the same length.
-     * @param outputs any number stereo pairs (L, R) to render channels separately into.
-     * @param effectsLeft the left stereo effect output buffer.
-     * @param effectsRight the left stereo effect output buffer.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     */
-    public readonly processSplit: (
-        outputs: Float32Array[][],
-        effectsLeft: Float32Array,
-        effectsRight: Float32Array,
-        startIndex?: number,
-        sampleCount?: number
+        sampleCount?: number,
+        channelOutputs?: Float32Array[][]
     ) => void;
 
     /**
@@ -227,7 +211,6 @@ export class SpessaSynthProcessor {
         // Bind methods for less overhead
         const c = this.synthCore;
         this.process = c.process.bind(c);
-        this.processSplit = c.processSplit.bind(c);
         this.systemExclusive = c.systemExclusive.bind(c);
         this.controllerChange = c.controllerChange.bind(c);
         this.noteOn = c.noteOn.bind(c);

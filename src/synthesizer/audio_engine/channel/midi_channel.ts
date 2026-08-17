@@ -114,6 +114,19 @@ export class MIDIChannel {
      * @internal
      */
     public readonly synthCore: SynthesizerCore;
+
+    /**
+     * Current left PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
+     * Always 0-based index.
+     * @internal
+     */
+    public readonly outputLeft: Float32Array;
+    /**
+     * Current right PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
+     * Always 0-based index.
+     * @internal
+     */
+    public readonly outputRight: Float32Array;
     /*
     ==========
     PUBLIC API
@@ -190,10 +203,7 @@ export class MIDIChannel {
      * Renders a voice to the stereo output buffer
      * @param voice the voice to render
      * @param timeNow current time in seconds
-     * @param outputL the left output buffer
-     * @param outputR the right output buffer
-     * @param startIndex
-     * @param sampleCount
+     * @param sampleCount the only thing needed as it's 0-based
      * @internal
      */
     public readonly renderVoice = renderVoice.bind(this);
@@ -380,6 +390,8 @@ export class MIDIChannel {
         this.synthCore = synthProperties;
         this.preset = preset;
         this.channel = channelNumber;
+        this.outputLeft = new Float32Array(this.synthCore.maxBufferSize);
+        this.outputRight = new Float32Array(this.synthCore.maxBufferSize);
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
         this.dynamicModulators = new DynamicModulatorManager(channelNumber);

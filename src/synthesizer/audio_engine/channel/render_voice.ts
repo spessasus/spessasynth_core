@@ -26,18 +26,12 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * Renders a voice to the stereo output buffer
  * @param voice the voice to render
  * @param timeNow current time in seconds
- * @param outputL the left output buffer
- * @param outputR the right output buffer
- * @param startIndex
- * @param sampleCount
+ * @param sampleCount the only thing needed as it's 0-based
  */
 export function renderVoice(
     this: MIDIChannel,
     voice: Voice,
     timeNow: number,
-    outputL: Float32Array,
-    outputR: Float32Array,
-    startIndex: number,
     sampleCount: number
 ) {
     // Check if release
@@ -331,30 +325,25 @@ export function renderVoice(
     const gainLeft = panTableLeft[index] * outputGain;
     const gainRight = panTableRight[index] * outputGain;
 
-    // Straight into the insertion EFX, but only if it is active
-    if (
-        this._midiParameters.efxAssign &&
-        systemParameters.effectsEnabled &&
-        core.insertionActive
-    ) {
-        const insertionL = core.insertionInputL;
-        const insertionR = core.insertionInputR;
-        for (let i = 0; i < sampleCount; i++) {
-            const s = buffer[i];
-            insertionL[i] += gainLeft * s;
-            insertionR[i] += gainRight * s;
-        }
-        return;
-    }
-
-    // Mix down the audio data
+    // Mix down the audio data, always 0-based
+    const { outputLeft, outputRight } = this;
     for (let i = 0; i < sampleCount; i++) {
         const s = buffer[i];
-        const idx = i + startIndex;
-        outputL[idx] += gainLeft * s;
-        outputR[idx] += gainRight * s;
+        outputLeft[i] += gainLeft * s;
+        outputRight[i] += gainRight * s;
     }
-    if (!systemParameters.effectsEnabled) {
+
+    /**
+     * Do not send to effects if:
+     * - Either effects are disabled
+     * - Or insertion is active on this channel (Insertion takes over the voice data)
+     */
+    if (
+        (this._midiParameters.efxAssign &&
+            systemParameters.effectsEnabled &&
+            core.insertionActive) ||
+        !systemParameters.effectsEnabled
+    ) {
         return;
     }
 
