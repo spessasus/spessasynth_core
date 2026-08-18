@@ -557,7 +557,7 @@ export function modifyMIDIInternal(midi: BasicMIDI, opts: ModifyMIDIOptions) {
                             addEventBefore(
                                 MIDIUtils.gsMessage(
                                     e.ticks,
-                                    40,
+                                    0x40,
                                     chanAddress,
                                     0x15,
                                     [1]
