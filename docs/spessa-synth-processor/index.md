@@ -34,7 +34,6 @@ All properties are optional. If they are not supplied, the defaults will be used
 
 ## Managers
 
-- [Key Modifier Manager](key-modifier-manager.md)
 - [Sound Bank Manager](sound-bank-manager.md)
 
 ## Methods
@@ -351,10 +350,6 @@ Synthesizer's delay processor, a [`DelayProcessor` instance](effects/delay-proce
 ### soundBankManager
 
 The [sound bank manager](sound-bank-manager.md) of this synthesizer.
-
-### keyModifierManager
-
-The [key modifier manager](key-modifier-manager.md) of this synthesizer.
 
 ### onMissingPreset
 

@@ -17,7 +17,6 @@ import { CachedVoice } from "./voice/voice_cache";
 import { SpessaLog } from "../../utils/loggin";
 import { MIDIChannel } from "./channel/midi_channel";
 import { SoundBankManager } from "./sound_bank_manager";
-import { KeyModifierManager } from "./key_modifier_manager";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
@@ -118,10 +117,6 @@ export class SynthesizerCore {
     public soundBankManager: SoundBankManager = new SoundBankManager(
         this.updatePresetList.bind(this)
     );
-    /**
-     * Handles the custom key overrides: velocity and preset
-     */
-    public keyModifierManager: KeyModifierManager = new KeyModifierManager();
     public readonly sampleRate;
     /**
      * This.tunings[program * 128 + key] = midiNote,cents (fraction)
@@ -541,20 +536,7 @@ export class SynthesizerCore {
     ): CachedVoiceList {
         const channelObject = this.midiChannels[channel];
 
-        // Override patch
-        const overridePatch = this.keyModifierManager.hasOverridePatch(
-            channel,
-            midiNote
-        );
-
-        let preset = channelObject.preset;
-        if (overridePatch) {
-            const patch = this.keyModifierManager.getPatch(channel, midiNote);
-            preset = this.soundBankManager.getPreset(
-                patch,
-                this.midiParameters.system
-            );
-        }
+        const preset = channelObject.preset;
 
         // Warning is handled in program change
         if (!preset) {

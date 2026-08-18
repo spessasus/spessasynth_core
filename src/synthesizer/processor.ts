@@ -302,14 +302,6 @@ export class SpessaSynthProcessor {
         return this.synthCore.soundBankManager;
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Handles the custom key overrides: velocity and preset
-     */
-    public get keyModifierManager() {
-        return this.synthCore.keyModifierManager;
-    }
-
     /**
      * A handler for missing presets during program change. By default, it warns to console.
      * @param patch The MIDI patch that was requested.

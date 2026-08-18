@@ -1,5 +1,4 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
-import { type KeyModifier } from "./key_modifier_manager";
 import type {
     ChorusProcessorSnapshot,
     DelayProcessorSnapshot,
@@ -17,11 +16,6 @@ import type { UserDrumSetParameter } from "../../midi/types";
 export interface SynthesizerSnapshot {
     midiChannels: ChannelSnapshot[];
 
-    /**
-     * Key modifiers.
-     */
-    keyMappings: (KeyModifier | undefined)[][];
-
     midiParameters: GlobalMIDIParameter;
     lockedMIDIParameters: Record<keyof GlobalMIDIParameter, boolean>;
     systemParameters: GlobalSystemParameter;
@@ -38,9 +32,6 @@ export function applySnapshot(
     this: SynthesizerCore,
     snapshot: SynthesizerSnapshot
 ) {
-    // Restore key modifiers
-    this.keyModifierManager.setMappings(snapshot.keyMappings);
-
     // Add channels if more needed
     while (this.midiChannels.length < snapshot.midiChannels.length)
         this.createMIDIChannel(true);
@@ -134,7 +125,6 @@ export function getSynthesizerSnapshot(
         lockedMIDIParameters: { ...this.lockedMIDIParameters },
         systemParameters: { ...this.systemParameters },
         midiChannels: this.midiChannels.map((c) => c.getSnapshot()),
-        keyMappings: this.keyModifierManager.getMappings(),
         reverbProcessor: this.reverbProcessor.getSnapshot(),
         chorusProcessor: this.chorusProcessor.getSnapshot(),
         delayProcessor: this.delayProcessor.getSnapshot(),

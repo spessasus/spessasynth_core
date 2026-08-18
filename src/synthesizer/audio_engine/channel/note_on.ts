@@ -45,7 +45,7 @@ export function noteOn(
     }
 
     // Apply Velocity Sense and clamp
-    let realVelocity = clamp(
+    const realVelocity = clamp(
         Math.floor(
             velocity * (this._midiParameters.velocitySenseDepth / 64) +
                 (this._midiParameters.velocitySenseOffset - 64) * 2
@@ -74,20 +74,8 @@ export function noteOn(
     )
         this.killNote(midiNote);
 
-    // Key velocity override
-    const keyVel = this.synthCore.keyModifierManager.getVelocity(
-        this.channel,
-        midiNote
-    );
-    if (keyVel > -1) {
-        realVelocity = keyVel;
-    }
-
     // Gain
-    let voiceGain = this.synthCore.keyModifierManager.getGain(
-        this.channel,
-        midiNote
-    );
+    let voiceGain = 1;
 
     // Portamento
     const previousNote = this.lastPortamentoNote;

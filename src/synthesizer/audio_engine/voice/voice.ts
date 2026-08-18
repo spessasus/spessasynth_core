@@ -160,7 +160,7 @@ export class Voice {
     public rootKey = 0;
 
     /**
-     * Linear gain of the voice. Used with Key Modifiers.
+     * Linear gain of the voice.
      */
     public gainModifier = 1;
 
