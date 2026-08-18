@@ -191,10 +191,17 @@ export class HermiteOscillator extends WavetableOscillator {
                 // Y0 is not handled here
                 // As it's floor of cur which is handled above
 
-                // Ensure that the points above do not go over the loop
-                if (y1 >= loopEnd) y1 -= loopLength;
-                if (y2 >= loopEnd) y2 -= loopLength;
-                if (y3 >= loopEnd) y3 -= loopLength;
+                // Ensure that the points above do not go over the loop.
+                // Use while here:
+                // When the loop is very short (or the cursor wraps near the loop end),
+                // A single loop is not enough to bring
+                // The points back into the loop range.
+                // Note: Only applies to this interpolator (for using more than 2 samples)
+                // Testcase: OmegaGMGS2.sf2 drum kit,
+                // Crash Cymbal (loop length 1, shortest valid)
+                while (y1 >= loopEnd) y1 -= loopLength;
+                while (y2 >= loopEnd) y2 -= loopLength;
+                while (y3 >= loopEnd) y3 -= loopLength;
 
                 // Grab the samples
                 const xm1 = sampleData[y0];
