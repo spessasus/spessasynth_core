@@ -705,11 +705,13 @@ export function rolandSystemExclusive(
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
+                            // Testcase: Sarah Geronimo - Maybe This Time
                             SpessaLog.gsFail(
                                 `Patch Parameter for ${channel}`,
                                 syx,
-                                "Invalid channel number"
+                                "Invalid part number."
                             );
+                            return;
                         }
                         switch (a3) {
                             default: {

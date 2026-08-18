@@ -85,16 +85,17 @@ export function yamahaSystemExclusive(
 
         if (a1 === 0x08 /* A2 is the channel number*/) {
             const channel = a2 + channelOffset;
-            if (channel >= this.midiChannels.length) {
+            const ch = this.midiChannels[channel];
+            if (!ch) {
                 // Invalid channel
                 SpessaLog.xgFail(
-                    "Part Setup",
+                    `Part Setup for ${channel}`,
                     syx,
-                    `Invalid part number: ${channel}`
+                    `Invalid part number.`
                 );
                 return;
             }
-            const ch = this.midiChannels[channel];
+
             switch (a3) {
                 default: {
                     SpessaLog.xgFail("Part Setup", [syx[5]]);
