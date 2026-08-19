@@ -128,8 +128,8 @@ export function renderVoice(
             lowpassExcursion += vibLfoValue * vibFilterDepth;
 
             // Amplitude depth
-            voiceGain *=
-                1 - ((vibLfoValue + 1) / 2) * (vibAmplitudeDepth / 1000);
+            // Like SCVA: double gain at peak, 0 at lowest (times depth)
+            voiceGain *= 1 + vibLfoValue * (vibAmplitudeDepth / 1000);
         }
     }
 
@@ -163,8 +163,8 @@ export function renderVoice(
             lowpassExcursion += modLfoValue * modFilterDepth;
 
             // Amplitude depth
-            voiceGain *=
-                1 - ((modLfoValue + 1) / 2) * (modAmplitudeDepth / 1000);
+            // Like SCVA: double gain at peak, 0 at lowest (times depth)
+            voiceGain *= 1 + modLfoValue * (modAmplitudeDepth / 1000);
         }
     }
 
