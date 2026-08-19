@@ -291,7 +291,7 @@ if (fsmpAvailable) {
             let success = true;
             for (const [vstiName, presetNumber] of Object.entries(RENDERS)) {
                 console.info(
-                    `Rendering (${file}/${filesToRender.length}) for ${vstiName}`
+                    `Rendering ${file} (${totalRendered}/${filesToRender.length}) for ${vstiName}`
                 );
                 const doneLabel = `${file} (${vstiName}) rendered in`;
                 console.time(doneLabel);
@@ -359,7 +359,6 @@ if (fsmpAvailable) {
                         )
                     );
                     await fs.writeFile(outputPath, wavBuffer);
-                    totalRendered++;
                 } catch (error) {
                     console.warn(
                         `Failed to render ${file} with ${vstiName}:`,
@@ -371,6 +370,7 @@ if (fsmpAvailable) {
                     console.timeEnd(doneLabel);
                 }
             }
+            totalRendered++;
 
             if (success) {
                 // Write right away as spessa always renders everything
@@ -414,6 +414,7 @@ function runWorker(file: string) {
 console.info(`Queueing ${midiFiles.length} files for render.`);
 console.time("Spessasynth render completed in");
 
+totalRendered = 0;
 await Promise.all(
     midiFiles.map(async (file) => {
         await runWorker(file);

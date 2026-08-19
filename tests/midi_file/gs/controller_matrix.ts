@@ -4,7 +4,10 @@ import { MIDIControllers, RegisteredParameterTypes } from "../../../src";
 const test = new MIDITestMaker("GS Controller matrix comparison");
 
 // Sine wave, no reverb, max volume and no vibrato
-test.init(8, 1, 80);
+test.init(8, 1, 80, {
+    // Sine wave seems to have a filter in SC which changes volume with pitch, fix that here
+    brightness: 127
+});
 
 function sweepGSMatrix(name: string, a3: number, v: number) {
     test.text(name)
@@ -62,7 +65,9 @@ test.text("CC1 TVF CONTROL -9600 [cents] at highest")
     .wait(480);
 
 // Back to sine wave
-test.programChange(8, 1, 80);
+test.init(8, 1, 80, {
+    brightness: 127
+});
 test.text("AMPLITUDE CONTROL Test");
 test.text("CC#7 - baseline (square gain)")
     .noteOn(60, 127)
