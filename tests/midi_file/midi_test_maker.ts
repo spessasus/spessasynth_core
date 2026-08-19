@@ -304,7 +304,7 @@ export class MIDITestMaker extends MIDIBuilder {
             let data = from;
 
             while (data >= to) {
-                this.text(`CC Sweep ${nrpn.toString(16)} = ${data}`);
+                this.text(`NRPN Sweep ${nrpn.toString(16)} = ${data}`);
                 this.nrpn(nrpn, data);
                 this.ticks += tickStep;
                 data -= step;
