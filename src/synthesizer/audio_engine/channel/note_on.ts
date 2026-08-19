@@ -171,7 +171,7 @@ export function noteOn(
         variationGain = p.variationSend / 127;
         this.synthCore.delayActive ||= variationGain > 0;
         // 1 is no override
-        if (voiceGain === 1) voiceGain = p.level / 120;
+        if (voiceGain === 1) voiceGain = Math.pow(p.level / 120, 2);
     }
 
     const noteID = emit ? this.noteOnID[midiNote]++ : this.noteOnID[midiNote];
