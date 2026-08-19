@@ -1,12 +1,8 @@
 import { MIDITestMaker } from "../midi_test_maker";
-import { MIDIControllers } from "../../../src";
 
 const test = new MIDITestMaker("Auto Pan");
 
-test.programChange(8, 1, 80)
-    .cc(MIDIControllers.vibratoDepth, 0)
-    .cc(MIDIControllers.brightness, 127)
-    .cc(MIDIControllers.reverbDepth, 0)
+test.init(8, 1, 80, { brightness: 127 })
     .wait(80)
     .noteOn(60, 120)
     .wait(480)

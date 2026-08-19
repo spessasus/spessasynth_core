@@ -346,6 +346,36 @@ export class MIDITestMaker extends MIDIBuilder {
         return this;
     }
 
+    public init(
+        msb: number,
+        lsb: number,
+        program: number,
+        options: {
+            reverbDepth?: number;
+            mainVolume?: number;
+            vibratoDepth?: number;
+            brightness?: number;
+            chorusDepth?: number;
+            variationDepth?: number;
+        } = {}
+    ) {
+        const {
+            reverbDepth = 0,
+            mainVolume = 127,
+            vibratoDepth = 0,
+            brightness = 64,
+            chorusDepth = 0,
+            variationDepth = 0
+        } = options;
+        return this.programChange(msb, lsb, program)
+            .cc(MIDIControllers.reverbDepth, reverbDepth)
+            .cc(MIDIControllers.mainVolume, mainVolume)
+            .cc(MIDIControllers.vibratoDepth, vibratoDepth)
+            .cc(MIDIControllers.brightness, brightness)
+            .cc(MIDIControllers.chorusDepth, chorusDepth)
+            .cc(MIDIControllers.variationDepth, variationDepth);
+    }
+
     public noteOff(midiNote: number) {
         super.noteOff(this.ticks, 0, this.channel, midiNote);
         return this;

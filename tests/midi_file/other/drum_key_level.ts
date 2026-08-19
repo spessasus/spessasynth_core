@@ -6,10 +6,7 @@ const test = new MIDITestMaker("Drum Key Level test", {
 });
 
 // Analog (pure sine kick almost always)
-test.programChange(0, 1, 25)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.mainVolume, 127)
-    .cc(MIDIControllers.releaseTime, 0);
+test.init(0, 1, 25).cc(MIDIControllers.releaseTime, 0);
 
 for (let i = 0; i < 127; i++) {
     test.nrpn((NonRegisteredMSB.drumLevel << 7) | 36, i);

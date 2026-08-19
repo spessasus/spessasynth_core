@@ -16,9 +16,7 @@ function seq() {
         .wait(1280);
 }
 
-test.programChange(0, 3, 64)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.mainVolume, 127);
+test.init(0, 3, 64);
 
 test.text("Unchanged");
 seq();
@@ -68,9 +66,7 @@ seq();
 
 test.text("Executing a program change")
     .text("The drums should BE MODIFIED")
-    .programChange(0, 0, 64)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.mainVolume, 127);
+    .init(0, 0, 64, { chorusDepth: 127, variationDepth: 127 });
 
 seq();
 

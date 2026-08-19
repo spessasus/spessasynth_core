@@ -1,9 +1,8 @@
 import { MIDITestMaker } from "../midi_test_maker";
-import { MIDIControllers } from "../../../src";
 
 const test = new MIDITestMaker("Velocity Sense Depth + Offset");
 
-test.cc(MIDIControllers.reverbDepth, 0).programChange(8, 1, 80);
+test.init(8, 1, 80);
 
 function velocitySweep() {
     test.note(60, 1, 240)

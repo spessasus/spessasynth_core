@@ -1,4 +1,3 @@
-import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../midi_test_maker";
 
 const test = new MIDITestMaker("GS Delay Feedback Test");
@@ -12,12 +11,8 @@ test.gs(0x40, 0x01, 0x50, [0])
         0x52,
         [0x49]
     )
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.chorusDepth, 0)
-    .cc(MIDIControllers.variationDepth, 127);
-
-// SC-55 MAP sine wave
-test.programChange(8, 1, 80);
+    // SC-55 MAP sine wave
+    .init(8, 1, 80, { variationDepth: 127 });
 
 let feedback = 1;
 while (feedback <= 126) {

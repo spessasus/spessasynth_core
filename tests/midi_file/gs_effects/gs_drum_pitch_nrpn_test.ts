@@ -7,9 +7,8 @@ const test = new MIDITestMaker("GS Drum Pitch NRPN Test", {
 
 let MIDI_NOTE = 50;
 
-test.cc(MIDIControllers.reverbDepth, 0);
 // SC-88Pro MAP STANDARD
-test.programChange(0, 3, 0);
+test.init(0, 3, 0);
 
 test.text("88Pro MAP STANDARD");
 let pitch = 50;
