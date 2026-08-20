@@ -24,7 +24,7 @@ const SF_LOCATION = path.join(
 );
 const FSMP_LOCATION = path.join(
     os.homedir(),
-    "Desktop/clutter/MidiPlayer x86/"
+    "Desktop/clutter/MidiPlayer x86/MidiPlayer.exe"
 );
 
 // For spessasynth rendering
@@ -40,6 +40,7 @@ const RENDERS = {
     scva: "3",
     syxg50: "4"
 };
+const FSMP_CLI = ["/render", "/traysilent", "/close"];
 
 function readWav(bin: ArrayBuffer) {
     const fileData = new IndexedByteArray(bin);
@@ -296,34 +297,50 @@ if (fsmpAvailable) {
                 const doneLabel = `${file} (${vstiName}) rendered in`;
                 console.time(doneLabel);
 
-                const command = isWindows ? "MidiPlayer.exe" : "wine";
-                let args: string[];
-                if (isWindows) {
-                    args = [
-                        `${inputPath}`,
-                        "/preset",
-                        `${presetNumber}`,
-                        "/render",
-                        "/traysilent",
-                        "/close"
-                    ];
-                } else {
-                    const windowsPath = "Z:" + inputPath.replaceAll("/", "\\");
-                    args = [
-                        "MidiPlayer.exe",
-                        `${windowsPath}`,
-                        "/preset",
-                        `${presetNumber}`,
-                        "/render",
-                        "/traysilent",
-                        "/close"
-                    ];
+                const command = isWindows ? FSMP_LOCATION : "wine";
+                const filePath = isWindows
+                    ? inputPath
+                    : "Z:" + inputPath.replaceAll("/", "\\");
+                const args = [
+                    filePath,
+                    "/preset",
+                    `${presetNumber}`,
+                    ...FSMP_CLI
+                ];
+
+                // Command is "wine" on linux, add the path to executable here
+                if (!isWindows) {
+                    args.unshift(path.basename(FSMP_LOCATION));
                 }
 
+                // Create the output directory
+                const outputDir = path.join(renderedDir, name);
+                await fs.mkdir(outputDir, { recursive: true });
+
+                // Run the command
                 try {
                     const result = child_process.spawnSync(command, args, {
-                        cwd: FSMP_LOCATION
+                        cwd: path.dirname(FSMP_LOCATION),
+                        encoding: "utf-8"
                     });
+
+                    // Write logs
+                    const logs = [
+                        [command, ...args].join(" "),
+                        "Stdout:",
+                        result.stdout?.trimEnd() ?? "",
+                        "Stderr:",
+                        result.stderr?.trimEnd() ?? ""
+                    ]
+                        .filter((line) => line.length > 0)
+                        .join("\n");
+
+                    await fs.writeFile(
+                        path.join(outputDir, `${vstiName}.log`),
+                        logs,
+                        { encoding: "utf-8" }
+                    );
+
                     if (result.status !== 0) {
                         console.warn(
                             `FSMP exited with code ${result.status}. Skipping!`
@@ -349,8 +366,6 @@ if (fsmpAvailable) {
                         }
                     }
 
-                    const outputDir = path.join(renderedDir, name);
-                    await fs.mkdir(outputDir, { recursive: true });
                     const outputPath = path.join(outputDir, `${vstiName}.wav`);
                     const wavBuffer = Buffer.from(
                         audioToWav(
