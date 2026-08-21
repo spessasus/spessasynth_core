@@ -21,12 +21,10 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import { type BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
-import { DrumParameters } from "./drum_parameters";
 import {
     applySnapshot,
     type ChannelSnapshot,
@@ -47,6 +45,10 @@ import {
 import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
+import type { SynthesizerPatch } from "../../types";
+import { DrumParameterUtils as DrumParameterUtilities } from "../../../midi/drum_parameters";
+import type { DrumParameter } from "../../../midi/types";
+
 /**
  * This class represents a single MIDI Channel within the synthesizer.
  */
@@ -56,11 +58,23 @@ export class MIDIChannel {
      * @internal
      */
     public readonly pitchWheels = new Int16Array(128).fill(8192);
+
+    /**
+     * An array of poly pressure values for the channel.
+     * Poly pressure persists across notes, much like per-note pitch wheels.
+     * @internal
+     */
+    public readonly polyPressures = new Uint8Array(128);
+
     /**
      * Parameters for each drum instrument.
      * @internal
      */
-    public readonly drumParams: DrumParameters[] = [];
+    public readonly drumParams: readonly DrumParameter[] = Array.from(
+        { length: 128 },
+        // eslint-disable-next-line unicorn/consistent-function-scoping
+        (_, index) => ({ ...DrumParameterUtilities.DEFAULT_DATA[index] })
+    );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      * @internal
@@ -85,7 +99,7 @@ export class MIDIChannel {
      * The preset currently assigned to the channel.
      * Note that this may be undefined in some cases.
      */
-    public preset?: BasicPreset;
+    public preset?: SynthesizerPatch;
     /**
      * Indicates the MIDI system when the preset was locked.
      * @internal
@@ -100,6 +114,19 @@ export class MIDIChannel {
      * @internal
      */
     public readonly synthCore: SynthesizerCore;
+
+    /**
+     * Current left PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
+     * Always 0-based index.
+     * @internal
+     */
+    public readonly outputLeft: Float32Array;
+    /**
+     * Current right PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
+     * Always 0-based index.
+     * @internal
+     */
+    public readonly outputRight: Float32Array;
     /*
     ==========
     PUBLIC API
@@ -176,10 +203,7 @@ export class MIDIChannel {
      * Renders a voice to the stereo output buffer
      * @param voice the voice to render
      * @param timeNow current time in seconds
-     * @param outputL the left output buffer
-     * @param outputR the right output buffer
-     * @param startIndex
-     * @param sampleCount
+     * @param sampleCount the only thing needed as it's 0-based
      * @internal
      */
     public readonly renderVoice = renderVoice.bind(this);
@@ -359,21 +383,21 @@ export class MIDIChannel {
      * @internal
      */
     public constructor(
-        synthProps: SynthesizerCore,
-        preset: BasicPreset | undefined,
+        synthProperties: SynthesizerCore,
+        preset: SynthesizerPatch | undefined,
         channelNumber: number
     ) {
-        this.synthCore = synthProps;
+        this.synthCore = synthProperties;
         this.preset = preset;
         this.channel = channelNumber;
+        this.outputLeft = new Float32Array(this.synthCore.maxBufferSize);
+        this.outputRight = new Float32Array(this.synthCore.maxBufferSize);
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
         this.dynamicModulators = new DynamicModulatorManager(channelNumber);
+        // Init
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
-        for (let i = 0; i < 128; i++) {
-            this.drumParams.push(new DrumParameters());
-        }
         this.resetDrumParams();
     }
 
@@ -569,8 +593,8 @@ export class MIDIChannel {
         if (tuning.length !== 12) {
             throw new Error("Tuning is not the length of 12.");
         }
-        for (let i = 0; i < 128; i++) {
-            this.octaveTuning[i] = tuning[i % 12];
+        for (let index = 0; index < 128; index++) {
+            this.octaveTuning[index] = tuning[index % 12];
         }
     }
 
@@ -608,23 +632,8 @@ export class MIDIChannel {
      */
     public polyPressure(midiNote: number, pressure: number) {
         // Note to self: don't use computeModulatorsAll here as we're setting the pressure!
-        let vc = 0;
-        if (this._voiceCount > 0)
-            for (const v of this.synthCore.voices) {
-                if (
-                    v.isActive &&
-                    v.channel === this.channel &&
-                    v.midiNote === midiNote
-                ) {
-                    v.pressure = pressure;
-                    this.computeModulators(
-                        v,
-                        0,
-                        ModulatorControllerSources.polyPressure
-                    );
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
-                }
-            }
+        this.polyPressures[midiNote] = pressure;
+        this.computeModulatorsAll(0, ModulatorControllerSources.polyPressure);
         this.synthCore.callEvent("polyPressure", {
             channel: this.channel,
             midiNote: midiNote,
@@ -837,21 +846,24 @@ export class MIDIChannel {
     protected resetDrumParams() {
         if (this.synthCore.systemParameters.drumLock || !this._drumChannel)
             return;
-        for (let i = 0; i < 128; i++) {
-            const p = this.drumParams[i];
-            p.pitch = 0;
-            p.gain = 1;
-            p.exclusiveClass = 0;
-            p.pan = 64;
-            p.reverbGain = DEFAULT_DRUM_REVERB[i] / 127;
-            p.chorusGain =
-                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] / 127 : 0; // Mirror reverb on XG only, GS has no chorus by default
-            p.delayGain = 0; // No drums have delay
-            p.rxNoteOn = true;
-            p.rxNoteOff = false;
+        for (let index = 0; index < 128; index++) {
+            const p = this.drumParams[index];
+            DrumParameterUtilities.copyInto(
+                DrumParameterUtilities.DEFAULT_DATA[index],
+                p
+            );
+            p.chorusSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0; // Mirror reverb on XG only, GS has no chorus by default
+            p.variationSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0;
         }
     }
 
+    /**
+     *
+     * @param sourceUsesCC what modulators should be computed, -1 means all, 0 means modulator source enum 1 means midi controller.
+     * @param sourceIndex
+     */
     protected computeModulatorsAll(
         sourceUsesCC: -1 | 0 | 1,
         sourceIndex: number

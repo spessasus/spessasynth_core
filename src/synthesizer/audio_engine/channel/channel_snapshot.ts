@@ -1,5 +1,5 @@
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
-import { DrumParameters } from "./drum_parameters";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./awe32_nrpn";
 import type { ChannelSystemParameter } from "./parameters/system";
@@ -7,18 +7,7 @@ import type { ChannelMIDIParameter } from "./parameters/midi";
 import type { MIDIController } from "../../../midi/enums";
 import type { MIDISystem } from "../../../soundbank/types";
 import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
-
-export interface DrumParameterSnapshot {
-    pitch: number;
-    gain: number;
-    exclusiveClass: number;
-    pan: number;
-    reverbGain: number;
-    chorusGain: number;
-    delayGain: number;
-    rxNoteOn: boolean;
-    rxNoteOff: boolean;
-}
+import type { DrumParameter } from "../../../midi/types";
 
 export interface ChannelSnapshot {
     patch?: MIDIPatchFull;
@@ -36,7 +25,7 @@ export interface ChannelSnapshot {
 
     perNotePitch: boolean;
 
-    drumParams: DrumParameterSnapshot[];
+    drumParams: DrumParameter[];
     drumChannel: boolean;
     channel: number;
 }
@@ -95,7 +84,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     this.generators.overridesEnabled = snapshot.generators.overridesEnabled;
 
     for (let i = 0; i < 128; i++)
-        this.drumParams[i] = DrumParameters.copyFrom(snapshot.drumParams[i]);
+        DrumParameterUtils.copyInto(snapshot.drumParams[i], this.drumParams[i]);
 
     // Disable to set patch
     // Restored in system params

@@ -6,6 +6,119 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
+import { ConsoleColors } from "../../../utils/other";
+
+function handleUserDrum(
+    this: SynthesizerCore,
+    a2: number,
+    a3: number,
+    data: number,
+    syx: SysExAcceptedArray
+) {
+    if (this.systemParameters.userDrumLock) return;
+    const drumSet = a2 >> 4;
+    const midiNote = a3;
+    const command = a2 & 0xf;
+    switch (command) {
+        default: {
+            SpessaLog.gsFail("User Drum set", syx);
+            return;
+        }
+
+        // User drum set name
+        case 0: {
+            const newName = readBinaryString(syx, 12, 7).trim();
+            SpessaLog.gsInfo(`User Drum Set ${drumSet} Name`, newName);
+            this.callEvent("displayMessage", [...syx]);
+            return;
+        }
+
+        case 0x1: {
+            // Here it's relative to 60, not 64 like NRPN. For some reason...
+            const pitch = data - 60;
+
+            // Use the full 100 cents here as we choose the correct pitch (50 or 100 cents) when committing changes
+            this.setUserDrumSetParam(drumSet, midiNote, "pitchCoarse", pitch);
+            return;
+        }
+
+        case 0x2: {
+            // Drum Level
+            this.setUserDrumSetParam(drumSet, midiNote, "level", data);
+            return;
+        }
+
+        case 0x3: {
+            // Drum Assign Group (exclusive class)
+            this.setUserDrumSetParam(drumSet, midiNote, "assignGroup", data);
+            return;
+        }
+
+        case 0x4: {
+            // Pan
+            this.setUserDrumSetParam(drumSet, midiNote, "pan", data);
+            return;
+        }
+
+        case 0x5: {
+            // Reverb
+            this.setUserDrumSetParam(drumSet, midiNote, "reverbSend", data);
+            return;
+        }
+
+        case 0x6: {
+            // Chorus
+            this.setUserDrumSetParam(drumSet, midiNote, "chorusSend", data);
+            return;
+        }
+
+        case 0x7: {
+            // Receive Note Off
+            this.setUserDrumSetParam(
+                drumSet,
+                midiNote,
+                "rxNoteOff",
+                data === 1
+            );
+            return;
+        }
+
+        case 0x8: {
+            // Receive Note On
+            this.setUserDrumSetParam(drumSet, midiNote, "rxNoteOn", data === 1);
+            return;
+        }
+
+        case 0x9: {
+            // Delay
+            this.setUserDrumSetParam(drumSet, midiNote, "variationSend", data);
+            return;
+        }
+
+        // Source drum set
+        case 0xa: {
+            this.setUserDrumSetParam(drumSet, midiNote, "sourceDrumSet", data);
+            return;
+        }
+
+        // Program number
+        case 0xb: {
+            this.setUserDrumSetParam(drumSet, midiNote, "program", data);
+            return;
+        }
+
+        // Source note number
+        case 0xc: {
+            this.setUserDrumSetParam(
+                drumSet,
+                midiNote,
+                "sourceNoteNumber",
+                data
+            );
+            return;
+        }
+    }
+}
 
 /**
  * Handles a Roland GS system exclusive
@@ -1064,7 +1177,7 @@ export function rolandSystemExclusive(
                     SpessaLog.gsFail("Patch Parameter", syx);
                     return;
                 }
-                // Drum setup
+                // Drum Setup
                 if (a1 === 0x41 || a1 === 0x51) {
                     // 51 means BLOCK B (+16 channels)
                     // Testcase: 95043-2.KYC.mid
@@ -1096,8 +1209,8 @@ export function rolandSystemExclusive(
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
                                 // Apply same thing: SC-55 uses 100 cents, SC-88 and above is 50
-                                ch.drumParams[drumKey].pitch =
-                                    pitch * (ch.patch.bankLSB === 1 ? 100 : 50);
+                                ch.drumParams[drumKey].pitchCoarse =
+                                    pitch * (ch.patch.bankLSB === 1 ? 1 : 0.5);
                             }
                             SpessaLog.gsInfo(
                                 `Drum Pitch for MAP${map}, key ${drumKey}`,
@@ -1110,7 +1223,7 @@ export function rolandSystemExclusive(
                             // Drum Level
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].gain = data / 120;
+                                ch.drumParams[drumKey].level = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Level for MAP${map}, key ${drumKey}`,
@@ -1123,7 +1236,7 @@ export function rolandSystemExclusive(
                             // Drum Assign Group (exclusive class)
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].exclusiveClass = data;
+                                ch.drumParams[drumKey].assignGroup = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Assign Group for MAP${map}, key ${drumKey}`,
@@ -1149,7 +1262,7 @@ export function rolandSystemExclusive(
                             // Reverb
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].reverbGain = data / 127;
+                                ch.drumParams[drumKey].reverbSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Reverb for MAP${map}, key ${drumKey}`,
@@ -1162,7 +1275,7 @@ export function rolandSystemExclusive(
                             // Chorus
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].chorusGain = data / 127;
+                                ch.drumParams[drumKey].chorusSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Chorus for MAP${map}, key ${drumKey}`,
@@ -1201,7 +1314,7 @@ export function rolandSystemExclusive(
                             // Delay
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].delayGain = data / 127;
+                                ch.drumParams[drumKey].variationSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Delay for MAP${map}, key ${drumKey}`,
@@ -1212,6 +1325,145 @@ export function rolandSystemExclusive(
                     }
                     return;
                 }
+                // User Drum Set
+                if (a1 === 0x21) {
+                    handleUserDrum.call(this, a2, a3, data, syx);
+                    return;
+                }
+
+                // User Drum Set Bulk Dump
+                if (a1 === 0x29) {
+                    const dataLength = syx.length - 9;
+                    SpessaLog.info(
+                        `%cUser Drum Set Bulk Dump detected! Keys: %c${dataLength}`,
+                        ConsoleColors.recognized,
+                        ConsoleColors.value
+                    );
+
+                    // Top half of a2 stays the same (indicates which user drum)
+                    // While the bottom param is something else
+                    // Guessed by analyzing 95043-2.KYC.mid
+
+                    let actualDrumParam: number;
+                    switch (a2 & 0x0f) {
+                        default: {
+                            SpessaLog.gsFail(
+                                "User Drum Bulk Dump System Exclusive",
+                                syx
+                            );
+                            return;
+                        }
+
+                        case 0x0: {
+                            // Most at 60 = play note?
+                            actualDrumParam = 1;
+                            break;
+                        }
+
+                        case 0x1: {
+                            // Level?
+                            actualDrumParam = 2;
+                            break;
+                        }
+
+                        case 0x2: {
+                            // Matches gm.dls exclusive class pretty well, assign group?
+                            actualDrumParam = 3;
+                            break;
+                        }
+
+                        case 0x3: {
+                            // Most at 64, so pan?
+                            actualDrumParam = 4;
+                            break;
+                        }
+
+                        case 0x4: {
+                            // 0 on bass, so reverb?
+                            actualDrumParam = 5;
+                            break;
+                        }
+
+                        case 0x5: {
+                            // 0 on all, so chorus?
+                            actualDrumParam = 6;
+                            break;
+                        }
+
+                        case 0x6: {
+                            // 16 on all
+                            // In the order, rx notes should be here, it's 0x10, so maybe
+                            // It's both? on << 4 | off?
+                            // Special handling is needed
+                            const address2Off = (a2 & 0xf0) | 7;
+                            const address2On = (a2 & 0xf0) | 8;
+                            for (
+                                let midiNote = 0;
+                                midiNote < dataLength;
+                                midiNote++
+                            ) {
+                                handleUserDrum.call(
+                                    this,
+                                    address2Off,
+                                    midiNote,
+                                    syx[midiNote + 7] & 0xf,
+                                    syx
+                                );
+                                handleUserDrum.call(
+                                    this,
+                                    address2On,
+                                    midiNote,
+                                    syx[midiNote + 7] >> 4,
+                                    syx
+                                );
+                            }
+                            return;
+                        }
+
+                        case 0x7: {
+                            // All 0, so delay
+                            actualDrumParam = 9;
+                            break;
+                        }
+
+                        case 0x8: {
+                            // All 2 and this is a 88pro midi, so the map is 2
+                            actualDrumParam = 0xa;
+                            break;
+                        }
+
+                        case 0x9: {
+                            // 0xA matches note number so the only one left is the program
+                            actualDrumParam = 0xb;
+                            break;
+                        }
+
+                        case 0xa: {
+                            // Drum numbers increase so source note
+                            actualDrumParam = 0xc;
+                            break;
+                        }
+
+                        case 0xb: {
+                            // 16 chars, seems to be a name (spec is wrong? says 12)
+                            actualDrumParam = 0;
+                            break;
+                        }
+                    }
+
+                    const address2 = (a2 & 0xf0) | actualDrumParam;
+                    for (let midiNote = 0; midiNote < dataLength; midiNote++) {
+                        handleUserDrum.call(
+                            this,
+                            address2,
+                            midiNote,
+                            syx[midiNote + 7],
+                            syx
+                        );
+                    }
+                    return;
+                }
+
                 // This is some other GS sysex...
                 SpessaLog.gsFail("System Exclusive", syx);
                 return;

@@ -1,4 +1,3 @@
-import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../midi_test_maker";
 
 const test = new MIDITestMaker("GS Delay Level");
@@ -7,11 +6,7 @@ const test = new MIDITestMaker("GS Delay Level");
 test.gs(0x40, 0x01, 0x59, [64]);
 
 // SC-55 sine
-test.programChange(8, 1, 80)
-    .cc(MIDIControllers.vibratoDepth, 0)
-    .cc(MIDIControllers.brightness, 127)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.variationDepth, 127);
+test.init(8, 1, 80, { brightness: 127, variationDepth: 127 });
 
 let level = 0;
 while (level <= 128) {

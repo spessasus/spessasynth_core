@@ -1,4 +1,3 @@
-import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../midi_test_maker";
 
 const test = new MIDITestMaker("GS Reverb Pan Delay Time Test");
@@ -10,7 +9,7 @@ test.gs(0x40, 0x01, 0x30, [7])
     // Delay feedback
     .gs(0x40, 0x01, 0x35, [0]);
 
-test.programChange(8, 1, 80).cc(MIDIControllers.reverbDepth, 127);
+test.init(8, 1, 80, { reverbDepth: 127 });
 
 let time = 0;
 while (time <= 128) {

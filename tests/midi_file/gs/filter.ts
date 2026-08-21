@@ -4,10 +4,7 @@ import { MIDIControllers } from "../../../src";
 const test = new MIDITestMaker("GS Filter Test");
 
 // MG Square, no reverb, max volume and no vibrato
-test.programChange(1, 1, 80)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.mainVolume, 127)
-    .cc(MIDIControllers.vibratoDepth, 0)
+test.init(1, 1, 80)
     .cc(MIDIControllers.vibratoRate, 0)
     .cc(MIDIControllers.vibratoDelay, 127);
 

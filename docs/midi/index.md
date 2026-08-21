@@ -282,7 +282,9 @@ for a given sound bank (used for capital tone fallback).
 const used = midi.getUsedProgramsAndKeys(soundBank);
 ```
 
-- soundBank - `BasicSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
+- soundBank - `CallableSoundBank` - an instance of the parsed sound bank to "play" the MIDI with.
+  Anything that implements the `getPreset` method of `BasicSoundBank`.
+  This can be used to provide custom selectors and sound bank lists.
 
 The returned value is `PresetWithKeyCombinations` which is `Map<BasicPreset, Map<number, Set<number>>`. That is:
 
@@ -412,6 +414,15 @@ All controllers that should be modified for this channel.
     - `"clear"` - all controller changes for this controller are removed.
     - `number` - clear + sets the new controller at the start of the song, effectively locking them to the set value.
 
+##### midiParams
+
+The new MIDI parameters of this channel.
+
+- Key: the MIDI parameter name. See [channel MIDI Parameters](../spessa-synth-processor/midi-channel/channel-parameters.md#midi)
+- value:
+    - `"clear"` - all changes for this parameter are removed.
+    - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
+
 ##### patch
 
 `ClearableParameter<MIDIPatch>`
@@ -444,6 +455,47 @@ The drum parameter changes.
 
 - `"clear"` - all existing drum parameter change MIDI messages are removed.
 - `never` - not yet implemented.
+
+#### userDrumSetParams
+
+`Map<number, ClearableParameter<UserDrumModification>>`
+
+The User Drum Set changes.
+
+- Key: the User Drum Set number, 0 based.
+  0 is the User Drum Set 1 located at MIDI program 64, and 1 is User Drum Set 2 located at MIDI program 65.
+- value:
+    - `"clear"` - all existing changes for this drum set are removed.
+    - `UserDrumModification` - modifies the drum set. The type is described below:
+
+##### UserDrumModification
+
+All modifications for this User Drum Set. This is a `Map` object.
+
+- Key: the MIDI note number for the note to modify.
+- value:
+    - `"clear"` - all modifications for this note are removed.
+    - `object` - partial parameter changes for this note:
+        - Key: User Drum Set parameter name. (`UserDrumSetParameter` property)
+        - value:
+            - `"clear"` - all changes for this parameter are removed.
+            - `specific value` - clear + insert a message setting this after a reset.
+
+#### midiParams
+
+The global MIDI parameter changes.
+
+- Key: the MIDI parameter name.
+- value:
+    - `"clear"` - all changes for this parameter are removed.
+    - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
+
+!!! Warning
+
+    Please note that `"clear"` is not supported for the `system` parameter,
+    as it may cause issues with the MIDI system detection and reset insertion.
+
+See [Global MIDI Parameters](../spessa-synth-processor/global-parameters.md#midi)
 
 #### reverbParams
 

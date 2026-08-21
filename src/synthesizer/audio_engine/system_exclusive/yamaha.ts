@@ -294,10 +294,10 @@ export function yamahaSystemExclusive(
 
                 case 0x00: {
                     // Drum pitch coarse
-                    const pitch = (data - 64) * 100;
+                    const pitch = data - 64;
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].pitch = pitch;
+                        ch.drumParams[drumKey].pitchCoarse = pitch;
                     }
                     SpessaLog.xgInfo(
                         `Drum Pitch for key ${drumKey}`,
@@ -312,10 +312,10 @@ export function yamahaSystemExclusive(
                     const pitch = data - 64;
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].pitch += pitch;
+                        ch.drumParams[drumKey].pitchFine = pitch;
                         SpessaLog.xgInfo(
-                            `Drum Pitch for key ${drumKey}`,
-                            ch.drumParams[drumKey].pitch,
+                            `Drum Pitch Fine for key ${drumKey}`,
+                            pitch,
                             "semitones"
                         );
                     }
@@ -326,7 +326,7 @@ export function yamahaSystemExclusive(
                     // Drum Level
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].gain = data / 120;
+                        ch.drumParams[drumKey].level = data;
                     }
                     SpessaLog.xgInfo(`Drum Level for key ${drumKey}`, data);
                     break;
@@ -336,7 +336,7 @@ export function yamahaSystemExclusive(
                     // Drum Alternate Group (exclusive class)
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].exclusiveClass = data;
+                        ch.drumParams[drumKey].assignGroup = data;
                     }
                     SpessaLog.xgInfo(
                         `Drum Alternate Group for key ${drumKey}`,
@@ -359,7 +359,7 @@ export function yamahaSystemExclusive(
                     // Drum Reverb
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].reverbGain = data / 127;
+                        ch.drumParams[drumKey].reverbSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Reverb for key ${drumKey}`, data);
                     break;
@@ -369,9 +369,19 @@ export function yamahaSystemExclusive(
                     // Drum Chorus
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].chorusGain = data / 127;
+                        ch.drumParams[drumKey].chorusSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Chorus for key ${drumKey}`, data);
+                    break;
+                }
+
+                case 0x07: {
+                    // Drum Variation
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumParams[drumKey].variationSend = data;
+                    }
+                    SpessaLog.xgInfo(`Drum Variation for key ${drumKey}`, data);
                     break;
                 }
 

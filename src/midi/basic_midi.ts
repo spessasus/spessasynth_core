@@ -1,7 +1,4 @@
-import {
-    getStringBytes,
-    readBinaryString
-} from "../utils/byte_functions/string";
+import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaLog } from "../utils/loggin";
@@ -11,8 +8,8 @@ import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
-import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import type {
+    CallableSoundBank,
     MIDIFormat,
     MIDILoop,
     MIDILoopType,
@@ -22,25 +19,19 @@ import type {
     TempoChange,
     TimelineEvent
 } from "./types";
-import {
-    modifyMIDIInternal,
-    type ModifyMIDIOptions
-} from "./midi_tools/modify_midi";
+import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
 import { parseSMFInternal } from "./read/midi";
 import { MIDIControllers, MIDIMessageTypes } from "./enums";
-import type {
-    GenericRange,
-    PresetsWithKeyCombinations
-} from "../soundbank/types";
+import type { GenericRange, PresetsWithKeyCombinations } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString, toISODateString } from "../utils/date";
-import type { SoundBankManager } from "../synthesizer/audio_engine/sound_bank_manager";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { parseRMIDIInternal } from "./read/rmidi";
 import { loadXMF } from "./read/xmf";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
+import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -356,9 +347,9 @@ export class BasicMIDI {
      * @param soundbank the sound bank.
      * @returns The output data is a key-value pair: preset -> Map<midiNote, Set<velocity>>
      */
-    public getUsedProgramsAndKeys(
-        soundbank: BasicSoundBank | SoundBankManager
-    ): PresetsWithKeyCombinations {
+    public getUsedProgramsAndKeys<T extends MIDIPatchFull>(
+        soundbank: CallableSoundBank<T>
+    ): PresetsWithKeyCombinations<T> {
         return getUsedProgramsAndKeys(this, soundbank);
     }
 
@@ -446,7 +437,8 @@ export class BasicMIDI {
      * This modifies the MIDI sequence _in-place_.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
-        modifyMIDIInternal(this, opts);
+        const editor = new MIDIEditor(this, opts);
+        editor.apply();
     }
 
     // noinspection JSUnusedGlobalSymbols

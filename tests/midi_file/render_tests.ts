@@ -1,9 +1,9 @@
-import path from "node:path";
 import * as child_process from "node:child_process";
-import * as os from "node:os";
-import * as worker_threads from "node:worker_threads";
-import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
+import fs from "node:fs/promises";
+import * as os from "node:os";
+import path from "node:path";
+import * as worker_threads from "node:worker_threads";
 import {
     audioToWav,
     BasicMIDI,
@@ -13,33 +13,42 @@ import {
     SpessaSynthProcessor,
     SpessaSynthSequencer
 } from "../../src";
-import { RIFFChunk } from "../../src/utils/riff_chunk";
-import { readBinaryStringIndexed } from "../../src/utils/byte_functions/string";
 import { readLittleEndianIndexed } from "../../src/utils/byte_functions/little_endian";
+import { readBinaryStringIndexed } from "../../src/utils/byte_functions/string";
+import { RIFFChunk } from "../../src/utils/riff_chunk";
 
-// ADJUST THESE TWO
+// ADJUST THESE
+
+// VSTi Template name -> Configuration preset number (suffix), like "scvaRender_003.ini" + fsmp path
+const RENDERS: Record<string, { preset: number; executable: string }> = {
+    scva: {
+        preset: 3,
+        executable: path.join(
+            os.homedir(),
+            "Desktop/clutter/MidiPlayer x86/MidiPlayer.exe"
+        )
+    },
+    syxg50: {
+        preset: 4,
+        executable: path.join(
+            os.homedir(),
+            "Desktop/clutter/MidiPlayer x86/MidiPlayer.exe"
+        )
+    }
+};
+
+// For spessasynth rendering
 const SF_LOCATION = path.join(
     os.homedir(),
     "htdocs/SpessaSynth/soundfonts/square.sf2"
 );
-const FSMP_LOCATION = path.join(
-    os.homedir(),
-    "Desktop/clutter/MidiPlayer x86/"
-);
-
-// For spessasynth rendering
-const SF_OUT_DIR = "spessa";
-const SF_LOG_OUT_DIR = "spessa_log";
+const FSMP_CLI = ["/render", "/traysilent", "/close"];
 const SF_RATE = 48_000;
 const SF_TAIL = 2;
 const BUFFER_SIZE = 128;
 const TRIM_THRESHOLD = 0.0005;
-
-// Out dir -> configuration preset number (suffix), like "scvaRender_003.ini"
-const RENDERS = {
-    scva: "3",
-    syxg50: "4"
-};
+const SPESSA_LOG = "spessa.log";
+const SPESSA_OUT = "spessa.wav";
 
 function readWav(bin: ArrayBuffer) {
     const fileData = new IndexedByteArray(bin);
@@ -98,58 +107,17 @@ function readWav(bin: ArrayBuffer) {
     };
 }
 
-function wavToFlac(wavBuffer: Buffer) {
-    return new Promise<Buffer>((resolve, reject) => {
-        const ffmpeg = child_process.spawn("ffmpeg", [
-            "-hide_banner",
-            "-loglevel",
-            "error",
-
-            // Input from stdin
-            "-i",
-            "pipe:0",
-
-            // Encode to flac
-            "-c:a",
-            "flac",
-            "-compression_level",
-            "12",
-
-            // Output to stdout
-            "-f",
-            "flac",
-            "pipe:1"
-        ]);
-
-        const chunks: Buffer[] = [];
-
-        ffmpeg.stdout.on("data", (chunk: Buffer) => {
-            chunks.push(chunk);
-        });
-        ffmpeg.on("close", (code) => {
-            if (code !== 0)
-                return reject(new Error(`ffmpeg exited with ${code}`));
-
-            resolve(Buffer.concat(chunks));
-        });
-
-        ffmpeg.stdin.write(wavBuffer);
-        ffmpeg.stdin.end();
-    });
-}
-
 if (!worker_threads.isMainThread) {
     // Worker thread logic here
 
     interface WorkerData {
         file: string;
         midiDir: string;
-        outputDir: string;
-        logOutputDir: string;
+        renderedDir: string;
     }
 
     // Extract the data passed from the main thread
-    const { file, midiDir, outputDir, logOutputDir } =
+    const { file, midiDir, renderedDir } =
         worker_threads.workerData as WorkerData;
 
     const sfBin = await fs.readFile(SF_LOCATION);
@@ -211,20 +179,16 @@ if (!worker_threads.isMainThread) {
         filledSamples += bufferSize;
     }
 
-    const name = "SPESSA_" + path.basename(inputPath, path.extname(inputPath));
+    const name = path.basename(inputPath, path.extname(inputPath));
+    const outputDir = path.join(renderedDir, name);
+    await fs.mkdir(outputDir, { recursive: true });
 
-    const logOutputName = `${name}.txt`;
-    const logText = log.join("\n");
-    await fs.writeFile(path.join(logOutputDir, logOutputName), logText, {
+    await fs.writeFile(path.join(outputDir, SPESSA_LOG), log.join("\n"), {
         encoding: "utf-8"
     });
 
-    const outputName = `${name}.flac`;
     const wavBuffer = Buffer.from(audioToWav([outLeft, outRight], SF_RATE));
-    const outputPath = path.join(outputDir, outputName);
-
-    const flacBuffer = await wavToFlac(wavBuffer);
-    await fs.writeFile(outputPath, flacBuffer);
+    await fs.writeFile(path.join(outputDir, SPESSA_OUT), wavBuffer);
 
     // Tell the main thread that we are done
     worker_threads.parentPort?.postMessage("done");
@@ -242,16 +206,14 @@ console.warn(
     Renders all files with spessasynth
     and VSTi reference.
     
-    Normalized and FLAC.
-    Uses wine and Falcosoft MIDI Player,
-    FFmpeg is required as well.
-
+    Normalized and WAV.
+    Uses wine and Falcosoft MIDI Player.
+    
     VSTi only renders changed files.
 ========================================
 `
 );
 
-console.info(`FSMP Location: ${FSMP_LOCATION}`);
 console.info(`SF Location: ${SF_LOCATION}`);
 console.info("\n");
 const isWindows = os.platform() === "win32";
@@ -260,9 +222,9 @@ const dirname = import.meta.dirname;
 const rootDir = path.join(dirname, "../..");
 
 const midiDir = path.join(rootDir, "tests/midi_file/generated");
-const outDir = path.join(rootDir, "tests/midi_file/rendered");
+const renderedDir = path.join(rootDir, "tests/midi_file/rendered");
 
-const checksumsPath = path.join(outDir, "checksums.json");
+const checksumsPath = path.join(renderedDir, "checksums.json");
 let checksumsJson = "{}";
 
 try {
@@ -273,7 +235,16 @@ try {
     console.info("checksums.json not found.");
 }
 
+/**
+ * File name -> sha256
+ */
 const checksums = JSON.parse(checksumsJson) as Record<string, string>;
+
+async function writeChecksums() {
+    await fs.writeFile(checksumsPath, JSON.stringify(checksums), {
+        encoding: "utf-8"
+    });
+}
 
 console.info("Building test files...");
 child_process.execSync("npm run test:midi", {
@@ -285,6 +256,10 @@ console.info("Done.");
 console.group("Comparing checksums...");
 const midiFiles = await fs.readdir(midiDir);
 const filesToRender: string[] = [];
+/**
+ * File name -> sha256
+ */
+const pendingChecksums = new Map<string, string>();
 for (const file of midiFiles) {
     const inputPath = path.join(midiDir, file);
     const bin = await fs.readFile(inputPath);
@@ -292,75 +267,84 @@ for (const file of midiFiles) {
     if (checksums[file] === sha256) {
         console.info(`Skipping ${file}, checksums match.`);
     } else {
-        checksums[file] = sha256;
+        pendingChecksums.set(file, sha256);
         filesToRender.push(file);
     }
 }
 console.info("Checksum check done.\n");
 console.groupEnd();
 
-console.info(`Beginning render. Files to render: ${filesToRender.length}`);
 let totalRendered = 0;
 
-try {
-    // Check if FSMP is there
-    await fs.access(FSMP_LOCATION, fs.constants.F_OK);
+console.info(`Beginning render. Files to render: ${filesToRender.length}`);
 
-    if (filesToRender.length === 0) {
-        console.info("Nothing to render with VSTi!");
-    } else {
-        console.group(`Rendering ${filesToRender.length} files with VSTi...`);
-        for (const [targetDirname, presetNumber] of Object.entries(RENDERS)) {
-            const outputDir = path.join(outDir, targetDirname);
+if (filesToRender.length === 0) {
+    console.info("Nothing to render with VSTi!");
+} else {
+    console.group(`Rendering ${filesToRender.length} files with VSTi...`);
+    for (const file of filesToRender) {
+        const inputPath = path.join(midiDir, file);
+        const name = path.basename(inputPath, path.extname(inputPath));
+
+        let success = true;
+        for (const [vstiName, params] of Object.entries(RENDERS)) {
+            console.info(
+                `Rendering ${file} (${totalRendered}/${filesToRender.length}) for ${vstiName}`
+            );
+            const doneLabel = `${file} (${vstiName}) rendered in`;
+            console.time(doneLabel);
+
+            const command = isWindows ? params.executable : "wine";
+            const filePath = isWindows
+                ? inputPath
+                : "Z:" + inputPath.replaceAll("/", "\\");
+            const args = [filePath, "/preset", `${params.preset}`, ...FSMP_CLI];
+
+            // Command is "wine" on linux, add the path to executable here
+            if (!isWindows) {
+                args.unshift(path.basename(params.executable));
+            }
+
+            // Create the output directory
+            const outputDir = path.join(renderedDir, name);
             await fs.mkdir(outputDir, { recursive: true });
-            let done = 0;
 
-            for (const file of filesToRender) {
-                const inputPath = path.join(midiDir, file);
-
-                const command = isWindows ? "MidiPlayer.exe" : "wine";
-                let args: string[];
-                if (isWindows) {
-                    args = [
-                        `${inputPath}`,
-                        "/preset",
-                        `${presetNumber}`,
-                        "/render",
-                        "/traysilent",
-                        "/close"
-                    ];
-                } else {
-                    const windowsPath = "Z:" + inputPath.replaceAll("/", "\\");
-                    args = [
-                        "MidiPlayer.exe",
-                        `${windowsPath}`,
-                        "/preset",
-                        `${presetNumber}`,
-                        "/render",
-                        "/traysilent",
-                        "/close"
-                    ];
-                }
-
-                console.info(
-                    `\n(${done}/${filesToRender.length}) Rendering ${file} for ${targetDirname.toUpperCase()}`
-                );
-                const doneLabel = `${file} rendered in`;
-                console.time(doneLabel);
-
-                child_process.spawnSync(command, args, {
-                    cwd: FSMP_LOCATION,
-                    stdio: "inherit"
+            // Run the command
+            try {
+                const result = child_process.spawnSync(command, args, {
+                    cwd: path.dirname(params.executable),
+                    encoding: "utf-8"
                 });
 
-                const name = path.basename(inputPath, path.extname(inputPath));
+                // Write logs
+                const logs = [
+                    [command, ...args].join(" "),
+                    "Stdout:",
+                    result.stdout?.trimEnd() ?? "",
+                    "Stderr:",
+                    result.stderr?.trimEnd() ?? ""
+                ]
+                    .filter((line) => line.length > 0)
+                    .join("\n");
+
+                await fs.writeFile(
+                    path.join(outputDir, `${vstiName}.log`),
+                    logs,
+                    { encoding: "utf-8" }
+                );
+
+                if (result.status !== 0) {
+                    console.warn(
+                        `FSMP exited with code ${result.status}. Skipping!`
+                    );
+                    success = false;
+                    continue;
+                }
 
                 const renderedPath = path.join(midiDir, `${name}.wav`);
                 const fileBin = await fs.readFile(renderedPath);
                 await fs.rm(renderedPath);
                 const { sampleData, sampleRate } = readWav(fileBin.buffer);
-                console.info("Trimming silence and normalizing...");
-
                 // Trim leading silence
                 const frames = sampleData[0].length;
 
@@ -374,37 +358,44 @@ try {
                     }
                 }
 
-                const outputPath = path.join(
-                    outputDir,
-                    `${targetDirname.toUpperCase()}_${name}.flac`
-                );
+                const outputPath = path.join(outputDir, `${vstiName}.wav`);
                 const wavBuffer = Buffer.from(
                     audioToWav(
                         sampleData.map((ch) => ch.slice(start)),
                         sampleRate
                     )
                 );
-                const flacBuffer = await wavToFlac(wavBuffer);
-                await fs.writeFile(outputPath, flacBuffer);
-                done++;
-                totalRendered++;
+                await fs.writeFile(outputPath, wavBuffer);
+            } catch (error) {
+                console.warn(
+                    `Failed to render ${file} with ${vstiName}:`,
+                    error,
+                    "Skipping!"
+                );
+                success = false;
+            } finally {
                 console.timeEnd(doneLabel);
             }
         }
+        totalRendered++;
 
-        console.info("VSTi render completed.\n");
-        console.groupEnd();
+        if (success) {
+            // Write right away as spessa always renders everything
+            const sha256 = pendingChecksums.get(file);
+            if (sha256) {
+                checksums[file] = sha256;
+                await writeChecksums();
+            }
+        }
     }
-} catch {
-    console.info("FSMP not installed, skipping VSTi render!");
+
+    console.info("VSTi render completed.\n");
+    console.groupEnd();
 }
 
 console.group("Rendering with spessasynth...");
 
-const outputDir = path.join(outDir, SF_OUT_DIR);
-await fs.mkdir(outputDir, { recursive: true });
-const logOutputDir = path.join(outDir, SF_LOG_OUT_DIR);
-await fs.mkdir(logOutputDir, { recursive: true });
+await fs.mkdir(renderedDir, { recursive: true });
 
 function runWorker(file: string) {
     return new Promise<void>((resolve, reject) => {
@@ -413,8 +404,7 @@ function runWorker(file: string) {
             workerData: {
                 file,
                 midiDir,
-                outputDir,
-                logOutputDir
+                renderedDir
             }
         });
 
@@ -430,6 +420,7 @@ function runWorker(file: string) {
 console.info(`Queueing ${midiFiles.length} files for render.`);
 console.time("Spessasynth render completed in");
 
+totalRendered = 0;
 await Promise.all(
     midiFiles.map(async (file) => {
         await runWorker(file);
@@ -442,7 +433,5 @@ console.timeEnd("Spessasynth render completed in");
 console.groupEnd();
 
 console.info("Writing checksums...");
-await fs.writeFile(checksumsPath, JSON.stringify(checksums), {
-    encoding: "utf-8"
-});
+await writeChecksums();
 console.info(`All done. ${totalRendered} files rendered.`);

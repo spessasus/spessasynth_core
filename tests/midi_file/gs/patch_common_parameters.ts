@@ -1,10 +1,9 @@
 import { MIDITestMaker } from "../midi_test_maker";
-import { MIDIControllers } from "../../../src";
 
 const test = new MIDITestMaker("GS Patch Common Parameters");
 
 // Sine wave, no reverb
-test.programChange(8, 1, 80).cc(MIDIControllers.reverbDepth, 0);
+test.init(8, 1, 80);
 
 test.text("MASTER TUNE");
 
