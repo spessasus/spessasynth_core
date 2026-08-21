@@ -61,6 +61,7 @@
     "homepage": "https://github.com/spessasus/spessasynth_core#readme",
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@julusian/midi": "^3.8.1",
         "@types/midi": "^2.0.4",
         "@types/node": "^25.9.1",
         "eslint": "^10.4.0",
@@ -69,7 +70,6 @@
         "globals": "^17.6.0",
         "husky": "^9.1.7",
         "lint-staged": "^17.0.5",
-        "midi": "^2.0.0",
         "prettier": "^3.8.3",
         "rimraf": "^6.1.3",
         "tsdown": "^0.22.0",
@@ -86,7 +86,7 @@
     },
     "allowScripts": {
         "esbuild@0.28.0": true,
-        "midi@2.0.0": true
+        "@julusian/midi@3.8.1": true
     },
     "dependencies": {
         "stb-vorbis": "latest"
