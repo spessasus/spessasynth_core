@@ -107,11 +107,13 @@ export function renderVoice(
     // Vibrato LFO
     if (timeNow >= voice.vibLfoStartTime) {
         const vibPitchDepth = modulated[GeneratorTypes.vibLfoToPitch];
+        const vibVolDepth = modulated[GeneratorTypes.vibLfoToVolume];
         const vibFilterDepth = modulated[GeneratorTypes.vibLfoToFilterFc];
         const vibAmplitudeDepth =
             modulated[GeneratorTypes.vibLfoAmplitudeDepth];
         if (
             vibPitchDepth !== 0 ||
+            vibVolDepth !== 0 ||
             vibFilterDepth !== 0 ||
             vibAmplitudeDepth !== 0
         ) {
@@ -126,6 +128,10 @@ export function renderVoice(
             cents += vibLfoValue * vibPitchDepth;
             // Low pass frequency
             lowpassExcursion += vibLfoValue * vibFilterDepth;
+
+            // Vol env volume offset
+            // Negate the lfo value because audigy starts with increase rather than decrease
+            volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
 
             // Amplitude depth
             // Like SCVA: double gain at peak, 0 at lowest (times depth)

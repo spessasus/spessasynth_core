@@ -37,7 +37,7 @@ sweepXGMatrix("AC1 PITCH CONTROL +24 [semitones]", 0x5a, 0x58);
 sweepXGMatrix("AC1 PITCH CONTROL +64 [semitones]", 0x5a, 127);
 
 // Square wave
-test.programChange(0, 1, 80);
+test.programChange(0, 6, 80);
 
 test.text("FILTER CONTROL Test");
 test.text("CC#74 - baseline (filter, lower half)")
@@ -68,7 +68,7 @@ test.init(0, 66, 80);
 test.text("AMPLITUDE CONTROL Test");
 test.text("CC#7 - baseline (square gain)")
     .noteOn(60, 127)
-    .sweepCC(MIDIControllers.mainVolume, 0, 127, 60)
+    .sweepCC(MIDIControllers.mainVolume, 0, 127, 30)
     .noteOff(60)
     .wait(480);
 
@@ -84,7 +84,7 @@ sweepXGMatrix("AC1 LFO PMOD DEPTH 50 [cents]", 0x5d, 10, 0);
 sweepXGMatrix("AC1 LFO PMOG DEPTH 600 [cents]", 0x5d, 127, 0);
 
 // Square wave
-test.init(0, 1, 80, {
+test.init(0, 6, 80, {
     brightness: 64
 });
 test.text("LFO FMOD DEPTH Test");

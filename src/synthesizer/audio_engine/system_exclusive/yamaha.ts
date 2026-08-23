@@ -2,6 +2,7 @@ import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
+import { ModulatorControllerSources } from "../../../soundbank/enums";
 
 /**
  * Handles a Yamaha XG system exclusive
@@ -268,8 +269,25 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // ---
+                // XG Controller matrix starts here
+                // ---
+                // 2 Special cases which are aliases:
+
+                // MW LFO PMOD Depth (alias to modulation wheel range)
+                case 0x20: {
+                    const centeredValue = data - 64;
+                    ch.setMIDIParameter("modulationDepth", (data / 127) * 600);
+                    SpessaLog.xgInfo(
+                        `Modulation Wheel Range for ${channel}`,
+                        centeredValue,
+                        "cents"
+                    );
+                    break;
+                }
+
+                // Bend pitch control (alias to pitch wheel range)
                 case 0x23: {
-                    // Bend pitch control (pitch wheel range)
                     const centeredValue = data - 64;
                     ch.setMIDIParameter("pitchWheelRange", centeredValue);
                     SpessaLog.xgInfo(
@@ -280,7 +298,7 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
-                // TODO: Implement setupReceivers, tests have been added
+                // Auxiliary controllers
                 // AC1 Controller number
                 case 0x59: {
                     ch.setMIDIParameter("cc1", data as MIDIController);
@@ -298,6 +316,123 @@ export function yamahaSystemExclusive(
                         `AC2 controller number for ${channel}`,
                         data
                     );
+                    break;
+                }
+
+                // The receivers themselves:
+                // Modulation Wheel
+                case 0x1d:
+                case 0x1e:
+                case 0x1f:
+                // 0x20 is aliased to modulation depth range
+                case 0x21:
+                case 0x22:
+
+                // Pitch Bend
+                // 0x23 is aliased to pitch bend range
+                case 0x24:
+                case 0x25:
+                case 0x26:
+                case 0x27:
+                case 0x28:
+
+                // Channel Aftertouch
+                case 0x4d:
+                case 0x4e:
+                case 0x4f:
+                case 0x50:
+                case 0x51:
+                case 0x52:
+
+                // Poly Aftertouch
+                case 0x53:
+                case 0x54:
+                case 0x55:
+                case 0x56:
+                case 0x57:
+                case 0x58:
+
+                // AC1
+                // 0x59 is number, handled above
+                case 0x5a:
+                case 0x5b:
+                case 0x5c:
+                case 0x5d:
+                case 0x5e:
+                case 0x5f:
+
+                // AC2
+                // 0x60 is number, handled above
+                case 0x61:
+                case 0x62:
+                case 0x63:
+                case 0x64:
+                case 0x65:
+                case 0x66: {
+                    let startAddr;
+                    let source: number;
+                    let isCC = false;
+                    let sourceName;
+                    let bipolar = false;
+
+                    if (a3 <= 0x22) {
+                        startAddr = 0x1d;
+                        source = MIDIControllers.modulationWheel;
+                        isCC = true;
+                        sourceName = "mod wheel";
+                    } else if (a3 <= 0x28) {
+                        startAddr = 0x23;
+                        source = ModulatorControllerSources.pitchWheel;
+                        sourceName = "pitch wheel";
+                        bipolar = true;
+                    } else if (a3 <= 0x52) {
+                        startAddr = 0x4d;
+                        source = ModulatorControllerSources.channelPressure;
+                        sourceName = "channel pressure";
+                    } else if (a3 <= 0x58) {
+                        startAddr = 0x53;
+                        source = ModulatorControllerSources.polyPressure;
+                        sourceName = "poly pressure";
+                    } else if (a3 <= 0x5f) {
+                        startAddr = 0x5a;
+                        source = ch.midiParameters.cc1;
+                        isCC = true;
+                        sourceName = "AC1";
+                    } else {
+                        startAddr = 0x61;
+                        source = ch.midiParameters.cc2;
+                        isCC = true;
+                        sourceName = "AC2";
+                    }
+
+                    // Map to GS
+                    ch.dynamicModulators.setupReceiverXG(
+                        a3 - startAddr,
+                        data,
+                        source,
+                        isCC,
+                        sourceName,
+                        bipolar
+                    );
+                    break;
+                }
+
+                // ---
+                // XG Controller Matrix ends here
+                // ---
+
+                // Portamento switch
+                case 0x67: {
+                    ch.controllerChange(
+                        MIDIControllers.portamentoOnOff,
+                        data === 1 ? 127 : 0
+                    );
+                    break;
+                }
+
+                // Portamento time
+                case 0x68: {
+                    ch.controllerChange(MIDIControllers.portamentoTime, data);
                     break;
                 }
             }

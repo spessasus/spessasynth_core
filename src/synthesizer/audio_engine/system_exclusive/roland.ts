@@ -1042,7 +1042,7 @@ export function rolandSystemExclusive(
                                     );
                                     break;
                                 }
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     MIDIControllers.modulationWheel,
@@ -1072,7 +1072,7 @@ export function rolandSystemExclusive(
                                     );
                                     break;
                                 }
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ModulatorControllerSources.pitchWheel,
@@ -1085,7 +1085,7 @@ export function rolandSystemExclusive(
 
                             case 0x20: {
                                 // Channel pressure
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ModulatorControllerSources.channelPressure,
@@ -1097,7 +1097,7 @@ export function rolandSystemExclusive(
 
                             case 0x30: {
                                 // Poly pressure
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ModulatorControllerSources.polyPressure,
@@ -1109,7 +1109,7 @@ export function rolandSystemExclusive(
 
                             case 0x40: {
                                 // CC1
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ch.midiParameters.cc1,
@@ -1121,7 +1121,7 @@ export function rolandSystemExclusive(
 
                             case 0x50: {
                                 // CC2
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ch.midiParameters.cc2,
