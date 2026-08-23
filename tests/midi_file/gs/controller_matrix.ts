@@ -86,9 +86,17 @@ test.text("LFO1 PITCH DEPTH Test");
 sweepGSMatrix("CC1 LFO1 PITCH DEPTH 50 [cents]", 0x44, 10, 0);
 sweepGSMatrix("CC1 LFO1 PITCH DEPTH 600 [cents]", 0x44, 127, 0);
 
+// Square wave
+test.init(1, 1, 80, {
+    brightness: 64
+});
 test.text("LFO1 TVF DEPTH Test");
 sweepGSMatrix("CC1 LFO1 TVF DEPTH 2400 [cents]", 0x45, 127, 0);
 
+// Back to sine wave
+test.init(8, 1, 80, {
+    brightness: 127
+});
 test.text("LFO1 TVA DEPTH Test");
 sweepGSMatrix("CC1 LFO1 TVA DEPTH 100 [%]", 0x46, 127, 0);
 

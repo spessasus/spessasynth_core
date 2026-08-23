@@ -357,7 +357,6 @@ export class MIDITestMaker extends MIDIBuilder {
             brightness?: number;
             chorusDepth?: number;
             variationDepth?: number;
-            eq?: boolean;
         } = {}
     ) {
         const {
@@ -366,8 +365,7 @@ export class MIDITestMaker extends MIDIBuilder {
             vibratoDepth = 0,
             brightness = 64,
             chorusDepth = 0,
-            variationDepth = 0,
-            eq = false
+            variationDepth = 0
         } = options;
         return this.programChange(msb, lsb, program)
             .cc(MIDIControllers.reverbDepth, reverbDepth)
@@ -375,10 +373,7 @@ export class MIDITestMaker extends MIDIBuilder {
             .cc(MIDIControllers.vibratoDepth, vibratoDepth)
             .cc(MIDIControllers.brightness, brightness)
             .cc(MIDIControllers.chorusDepth, chorusDepth)
-            .cc(MIDIControllers.variationDepth, variationDepth)
-            .gs(0x40, 0x40 | MIDIUtilities.channelToSyx(this.channel), 0x20, [
-                eq ? 1 : 0
-            ]);
+            .cc(MIDIControllers.variationDepth, variationDepth);
     }
 
     public noteOff(midiNote: number) {
