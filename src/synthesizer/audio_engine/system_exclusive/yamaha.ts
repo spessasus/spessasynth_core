@@ -1,5 +1,5 @@
 import { SpessaLog } from "../../../utils/loggin";
-import { MIDIControllers } from "../../../midi/enums";
+import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
@@ -277,6 +277,28 @@ export function yamahaSystemExclusive(
                         centeredValue,
                         "semitones"
                     );
+                    break;
+                }
+
+                // TODO: Implement setupReceivers, tests have been added
+                // AC1 Controller number
+                case 0x59: {
+                    ch.setMIDIParameter("cc1", data as MIDIController);
+                    SpessaLog.xgInfo(
+                        `AC1 controller number for ${channel}`,
+                        data
+                    );
+                    break;
+                }
+
+                // AC2 Controller number
+                case 0x60: {
+                    ch.setMIDIParameter("cc2", data as MIDIController);
+                    SpessaLog.xgInfo(
+                        `AC2 controller number for ${channel}`,
+                        data
+                    );
+                    break;
                 }
             }
             return;

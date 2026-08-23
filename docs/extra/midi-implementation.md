@@ -496,6 +496,8 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | DECAY TIME                     | Aliased to MIDI CC#75 (Decay Time).                                                                                                                                            |
 | RELEASE TIME                   | Aliased to MIDI CC#72 (Release Time).                                                                                                                                          |
 | BEND PITCH CONTROL             | Sets the Channel MIDI Parameter [`pitchWheelRange`](../spessa-synth-processor/midi-channel/channel-parameters.md#pitchwheelrange).                                             |
+| AC1 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter [`cc1`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc1).                                                                     |
+| AC2 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter [`cc2`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc2).                                                                     |
 
 [^3]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode.
 
