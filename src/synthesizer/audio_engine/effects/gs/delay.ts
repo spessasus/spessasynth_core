@@ -1,5 +1,5 @@
 import type { DelayProcessor, DelayProcessorSnapshot } from "../types";
-import { DelayLine } from "../delay_line";
+import { DelayLine } from "../implementation/delay_line";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!

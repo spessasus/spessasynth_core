@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import type { InsertionProcessor } from "../types";
+import type { InsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -9,23 +8,56 @@ import {
     zeroState,
     ZeroStateC
 } from "./utils";
+import { InsertionValueConverter } from "./convert";
 
-const DEFAULT_LEVEL = 127; // CHANGE THIS
-
+const DEFAULT_LEVEL = 127;
+const PI_2 = Math.PI * 2;
+const GAIN_SMOOTHING = 0.01;
 /*
-This is a boilerplate code to copy when creating a new insertion processor.
-It already has EQ and level implemented.
+Tremolo cyclically modulates the volume to add tremolo
+effect to the sound.
+
+Type: Stereo
  */
-
-// REMEMBER TO REMOVE THE ESLINT DISABLE COMMENTS!
-
-//@ts-expect-error Boilerplate class
-// noinspection JSUnusedLocalSymbols
-class BoilerplateFX implements InsertionProcessor {
+export class TremoloFX implements InsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
-    public readonly type = 0x00_01; // CHANGE THIS
+    public readonly type = 0x01_25;
+
+    /**
+     * Selects the type of modulation.
+     * Tri:
+     *  The sound will be modulated like a triangle
+     * wave.
+     * Sqr:
+     *  The sound will be modulated like a square
+     * wave.
+     * Sin:
+     *  The sound will be modulated like a sine
+     * wave.
+     * Saw1,2: The sound will be modulated like a
+     * sawtooth wave. The teeth in Saw1 and
+     * Saw2 point at opposite direction.
+     *
+     * [Tri/Sqr/Sin/Saw1/Saw2 -> 00/01/02/03/04]
+     * @private
+     */
+    private modWave = 1;
+
+    /**
+     * Adjusts the frequency of modulation.
+     * [Rate1 conversion]
+     * @private
+     */
+    private modRate = 3.05;
+
+    /**
+     * Adjusts the depth of modulation.
+     * [0;127]
+     * @private
+     */
+    private modDepth = 96;
 
     /**
      * Adjusts the gain of the low frequency range. (200Hz)
@@ -48,6 +80,9 @@ class BoilerplateFX implements InsertionProcessor {
      */
     private level = DEFAULT_LEVEL / 127;
 
+    private phase = 0;
+    private currentGain = 1;
+
     // Biquad shelving coefficients and states (per channel)
     private readonly lsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
     private readonly hsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
@@ -60,16 +95,20 @@ class BoilerplateFX implements InsertionProcessor {
     private hsStateL: BiquadState = { ...ZeroStateC };
     private readonly sampleRate;
 
-    public constructor(sampleRate: number, maxBufferSize: number) {
+    public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.reset();
-        void maxBufferSize; // REMOVE THIS
     }
 
     public reset() {
+        this.modWave = 1;
+        this.modRate = 3.05;
+        this.modDepth = 96;
         this.lowGain = 0;
         this.hiGain = 0;
         this.level = DEFAULT_LEVEL / 127;
+        this.phase = 0;
+        this.currentGain = 1;
         zeroState(this.hsStateR);
         zeroState(this.hsStateL);
         zeroState(this.lsStateR);
@@ -98,8 +137,12 @@ class BoilerplateFX implements InsertionProcessor {
             lsStateR,
             hsCoeffs,
             hsStateR,
-            hsStateL
+            hsStateL,
+            modDepth,
+            modWave
         } = this;
+        const rateInc = this.modRate / this.sampleRate;
+        let { currentGain, phase } = this;
         for (let i = 0; i < sampleCount; i++) {
             // Apply EQ to input (EQ is applied regardless of mix)
             const sL = applyShelves(
@@ -117,8 +160,46 @@ class BoilerplateFX implements InsertionProcessor {
                 hsStateR
             );
 
-            const outL = sL * level;
-            const outR = sR * level;
+            let lfo: number;
+            switch (modWave) {
+                default: {
+                    // 0 -> triangle
+                    lfo = 1 - 4 * Math.abs(phase - 0.5);
+                    break;
+                }
+
+                case 1: {
+                    // 1 - square
+                    // This weird half-sine wave is what SC-VA produces so we have to keep it
+                    lfo = phase > 0.5 ? -1 : -Math.cos((phase - 0.75) * PI_2);
+                    break;
+                }
+
+                case 2: {
+                    // 2 - sine
+                    lfo = Math.sin(PI_2 * phase);
+                    break;
+                }
+
+                case 3: {
+                    // Saw1
+                    lfo = 1 - 2 * phase;
+                    break;
+                }
+
+                case 4: {
+                    // Saw2
+                    lfo = 2 * phase - 1;
+                    break;
+                }
+            }
+            if ((phase += rateInc) >= 1) phase -= 1;
+
+            const tremoloLevel = 1 - (lfo / 2 + 0.5) * (modDepth / 127);
+            currentGain += (tremoloLevel - currentGain) * GAIN_SMOOTHING;
+
+            const outL = sL * level * currentGain;
+            const outR = sR * level * currentGain;
 
             // Mix
             const idx = startIndex + i;
@@ -129,11 +210,28 @@ class BoilerplateFX implements InsertionProcessor {
             outputChorus[i] += mono * sendLevelToChorus;
             outputDelay[i] += mono * sendLevelToDelay;
         }
+        this.phase = phase;
+        this.currentGain = currentGain;
     }
 
     public setParameter(parameter: number, value: number) {
         switch (parameter) {
             default: {
+                break;
+            }
+
+            case 0x03: {
+                this.modWave = value;
+                break;
+            }
+
+            case 0x04: {
+                this.modRate = InsertionValueConverter.rate1(value);
+                break;
+            }
+
+            case 0x05: {
+                this.modDepth = value;
                 break;
             }
 

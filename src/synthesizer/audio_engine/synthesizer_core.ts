@@ -46,11 +46,11 @@ import type {
     UserDrumSetParameter
 } from "../../midi/types";
 import type { MIDISystem } from "../../soundbank/types";
-import { SpessaSynthChorus } from "./effects/chorus/chorus";
-import { SpessaSynthDelay } from "./effects/delay/delay";
-import { ThruFX } from "./effects/insertion/thru";
-import { INSERTION_EFFECT_LIST } from "./effects/insertion_list";
-import { SpessaSynthReverb } from "./effects/reverb/reverb";
+import { SpessaSynthChorus } from "./effects/gs/chorus";
+import { SpessaSynthDelay } from "./effects/gs/delay";
+import { ThruFX } from "./effects/gs/insertion/thru";
+import { INSERTION_EFFECT_LIST } from "./effects/gs/insertion_list";
+import { SpessaSynthReverb } from "./effects/gs/reverb";
 import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,

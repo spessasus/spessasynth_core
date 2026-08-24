@@ -1,6 +1,6 @@
 import type { ReverbProcessor, ReverbProcessorSnapshot } from "../types";
-import { DattorroReverb } from "./dattorro";
-import { DelayLine } from "../delay_line";
+import { DattorroReverb } from "../implementation/dattorro";
+import { DelayLine } from "../implementation/delay_line";
 
 const DELAY_GAIN = 1.5;
 

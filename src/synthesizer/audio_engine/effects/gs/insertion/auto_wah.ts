@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../types";
+import type { InsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,

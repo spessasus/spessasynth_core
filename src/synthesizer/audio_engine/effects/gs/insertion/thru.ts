@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../types";
+import type { InsertionProcessor } from "../../types";
 
 export class ThruFX implements InsertionProcessor {
     public sendLevelToReverb = 40 / 127;
