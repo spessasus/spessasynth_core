@@ -220,13 +220,18 @@ Processes a raw MIDI message and allows scheduling it at a specific time.
 synth.processMessage(message, (channnelOffset = 0), (options = null));
 ```
 
-- message - `number` or any byte Typed Array (like `Uint8Array`) - the MIDI message to process.
+- message - `number` or any byte Typed Array (like `Uint8Array`) or `MIDIMessage` - the MIDI message to process.
 - channelOffset - `number`, optional - adds to the channel number of the message. It defaults to 0.
 - eventOptions - an `object`, currently defined properties are:
     - time - `number` - time in seconds for when the message is executed.
       This allows message scheduling.
       Absolute time in synth's current time.
       A value less than the current time causes the message to get executed immediately.
+
+### processMessages
+
+This method is identical to [`processMessage`](#processmessage), the only difference is that the first parameter is an array.
+Useful for `MIDIUtils`.
 
 ### lockMIDIParameter
 
