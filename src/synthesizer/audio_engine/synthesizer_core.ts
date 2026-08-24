@@ -1,21 +1,34 @@
+import {
+    type MIDIController,
+    MIDIControllers,
+    type MIDIMessageType,
+    MIDIMessageTypes
+} from "../../midi/enums";
+import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
+import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
+import { IndexedByteArray } from "../../utils/indexed_array";
+import { SpessaLog } from "../../utils/loggin";
+import { ConsoleColors } from "../../utils/other";
+import {
+    type DelayProcessor,
+    type InsertionProcessor,
+    type InsertionProcessorConstructor,
+    type InsertionProcessorSnapshot
+} from "../exports";
 import type {
     CachedVoiceList,
+    SynthesizerPatch,
     SynthMethodOptions,
     SynthProcessorEventData,
     SynthProcessorOptions,
     UserDrumSetChangeCallback
 } from "../types";
-import type { BasicPreset } from "../../soundbank/basic_soundbank/basic_preset";
+import { MIDIChannel } from "./channel/midi_channel";
 import {
     DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
     type GlobalSystemParameter,
     setSystemParameterInternal
 } from "./parameters/system";
-import { Voice } from "./voice/voice";
-import { type MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
-import { CachedVoice } from "./voice/voice_cache";
-import { SpessaLog } from "../../utils/loggin";
-import { MIDIChannel } from "./channel/midi_channel";
 import { SoundBankManager } from "./sound_bank_manager";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
@@ -23,40 +36,28 @@ import {
     EFX_SENDS_GAIN_CORRECTION
 } from "./synth_constants";
 import { systemExclusiveInternal } from "./system_exclusive/system_exclusive";
-import {
-    type MIDIController,
-    MIDIControllers,
-    type MIDIMessageType,
-    MIDIMessageTypes
-} from "../../midi/enums";
-import { IndexedByteArray } from "../../utils/indexed_array";
-import { ConsoleColors } from "../../utils/other";
-import {
-    type DelayProcessor,
-    type InsertionProcessor,
-    type InsertionProcessorConstructor,
-    type InsertionProcessorSnapshot,
-    type SynthesizerPatch
-} from "../exports";
 import { LowpassFilter } from "./voice/lowpass_filter";
+import { Voice } from "./voice/voice";
+import { CachedVoice } from "./voice/voice_cache";
 
-import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
+import { MIDIMessage } from "../../midi/midi_message";
+import type {
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../../midi/types";
+import type { MIDISystem } from "../../soundbank/types";
+import { SpessaSynthChorus } from "./effects/chorus/chorus";
+import { SpessaSynthDelay } from "./effects/delay/delay";
 import { ThruFX } from "./effects/insertion/thru";
 import { INSERTION_EFFECT_LIST } from "./effects/insertion_list";
 import { SpessaSynthReverb } from "./effects/reverb/reverb";
-import { SpessaSynthChorus } from "./effects/chorus/chorus";
-import { SpessaSynthDelay } from "./effects/delay/delay";
+import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
     lockMIDIParameterInternal,
     setMIDIParameterInternal
 } from "./parameters/midi";
-import type { MIDISystem } from "../../soundbank/types";
-import type {
-    SysExAcceptedArray,
-    UserDrumSetParameter
-} from "../../midi/types";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -498,21 +499,41 @@ export class SynthesizerCore {
      * @param options Additional options for scheduling the message.
      */
     public processMessage(
-        message: SysExAcceptedArray,
+        message: SysExAcceptedArray | MIDIMessage,
         channelOffset = 0,
         options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
+        const raw =
+            message instanceof MIDIMessage
+                ? [message.statusByte, ...message.data]
+                : message;
+
         const time = options.time;
         if (time > this.currentTime) {
             this.eventQueue.push({
-                message,
+                message: raw,
                 channelOffset,
                 time
             });
             this.eventQueue.sort((e1, e2) => e1.time - e2.time);
         } else {
-            this.processMessageInternal(message, channelOffset);
+            this.processMessageInternal(raw, channelOffset);
         }
+    }
+
+    /**
+     * Processes multiple MIDI messages.
+     * @param messages The messages to process.
+     * @param channelOffset The channel offset for the messages
+     * @param options Additional options for scheduling the messages.
+     */
+    public processMessages(
+        messages: (SysExAcceptedArray | MIDIMessage)[],
+        channelOffset = 0,
+        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
+    ) {
+        for (const message of messages)
+            this.processMessage(message, channelOffset, options);
     }
 
     public destroySynthProcessor() {

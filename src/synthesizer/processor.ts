@@ -29,6 +29,7 @@ import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type { MIDISystem } from "../soundbank/types";
 import type { SysExAcceptedArray } from "../midi/types";
 import { BasicSoundBank } from "../soundbank/exports";
+import type { MIDIMessage } from "../midi/midi_message";
 
 /**
  * Processor.ts
@@ -166,7 +167,20 @@ export class SpessaSynthProcessor {
      * @param options Additional options for scheduling the message.
      */
     public readonly processMessage: (
-        message: SysExAcceptedArray,
+        message: SysExAcceptedArray | MIDIMessage,
+        channelOffset?: number,
+        options?: SynthMethodOptions
+    ) => void;
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Processes multiple MIDI messages and allows scheduling them at a specific time.
+     * @param message The MIDI messages to process.
+     * @param channelOffset The channel offset for the messages. It will be added to messages' channel number if applicable.
+     * @param options Additional options for scheduling the message.
+     */
+    public readonly processMessages: (
+        message: (SysExAcceptedArray | MIDIMessage)[],
         channelOffset?: number,
         options?: SynthMethodOptions
     ) => void;
@@ -220,6 +234,7 @@ export class SpessaSynthProcessor {
         this.pitchWheel = c.pitchWheel.bind(c);
         this.programChange = c.programChange.bind(c);
         this.processMessage = c.processMessage.bind(c);
+        this.processMessages = c.processMessages.bind(c);
 
         for (let i = 0; i < 16; i++) {
             // Don't send events as we're creating the initial channels
