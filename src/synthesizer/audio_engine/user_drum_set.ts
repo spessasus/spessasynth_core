@@ -108,10 +108,10 @@ export class UserDrumSet implements SynthesizerPatch {
         this.tempPatch.program = binding.program;
         let resolvedPatch = this.resolvePatch(this.tempPatch);
         // Protect from binding to self as well
-        if (!resolvedPatch || resolvedPatch === this) {
+        if (!resolvedPatch || resolvedPatch instanceof UserDrumSet) {
             resolvedPatch = this.resolvePatch(FALLBACK_PATCH);
-            if (!resolvedPatch) {
-                // No drums at all
+            if (!resolvedPatch || resolvedPatch instanceof UserDrumSet) {
+                // No drums at all (only user drum sets are present)
                 return [];
             }
         }
