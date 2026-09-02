@@ -4,11 +4,7 @@ import { MIDIControllers } from "../../../src";
 const test = new MIDITestMaker("Insertion FX Effect Sends");
 
 // SC-55 sine
-test.programChange(8, 1, 80)
-    .cc(MIDIControllers.vibratoDepth, 0)
-    .cc(MIDIControllers.brightness, 127)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.variationDepth, 127);
+test.init(8, 1, 80, { brightness: 127, variationDepth: 127 });
 
 // Play short note
 test.wait(60).noteOn(60, 127).wait(60).noteOff(60).wait(960);

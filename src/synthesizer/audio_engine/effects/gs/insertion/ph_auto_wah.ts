@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../types";
+import type { InsertionProcessor } from "../../types";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
 import { PAN_TABLE_LEFT, PAN_TABLE_RIGHT } from "./utils";

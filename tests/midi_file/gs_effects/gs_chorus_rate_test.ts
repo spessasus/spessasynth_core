@@ -1,4 +1,3 @@
-import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../midi_test_maker";
 
 const test = new MIDITestMaker("GS Chorus Rate");
@@ -11,10 +10,8 @@ test.gs(0x40, 0x01, 0x38, [2])
     .gs(0x40, 0x01, 0x3c, [0])
     // Depth
     .gs(0x40, 0x01, 0x3e, [127])
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.chorusDepth, 127)
     // SC-55 MAP square wave
-    .programChange(1, 1, 80);
+    .init(1, 1, 80, { chorusDepth: 127 });
 
 let rate = 0;
 while (rate <= 128) {

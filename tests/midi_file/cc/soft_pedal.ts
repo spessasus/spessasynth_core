@@ -5,10 +5,7 @@ const test = new MIDITestMaker("Soft Pedal Test");
 
 // Sav wave no extra effects
 // Capital tone since variation banks seem to not be affected????
-test.programChange(0, 3, 81)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .cc(MIDIControllers.mainVolume, 127)
-    .cc(MIDIControllers.vibratoDepth, 0);
+test.init(0, 3, 81);
 
 test.text("Soft pedal OFF")
     .cc(MIDIControllers.softPedal, 0)

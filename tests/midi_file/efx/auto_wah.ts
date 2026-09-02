@@ -3,10 +3,7 @@ import { MIDIControllers } from "../../../src";
 
 const test = new MIDITestMaker("Auto Wah");
 
-test.programChange(16, 3, 80)
-    .cc(MIDIControllers.vibratoDepth, 0)
-    .cc(MIDIControllers.brightness, 127)
-    .cc(MIDIControllers.reverbDepth, 0)
+test.init(16, 3, 80, { brightness: 127 })
     .wait(80)
     .noteOn(24, 127)
     .wait(480)

@@ -17,12 +17,13 @@ import {
 } from "../exports";
 import type {
     CachedVoiceList,
+    SynthesizerPatch,
     SynthMethodOptions,
     SynthProcessorEventData,
-    SynthProcessorOptions
+    SynthProcessorOptions,
+    UserDrumSetChangeCallback
 } from "../types";
 import { MIDIChannel } from "./channel/midi_channel";
-import { KeyModifierManager } from "./key_modifier_manager";
 import {
     DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
     type GlobalSystemParameter,
@@ -40,13 +41,16 @@ import { Voice } from "./voice/voice";
 import { CachedVoice } from "./voice/voice_cache";
 
 import { MIDIMessage } from "../../midi/midi_message";
-import type { SysExAcceptedArray } from "../../midi/types";
+import type {
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../../midi/types";
 import type { MIDISystem } from "../../soundbank/types";
-import { SpessaSynthChorus } from "./effects/chorus/chorus";
-import { SpessaSynthDelay } from "./effects/delay/delay";
-import { ThruFX } from "./effects/insertion/thru";
-import { INSERTION_EFFECT_LIST } from "./effects/insertion_list";
-import { SpessaSynthReverb } from "./effects/reverb/reverb";
+import { SpessaSynthChorus } from "./effects/gs/chorus";
+import { SpessaSynthDelay } from "./effects/gs/delay";
+import { ThruFX } from "./effects/gs/insertion/thru";
+import { INSERTION_EFFECT_LIST } from "./effects/gs/insertion_list";
+import { SpessaSynthReverb } from "./effects/gs/reverb";
 import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
@@ -55,10 +59,14 @@ import {
     setMIDIParameterInternal
 } from "./parameters/midi";
 
-// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+/**
+ * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+ */
 const GAIN_SMOOTHING_FACTOR = 0.01;
 
-// Pan smoothing for rapid pan changes
+/**
+ * Pan smoothing for rapid pan changes
+ */
 const PAN_SMOOTHING_FACTOR = 0.05;
 /**
  * The core synthesis engine which interacts with channels and holds all the synth parameters.
@@ -110,10 +118,6 @@ export class SynthesizerCore {
     public soundBankManager: SoundBankManager = new SoundBankManager(
         this.updatePresetList.bind(this)
     );
-    /**
-     * Handles the custom key overrides: velocity and preset
-     */
-    public keyModifierManager: KeyModifierManager = new KeyModifierManager();
     public readonly sampleRate;
     /**
      * This.tunings[program * 128 + key] = midiNote,cents (fraction)
@@ -156,11 +160,11 @@ export class SynthesizerCore {
     /**
      * Synth's default (reset) preset.
      */
-    public defaultPreset: BasicPreset | undefined;
+    public defaultPreset: SynthesizerPatch | undefined;
     /**
      * Synth's default (reset) drum preset.
      */
-    public drumPreset: BasicPreset | undefined;
+    public drumPreset: SynthesizerPatch | undefined;
     /**
      * Gain smoothing factor, adjusted to the sample rate.
      */
@@ -297,6 +301,9 @@ export class SynthesizerCore {
         this.setSystemParameter("effectsEnabled", options.effectsEnabled);
         this.setSystemParameter("eventsEnabled", options.eventsEnabled);
         this.maxBufferSize = options.maxBufferSize;
+
+        // For GS user drum set
+        this.soundBankManager.systemGetter = () => this.midiParameters.system;
         // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
         // Volume  smoothing factor
         this.gainSmoothingFactor =
@@ -550,20 +557,7 @@ export class SynthesizerCore {
     ): CachedVoiceList {
         const channelObject = this.midiChannels[channel];
 
-        // Override patch
-        const overridePatch = this.keyModifierManager.hasOverridePatch(
-            channel,
-            midiNote
-        );
-
-        let preset = channelObject.preset;
-        if (overridePatch) {
-            const patch = this.keyModifierManager.getPatch(channel, midiNote);
-            preset = this.soundBankManager.getPreset(
-                patch,
-                this.midiParameters.system
-            );
-        }
+        const preset = channelObject.preset;
 
         // Warning is handled in program change
         if (!preset) {
@@ -616,27 +610,17 @@ export class SynthesizerCore {
         // Avoid crashing
         if (!this.drumPreset || !this.defaultPreset) return;
 
+        // Reset GS user drums
+        if (!this.systemParameters.userDrumLock)
+            for (const userDrum of this.soundBankManager.userDrumSets)
+                userDrum.reset();
+
         // Reset channels
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
 
         // Update if the effects should still be active.
         this.updateActiveEffects();
-    }
-
-    public process(
-        left: Float32Array,
-        right: Float32Array,
-        startIndex = 0,
-        sampleCount = 0
-    ) {
-        this.processSplit(
-            [[left, right]],
-            left,
-            right,
-            startIndex,
-            sampleCount
-        );
     }
 
     /**
@@ -672,24 +656,25 @@ export class SynthesizerCore {
      *              │              │          │                   │
      *              │              │          │                   │
      *              𜸊              𜸊          𜸊                   𜸊
-     *    ┌─────────┴──────────┐ ┌─┴──────────┴───────────────────┴────┐
-     *    │  Dry Output Pairs  │ │        Stereo Effects Output        │
-     *    └────────────────────┘ └─────────────────────────────────────┘
+     *    ┌─────────┴──────────────┴──────────┴───────────────────┴────┐
+     *    │                        Stereo Output                       │
+     *    └────────────────────────────────────────────────────────────┘
      * ```
+     * Each channel's dry signal is also copied to the optional `channelOutputs` pairs for visualization only.
      * The pipeline is quite similar to the one on SC-8850 manual page 78.
      * All output arrays must be the same length, the method will crash otherwise.
-     * @param outputs The stereo pairs for each MIDI channel's dry output, will be wrapped if less.
-     * @param effectsLeft The left stereo effect output buffer.
-     * @param effectsRight The right stereo effect output buffer.
+     * @param left the left output channel.
+     * @param right the right output channel.
      * @param startIndex The index to start writing at into the output buffer.
      * @param samples The amount of samples to write.
+     * @param channelOutputs optional stereo channel outputs for visualization _only_. These shouldn't be added to the direct outputs.
      */
-    public processSplit(
-        outputs: Float32Array[][],
-        effectsLeft: Float32Array,
-        effectsRight: Float32Array,
+    public process(
+        left: Float32Array,
+        right: Float32Array,
         startIndex = 0,
-        samples = 0
+        samples = 0,
+        channelOutputs?: Float32Array[][]
     ) {
         // Process event queue
         if (this.eventQueue.length > 0) {
@@ -704,7 +689,7 @@ export class SynthesizerCore {
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        const sampleCount = samples || outputs[0][0].length - startIndex;
+        const sampleCount = samples || left.length - startIndex;
         if (sampleCount > this.maxBufferSize)
             throw new Error(
                 `Requested ${sampleCount} samples, but maxBufferSize is ${this.maxBufferSize}`
@@ -718,35 +703,68 @@ export class SynthesizerCore {
             this.insertionInputL.fill(0);
             this.insertionInputR.fill(0);
         }
-
-        // Clear voice count
         for (const c of this.midiChannels) {
+            // And voice count
             c.clearVoiceCount();
+            c.outputRight.fill(0);
+            c.outputLeft.fill(0);
         }
         this._voiceCount = 0;
 
         // Process voices
         const cap = this.systemParameters.voiceCap;
-        const outputCount = outputs.length;
+        const outputCount = channelOutputs?.length ?? 0;
         for (let i = 0; i < cap; i++) {
             const v = this.voices[i];
             const ch = this.midiChannels[v.channel];
             if (!v.isActive) continue;
 
-            // Send the voice to appropriate output
-            const outputIndex = v.channel % outputCount;
-            ch.renderVoice(
-                v,
-                this.currentTime,
-                outputs[outputIndex][0],
-                outputs[outputIndex][1],
-                startIndex,
-                sampleCount
-            );
+            ch.renderVoice(v, this.currentTime, sampleCount);
 
             // Update voice count
             ch.voiceCount++;
             this._voiceCount++;
+        }
+
+        // Mix channel data
+        for (let channel = 0; channel < this.midiChannels.length; channel++) {
+            const { outputLeft, outputRight, midiParameters } =
+                this.midiChannels[channel];
+            // Mix visualization first
+            if (outputCount) {
+                const out = channelOutputs![channel % outputCount];
+                const outL = out[0];
+                const outR = out[1];
+
+                for (let i = 0; i < sampleCount; i++) {
+                    const idx = startIndex + i;
+                    outL[idx] += outputLeft[i];
+                    outR[idx] += outputRight[i];
+                }
+            }
+
+            // Straight into the insertion EFX, but only if it is active
+            if (
+                midiParameters.efxAssign &&
+                this.systemParameters.effectsEnabled &&
+                this.insertionActive
+            ) {
+                const insertionL = this.insertionInputL;
+                const insertionR = this.insertionInputR;
+                // Index is 0-based here as it's internal
+                for (let i = 0; i < sampleCount; i++) {
+                    insertionL[i] += outputLeft[i];
+                    insertionR[i] += outputRight[i];
+                }
+                continue;
+            }
+
+            // Mix down normally
+            for (let i = 0; i < sampleCount; i++) {
+                const idx = startIndex + i;
+                left[idx] += outputLeft[i];
+                right[idx] += outputRight[i];
+            }
         }
 
         // Process effects
@@ -764,8 +782,8 @@ export class SynthesizerCore {
                 this.insertionProcessor.process(
                     insertionInputL,
                     insertionInputR,
-                    effectsLeft,
-                    effectsRight,
+                    left,
+                    right,
                     reverbInput,
                     chorusInput,
                     delayInput,
@@ -777,8 +795,8 @@ export class SynthesizerCore {
             // Chorus first, it feeds to reverb and delay
             this.chorusProcessor.process(
                 chorusInput,
-                effectsLeft,
-                effectsRight,
+                left,
+                right,
                 reverbInput,
                 delayInput,
                 startIndex,
@@ -789,8 +807,8 @@ export class SynthesizerCore {
                 // Process delay
                 this.delayProcessor.process(
                     delayInput,
-                    effectsLeft,
-                    effectsRight,
+                    left,
+                    right,
                     reverbInput,
                     startIndex,
                     sampleCount
@@ -799,8 +817,8 @@ export class SynthesizerCore {
             // Finally process the reverb processor (it goes directly into the output buffer)
             this.reverbProcessor.process(
                 reverbInput,
-                effectsLeft,
-                effectsRight,
+                left,
+                right,
                 startIndex,
                 sampleCount
             );
@@ -818,7 +836,7 @@ export class SynthesizerCore {
      * @returns Output is an array of voices.
      */
     public getVoicesForPreset(
-        preset: BasicPreset,
+        preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
     ): CachedVoiceList {
@@ -888,6 +906,42 @@ export class SynthesizerCore {
                                   MIDIControllers.variationDepth
                               ] > 0
                       );
+    }
+
+    // Bad code... make sure to call only when necessary!!!
+    public purgeCachedPatch(patch: MIDIPatch) {
+        for (let midiNote = 0; midiNote < 128; midiNote++) {
+            for (let velocity = 0; velocity < 128; velocity++) {
+                this.cachedVoices.delete(
+                    this.getCachedVoiceIndex(patch, midiNote, velocity)
+                );
+            }
+        }
+    }
+
+    protected setUserDrumSetParam<K extends keyof UserDrumSetParameter>(
+        drumSet: number,
+        midiNote: number,
+        parameter: K,
+        value: UserDrumSetParameter[K]
+    ) {
+        const set = this.soundBankManager.userDrumSets[drumSet];
+        // Optimization for bulk dump
+        // Testcase FADED88.mid
+        if (set.keyParams[midiNote][parameter] === value) {
+            return;
+        }
+        set.keyParams[midiNote][parameter] = value;
+        this.callEvent("userDrumSetChange", {
+            midiNote,
+            drumSet,
+            parameter,
+            value
+        } as UserDrumSetChangeCallback);
+        SpessaLog.gsInfo(
+            `User Drum Set ${drumSet} ${parameter}, key ${midiNote}`,
+            value.toString()
+        );
     }
 
     protected getInsertionSnapshot(): InsertionProcessorSnapshot {

@@ -11,7 +11,7 @@
         "lint": "eslint --cache",
         "build:fast": "rimraf -rf dist && tsdown src/index.ts --tsconfig src/tsconfig.json --platform neutral --sourcemap",
         "build": "npm run test:types && npm run build:fast",
-        "format": "prettier . --write",
+        "format": "prettier --list-different --write .",
         "test:types": "npm run lint && tsc -b ",
         "test:midi": "tsx tests/midi_file/make_tests.ts",
         "test:midi:render": "tsx tests/midi_file/render_tests.ts",

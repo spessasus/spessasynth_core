@@ -34,7 +34,6 @@ All properties are optional. If they are not supplied, the defaults will be used
 
 ## Managers
 
-- [Key Modifier Manager](key-modifier-manager.md)
 - [Sound Bank Manager](sound-bank-manager.md)
 
 ## Methods
@@ -44,7 +43,13 @@ All properties are optional. If they are not supplied, the defaults will be used
 Render PCM float32 audio data to the stereo outputs and processes the effects if they are enabled.
 
 ```ts
-synth.process(left, right, (startIndex = 0), (sampleCount = all));
+synth.process(
+    left,
+    right,
+    (startIndex = 0),
+    (sampleCount = all),
+    (channelOutputs = null)
+);
 ```
 
 - left - a `Float32Array` - the left audio output buffer.
@@ -52,6 +57,7 @@ synth.process(left, right, (startIndex = 0), (sampleCount = all));
 - startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
 - sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
   `startIndex`.
+- channelOutputs - optional, `Float32Array[][]` - optional stereo channel outputs for visualization _only_. These shouldn't be added to the direct outputs.
 
 **All `Float32Array`s must be the same length**
 
@@ -61,36 +67,9 @@ synth.process(left, right, (startIndex = 0), (sampleCount = all));
     The LFOs and envelopes are only processed at the beginning.
     `sampleCount` cannot exceed `maxBufferSize`. Larger values will throw an exception!
 
-### processSplit
+!!! Tip
 
-Render PCM float32 audio data of separate channels + effects.
-
-```ts
-synth.processSplit(
-    outputs,
-    effectsLeft,
-    effectsRight,
-    (startIndex = 0),
-    (sampleCount = all)
-);
-```
-
-- separateChannels - an array of `Float32Array` pairs - one pair represents one channel (`[L, R]`),
-  for example, the first pair is first channels L and R outputs and so on. If there are fewer arrays than the channels,
-  the extra channels will render into the same arrays.
-- effectsLeft - a `Float32Array`- the left output buffer for effects.
-- effectsRight - a `Float32Array` - the right output buffer for effects.
-- startIndex - optional, `number` - the offset at which to start rendering audio in the provided arrays. Default is 0.
-- sampleCount - optional, `number` - the number of samples to render. Default is the entire length, starting from
-  `startIndex`.
-
-**All `Float32Array`s must be the same length**
-
-!!! Danger
-
-    This method renders a single quantum of audio.
-    The LFOs and envelopes are only processed at the beginning.
-    `sampleCount` cannot exceed `maxBufferSize`. Larger values will throw an exception!
+    `processSplit` has been superseded by process with visualization channels. This approach allows visualization with insertion effects and upcoming EQ.
 
 ### systemExclusive
 
@@ -316,7 +295,7 @@ Clear the synthesizer's voice cache.
 
 ## Properties
 
-### processorInitialized
+### ready
 
 A `Promise` that must be awaited before the processor can be used with a compressed sound bank.
 
@@ -376,10 +355,6 @@ Synthesizer's delay processor, a [`DelayProcessor` instance](effects/delay-proce
 ### soundBankManager
 
 The [sound bank manager](sound-bank-manager.md) of this synthesizer.
-
-### keyModifierManager
-
-The [key modifier manager](key-modifier-manager.md) of this synthesizer.
 
 ### onMissingPreset
 

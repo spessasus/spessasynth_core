@@ -1,12 +1,8 @@
-import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../midi_test_maker";
 
 const test = new MIDITestMaker("Stereo EQ");
 
-test.programChange(16, 3, 80)
-    .cc(MIDIControllers.vibratoDepth, 0)
-    .cc(MIDIControllers.brightness, 127)
-    .cc(MIDIControllers.reverbDepth, 0)
+test.init(16, 3, 80, { brightness: 127 })
     .wait(80)
     .noteOn(60, 120)
     .wait(480)

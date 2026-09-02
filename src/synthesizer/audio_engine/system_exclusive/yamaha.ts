@@ -1,7 +1,8 @@
 import { SpessaLog } from "../../../utils/loggin";
-import { MIDIControllers } from "../../../midi/enums";
+import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
+import { ModulatorControllerSources } from "../../../soundbank/enums";
 
 /**
  * Handles a Yamaha XG system exclusive
@@ -268,8 +269,25 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // ---
+                // XG Controller matrix starts here
+                // ---
+                // 2 Special cases which are aliases:
+
+                // MW LFO PMOD Depth (alias to modulation wheel range)
+                case 0x20: {
+                    const centeredValue = data - 64;
+                    ch.setMIDIParameter("modulationDepth", (data / 127) * 600);
+                    SpessaLog.xgInfo(
+                        `Modulation Wheel Range for ${channel}`,
+                        centeredValue,
+                        "cents"
+                    );
+                    break;
+                }
+
+                // Bend pitch control (alias to pitch wheel range)
                 case 0x23: {
-                    // Bend pitch control (pitch wheel range)
                     const centeredValue = data - 64;
                     ch.setMIDIParameter("pitchWheelRange", centeredValue);
                     SpessaLog.xgInfo(
@@ -277,6 +295,145 @@ export function yamahaSystemExclusive(
                         centeredValue,
                         "semitones"
                     );
+                    break;
+                }
+
+                // Auxiliary controllers
+                // AC1 Controller number
+                case 0x59: {
+                    ch.setMIDIParameter("cc1", data as MIDIController);
+                    SpessaLog.xgInfo(
+                        `AC1 controller number for ${channel}`,
+                        data
+                    );
+                    break;
+                }
+
+                // AC2 Controller number
+                case 0x60: {
+                    ch.setMIDIParameter("cc2", data as MIDIController);
+                    SpessaLog.xgInfo(
+                        `AC2 controller number for ${channel}`,
+                        data
+                    );
+                    break;
+                }
+
+                // The receivers themselves:
+                // Modulation Wheel
+                case 0x1d:
+                case 0x1e:
+                case 0x1f:
+                // 0x20 is aliased to modulation depth range
+                case 0x21:
+                case 0x22:
+
+                // Pitch Bend
+                // 0x23 is aliased to pitch bend range
+                case 0x24:
+                case 0x25:
+                case 0x26:
+                case 0x27:
+                case 0x28:
+
+                // Channel Aftertouch
+                case 0x4d:
+                case 0x4e:
+                case 0x4f:
+                case 0x50:
+                case 0x51:
+                case 0x52:
+
+                // Poly Aftertouch
+                case 0x53:
+                case 0x54:
+                case 0x55:
+                case 0x56:
+                case 0x57:
+                case 0x58:
+
+                // AC1
+                // 0x59 is number, handled above
+                case 0x5a:
+                case 0x5b:
+                case 0x5c:
+                case 0x5d:
+                case 0x5e:
+                case 0x5f:
+
+                // AC2
+                // 0x60 is number, handled above
+                case 0x61:
+                case 0x62:
+                case 0x63:
+                case 0x64:
+                case 0x65:
+                case 0x66: {
+                    let startAddr;
+                    let source: number;
+                    let isCC = false;
+                    let sourceName;
+                    let bipolar = false;
+
+                    if (a3 <= 0x22) {
+                        startAddr = 0x1d;
+                        source = MIDIControllers.modulationWheel;
+                        isCC = true;
+                        sourceName = "mod wheel";
+                    } else if (a3 <= 0x28) {
+                        startAddr = 0x23;
+                        source = ModulatorControllerSources.pitchWheel;
+                        sourceName = "pitch wheel";
+                        bipolar = true;
+                    } else if (a3 <= 0x52) {
+                        startAddr = 0x4d;
+                        source = ModulatorControllerSources.channelPressure;
+                        sourceName = "channel pressure";
+                    } else if (a3 <= 0x58) {
+                        startAddr = 0x53;
+                        source = ModulatorControllerSources.polyPressure;
+                        sourceName = "poly pressure";
+                    } else if (a3 <= 0x5f) {
+                        startAddr = 0x5a;
+                        source = ch.midiParameters.cc1;
+                        isCC = true;
+                        sourceName = "AC1";
+                    } else {
+                        startAddr = 0x61;
+                        source = ch.midiParameters.cc2;
+                        isCC = true;
+                        sourceName = "AC2";
+                    }
+
+                    // Map to GS
+                    ch.dynamicModulators.setupReceiverXG(
+                        a3 - startAddr,
+                        data,
+                        source,
+                        isCC,
+                        sourceName,
+                        bipolar
+                    );
+                    break;
+                }
+
+                // ---
+                // XG Controller Matrix ends here
+                // ---
+
+                // Portamento switch
+                case 0x67: {
+                    ch.controllerChange(
+                        MIDIControllers.portamentoOnOff,
+                        data === 1 ? 127 : 0
+                    );
+                    break;
+                }
+
+                // Portamento time
+                case 0x68: {
+                    ch.controllerChange(MIDIControllers.portamentoTime, data);
+                    break;
                 }
             }
             return;
@@ -294,10 +451,10 @@ export function yamahaSystemExclusive(
 
                 case 0x00: {
                     // Drum pitch coarse
-                    const pitch = (data - 64) * 100;
+                    const pitch = data - 64;
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].pitch = pitch;
+                        ch.drumParams[drumKey].pitchCoarse = pitch;
                     }
                     SpessaLog.xgInfo(
                         `Drum Pitch for key ${drumKey}`,
@@ -312,10 +469,10 @@ export function yamahaSystemExclusive(
                     const pitch = data - 64;
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].pitch += pitch;
+                        ch.drumParams[drumKey].pitchFine = pitch;
                         SpessaLog.xgInfo(
-                            `Drum Pitch for key ${drumKey}`,
-                            ch.drumParams[drumKey].pitch,
+                            `Drum Pitch Fine for key ${drumKey}`,
+                            pitch,
                             "semitones"
                         );
                     }
@@ -326,7 +483,7 @@ export function yamahaSystemExclusive(
                     // Drum Level
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].gain = data / 120;
+                        ch.drumParams[drumKey].level = data;
                     }
                     SpessaLog.xgInfo(`Drum Level for key ${drumKey}`, data);
                     break;
@@ -336,7 +493,7 @@ export function yamahaSystemExclusive(
                     // Drum Alternate Group (exclusive class)
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].exclusiveClass = data;
+                        ch.drumParams[drumKey].assignGroup = data;
                     }
                     SpessaLog.xgInfo(
                         `Drum Alternate Group for key ${drumKey}`,
@@ -359,7 +516,7 @@ export function yamahaSystemExclusive(
                     // Drum Reverb
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].reverbGain = data / 127;
+                        ch.drumParams[drumKey].reverbSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Reverb for key ${drumKey}`, data);
                     break;
@@ -369,9 +526,19 @@ export function yamahaSystemExclusive(
                     // Drum Chorus
                     for (const ch of this.midiChannels) {
                         if (!ch.drumChannel) continue;
-                        ch.drumParams[drumKey].chorusGain = data / 127;
+                        ch.drumParams[drumKey].chorusSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Chorus for key ${drumKey}`, data);
+                    break;
+                }
+
+                case 0x07: {
+                    // Drum Variation
+                    for (const ch of this.midiChannels) {
+                        if (!ch.drumChannel) continue;
+                        ch.drumParams[drumKey].variationSend = data;
+                    }
+                    SpessaLog.xgInfo(`Drum Variation for key ${drumKey}`, data);
                     break;
                 }
 

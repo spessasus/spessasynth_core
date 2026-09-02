@@ -6,6 +6,7 @@ import {
 } from "../synth_constants";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
+import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIChannel } from "./midi_channel";
 
 /**
@@ -16,9 +17,9 @@ export const DEFAULT_MIDI_CONTROLLERS: Readonly<Int16Array> = new Int16Array(
     CONTROLLER_TABLE_SIZE
 ).fill(0);
 
-const setResetValue = (i: MIDIController, v: number) =>
+const setResetValue = (index: MIDIController, v: number) =>
     // @ts-expect-error Only set here!
-    (DEFAULT_MIDI_CONTROLLERS[i] = v << 7);
+    (DEFAULT_MIDI_CONTROLLERS[index] = v << 7);
 
 // Values come from Falcosoft MIDI Player
 setResetValue(MIDIControllers.mainVolume, 100);
@@ -83,6 +84,9 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
         }
     }
 
+    // Reset Poly pressure
+    this.polyPressures.fill(0);
+
     // Reset MIDI parameters (locked will remain in place)
     this.setMIDIParameter("pressure", 0);
     this.setMIDIParameter("pitchWheelRange", 2);
@@ -120,6 +124,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.dynamicModulators.resetModulators();
     this.sf2NRPNGeneratorLSB = 0;
     this.playingNotes.fill(false);
+    this.resetVibratoParams();
 
     // Reset Parameters (do not emit controller change)
     // We reset them here since in the loop, the data entries would come before params
@@ -152,12 +157,42 @@ export const RP_15_RESET_CC_NUMS: MIDIController[] = [
     MIDIControllers.sostenutoPedal,
     MIDIControllers.softPedal,
     MIDIControllers.registeredParameterMSB,
-    MIDIControllers.registeredParameterLSB
+    MIDIControllers.registeredParameterLSB,
+    MIDIControllers.nonRegisteredParameterMSB,
+    MIDIControllers.nonRegisteredParameterLSB
 ];
 
 /**
  * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
  * Reset controllers according to RP-15 Recommended Practice.
+ *
+ * From the PDF:
+ * Upon receipt of Reset All Controllers message (Controller #121) the following actions are taken
+ *  for the specified MIDI channel:
+ *  Set Expression (#11) to 127.
+ *  Set Modulation (#1) to 0.
+ *  Set Pedals (#64, #65, #66, #67) to 0.
+ *  Set Registered and Non-registered parameter number LSB and MSB
+ *  (#98-#101) to null value (127)
+ *  Set pitch bender to center (64/0)
+ *  Reset channel pressure to 0
+ *  Reset polyphonic pressure for all notes to 0.
+ *  Do NOT reset Bank Select (#0/#32)
+ *  Do NOT reset Volume (#7)
+ *  Do NOT reset Pan (#10)
+ *  Do NOT reset Program Change.
+ *  Do NOT reset Effect Controllers (#91-#95)
+ *  Do NOT reset Sound Controllers
+ *  (#70-#79)
+ *  Do NOT reset other channel mode messages (#120-#127).
+ *  Do NOT reset registered or non-registered parameters.
+ *  Any other controllers that a device can respond to should be set to 0, or the behavior should
+ *  be specified and/or documented. If the manufacturer does not want the Reset All Controllers
+ *  message to affect a particular controller, that is also permissible, as long as the behavior is
+ *  documented.
+ *
+ *  Note:
+ *  GS/XG only reset the specified CCs above.
  */
 export function resetRP15(this: MIDIChannel) {
     this.pitchWheel(8192);
@@ -168,4 +203,7 @@ export function resetRP15(this: MIDIChannel) {
         if (resetValue !== this._midiControllers[resetCC])
             this.controllerChange(resetCC, resetValue >> 7);
     }
+    // Reset polyphonic pressure for all notes to 0
+    this.polyPressures.fill(0);
+    this.computeModulatorsAll(-1, ModulatorControllerSources.polyPressure);
 }

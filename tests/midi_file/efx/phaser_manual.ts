@@ -1,13 +1,8 @@
-import { MIDIControllers } from "../../../src";
 import { MIDITestMaker } from "../midi_test_maker";
 
 const test = new MIDITestMaker("Phaser Manual Param");
 
-test.programChange(16, 3, 80)
-    .cc(MIDIControllers.vibratoDepth, 0)
-    .cc(MIDIControllers.brightness, 127)
-    .cc(MIDIControllers.reverbDepth, 0)
-    .wait(80);
+test.init(16, 3, 80, { brightness: 127 }).wait(80);
 
 const NOTE = 24;
 

@@ -251,7 +251,6 @@ export class MIDIBuilder extends BasicMIDI {
         );
     }
 
-    // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new Pitch Wheel event.
      * @param ticks the tick time of the event.
@@ -272,6 +271,52 @@ export class MIDIBuilder extends BasicMIDI {
             track,
             (MIDIMessageTypes.pitchWheel | channel) as MIDIMessageType,
             [pitch & 0x7f, (pitch >> 7) & 0x7f]
+        );
+    }
+
+    /**
+     * Adds a new Poly Pressure event.
+     * @param ticks the tick time of the event.
+     * @param track the track to use.
+     * @param channel the channel to use.
+     * @param midiNote the MIDI note number to apply the pressure to.
+     * @param pressure the pressure (0 - 127)
+     */
+    public polyPressure(
+        ticks: number,
+        track: number,
+        channel: number,
+        midiNote: number,
+        pressure: number
+    ) {
+        channel %= 16;
+        this.addEvent(
+            ticks,
+            track,
+            (MIDIMessageTypes.polyPressure | channel) as MIDIMessageType,
+            [midiNote & 0x7f, pressure & 0x7f]
+        );
+    }
+
+    /**
+     * Adds a new Channel Pressure event.
+     * @param ticks the tick time of the event.
+     * @param track the track to use.
+     * @param channel the channel to use.
+     * @param pressure the pressure (0 - 127)
+     */
+    public channelPressure(
+        ticks: number,
+        track: number,
+        channel: number,
+        pressure: number
+    ) {
+        channel %= 16;
+        this.addEvent(
+            ticks,
+            track,
+            (MIDIMessageTypes.channelPressure | channel) as MIDIMessageType,
+            [pressure & 0x7f]
         );
     }
 
