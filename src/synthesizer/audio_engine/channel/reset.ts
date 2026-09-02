@@ -124,6 +124,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.dynamicModulators.resetModulators();
     this.sf2NRPNGeneratorLSB = 0;
     this.playingNotes.fill(false);
+    this.resetVibratoParams();
 
     // Reset Parameters (do not emit controller change)
     // We reset them here since in the loop, the data entries would come before params

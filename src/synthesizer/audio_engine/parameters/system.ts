@@ -156,6 +156,17 @@ export interface GlobalSystemParameter {
      * Where a new note will kill the previous one if it is still playing.
      */
     monophonicRetrigger: boolean;
+
+    /**
+     * If the synthesizer should use the custom vibrato implementation.
+     *
+     * This effect is modified using NRPN, so
+     * the recommended use case would be setting
+     * the custom vibrato then locking it to prevent changes by MIDI files.
+     *
+     * Disabled by default to avoid altering songs that don't expect it.
+     */
+    customVibrato: boolean;
 }
 
 export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
@@ -189,7 +200,8 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
 
     interpolationType: InterpolationTypes.hermite,
     nrpnParamLock: false,
-    monophonicRetrigger: false
+    monophonicRetrigger: false,
+    customVibrato: false
 };
 
 /**

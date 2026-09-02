@@ -48,6 +48,7 @@ import type { MIDIController } from "../../../midi/enums";
 import type { SynthesizerPatch } from "../../types";
 import { DrumParameterUtils as DrumParameterUtilities } from "../../../midi/drum_parameters";
 import type { DrumParameter } from "../../../midi/types";
+import type { CustomChannelVibrato } from "./types";
 
 /**
  * This class represents a single MIDI Channel within the synthesizer.
@@ -109,6 +110,16 @@ export class MIDIChannel {
      * The channel's number (0-based index)
      */
     public readonly channel: number;
+
+    /**
+     * The vibrato settings for the channel.
+     * @internal
+     */
+    public readonly customVibrato: CustomChannelVibrato = {
+        delay: 0,
+        depth: 0,
+        rate: 0
+    };
     /**
      * Core synthesis engine.
      * @internal
@@ -399,6 +410,7 @@ export class MIDIChannel {
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
         this.resetDrumParams();
+        this.resetVibratoParams();
     }
 
     /**
@@ -856,6 +868,25 @@ export class MIDIChannel {
                 this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0; // Mirror reverb on XG only, GS has no chorus by default
             p.variationSend =
                 this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0;
+        }
+    }
+
+    protected resetVibratoParams() {
+        if (!this.synthCore.systemParameters.customVibrato) return;
+        this.customVibrato.rate = 0;
+        this.customVibrato.depth = 0;
+        this.customVibrato.delay = 0;
+    }
+
+    protected addDefaultVibrato() {
+        if (
+            this.customVibrato.delay === 0 &&
+            this.customVibrato.rate === 0 &&
+            this.customVibrato.depth === 0
+        ) {
+            this.customVibrato.depth = 50;
+            this.customVibrato.rate = 8;
+            this.customVibrato.delay = 0.6;
         }
     }
 

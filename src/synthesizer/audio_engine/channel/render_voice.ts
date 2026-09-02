@@ -5,6 +5,8 @@ import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_typ
 import { MIDIControllers } from "../../../midi/enums";
 import { LowpassFilter } from "../voice/lowpass_filter";
 
+const TWO_PI = Math.PI * 2;
+
 const HALF_PI = Math.PI / 2;
 
 const MIN_PAN = -500;
@@ -174,7 +176,26 @@ export function renderVoice(
         }
     }
 
-    // TODO: Implement proper GS vibrato. Custom vibrato used to be here.
+    const { systemParameters } = core;
+
+    // Channel vibrato (custom vibrato)
+    // TODO: Replace this with proper GS vibrato someday
+    if (
+        systemParameters.customVibrato &&
+        this._midiControllers[MIDIControllers.modulationWheel] === 0 &&
+        this.customVibrato.depth > 0
+    ) {
+        // Inlined LFO from 4.2.0
+        const vibStart = voice.startTime + this.customVibrato.delay;
+        if (timeNow >= vibStart) {
+            const elapsed = timeNow - vibStart;
+
+            // 2pif t gives a full sine cycle at the specified frequency
+            cents +=
+                Math.sin(TWO_PI * this.customVibrato.rate * elapsed) *
+                this.customVibrato.depth;
+        }
+    }
 
     // Mod env
     const modEnvPitchDepth = modulated[GeneratorTypes.modEnvToPitch];
@@ -321,8 +342,6 @@ export function renderVoice(
             core.panSmoothingFactor;
         pan = voice.currentPan;
     }
-
-    const { systemParameters } = core;
 
     const outputGain = this.currentGain * voiceGain;
     const index =

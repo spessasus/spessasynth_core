@@ -161,9 +161,9 @@ rr: Drum MIDI note number (0 - 127)
 
 | NRPN MSB | NRPN LSB | Name                 | Explanation                                                                                         | Default                          |
 | -------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
-| 0x01     | 0x08     | Vibrato Rate         | Alias to MIDI CC#76. (Vibrato Rate)                                                                 | 64                               |
-| 0x01     | 0x09     | Vibrato Depth        | Alias to MIDI CC#77. (Vibrato Depth)                                                                | 64                               |
-| 0x01     | 0x0A     | Vibrato Delay        | Alias to MIDI CC#78. (Vibrato Delay)                                                                | 64                               |
+| 0x01     | 0x08     | Vibrato Rate         | Alias to MIDI CC#76. (Vibrato Rate) Also see [custom vibrato.](#custom-vibrato)                     | 64                               |
+| 0x01     | 0x09     | Vibrato Depth        | Alias to MIDI CC#77. (Vibrato Depth) Also see [custom vibrato.](#custom-vibrato)                    | 64                               |
+| 0x01     | 0x0A     | Vibrato Delay        | Alias to MIDI CC#78. (Vibrato Delay) Also see [custom vibrato.](#custom-vibrato)                    | 64                               |
 | 0x01     | 0x20     | TVF Filter Cutoff    | Alias to MIDI CC#74. (Brightness)                                                                   | 64                               |
 | 0x01     | 0x21     | TVF Filter Resonance | Alias to MIDI CC#71. (Filter resonance)                                                             | 64                               |
 | 0x01     | 0x63     | EG Attack Time       | Alias to MIDI CC#73. (Attack Time)                                                                  | 64                               |
@@ -178,6 +178,35 @@ rr: Drum MIDI note number (0 - 127)
 | 0x1F     | rr       | Drum Variation       | Controls the variation level of the drum instrument.[^7] (multiplicative of channel)                | 0 (none)                         |
 
 [^7]: This controls the delay level in GS/GM mode. In XG, it has no effect.
+
+##### Custom Vibrato
+
+!!! Note
+
+    This only applies when the [`customVibrato` System Parameter](../spessa-synth-processor/global-parameters.md#customvibrato) is enabled.
+
+The NRPN vibrato messages have special behavior.
+On synth start and reset it is disabled.
+Any value other than 64 received for any of the states activates it with the default settings:
+
+- depth = 50 cents
+- rate = 8 Hz
+- delay = 0.6s
+
+After which any changes received through the NRPN (including the one that triggered it) are processed.
+
+Calculation for the specific NRPN parameters are as follows (value is the data entry MSB value from 0 to 127):
+
+- Rate: `Hz = (value / 64) * 8`
+- Depth: `cents = value / 2`
+- Delay: `seconds = (64 / value) / 3`
+
+This behavior has existed since the beginning of this program as a way to enhance Touhou Project MIDI files,
+the original target of SpessaSynth.
+
+**It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
+This can be useful as setting CC#1 to something like 1 (which is usually imperceptible),
+will disable the extra vibrato for this channel when it is globally enabled.
 
 ##### SoundFont2 NRPN
 

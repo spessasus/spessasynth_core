@@ -155,28 +155,80 @@ export function dataEntry(this: MIDIChannel) {
 
                 // Vibrato rate
                 case NonRegisteredLSB.vibratoRate: {
-                    this.controllerChange(
-                        MIDIControllers.vibratoRate,
-                        dataCoarse
-                    );
+                    /*
+                    A note on this vibrato.
+                    This is a completely custom vibrato, with its own oscillator and parameters.
+                    It is disabled by default via a system parameter, and when enabled,
+                    it only activates when one of the NPRN messages changing it is received
+                    and stays on until the next system-reset.
+
+                    It was implemented very early in SpessaSynth's development,
+                    because I wanted support for Touhou MIDIs :-)
+                     */
+                    if (
+                        this.synthCore.systemParameters.customVibrato &&
+                        !this.dynamicModulators.active
+                    ) {
+                        if (parameterLock || dataCoarse === 64) return;
+                        this.addDefaultVibrato();
+                        this.customVibrato.rate = (dataCoarse / 64) * 8;
+                        SpessaLog.coolInfo(
+                            `Vibrato rate for ${this.channel}`,
+                            `${dataCoarse} = ${this.customVibrato.rate}`,
+                            "Hz"
+                        );
+                    } else {
+                        this.controllerChange(
+                            MIDIControllers.vibratoRate,
+                            dataCoarse
+                        );
+                    }
                     break;
                 }
 
                 // Vibrato depth
                 case NonRegisteredLSB.vibratoDepth: {
-                    this.controllerChange(
-                        MIDIControllers.vibratoDepth,
-                        dataCoarse
-                    );
+                    if (
+                        this.synthCore.systemParameters.customVibrato &&
+                        !this.dynamicModulators.active
+                    ) {
+                        if (parameterLock || dataCoarse === 64) return;
+                        this.addDefaultVibrato();
+                        this.customVibrato.depth = dataCoarse / 2;
+                        SpessaLog.coolInfo(
+                            `Vibrato depth for ${this.channel}`,
+                            `${dataCoarse} = ${this.customVibrato.depth}`,
+                            "cents"
+                        );
+                    } else {
+                        this.controllerChange(
+                            MIDIControllers.vibratoDepth,
+                            dataCoarse
+                        );
+                    }
                     break;
                 }
 
                 // Vibrato delay
                 case NonRegisteredLSB.vibratoDelay: {
-                    this.controllerChange(
-                        MIDIControllers.vibratoDelay,
-                        dataCoarse
-                    );
+                    if (
+                        this.synthCore.systemParameters.customVibrato &&
+                        !this.dynamicModulators.active
+                    ) {
+                        if (parameterLock || dataCoarse === 64) return;
+                        this.addDefaultVibrato();
+                        this.customVibrato.delay = dataCoarse / 64 / 3;
+                        SpessaLog.coolInfo(
+                            `Vibrato delay for ${this.channel}`,
+                            `${dataCoarse} = ${this.customVibrato.delay}`,
+                            "seconds"
+                        );
+                    } else {
+                        this.controllerChange(
+                            MIDIControllers.vibratoDelay,
+                            dataCoarse
+                        );
+                    }
                     break;
                 }
 
