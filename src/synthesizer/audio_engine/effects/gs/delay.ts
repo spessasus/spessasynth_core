@@ -291,6 +291,10 @@ export class SpessaSynthDelay implements DelayProcessor {
             outputRight[o] += c;
             outputReverb[o] += c * reverbGain;
 
+            // Center feedback, do it first so left and right delay of 0 work fine
+            // Testcase: gs_effect_send_level_test
+            buffer[writeIndex] = delayIn[i] + delayed * feedbackGain;
+
             // Write left
             const l = buffer[leftReadIndex] * leftGain;
             outputLeft[o] += l;
@@ -300,9 +304,6 @@ export class SpessaSynthDelay implements DelayProcessor {
             const r = buffer[rightReadIndex] * rightGain;
             outputRight[o] += r;
             outputReverb[o] += r * reverbGain;
-
-            // Center feedback
-            buffer[writeIndex] = delayIn[i] + delayed * feedbackGain;
 
             // Advance and wrap
             if (++writeIndex >= bufferLength) writeIndex = 0;
