@@ -594,13 +594,6 @@ int main(const int argc, char* argv[]) {
         fwrite(vstAudioBuf, 1, got, wavFile);
         totalDataBytes += got;
         currentSample += got / (NUM_CHANNELS * sizeof(float));
-
-        if (renderSamples > 0) {
-            int percent = static_cast<int>((currentSample * 100) / renderSamples);
-            if (percent > 100) percent = 100;
-            printf("\rProgress: %d%%", percent);
-            fflush(stdout);
-        }
     }
 
     // Stop any notes that may still be held
@@ -616,6 +609,6 @@ int main(const int argc, char* argv[]) {
     BASS_StreamFree(hVST);
     BASS_Free();
 
-    printf("\nSuccessfully rendered to %s! \n", wavPath);
+    printf("\nSuccessfully rendered to %s!\n", wavPath);
     return 0;
 }

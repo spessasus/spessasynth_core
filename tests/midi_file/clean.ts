@@ -6,11 +6,13 @@ console.group("Cleaning MIDI test artifacts");
 const midiFileDir = import.meta.dirname;
 const generatedDir = renderTestsConfig.paths.midiDir;
 const renderedDir = renderTestsConfig.paths.renderedDir;
+const checksumsDir = renderTestsConfig.paths.checksumsDir;
 const rendererDir = path.join(midiFileDir, "renderer");
 
 const pathsToRemove = [
     generatedDir,
     renderedDir,
+    checksumsDir,
     path.join(rendererDir, "bin"),
     path.join(rendererDir, "renderer.obj"),
     path.join(rendererDir, "renderer.pdb")

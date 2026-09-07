@@ -16,15 +16,11 @@ import {
 import { readLittleEndianIndexed } from "../../src/utils/byte_functions/little_endian";
 import { readBinaryStringIndexed } from "../../src/utils/byte_functions/string";
 import { RIFFChunk } from "../../src/utils/riff_chunk";
-import { renderTestsConfig } from "./config";
-
-// For spessasynth rendering
-const SF_RATE = 48_000;
-const SF_TAIL = 2;
-const BUFFER_SIZE = 128;
-const TRIM_THRESHOLD = 0.0005;
-const SPESSA_LOG = "spessa.log";
-const SPESSA_OUT = "spessa.wav";
+import {
+    type RenderTargetArch,
+    type RenderTargetConfig,
+    renderTestsConfig
+} from "./config";
 
 function readWav(bin: ArrayBuffer) {
     const fileData = new IndexedByteArray(bin);
@@ -117,11 +113,13 @@ if (!worker_threads.isMainThread) {
     const inputPath = path.join(midiDir, file);
     const midiBin = await fs.readFile(inputPath);
     const midi = BasicMIDI.fromArrayBuffer(midiBin.buffer);
-    const sampleCount = SF_RATE * (midi.duration + SF_TAIL);
+    const { bufferSize, logFileName, outputFileName, sampleRate, tailSeconds } =
+        renderTestsConfig.spessasynth;
+    const sampleCount = sampleRate * (midi.duration + tailSeconds);
 
-    const synth = new SpessaSynthProcessor(SF_RATE, {
+    const synth = new SpessaSynthProcessor(sampleRate, {
         eventsEnabled: false,
-        maxBufferSize: BUFFER_SIZE
+        maxBufferSize: bufferSize
     });
     synth.soundBankManager.addSoundBank(sf, "main");
     const seq = new SpessaSynthSequencer(synth);
@@ -165,21 +163,24 @@ if (!worker_threads.isMainThread) {
     let filledSamples = 0;
     while (filledSamples < sampleCount) {
         seq.processTick();
-        const bufferSize = Math.min(BUFFER_SIZE, sampleCount - filledSamples);
-        synth.process(outLeft, outRight, filledSamples, bufferSize);
-        filledSamples += bufferSize;
+        const currentBufferSize = Math.min(
+            bufferSize,
+            sampleCount - filledSamples
+        );
+        synth.process(outLeft, outRight, filledSamples, currentBufferSize);
+        filledSamples += currentBufferSize;
     }
 
     const name = path.basename(inputPath, path.extname(inputPath));
     const outputDir = path.join(renderedDir, name);
     await fs.mkdir(outputDir, { recursive: true });
 
-    await fs.writeFile(path.join(outputDir, SPESSA_LOG), log.join("\n"), {
+    await fs.writeFile(path.join(outputDir, logFileName), log.join("\n"), {
         encoding: "utf-8"
     });
 
-    const wavBuffer = Buffer.from(audioToWav([outLeft, outRight], SF_RATE));
-    await fs.writeFile(path.join(outputDir, SPESSA_OUT), wavBuffer);
+    const wavBuffer = Buffer.from(audioToWav([outLeft, outRight], sampleRate));
+    await fs.writeFile(path.join(outputDir, outputFileName), wavBuffer);
 
     // Tell the main thread that we are done
     worker_threads.parentPort?.postMessage("done");
@@ -209,28 +210,30 @@ console.info(`SF Location: ${renderTestsConfig.paths.soundFont}`);
 console.info("\n");
 const isWindows = os.platform() === "win32";
 const { paths } = renderTestsConfig;
-const { midiDir, renderedDir, rendererDir, rootDir, vstDir } = paths;
+const { checksumsDir, midiDir, renderedDir, rendererDir, rootDir } = paths;
 
-const checksumsPath = paths.checksums;
-let checksumsJson = "{}";
+const writeQueues = new Map<string, Promise<void>>();
 
-try {
-    checksumsJson = await fs.readFile(checksumsPath, {
-        encoding: "utf-8"
-    });
-} catch {
-    console.info("checksums.json not found.");
-}
-
-/**
- * File name -> sha256
- */
-const checksums = JSON.parse(checksumsJson) as Record<string, string>;
-
-async function writeChecksums() {
-    await fs.writeFile(checksumsPath, JSON.stringify(checksums), {
-        encoding: "utf-8"
-    });
+async function writeTargetChecksums(
+    target: string,
+    checksums: Record<string, string>
+) {
+    const checksumsPath = path.join(checksumsDir, `${target}.json`);
+    const currentQueue = writeQueues.get(target) ?? Promise.resolve();
+    const nextQueue = currentQueue
+        .catch(() => {
+            /* Empty */
+        })
+        .then(async () => {
+            await fs.mkdir(checksumsDir, { recursive: true });
+            const tempPath = `${checksumsPath}.tmp`;
+            await fs.writeFile(tempPath, JSON.stringify(checksums), {
+                encoding: "utf-8"
+            });
+            await fs.rename(tempPath, checksumsPath);
+        });
+    writeQueues.set(target, nextQueue);
+    return nextQueue;
 }
 
 async function fileExists(filePath: string) {
@@ -245,7 +248,7 @@ async function fileExists(filePath: string) {
 /**
  * This builds the renderer if not found
  */
-async function getRendererPath(arch: "x86" | "x64") {
+async function getRendererPath(arch: RenderTargetArch) {
     const rendererName = `renderer_${arch}.exe`;
     const rendererPath = path.join(rendererDir, arch, rendererName);
 
@@ -266,7 +269,7 @@ async function getRendererPath(arch: "x86" | "x64") {
 }
 
 console.info("Building test files...");
-child_process.execSync("npm run test:midi", {
+child_process.execSync("npm run test:midi:generate", {
     stdio: "ignore",
     cwd: rootDir
 });
@@ -274,160 +277,278 @@ console.info("Done.");
 
 console.group("Comparing checksums...");
 const midiFiles = await fs.readdir(midiDir);
-const filesToRender: string[] = [];
-/**
- * File name -> sha256
- */
-const pendingChecksums = new Map<string, string>();
+const fileHashes = new Map<string, string>();
 for (const file of midiFiles) {
     const inputPath = path.join(midiDir, file);
     const bin = await fs.readFile(inputPath);
     const sha256 = createHash("sha256").update(bin).digest("hex");
-    if (checksums[file] === sha256) {
-        console.info(`Skipping ${file}, checksums match.`);
-    } else {
-        pendingChecksums.set(file, sha256);
-        filesToRender.push(file);
+    fileHashes.set(file, sha256);
+}
+
+/**
+ * Target: Map<fileName: checksum>
+ */
+const targetChecksums = new Map<string, Record<string, string>>();
+/**
+ * Target: fileName[]
+ */
+const filesToRenderByTarget = new Map<string, string[]>();
+
+// Check if checksums exist for each target
+for (const renderTarget of Object.keys(renderTestsConfig.renderTargets)) {
+    const targetChecksumsPath = path.join(checksumsDir, `${renderTarget}.json`);
+    let checksums: Record<string, string> = {};
+    try {
+        const checksumsJson = await fs.readFile(targetChecksumsPath, {
+            encoding: "utf-8"
+        });
+        checksums = JSON.parse(checksumsJson) as Record<string, string>;
+    } catch {
+        console.info(`Checksums for ${renderTarget} not found.`);
     }
+    targetChecksums.set(renderTarget, checksums);
+
+    const targetFiles: string[] = [];
+    for (const file of midiFiles) {
+        const sha256 = fileHashes.get(file)!;
+        if (checksums[file] === sha256) {
+            console.info(
+                `Skipping ${file} for ${renderTarget}, checksums match.`
+            );
+        } else {
+            targetFiles.push(file);
+        }
+    }
+    filesToRenderByTarget.set(renderTarget, targetFiles);
 }
 console.info("Checksum check done.\n");
 console.groupEnd();
 
-let totalRendered = 0;
+const totalVstFilesToRender = Array.from(filesToRenderByTarget.values()).reduce(
+    (sum, files) => sum + files.length,
+    0
+);
 
-console.info(`Beginning render. Files to render: ${filesToRender.length}`);
+console.info(
+    `Beginning render. Files to render across VST targets: ${totalVstFilesToRender}`
+);
 
-if (filesToRender.length === 0) {
-    console.info("Nothing to render with VSTi!");
-} else {
-    console.group(`Rendering ${filesToRender.length} files with VSTi...`);
-    for (const file of filesToRender) {
-        const inputPath = path.join(midiDir, file);
-        const name = path.basename(inputPath, path.extname(inputPath));
+function execRenderer(command: string, args: string[], cwd: string) {
+    return new Promise<{
+        status: number | null;
+        stdout: string[];
+    }>((resolve, reject) => {
+        const proc = child_process.spawn(command, args, {
+            cwd,
+            env: {
+                ...process.env,
+                WINEDEBUG: "-all",
+                DISPLAY: ""
+            },
+            stdio: ["ignore", "pipe", "pipe"]
+        });
+        const stdout = new Array<string>();
+        proc.stdout.setEncoding("utf-8");
+        proc.stderr.setEncoding("utf-8");
+        proc.stdout.on("data", (chunk: string) => {
+            stdout.push(chunk);
+        });
+        proc.stderr.on("data", (chunk: string) => {
+            stdout.push(chunk);
+        });
+        proc.on("error", (err) => {
+            reject(err);
+        });
+        proc.on("close", (code) => {
+            resolve({ status: code, stdout });
+        });
+    });
+}
 
-        let success = true;
-        for (const [renderTarget, params] of Object.entries(
-            renderTestsConfig.renderTargets
-        )) {
-            console.info(
-                `Rendering ${file} (${totalRendered}/${filesToRender.length}) for ${renderTarget}`
+async function renderVSTTarget(
+    file: string,
+    inputPath: string,
+    outputDir: string,
+    renderTarget: string,
+    params: RenderTargetConfig,
+    progress?: string
+) {
+    if (progress) {
+        console.info(
+            `Starting to render ${file} (${progress}) for ${renderTarget}`
+        );
+    }
+    const doneLabel = `${file} for ${renderTarget} took`;
+    console.time(doneLabel);
+
+    const rendererPath = await getRendererPath(params.arch);
+    const vstPath = params.vstPath;
+    const renderedPath = path.join(outputDir, `${renderTarget}_temp.wav`);
+
+    // Run the command
+    try {
+        if (!(await fileExists(vstPath))) {
+            console.error(`VST not found: ${vstPath}. Skipping!`);
+            return false;
+        }
+
+        // Add wine if linux
+        const command = isWindows ? rendererPath : "wine";
+
+        const rendererArgument = path.relative(rendererDir, rendererPath);
+        const vstArgument = path.relative(rendererDir, vstPath);
+        const inputArgument = path.relative(rendererDir, inputPath);
+        const outputArgument = path.relative(rendererDir, renderedPath);
+
+        const args = isWindows
+            ? [vstArgument, inputArgument, outputArgument]
+            : [rendererArgument, vstArgument, inputArgument, outputArgument];
+        const result = await execRenderer(command, args, rendererDir);
+
+        // Write logs
+        const logs = [[command, ...args].join(" "), ...result.stdout]
+            .filter((line) => line.length > 0)
+            .join("\n");
+
+        await fs.writeFile(path.join(outputDir, `${renderTarget}.log`), logs, {
+            encoding: "utf-8"
+        });
+
+        if (result.status !== 0) {
+            console.warn(
+                `Renderer exited with code ${result.status} for ${renderTarget}.\n` +
+                    `Check the log file for more information.`
             );
-            const doneLabel = `${file} (${renderTarget}) rendered in`;
-            console.time(doneLabel);
+            return false;
+        }
 
-            const rendererPath = await getRendererPath(params.arch);
-            const vstPath = path.join(vstDir, params.vstName);
-            const renderedPath = path.join(midiDir, `${name}.wav`);
+        const fileBin = await fs.readFile(renderedPath);
+        const { sampleData, sampleRate } = readWav(fileBin.buffer);
+        // Trim leading silence
+        const frames = sampleData[0].length;
 
-            // Create the output directory
+        let start;
+
+        outer: for (start = 0; start < frames; start++) {
+            for (const sample of sampleData) {
+                if (Math.abs(sample[start]) > renderTestsConfig.trimThreshold) {
+                    break outer;
+                }
+            }
+        }
+
+        const outputPath = path.join(outputDir, `${renderTarget}.wav`);
+        const wavBuffer = Buffer.from(
+            audioToWav(
+                sampleData.map((ch) => ch.slice(start)),
+                sampleRate,
+                {
+                    normalizeAudio: true
+                }
+            )
+        );
+        await fs.writeFile(outputPath, wavBuffer);
+        await fs.rm(renderedPath);
+        return true;
+    } catch (error) {
+        console.warn(
+            `Failed to render ${file} with ${renderTarget}:`,
+            error,
+            "Skipping!"
+        );
+        return false;
+    } finally {
+        console.timeEnd(doneLabel);
+        console.info();
+    }
+}
+
+if (totalVstFilesToRender === 0) {
+    console.info("Nothing to render with VST!");
+} else {
+    // Ensure all required renderers are built before starting rendering
+    const arches = new Set(
+        Object.values(renderTestsConfig.renderTargets).map((t) => t.arch)
+    );
+    for (const arch of arches) {
+        await getRendererPath(arch);
+    }
+
+    console.group(
+        `Rendering ${totalVstFilesToRender} total files across VST targets...`
+    );
+    console.time("VST render completed in");
+
+    for (const [renderTarget, params] of Object.entries(
+        renderTestsConfig.renderTargets
+    )) {
+        const filesToRender = filesToRenderByTarget.get(renderTarget) ?? [];
+        if (filesToRender.length === 0) {
+            console.info(`Nothing to render for ${renderTarget}!`);
+            continue;
+        }
+
+        console.group(
+            `Rendering ${filesToRender.length} files for ${renderTarget} (${params.multithreaded ? "multithreaded" : "single threaded"})...`
+        );
+        console.time(`${renderTarget} render completed in`);
+
+        let targetRendered = 0;
+
+        const renderSingleFile = async (file: string, logStart: boolean) => {
+            const inputPath = path.join(midiDir, file);
+            const name = path.basename(inputPath, path.extname(inputPath));
             const outputDir = path.join(renderedDir, name);
             await fs.mkdir(outputDir, { recursive: true });
 
-            // Run the command
-            try {
-                if (!(await fileExists(vstPath))) {
-                    throw new Error(`VST not found: ${vstPath}`);
+            const ok = await renderVSTTarget(
+                file,
+                inputPath,
+                outputDir,
+                renderTarget,
+                params,
+                logStart
+                    ? `${targetRendered}/${filesToRender.length}`
+                    : undefined
+            );
+            targetRendered++;
+            console.info(
+                `Finished rendering ${file} (${targetRendered}/${filesToRender.length}) for ${renderTarget}`
+            );
+
+            if (ok) {
+                const sha256 = fileHashes.get(file);
+                if (sha256) {
+                    const currentChecksums = targetChecksums.get(renderTarget)!;
+                    currentChecksums[file] = sha256;
+                    await writeTargetChecksums(renderTarget, currentChecksums);
                 }
+            }
+        };
 
-                // Add wine if linux
-                const command = isWindows ? rendererPath : "wine";
-                const rendererArgument = path.relative(
-                    rendererDir,
-                    rendererPath
-                );
-                const vstArgument = path.relative(rendererDir, vstPath);
-                const inputArgument = path.relative(rendererDir, inputPath);
-                const outputArgument = path.relative(rendererDir, renderedPath);
-                const args = isWindows
-                    ? [vstArgument, inputArgument, outputArgument]
-                    : [
-                          rendererArgument,
-                          vstArgument,
-                          inputArgument,
-                          outputArgument
-                      ];
-                const result = child_process.spawnSync(command, args, {
-                    cwd: rendererDir,
-                    encoding: "utf-8"
-                });
-
-                // Write logs
-                const logs = [
-                    [command, ...args].join(" "),
-                    "Stdout:",
-                    result.stdout?.trimEnd() ?? "",
-                    "Stderr:",
-                    result.stderr?.trimEnd() ?? ""
-                ]
-                    .filter((line) => line.length > 0)
-                    .join("\n");
-
-                await fs.writeFile(
-                    path.join(outputDir, `${renderTarget}.log`),
-                    logs,
-                    { encoding: "utf-8" }
-                );
-
-                if (result.status !== 0) {
-                    console.warn(
-                        `Renderer exited with code ${result.status}. Skipping!`
-                    );
-                    success = false;
-                    continue;
-                }
-
-                const fileBin = await fs.readFile(renderedPath);
-                await fs.rm(renderedPath);
-                const { sampleData, sampleRate } = readWav(fileBin.buffer);
-                // Trim leading silence
-                const frames = sampleData[0].length;
-
-                let start;
-
-                outer: for (start = 0; start < frames; start++) {
-                    for (const sample of sampleData) {
-                        if (Math.abs(sample[start]) > TRIM_THRESHOLD) {
-                            break outer;
-                        }
-                    }
-                }
-
-                const outputPath = path.join(outputDir, `${renderTarget}.wav`);
-                const wavBuffer = Buffer.from(
-                    audioToWav(
-                        sampleData.map((ch) => ch.slice(start)),
-                        sampleRate
-                    )
-                );
-                await fs.writeFile(outputPath, wavBuffer);
-            } catch (error) {
-                console.warn(
-                    `Failed to render ${file} with ${renderTarget}:`,
-                    error,
-                    "Skipping!"
-                );
-                success = false;
-            } finally {
-                console.timeEnd(doneLabel);
+        if (params.multithreaded) {
+            console.info(
+                `Queueing ${filesToRender.length} files for ${renderTarget}.`
+            );
+            await Promise.all(
+                filesToRender.map((file) => renderSingleFile(file, false))
+            );
+        } else {
+            for (const file of filesToRender) {
+                await renderSingleFile(file, true);
             }
         }
-        totalRendered++;
 
-        if (success) {
-            // Write right away as spessa always renders everything
-            const sha256 = pendingChecksums.get(file);
-            if (sha256) {
-                checksums[file] = sha256;
-                await writeChecksums();
-            }
-        }
+        console.timeEnd(`${renderTarget} render completed in`);
+        console.groupEnd();
     }
 
+    console.timeEnd("VSTi render completed in");
     console.info("VSTi render completed.\n");
     console.groupEnd();
 }
 
-console.group("Rendering with spessasynth...");
+console.group("Rendering with SpessaSynth...");
 
 await fs.mkdir(renderedDir, { recursive: true });
 
@@ -454,7 +575,7 @@ function runWorker(file: string) {
 console.info(`Queueing ${midiFiles.length} files for render.`);
 console.time("SpessaSynth render completed in");
 
-totalRendered = 0;
+let totalRendered = 0;
 await Promise.all(
     midiFiles.map(async (file) => {
         await runWorker(file);
@@ -466,8 +587,4 @@ await Promise.all(
 console.timeEnd("SpessaSynth render completed in");
 console.groupEnd();
 
-console.info("Writing checksums...");
-await writeChecksums();
-console.info(
-    `All done. ${totalRendered} files rendered. ${totalRendered - filesToRender.length} files skipped for VST.`
-);
+console.info(`All done. ${totalRendered} files rendered with SpessaSynth.`);

@@ -14,7 +14,7 @@
         "build:renderer": "tsx tests/midi_file/renderer/build.ts",
         "format": "prettier --list-different --write .",
         "test:types": "npm run lint && tsc -b ",
-        "test:midi": "tsx tests/midi_file/make_tests.ts",
+        "test:midi:generate": "tsx tests/midi_file/make_tests.ts",
         "test:midi:clean": "tsx tests/midi_file/clean.ts",
         "test:midi:render": "tsx tests/midi_file/render_tests.ts",
         "prepublishOnly": "npm run format && npm run build",
