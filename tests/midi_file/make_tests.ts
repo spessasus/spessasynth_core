@@ -1,30 +1,19 @@
 import fs, { readdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { renderTestsConfig } from "./config";
 
-const TESTS_DIR = import.meta.dirname;
-const OUT_DIR = path.resolve(TESTS_DIR, "generated");
-
-const topLevel = await fs.readdir(TESTS_DIR, { withFileTypes: true });
-
-const SKIP_FILES = new Set(
-    topLevel.filter((f) => f.isFile()).map((f) => f.name)
-);
-const SKIP_DIRS = new Set(["node_modules", "files"]);
+const TESTS_DIR = path.resolve(import.meta.dirname, "tests");
+const OUT_DIR = renderTestsConfig.paths.midiDir;
 
 async function findTestFiles(dir: string) {
     const entries = await readdir(dir, { withFileTypes: true });
     const files: string[] = [];
     for (const entry of entries) {
-        if (SKIP_DIRS.has(entry.name)) continue;
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             files.push(...(await findTestFiles(full)));
-        } else if (
-            entry.isFile() &&
-            entry.name.endsWith(".ts") &&
-            !SKIP_FILES.has(entry.name)
-        ) {
+        } else if (entry.isFile() && entry.name.endsWith(".ts")) {
             files.push(full);
         }
     }

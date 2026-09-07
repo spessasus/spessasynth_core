@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import {
     type ChannelMIDIParameter,
     type GlobalMIDIParameter,
@@ -8,10 +10,9 @@ import {
     type MIDISystem,
     MIDIUtils as MIDIUtilities
 } from "../../src";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { arrayToHexString } from "../../src/utils/other";
 import { fillWithDefaults } from "../../src/utils/fill_with_defaults";
+import { arrayToHexString } from "../../src/utils/other";
+import { renderTestsConfig } from "./config";
 
 class EFXTest {
     private readonly builder;
@@ -423,9 +424,8 @@ export class MIDITestMaker extends MIDIBuilder {
         this.wait(960).cc(1, 1);
         this.flush();
 
-        const outPath = `generated`;
-        const resolve = path.resolve(import.meta.dirname, outPath);
-        const outFile = path.resolve(resolve, `${this.fileName}.mid`);
+        const resolve = renderTestsConfig.paths.midiDir;
+        const outFile = path.join(resolve, `${this.fileName}.mid`);
 
         await fs.mkdir(resolve, { recursive: true });
         await fs.writeFile(outFile, new Uint8Array(this.writeMIDI()));

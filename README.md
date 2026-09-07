@@ -311,6 +311,10 @@ npm run build
 
 The files will be placed in the `dist` folder.
 
+#### Test Suite
+
+This library has a comprehensive MIDI testing suite. For more information, please read the [tests `README`](tests/README.md).
+
 ## License
 
 Copyright © 2026 Spessasus

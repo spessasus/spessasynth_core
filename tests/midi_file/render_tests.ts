@@ -16,33 +16,9 @@ import {
 import { readLittleEndianIndexed } from "../../src/utils/byte_functions/little_endian";
 import { readBinaryStringIndexed } from "../../src/utils/byte_functions/string";
 import { RIFFChunk } from "../../src/utils/riff_chunk";
-
-// ADJUST THESE
-
-// VSTi Template name -> Configuration preset number (suffix), like "scvaRender_003.ini" + fsmp path
-const RENDERS: Record<string, { preset: number; executable: string }> = {
-    scva: {
-        preset: 3,
-        executable: path.join(
-            os.homedir(),
-            "Desktop/clutter/MidiPlayer x86/MidiPlayer.exe"
-        )
-    },
-    syxg50: {
-        preset: 4,
-        executable: path.join(
-            os.homedir(),
-            "Desktop/clutter/MidiPlayer x86/MidiPlayer.exe"
-        )
-    }
-};
+import { renderTestsConfig } from "./config";
 
 // For spessasynth rendering
-const SF_LOCATION = path.join(
-    os.homedir(),
-    "htdocs/SpessaSynth/soundfonts/square.sf2"
-);
-const FSMP_CLI = ["/render", "/traysilent", "/close"];
 const SF_RATE = 48_000;
 const SF_TAIL = 2;
 const BUFFER_SIZE = 128;
@@ -74,7 +50,7 @@ function readWav(bin: ArrayBuffer) {
     }
 
     const formatTag = readLittleEndianIndexed(fmt.data, 2);
-    if (formatTag !== 1) {
+    if (formatTag !== 1 && formatTag !== 3) {
         throw new Error(`Format not PCM: ${formatTag}`);
     }
 
@@ -84,6 +60,9 @@ function readWav(bin: ArrayBuffer) {
     fmt.data.currentIndex += 6;
     const bitsPerSample = readLittleEndianIndexed(fmt.data, 2);
     const bytesPerSample = bitsPerSample / 8;
+    if (formatTag === 3 && bitsPerSample !== 32) {
+        throw new Error(`Unsupported IEEE float depth: ${bitsPerSample}`);
+    }
 
     // Read data
     const sampleLength = data.data.length / (channels * bytesPerSample);
@@ -95,10 +74,22 @@ function readWav(bin: ArrayBuffer) {
     const divider = 1 << (bytesPerSample * 8 - 1);
     for (let sampleIndex = 0; sampleIndex < sampleLength; sampleIndex++) {
         for (let channel = 0; channel < channels; channel++) {
-            const sample = readLittleEndianIndexed(data.data, bytesPerSample);
-
-            sampleData[channel][sampleIndex] =
-                ((sample << shift) >> shift) / divider;
+            if (formatTag === 3) {
+                const offset =
+                    (sampleIndex * channels + channel) * bytesPerSample;
+                sampleData[channel][sampleIndex] = new DataView(
+                    data.data.buffer,
+                    data.data.byteOffset + offset,
+                    bytesPerSample
+                ).getFloat32(0, true);
+            } else {
+                const sample = readLittleEndianIndexed(
+                    data.data,
+                    bytesPerSample
+                );
+                sampleData[channel][sampleIndex] =
+                    ((sample << shift) >> shift) / divider;
+            }
         }
     }
     return {
@@ -120,7 +111,7 @@ if (!worker_threads.isMainThread) {
     const { file, midiDir, renderedDir } =
         worker_threads.workerData as WorkerData;
 
-    const sfBin = await fs.readFile(SF_LOCATION);
+    const sfBin = await fs.readFile(renderTestsConfig.paths.soundFont);
     const sf = SoundBankLoader.fromArrayBuffer(sfBin.buffer);
 
     const inputPath = path.join(midiDir, file);
@@ -199,32 +190,28 @@ if (!worker_threads.isMainThread) {
 console.warn(
     `
 ==============WARNING===================
-    Only tested on Linux,
-    may work with Windows.
+    Tested on both Linux and Windows.
+    On Linux, wine and mingw64-gcc is required for VST renders.
+    On Windows, Visual Studio is required for VST renders.
     
     Detected OS: ${os.platform()}
-    Renders all files with spessasynth
-    and VSTi reference.
+    Renders all files with spessasynth_core
+    and the configured native VST renderer.
     
     Normalized and WAV.
-    Uses wine and Falcosoft MIDI Player.
     
     VSTi only renders changed files.
 ========================================
 `
 );
 
-console.info(`SF Location: ${SF_LOCATION}`);
+console.info(`SF Location: ${renderTestsConfig.paths.soundFont}`);
 console.info("\n");
 const isWindows = os.platform() === "win32";
-const dirname = import.meta.dirname;
+const { paths } = renderTestsConfig;
+const { midiDir, renderedDir, rendererDir, rootDir, vstDir } = paths;
 
-const rootDir = path.join(dirname, "../..");
-
-const midiDir = path.join(rootDir, "tests/midi_file/generated");
-const renderedDir = path.join(rootDir, "tests/midi_file/rendered");
-
-const checksumsPath = path.join(renderedDir, "checksums.json");
+const checksumsPath = paths.checksums;
 let checksumsJson = "{}";
 
 try {
@@ -244,6 +231,38 @@ async function writeChecksums() {
     await fs.writeFile(checksumsPath, JSON.stringify(checksums), {
         encoding: "utf-8"
     });
+}
+
+async function fileExists(filePath: string) {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * This builds the renderer if not found
+ */
+async function getRendererPath(arch: "x86" | "x64") {
+    const rendererName = `renderer_${arch}.exe`;
+    const rendererPath = path.join(rendererDir, arch, rendererName);
+
+    if (!(await fileExists(rendererPath))) {
+        console.info(`Renderer ${arch} not found. Building renderer...`);
+        child_process.execFileSync("npm", ["run", "build:renderer"], {
+            cwd: rootDir,
+            stdio: "inherit",
+            shell: true
+        });
+    }
+
+    if (!(await fileExists(rendererPath))) {
+        throw new Error(`Failed to build renderer: ${rendererPath}`);
+    }
+
+    return rendererPath;
 }
 
 console.info("Building test files...");
@@ -287,23 +306,18 @@ if (filesToRender.length === 0) {
         const name = path.basename(inputPath, path.extname(inputPath));
 
         let success = true;
-        for (const [vstiName, params] of Object.entries(RENDERS)) {
+        for (const [renderTarget, params] of Object.entries(
+            renderTestsConfig.renderTargets
+        )) {
             console.info(
-                `Rendering ${file} (${totalRendered}/${filesToRender.length}) for ${vstiName}`
+                `Rendering ${file} (${totalRendered}/${filesToRender.length}) for ${renderTarget}`
             );
-            const doneLabel = `${file} (${vstiName}) rendered in`;
+            const doneLabel = `${file} (${renderTarget}) rendered in`;
             console.time(doneLabel);
 
-            const command = isWindows ? params.executable : "wine";
-            const filePath = isWindows
-                ? inputPath
-                : "Z:" + inputPath.replaceAll("/", "\\");
-            const args = [filePath, "/preset", `${params.preset}`, ...FSMP_CLI];
-
-            // Command is "wine" on linux, add the path to executable here
-            if (!isWindows) {
-                args.unshift(path.basename(params.executable));
-            }
+            const rendererPath = await getRendererPath(params.arch);
+            const vstPath = path.join(vstDir, params.vstName);
+            const renderedPath = path.join(midiDir, `${name}.wav`);
 
             // Create the output directory
             const outputDir = path.join(renderedDir, name);
@@ -311,8 +325,29 @@ if (filesToRender.length === 0) {
 
             // Run the command
             try {
+                if (!(await fileExists(vstPath))) {
+                    throw new Error(`VST not found: ${vstPath}`);
+                }
+
+                // Add wine if linux
+                const command = isWindows ? rendererPath : "wine";
+                const rendererArgument = path.relative(
+                    rendererDir,
+                    rendererPath
+                );
+                const vstArgument = path.relative(rendererDir, vstPath);
+                const inputArgument = path.relative(rendererDir, inputPath);
+                const outputArgument = path.relative(rendererDir, renderedPath);
+                const args = isWindows
+                    ? [vstArgument, inputArgument, outputArgument]
+                    : [
+                          rendererArgument,
+                          vstArgument,
+                          inputArgument,
+                          outputArgument
+                      ];
                 const result = child_process.spawnSync(command, args, {
-                    cwd: path.dirname(params.executable),
+                    cwd: rendererDir,
                     encoding: "utf-8"
                 });
 
@@ -328,20 +363,19 @@ if (filesToRender.length === 0) {
                     .join("\n");
 
                 await fs.writeFile(
-                    path.join(outputDir, `${vstiName}.log`),
+                    path.join(outputDir, `${renderTarget}.log`),
                     logs,
                     { encoding: "utf-8" }
                 );
 
                 if (result.status !== 0) {
                     console.warn(
-                        `FSMP exited with code ${result.status}. Skipping!`
+                        `Renderer exited with code ${result.status}. Skipping!`
                     );
                     success = false;
                     continue;
                 }
 
-                const renderedPath = path.join(midiDir, `${name}.wav`);
                 const fileBin = await fs.readFile(renderedPath);
                 await fs.rm(renderedPath);
                 const { sampleData, sampleRate } = readWav(fileBin.buffer);
@@ -358,7 +392,7 @@ if (filesToRender.length === 0) {
                     }
                 }
 
-                const outputPath = path.join(outputDir, `${vstiName}.wav`);
+                const outputPath = path.join(outputDir, `${renderTarget}.wav`);
                 const wavBuffer = Buffer.from(
                     audioToWav(
                         sampleData.map((ch) => ch.slice(start)),
@@ -368,7 +402,7 @@ if (filesToRender.length === 0) {
                 await fs.writeFile(outputPath, wavBuffer);
             } catch (error) {
                 console.warn(
-                    `Failed to render ${file} with ${vstiName}:`,
+                    `Failed to render ${file} with ${renderTarget}:`,
                     error,
                     "Skipping!"
                 );
@@ -418,7 +452,7 @@ function runWorker(file: string) {
 }
 
 console.info(`Queueing ${midiFiles.length} files for render.`);
-console.time("Spessasynth render completed in");
+console.time("SpessaSynth render completed in");
 
 totalRendered = 0;
 await Promise.all(
@@ -429,9 +463,11 @@ await Promise.all(
     })
 );
 
-console.timeEnd("Spessasynth render completed in");
+console.timeEnd("SpessaSynth render completed in");
 console.groupEnd();
 
 console.info("Writing checksums...");
 await writeChecksums();
-console.info(`All done. ${totalRendered} files rendered.`);
+console.info(
+    `All done. ${totalRendered} files rendered. ${totalRendered - filesToRender.length} files skipped for VST.`
+);
