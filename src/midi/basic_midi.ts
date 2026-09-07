@@ -1,4 +1,7 @@
-import { getStringBytes, readBinaryString } from "../utils/byte_functions/string";
+import {
+    getStringBytes,
+    readBinaryString
+} from "../utils/byte_functions/string";
 import { MIDIMessage } from "./midi_message";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
 import { SpessaLog } from "../utils/loggin";
@@ -23,7 +26,10 @@ import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
 import { parseSMFInternal } from "./read/midi";
 import { MIDIControllers, MIDIMessageTypes } from "./enums";
-import type { GenericRange, PresetsWithKeyCombinations } from "../soundbank/types";
+import type {
+    GenericRange,
+    PresetsWithKeyCombinations
+} from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString, toISODateString } from "../utils/date";
@@ -991,6 +997,36 @@ export class BasicMIDI {
                 if (this.portChannelOffsetMap[port] === undefined) {
                     this.portChannelOffsetMap[port] = portOffset;
                     portOffset += 16;
+                }
+            }
+        }
+
+        // Attempt to determine ports from track names:
+        // A<num> or PartA<num>
+        // B<num> or PartB<num>
+        // C<num> or PartC<num>
+        // D<num> or PartD<num>
+        if (portOffset === 0) {
+            for (const track of this.tracks) {
+                const n = track.name;
+                if (n.includes("PartA") || /^A\d/.test(n)) {
+                    track.port = 0;
+                    this.portChannelOffsetMap[0] = 0;
+                    continue;
+                }
+                if (n.includes("PartB") || /^B\d/.test(n)) {
+                    track.port = 1;
+                    this.portChannelOffsetMap[1] = 16;
+                    continue;
+                }
+                if (n.includes("PartC") || /^C\d/.test(n)) {
+                    track.port = 2;
+                    this.portChannelOffsetMap[2] = 32;
+                    continue;
+                }
+                if (n.includes("PartD") || /^D\d/.test(n)) {
+                    track.port = 3;
+                    this.portChannelOffsetMap[3] = 48;
                 }
             }
         }
