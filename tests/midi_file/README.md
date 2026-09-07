@@ -7,7 +7,7 @@ to render their output using `spessasynth_core` and reference VST plugins.
 - `config.ts` contains render paths and the VST renderer configuration. _Adjust this if necessary!_
 - `midi_test_maker.ts` contains the shared MIDI test builder used across the entire test suite.
 - `generate_midi.ts` generates all MIDI test files and places them into `output/midi`.
-- `render_tests.ts` renders the generated MIDI with `spessasynth_core` and the
+- `render_audio.ts` renders the generated MIDI with `spessasynth_core` and the
   configured VST targets, writing results to `output/wav`, grouped by test.
 - `clean.ts` removes generated files and build artifacts.
 - `renderer` contains the native VST C++ renderer using the BASS library.
