@@ -41,6 +41,7 @@ import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { parseRMIDIInternal } from "./read/rmidi";
 import { loadXMF } from "./read/xmf";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
+import { removeEMIDINonGMTracksInternal } from "./midi_tools/emidi";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -451,6 +452,24 @@ export class BasicMIDI {
 
     // noinspection JSUnusedGlobalSymbols
     /**
+     * Removes the tracks that EMIDI designates for a device other than
+     * General MIDI.
+     *
+     * An EMIDI song built for several synthesizers carries one copy of its
+     * content per target, each marked with a Track Designation controller,
+     * so playing it as plain General MIDI sounds every copy at once. Tracks
+     * that carry no designation are left alone, so this is a no-op on a file
+     * that is not EMIDI.
+     *
+     * This modifies the MIDI sequence _in-place_.
+     * @returns the number of tracks removed.
+     */
+    public removeEMIDINonGMTracks(): number {
+        return removeEMIDINonGMTracksInternal(this);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
      * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
      *
      * Note that System Parameters `fineTune` and `keyShift` are passed to the relative tuning parameters of the channels.
@@ -702,6 +721,28 @@ export class BasicMIDI {
         let loopEnd = null;
         let loopType: MIDILoopType = "hard";
 
+        // CC 111 is shared: RPG Maker writes it as a loop start, and Apogee's
+        // Extended MIDI has its own meaning for it. Reading it as a loop point
+        // Is only safe on a file that shows no other sign of being EMIDI, so
+        // Look for the rest of the EMIDI controller block first: 110, and 112
+        // Through 119. 111 itself is deliberately not in that set, since it is
+        // The very thing being disambiguated.
+        const isEMIDI = this.tracks.some((t) =>
+            t.events.some((e) => {
+                if (
+                    (e.statusByte & 0xf0) !==
+                    MIDIMessageTypes.controllerChange
+                ) {
+                    return false;
+                }
+                const cc = e.data[0];
+                return (
+                    cc >= MIDIControllers.undefinedCC112LSB &&
+                    cc <= MIDIControllers.undefinedCC119LSB
+                );
+            })
+        );
+
         for (const track of this.tracks) {
             const usedChannels = new Set<number>();
             let trackHasVoiceMessages = false;
@@ -722,11 +763,18 @@ export class BasicMIDI {
                         case MIDIMessageTypes.controllerChange: {
                             switch (e.data[0]) {
                                 // Touhou
-                                case MIDIControllers.breathController:
+                                case MIDIControllers.breathController: {
+                                    // For Touhou, the data value must be 0.
+                                    if (e.data[1] === 0) loopStart = e.ticks;
+                                    break;
+                                }
                                 // RPG Maker
                                 case MIDIControllers.undefinedCC111LSB: {
-                                    // For Touhou and RPG Maker, the data value must be 0.
-                                    if (e.data[1] === 0) loopStart = e.ticks;
+                                    // For RPG Maker, the data value must be 0.
+                                    // On an EMIDI file this controller is not a loop point.
+                                    if (!isEMIDI && e.data[1] === 0) {
+                                        loopStart = e.ticks;
+                                    }
                                     break;
                                 }
                                 // EMIDI/XMI
