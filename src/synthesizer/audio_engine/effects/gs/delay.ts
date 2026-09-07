@@ -1,5 +1,4 @@
 import type { DelayProcessor, DelayProcessorSnapshot } from "../types";
-import { DelayLine } from "../implementation/delay_line";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!
@@ -33,27 +32,38 @@ export class SpessaSynthDelay implements DelayProcessor {
      * @private
      */
     private preLPFz = 0;
-    private readonly delayLeft;
-    private readonly delayRight;
-    private readonly delayCenter;
+    private readonly buffer;
     private readonly sampleRate;
-    private readonly delayCenterOutput;
     private readonly delayPreLPF;
-    private delayCenterTime;
     private delayLeftMultiplier = 0.04;
     private delayRightMultiplier = 0.04;
     private gain = 0;
     private reverbGain = 0;
+    private feedbackGain = 0;
+    /**
+     * Samples
+     */
+    private delayCenter;
+    /**
+     * Samples
+     */
+    private delayLeft;
+    /**
+     * Samples
+     */
+    private delayRight;
+    private gainCenter = 1;
+    private gainLeft = 0;
+    private gainRight = 0;
+    private writeIndex = 0;
 
     public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
-        this.delayCenterOutput = new Float32Array(maxBufferSize);
+        this.buffer = new Float32Array(sampleRate);
         this.delayPreLPF = new Float32Array(maxBufferSize);
-        this.delayCenterTime = 0.34 * sampleRate;
-        // All delays are capped at 1s
-        this.delayCenter = new DelayLine(sampleRate);
-        this.delayLeft = new DelayLine(sampleRate);
-        this.delayRight = new DelayLine(sampleRate);
+        this.delayCenter = Math.floor(0.34 * sampleRate);
+        this.delayLeft = Math.floor(this.delayCenter * 0.04);
+        this.delayRight = Math.floor(this.delayCenter * 0.04);
     }
 
     private _sendLevelToReverb = 0;
@@ -135,12 +145,10 @@ export class SpessaSynthDelay implements DelayProcessor {
     }
 
     public set feedback(value: number) {
+        // -64 means max at inverted phase
+        // Use 66 for it to not be infinite (-1)
+        this.feedbackGain = (value - 64) / 66;
         this._feedback = value;
-        // Only the center delay has feedback
-        this.delayLeft.feedback = this.delayRight.feedback = 0;
-        // -64 means max at inverted phase, so feedback of -1 it is!
-        // Use 66 for it to not be infinite
-        this.delayCenter.feedback = (value - 64) / 66;
     }
 
     private _timeRatioRight = 0;
@@ -155,7 +163,6 @@ export class SpessaSynthDelay implements DelayProcessor {
         // The resolution is 100/24(%).
         // Turn that into multiplier
         this.delayRightMultiplier = value * (100 / 2400);
-        this.delayRight.time = this.delayCenterTime * this.delayRightMultiplier;
     }
 
     private _timeRatioLeft = 0;
@@ -170,7 +177,6 @@ export class SpessaSynthDelay implements DelayProcessor {
         // The resolution is 100/24(%).
         // Turn that into multiplier
         this.delayLeftMultiplier = value * (100 / 2400);
-        this.delayLeft.time = this.delayCenterTime * this.delayLeftMultiplier;
     }
 
     private _timeCenter = 12;
@@ -191,12 +197,27 @@ export class SpessaSynthDelay implements DelayProcessor {
                 break;
             }
         }
-        this.delayCenterTime = Math.max(2, this.sampleRate * (delayMs / 1000));
-        this.delayCenter.time = this.delayCenterTime;
-        this.delayLeft.time = this.delayCenterTime * this.delayLeftMultiplier;
-        this.delayRight.time = this.delayCenterTime * this.delayRightMultiplier;
+        this.delayCenter = Math.floor(
+            Math.max(2, this.sampleRate * (delayMs / 1000))
+        );
+        this.delayLeft = Math.floor(
+            this.delayCenter * this.delayLeftMultiplier
+        );
+        this.delayRight = Math.floor(
+            this.delayCenter * this.delayRightMultiplier
+        );
+        this.buffer.fill(0);
     }
 
+    /**
+     * Process the effect and ADDS it to the output.
+     * @param input The input buffer to process. It always starts at index 0.
+     * @param outputLeft The left output buffer.
+     * @param outputRight The right output buffer.
+     * @param outputReverb The mono input for reverb. It always starts at index 0.
+     * @param startIndex The index to start mixing at into the output buffers.
+     * @param sampleCount The amount of samples to mix.
+     */
     public process(
         input: Float32Array,
         outputLeft: Float32Array,
@@ -229,43 +250,64 @@ export class SpessaSynthDelay implements DelayProcessor {
         stereo delays only connect to the output.
         Also level is separate from reverb send level,
         i.e. level = 0 and reverb send level = 127 will still send sound to reverb.
+
+        Center always sends to stereo, regardless of level center in hardware and latest SCVA, older revisions incorrectly don't send it,
+        So level center = 0, level left = 127 will still have feedback.
+        Also feedback time is always time center, even if only left delay is playing.
          */
-        const { gain, reverbGain } = this;
+        const {
+            gain,
+            reverbGain,
+            delayCenter,
+            delayLeft,
+            delayRight,
+            buffer,
+            feedbackGain
+        } = this;
+        let writeIndex = this.writeIndex;
+        const bufferLength = buffer.length;
+        const centerGain = this.gainCenter * gain;
+        const leftGain = this.gainLeft * gain;
+        const rightGain = this.gainRight * gain;
 
-        // Process center first
-        this.delayCenter.process(delayIn, this.delayCenterOutput, sampleCount);
-
-        // Mix into output
-        const center = this.delayCenterOutput;
-        for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
-            const sample = center[i];
-            outputReverb[i] += sample * reverbGain;
-            const outSample = sample * gain;
-            outputLeft[o] += outSample;
-            outputRight[o] += outSample;
-        }
-
-        // Add input into delay (stereo delays take input from both)
         for (let i = 0; i < sampleCount; i++) {
-            center[i] += input[i];
-        }
+            // Read center
+            let centerReadIndex = writeIndex - delayCenter;
+            if (centerReadIndex < 0) centerReadIndex += bufferLength;
 
-        // Process stereo delays (reuse preLPF array as delays overwrite samples)
-        const stereoOut = this.delayPreLPF;
-        // Left
-        this.delayLeft.process(center, stereoOut, sampleCount);
-        for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
-            const sample = stereoOut[i];
-            outputLeft[o] += sample * gain;
-            outputReverb[i] += sample * reverbGain;
+            // Read left
+            let leftReadIndex = (writeIndex - delayLeft) % bufferLength;
+            if (leftReadIndex < 0) leftReadIndex += bufferLength;
+
+            // Read right
+            let rightReadIndex = (writeIndex - delayRight) % bufferLength;
+            if (rightReadIndex < 0) rightReadIndex += bufferLength;
+
+            // Write center
+            const o = startIndex + i;
+            const delayed = buffer[centerReadIndex];
+            const c = delayed * centerGain;
+            outputLeft[o] += c;
+            outputRight[o] += c;
+            outputReverb[o] += c * reverbGain;
+
+            // Write left
+            const l = buffer[leftReadIndex] * leftGain;
+            outputLeft[o] += l;
+            outputReverb[o] += l * reverbGain;
+
+            // Write right
+            const r = buffer[rightReadIndex] * rightGain;
+            outputRight[o] += r;
+            outputReverb[o] += r * reverbGain;
+
+            // Center feedback
+            buffer[writeIndex] = delayIn[i] + delayed * feedbackGain;
+
+            // Advance and wrap
+            if (++writeIndex >= bufferLength) writeIndex = 0;
         }
-        // Right
-        this.delayRight.process(center, stereoOut, sampleCount);
-        for (let i = 0, o = startIndex; i < sampleCount; i++, o++) {
-            const sample = stereoOut[i];
-            outputRight[o] += sample * gain;
-            outputReverb[i] += sample * reverbGain;
-        }
+        this.writeIndex = writeIndex;
     }
 
     public getSnapshot(): DelayProcessorSnapshot {
@@ -284,8 +326,9 @@ export class SpessaSynthDelay implements DelayProcessor {
     }
 
     private updateGain() {
-        this.delayCenter.gain = this._levelCenter / 127;
-        this.delayLeft.gain = this._levelLeft / 127;
-        this.delayRight.gain = this._levelRight / 127;
+        // Center gain is applied in post
+        this.gainCenter = this._levelCenter / 127;
+        this.gainLeft = this._levelLeft / 127;
+        this.gainRight = this._levelRight / 127;
     }
 }
