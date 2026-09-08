@@ -13,11 +13,10 @@ const BIN_DIR = path.join(RENDERER_DIR, "bin");
 
 const DOWNLOAD_URLS = {
     bass: "https://www.un4seen.com/files/bass24.zip",
-    bassmidi: "https://www.un4seen.com/files/bassmidi24.zip",
     bass_vst: "https://www.un4seen.com/files/z/5/bass_vst24.zip"
 } as const;
 
-const REQUIRED_HEADERS = ["bass.h", "bassmidi.h", "bass_vst.h"];
+const REQUIRED_HEADERS = ["bass.h", "bass_vst.h"];
 
 async function download(url: string, dest: string) {
     console.info(`Downloading ${path.basename(dest)}...`);
@@ -336,7 +335,7 @@ if (isWindows) {
                 `/OPT:ICF`,
                 `/INCREMENTAL:NO`,
                 `/LIBPATH:"${archDir}"`,
-                `bass.lib bassmidi.lib bass_vst.lib`
+                `bass.lib bass_vst.lib`
             ]
                 .filter(Boolean)
                 .join(" ");
@@ -398,7 +397,6 @@ if (isWindows) {
                     sourceFile,
                     `-L${archDir}`,
                     "-lbass",
-                    "-lbassmidi",
                     "-lbass_vst",
                     "-o",
                     outPath

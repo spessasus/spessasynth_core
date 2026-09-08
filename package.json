@@ -18,7 +18,7 @@
         "test:midi:clean": "tsx tests/midi_file/clean.ts",
         "test:midi:render": "tsx tests/midi_file/render_audio.ts",
         "prepublishOnly": "npm run format && npm run build",
-        "prepare": "husky install",
+        "prepare": "husky",
         "dev:vorbis": "npm uninstall stb-vorbis; npm install ../stb-vorbis",
         "release:vorbis": "npm uninstall stb-vorbis; npm install stb-vorbis"
     },
