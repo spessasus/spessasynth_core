@@ -412,7 +412,7 @@ export class SpessaSynthSequencer {
         }
     }
 
-    protected sendMIDIMessage(message: number[]) {
+    protected sendMIDIMessage(message: number[], channelOffset: number) {
         if (!this.externalMIDIPlayback) {
             SpessaLog.warn(
                 `Attempting to send ${arrayToHexString(message)} to the synthesizer via sendMIDIMessage. This shouldn't happen!`
@@ -421,7 +421,8 @@ export class SpessaSynthSequencer {
         }
         this.callEvent("midiMessage", {
             message,
-            time: this.synth.currentTime
+            time: this.synth.currentTime,
+            channelOffset
         });
     }
 
@@ -551,12 +552,11 @@ export class SpessaSynthSequencer {
             this.synth.noteOn(channel, midiNote, velocity);
             return;
         }
-        channel %= 16;
-        this.sendMIDIMessage([
-            MIDIMessageTypes.noteOn | channel,
-            midiNote,
-            velocity
-        ]);
+        const midiChannel = channel % 16;
+        this.sendMIDIMessage(
+            [MIDIMessageTypes.noteOn | midiChannel, midiNote, velocity],
+            channel - midiChannel
+        );
     }
 
     protected sendMIDINoteOff(channel: number, midiNote: number) {
@@ -564,12 +564,15 @@ export class SpessaSynthSequencer {
             this.synth.noteOff(channel, midiNote);
             return;
         }
-        channel %= 16;
-        this.sendMIDIMessage([
-            MIDIMessageTypes.noteOff | channel,
-            midiNote,
-            64 // Make sure to send velocity as well
-        ]);
+        const midiChannel = channel % 16;
+        this.sendMIDIMessage(
+            [
+                MIDIMessageTypes.noteOff | midiChannel,
+                midiNote,
+                64 // Make sure to send velocity as well
+            ],
+            channel - midiChannel
+        );
     }
 
     protected sendMIDICC(channel: number, type: MIDIController, value: number) {
@@ -577,12 +580,11 @@ export class SpessaSynthSequencer {
             this.synth.controllerChange(channel, type, value);
             return;
         }
-        channel %= 16;
-        this.sendMIDIMessage([
-            MIDIMessageTypes.controllerChange | channel,
-            type,
-            value
-        ]);
+        const midiChannel = channel % 16;
+        this.sendMIDIMessage(
+            [MIDIMessageTypes.controllerChange | midiChannel, type, value],
+            channel - midiChannel
+        );
     }
 
     protected sendMIDISysEx(syx: SysExAcceptedArray) {
@@ -590,7 +592,7 @@ export class SpessaSynthSequencer {
             this.synth.systemExclusive(syx);
             return;
         }
-        this.sendMIDIMessage([MIDIMessageTypes.systemExclusive, ...syx]);
+        this.sendMIDIMessage([MIDIMessageTypes.systemExclusive, ...syx], 0);
     }
 
     /**
@@ -603,11 +605,14 @@ export class SpessaSynthSequencer {
             this.synth.pitchWheel(channel, pitch);
             return;
         }
-        channel %= 16;
-        this.sendMIDIMessage([
-            MIDIMessageTypes.pitchWheel | channel,
-            pitch & 0x7f,
-            pitch >> 7
-        ]);
+        const midiChannel = channel % 16;
+        this.sendMIDIMessage(
+            [
+                MIDIMessageTypes.pitchWheel | midiChannel,
+                pitch & 0x7f,
+                pitch >> 7
+            ],
+            channel - midiChannel
+        );
     }
 }

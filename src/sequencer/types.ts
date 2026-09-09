@@ -16,6 +16,13 @@ export interface SequencerEventData {
          * Use this for scheduling MIDI messages to your external MIDI device.
          */
         time: number;
+
+        /**
+         * The channel offset of this message, it is useful for multi-port MIDI files.
+         * For example, offset of 0 means the first 16 channels (0-15). Offset of 16 means the second port (channels 16-31).
+         * The second port could be routed to a second MIDI output or a second MIDI device.
+         */
+        channelOffset: number;
     };
     /**
      * Called when the time is changed.
