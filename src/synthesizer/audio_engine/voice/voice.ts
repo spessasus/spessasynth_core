@@ -160,12 +160,7 @@ export class Voice {
     public rootKey = 0;
 
     /**
-     * The pressure of the voice
-     */
-    public pressure = 0;
-
-    /**
-     * Linear gain of the voice. Used with Key Modifiers.
+     * Linear gain of the voice.
      */
     public gainModifier = 1;
 
@@ -224,19 +219,19 @@ export class Voice {
     public pitchOffset = 0;
 
     /**
-     * Reverb send of the voice, used for drum parts, otherwise 1.
+     * Reverb gain of the voice, used for drum parts, otherwise 1.
      */
-    public reverbSend = 1;
+    public reverbGain = 1;
 
     /**
-     * Chorus send of the voice, used for drum parts, otherwise 1.
+     * Chorus gain of the voice, used for drum parts, otherwise 1.
      */
-    public chorusSend = 1;
+    public chorusGain = 1;
 
     /**
-     * Delay send of the voice, used for drum parts, otherwise 1.
+     * Delay/variation gain of the voice, used for drum parts, otherwise 1.
      */
-    public delaySend = 1;
+    public variationGain = 1;
 
     /**
      * Exclusive class number for hi-hats etc.
@@ -299,7 +294,6 @@ export class Voice {
         this.hasRendered = false;
         this.isHeld = false;
         this.releaseStartTime = Infinity;
-        this.pressure = 0;
         this.overrideReleaseVolEnv = 0;
         this.portamentoDuration = 0;
         this.portamentoFromKey = -1;

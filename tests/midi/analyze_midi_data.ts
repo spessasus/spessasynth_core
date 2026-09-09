@@ -152,8 +152,8 @@ for (const t of timeline) {
         }
 
         case MIDIMessageTypes.systemExclusive: {
-            const analyzed = MIDIUtils.analyzeSysEx(e.data);
-            if (analyzed) {
+            const analyzedMessages = MIDIUtils.analyzeSysEx(e.data);
+            for (const analyzed of analyzedMessages) {
                 switch (analyzed.type) {
                     default: {
                         // Log without type

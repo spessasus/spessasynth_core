@@ -30,7 +30,7 @@ synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
-await synth.processorInitialized;
+await synth.ready;
 
 // Test code here (internal access only so we can do that)
 synth.setSystemParameter("voiceCap", 1);

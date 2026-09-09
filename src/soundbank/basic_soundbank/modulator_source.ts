@@ -182,7 +182,8 @@ export class ModulatorSource {
                 }
 
                 case ModulatorControllerSources.polyPressure: {
-                    rawValue = voice.pressure << 7;
+                    // Use MIDI Note here as key shift is internal
+                    rawValue = channel.polyPressures[voice.midiNote] << 7;
                     break;
                 }
 

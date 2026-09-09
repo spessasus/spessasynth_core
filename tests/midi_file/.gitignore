@@ -1,3 +1,4 @@
-generated/
-rendered/
+# Generated Output
+output/
 *.wav
+*.mid

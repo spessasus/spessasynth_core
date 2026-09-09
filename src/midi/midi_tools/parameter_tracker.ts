@@ -1,9 +1,9 @@
-import { type MIDIController, MIDIControllers } from "../enums";
-import { MIDIUtils } from "./midi_utils";
 import {
     DEFAULT_NRPN,
     DEFAULT_RPN
 } from "../../synthesizer/audio_engine/synth_constants";
+import { type MIDIController, MIDIControllers } from "../enums";
+import { MIDIUtils } from "./midi_utils";
 
 interface ParameterController {
     /**
@@ -67,6 +67,38 @@ export class ParameterTracker {
 
     public get paramLSB() {
         return this.isRegistered ? this.rpnLSB : this.nrpnLSB;
+    }
+
+    /**
+     * Keeps the cached event indexes valid when an event is deleted from a
+     * track.
+     * @param track the track number
+     * @param index the index of the event
+     */
+    public deleteEvent(track: number, index: number) {
+        this.shiftEvent(this.rpnMSB, track, index);
+        this.shiftEvent(this.rpnLSB, track, index);
+        this.shiftEvent(this.nrpnMSB, track, index);
+        this.shiftEvent(this.nrpnLSB, track, index);
+        this.shiftEvent(this.dataMSB, track, index);
+        this.shiftEvent(this.dataLSB, track, index);
+    }
+
+    /**
+     *
+     * @param param the parameter affected
+     * @param track the track number
+     * @param index the index of the event
+     */
+    private shiftEvent(
+        param: ParameterController,
+        track: number,
+        index: number
+    ) {
+        // If an event before the tracked one was deleted, the index goes down
+        if (param.track === track && param.event > index) {
+            param.event--;
+        }
     }
 
     public reset() {

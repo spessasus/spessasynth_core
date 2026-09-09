@@ -10,7 +10,7 @@ if (args.length !== 2) {
 const sfeIn = args[0];
 const sfeOut = args[1];
 
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 
 const sfe = await fs.readFile(sfeIn);
 const bank = SoundBankLoader.fromArrayBuffer(sfe.buffer);

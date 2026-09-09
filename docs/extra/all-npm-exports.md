@@ -16,7 +16,6 @@ This is a (non-exhaustive) list of exports in the NPM package.
 - `SpessaSynthProcessor` - the main synthesis engine.
 - `SpessaSynthSequencer` - the main sequencer engine.
 - `MIDIChannel` - the class representing a single MIDI channel.
-- `KeyModifier` - for the `KeyModifierManager`, a single key modification.
 
 ### Related Enums and Constants
 

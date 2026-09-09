@@ -16,12 +16,29 @@ import type {
     StopAllCallback
 } from "./audio_engine/channel/types";
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
-import type { MIDISystem } from "../soundbank/types";
+import type { MIDISystem, VoiceParameters } from "../soundbank/types";
+import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import type { UserDrumSetParameter } from "../midi/types";
 
 /**
  * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
  */
 type DisplayMessageData = number[];
+
+export interface SoundBankManagerListEntry {
+    /**
+     * The unique string identifier of the sound bank.
+     */
+    id: string;
+    /**
+     * The sound bank itself.
+     */
+    soundBank: BasicSoundBank;
+    /**
+     * The bank MSB offset for this sound bank.
+     */
+    bankOffset: number;
+}
 
 export type GlobalMIDIParameterChangeCallback = {
     [P in keyof GlobalMIDIParameter]: {
@@ -104,6 +121,30 @@ export type EffectChangeCallback =
           value: number;
       };
 
+export type UserDrumSetChangeCallback = {
+    [P in keyof UserDrumSetParameter]: {
+        /**
+         * The drum set that was changed. 0 means User Drum Set 1, and 1 means User Drum Set 2.
+         */
+        drumSet: number;
+
+        /**
+         * The MIDI note number that has been changed in the drum set.
+         */
+        midiNote: number;
+
+        /**
+         * The parameter that was changed.
+         */
+        parameter: P;
+
+        /**
+         * The new value of this parameter.
+         */
+        value: UserDrumSetParameter[P];
+    };
+}[keyof UserDrumSetParameter];
+
 export interface SynthProcessorEventData {
     /**
      * This event fires when a note is played.
@@ -160,6 +201,11 @@ export interface SynthProcessorEventData {
      * This event fires when an effect processor is modified.
      */
     effectChange: EffectChangeCallback;
+
+    /**
+     * This event fires when a GS User Drum Set is modified.
+     */
+    userDrumSetChange: UserDrumSetChangeCallback;
 }
 
 export type SynthProcessorEvent = {
@@ -233,3 +279,17 @@ export {
     type DelayProcessor,
     type ReverbProcessor
 } from "./audio_engine/effects/types";
+
+/**
+ * A generic synthesizer patch that can return voice parameters.
+ * This is used for the virtual GS user drum preset.
+ */
+export interface SynthesizerPatch extends MIDIPatchFull {
+    /**
+     * Returns the voice synthesis data for this preset.
+     * @param midiNote the MIDI note number.
+     * @param velocity the MIDI velocity.
+     * @returns the returned sound data.
+     */
+    getVoiceParameters(midiNote: number, velocity: number): VoiceParameters[];
+}

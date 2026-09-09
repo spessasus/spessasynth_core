@@ -11,8 +11,8 @@ import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
 import { IndexedByteArray } from "../utils/indexed_array";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
-import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import type {
+    CallableSoundBank,
     MIDIFormat,
     MIDILoop,
     MIDILoopType,
@@ -22,10 +22,7 @@ import type {
     TempoChange,
     TimelineEvent
 } from "./types";
-import {
-    modifyMIDIInternal,
-    type ModifyMIDIOptions
-} from "./midi_tools/modify_midi";
+import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/modify_midi";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
 import { parseSMFInternal } from "./read/midi";
 import { MIDIControllers, MIDIMessageTypes } from "./enums";
@@ -36,11 +33,11 @@ import type {
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString, toISODateString } from "../utils/date";
-import type { SoundBankManager } from "../synthesizer/audio_engine/sound_bank_manager";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { parseRMIDIInternal } from "./read/rmidi";
 import { loadXMF } from "./read/xmf";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
+import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -356,9 +353,9 @@ export class BasicMIDI {
      * @param soundbank the sound bank.
      * @returns The output data is a key-value pair: preset -> Map<midiNote, Set<velocity>>
      */
-    public getUsedProgramsAndKeys(
-        soundbank: BasicSoundBank | SoundBankManager
-    ): PresetsWithKeyCombinations {
+    public getUsedProgramsAndKeys<T extends MIDIPatchFull>(
+        soundbank: CallableSoundBank<T>
+    ): PresetsWithKeyCombinations<T> {
         return getUsedProgramsAndKeys(this, soundbank);
     }
 
@@ -446,7 +443,8 @@ export class BasicMIDI {
      * This modifies the MIDI sequence _in-place_.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
-        modifyMIDIInternal(this, opts);
+        const editor = new MIDIEditor(this, opts);
+        editor.apply();
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -999,6 +997,36 @@ export class BasicMIDI {
                 if (this.portChannelOffsetMap[port] === undefined) {
                     this.portChannelOffsetMap[port] = portOffset;
                     portOffset += 16;
+                }
+            }
+        }
+
+        // Attempt to determine ports from track names:
+        // A<num> or PartA<num>
+        // B<num> or PartB<num>
+        // C<num> or PartC<num>
+        // D<num> or PartD<num>
+        if (portOffset === 0) {
+            for (const track of this.tracks) {
+                const n = track.name;
+                if (n.includes("PartA") || /^A\d/.test(n)) {
+                    track.port = 0;
+                    this.portChannelOffsetMap[0] = 0;
+                    continue;
+                }
+                if (n.includes("PartB") || /^B\d/.test(n)) {
+                    track.port = 1;
+                    this.portChannelOffsetMap[1] = 16;
+                    continue;
+                }
+                if (n.includes("PartC") || /^C\d/.test(n)) {
+                    track.port = 2;
+                    this.portChannelOffsetMap[2] = 32;
+                    continue;
+                }
+                if (n.includes("PartD") || /^D\d/.test(n)) {
+                    track.port = 3;
+                    this.portChannelOffsetMap[3] = 48;
                 }
             }
         }

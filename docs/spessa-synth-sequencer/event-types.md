@@ -14,6 +14,9 @@ Called when a MIDI message is sent and externalMIDIPlayback is true.
 - message: number[] - the binary MIDI message
 - time: number - the synthesizer's current time when this event was sent.
   Use this for scheduling MIDI messages to your external MIDI device.
+- channelOffset: number - the channel offset of this message, it is useful for multi-port MIDI files.
+  For example, offset of 0 means the first 16 channels (0-15). Offset of 16 means the second port (channels 16-31).
+  The second port could be routed to a second MIDI output or a second MIDI device.
 
 ### timeChange
 

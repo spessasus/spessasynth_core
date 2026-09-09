@@ -24,16 +24,6 @@ synth.applySnapshot(snapshot);
 
 An array of channel snapshots for all the MIDI channels of the synth.
 
-### keyMappings
-
-An array of arrays of [KeyModifiers](key-modifier-manager.md).
-
-Stored as:
-
-```ts
-const mapping = snapshot.keyMappings[channelNumber][midiNote];
-```
-
 ### systemParameters
 
 All [system parameters](global-parameters.md) stored as a type: value pair.

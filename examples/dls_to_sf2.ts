@@ -11,7 +11,7 @@ if (args.length !== 2) {
 const dlsPath = args[0];
 const sf2Path = args[1];
 
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 const dls = await fs.readFile(dlsPath);
 console.time("Loaded in");
 const bank = SoundBankLoader.fromArrayBuffer(dls.buffer);

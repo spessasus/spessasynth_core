@@ -36,7 +36,7 @@ synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
-await synth.processorInitialized;
+await synth.ready;
 
 // Initialize the sequencer
 const seq = new SpessaSynthSequencer(synth);

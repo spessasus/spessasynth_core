@@ -15,7 +15,7 @@ const midPath = args[1];
 const outPath = args[2];
 
 // Await sf3 decoder
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 
 SpessaLog.setLogLevel(true, true, true);
 

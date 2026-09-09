@@ -18,7 +18,7 @@ synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sf.buffer),
     "main"
 );
-await synth.processorInitialized;
+await synth.ready;
 
 const bufSize = 128;
 

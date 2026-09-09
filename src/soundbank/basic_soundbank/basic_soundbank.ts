@@ -23,7 +23,11 @@ import type {
     SoundFont2WriteOptions
 } from "../types";
 import { GeneratorTypes } from "./generator_types";
-import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
+import {
+    type MIDIPatch,
+    type MIDIPatchFull,
+    MIDIPatchTools
+} from "./midi_patch";
 import {
     DEFAULT_DLS_OPTIONS,
     DownloadableSounds
@@ -38,7 +42,7 @@ export class BasicSoundBank {
     /**
      * Indicates if the SF3/SF2Pack decoder is ready.
      */
-    public static isSF3DecoderReady: Promise<void> = StbVorbis.ready;
+    public static ready: Promise<void> = StbVorbis.ready;
 
     /**
      * The type of the sound bank that was loaded.
@@ -443,7 +447,9 @@ export class BasicSoundBank {
      * Absent presets will be removed from the sound bank,
      * and samples that don't get activated in the remaining presets will be removed as well.
      */
-    public trim(presetData: PresetsWithKeyCombinations) {
+    public trim<T extends MIDIPatchFull>(
+        presetData: PresetsWithKeyCombinations<T>
+    ) {
         const trimInstrumentZones = (
             instrument: BasicInstrument,
             keyCombos: Map<number, Set<number>>
@@ -511,7 +517,8 @@ export class BasicSoundBank {
             presetIndex++
         ) {
             const p = this.presets[presetIndex];
-            const keyCombos = presetData.get(p);
+            // T may be a virtual preset (GS user drum set) or a regular BasicPreset, ignore cast because we only care about basic presets anyway
+            const keyCombos = presetData.get(p as unknown as T);
             if (keyCombos === undefined) {
                 SpessaLog.info(
                     `%cDeleting preset %c${p.name}%c and its zones`,

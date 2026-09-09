@@ -1,4 +1,9 @@
 import type { MIDIChannel } from "./midi_channel";
+import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "../synth_constants";
+import { UserDrumSet } from "../user_drum_set";
+import { SpessaLog } from "../../../utils/loggin";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
+import { ConsoleColors } from "../../../utils/other";
 
 /**
  * Changes the program (preset) of the channel.
@@ -32,6 +37,38 @@ export function programChange(this: MIDIChannel, program: number) {
         this.setDrumFlag(preset.isDrum);
     }
     this.resetDrumParams();
+
+    // Commit changes made to user drums.
+    // SCVA does not play drum sounds until the change is sent, even if this patch was selected before then.
+    // See the corresponding test in MIDI tests.
+    if (
+        preset.isGMGSDrum &&
+        (preset.program === GS_USER_DRUM_1 ||
+            preset.program === GS_USER_DRUM_2) &&
+        !this.synthCore.systemParameters.userDrumLock
+    ) {
+        SpessaLog.info(
+            `%cCommitting changes to User Drum Set ${preset.program - 63}!`,
+            ConsoleColors.info
+        );
+        // Purge cache for this preset to cache the new drum voice data
+        this.synthCore.purgeCachedPatch(preset);
+        // Copy drum param data
+        if (preset instanceof UserDrumSet) {
+            for (let i = 0; i < preset.keyParams.length; i++) {
+                // SC-55 uses 100 cents, SC-88 and above is 50
+                // Refer to source binding and do it here
+                const binding = preset.keyParams[i];
+                binding.pitchCoarse *= binding.sourceDrumSet === 1 ? 1 : 0.5;
+                DrumParameterUtils.copyInto(binding, this.drumParams[i]);
+            }
+        } else {
+            SpessaLog.warn(
+                `Current patch should be GS User Drum! Instead found ${preset.name}.`
+            );
+        }
+    }
+
     // Do not spread the preset as we don't want to copy it entirely.
     this.synthCore.callEvent("programChange", {
         channel: this.channel,

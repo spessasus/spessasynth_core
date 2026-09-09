@@ -1,4 +1,9 @@
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import type {
+    MIDIPatch,
+    MIDIPatchFull
+} from "../soundbank/basic_soundbank/midi_patch";
+import type { MIDISystem } from "../soundbank/types";
 
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.
@@ -194,3 +199,87 @@ export type SysExAcceptedArray =
     | Uint8Array
     | Int8Array
     | Uint8ClampedArray;
+
+/**
+ * A sound bank that has patches of type T instead of a fixed `BasicPreset`.
+ * (Used in SoundBankManager)
+ */
+export interface CallableSoundBank<T extends MIDIPatchFull> {
+    /**
+     * Get the appropriate preset.
+     */
+    getPreset(patch: MIDIPatch, system: MIDISystem): T | undefined;
+}
+/**
+ * Represents a single drum instrument's XG/GS parameters.
+ */
+export interface DrumParameter {
+    /**
+     * Pitch offset in semitones. Relative value.
+     * May be floating point! (GS half-semitone coarse tune resolution)
+     */
+    pitchCoarse: number;
+
+    /**
+     * Pitch offset in cents. Relative value.
+     */
+    pitchFine: number;
+
+    /**
+     * Level in 0 - 127 range.
+     */
+    level: number;
+
+    /**
+     * Exclusive class override.
+     */
+    assignGroup: number;
+
+    /**
+     * Pan, 1-64-127, 0 is random. This adds to the channel pan!
+     */
+    pan: number;
+
+    /**
+     * Reverb send level 0-127
+     */
+    reverbSend: number;
+
+    /**
+     * Chorus send level 0-127
+     */
+    chorusSend: number;
+
+    /**
+     * Variation/delay send level 0-127
+     */
+    variationSend: number;
+
+    /**
+     * If note on should be received.
+     */
+    rxNoteOn: boolean;
+
+    /**
+     * If note off should be received.
+     * Note:
+     * Due to the way sound banks implement drums (as 100s release time),
+     * this means killing the voice on note off, not releasing it.
+     */
+    rxNoteOff: boolean;
+}
+
+export interface UserDrumSetParameter extends DrumParameter {
+    /**
+     * The source drum set bank LSB number.
+     */
+    sourceDrumSet: number;
+    /**
+     * The MIDI program number of the source drum set.
+     */
+    program: number;
+    /**
+     * The MIDI key number from the source drum set to bind.
+     */
+    sourceNoteNumber: number;
+}

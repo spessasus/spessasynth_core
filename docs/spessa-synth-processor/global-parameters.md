@@ -120,6 +120,15 @@ These params are modified using MIDI system exclusive messages or NRPN, so
 the recommended use case would be setting
 the drum parameters then locking it to prevent changes by MIDI files.
 
+### userDrumLock
+
+`boolean`
+
+If the synthesizer should prevent editing of the User Drum Set (GS only) parameters.
+These params are modified using MIDI system exclusive messages or NRPN, so
+the recommended use case would be setting
+the User Drum Set parameters then locking it to prevent changes by MIDI files.
+
 ### blackMIDIMode
 
 `boolean`
@@ -181,6 +190,18 @@ The interpolation types defined are:
 - 0 - linear interpolation - fast, medium quality
 - 1 - nearest neighbor interpolation - fastest, but lowest quality (it may be desirable in some cases to make the sound "crispier")
 - 2 - Hermite interpolation - slow, high quality (default)
+
+### customVibrato
+
+`boolean`
+
+If the synthesizer should use the custom vibrato implementation.
+
+This effect is modified using NRPN, so
+the recommended use case would be setting
+the custom vibrato then locking it to prevent changes by MIDI files.
+
+Disabled by default to avoid altering songs that don't expect it.
 
 ### nrpnParamLock
 

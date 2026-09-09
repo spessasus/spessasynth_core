@@ -4,7 +4,6 @@ export * from "./audio_engine/effects/types";
 
 export { SpessaSynthProcessor } from "./processor";
 export { MIDIChannel } from "./audio_engine/channel/midi_channel";
-export { KeyModifier } from "./audio_engine/key_modifier_manager";
 export { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "./audio_engine/parameters/system";
 export { DEFAULT_GLOBAL_MIDI_PARAMETERS } from "./audio_engine/parameters/midi";
 export { DEFAULT_CHANNEL_SYSTEM_PARAMETERS } from "./audio_engine/channel/parameters/system";

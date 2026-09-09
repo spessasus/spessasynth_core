@@ -248,7 +248,7 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(soundBank, "main");
-await synth.processorInitialized;
+await synth.ready;
 // Enable verbose information during render
 SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count
@@ -310,6 +310,10 @@ npm run build
 ```
 
 The files will be placed in the `dist` folder.
+
+#### Test Suite
+
+This library has a comprehensive MIDI testing suite. For more information, please read the [tests `README`](tests/README.md).
 
 ## License
 

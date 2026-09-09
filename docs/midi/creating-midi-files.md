@@ -146,6 +146,33 @@ mid.pitchWheel(ticks, track, channel, pitch);
 - `channel` - `number` - the MIDI channel to use. Ranges from 0 to 15.
 - `pitch` - `number` - the new 14-bit pitch value. Ranges from 0 to 16,383. Value of 8192 centers the wheel (no change)
 
+### polyPressure
+
+Adds a new "Poly Pressure" message.
+
+```ts
+mid.polyPressure(ticks, track, channel, midiNote, pressure);
+```
+
+- `ticks` - `number` - the tick time of the event.
+- `track` - `number` - the track to use.
+- `channel` - `number` - the channel to use.
+- `midiNote` - `number` - the MIDI note number to apply the pressure to.
+- `pressure` - `number` - the pressure (0 - 127)
+
+### channelPressure
+
+Adds a new "Channel Pressure" message.
+
+```ts
+mid.channelPressure(ticks, track, channel, pressure);
+```
+
+- `ticks` - `number` - the tick time of the event.
+- `track` - `number` - the track to use.
+- `channel` - `number` - the channel to use.
+- `pressure` - `number` - the pressure (0 - 127)
+
 ### systemExclusive
 
 Adds a new "System Exclusive" message.

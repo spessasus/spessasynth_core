@@ -161,9 +161,9 @@ rr: Drum MIDI note number (0 - 127)
 
 | NRPN MSB | NRPN LSB | Name                 | Explanation                                                                                         | Default                          |
 | -------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
-| 0x01     | 0x08     | Vibrato Rate         | Alias to MIDI CC#76. (Vibrato Rate)                                                                 | 64                               |
-| 0x01     | 0x09     | Vibrato Depth        | Alias to MIDI CC#77. (Vibrato Depth)                                                                | 64                               |
-| 0x01     | 0x0A     | Vibrato Delay        | Alias to MIDI CC#78. (Vibrato Delay)                                                                | 64                               |
+| 0x01     | 0x08     | Vibrato Rate         | Alias to MIDI CC#76. (Vibrato Rate) Also see [custom vibrato.](#custom-vibrato)                     | 64                               |
+| 0x01     | 0x09     | Vibrato Depth        | Alias to MIDI CC#77. (Vibrato Depth) Also see [custom vibrato.](#custom-vibrato)                    | 64                               |
+| 0x01     | 0x0A     | Vibrato Delay        | Alias to MIDI CC#78. (Vibrato Delay) Also see [custom vibrato.](#custom-vibrato)                    | 64                               |
 | 0x01     | 0x20     | TVF Filter Cutoff    | Alias to MIDI CC#74. (Brightness)                                                                   | 64                               |
 | 0x01     | 0x21     | TVF Filter Resonance | Alias to MIDI CC#71. (Filter resonance)                                                             | 64                               |
 | 0x01     | 0x63     | EG Attack Time       | Alias to MIDI CC#73. (Attack Time)                                                                  | 64                               |
@@ -178,6 +178,35 @@ rr: Drum MIDI note number (0 - 127)
 | 0x1F     | rr       | Drum Variation       | Controls the variation level of the drum instrument.[^7] (multiplicative of channel)                | 0 (none)                         |
 
 [^7]: This controls the delay level in GS/GM mode. In XG, it has no effect.
+
+##### Custom Vibrato
+
+!!! Note
+
+    This only applies when the [`customVibrato` System Parameter](../spessa-synth-processor/global-parameters.md#customvibrato) is enabled.
+
+The NRPN vibrato messages have special behavior.
+On synth start and reset it is disabled.
+Any value other than 64 received for any of the states activates it with the default settings:
+
+- depth = 50 cents
+- rate = 8 Hz
+- delay = 0.6s
+
+After which any changes received through the NRPN (including the one that triggered it) are processed.
+
+Calculation for the specific NRPN parameters are as follows (value is the data entry MSB value from 0 to 127):
+
+- Rate: `Hz = (value / 64) * 8`
+- Depth: `cents = value / 2`
+- Delay: `seconds = (64 / value) / 3`
+
+This behavior has existed since the beginning of this program as a way to enhance Touhou Project MIDI files,
+the original target of SpessaSynth.
+
+**It is disabled for any channel that has CC#1 (Mod Wheel) set to anything other than 0.**
+This can be useful as setting CC#1 to something like 1 (which is usually imperceptible),
+will disable the extra vibrato for this channel when it is globally enabled.
 
 ##### SoundFont2 NRPN
 
@@ -410,6 +439,34 @@ These search for a matching drum channel with the correct `drumMap` Channel MIDI
 | Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                                           |
 | DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                                            |
 
+#### User Drum set
+
+The following messages allow to create a custom drum instrument, by setting which key from which drum set is bound to a specific key in the user drum set.
+Then the parameters above may also be applied to the key.
+Instruments are available on programs 64 and 65 in GS mode.
+
+| Name                   | Description                                                                                                                   | Parameter Name     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| USER DRUM MAP NAME     | Exactly the same behavior as DRUM MAP NAME.                                                                                   | N.A.               |
+| PLAY NOTE NUMBER       | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                       | `pitchCoarse`      |
+| LEVEL                  | The drum's loudness. These are normalized against 120 (`gain = data / 120`).                                                  | `level`            |
+| ASSIGN GROUP NUMBER    | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                     | `assignGroup`      |
+| PANPOT                 | Pan position of the instrument, except value `0` enables random panning for every note. (multiplicative of channel)           | `pan`              |
+| REVERB SEND LEVEL      | Reverb send level of the instrument. (multiplicative of channel)                                                              | `reverbSend`       |
+| CHORUS SEND LEVEL      | Chorus send level of the instrument. (multiplicative of channel)                                                              | `chorusSend`       |
+| Rx. NOTE OFF           | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off. | `rxNoteOff`        |
+| Rx. NOTE ON            | This allows to disable a specific drum instrument from receiving Note On events.                                              | `rxNoteOn`         |
+| DELAY SEND LEVEL       | Delay send level of the instrument. (multiplicative of channel)                                                               | `variationSend`    |
+| SOURCE DRUM SET# (MAP) | Bank LSB number of the source drum set for this key. (GS map)                                                                 | `sourceDrumSet`    |
+| (PG#: Program number)  | The program number of the source drum set for this key.                                                                       | `program`          |
+| SOURCE NOTE NUMBER     | The MIDI note number of the source drum set for this key.                                                                     | `sourceNoteNumber` |
+
+#### Bulk Dump
+
+Bulk dump messages allow to set many parameters in one message.
+
+SpessaSynth currently recognizes the bulk dump messages for User Drum Set only.
+
 ### Yamaha XG
 
 SpessaSynth has decent support for the XG standard, but it does not include any effects.
@@ -464,12 +521,34 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | VIBRATO DELAY                  | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                                         |
 | FILTER CUTOFF                  | Aliased to MIDI CC#74 (Brightness).                                                                                                                                            |
 | FILTER RESONANCE               | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                                                      |
-| ATTACK TIME                    | Aliased to MIDI CC#73 (Attack Time).                                                                                                                                           |
-| DECAY TIME                     | Aliased to MIDI CC#75 (Decay Time).                                                                                                                                            |
-| RELEASE TIME                   | Aliased to MIDI CC#72 (Release Time).                                                                                                                                          |
-| BEND PITCH CONTROL             | Sets the Channel MIDI Parameter [`pitchWheelRange`](../spessa-synth-processor/midi-channel/channel-parameters.md#pitchwheelrange).                                             |
+| EG ATTACK TIME                 | Aliased to MIDI CC#73 (Attack Time).                                                                                                                                           |
+| EG DECAY TIME                  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                                            |
+| EG RELEASE TIME                | Aliased to MIDI CC#72 (Release Time).                                                                                                                                          |
+| AC1 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter [`cc1`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc1).                                                                     |
+| AC2 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter [`cc2`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc2).                                                                     |
+| PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                                                   |
+| PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                                                        |
 
 [^3]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode.
+
+#### Patch Part Controller Depths
+
+All of them are supported! At least, in theory (excluding HPF which is marked as `(NOT USED)`)
+These define how a controller affects the sound.
+Examples:
+
+- MW PITCH CONTROL
+- MW FILTER CONTROL
+- PAT AMPLITUDE CONTROL
+- AC2 LFO AMOD DEPTH
+
+See pages 42 and 43 of the XG specification.
+This is implemented using a dynamic modulator system and additional generators to cover the linear amplitude range.
+
+There are two special cases that are directly aliased to Channel MIDI Parameters:
+
+- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter [`modulationDepth`](../spessa-synth-processor/midi-channel/channel-parameters.md#modulationdepth).
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter [`pitchWheelRange`](../spessa-synth-processor/midi-channel/channel-parameters.md#pitchwheelrange).
 
 #### Drum Setup
 

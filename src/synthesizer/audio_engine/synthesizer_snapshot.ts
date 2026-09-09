@@ -1,5 +1,4 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
-import { type KeyModifier } from "./key_modifier_manager";
 import type {
     ChorusProcessorSnapshot,
     DelayProcessorSnapshot,
@@ -11,13 +10,11 @@ import type { SynthesizerCore } from "./synthesizer_core";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
+import { DrumParameterUtils } from "../../midi/drum_parameters";
+import type { UserDrumSetParameter } from "../../midi/types";
+
 export interface SynthesizerSnapshot {
     midiChannels: ChannelSnapshot[];
-
-    /**
-     * Key modifiers.
-     */
-    keyMappings: (KeyModifier | undefined)[][];
 
     midiParameters: GlobalMIDIParameter;
     lockedMIDIParameters: Record<keyof GlobalMIDIParameter, boolean>;
@@ -27,15 +24,14 @@ export interface SynthesizerSnapshot {
     chorusProcessor: ChorusProcessorSnapshot;
     delayProcessor: DelayProcessorSnapshot;
     insertionProcessor: InsertionProcessorSnapshot;
+
+    userDrumSets: UserDrumSetParameter[][];
 }
 
 export function applySnapshot(
     this: SynthesizerCore,
     snapshot: SynthesizerSnapshot
 ) {
-    // Restore key modifiers
-    this.keyModifierManager.setMappings(snapshot.keyMappings);
-
     // Add channels if more needed
     while (this.midiChannels.length < snapshot.midiChannels.length)
         this.createMIDIChannel(true);
@@ -66,6 +62,17 @@ export function applySnapshot(
             this.systemExclusive(
                 MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]])
             );
+    }
+
+    // Restore user drum sets
+    for (let drumSet = 0; drumSet < snapshot.userDrumSets.length; drumSet++) {
+        const userDrumSet = snapshot.userDrumSets[drumSet];
+        for (let midiNote = 0; midiNote < userDrumSet.length; midiNote++) {
+            DrumParameterUtils.copyIntoUser(
+                userDrumSet[midiNote],
+                this.soundBankManager.userDrumSets[drumSet].keyParams[midiNote]
+            );
+        }
     }
 
     // Restore MIDI parameters
@@ -118,10 +125,12 @@ export function getSynthesizerSnapshot(
         lockedMIDIParameters: { ...this.lockedMIDIParameters },
         systemParameters: { ...this.systemParameters },
         midiChannels: this.midiChannels.map((c) => c.getSnapshot()),
-        keyMappings: this.keyModifierManager.getMappings(),
         reverbProcessor: this.reverbProcessor.getSnapshot(),
         chorusProcessor: this.chorusProcessor.getSnapshot(),
         delayProcessor: this.delayProcessor.getSnapshot(),
-        insertionProcessor: this.getInsertionSnapshot()
+        insertionProcessor: this.getInsertionSnapshot(),
+        userDrumSets: this.soundBankManager.userDrumSets.map((d) =>
+            d.getSnapshot()
+        )
     };
 }
