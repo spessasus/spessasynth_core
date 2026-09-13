@@ -13,18 +13,55 @@ import type { GlobalSystemParameter } from "./parameters/system";
 import { DrumParameterUtils } from "../../midi/drum_parameters";
 import type { UserDrumSetParameter } from "../../midi/types";
 
+/**
+ * This interface is a snapshot of a {@link SpessaSynthProcessor},
+ * capturing its current state, which can be saved and restored.
+ *
+ * This can be useful for creating a different processor
+ * (for example, for rendering to an audio file)
+ * and copying the current processor's state.
+ *
+ * @group Synthesizer.Snapshots
+ */
 export interface SynthesizerSnapshot {
+    /**
+     * The snapshots of all MIDI channels of the synth.
+     */
     midiChannels: ChannelSnapshot[];
 
+    /**
+     * All Global MIDI Parameters of the synthesizer.
+     */
     midiParameters: GlobalMIDIParameter;
+    /**
+     * Locks of all Global MIDI Parameters of the synthesizer.
+     */
     lockedMIDIParameters: Record<keyof GlobalMIDIParameter, boolean>;
+    /**
+     * All Global System Parameters of the synthesizer.
+     */
     systemParameters: GlobalSystemParameter;
 
+    /**
+     * A snapshot of the reverb processor.
+     */
     reverbProcessor: ReverbProcessorSnapshot;
+    /**
+     * A snapshot of the chorus processor.
+     */
     chorusProcessor: ChorusProcessorSnapshot;
+    /**
+     * A snapshot of the delay processor.
+     */
     delayProcessor: DelayProcessorSnapshot;
+    /**
+     * A snapshot of the insertion effect processor.
+     */
     insertionProcessor: InsertionProcessorSnapshot;
 
+    /**
+     * A snapshot of the User Drum Set parameters.
+     */
     userDrumSets: UserDrumSetParameter[][];
 }
 

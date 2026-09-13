@@ -16,12 +16,10 @@ import {
     type InsertionProcessorSnapshot
 } from "../exports";
 import type {
-    CachedVoiceList,
+    SynthesizerEvent,
     SynthesizerPatch,
     SynthMethodOptions,
-    SynthProcessorEventData,
-    SynthProcessorOptions,
-    UserDrumSetChangeCallback
+    SynthProcessorOptions
 } from "../types";
 import { MIDIChannel } from "./channel/midi_channel";
 import {
@@ -58,6 +56,7 @@ import {
     lockMIDIParameterInternal,
     setMIDIParameterInternal
 } from "./parameters/midi";
+import type { UserDrumSetChangeEvent } from "../events";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -68,6 +67,11 @@ const GAIN_SMOOTHING_FACTOR = 0.01;
  * Pan smoothing for rapid pan changes
  */
 const PAN_SMOOTHING_FACTOR = 0.05;
+/**
+ * A list of voices for a given key:velocity.
+ */
+type CachedVoiceList = CachedVoice[];
+
 /**
  * The core synthesis engine which interacts with channels and holds all the synth parameters.
  */
@@ -178,9 +182,9 @@ export class SynthesizerCore {
      * @param eventType The event type.
      * @param eventData The event data.
      */
-    public eventCallbackHandler: <K extends keyof SynthProcessorEventData>(
+    public eventCallbackHandler: <K extends keyof SynthesizerEvent>(
         eventType: K,
-        eventData: SynthProcessorEventData[K]
+        eventData: SynthesizerEvent[K]
     ) => unknown;
     public readonly missingPresetHandler: (
         patch: MIDIPatch,
@@ -282,9 +286,9 @@ export class SynthesizerCore {
     private readonly sampleTime: number;
 
     public constructor(
-        eventCallbackHandler: <K extends keyof SynthProcessorEventData>(
+        eventCallbackHandler: <K extends keyof SynthesizerEvent>(
             eventType: K,
-            eventData: SynthProcessorEventData[K]
+            eventData: SynthesizerEvent[K]
         ) => unknown,
         missingPresetHandler: (
             patch: MIDIPatch,
@@ -878,9 +882,9 @@ export class SynthesizerCore {
     /**
      * Copied callback so MIDI channels can call it.
      */
-    public callEvent<K extends keyof SynthProcessorEventData>(
+    public callEvent<K extends keyof SynthesizerEvent>(
         eventName: K,
-        eventData: SynthProcessorEventData[K]
+        eventData: SynthesizerEvent[K]
     ) {
         this.eventCallbackHandler(eventName, eventData);
     }
@@ -937,7 +941,7 @@ export class SynthesizerCore {
             drumSet,
             parameter,
             value
-        } as UserDrumSetChangeCallback);
+        } as UserDrumSetChangeEvent);
         SpessaLog.gsInfo(
             `User Drum Set ${drumSet} ${parameter}, key ${midiNote}`,
             value.toString()

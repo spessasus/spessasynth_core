@@ -23,6 +23,11 @@ import type { RMIDInfoFourCC } from "../midi/types";
 
 export type GenericRIFFFourCC = "RIFF" | "RIFS" | "LIST" | "INFO";
 export type WAVFourCC = "wave" | "cue " | "fmt ";
+/**
+ * All RIFF Four Character Codes recognized by the library.
+ *
+ * @group Utilities
+ */
 export type FourCC =
     | GenericRIFFFourCC
     | SoundBankInfoFourCC

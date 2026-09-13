@@ -5,9 +5,9 @@ import { MIDIMessage } from "../midi_message";
 import { ConsoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import {
-    DEFAULT_PERCUSSION,
     GS_USER_DRUM_1,
-    GS_USER_DRUM_2
+    GS_USER_DRUM_2,
+    MIDI_DRUM_CHANNEL
 } from "../../synthesizer/audio_engine/synth_constants";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { MIDIControllers, MIDIMessageTypes } from "../enums";
@@ -69,7 +69,7 @@ function correctBankOffsetInternal(
     for (let i = 0; i < channelsAmount; i++) {
         channels.push({
             program: 0,
-            isDrum: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
+            isDrum: i % 16 === MIDI_DRUM_CHANNEL, // Drums appear on 9 every 16 channels,
             lastBank: undefined,
             lastBankLSB: undefined,
             hasBankSelect: false,

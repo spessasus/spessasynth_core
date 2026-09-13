@@ -6,7 +6,6 @@ import { LowpassFilter } from "./lowpass_filter";
 import { VolumeEnvelope } from "./volume_envelope";
 import { ModulationEnvelope } from "./modulation_envelope";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
-import type { SampleLoopingMode } from "../../types";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "../synth_constants";
 import {
     HermiteOscillator,
@@ -19,6 +18,16 @@ import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../parameters/system";
 import type { VoiceModulator } from "./voice_modulator";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
+
+/**
+ * Looping mode of the sample.
+ * 0 - no loop.
+ * 1 - loop.
+ * 2 - UNOFFICIAL: polyphone 2.4 added start on release.
+ * 3 - loop then play when released.
+
+ */
+export type SampleLoopingMode = 0 | 1 | 2 | 3;
 
 /**
  * Voice represents a single instance of the

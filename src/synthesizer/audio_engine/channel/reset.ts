@@ -1,8 +1,8 @@
 import {
     CONTROLLER_TABLE_SIZE,
     DEFAULT_NRPN,
-    DEFAULT_PERCUSSION,
-    DEFAULT_RPN
+    DEFAULT_RPN,
+    MIDI_DRUM_CHANNEL
 } from "../synth_constants";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
@@ -12,6 +12,8 @@ import type { MIDIChannel } from "./midi_channel";
 /**
  * An array with the default MIDI controller values.
  * Note that these are 14-bit, requiring a 7-bit shift to the right for 7-bit values!
+ *
+ * @group Synthesizer.Constants
  */
 export const DEFAULT_MIDI_CONTROLLERS: Readonly<Int16Array> = new Int16Array(
     CONTROLLER_TABLE_SIZE
@@ -102,7 +104,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.setMIDIParameter("cc2", 0x11);
     this.setMIDIParameter(
         "drumMap",
-        this.channel % 16 === DEFAULT_PERCUSSION ? 1 : 0
+        this.channel % 16 === MIDI_DRUM_CHANNEL ? 1 : 0
     );
     this.setMIDIParameter("velocitySenseOffset", 64);
     this.setMIDIParameter("velocitySenseDepth", 64);
@@ -145,7 +147,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.setBankLSB(0);
     this.setGSDrums(false);
 
-    this.setDrums(this.channel % 16 === DEFAULT_PERCUSSION);
+    this.setDrums(this.channel % 16 === MIDI_DRUM_CHANNEL);
     this.programChange(0);
 }
 

@@ -1,9 +1,7 @@
 // @ts-expect-error minified lib that I can't move
-import { inflateSync } from "./fflate.min";
-
-type inflateFunc = (input: Uint8Array) => Uint8Array<ArrayBuffer>;
+import { inflateSync as inf } from "./fflate.min";
 
 // @ts-expect-error minified lib that I can't move
-const inf: inflateFunc = inflateSync as inflateFunc;
+const inflateSync = inf as (input: Uint8Array) => Uint8Array<ArrayBuffer>;
 
-export { inf as inflateSync };
+export { inflateSync };

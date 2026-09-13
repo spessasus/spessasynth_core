@@ -32,6 +32,13 @@ class SoundBankManagerPreset extends BasicPreset implements SynthesizerPatch {
     }
 }
 
+/**
+ * Manages the sound banks of the parent {@link SpessaSynthProcessor}.
+ *
+ * It can be accessed through {@link SpessaSynthProcessor.soundBankManager}.
+ *
+ * @group Synthesizer.Sound Bank Integration
+ */
 export class SoundBankManager {
     /**
      * All the sound banks, ordered from the most important to the least.
@@ -41,6 +48,7 @@ export class SoundBankManager {
      * The two GS user drum sets, available on programs 65 and 66.
      * These override any sound bank presets at those program numbers.
      * Note that these are not selectable in XG mode (implied by the bank selection system)
+     * @internal
      */
     public readonly userDrumSets: readonly [UserDrumSet, UserDrumSet];
     private readonly presetListChangeCallback: () => unknown;
@@ -48,6 +56,7 @@ export class SoundBankManager {
     private selectablePresetList: SynthesizerPatch[] = [];
 
     /**
+     * @internal
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
      * this is called whenever the preset list changes.
      */
@@ -67,7 +76,13 @@ export class SoundBankManager {
     private _presetList: MIDIPatchFull[] = [];
 
     /**
-     * The list of all presets in the sound bank stack.
+     * The list of all presets in the sound bank stack with bank offsets applied.
+     *
+     * > **Warning**
+     * >
+     * > `isDrum` is the correct way of distinguishing between drum and melodic presets.
+     * >
+     * > _Do not_ use `isGMGSDrum` as the indication!
      */
     public get presetList() {
         return [...this._presetList];
@@ -75,6 +90,8 @@ export class SoundBankManager {
 
     /**
      * The current sound bank priority order.
+     *
+     * Presets in the first bank override the second bank if they have the same MIDI patch and so on.
      * @returns The IDs of the sound banks in the current order.
      */
     public get priorityOrder() {
@@ -83,6 +100,8 @@ export class SoundBankManager {
 
     /**
      * The current sound bank priority order.
+     *
+     * Presets in the first bank override the second bank if they have the same MIDI patch and so on.
      * @param newList The new order of sound bank IDs.
      */
     public set priorityOrder(newList: string[]) {
@@ -100,8 +119,8 @@ export class SoundBankManager {
     public systemGetter: () => MIDISystem = () => "gs";
 
     /**
-     * Deletes a given sound bank by its ID.
-     * @param id the ID of the sound bank to delete.
+     * This method removes a sound bank with a given ID from the sound bank list.
+     * @param id The ID of the sound bank to delete.
      */
     public deleteSoundBank(id: string) {
         if (this.soundBankList.length === 0) {
@@ -119,21 +138,22 @@ export class SoundBankManager {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Adds a new sound bank with a given ID, or replaces an existing one.
-     * @param font the sound bank to add.
-     * @param id the ID of the sound bank.
-     * @param bankOffset the bank offset of the sound bank.
+     * @param bank The sound bank to add.
+     * @param id The unique ID to assign to the sound bank.
+     * If a sound bank with this ID already exists, it will be replaced.
+     * @param bankOffset The bank offset of the sound bank. Offsets the bank MSB value of all presets in this sound bank.
      */
-    public addSoundBank(font: BasicSoundBank, id: string, bankOffset = 0) {
+    public addSoundBank(bank: BasicSoundBank, id: string, bankOffset = 0) {
         const foundBank = this.soundBankList.find((s) => s.id === id);
         if (foundBank === undefined) {
             this.soundBankList.push({
                 id: id,
-                soundBank: font,
+                soundBank: bank,
                 bankOffset: bankOffset
             });
         } else {
             // Replace
-            foundBank.soundBank = font;
+            foundBank.soundBank = bank;
             foundBank.bankOffset = bankOffset;
         }
         this.generatePresetList();
@@ -164,7 +184,11 @@ export class SoundBankManager {
         );
     }
 
-    // Clears the sound bank list and destroys all sound banks.
+    /**
+     * Clears the sound bank list and destroys all sound banks.
+     *
+     * @internal
+     */
     public destroy() {
         for (const s of this.soundBankList) {
             s.soundBank.destroySoundBank();

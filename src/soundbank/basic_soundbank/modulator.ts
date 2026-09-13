@@ -47,19 +47,31 @@ export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
     MIDIControllers.filterResonance
 ); // Linear forwards bipolar cc 74
 
+/**
+ * This class represents a single modulator (map from a source to a given synthesis parameter).
+ *
+ * > **Tip**
+ * >
+ * > Consider reading {@link "Modulator Information"}.
+ *
+ * @group Sound Banks.Modulators
+ */
 export class Modulator {
     /**
-     * The generator destination of this modulator.
+     * The destination generator for this modulator.
+     * This is the target parameter that will be changed.
      */
     public destination: GeneratorType = GeneratorTypes.initialAttenuation;
 
     /**
      * The transform amount for this modulator.
+     * This is the multiplier of the transformation.
      */
     public transformAmount = 0;
 
     /**
      * The transform type for this modulator.
+     * Usually no operation is performed.
      */
     public transformType: ModulatorTransformType = 0;
 
@@ -74,7 +86,12 @@ export class Modulator {
     public readonly secondarySource: ModulatorSource;
 
     /**
-     * Creates a new SF2 Modulator
+     * Creates a new modulator.
+     * @param primarySource An optional primary source.
+     * @param secondarySource An optional secondary source.
+     * @param destination An optional destination can be set here.
+     * @param amount An optional amount.
+     * @param transformType An optional transform type.
      */
     public constructor(
         primarySource = new ModulatorSource(),
@@ -101,10 +118,10 @@ export class Modulator {
 
     /**
      * Checks if the pair of modulators is identical (in SF2 terms)
-     * @param mod1 modulator 1
-     * @param mod2 modulator 2
-     * @param checkAmount if the amount should be checked too.
-     * @returns if they are identical
+     * @param mod1 Modulator 1 to compare.
+     * @param mod2 Modulator 2 to compare.
+     * @param checkAmount If the amount should be checked too. SF2 specification compares everything except amount.
+     * @returns True if the two modulators are identical.
      */
     public static isIdentical(
         mod1: Modulator,
@@ -145,6 +162,11 @@ export class Modulator {
         );
     }
 
+    /**
+     * @internal
+     * @param modData
+     * @param indexes
+     */
     public write(modData: IndexedByteArray, indexes?: SoundFontWriteIndexes) {
         writeWord(modData, this.primarySource.toSourceEnum());
         writeWord(modData, this.destination);
@@ -161,6 +183,7 @@ export class Modulator {
      * Sums transform and create a NEW modulator
      * @param modulator the modulator to sum with
      * @returns the new modulator
+     * @internal
      */
     public sumTransform(modulator: Modulator): Modulator {
         const m = Modulator.copyFrom(this);

@@ -1,9 +1,9 @@
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import {
-    DEFAULT_PERCUSSION,
     GS_USER_DRUM_1,
-    GS_USER_DRUM_2
+    GS_USER_DRUM_2,
+    MIDI_DRUM_CHANNEL
 } from "../../synthesizer/audio_engine/synth_constants";
 import { MIDIUtils } from "./midi_utils";
 import type { BasicMIDI } from "../basic_midi";
@@ -78,7 +78,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
         masterKeyShift = 0;
         for (let i = 0; i < channelsAmount; i++) {
             const ch = channels[i];
-            ch.isDrum = i % 16 === DEFAULT_PERCUSSION;
+            ch.isDrum = i % 16 === MIDI_DRUM_CHANNEL;
             ch.bankMSB = BankSelectHacks.getDefaultBank(sys);
             ch.bankLSB = 0;
             ch.keyShift = 0;
@@ -92,7 +92,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
     };
 
     for (let i = 0; i < channelsAmount; i++) {
-        const isDrum = i % 16 === DEFAULT_PERCUSSION;
+        const isDrum = i % 16 === MIDI_DRUM_CHANNEL;
         channels.push({
             preset: soundBank.getPreset(
                 {

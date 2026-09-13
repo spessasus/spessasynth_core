@@ -13,13 +13,13 @@ import { BasicPreset } from "./basic_preset";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 
 import type {
-    DLSWriteOptions,
     MIDISystem,
     PresetsWithKeyCombinations,
     SetSampleFormatOptions,
     SF2VersionTag,
     SFEWriteOptions,
     SoundBankInfoData,
+    SoundBankWriteOptions,
     SoundFont2WriteOptions
 } from "../types";
 import { GeneratorTypes } from "./generator_types";
@@ -36,11 +36,29 @@ import { Generator } from "./generator";
 import { StbVorbis } from "stb-vorbis";
 
 /**
- * Represents a single sound bank, be it DLS or SF2.
+ * This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
+ * It represents a single sound bank.
+ *
+ * It also contains support for `.dls` files and experimental read and write support for [64-bit SFE](https://github.com/SFe-Team-was-taken/SFE).
+ *
+
+ * **Specifications:**
+ *
+ * - [SoundFont2 Specification](http://www.synthfont.com/sfspec24.pdf)
+ * - [SoundFont3 Description](https://www.fluidsynth.org/wiki/SoundFont3Format)
+ * - [DLS Level 2 Specification](https://midi.org/dls)
+ *
+ * > **Important**
+ * >
+ * > Please use {@link SoundBankLoader.fromArrayBuffer} to load a sound bank file.
+ *
+ * @group Sound Banks
  */
 export class BasicSoundBank {
     /**
-     * Indicates if the SF3/SF2Pack decoder is ready.
+     * A Promise object indicating if the SF3/SF2Pack decoder is ready.
+     * Make sure to await it if you are loading SF3/SF2Pack files.
+     * It only needs to be awaited once, globally. Then all banks can be loaded synchronously.
      */
     public static ready: Promise<void> = StbVorbis.ready;
 
@@ -48,13 +66,15 @@ export class BasicSoundBank {
      * The type of the sound bank that was loaded.
      * Either `sf2` for SoundFont2/SoundFont3 or `dls` for DownLoadable Sounds or `sfe` for SF-Enhanced.
      *
-     * Please note that SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
-     * The type is still `sf2`.
+     * > **Note**
+     * >
+     * > SF3 or SFOGG files are parsed as `sf2` files, but with compressed samples.
+     * > The type is still `sf2`.
      */
     public readonly type: "sf2" | "dls" | "sfe";
 
     /**
-     * Sound bank's info.
+     * The metadata of this sound bank.
      */
     public soundBankInfo: SoundBankInfoData = {
         name: "Unnamed",
@@ -68,22 +88,26 @@ export class BasicSoundBank {
     };
 
     /**
-     * The sound bank's presets.
+     * An array of all presets in the bank, ordered by bank and preset number.
      */
     public presets: BasicPreset[] = [];
 
     /**
-     * The sound bank's samples.
+     * An array of all instruments in the bank.
      */
     public samples: BasicSample[] = [];
 
     /**
-     * The sound bank's instruments.
+     * An array of all samples in the bank.
      */
     public instruments: BasicInstrument[] = [];
 
     /**
      * Sound bank's default modulators.
+     *
+     * > **Tip**
+     * >
+     * > Consider reading {@link "Modulator Information"}
      */
     public defaultModulators: Modulator[] = SPESSASYNTH_DEFAULT_MODULATORS.map(
         Modulator.copyFrom.bind(Modulator)
@@ -91,9 +115,17 @@ export class BasicSoundBank {
 
     /**
      * If the sound bank has custom default modulators (DMOD).
+     *
+     * > **Tip**
+     * >
+     * > Consider reading the [default modulators proposal](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md).
      */
     public customDefaultModulators = false;
 
+    /**
+     * Creates an empty sound bank instance.
+     * @param type The value to initialize the {@link BasicSoundBank.type} property with.
+     */
     public constructor(type: "sf2" | "sfe" | "dls" = "sf2") {
         this.type = type;
     }
@@ -108,8 +140,14 @@ export class BasicSoundBank {
     }
 
     /**
-     * Merges sound banks with the given order. Keep in mind that the info read is copied from the first one
-     * @param soundBanks the sound banks to merge, the first overwrites the last
+     * Merges sound banks with the given order.
+     *
+     * > **Note**
+     * >
+     * > The `soundBankInfo` is taken from the first sound bank.
+     *
+     * @param soundBanks The sound banks to merge. The first is used as a base, and the rest are
+     * added on top.
      */
     public static mergeSoundBanks(
         ...soundBanks: BasicSoundBank[]
@@ -141,7 +179,8 @@ export class BasicSoundBank {
     }
 
     /**
-     * Creates a simple sound bank with one saw wave preset.
+     * Creates a simple sound bank with a single saw wave preset.
+     * Useful for testing synthesizer's functionality without providing a file.
      */
     public static getSampleSoundBankFile() {
         const font = new BasicSoundBank();
@@ -183,7 +222,7 @@ export class BasicSoundBank {
     }
 
     /**
-     * Copies a given sound bank.
+     * Copies a given sound bank, deeply cloning all presets instruments and samples.
      * @param bank The sound bank to copy.
      */
     public static copyFrom(bank: BasicSoundBank) {
@@ -194,7 +233,7 @@ export class BasicSoundBank {
     }
 
     /**
-     * Adds complete presets along with their instruments and samples.
+     * Adds complete presets along with their associated instruments and samples into this sound bank.
      * @param presets The presets to add.
      */
     public addCompletePresets(presets: BasicPreset[]) {
@@ -227,7 +266,14 @@ export class BasicSoundBank {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Sets the sound bank's sample format _in place_.
-     * @param options options for writing the file.
+     *
+     * > **Warning**
+     * >
+     * > Note that decompressing (sample format `pcm`) usually results
+     * > in permanent sample quality loss!
+     * > This method is memory and CPU intensive with large sound banks.
+     *
+     * @param options Options associated with setting the sample format.
      */
     public async setSampleFormat(options: SetSampleFormatOptions) {
         let writtenCount = 0;
@@ -286,12 +332,23 @@ export class BasicSoundBank {
     }
 
     /**
-     * Write the sound bank as a .dls file. This may not be 100% accurate.
-     * Note that samples are always written in the s16le PCM encoding.
-     * @param options options for writing the file.
-     * @returns the binary file.
+     * Writes out a DLS Level 2 sound bank. This may not be 100% accurate.
+     * Samples data is always written in the S16LE PCM encoding.
+     *
+     * > **Note**
+     * >
+     * > Consider reading {@link "The DLS Conversion problem"}
+     *
+     * > **Warning**
+     * >
+     * > This method is memory and CPU intensive with large sound banks.
+     *
+     * @param options Options for writing the file.
+     * @returns The binary representation of the file.
      */
-    public writeDLS(options: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
+    public writeDLS(
+        options: Partial<SoundBankWriteOptions> = DEFAULT_DLS_OPTIONS
+    ) {
         const pFunc = options.progressFunction;
         // First half (progress 0-0.5)
         const dls = DownloadableSounds.fromSF(
@@ -308,9 +365,15 @@ export class BasicSoundBank {
     }
 
     /**
-     * Writes the sound bank as an SF2 file.
-     * @param writeOptions the options for writing.
-     * @returns the binary file data.
+     * Writes the sound bank as an SF2 or SF3 file.
+     *
+     * > **Warning**
+     * >
+     * > This method is memory and CPU intensive with large sound banks,
+     * > especially if compression is enabled.
+     *
+     * @param writeOptions Options for writing the file.
+     * @returns The binary representation of the file.
      */
     public writeSF2(
         writeOptions: Partial<SoundFont2WriteOptions> = DEFAULT_SF2_WRITE_OPTIONS
@@ -322,8 +385,8 @@ export class BasicSoundBank {
      * Writes the sound bank as an [SFE 4](https://sfe-team-was-taken.github.io/SFE/) file.
      * This enables features such as bank LSB and RIFF64.
      * Note that spessasynth is currently the only software that can read these files.
-     * @param writeOptions the options for writing.
-     * @returns the binary file data.
+     * @param writeOptions Options for writing the file.
+     * @returns The binary representation of the file.
      */
     public writeSFE(
         writeOptions: Partial<SFEWriteOptions> = DEFAULT_SFE_WRITE_OPTIONS
@@ -331,22 +394,40 @@ export class BasicSoundBank {
         return writeSFEInternal(this, writeOptions);
     }
 
+    /**
+     * Adds {@link BasicPreset}s to this sound bank.
+     * @param presets The presets to add.
+     */
     public addPresets(...presets: BasicPreset[]) {
         this.presets.push(...presets);
     }
 
+    /**
+     * Adds {@link BasicInstrument}s to this sound bank.
+     * @param instruments The instruments to add.
+     */
     public addInstruments(...instruments: BasicInstrument[]) {
         this.instruments.push(...instruments);
     }
 
+    /**
+     * Adds {@link BasicSample}s to this sound bank.
+     * @param samples The samples to add.
+     */
     public addSamples(...samples: BasicSample[]) {
         this.samples.push(...samples);
     }
 
     /**
      * Clones a sample into this bank.
+     *
+     * > **Important**
+     * >
+     * > If a sample with the same name already exists in the sound bank,
+     * > it is returned instead and the new sample is not copied.
+     *
      * @param sample The sample to copy.
-     * @returns the copied sample, if a sample exists with that name, it is returned instead
+     * @returns The copied sample.
      */
     public cloneSample(sample: BasicSample): BasicSample {
         const duplicate = this.samples.find((s) => s.name === sample.name);
@@ -380,7 +461,14 @@ export class BasicSoundBank {
 
     /**
      * Recursively clones an instrument into this sound bank, as well as its samples.
-     * @returns the copied instrument, if an instrument exists with that name, it is returned instead.
+     *
+     * > **Important**
+     * >
+     * > If an instrument with the same name already exists in the sound bank,
+     * > it is returned instead and the new instrument is not copied.
+     *
+     * @param instrument The instrument to copy.
+     * @returns The copied instrument.
      */
     public cloneInstrument(instrument: BasicInstrument): BasicInstrument {
         const duplicate = this.instruments.find(
@@ -405,7 +493,14 @@ export class BasicSoundBank {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Recursively clones a preset into this sound bank, as well as its instruments and samples.
-     * @returns the copied preset, if a preset exists with that name, it is returned instead.
+     *
+     * > **Important**
+     * >
+     * > If a preset with the same name already exists in the sound bank,
+     * > it is returned instead and the new preset is not copied.
+     *
+     * @param preset The preset to copy.
+     * @returns The copied preset.
      */
     public clonePreset(preset: BasicPreset): BasicPreset {
         const duplicate = this.presets.find((p) => p.name === preset.name);
@@ -434,7 +529,7 @@ export class BasicSoundBank {
     }
 
     /**
-     * Updates internal values.
+     * Updates internal values. Call after updating the preset list.
      */
     public flush() {
         this.presets.sort(MIDIPatchTools.compare.bind(MIDIPatchTools));
@@ -443,6 +538,16 @@ export class BasicSoundBank {
 
     /**
      * Trims the sound bank _in-place_ to only contain samples in a given MIDI file.
+     *
+
+     * Absent presets will be removed from the sound bank,
+     * and samples that don't get activated in the remaining presets will be removed as well.
+     *
+     * > **Note**
+     * >
+     * > This exact type is returned from {@link BasicMIDI.getUsedProgramsAndKeys}
+     * > Consider reading the page for more explanation about the parameter.
+     *
      * @param presetData - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
      * Absent presets will be removed from the sound bank,
      * and samples that don't get activated in the remaining presets will be removed as well.
@@ -600,6 +705,9 @@ export class BasicSoundBank {
         SpessaLog.groupEnd();
     }
 
+    /**
+     * Removes all {@link BasicSample}s and {@link BasicInstrument}s not used by any {@link BasicPreset}.
+     */
     public removeUnusedElements() {
         this.instruments = this.instruments.filter((i) => {
             i.deleteUnusedZones();
@@ -618,28 +726,47 @@ export class BasicSoundBank {
         });
     }
 
+    /**
+     * Deletes a given instrument from the sound bank.
+     * @param instrument The instrument to delete.
+     */
     public deleteInstrument(instrument: BasicInstrument) {
         instrument.delete();
         this.instruments.splice(this.instruments.indexOf(instrument), 1);
     }
 
+    /**
+     * Deletes a given preset from the sound bank.
+     * @param preset The preset to delete.
+     */
     public deletePreset(preset: BasicPreset) {
         preset.delete();
         this.presets.splice(this.presets.indexOf(preset), 1);
     }
 
+    /**
+     * Deletes a given sample from the sound bank.
+     * @param sample The sample to delete.
+     */
     public deleteSample(sample: BasicSample) {
         sample.unlinkSample();
         this.samples.splice(this.samples.indexOf(sample), 1);
     }
 
     /**
-     * Get the appropriate preset.
+     * Returns the matching {@link BasicPreset} instance.
+     * This uses the {@link MIDIPatchTools.selectPatch} algorithm for selecting the optimal preset.
+     * @param patch The patch to select.
+     * @param system The MIDI system to select for. If you're unsure, pick `gs`.
+     * @returns The selected preset.
      */
     public getPreset(patch: MIDIPatch, system: MIDISystem): BasicPreset {
         return MIDIPatchTools.selectPatch(this.presets, patch, system);
     }
 
+    /**
+     * Deletes everything irreversibly.
+     */
     public destroySoundBank() {
         this.presets.length = 0;
         this.instruments.length = 0;

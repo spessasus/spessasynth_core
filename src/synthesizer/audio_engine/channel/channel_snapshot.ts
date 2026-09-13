@@ -10,6 +10,14 @@ import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
 import type { DrumParameter } from "../../../midi/types";
 import type { CustomChannelVibrato } from "./types";
 
+/**
+ * This interface is a snapshot of a {@link MIDIChannel},
+ * capturing its current state, which can be saved and restored.
+ *
+ * See also {@link SynthesizerSnapshot}.
+ *
+ * @group Synthesizer.Snapshots
+ */
 export interface ChannelSnapshot {
     patch?: MIDIPatchFull;
     lockedSystem: MIDISystem;

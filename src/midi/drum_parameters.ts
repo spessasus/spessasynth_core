@@ -1,7 +1,15 @@
 import type { DrumParameter, UserDrumSetParameter } from "./types";
 import { DEFAULT_DRUM_REVERB } from "../synthesizer/exports";
 
+/**
+ * This class contains various utilities for manipulating {@link DrumParameter}s.
+ *
+ * @group Synthesizer.Drum Sets
+ */
 export class DrumParameterUtils {
+    /**
+     * Default drum parameter data.
+     */
     public static readonly DEFAULT_DATA: readonly DrumParameter[] = Array.from(
         { length: 128 },
         // eslint-disable-next-line unicorn/consistent-function-scoping
@@ -18,6 +26,9 @@ export class DrumParameterUtils {
             rxNoteOff: false
         })
     );
+    /**
+     * Default User Drum parameter data.
+     */
     public static readonly DEFAULT_USER_DATA: readonly UserDrumSetParameter[] =
         Array.from({ length: 128 }, (_, i) => ({
             ...this.DEFAULT_DATA[i],

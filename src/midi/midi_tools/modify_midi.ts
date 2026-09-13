@@ -2,7 +2,7 @@ import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { MIDIMessage } from "../midi_message";
 
-import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
+import { MIDI_DRUM_CHANNEL } from "../../synthesizer/audio_engine/synth_constants";
 
 import {
     type MIDIPatch,
@@ -66,12 +66,15 @@ const delayAddressMap: DelayProcessorSnapshot = {
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
  * Essentially:
- * - undefined - no change.
+ * - `undefined` - no change.
  * - `clear` - clear all changes of this parameter from the MIDI file.
- * - T - clear all changes of this parameter from the MIDI file and add T.
+ * - `T` - clear all changes of this parameter from the MIDI file and add `T` (replace this parameter with `T`).
+ *
+ * @group MIDI.Editing
  */
 export type ClearableParameter<T> = T | "clear";
 
+/** @group MIDI.Editing */
 export interface ChannelModification {
     /**
      * All controllers that should be modified for this channel.
@@ -85,7 +88,7 @@ export interface ChannelModification {
     /**
      * The new program of this channel.
      * - `"clear"` - all program changes for this channel are removed.
-     * - `MIDIPatch` - clear + sets the new patch according to the MIDI system at the start of the sequence.
+     * - {@link MIDIPatch} - clear + sets the new patch according to the MIDI system at the start of the sequence.
      */
     patch?: ClearableParameter<MIDIPatch>;
 
@@ -133,6 +136,8 @@ export interface ChannelModification {
  *     - value:
  *       - `"clear"` - all changes for this parameter are removed.
  *       - `specific value` - clear + insert a message setting this after a reset.
+ *
+ * @group MIDI.Editing
  */
 export type UserDrumModification = Map<
     number,
@@ -143,13 +148,14 @@ export type UserDrumModification = Map<
     }>
 >;
 
+/** @group MIDI.Editing */
 export interface ModifyMIDIOptions {
     /**
      * The channel changes.
      * - Key: the MIDI channel number.
      * - value:
      *   - `"clear"` - all MIDI messages for this channel, such as Note On are removed.
-     *   - `ChannelModification` - modifies the channel.
+     *   - {@link ChannelModification} - modifies the channel.
      */
     channels?: Map<number, ClearableParameter<ChannelModification>>;
 
@@ -159,7 +165,7 @@ export interface ModifyMIDIOptions {
      * 0 is the User Drum Set 1 located at MIDI program 64, and 1 is User Drum Set 2 located at MIDI program 65.
      * - value:
      *   - `"clear"` - all existing changes for this drum set are removed.
-     *   - `UserDrumModification` - modifies the drum set.
+     *   - {@link UserDrumModification} - modifies the drum set.
      */
     userDrumSetParams?: Map<number, ClearableParameter<UserDrumModification>>;
     /**
@@ -186,25 +192,25 @@ export interface ModifyMIDIOptions {
     /**
      * The desired GS reverb parameters.
      * - `"clear"` - all existing parameter change MIDI messages are removed.
-     * - `ReverbProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+     * - {@link ReverbProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
     reverbParams?: ClearableParameter<ReverbProcessorSnapshot>;
     /**
      * The GS chorus parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - `ChorusProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+     * - {@link ChorusProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
     chorusParams?: ClearableParameter<ChorusProcessorSnapshot>;
     /**
      * The GS delay parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - `DelayProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+     * - {@link DelayProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
     delayParams?: ClearableParameter<DelayProcessorSnapshot>;
     /**
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - `InsertionProcessorSnapshot` - clear + the new parameters are set via System Exclusive messages.
+     * - {@link InsertionProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
     insertionParams?: ClearableParameter<InsertionProcessorSnapshot>;
 }
@@ -1049,7 +1055,7 @@ export class MIDIEditor {
             if (
                 patch.isGMGSDrum &&
                 !BankSelectHacks.isSystemXG(this.system) &&
-                midiChannel !== DEFAULT_PERCUSSION
+                midiChannel !== MIDI_DRUM_CHANNEL
             ) {
                 // Add gs drum change first
                 SpessaLog.info(

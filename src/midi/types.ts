@@ -5,8 +5,16 @@ import type {
 } from "../soundbank/basic_soundbank/midi_patch";
 import type { MIDISystem } from "../soundbank/types";
 
+export type {
+    ChannelModification,
+    ClearableParameter,
+    UserDrumModification
+} from "./midi_tools/modify_midi";
+
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.
+ *
+ * @group MIDI.Sequence
  */
 export interface RMIDInfoData {
     /**
@@ -35,7 +43,7 @@ export interface RMIDInfoData {
     genre: string;
 
     /**
-     * The image for the file (album cover).
+     * The attached picture, usually album cover. Binary data of the image.
      */
     picture: ArrayBuffer;
 
@@ -45,12 +53,13 @@ export interface RMIDInfoData {
     comment: string;
 
     /**
-     * The creation date of the file.
+     * The creation date of the file. If not provided, current date is used.
      */
     creationDate: Date;
 
     /**
-     * The copyright of the file.
+     * The copyright string.
+     * If not provided, `midi.getExtraMetadata()` is used.
      */
     copyright: string;
 
@@ -60,7 +69,8 @@ export interface RMIDInfoData {
     infoEncoding: string;
 
     /**
-     * The encoding of the MIDI file's text messages.
+     * The encoding of the inner MIDI file.
+     * Make sure to pick a value acceptable by `TextDecoder`.
      */
     midiEncoding: string;
 
@@ -75,6 +85,9 @@ export interface RMIDInfoData {
     subject: string;
 }
 
+/**
+ * @group MIDI.Sequence
+ */
 export interface TempoChange {
     /**
      * MIDI ticks of the change, absolute value from the start of the MIDI file.
@@ -86,8 +99,11 @@ export interface TempoChange {
     tempo: number;
 }
 
-export type MIDILoopType = "soft" | "hard";
-
+/**
+ * Represents a loop in a {@link BasicMIDI} sequence.
+ *
+ * @group MIDI.Sequence
+ */
 export interface MIDILoop {
     /**
      * Start of the loop, in MIDI ticks.
@@ -107,14 +123,20 @@ export interface MIDILoop {
      *
      * Soft loop types are enabled for Touhou and GameMaker loop points.
      */
-    type: MIDILoopType;
+    type: "soft" | "hard";
 }
 
+/**
+ * @group MIDI.Sequence
+ */
 export type MIDIFormat = 0 | 1 | 2;
 
+/**
+ *  @group MIDI.Sequence
+ */
 export interface NoteTime {
     /**
-     * The MIDI key number.
+     * The MIDI note number.
      */
     midiNote: number;
     /**
@@ -131,22 +153,39 @@ export interface NoteTime {
     velocity: number;
 }
 
+/**
+ * Options for writing an RMIDI file.
+ *
+ * @group MIDI.Files
+ */
 export interface RMIDIWriteOptions {
     /**
-     * The bank offset for RMIDI.
+     * The bank offset to apply to the file. Defaults to `0`.
+     * [See this for more info](https://github.com/spessasus/sf2-rmidi-specification#dbnk-chunk)
      */
     bankOffset: number;
     /**
-     * The metadata of the file. Optional.
+     * The metadata of the file. If left undefined, some basic metadata (like the song's title) will be copied from the MIDI.
+     * All properies are optional.
+     *
+     * > **Warning**
+     * >
+     * > Providing *any* of the metadata fields overrides the info encoding with `utf-8`.
+     * > This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
+     *
      */
     metadata: Partial<Omit<RMIDInfoData, "infoEncoding">>;
     /**
+     * If the function should correct all program-selects and bank-selects in the MIDI file to reflect the embedded sound bank (i.e., make it [self-contained](https://github.com/spessasus/sf2-rmidi-specification#self-contained-file)).
+     * Recommended unless a specific use-case is required. Defaults to `true`.
      * If the MIDI file should internally be corrected to work with the set bank offset.
      */
     correctBankOffset: boolean;
 
     /**
-     * The optional sound bank instance used to correct bank offset.
+     * The sound bank instance that `soundBankBinary` contains.
+     * Used for correcting bank and program changes when `correctBankOffset` is enabled.
+     * If omitted, bank correction may be less accurate.
      */
     soundBank?: BasicSoundBank;
 }
@@ -184,6 +223,9 @@ export type RMIDInfoFourCC =
     // Bank offset
     | "DBNK";
 
+/**
+ * @group MIDI.Sequence
+ */
 export interface TimelineEvent {
     /**
      * The track number of this event.
@@ -194,6 +236,7 @@ export interface TimelineEvent {
      */
     ev: number;
 }
+/** @group MIDI.Protocol */
 export type SysExAcceptedArray =
     | number[]
     | Uint8Array
@@ -201,17 +244,24 @@ export type SysExAcceptedArray =
     | Uint8ClampedArray;
 
 /**
- * A sound bank that has patches of type T instead of a fixed `BasicPreset`.
- * (Used in SoundBankManager)
+ * An interface that represents a virtual sound bank which can return a preset.
+ *
+ * @group Sound Banks
  */
 export interface CallableSoundBank<T extends MIDIPatchFull> {
     /**
-     * Get the appropriate preset.
+     * Returns the matching {@link BasicPreset} instance.
+     * This uses the {@link MIDIPatchTools.selectPatch} algorithm for selecting the optimal preset.
+     * @param patch The patch to select.
+     * @param system The MIDI system to select for.
+     * @returns The selected preset.
      */
     getPreset(patch: MIDIPatch, system: MIDISystem): T | undefined;
 }
 /**
  * Represents a single drum instrument's XG/GS parameters.
+ *
+ * @group Synthesizer.Drum Sets
  */
 export interface DrumParameter {
     /**
@@ -241,17 +291,17 @@ export interface DrumParameter {
     pan: number;
 
     /**
-     * Reverb send level 0-127
+     * Reverb send level 0-127.
      */
     reverbSend: number;
 
     /**
-     * Chorus send level 0-127
+     * Chorus send level 0-127.
      */
     chorusSend: number;
 
     /**
-     * Variation/delay send level 0-127
+     * Variation/delay send level 0-127.
      */
     variationSend: number;
 
@@ -269,6 +319,15 @@ export interface DrumParameter {
     rxNoteOff: boolean;
 }
 
+/**
+ * Represents a single User Drum Set parameter.
+ *
+ * > **Tip**
+ * >
+ * > Consider reading the [MIDI Implementation of the User Drum Set.](../../docs/extra/midi-implementation.md#user-drum-set)
+ *
+ * @group Synthesizer.Drum Sets
+ */
 export interface UserDrumSetParameter extends DrumParameter {
     /**
      * The source drum set bank LSB number.

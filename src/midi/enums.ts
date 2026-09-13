@@ -1,4 +1,12 @@
-// All the midi statuses dictionary
+/**
+ * All MIDI 1.0 defined status bytes
+ *
+ * > **Tip**
+ * >
+ * > Consider reading the [supported MIDI messages](../../docs/extra/midi-implementation.md#supported-midi-messages) for more information.
+ *
+ * @group MIDI.Protocol
+ */
 export const MIDIMessageTypes = {
     noteOff: 0x80,
     noteOn: 0x90,
@@ -37,10 +45,23 @@ export const MIDIMessageTypes = {
     sequenceSpecific: 0x7f
 } as const;
 
+/**
+ * @inheritDoc MIDIMessageTypes
+ *
+ * @group MIDI.Protocol
+ */
 export type MIDIMessageType =
     (typeof MIDIMessageTypes)[keyof typeof MIDIMessageTypes];
 
-// All midi controllers dictionary
+/**
+ * All MIDI 1.0 controller values.
+ *
+ * > **Tip**
+ * >
+ * > Consider reading the [default supported controllers](../../docs/extra/midi-implementation.md#default-supported-controllers) for more information.
+ *
+ * @group MIDI.Protocol
+ */
 export const MIDIControllers = {
     bankSelect: 0,
     modulationWheel: 1,
@@ -172,9 +193,19 @@ export const MIDIControllers = {
     polyModeOn: 127
 } as const;
 
+/**
+ * @inheritDoc MIDIControllers
+ *
+ * @group MIDI.Protocol
+ */
 export type MIDIController =
     (typeof MIDIControllers)[keyof typeof MIDIControllers];
 
+/**
+ * General MIDI Registered Parameter Numbers.
+ *
+ * @group MIDI.Protocol
+ */
 export const RegisteredParameterTypes = {
     pitchWheelRange: 0x00_00,
     fineTuning: 0x00_01,
@@ -183,7 +214,16 @@ export const RegisteredParameterTypes = {
     resetParameters: 0x3f_ff
 } as const;
 
-export const NonRegisteredMSB = {
+/**
+ * Roland GS/ Yamaha XG Non-Registered Parameter Numbers (MSB).
+ *
+ * Sources:
+ * - https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
+ * - http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ *
+ * @group MIDI.Protocol
+ */
+export const NonRegisteredParameterTypesMSB = {
     partParameter: 0x01,
     drumPitch: 0x18,
     drumPitchFine: 0x19,
@@ -198,11 +238,15 @@ export const NonRegisteredMSB = {
 } as const;
 
 /**
- * https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
- * http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
- * These also seem to match XG
+ * Roland GS/ Yamaha XG Non-Registered Parameter Numbers (LSB).
+ *
+ * Sources:
+ * - https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
+ * - http://hummer.stanford.edu/sig/doc/classes/MidiOutput/rpn.html
+ *
+ * @group MIDI.Protocol
  */
-export const NonRegisteredLSB = {
+export const NonRegisteredParameterTypesLSB = {
     vibratoRate: 0x08,
     vibratoDepth: 0x09,
     vibratoDelay: 0x0a,

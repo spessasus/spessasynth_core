@@ -3,8 +3,8 @@ import type { MIDIChannel } from "./midi_channel";
 import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import {
     MIDIControllers,
-    NonRegisteredLSB,
-    NonRegisteredMSB,
+    NonRegisteredParameterTypesLSB,
+    NonRegisteredParameterTypesMSB,
     RegisteredParameterTypes
 } from "../../../midi/enums";
 import { SpessaLog } from "../../../utils/loggin";
@@ -110,8 +110,8 @@ export function dataEntry(this: MIDIChannel) {
     // Skip drums early
     if (
         this.synthCore.systemParameters.drumLock &&
-        parameterCoarse >= NonRegisteredMSB.drumPitch &&
-        parameterCoarse <= NonRegisteredMSB.drumVariation
+        parameterCoarse >= NonRegisteredParameterTypesMSB.drumPitch &&
+        parameterCoarse <= NonRegisteredParameterTypesMSB.drumVariation
     )
         return;
     switch (parameterCoarse) {
@@ -133,7 +133,7 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         // Part parameters
-        case NonRegisteredMSB.partParameter: {
+        case NonRegisteredParameterTypesMSB.partParameter: {
             const parameterLock =
                 this._systemParameters.nrpnParamLock ??
                 this.synthCore.systemParameters.nrpnParamLock;
@@ -154,7 +154,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Vibrato rate
-                case NonRegisteredLSB.vibratoRate: {
+                case NonRegisteredParameterTypesLSB.vibratoRate: {
                     /*
                     A note on this vibrato.
                     This is a completely custom vibrato, with its own oscillator and parameters.
@@ -187,7 +187,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Vibrato depth
-                case NonRegisteredLSB.vibratoDepth: {
+                case NonRegisteredParameterTypesLSB.vibratoDepth: {
                     if (
                         this.synthCore.systemParameters.customVibrato &&
                         !this.dynamicModulators.active
@@ -210,7 +210,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Vibrato delay
-                case NonRegisteredLSB.vibratoDelay: {
+                case NonRegisteredParameterTypesLSB.vibratoDelay: {
                     if (
                         this.synthCore.systemParameters.customVibrato &&
                         !this.dynamicModulators.active
@@ -233,7 +233,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Filter cutoff
-                case NonRegisteredLSB.tvfCutoffFrequency: {
+                case NonRegisteredParameterTypesLSB.tvfCutoffFrequency: {
                     if (parameterLock) return;
                     // Affect the "brightness" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -248,7 +248,7 @@ export function dataEntry(this: MIDIChannel) {
                     break;
                 }
 
-                case NonRegisteredLSB.tvfResonance: {
+                case NonRegisteredParameterTypesLSB.tvfResonance: {
                     if (parameterLock) return;
                     // Affect the "resonance" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -264,7 +264,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Attack time
-                case NonRegisteredLSB.envelopeAttackTime: {
+                case NonRegisteredParameterTypesLSB.envelopeAttackTime: {
                     if (parameterLock) return;
                     // Affect the "attack time" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -280,7 +280,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Decay time
-                case NonRegisteredLSB.envelopeDecayTime: {
+                case NonRegisteredParameterTypesLSB.envelopeDecayTime: {
                     if (parameterLock) return;
                     // Affect the "decay time" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -296,7 +296,7 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Release time
-                case NonRegisteredLSB.envelopeReleaseTime: {
+                case NonRegisteredParameterTypesLSB.envelopeReleaseTime: {
                     if (parameterLock) return;
                     // Affect the "release time" controller as we have a default modulator that controls it
                     this.controllerChange(
@@ -314,7 +314,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumPitch: {
+        case NonRegisteredParameterTypesMSB.drumPitch: {
             /**
              * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
              * it's actually 50 cents! (not for XG though)
@@ -333,7 +333,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumPitchFine: {
+        case NonRegisteredParameterTypesMSB.drumPitchFine: {
             const pitch = dataCoarse - 64;
             this.drumParams[parameterFine].pitchFine = pitch;
             SpessaLog.coolInfo(
@@ -344,7 +344,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumLevel: {
+        case NonRegisteredParameterTypesMSB.drumLevel: {
             this.drumParams[parameterFine].level = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${parameterFine} level for ${this.channel}`,
@@ -354,7 +354,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumPan: {
+        case NonRegisteredParameterTypesMSB.drumPan: {
             this.drumParams[parameterFine].pan = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${parameterFine} Pan for ${this.channel}`,
@@ -364,7 +364,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumReverb: {
+        case NonRegisteredParameterTypesMSB.drumReverb: {
             this.drumParams[parameterFine].reverbSend = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${parameterFine} Reverb Send for ${this.channel}`,
@@ -374,7 +374,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumChorus: {
+        case NonRegisteredParameterTypesMSB.drumChorus: {
             this.drumParams[parameterFine].chorusSend = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${parameterFine} Chorus Send for ${this.channel}`,
@@ -384,7 +384,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumVariation: {
+        case NonRegisteredParameterTypesMSB.drumVariation: {
             this.drumParams[parameterFine].variationSend = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${parameterFine} Variation Send for ${this.channel}`,
@@ -394,13 +394,13 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.awe32: {
+        case NonRegisteredParameterTypesMSB.awe32: {
             handleAWE32NRPN.call(this, parameterFine, dataValue);
             break;
         }
 
         // SF2 NRPN
-        case NonRegisteredMSB.SF2: {
+        case NonRegisteredParameterTypesMSB.SF2: {
             if (parameterFine > 100) {
                 // Sf spec:
                 // Note that NRPN Select LSB greater than 100 are for setup only, and should not be used on their own to select a

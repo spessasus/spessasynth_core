@@ -98,6 +98,10 @@ export class ModulatorSource {
         );
     }
 
+    /**
+     * @internal
+     * @param sourceEnum
+     */
     public static fromSourceEnum(sourceEnum: number) {
         const isBipolar = bitMaskToBool(sourceEnum, 9);
         const isNegative = bitMaskToBool(sourceEnum, 8);
@@ -117,6 +121,7 @@ export class ModulatorSource {
      * Copies the modulator source.
      * @param source The source to copy from.
      * @returns the copied source.
+     * @internal
      */
     public static copyFrom(source: ModulatorSource) {
         return new ModulatorSource(
@@ -132,6 +137,9 @@ export class ModulatorSource {
         return `${this.sourceName} ${this.curveTypeName} ${this.isBipolar ? "bipolar" : "unipolar"} ${this.isNegative ? "negative" : "positive"}`;
     }
 
+    /**
+     * @internal
+     */
     public toSourceEnum() {
         return (
             (this.curveType << 10) |
@@ -142,6 +150,10 @@ export class ModulatorSource {
         );
     }
 
+    /**
+     * Checks if the source is identical to another source, per SF2 definition.
+     * @param source The source to compare against.
+     */
     public isIdentical(source: ModulatorSource) {
         return (
             this.index === source.index &&
@@ -157,6 +169,7 @@ export class ModulatorSource {
      * @param channel the MIDI channel to compute for.
      * @param pitchWheel the pitch wheel value, as channel determines if it's a per-note or a global value.
      * @param voice The voice to get the data for.
+     * @internal
      */
     public getValue(channel: SF2Channel, pitchWheel: number, voice: Voice) {
         // The raw 14-bit value (0 - 16,383)

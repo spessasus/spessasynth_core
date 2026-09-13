@@ -1,4 +1,4 @@
-interface EffectProcessor {
+interface EffectProcessorSnapshot {
     /**
      * 0-127
      * This parameter sets the amount of the effect sent to the effect output.
@@ -13,44 +13,75 @@ interface EffectProcessor {
      */
     preLowpass: number;
 }
-export interface ReverbProcessorSnapshot extends EffectProcessor {
+
+/**
+ * Represents stored GS-compatible reverb processor data.
+ *
+ * @group Synthesizer.Effects
+ */
+export interface ReverbProcessorSnapshot extends EffectProcessorSnapshot {
     /**
-     * 0-7.
-     * If character is not available, it should default to the first one.
+     * `0-7`
      *
      * This parameter selects the type of reverb. 0–5 are reverb effects, and 6 and 7 are delay
      * effects.
+     *
+     * > **NOTE**
+     * >
+     * > If character is not available, it should default to the first one.
      */
     character: number;
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the time over which the reverberation will continue.
      * Higher values result in longer reverberation.
      */
     time: number;
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter is used when the Reverb Character is set to 6 or 7, or the Reverb Type
      * is set to Delay or Panning Delay (Rev Character 6, 7). It sets the way in which delays
      * repeat. Higher values result in more delay repeats.
      */
     delayFeedback: number;
     /**
-     * 0 - 127 (ms)
+     * `0 - 127 (ms)`
+     *
      * This parameter sets the delay time until the reverberant sound is heard.
      * Higher values result in a longer pre-delay time, simulating a larger reverberant space.
      */
     preDelayTime: number;
 }
 
+/**
+ * Reverb is an effect that adds reverberation to a sound, as you would hear in a concert
+ * hall.
+ *
+ * This is a Roland GS-compatible reverb interface.
+ *
+ * {@link SpessaSynthProcessor} allows you to supply a custom reverb processor.
+ * A custom reverb processor must implement this interface.
+ *
+ * ### Editing the parameters
+ *
+ * Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing the {@link SpessaSynthProcessor.reverbProcessor} property.
+ *
+ * > **Tip**
+ * >
+ * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
+ *
+ * @group Synthesizer.Effects
+ */
 export interface ReverbProcessor extends ReverbProcessorSnapshot {
     /**
-     * Process the effect and ADDS it to the output.
+     * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
      * @param outputRight The right output buffer.
      * @param startIndex The index to start mixing at into the output buffers.
-     * @param sampleCount The amount of samples to mix.
+     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance.
      */
     process(
         input: Float32Array,
@@ -61,62 +92,91 @@ export interface ReverbProcessor extends ReverbProcessorSnapshot {
     ): void;
 
     /**
-     * Gets a synthesizer from this effect processor instance.
+     * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): ReverbProcessorSnapshot;
 }
 
-export interface ChorusProcessorSnapshot extends EffectProcessor {
+/**
+ * Represents stored GS-compatible chorus processor data.
+ *
+ * @group Synthesizer.Effects
+ */
+export interface ChorusProcessorSnapshot extends EffectProcessorSnapshot {
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the level at which the chorus sound is re-input (fed back) into the
      * chorus. By using feedback, a denser chorus sound can be created.
      * Higher values result in a greater feedback level.
      */
     feedback: number;
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the delay time of the chorus effect.
      */
     delay: number;
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the speed (frequency) at which the chorus sound is modulated.
      * Higher values result in faster modulation.
      */
     rate: number;
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the depth at which the chorus sound is modulated.
      * Higher values result in deeper modulation.
      */
     depth: number;
 
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the amount of chorus sound that will be sent to the reverb.
      * Higher values result in more sound being sent.
      */
     sendLevelToReverb: number;
 
     /**
-     * 0-127
+     * `0-127`
+     *
      * This parameter sets the amount of chorus sound that will be sent to the delay.
      * Higher values result in more sound being sent.
      */
     sendLevelToDelay: number;
 }
 
+/**
+ * Chorus broadens the spatial image of the sound, adding depth and richness.
+ *
+ * This is a Roland GS-compatible chorus interface.
+ *
+ * {@link SpessaSynthProcessor} allows you to supply a custom chorus processor.
+ * A custom chorus processor must implement this interface.
+ *
+ * ### Editing the parameters
+ *
+ * Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing {@link SpessaSynthProcessor.chorusProcessor} property.
+ *
+ * > **Tip**
+ * >
+ * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
+ *
+ * @group Synthesizer.Effects
+ */
 export interface ChorusProcessor extends ChorusProcessorSnapshot {
     /**
-     * Process the effect and ADDS it to the output.
+     * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
      * @param outputRight The right output buffer.
      * @param outputReverb The mono input for reverb. It always starts at index 0.
      * @param outputDelay The mono input for delay. It always starts at index 0.
      * @param startIndex The index to start mixing at into the output buffers.
-     * @param sampleCount The amount of samples to mix.
+     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance.
      */
     process(
         input: Float32Array,
@@ -129,12 +189,17 @@ export interface ChorusProcessor extends ChorusProcessorSnapshot {
     ): void;
 
     /**
-     * Gets a synthesizer from this effect processor instance.
+     * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): ChorusProcessorSnapshot;
 }
 
-export interface DelayProcessorSnapshot extends EffectProcessor {
+/**
+ * Represents stored GS-compatible delay processor data.
+ *
+ * @group Synthesizer.Effects
+ */
+export interface DelayProcessorSnapshot extends EffectProcessorSnapshot {
     /**
      * 0-115
      * 0.1ms-340ms-1000ms
@@ -202,15 +267,38 @@ export interface DelayProcessorSnapshot extends EffectProcessor {
     sendLevelToReverb: number;
 }
 
+/**
+ * Delay creates echoes. It is also possible to give depth and width to a sound by adding
+ * a short delay to the original sound.
+ *
+ * This is a Roland GS-compatible delay interface.
+ *
+ * > **Note**
+ * >
+ * > Delay is disabled in XG mode.
+ *
+ * {@link SpessaSynthProcessor} allows you to supply a custom delay processor.
+ * A custom delay processor must implement this interface.
+ *
+ * ### Editing the parameters
+ *
+ * Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing {@link SpessaSynthProcessor.delayProcessor} property.
+ *
+ * > **Tip**
+ * >
+ * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
+ *
+ * @group Synthesizer.Effects
+ */
 export interface DelayProcessor extends DelayProcessorSnapshot {
     /**
-     * Process the effect and ADDS it to the output.
+     * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
      * @param outputRight The right output buffer.
      * @param outputReverb The mono input for reverb. It always starts at index 0.
      * @param startIndex The index to start mixing at into the output buffers.
-     * @param sampleCount The amount of samples to mix.
+     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance.
      */
     process(
         input: Float32Array,
@@ -222,34 +310,42 @@ export interface DelayProcessor extends DelayProcessorSnapshot {
     ): void;
 
     /**
-     * Gets a synthesizer from this effect processor instance.
+     * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): DelayProcessorSnapshot;
 }
 
+/**
+ * Represents a GS-compatible Insertion EFX processor.
+ *
+ * @group Synthesizer.Effects
+ */
 export interface InsertionProcessor {
     /**
      * The EFX type of this processor, stored as MSB << | LSB.
-     * For example 0x30, 0x10 is 0x3010
+     * For example `0x30`, `0x10` is `0x3010`.
      */
     readonly type: number;
 
     /**
-     * 0-1 (floating point)
+     * `0-1` (floating point)
+     *
      * This parameter sets the amount of insertion sound that will be sent to the reverb.
      * Higher values result in more sound being sent.
      */
     sendLevelToReverb: number;
 
     /**
-     * 0-1 (floating point)
+     * `0-1` (floating point)
+     *
      * This parameter sets the amount of insertion sound that will be sent to the chorus.
      * Higher values result in more sound being sent.
      */
     sendLevelToChorus: number;
 
     /**
-     * 0-1 (floating point)
+     * `0-1` (floating point)
+     *
      * This parameter sets the amount of insertion sound that will be sent to the delay.
      * Higher values result in more sound being sent.
      */
@@ -269,7 +365,7 @@ export interface InsertionProcessor {
     setParameter(parameter: number, value: number): void;
 
     /**
-     * Process the effect and ADDS it to the output.
+     * Process the effect and **adds** it to the output.
      * @param inputLeft The left input buffer to process. It always starts at index 0.
      * @param inputRight The right input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
@@ -278,8 +374,7 @@ export interface InsertionProcessor {
      * @param outputChorus The mono input for chorus. It always starts at index 0.
      * @param outputDelay The mono input for delay. It always starts at index 0.
      * @param startIndex The index to start mixing at into the output buffers.
-     * @param sampleCount The amount of samples to mix.
-     */
+     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance. */
     process(
         inputLeft: Float32Array,
         inputRight: Float32Array,
@@ -292,7 +387,11 @@ export interface InsertionProcessor {
         sampleCount: number
     ): void;
 }
-
+/**
+ * Represents stored GS-compatible insertion processor data.
+ *
+ * @group Synthesizer.Effects
+ */
 export interface InsertionProcessorSnapshot {
     type: number;
     /**
@@ -301,6 +400,7 @@ export interface InsertionProcessorSnapshot {
     params: Uint8Array;
 }
 
+/** @group Synthesizer.Effects */
 export type InsertionProcessorConstructor = new (
     sampleRate: number,
     maxBufferSize: number

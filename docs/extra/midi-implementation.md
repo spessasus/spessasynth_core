@@ -1,6 +1,10 @@
+---
+title: MIDI Implementation
+---
+
 # MIDI Implementation
 
-This page describes what messages [`SpessaSynthProcessor`](../spessa-synth-processor/index.md) can receive.
+This page describes what messages {@link SpessaSynthProcessor} can receive.
 The supported standards are:
 
 - MIDI 1.0 Protocol
@@ -9,9 +13,9 @@ The supported standards are:
 - Roland GS
 - Yamaha XG.
 
-!!! Tip
-
-    [Here is a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
+> **Tip**
+>
+> [Here is a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
 
 ## Supported MIDI Messages
 
@@ -23,7 +27,7 @@ Below is the list of supported MIDI messages.
 | Note Off          | ✔️         | Does not support note off velocity (Per SF2 specification) [More info](#overlapping-notes)                              |
 | Poly Pressure     | ✔️         | Recognized, but no default behavior (Per SF2 specification). It has to be defined with modulators or System Exclusives. |
 | Controller Change | ✔️         | [More info](#default-supported-controllers)                                                                             |
-| Program Change    | ✔️         | [More info](../spessa-synth-processor/midi-patch.md).                                                                   |
+| Program Change    | ✔️         | More info: {@link MIDIPatch}                                                                                            |
 | Channel Pressure  | ✔️         | 50 cents of vibrato (Per SF2 specification)                                                                             |
 | Pitch Wheel       | ✔️         | Controlled by Pitch Wheel Range. [More info](#per-note-pitch-wheel).                                                    |
 | System Exclusive  | ✔️         | [More info](#system-exclusives)                                                                                         |
@@ -43,9 +47,9 @@ Below is the list of supported MIDI messages.
 As of 4.1.0 SpessaSynth supports per-note Pitch Wheel as a part of the MIDI 2.0 specification.
 Per-note mode is activated through the API and deactivated on channel or system reset.
 
-!!! Note
-
-    This is API-only, there are no MIDI messages that allow for changing it for now.
+> **Note**
+>
+> This is API-only, there are no MIDI messages that allow for changing it for now.
 
 ## Controllers
 
@@ -53,10 +57,10 @@ Per-note mode is activated through the API and deactivated on channel or system 
 
 Below is the list of controllers supported by default.
 
-!!! Note
-
-    Any MIDI CC may affect synthesis through modulators,
-    but the controllers below have built-in behavior or default modulators.
+> **Note**
+>
+> Any MIDI CC may affect synthesis through modulators,
+> but the controllers below have built-in behavior or default modulators.
 
 Legend for the "Type" column:
 
@@ -64,20 +68,20 @@ Legend for the "Type" column:
 - Extended - Support for this controller is provided by a non-SF2 default modulator, can be disabled via DMOD.
 - Engine - Support for this controller is provided with a custom behavior, _cannot_ be disabled via DMOD.
 
-!!! Note
-
-    For exact values of the modulators, see [default modulators](../sound-bank/modulator.md#default-modulators)
+> **Note**
+>
+> For exact values of the modulators, see [default modulators](../extra/modulator-information.md#default-modulators)
 
 | CC#                  | Controller Name                     | Type     | Behavior                                                                                                                                                            |
 | -------------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0                    | Bank Select                         | Engine   | Changes the bank number that is used in Program Change. [More info](../spessa-synth-processor/midi-patch.md)                                                        |
+| 0                    | Bank Select                         | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                |
 | 1                    | Modulation Wheel                    | SF2      | Controls the vibrato for the given patch.                                                                                                                           |
 | 5                    | Portamento Time                     | Engine   | Controls the portamento time. [More info](#portamento-implementation)                                                                                               |
 | 6                    | Data Entry MSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Upper 7 bits. [More info](#parameter-numbers)                                                                     |
 | 7                    | Main Volume                         | SF2      | Changes the channel's volume.                                                                                                                                       |
 | 10                   | Pan                                 | SF2      | Controls the channel's stereo pan.                                                                                                                                  |
 | 11                   | Expression                          | SF2      | Changes the channel's volume, similarly to Main Volume, but independent of it.                                                                                      |
-| 32                   | Bank Select LSB                     | Engine   | Changes the bank number that is used in Program Change. [More info](../spessa-synth-processor/midi-patch.md)                                                        |
+| 32                   | Bank Select LSB                     | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                |
 | 33 - 63 excluding 38 | Controller LSB values               | SF2      | Extends the precision of the corresponding controllers from 7-bit to 14-bit.                                                                                        |
 | 38                   | Data Entry LSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Lower 7 bits. [More info](#parameter-numbers)                                                                     |
 | 64                   | Sustain Pedal                       | Engine   | Holds the Note Off messages until the pedal is off, then stops them all at once.                                                                                    |
@@ -89,8 +93,8 @@ Legend for the "Type" column:
 | 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                     |
 | 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                        |
 | 84                   | Portamento Control                  | Engine   | Controls the portamento target key. [More info](#portamento-implementation)                                                                                         |
-| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](../sound-bank/modulator.md#reverb-and-chorus-modulators)                                         |
-| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](../sound-bank/modulator.md#reverb-and-chorus-modulators)                                              |
+| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](../extra/modulator-information.md#reverb-and-chorus-modulators)                                  |
+| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](../extra/modulator-information.md#reverb-and-chorus-modulators)                                       |
 | 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                 |
 | 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                           |
 | 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                           |
@@ -106,10 +110,10 @@ Legend for the "Type" column:
 
 ### Default Controller Values
 
-!!! Important
-
-    "Reset All Controllers" (CC#121) is implemented according
-    to [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)
+> **Important**
+>
+> "Reset All Controllers" (CC#121) is implemented according
+> to [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)
 
 Below are all the controller values which are not zero when the controllers are reset.
 
@@ -135,9 +139,9 @@ Below are all the controller values which are not zero when the controllers are 
 | 100       | Registered Parameter Number LSB     | 127 (NULL)                               |
 | 101       | Registered Parameter Number MSB     | 127 (NULL)                               |
 
-!!! Note
-
-    Reverb is 0 by default, contrary to the MIDI specification as it can introduce unwanted sounds.
+> **Note**
+>
+> Reverb is 0 by default, contrary to the MIDI specification as it can introduce unwanted sounds.
 
 ### Parameter Numbers
 
@@ -145,13 +149,13 @@ Below are all the controller values which are not zero when the controllers are 
 
 Below is the list of currently implemented Registered Parameters.
 
-| RPN MSB | RPN LSB | Name                     | Explanation                                                                                                                       | Default                      |
-| ------- | ------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 0       | 0       | Pitch Wheel Range        | Sets the Channel MIDI Parameter [`pitchWheelRange`](../spessa-synth-processor/midi-channel/channel-parameters.md#pitchwheelrange) | 2 semitones                  |
-| 0       | 2       | Channel Coarse Tuning    | Sets the Channel MIDI Parameter [`keyShift`](../spessa-synth-processor/midi-channel/channel-parameters.md#keyshift_1)             | 0 keys                       |
-| 0       | 3       | Channel Fine Tuning      | Sets the Channel MIDI Parameter [`fineTune`](../spessa-synth-processor/midi-channel/channel-parameters.md#finetune_1)             | 0 cents                      |
-| 0       | 5       | Channel Modulation Depth | Sets the Channel MIDI Parameter [`modulationDepth`](../spessa-synth-processor/midi-channel/channel-parameters.md#modulationdepth) | Default SF2 depth (50 cents) |
-| 127     | 127     | Reset parameters         | Resets the selected RPN/NRPN to NULL (unspecified state). All data entries in this state are recognized as ignored.               | N.A.                         |
+| RPN MSB | RPN LSB | Name                     | Explanation                                                                                                         | Default                      |
+| ------- | ------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 0       | 0       | Pitch Wheel Range        | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}                      | 2 semitones                  |
+| 0       | 2       | Channel Coarse Tuning    | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}                                    | 0 keys                       |
+| 0       | 3       | Channel Fine Tuning      | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.fineTune `fineTune`}                                    | 0 cents                      |
+| 0       | 5       | Channel Modulation Depth | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}                      | Default SF2 depth (50 cents) |
+| 127     | 127     | Reset parameters         | Resets the selected RPN/NRPN to NULL (unspecified state). All data entries in this state are recognized as ignored. | N.A.                         |
 
 #### Supported Non-Registered Parameters
 
@@ -181,9 +185,9 @@ rr: Drum MIDI note number (0 - 127)
 
 ##### Custom Vibrato
 
-!!! Note
-
-    This only applies when the [`customVibrato` System Parameter](../spessa-synth-processor/global-parameters.md#customvibrato) is enabled.
+> **Note**
+>
+> This only applies when the {@link GlobalSystemParameter.customVibrato} is enabled.
 
 The NRPN vibrato messages have special behavior.
 On synth start and reset it is disabled.
@@ -234,37 +238,45 @@ There are a few differences from FluidSynth's implementation:
 
 ## Supported Bank Selection Systems
 
-See the [MIDI Patch system](../spessa-synth-processor/midi-patch.md) for more information.
+See {@link MIDIPatch} for more information.
 
-### `GM`
+### GM
 
 General MIDI (Level 1).
 
 Ignores all bank select messages.
 
-### `GS`
+### GS
 
 Roland GS, default.
 
 Bank MSB processed directly, LSB is ignored, unless a direct match is found.
 System Exclusive messages can be used to turn a channel into a drum channel.
 
-### `GM2`
+### GM2
 
 General MIDI Level 2.
 
 Bank LSB and MSB are processed.
 Default bank MSB is 121 instead of 0.
 MSB can be used to turn a channel into a drum channel.
-Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
+Drums will be selected according to the [XG Validity Test](#xg-validity-test)
 
-### `XG`
+### XG
 
 Yamaha XG.
 
 Bank LSB and MSB are processed.
 MSB can be used to turn a channel into a drum channel.
-Drums will be selected according to the [XG Validity Test](../spessa-synth-processor/midi-patch.md#xg-validity-test)
+Drums will be selected according to the [XG Validity Test](#xg-validity-test)
+
+#### XG Validity Test
+
+Each sound bank is validated for XG compatibility.
+That is, contains only allowed program numbers in the XG standard for the drum presets.
+This is done because some sound bank set the bank MSB of 127 for Roland MT presets.
+
+If a sound bank fails to meet that check, the GM/GS drum presets will be used instead of the GM2/XG drums.
 
 ## System Exclusives
 
@@ -284,7 +296,7 @@ Below are the supported Roland GS messages.
 #### Display Data
 
 All messages with address of `0x10 xx xx` are recognized.
-A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data.
+A {@link SynthesizerEvent.displayMessage | `displayMessage`} event will be emitted with the System Exclusive data.
 
 #### System Parameters
 
@@ -303,56 +315,56 @@ These are global parameters, affecting the entire synthesizer.
 
 ##### System
 
-| Name             | Description                                                                                                                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MASTER TUNE      | Sets the Global MIDI Parameter [`fineTune`](../spessa-synth-processor/global-parameters.md#finetune_1).                                                                                                                    |
-| MASTER VOLUME    | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume).                                                                                                                          |
-| MASTER KEY-SHIFT | Sets the Global MIDI Parameter [`keyShift`](../spessa-synth-processor/global-parameters.md#keyshift_1).                                                                                                                    |
-| MASTER PAN       | Sets the Global MIDI Parameter [`pan`](../spessa-synth-processor/global-parameters.md#pan_1).                                                                                                                              |
-| MODE SET         | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gs`.                                                                                     |
-| PATCH NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
+| Name             | Description                                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MASTER TUNE      | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.fineTune `fineTune`}.                                                                                                                   |
+| MASTER VOLUME    | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`}.                                                                                                                       |
+| MASTER KEY-SHIFT | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.keyShift `keyShift`}.                                                                                                                   |
+| MASTER PAN       | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.pan `pan`}.                                                                                                                             |
+| MODE SET         | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.                                                                                    |
+| PATCH NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} will be emitted with the System Exclusive data. |
 
 ##### Reverb
 
 | Name                  | Description                                                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | REVERB MACRO          | Sets all Reverb Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 81. |
-| REVERB CHARACTER      | Sets the Reverb Processor property [`character`](../spessa-synth-processor/effects/reverb-processor.md#character).                                                                           |
-| REVERB PRE-LPF        | Sets the Reverb Processor property [`preLowpass`](../spessa-synth-processor/effects/reverb-processor.md#prelowpass).                                                                         |
-| REVERB LEVEL          | Sets the Reverb Processor property [`level`](../spessa-synth-processor/effects/reverb-processor.md#level).                                                                                   |
-| REVERB TIME           | Sets the Reverb Processor property [`time`](../spessa-synth-processor/effects/reverb-processor.md#time).                                                                                     |
-| REVERB DELAY FEEDBACK | Sets the Reverb Processor property [`delayFeedback`](../spessa-synth-processor/effects/reverb-processor.md#delayfeedback).                                                                   |
-| REVERB PREDELAY TIME  | Sets the Reverb Processor property [`preDelayTime`](../spessa-synth-processor/effects/reverb-processor.md#predelaytime).                                                                     |
+| REVERB CHARACTER      | Sets the Reverb Processor property {@link ReverbProcessor.character `character`}.                                                                                                            |
+| REVERB PRE-LPF        | Sets the Reverb Processor property {@link ReverbProcessor.preLowpass `preLowpass`}.                                                                                                          |
+| REVERB LEVEL          | Sets the Reverb Processor property {@link ReverbProcessor.level `level`}.                                                                                                                    |
+| REVERB TIME           | Sets the Reverb Processor property {@link ReverbProcessor.time `time`}.                                                                                                                      |
+| REVERB DELAY FEEDBACK | Sets the Reverb Processor property {@link ReverbProcessor.delayFeedback `delayFeedback`}.                                                                                                    |
+| REVERB PREDELAY TIME  | Sets the Reverb Processor property {@link ReverbProcessor.preDelayTime `preDelayTime`}.                                                                                                      |
 
 ##### Chorus
 
 | Name                        | Description                                                                                                                                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CHORUS MACRO                | Sets all Chorus Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 83. |
-| CHORUS PRE-LPF              | Sets the Chorus Processor property [`preLowpass`](../spessa-synth-processor/effects/chorus-processor.md#prelowpass).                                                                         |
-| CHORUS LEVEL                | Sets the Chorus Processor property [`level`](../spessa-synth-processor/effects/chorus-processor.md#level).                                                                                   |
-| CHORUS FEEDBACK             | Sets the Chorus Processor property [`feedback`](../spessa-synth-processor/effects/chorus-processor.md#feedback).                                                                             |
-| CHORUS DELAY                | Sets the Chorus Processor property [`delay`](../spessa-synth-processor/effects/chorus-processor.md#delay).                                                                                   |
-| CHORUS RATE                 | Sets the Chorus Processor property [`rate`](../spessa-synth-processor/effects/chorus-processor.md#rate).                                                                                     |
-| CHORUS DEPTH                | Sets the Chorus Processor property [`depth`](../spessa-synth-processor/effects/chorus-processor.md#depth).                                                                                   |
-| CHORUS SEND LEVEL TO REVERB | Sets the Chorus Processor property [`sendLevelToReverb`](../spessa-synth-processor/effects/chorus-processor.md#sendleveltoreverb).                                                           |
-| CHORUS SEND LEVEL TO DELAY  | Sets the Chorus Processor property [`sendLevelToDelay`](../spessa-synth-processor/effects/chorus-processor.md#sendleveltodelay).                                                             |
+| CHORUS PRE-LPF              | Sets the Chorus Processor property {@link ChorusProcessor.preLowpass `preLowpass`}.                                                                                                          |
+| CHORUS LEVEL                | Sets the Chorus Processor property {@link ChorusProcessor.level `level`}.                                                                                                                    |
+| CHORUS FEEDBACK             | Sets the Chorus Processor property {@link ChorusProcessor.feedback `feedback`}.                                                                                                              |
+| CHORUS DELAY                | Sets the Chorus Processor property {@link ChorusProcessor.delay `delay`}.                                                                                                                    |
+| CHORUS RATE                 | Sets the Chorus Processor property {@link ChorusProcessor.rate `rate`}.                                                                                                                      |
+| CHORUS DEPTH                | Sets the Chorus Processor property {@link ChorusProcessor.depth `depth`}.                                                                                                                    |
+| CHORUS SEND LEVEL TO REVERB | Sets the Chorus Processor property {@link ChorusProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                            |
+| CHORUS SEND LEVEL TO DELAY  | Sets the Chorus Processor property {@link ChorusProcessor.sendLevelToDelay `sendLevelToDelay`}.                                                                                              |
 
 ##### Delay
 
 | Name                       | Description                                                                                                                                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DELAY MACRO                | Sets all Delay Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 85. |
-| DELAY PRE-LPF              | Sets the Delay Processor property [`preLowpass`](../spessa-synth-processor/effects/delay-processor.md#prelowpass).                                                                          |
-| DELAY TIME CENTER          | Sets the Delay Processor property [`timeCenter`](../spessa-synth-processor/effects/delay-processor.md#timecenter).                                                                          |
-| DELAY TIME RATIO LEFT      | Sets the Delay Processor property [`timeRatioLeft`](../spessa-synth-processor/effects/delay-processor.md#timeratioleft).                                                                    |
-| DELAY TIME RATIO RIGHT     | Sets the Delay Processor property [`timeRatioRight`](../spessa-synth-processor/effects/delay-processor.md#timeratioright).                                                                  |
-| DELAY LEVEL CENTER         | Sets the Delay Processor property [`levelCenter`](../spessa-synth-processor/effects/delay-processor.md#levelcenter).                                                                        |
-| DELAY LEVEL LEFT           | Sets the Delay Processor property [`levelLeft`](../spessa-synth-processor/effects/delay-processor.md#levelleft).                                                                            |
-| DELAY LEVEL RIGHT          | Sets the Delay Processor property [`levelRight`](../spessa-synth-processor/effects/delay-processor.md#levelright).                                                                          |
-| DELAY LEVEL                | Sets the Delay Processor property [`level`](../spessa-synth-processor/effects/delay-processor.md#level).                                                                                    |
-| DELAY FEEDBACK             | Sets the Delay Processor property [`feedback`](../spessa-synth-processor/effects/delay-processor.md#feedback).                                                                              |
-| DELAY SEND LEVEL TO REVERB | Sets the Delay Processor property [`sendLevelToReverb`](../spessa-synth-processor/effects/delay-processor.md#sendleveltoreverb).                                                            |
+| DELAY PRE-LPF              | Sets the Delay Processor property {@link DelayProcessor.preLowpass `preLowpass`}.                                                                                                           |
+| DELAY TIME CENTER          | Sets the Delay Processor property {@link DelayProcessor.timeCenter `timeCenter`}.                                                                                                           |
+| DELAY TIME RATIO LEFT      | Sets the Delay Processor property {@link DelayProcessor.timeRatioLeft `timeRatioLeft`}.                                                                                                     |
+| DELAY TIME RATIO RIGHT     | Sets the Delay Processor property {@link DelayProcessor.timeRatioRight `timeRatioRight`}.                                                                                                   |
+| DELAY LEVEL CENTER         | Sets the Delay Processor property {@link DelayProcessor.levelCenter `levelCenter`}.                                                                                                         |
+| DELAY LEVEL LEFT           | Sets the Delay Processor property {@link DelayProcessor.levelLeft `levelLeft`}.                                                                                                             |
+| DELAY LEVEL RIGHT          | Sets the Delay Processor property {@link DelayProcessor.levelRight `levelRight`}.                                                                                                           |
+| DELAY LEVEL                | Sets the Delay Processor property {@link DelayProcessor.level `level`}.                                                                                                                     |
+| DELAY FEEDBACK             | Sets the Delay Processor property {@link DelayProcessor.feedback `feedback`}.                                                                                                               |
+| DELAY SEND LEVEL TO REVERB | Sets the Delay Processor property {@link DelayProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                             |
 
 ##### EFX
 
@@ -368,43 +380,43 @@ These are global parameters, affecting the entire synthesizer.
 
 Part (channel) parameters set a specific parameter for a specific channel.
 
-!!! Warning
+> **Warning**
+>
+> GS can refer up to 32 channels, the top 16 can be accessed with `0x50` instead of `0x40` for the "BLOCK B".
+>
+> Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
-    GS can refer up to 32 channels, the top 16 can be accessed with `0x50` instead of `0x40` for the "BLOCK B".
-
-    Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
-
-| Name                              | Description                                                                                                                                                                           |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TONE NUMBER                       | Bank MSB and Program Change in one message.                                                                                                                                           |
-| Rx. CHANNEL                       | Sets the Channel MIDI Parameter [`rxChannel`](../spessa-synth-processor/midi-channel/channel-parameters.md#rxchannel).                                                                |
-| MONO/POLY MODE                    | Sets the Channel MIDI Parameter [`polyMode`](../spessa-synth-processor/midi-channel/channel-parameters.md#polymode). See [poly/mono implementation](#polymono-implementation).        |
-| ASSIGN MODE                       | Sets the Channel MIDI Parameter [`assignMode`](../spessa-synth-processor/midi-channel/channel-parameters.md#assignmode).                                                              |
-| USE FOR RHYTHM PART               | Turns any channel into a drum channel.[^2] The Drum Map number is stored in Channel MIDI Parameter [`drumMap`](../spessa-synth-processor/midi-channel/channel-parameters.md#drummap). |
-| PITCH KEY SHIFT                   | Sets the Channel MIDI Parameter [`keyShift`](../spessa-synth-processor/midi-channel/channel-parameters.md#keyshift_1).                                                                |
-| PART LEVEL                        | Aliased to MIDI CC#7 (Main Volume).                                                                                                                                                   |
-| VELOCITY SENSE DEPTH              | Sets the Channel MIDI Parameter [`velocitySenseDepth`](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysensedepth).                                              |
-| VELOCITY SENSE OFFSET             | Sets the Channel MIDI Parameter [`velocitySenseOffset`](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysenseoffset).                                            |
-| PART PANPOT                       | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                                                                 |
-| CC1 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter [`cc1`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc1).                                                                            |
-| CC2 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter [`cc2`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc2).                                                                            |
-| CHORUS SEND LEVEL                 | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                                                                 |
-| REVERB SEND LEVEL                 | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                                                                 |
-| PITCH FINE TUNE                   | Sets the Channel MIDI Parameter [`fineTune`](../spessa-synth-processor/midi-channel/channel-parameters.md#finetune_1).                                                                |
-| DELAY SEND LEVEL                  | Aliased to MIDI CC#94 (Variation Depth).                                                                                                                                              |
-| TONE MODIFY1 (Vibrato rate)       | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                                                                 |
-| TONE MODIFY2 (Vibrato depth)      | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                                                                |
-| TONE MODIFY3 (TVF Cutoff Freq)    | Aliased to MIDI CC#74 (Brightness).                                                                                                                                                   |
-| TONE MODIFY4 (TVF Resonance)      | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                                                             |
-| TONE MODIFY5 (TVF&TVA Env.attack) | Aliased to MIDI CC#73 (Attack Time).                                                                                                                                                  |
-| TONE MODIFY6 (TVF&TVA Env.decay)  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                                                   |
-| TONE MODIFY7 (TVA Env.release)    | Aliased to MIDI CC#72 (Release Time).                                                                                                                                                 |
-| TONE MODIFY8 (Vibrato delay)      | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                                                |
-| SCALE TUNING                      | Treated like MTS octave tuning, allows to tune an octave in cents. Tuning is repeated for all octaves.                                                                                |
-| \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                                                       |
-| TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                                                              |
-| TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                                                              |
-| PART EFX ASSIGN                   | Sets the Channel MIDI Parameter [`efxAssign`](../spessa-synth-processor/midi-channel/channel-parameters.md#efxassign).                                                                |
+| Name                              | Description                                                                                                                                        |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TONE NUMBER                       | Bank MSB and Program Change in one message.                                                                                                        |
+| Rx. CHANNEL                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                                |
+| MONO/POLY MODE                    | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation).        |
+| ASSIGN MODE                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                              |
+| USE FOR RHYTHM PART               | Turns any channel into a drum channel.[^2] The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}. |
+| PITCH KEY SHIFT                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                                  |
+| PART LEVEL                        | Aliased to MIDI CC#7 (Main Volume).                                                                                                                |
+| VELOCITY SENSE DEPTH              | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                              |
+| VELOCITY SENSE OFFSET             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                            |
+| PART PANPOT                       | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                              |
+| CC1 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc1 `cc1`}.                                                                            |
+| CC2 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc2 `cc2`}.                                                                            |
+| CHORUS SEND LEVEL                 | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                              |
+| REVERB SEND LEVEL                 | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                              |
+| PITCH FINE TUNE                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.fineTune `fineTune`}.                                                                  |
+| DELAY SEND LEVEL                  | Aliased to MIDI CC#94 (Variation Depth).                                                                                                           |
+| TONE MODIFY1 (Vibrato rate)       | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                              |
+| TONE MODIFY2 (Vibrato depth)      | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                             |
+| TONE MODIFY3 (TVF Cutoff Freq)    | Aliased to MIDI CC#74 (Brightness).                                                                                                                |
+| TONE MODIFY4 (TVF Resonance)      | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                          |
+| TONE MODIFY5 (TVF&TVA Env.attack) | Aliased to MIDI CC#73 (Attack Time).                                                                                                               |
+| TONE MODIFY6 (TVF&TVA Env.decay)  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                |
+| TONE MODIFY7 (TVA Env.release)    | Aliased to MIDI CC#72 (Release Time).                                                                                                              |
+| TONE MODIFY8 (Vibrato delay)      | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                             |
+| SCALE TUNING                      | Treated like MTS octave tuning, allows to tune an octave in cents. Tuning is repeated for all octaves.                                             |
+| \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                    |
+| TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                           |
+| TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                           |
+| PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                                |
 
 [^2]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have.
 
@@ -417,8 +429,8 @@ This is implemented using a dynamic modulator system and additional generators t
 
 There are two special cases that are directly aliased to Channel MIDI Parameters:
 
-- MOD LFO1 PITCH DEPTH - Sets the Channel MIDI Parameter [`modulationDepth`](../spessa-synth-processor/midi-channel/channel-parameters.md#modulationdepth).
-- BEND PITCH CONTROL - Sets the Channel MIDI Parameter [`pitchWheelRange`](../spessa-synth-processor/midi-channel/channel-parameters.md#pitchwheelrange).
+- MOD LFO1 PITCH DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}.
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}.
 
 #### Drum Setup Parameters
 
@@ -426,18 +438,18 @@ The following messages allow to tune drum instruments.
 A drum instrument is defined as a single MIDI key in the drum preset.
 These search for a matching drum channel with the correct `drumMap` Channel MIDI Parameter.
 
-| Name                | Description                                                                                                                                                                                                                |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DRUM MAP NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
-| PLAY NOTE NUMBER    | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                                                                                    |
-| LEVEL               | The drum's loudness. These are normalized against 120 (`gain = data / 120`).                                                                                                                                               |
-| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                                                                                                                  |
-| PANPOT              | Pan position of the instrument, except value `0` enables random panning for every note. (multiplicative of channel)                                                                                                        |
-| REVERB SEND LEVEL   | Reverb send level of the instrument. (multiplicative of channel)                                                                                                                                                           |
-| CHORUS SEND LEVEL   | Chorus send level of the instrument. (multiplicative of channel)                                                                                                                                                           |
-| Rx. NOTE OFF        | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                                                                                              |
-| Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                                           |
-| DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                                            |
+| Name                | Description                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DRUM MAP NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data. |
+| PLAY NOTE NUMBER    | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                                                                 |
+| LEVEL               | The drum's loudness. These are normalized against 120 (`gain = data / 120`).                                                                                                                            |
+| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                                                                                               |
+| PANPOT              | Pan position of the instrument, except value `0` enables random panning for every note. (multiplicative of channel)                                                                                     |
+| REVERB SEND LEVEL   | Reverb send level of the instrument. (multiplicative of channel)                                                                                                                                        |
+| CHORUS SEND LEVEL   | Chorus send level of the instrument. (multiplicative of channel)                                                                                                                                        |
+| Rx. NOTE OFF        | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                                                                           |
+| Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                        |
+| DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                         |
 
 #### User Drum set
 
@@ -476,14 +488,14 @@ Below are the supported Yamaha XG System Exclusive messages.
 
 These are global parameters, affecting the entire synthesizer.
 
-| Name                | Description                                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| MASTER TUNE         | Sets the Global MIDI Parameter [`fineTune`](../spessa-synth-processor/global-parameters.md#finetune_1).                                |
-| MASTER VOLUME       | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume).                                      |
-| MASTER ATTENUATOR   | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume) with an inverted value.               |
-| MASTER TRANSPOSE    | Sets the Global MIDI Parameter [`keyShift`](../spessa-synth-processor/global-parameters.md#keyshift_1)                                 |
-| XG SYSTEM ON        | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `xg`. |
-| ALL PARAMETER RESET | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `xg`. |
+| Name                | Description                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| MASTER TUNE         | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.fineTune `fineTune`}.                                |
+| MASTER VOLUME       | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`}.                                    |
+| MASTER ATTENUATOR   | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`} with an inverted value.             |
+| MASTER TRANSPOSE    | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.keyShift `keyShift`}                                 |
+| XG SYSTEM ON        | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `xg`. |
+| ALL PARAMETER RESET | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `xg`. |
 
 #### Reverb, chorus, and variation block
 
@@ -494,40 +506,40 @@ They are ignored and logged to console in verbose output.
 
 Part (channel) parameters set a specific parameter for a specific channel.
 
-!!! Warning
+> **Warning**
+>
+> XG part (channel) number may range from 0 to 64.
+>
+> Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
-    XG part (channel) number may range from 0 to 64.
-
-    Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
-
-| Name                           | Description                                                                                                                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| BANK SELECT MSB                | Aliased to MIDI CC#0 (Bank Select).                                                                                                                                            |
-| BANK SELECT LSB                | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                                                       |
-| PROGRAM CHANGE                 | Same as a MIDI Program Change on that part's channel.                                                                                                                          |
-| RECEIVE CHANNEL NUMBER         | Sets the Channel MIDI Parameter [`rxChannel`](../spessa-synth-processor/midi-channel/channel-parameters.md#rxchannel).                                                         |
-| POLY/MONO MODE                 | Sets the Channel MIDI Parameter [`polyMode`](../spessa-synth-processor/midi-channel/channel-parameters.md#polymode). See [poly/mono implementation](#polymono-implementation). |
-| SAME NOTE NUMBER KEY ON ASSIGN | Sets the Channel MIDI Parameter [`assignMode`](../spessa-synth-processor/midi-channel/channel-parameters.md#assignmode).                                                       |
-| PART MODE                      | `0` = normal (melodic) part; any non-zero value turns the part into a drum channel.[^3]                                                                                        |
-| NOTE SHIFT                     | Sets the Channel MIDI Parameter [`keyShift`](../spessa-synth-processor/midi-channel/channel-parameters.md#keyshift_1).                                                         |
-| VOLUME                         | Aliased to MIDI CC#7 (Main Volume).                                                                                                                                            |
-| VELOCITY SENSE DEPTH           | Sets the Channel MIDI Parameter [`velocitySenseDepth`](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysensedepth).                                       |
-| VELOCITY SENSE OFFSET          | Sets the Channel MIDI Parameter [`velocitySenseOffset`](../spessa-synth-processor/midi-channel/channel-parameters.md#velocitysenseoffset).                                     |
-| PAN                            | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                                                          |
-| CHORUS                         | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                                                          |
-| REVERB                         | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                                                          |
-| VIBRATO RATE                   | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                                                          |
-| VIBRATO DEPTH                  | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                                                         |
-| VIBRATO DELAY                  | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                                         |
-| FILTER CUTOFF                  | Aliased to MIDI CC#74 (Brightness).                                                                                                                                            |
-| FILTER RESONANCE               | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                                                      |
-| EG ATTACK TIME                 | Aliased to MIDI CC#73 (Attack Time).                                                                                                                                           |
-| EG DECAY TIME                  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                                            |
-| EG RELEASE TIME                | Aliased to MIDI CC#72 (Release Time).                                                                                                                                          |
-| AC1 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter [`cc1`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc1).                                                                     |
-| AC2 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter [`cc2`](../spessa-synth-processor/midi-channel/channel-parameters.md#cc2).                                                                     |
-| PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                                                   |
-| PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                                                        |
+| Name                           | Description                                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| BANK SELECT MSB                | Aliased to MIDI CC#0 (Bank Select).                                                                                                         |
+| BANK SELECT LSB                | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                    |
+| PROGRAM CHANGE                 | Same as a MIDI Program Change on that part's channel.                                                                                       |
+| RECEIVE CHANNEL NUMBER         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                         |
+| POLY/MONO MODE                 | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation). |
+| SAME NOTE NUMBER KEY ON ASSIGN | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                       |
+| PART MODE                      | `0` = normal (melodic) part; any non-zero value turns the part into a drum channel.[^3]                                                     |
+| NOTE SHIFT                     | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                           |
+| VOLUME                         | Aliased to MIDI CC#7 (Main Volume).                                                                                                         |
+| VELOCITY SENSE DEPTH           | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                       |
+| VELOCITY SENSE OFFSET          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                     |
+| PAN                            | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                       |
+| CHORUS                         | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                       |
+| REVERB                         | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                       |
+| VIBRATO RATE                   | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                       |
+| VIBRATO DEPTH                  | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                      |
+| VIBRATO DELAY                  | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                      |
+| FILTER CUTOFF                  | Aliased to MIDI CC#74 (Brightness).                                                                                                         |
+| FILTER RESONANCE               | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                   |
+| EG ATTACK TIME                 | Aliased to MIDI CC#73 (Attack Time).                                                                                                        |
+| EG DECAY TIME                  | Aliased to MIDI CC#75 (Decay Time).                                                                                                         |
+| EG RELEASE TIME                | Aliased to MIDI CC#72 (Release Time).                                                                                                       |
+| AC1 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc1 `cc1`}.                                                                     |
+| AC2 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc2 `cc2`}.                                                                     |
+| PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                |
+| PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                     |
 
 [^3]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode.
 
@@ -547,8 +559,8 @@ This is implemented using a dynamic modulator system and additional generators t
 
 There are two special cases that are directly aliased to Channel MIDI Parameters:
 
-- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter [`modulationDepth`](../spessa-synth-processor/midi-channel/channel-parameters.md#modulationdepth).
-- BEND PITCH CONTROL - Sets the Channel MIDI Parameter [`pitchWheelRange`](../spessa-synth-processor/midi-channel/channel-parameters.md#pitchwheelrange).
+- MW LFO PMOD DEPTH - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.modulationDepth `modulationDepth`}.
+- BEND PITCH CONTROL - Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.pitchWheelRange `pitchWheelRange`}.
 
 #### Drum Setup
 
@@ -575,10 +587,10 @@ all drum channels get the same stored parameters, as there isn't a MAP system, l
 
 #### Display Data
 
-| Name           | Description                                                                                                                                                                       |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display Letter | The text that XG MIDIs display on the device. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data. |
-| Display Bitmap | Dot matrix display data for the XG devices. A [`displayMessage` event](../spessa-synth-processor/event-types.md#displaymessage) will be emitted with the System Exclusive data.   |
+| Name           | Description                                                                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display Letter | The text that XG MIDIs display on the device. A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data. |
+| Display Bitmap | Dot matrix display data for the XG devices. A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data.   |
 
 ### Universal MIDI System Exclusive
 
@@ -587,32 +599,32 @@ Below are the supported Universal System Exclusive messages.
 
 #### Device Control
 
-| Name                 | Description                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------- |
-| Master Volume        | Sets the Global MIDI Parameter [`volume`](../spessa-synth-processor/global-parameters.md#volume).       |
-| Master Balance       | Sets the Global MIDI Parameter [`pan`](../spessa-synth-processor/global-parameters.md#pan_1).           |
-| Master Fine-Tuning   | Sets the Global MIDI Parameter [`fineTune`](../spessa-synth-processor/global-parameters.md#finetune_1). |
-| Master Coarse Tuning | Sets the Global MIDI Parameter [`keyShift`](../spessa-synth-processor/global-parameters.md#keyshift_1). |
+| Name                 | Description                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Master Volume        | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`}.     |
+| Master Balance       | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.pan `pan`}.           |
+| Master Fine-Tuning   | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.fineTune `fineTune`}. |
+| Master Coarse Tuning | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.keyShift `keyShift`}. |
 
 #### Global Parameter Control
 
 | Name           | Description                                                                                                                                                                                  |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Reverb Type    | Sets all Reverb Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 81. |
-| Reverb Time    | Sets the Reverb Processor property [`time`](../spessa-synth-processor/effects/reverb-processor.md#time).                                                                                     |
+| Reverb Time    | Sets the Reverb Processor property {@link ReverbProcessor.time `time`}.                                                                                                                      |
 | Chorus Type    | Sets all Chorus Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 83. |
-| Mod Rate       | Sets the Chorus Processor property [`rate`](../spessa-synth-processor/effects/chorus-processor.md#rate).                                                                                     |
-| Mod Depth      | Sets the Chorus Processor property [`depth`](../spessa-synth-processor/effects/chorus-processor.md#depth).                                                                                   |
-| Feedback       | Sets the Chorus Processor property [`feedback`](../spessa-synth-processor/effects/chorus-processor.md#feedback).                                                                             |
-| Send to Reverb | Sets the Chorus Processor property [`sendLevelToReverb`](../spessa-synth-processor/effects/chorus-processor.md#sendleveltoreverb).                                                           |
+| Mod Rate       | Sets the Chorus Processor property {@link ChorusProcessor.rate `rate`}.                                                                                                                      |
+| Mod Depth      | Sets the Chorus Processor property {@link ChorusProcessor.depth `depth`}.                                                                                                                    |
+| Feedback       | Sets the Chorus Processor property {@link ChorusProcessor.feedback `feedback`}.                                                                                                              |
+| Send to Reverb | Sets the Chorus Processor property {@link ChorusProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                            |
 
 #### General MIDI
 
-| Name          | Description                                                                                                                             |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| GM System Off | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gs`.  |
-| GM1 System On | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gm`.  |
-| GM2 System On | Resets the synthesizer and sets the Global MIDI Parameter [`system`](../spessa-synth-processor/global-parameters.md#system_1) to `gm2`. |
+| Name          | Description                                                                                                     |
+| ------------- | --------------------------------------------------------------------------------------------------------------- |
+| GM System Off | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.  |
+| GM1 System On | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gm`.  |
+| GM2 System On | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gm2`. |
 
 #### MIDI Tuning Standard
 

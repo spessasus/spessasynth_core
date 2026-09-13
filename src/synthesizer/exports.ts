@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./enums";
 export * from "./audio_engine/effects/types";
 
+export { SoundBankManager } from "./audio_engine/sound_bank_manager";
 export { SpessaSynthProcessor } from "./processor";
 export { MIDIChannel } from "./audio_engine/channel/midi_channel";
 export { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "./audio_engine/parameters/system";
@@ -9,12 +10,11 @@ export { DEFAULT_GLOBAL_MIDI_PARAMETERS } from "./audio_engine/parameters/midi";
 export { DEFAULT_CHANNEL_SYSTEM_PARAMETERS } from "./audio_engine/channel/parameters/system";
 export { DEFAULT_CHANNEL_MIDI_PARAMETERS } from "./audio_engine/channel/parameters/midi";
 export {
-    DEFAULT_PERCUSSION,
-    DEFAULT_SYNTH_MODE,
-    VOICE_CAP,
     SPESSASYNTH_GAIN_FACTOR,
     SPESSA_BUFSIZE,
-    CONTROLLER_TABLE_SIZE
+    MIDI_DRUM_CHANNEL,
+    DEFAULT_SYNTH_MODE,
+    VOICE_CAP
 } from "./audio_engine/synth_constants";
 export * from "./audio_engine/channel/types";
 export type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";

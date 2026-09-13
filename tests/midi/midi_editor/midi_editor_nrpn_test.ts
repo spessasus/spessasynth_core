@@ -1,7 +1,7 @@
 import {
     MIDIControllers,
-    NonRegisteredLSB,
-    NonRegisteredMSB
+    NonRegisteredParameterTypesLSB,
+    NonRegisteredParameterTypesMSB
 } from "../../../src";
 import { MIDITestMaker } from "../../midi_file/midi_test_maker";
 import { runMIDIEditorTest } from "./run_midi_editor_test";
@@ -16,8 +16,8 @@ const dMSB = MIDIControllers.dataEntryMSB;
 // Add manually
 
 test.noteOn(60, 127)
-    .cc(pLSB, NonRegisteredLSB.tvfCutoffFrequency)
-    .cc(pMSB, NonRegisteredMSB.partParameter);
+    .cc(pLSB, NonRegisteredParameterTypesLSB.tvfCutoffFrequency)
+    .cc(pMSB, NonRegisteredParameterTypesMSB.partParameter);
 
 // Data entry spam: msb -> lsb
 for (let index = 0; index < 5; index++) {
@@ -37,13 +37,13 @@ for (let index = 0; index < 5; index++) {
 }
 
 // Interleaved NRPN between channels
-test.cc(pLSB, NonRegisteredLSB.tvfCutoffFrequency)
+test.cc(pLSB, NonRegisteredParameterTypesLSB.tvfCutoffFrequency)
     .switchChannel(1)
-    .cc(pLSB, NonRegisteredLSB.tvfCutoffFrequency)
+    .cc(pLSB, NonRegisteredParameterTypesLSB.tvfCutoffFrequency)
     .switchChannel(0)
-    .cc(pMSB, NonRegisteredMSB.partParameter)
+    .cc(pMSB, NonRegisteredParameterTypesMSB.partParameter)
     .switchChannel(1)
-    .cc(pMSB, NonRegisteredMSB.partParameter)
+    .cc(pMSB, NonRegisteredParameterTypesMSB.partParameter)
     .switchChannel(0)
     .note(61, 127)
     .cc(dMSB, 60)

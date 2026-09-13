@@ -4,8 +4,21 @@ import type { SynthesizerCore } from "../synthesizer_core";
 import { SpessaLog } from "../../../utils/loggin";
 
 /**
- * The global parameters of the synthesizer.
- * These can only be changed via the API.
+ * Global System Parameters are API-only parameters
+ * that affect the entire synthesizer.
+ *
+ * They are System Parameters, meaning that they can only be changed via the API,
+ * and not via MIDI messages.
+ *
+ * {@link DEFAULT_GLOBAL_SYSTEM_PARAMETERS} is provided with the library,
+ * containing the defaults.
+ *
+ * Examples:
+ *
+ * - `voiceCap`
+ * - `interpolationType`
+ *
+ * @group Synthesizer.Parameters
  */
 export interface GlobalSystemParameter {
     // Synth exclusive
@@ -22,16 +35,20 @@ export interface GlobalSystemParameter {
     /**
      * The maximum number of voices that can be played at once.
      *
-     * Increasing this value causes memory allocation for more voices.
-     * It is recommended to set it at the beginning, before rendering audio to avoid GC.
-     * Decreasing it does not cause memory usage change, so it's fine to use.
+     * > **Warning**
+     * >
+     * > Increasing this value causes memory allocation for more voices.
+     * > It is recommended to set it at the beginning, before rendering audio to avoid GC.
+     * > Decreasing it does not cause memory usage change, so it's fine to use.
      */
     voiceCap: number;
 
     /**
      * Enabling this parameter will cause a new voice allocation when the voice cap is hit, rather than stealing existing voices.
      *
-     * This is not recommended in real-time environments.
+     * > **Warning**
+     * >
+     * > This is not recommended in real-time environments.
      */
     autoAllocateVoices: boolean;
 
@@ -83,7 +100,9 @@ export interface GlobalSystemParameter {
      * the recommended use case would be setting
      * the insertion effect type and parameters then locking it to prevent changes by MIDI files.
      *
-     * To lock the channel insertion assign, lock the `efxAssign` parameter instead.
+     * > **Warning**
+     * >
+     * > To lock the channel insertion assign, lock the {@link ChannelMIDIParameter.efxAssign `efxAssign`} parameter instead.
      */
     insertionEffectLock: boolean;
 
@@ -137,11 +156,25 @@ export interface GlobalSystemParameter {
     /**
      * The global tuning in cents.
      * Drum channels ignore this value.
+     *
+     * > **Tip**
+     * >
+     * > While the range of this parameter is unlimited, it is recommended to keep it in the range of -100 to 100 cents.
+     * > The values above that should be applied to `keyShift` instead.
+     * > For example, if the target value is 156, the recommended approach is:
+     * >
+     * > - `keyShift` = 1
+     * > - `fineTune` = 56
      */
     fineTune: number;
 
     /**
      * The interpolation type used for sample playback.
+     * Interpolation defines how sample points between the sample data are calculated.
+     * This has high cost on performance but can improve the quality.
+     *
+     *
+     * Overrides the global parameter if set.
      */
     interpolationType: InterpolationType;
 
@@ -169,6 +202,11 @@ export interface GlobalSystemParameter {
     customVibrato: boolean;
 }
 
+/**
+ * Default values for {@link GlobalSystemParameter}s.
+ *
+ * @group Synthesizer.Parameters
+ */
 export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
     // Synth exclusive
     effectsEnabled: true,

@@ -1,6 +1,10 @@
 // prettier-ignore
 /**
  * All SoundFont2 Generator enumerations.
+ *
+ * Also see [Generator Types](../../../docs/extra/generator-types.md).
+ *
+ * @group Sound Banks.Generators
  */
 export const GeneratorTypes = Object.freeze({
     invalid: -1, // Invalid generator
@@ -84,13 +88,23 @@ export const GeneratorTypes = Object.freeze({
     modLfoAmplitudeDepth: 67
 } as const);
 
+/**
+ * @inheritDoc GeneratorTypes
+ *
+ * @group Sound Banks.Generators
+ */
 export type GeneratorType =
     (typeof GeneratorTypes)[keyof typeof GeneratorTypes];
 
 export const MAX_GENERATOR = Math.max(...Object.values(GeneratorTypes));
 export const GENERATORS_AMOUNT = MAX_GENERATOR + 1;
 
-interface GeneratorLimit {
+/**
+ * Represents a single generator's range and default value.
+ *
+ * @group Sound Banks.Generators
+ */
+export interface GeneratorLimit {
     /**
      * Minimum value for this generator type.
      */
@@ -110,7 +124,9 @@ interface GeneratorLimit {
 }
 
 /**
- * Min: minimum value, max: maximum value, def: default value, nrpn: nrpn scale
+ * Limits and defaults for all the {@link BasicSoundBank} generator types.
+ *
+ * @group Sound Banks.Generators
  */
 // prettier-ignore
 export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =

@@ -2,8 +2,8 @@ import { MIDIMessage } from "../midi_message";
 import {
     type MIDIController,
     MIDIControllers,
-    NonRegisteredLSB,
-    NonRegisteredMSB,
+    NonRegisteredParameterTypesLSB,
+    NonRegisteredParameterTypesMSB,
     RegisteredParameterTypes
 } from "../enums";
 
@@ -16,20 +16,54 @@ import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/paramet
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
 
-type GlobalMIDIParameterMessage = {
+/**
+ * Represents an analyzed global MIDI parameter change message.
+ *
+ * @group MIDI.Protocol
+ */
+export type GlobalMIDIParameterMessage = {
     [P in keyof GlobalMIDIParameter]: {
+        /**
+         * The message type identifier.
+         */
         type: "Global MIDI Param";
+        /**
+         * The global MIDI parameter being modified.
+         */
         parameter: P;
+        /**
+         * The new value of the global MIDI parameter.
+         */
         value: GlobalMIDIParameter[P];
     };
 }[keyof GlobalMIDIParameter];
 
-// Channel number may be above 15
-type ChannelMIDIParameterMessage = {
+/**
+ * Represents an analyzed channel MIDI parameter change message.
+ *
+ * > **Note**
+ * >
+ * > Channel number may be above 15 for multi-port MIDI setups.
+ *
+ * @group MIDI.Protocol
+ */
+export type ChannelMIDIParameterMessage = {
     [P in keyof ChannelMIDIParameter]: {
+        /**
+         * The message type identifier.
+         */
         type: "Channel MIDI Param";
+        /**
+         * The channel MIDI parameter being modified.
+         */
         parameter: P;
+        /**
+         * The new value of the channel MIDI parameter.
+         */
         value: ChannelMIDIParameter[P];
+        /**
+         * The MIDI channel number (it may be above 15 for multi-port MIDI setups).
+         */
         channel: number;
     };
 }[keyof ChannelMIDIParameter];
@@ -51,45 +85,158 @@ const userDrumParamMap: Record<keyof UserDrumSetParameter, number> = {
     sourceNoteNumber: 0xc
 };
 
-// Channel number may be above 15
-type AnalyzedParameter =
-    | { type: "Other" }
+/**
+ * The analysis result of an RPN (Registered Parameter Number) or NRPN (Non-Registered Parameter Number) MIDI message.
+ *
+ * > **Note**
+ * >
+ * > Channel number may be above 15 for multi-port MIDI setups.
+ *
+ * @group MIDI.Protocol
+ */
+export type AnalyzedParameter =
     | {
+          /**
+           * An unhandled or unrecognized parameter message.
+           */
+          type: "Other";
+      }
+    | {
+          /**
+           * A standard MIDI controller change mapped from an NRPN or parameter.
+           */
           type: "Controller Change";
+          /**
+           * The MIDI controller being modified.
+           */
           controller: MIDIController;
+          /**
+           * The 7-bit controller value (0-127).
+           */
           value: number;
+          /**
+           * The MIDI channel number (it may be above 15).
+           */
           channel: number;
       }
     | ChannelMIDIParameterMessage
     | {
           [K in keyof DrumParameter]: {
+              /**
+               * A drum setup parameter message.
+               */
               type: "Drum Setup";
+              /**
+               * The MIDI drum key/note number being modified.
+               */
               key: number;
+              /**
+               * The drum parameter name.
+               */
               parameter: K;
+              /**
+               * The value for the drum parameter.
+               */
               value: DrumParameter[K];
           };
       }[keyof DrumParameter];
 
+/**
+ * The analysis result of a System Exclusive (SysEx) or (N)RPN MIDI message.
+ *
+ * Represents various parsed MIDI events, including effect parameters, channel setups,
+ * program changes, display data, global parameters, user drum setups, and other analyzed parameters.
+ *
+ * @group MIDI.Protocol
+ */
 export type AnalyzedMIDIMessage =
     | AnalyzedParameter
-    | { type: "Reverb Param" }
-    | { type: "Chorus Param" }
-    | { type: "Delay Param" }
-    | { type: "Variation Param" }
-    | { type: "Insertion Param" }
-    | { type: "Drums On"; channel: number; isDrum: boolean }
-    | { type: "Program Change"; channel: number; value: number }
-    | { type: "Display Data" }
+    | {
+          /**
+           * A reverb effect processor parameter message.
+           */
+          type: "Reverb Param";
+      }
+    | {
+          /**
+           * A chorus effect processor parameter message.
+           */
+          type: "Chorus Param";
+      }
+    | {
+          /**
+           * A delay effect processor parameter message.
+           */
+          type: "Delay Param";
+      }
+    | {
+          /**
+           * A variation effect processor parameter message (Yamaha XG).
+           */
+          type: "Variation Param";
+      }
+    | {
+          /**
+           * An insertion effect processor parameter message (Roland GS).
+           */
+          type: "Insertion Param";
+      }
+    | {
+          /**
+           * A message configuring whether a channel is set as a drum channel or melodic channel.
+           */
+          type: "Drums On";
+          /**
+           * The MIDI channel number.
+           */
+          channel: number;
+          /**
+           * `true` if the channel is set to drums, `false` if melodic.
+           */
+          isDrum: boolean;
+      }
+    | {
+          /**
+           * A MIDI program change message configured via System Exclusive.
+           */
+          type: "Program Change";
+          /**
+           * The MIDI channel number.
+           */
+          channel: number;
+          /**
+           * The MIDI program number (0-127).
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
+           */
+          type: "Display Data";
+      }
     | GlobalMIDIParameterMessage
     | {
           [K in keyof UserDrumSetParameter]: {
+              /**
+               * A user drum set parameter setup message.
+               */
               type: "User Drum Setup";
               /**
-               * 0-based
+               * The 0-based user drum set index.
                */
               drumSet: number;
+              /**
+               * The MIDI note number within the user drum set.
+               */
               midiNote: number;
+              /**
+               * The user drum set parameter name.
+               */
               parameter: K;
+              /**
+               * The value for the user drum set parameter.
+               */
               value: UserDrumSetParameter[K];
           };
       }[keyof UserDrumSetParameter];
@@ -97,15 +244,26 @@ export type AnalyzedMIDIMessage =
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedParameter;
 
 /**
- * A general purpose class for handling MIDI messages.
+ * This class contains useful utilities for manipulating and parsing System Exclusive and other MIDI 1.0 messages.
+ *
+ * @group MIDI.Protocol
  */
 export class MIDIUtils {
+    // noinspection JSUnusedLocalSymbols
+    private constructor() {
+        throw new Error("MIDIUtils. cannot be instantiated");
+    }
+
     /**
      * Analyzes a MIDI System Exclusive message
      * and returns an identification and data for it.
-     * @param syx the System Exclusive message, WITHOUT the first 0xF0 System Exclusive byte!
      *
-     * Note that bulk dump and other sysExes are supported so this method may return more than one result.
+     * > **Note**
+     * >
+     * > Bulk dump and other sysExes are supported so this method may return more than one result.
+     *
+     * @param syx The System Exclusive message, WITHOUT the first `0xF0` System Exclusive byte!
+     * @returns The analysis result(s) of the message.
      */
     public static analyzeSysEx(syx: SysExAcceptedArray): AnalyzedMIDIMessage[] {
         // At least Manufacturer ID, Device ID and XG/GS model ID
@@ -140,6 +298,7 @@ export class MIDIUtils {
      * @param channel The MIDI channel number.
      * @param rpn The 14-bit RPN number.
      * @param value The 14-bit value for that number.
+     * @returns The analysis result(s) of the message.
      */
     public static analyzeRPN(
         channel: number,
@@ -196,6 +355,7 @@ export class MIDIUtils {
      * @param channel The MIDI channel number.
      * @param nrpn The 14-bit NRPN number.
      * @param value The 14-bit value for that number.
+     * @returns The analysis result(s) of the message.
      */
     public static analyzeNRPN(
         channel: number,
@@ -209,13 +369,13 @@ export class MIDIUtils {
                 return OTHER;
             }
 
-            case NonRegisteredMSB.partParameter: {
+            case NonRegisteredParameterTypesMSB.partParameter: {
                 switch (lsb) {
                     default: {
                         return OTHER;
                     }
 
-                    case NonRegisteredLSB.vibratoRate: {
+                    case NonRegisteredParameterTypesLSB.vibratoRate: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -224,7 +384,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.vibratoDepth: {
+                    case NonRegisteredParameterTypesLSB.vibratoDepth: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -233,7 +393,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.vibratoDelay: {
+                    case NonRegisteredParameterTypesLSB.vibratoDelay: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -242,7 +402,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.tvfCutoffFrequency: {
+                    case NonRegisteredParameterTypesLSB.tvfCutoffFrequency: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -251,7 +411,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.tvfResonance: {
+                    case NonRegisteredParameterTypesLSB.tvfResonance: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -260,7 +420,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.envelopeAttackTime: {
+                    case NonRegisteredParameterTypesLSB.envelopeAttackTime: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -269,7 +429,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.envelopeDecayTime: {
+                    case NonRegisteredParameterTypesLSB.envelopeDecayTime: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -278,7 +438,7 @@ export class MIDIUtils {
                         };
                     }
 
-                    case NonRegisteredLSB.envelopeReleaseTime: {
+                    case NonRegisteredParameterTypesLSB.envelopeReleaseTime: {
                         return {
                             type: "Controller Change",
                             channel,
@@ -289,7 +449,7 @@ export class MIDIUtils {
                 }
             }
 
-            case NonRegisteredMSB.drumPitch: {
+            case NonRegisteredParameterTypesMSB.drumPitch: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -297,7 +457,7 @@ export class MIDIUtils {
                     value: value - 64
                 };
             }
-            case NonRegisteredMSB.drumPitchFine: {
+            case NonRegisteredParameterTypesMSB.drumPitchFine: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -305,7 +465,7 @@ export class MIDIUtils {
                     value: value - 64
                 };
             }
-            case NonRegisteredMSB.drumLevel: {
+            case NonRegisteredParameterTypesMSB.drumLevel: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -313,7 +473,7 @@ export class MIDIUtils {
                     value
                 };
             }
-            case NonRegisteredMSB.drumPan: {
+            case NonRegisteredParameterTypesMSB.drumPan: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -321,7 +481,7 @@ export class MIDIUtils {
                     value
                 };
             }
-            case NonRegisteredMSB.drumReverb: {
+            case NonRegisteredParameterTypesMSB.drumReverb: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -330,7 +490,7 @@ export class MIDIUtils {
                 };
             }
 
-            case NonRegisteredMSB.drumChorus: {
+            case NonRegisteredParameterTypesMSB.drumChorus: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -338,7 +498,7 @@ export class MIDIUtils {
                     value
                 };
             }
-            case NonRegisteredMSB.drumVariation: {
+            case NonRegisteredParameterTypesMSB.drumVariation: {
                 return {
                     type: "Drum Setup",
                     key: lsb,
@@ -356,6 +516,7 @@ export class MIDIUtils {
      * this selects the preferred way. Otherwise, it prefers Universal (GM).
      * @param parameter The parameter to set.
      * @param value The value to set it to.
+     * @returns The list of {@link MIDIMessage}s needed to set this Global MIDI Parameter.
      */
     public static setGlobalMIDIParameter<P extends keyof GlobalMIDIParameter>(
         ticks: number,
@@ -527,7 +688,7 @@ export class MIDIUtils {
      * this selects the preferred way. Otherwise, it prefers Universal (GM).
      * @param parameter The parameter to set.
      * @param value The value to set it to.
-     * @returns The list of `MIDIMessage`s that set the parameter.
+     * @returns The list of {@link MIDIMessage}s needed to set this Channel MIDI Parameter.
      */
     public static setChannelMIDIParameter<P extends keyof ChannelMIDIParameter>(
         ticks: number,
@@ -748,13 +909,13 @@ export class MIDIUtils {
     }
 
     /**
-     * Returns a  MIDI event needed to set the given GS User Drum Set parameter.
+     * Returns a MIDI event needed to set the given GS User Drum Set parameter.
      * @param ticks The ticks for all events.
      * @param drumSet The drum set to modify, either 0 or 1.
      * @param midiNote The MIDI note number of the drum key to modify.
      * @param parameter The parameter to set.
      * @param value The value to set it to.
-     * @returns The `MIDIMessage` that sets the parameter.
+     * @returns The {@link MIDIMessage} needed to set this User Drum Set parameter.
      */
     public static setUserDrumParameter<P extends keyof UserDrumSetParameter>(
         ticks: number,
@@ -784,8 +945,9 @@ export class MIDIUtils {
     }
 
     /**
-     * Converts GS/XG "part number" to MIDI channel number.
+     * Converts GS part number to MIDI channel number.
      * @param part The part number.
+     * @returns The MIDI Channel number.
      */
     public static syxToChannel(part: number) {
         return [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
@@ -794,8 +956,9 @@ export class MIDIUtils {
     }
 
     /**
-     * Converts MIDI channel number to GS/XG "part number".
+     * Converts MIDI channel number to GS "part number".
      * @param channel The MIDI channel number.
+     * @returns The GS part number.
      */
     public static channelToSyx(channel: number) {
         return [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][
@@ -804,11 +967,18 @@ export class MIDIUtils {
     }
 
     /**
-     * Gets raw GS System Exclusive message bytes, without the 0xF0 status byte.
+     * Gets raw GS Data set 1 (DT1) System Exclusive message bytes.
+     *
+     * > **Tip**
+     * >
+     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf)
+     * > for the addresses for specific parameters.
+     *
      * @param a1 Address 1
      * @param a2 Address 2
      * @param a3 Address 3
      * @param data Data, can be multiple bytes.
+     * @returns The binary data of the MIDI message, excluding the starting `0xF0` byte.
      */
     public static gs(a1: number, a2: number, a3: number, data: number[]) {
         // Calculate checksum
@@ -830,12 +1000,19 @@ export class MIDIUtils {
     }
 
     /**
-     * Gets a GS System Exclusive MIDI message.
-     * @param ticks The tick time of the message.
+     * Gets a GS Data set 1 (DT1) System Exclusive MIDI message.
+     *
+     * > **Tip**
+     * >
+     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf)
+     * > for the addresses for specific parameters.
+     *
+     * @param ticks The MIDI tick time of the message.
      * @param a1 Address 1
      * @param a2 Address 2
      * @param a3 Address 3
      * @param data Data, can be multiple bytes.
+     * @returns The System Exclusive MIDI message.
      */
     public static gsMessage(
         ticks: number,
@@ -848,11 +1025,12 @@ export class MIDIUtils {
     }
 
     /**
-     * Gets raw XG System Exclusive message bytes, without the 0xF0 status byte.
+     * Gets raw XG System Exclusive message bytes.
      * @param a1 Address 1
      * @param a2 Address 2
      * @param a3 Address 3
      * @param data Data, can be multiple bytes.
+     * @returns The binary data of the MIDI message, excluding the starting `0xF0` byte.
      */
     public static xg(a1: number, a2: number, a3: number, data: number[]) {
         return [
@@ -874,6 +1052,7 @@ export class MIDIUtils {
      * @param a2 Address 2
      * @param a3 Address 3
      * @param data Data, can be multiple bytes.
+     * @returns The System Exclusive MIDI message.
      */
     public static xgMessage(
         ticks: number,
@@ -886,9 +1065,10 @@ export class MIDIUtils {
     }
 
     /**
-     * Gets a raw Device Control System Exclusive message bytes, without the 0xF0 status byte.
+     * Gets a raw Device Control System Exclusive message bytes.
      * @param subID The sub ID.
      * @param data Data, can be multiple bytes.
+     * @returns The binary MIDI message data, excluding the starting `0xF0` byte.
      */
     public static deviceControl(subID: number, data: number[]) {
         return [
@@ -906,6 +1086,7 @@ export class MIDIUtils {
      * @param ticks The tick time of the message.
      * @param subID The sub ID.
      * @param data Data, can be multiple bytes.
+     * @returns The system exclusive MIDI message.
      */
     public static deviceControlMessage(
         ticks: number,
@@ -922,6 +1103,7 @@ export class MIDIUtils {
      * Gets a selected reset System Exclusive MIDI message.
      * @param ticks The tick time of the message.
      * @param system The system to reset into.
+     * @returns The system exclusive MIDI message.
      */
     public static reset(ticks: number, system: MIDISystem) {
         switch (system) {
