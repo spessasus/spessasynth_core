@@ -20,7 +20,7 @@ export function load(application: Application) {
         if (!heading) return;
 
         const title = heading[1]
-            .replaceAll(/<[^>]*>/g, "")
+            .replaceAll(/<[^>]*(?:>|$)/g, "")
             .replaceAll("&lt;", "<")
             .replaceAll("&gt;", ">")
             .replaceAll("&quot;", '"')
