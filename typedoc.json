@@ -38,6 +38,7 @@
         "./docs/typedoc/plugins/redirects.ts",
         "./docs/typedoc/plugins/assets.ts",
         "./docs/typedoc/plugins/homepage.ts",
+        "./docs/typedoc/plugins/404.ts",
         "./docs/typedoc/plugins/search.ts"
     ]
 }
