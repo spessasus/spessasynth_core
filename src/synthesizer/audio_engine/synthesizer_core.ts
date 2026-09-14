@@ -575,13 +575,11 @@ export class SynthesizerCore {
         const channel: MIDIChannel = new MIDIChannel(
             this,
             this.defaultPreset,
+            this.drumPreset,
             this.midiChannels.length
         );
         this.midiChannels.push(channel);
-        if (sendEvent) {
-            this.callEvent("channelAdded", undefined);
-            channel.setDrums(true);
-        }
+        if (sendEvent) this.callEvent("channelAdded", undefined);
     }
 
     /**

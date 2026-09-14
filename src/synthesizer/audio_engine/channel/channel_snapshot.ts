@@ -80,8 +80,6 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
 }
 
 export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
-    this.setDrums(snapshot.drumChannel);
-
     this._midiControllers.set(snapshot.midiControllers);
     for (let i = 0; i < CONTROLLER_TABLE_SIZE; i++)
         this.lockController(i as MIDIController, snapshot.lockedControllers[i]);
@@ -106,7 +104,16 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     // Disable to set patch
     // Restored in system params
     this.setSystemParameter("presetLock", false);
-    if (snapshot.patch) this.setPatch(snapshot.patch);
+    if (snapshot.patch) {
+        this.setBankMSB(snapshot.patch.bankMSB);
+        this.setBankLSB(snapshot.patch.bankLSB);
+        this.setIsGMGSDrum(snapshot.patch.isGMGSDrum);
+        this.programChange(snapshot.patch.program);
+        // Fallback if no preset matched and the flag didn't sync
+        this.setDrumFlag(snapshot.drumChannel);
+    } else {
+        this.setDrumFlag(snapshot.drumChannel);
+    }
     this.lockedSystem = snapshot.lockedSystem;
 
     // Restore MIDI parameters

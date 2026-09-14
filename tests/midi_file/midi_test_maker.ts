@@ -339,12 +339,20 @@ export class MIDITestMaker extends MIDIBuilder {
         return this;
     }
 
+    /**
+     * Executes a single program change message.
+     * @param program The MIDI program number.
+     */
+    public programChangeOnly(program: number) {
+        super.programChange(this.ticks, 0, this.channel, program);
+        return this;
+    }
+
     public programChange(msb: number, lsb: number, program: number) {
         this.text(`Program change ${msb}:${lsb} - ${program}`);
         this.cc(MIDIControllers.bankSelectLSB, lsb);
         this.cc(MIDIControllers.bankSelect, msb);
-        super.programChange(this.ticks, 0, this.channel, program);
-        return this;
+        return this.programChangeOnly(program);
     }
 
     public init(

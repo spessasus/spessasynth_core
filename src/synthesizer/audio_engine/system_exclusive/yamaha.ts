@@ -154,7 +154,15 @@ export function yamahaSystemExclusive(
                 // Part mode
                 case 0x07: {
                     const drums = data !== 0;
+                    // Testcase: xg part_mode_drum
+                    // Verified with s-yxg50
+                    // SetDrums switches the bank and keeps the program,
+                    // But switching *to* drums re-initializes the kit
+                    // To program 0 instead!
                     ch.setDrums(drums);
+                    if (drums) {
+                        ch.programChange(0);
+                    }
                     SpessaLog.xgInfo(
                         `Part Mode on ${channel}`,
                         drums ? "DRUM" : "MELODIC"

@@ -767,10 +767,24 @@ export function rolandSystemExclusive(
                             }
 
                             case 0x15: {
-                                // This is the Use for Drum Part sysex (multiple drums)
+                                // This is the Use for Rhythm Part sysex (multiple drums)
+                                const prevMap = ch.midiParameters.drumMap;
                                 ch.setMIDIParameter("drumMap", data);
-                                const isDrums = data > 0; // If set to other than 0, is a drum channel
-                                ch.setGSDrums(isDrums);
+                                const newMap = ch.midiParameters.drumMap;
+                                const isDrums = data > 0; // Non-zero means a drum channel
+                                // Testcase: gs_drum_change_test
+                                // GS resets to the default kit not only when toggling drums,
+                                // But on any map change too.
+                                if (
+                                    !ch.systemParameters.presetLock &&
+                                    (isDrums !== ch.patch.isGMGSDrum ||
+                                        newMap !== prevMap)
+                                ) {
+                                    ch.patch.bankMSB = 0;
+                                    ch.patch.bankLSB = 0;
+                                    ch.patch.isGMGSDrum = isDrums;
+                                    ch.programChange(0);
+                                }
                                 SpessaLog.gsInfo(
                                     `Drums on ${channel}`,
                                     isDrums.toString()

@@ -142,13 +142,12 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this._midiControllers[MIDIControllers.dataEntryMSB] = 0;
     this._midiControllers[MIDIControllers.dataEntryLSB] = 0;
 
-    // Reset program
+    // Reset program: default bank, program 0,
+    // Drums only on every 16th channel 10.
     this.setBankMSB(BankSelectHacks.getDefaultBank(this.channelSystem));
     this.setBankLSB(0);
-    this.setGSDrums(false);
-
+    this.patch.program = 0;
     this.setDrums(this.channel % 16 === MIDI_DRUM_CHANNEL);
-    this.programChange(0);
 }
 
 export const RP_15_RESET_CC_NUMS: MIDIController[] = [

@@ -50,6 +50,7 @@ import { DrumParameterUtils as DrumParameterUtilities } from "../../../midi/drum
 import type { DrumParameter } from "../../../midi/types";
 import type { CustomChannelVibrato } from "./types";
 import type { Voice } from "../voice/voice";
+import { SpessaLog } from "../../../utils/loggin";
 
 /**
  * This class represents a single MIDI channel within a {@link SpessaSynthProcessor}.
@@ -344,6 +345,7 @@ export class MIDIChannel {
     public constructor(
         synthProperties: SynthesizerCore,
         preset: SynthesizerPatch | undefined,
+        drumPreset: SynthesizerPatch | undefined,
         channelNumber: number
     ) {
         this.synthCore = synthProperties;
@@ -369,6 +371,17 @@ export class MIDIChannel {
         this.resetGeneratorOffsets();
         this.resetDrumParams();
         this.resetVibratoParams();
+        // Drum preset
+        if (this.channel % 16 === MIDI_DRUM_CHANNEL) {
+            if (drumPreset) {
+                this.preset = drumPreset;
+                this.patch.program = drumPreset.program;
+                this.patch.bankLSB = drumPreset.bankLSB;
+                this.patch.bankMSB = drumPreset.bankMSB;
+                this.patch.isGMGSDrum = drumPreset.isGMGSDrum;
+            }
+            this.setDrumFlag(true);
+        }
     }
 
     /**
@@ -448,7 +461,7 @@ export class MIDIChannel {
     }
 
     /** @internal */
-    protected get channelSystem(): MIDISystem {
+    public get channelSystem(): MIDISystem {
         return this._systemParameters.presetLock
             ? this.lockedSystem
             : this.synthCore.midiParameters.system;
@@ -610,31 +623,46 @@ export class MIDIChannel {
     }
 
     /**
-     * Changes the preset to, or from drums.
-     * Note that this executes a program change.
-     * @param isDrum If the channel should be a drum preset or not.
+     * Toggles drums on the channel and keeps the current program number.
+     * Executes a program change so the change is immediately audible.
+     *
+     * > **Note**
+     * >
+     * > This does _not_ bypass {@link ChannelSystemParameter.presetLock `presetLock`}.
+     *
+     * @param isDrum If the channel should be a drum channel or not.
      */
     public setDrums(isDrum: boolean) {
+        if (this._systemParameters.presetLock) return;
+
         if (BankSelectHacks.isSystemXG(this.channelSystem)) {
             if (isDrum) {
+                if (BankSelectHacks.isXGDrum(this.patch.bankMSB)) return;
                 this.setBankMSB(
                     BankSelectHacks.getDrumBank(this.channelSystem)
                 );
-                this.setBankLSB(0);
             } else {
                 if (this.channel % 16 === MIDI_DRUM_CHANNEL) {
-                    throw new Error(
+                    SpessaLog.warn(
                         `Cannot disable drums on channel ${this.channel} for XG.`
                     );
+                    return;
                 }
-                this.setBankMSB(0);
-                this.setBankLSB(0);
+                this.setBankMSB(
+                    BankSelectHacks.getDefaultBank(this.channelSystem)
+                );
             }
-        } else {
-            this.setGSDrums(isDrum);
+
+            // Commit the changes and return
+            this.programChange(this.patch.program);
+            return;
         }
-        this.setDrumFlag(isDrum);
+        if (isDrum === this._drumChannel) return;
+        // Flip the drums for GS
+        this.setIsGMGSDrum(isDrum);
         this.programChange(this.patch.program);
+        // Fallback if no preset matched and the flag didn't sync
+        this.setDrumFlag(isDrum);
     }
 
     /**
@@ -814,33 +842,6 @@ export class MIDIChannel {
     }
 
     /**
-     * Sets the channel to a given MIDI patch.
-     * Note that this executes a program change.
-     * @param patch The MIDI patch to set the channel to.
-     * @internal
-     */
-    public setPatch(patch: MIDIPatch) {
-        this.setBankMSB(patch.bankMSB);
-        this.setBankLSB(patch.bankLSB);
-        this.setGSDrums(patch.isGMGSDrum);
-        this.programChange(patch.program);
-    }
-
-    /**
-     * Sets the GM/GS drum flag.
-     * @param drums
-     * @internal
-     */
-    public setGSDrums(drums: boolean) {
-        if (drums === this.patch.isGMGSDrum) {
-            return;
-        }
-        this.setBankLSB(0);
-        this.setBankMSB(0);
-        this.patch.isGMGSDrum = drums;
-    }
-
-    /**
      * Stops a note nearly instantly.
      * @param midiNote The note to stop.
      * @param releaseTime in timecents, defaults to -12000 (very short release).
@@ -904,6 +905,24 @@ export class MIDIChannel {
         this._midiControllers = undefined;
         // @ts-expect-error destruction
         this._midiParameters = undefined;
+    }
+
+    /** @internal */
+    protected setBankMSB(bankMSB: number) {
+        if (this._systemParameters.presetLock) return;
+        this.patch.bankMSB = bankMSB;
+    }
+
+    /** @internal */
+    protected setBankLSB(bankLSB: number) {
+        if (this._systemParameters.presetLock) return;
+        this.patch.bankLSB = bankLSB;
+    }
+
+    /** @internal */
+    protected setIsGMGSDrum(isGMGSDrum: boolean) {
+        if (this._systemParameters.presetLock) return;
+        this.patch.isGMGSDrum = isGMGSDrum;
     }
 
     /** @internal */
@@ -1011,28 +1030,12 @@ export class MIDIChannel {
             }
     }
 
-    /** @internal */
-    protected setBankMSB(bankMSB: number) {
-        if (this._systemParameters.presetLock) return;
-        this.patch.bankMSB = bankMSB;
-    }
-
-    /** @internal */
-    protected setBankLSB(bankLSB: number) {
-        if (this._systemParameters.presetLock) return;
-        this.patch.bankLSB = bankLSB;
-    }
-
     /**
      * Sets drums on channel.
      * @internal
      */
     protected setDrumFlag(isDrum: boolean) {
-        if (
-            this._systemParameters.presetLock ||
-            !this.preset ||
-            this._drumChannel === isDrum
-        )
+        if (this._systemParameters.presetLock || this._drumChannel === isDrum)
             return;
 
         this._drumChannel = isDrum;
