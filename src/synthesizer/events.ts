@@ -459,6 +459,7 @@ export interface SynthesizerEvent {
  */
 export type SynthesizerEventCallback = {
     [K in keyof SynthesizerEvent]: {
+        type: K;
         data: SynthesizerEvent[K];
     };
 }[keyof SynthesizerEvent];
