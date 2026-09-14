@@ -107,7 +107,7 @@ export class BasicSoundBank {
      *
      * > **Tip**
      * >
-     * > Consider reading {@link "Modulator Information"}
+     * > Consider reading [default modulators](../../../docs/extra/modulator-information.md#default-modulators).
      */
     public defaultModulators: Modulator[] = SPESSASYNTH_DEFAULT_MODULATORS.map(
         Modulator.copyFrom.bind(Modulator)
@@ -337,7 +337,7 @@ export class BasicSoundBank {
      *
      * > **Note**
      * >
-     * > Consider reading {@link "The DLS Conversion problem"}
+     * > Consider reading about [the DLS conversion problem](../../../docs/extra/dls-conversion-problem.md).
      *
      * > **Warning**
      * >

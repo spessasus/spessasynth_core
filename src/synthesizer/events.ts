@@ -375,7 +375,7 @@ export interface SynthesizerEvent {
      * This event is triggered when a new channel is added to the synthesizer.
      * Either manually,
      * or when the sequencer detects
-     * a Multi-Port MIDI file. Consider reading {@link "About Multi-Port MIDI Files"}.
+     * a Multi-Port MIDI file. Consider reading [About Multi-Port MIDI Files](../../docs/extra/about-multi-port.md)
      */
     channelAdded: void;
     /**

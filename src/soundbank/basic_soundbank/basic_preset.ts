@@ -359,7 +359,7 @@ export class BasicPreset implements MIDIPatchFull {
      *
      * > **Tip**
      * >
-     * > Consider reading {@link "The DLS Conversion problem"}.
+     * > Consider reading about [the DLS conversion problem](../../../docs/extra/dls-conversion-problem.md).
      *
      * @returns The instrument containing the flattened zones. If flattening was successful, it should exactly the same as this preset.
      */

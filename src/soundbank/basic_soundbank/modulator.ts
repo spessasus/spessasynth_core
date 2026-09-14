@@ -52,7 +52,7 @@ export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
  *
  * > **Tip**
  * >
- * > Consider reading {@link "Modulator Information"}.
+ * > Consider reading [Modulator Information](../../../docs/extra/modulator-information.md).
  *
  * @group Sound Banks.Modulators
  */
