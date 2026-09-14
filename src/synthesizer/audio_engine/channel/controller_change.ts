@@ -32,7 +32,7 @@ export function controllerChange(
     // Excluding bank select as it's handled separately
     if (
         controller >= MIDIControllers.modulationWheelLSB &&
-        controller <= MIDIControllers.effectControl2LSB
+        controller <= MIDIControllers.undefinedCC31LSB
     ) {
         const actualCCNum = controller - 32;
         if (this.lockedControllers[actualCCNum]) return;
