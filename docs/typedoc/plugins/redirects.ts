@@ -135,9 +135,6 @@ export function load(application: Application) {
 </html>
 `
                     );
-                    application.logger.verbose(
-                        `Legacy redirect: "${fromDirectory}" -> "${href}".`
-                    );
                 }
             }
         );
