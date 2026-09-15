@@ -9,9 +9,10 @@ import {
     type SynthesizerSnapshot
 } from "./audio_engine/synthesizer_snapshot";
 import type {
+    SynthesizerEvent,
+    SynthesizerEventCallback,
+    SynthesizerPatch,
     SynthMethodOptions,
-    SynthProcessorEvent,
-    SynthProcessorEventData,
     SynthProcessorOptions
 } from "./types";
 import { type MIDIController } from "../midi/enums";
@@ -28,178 +29,54 @@ import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type { MIDISystem } from "../soundbank/types";
 import type { SysExAcceptedArray } from "../midi/types";
 import { BasicSoundBank } from "../soundbank/exports";
-import type { MIDIMessage } from "../midi/midi_message";
+import type { MIDIMessage } from "../midi/midi_message"; /**
+ * Processor.ts
+ * purpose: the core synthesis engine
+ */
 
 /**
  * Processor.ts
  * purpose: the core synthesis engine
  */
 
-// The core synthesis engine of spessasynth.
+/**
+ * The core synthesis engine of SpessaSynth.
+ * This module converts sound bank and MIDI data into PCM audio data.
+ * The internal synthesis system is modeled after SoundFont2 synthesis model,
+ * with additional extensions and functionality.
+ *
+ * [MIDI implementation of the synthesizer can be found here.](../../docs/extra/midi-implementation.md)
+ *
+ * ### Effect processors reference
+ *
+ * - {@link ReverbProcessor} - How to implement your own reverb processor.
+ * - {@link ChorusProcessor} - How to implement your own chorus processor.
+ * - {@link DelayProcessor} - How to implement your own delay processor.
+ *
+ * ### Managers
+ *
+ * - {@link SoundBankManager} - Manages the sound banks within the processor.
+ *
+ * @group Synthesizer
+ */
 export class SpessaSynthProcessor {
     /**
-     * Controls if the processor is fully initialized.
+     * A `Promise` that must be awaited before
+     * the processor can be used with a compressed sound bank.
+     *
      */
-    public readonly processorInitialized = BasicSoundBank.isSF3DecoderReady;
+    public readonly ready = BasicSoundBank.ready;
     /**
-     * Sample rate in Hertz.
+     * Sample rate, in Hertz.
      */
     public readonly sampleRate: number;
     /**
-     * Calls when an event occurs.
+     * This property can be defined as a function that listens for events.
+     * All events are defined in {@link SynthesizerEvent}.
+     *
      * @param event The event that occurred.
      */
-    public onEventCall?: (event: SynthProcessorEvent) => unknown;
-
-    /**
-     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`.
-     * All float arrays must have the same length.
-     * @param left the left output channel.
-     * @param right the right output channel.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     */
-    public readonly process: (
-        left: Float32Array,
-        right: Float32Array,
-        startIndex?: number,
-        sampleCount?: number
-    ) => void;
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Renders float32 audio data to stereo outputs; buffer size must be equal or smaller than `maxBufferSize`.
-     * All float arrays must have the same length.
-     * @param outputs any number stereo pairs (L, R) to render channels separately into.
-     * @param effectsLeft the left stereo effect output buffer.
-     * @param effectsRight the left stereo effect output buffer.
-     * @param startIndex start offset of the passed arrays, rendering starts at this index, defaults to 0.
-     * @param sampleCount the length of the rendered buffer, defaults to float32array length - startOffset.
-     */
-    public readonly processSplit: (
-        outputs: Float32Array[][],
-        effectsLeft: Float32Array,
-        effectsRight: Float32Array,
-        startIndex?: number,
-        sampleCount?: number
-    ) => void;
-
-    /**
-     * Executes a system exclusive message for the synthesizer.
-     * @param syx The system exclusive message as an array of bytes.
-     * @param channelOffset The channel offset to apply (default is 0).
-     */
-    public readonly systemExclusive: (
-        syx: SysExAcceptedArray,
-        channelOffset?: number
-    ) => void;
-
-    /**
-     * Executes a MIDI controller change message on the specified channel.
-     * @param channel The MIDI channel to change the controller on.
-     * @param controller The MIDI controller number (0-127).
-     * @param value The value of the controller (0-127).
-     */
-    public readonly controllerChange: (
-        channel: number,
-        controller: MIDIController,
-        value: number
-    ) => void;
-
-    /**
-     * Executes a MIDI Note On message on the specified channel.
-     * Starts playing a note.
-     * @param channel The MIDI channel to send the note on.
-     * @param midiNote The MIDI note number to play.
-     * @param velocity The velocity of the note, from 0 to 127.
-     * @remarks
-     * If the velocity is 0, it will be treated as a Note Off message.
-     */
-    public readonly noteOn: (
-        channel: number,
-        midiNote: number,
-        velocity: number
-    ) => void;
-
-    /**
-     * Executes a MIDI Note Off message on the specified channel.
-     * Stops playing a note.
-     * @param channel The MIDI channel to send the note off.
-     * @param midiNote The MIDI note number to stop playing.
-     */
-    public readonly noteOff: (channel: number, midiNote: number) => void;
-
-    /**
-     * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
-     * This differs from the Channel Pressure in that it's per-note and not for the whole channel.
-     * @param channel The MIDI channel to send the poly pressure on.
-     * @param midiNote The MIDI note number to apply the pressure to.
-     * @param pressure The pressure value, from 0 to 127.
-     */
-    public readonly polyPressure: (
-        channel: number,
-        midiNote: number,
-        pressure: number
-    ) => void;
-
-    /**
-     * Executes a MIDI Channel Pressure (Aftertouch) message on the specified channel.
-     * @param channel The MIDI channel to send the channel pressure on.
-     * @param pressure The pressure value, from 0 to 127.
-     */
-    public readonly channelPressure: (
-        channel: number,
-        pressure: number
-    ) => void;
-
-    /**
-     * Executes a MIDI Pitch Wheel message on the specified channel.
-     * @param channel The MIDI channel to send the pitch wheel on.
-     * @param pitch The new pitch value: 0-16383
-     * @param midiNote The MIDI note number (optional), pass -1 for the regular pitch wheel.
-     */
-    public readonly pitchWheel: (
-        channel: number,
-        pitch: number,
-        midiNote?: number
-    ) => void;
-
-    /**
-     * Executes a MIDI Program Change message on the specified channel.
-     * @param channel The MIDI channel to send the program change on.
-     * @param programNumber The program number to change to, from 0 to 127.
-     */
-    public readonly programChange: (
-        channel: number,
-        programNumber: number
-    ) => void;
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Processes a raw MIDI message and allows scheduling it at a specific time.
-     * @param message The MIDI message to process.
-     * @param channelOffset The channel offset for the message. It will be added to message's channel number if applicable.
-     * @param options Additional options for scheduling the message.
-     */
-    public readonly processMessage: (
-        message: SysExAcceptedArray | MIDIMessage,
-        channelOffset?: number,
-        options?: SynthMethodOptions
-    ) => void;
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Processes multiple MIDI messages and allows scheduling them at a specific time.
-     * @param message The MIDI messages to process.
-     * @param channelOffset The channel offset for the messages. It will be added to messages' channel number if applicable.
-     * @param options Additional options for scheduling the message.
-     */
-    public readonly processMessages: (
-        message: (SysExAcceptedArray | MIDIMessage)[],
-        channelOffset?: number,
-        options?: SynthMethodOptions
-    ) => void;
-
+    public onEventCall?: (event: SynthesizerEventCallback) => unknown;
     /**
      * Core synthesis engine.
      */
@@ -210,9 +87,9 @@ export class SpessaSynthProcessor {
     private savedSnapshot?: SynthesizerSnapshot;
 
     /**
-     * Creates a new synthesizer engine.
-     * @param sampleRate sample rate, in Hertz.
-     * @param opts the processor's options.
+     * Initializes a new MIDI Synthesizer engine.
+     * @param sampleRate The sample rate of the synthesizer, in Hertz.
+     * @param opts Additional options when initializing the synthesizer.
      */
     public constructor(
         sampleRate: number,
@@ -240,7 +117,6 @@ export class SpessaSynthProcessor {
         // Bind methods for less overhead
         const c = this.synthCore;
         this.process = c.process.bind(c);
-        this.processSplit = c.processSplit.bind(c);
         this.systemExclusive = c.systemExclusive.bind(c);
         this.controllerChange = c.controllerChange.bind(c);
         this.noteOn = c.noteOn.bind(c);
@@ -256,7 +132,7 @@ export class SpessaSynthProcessor {
             // Don't send events as we're creating the initial channels
             this.synthCore.createMIDIChannel(false);
         }
-        void this.processorInitialized.then(() => {
+        void this.ready.then(() => {
             SpessaLog.info("%cSpessaSynth is ready!", ConsoleColors.recognized);
         });
     }
@@ -282,6 +158,8 @@ export class SpessaSynthProcessor {
     /**
      * The global system parameters of the synthesizer.
      * These are only editable via the API.
+     *
+     * Use {@link SpessaSynthProcessor.setSystemParameter} to set them.
      */
     public get systemParameters(): Readonly<GlobalSystemParameter> {
         return this.synthCore.systemParameters;
@@ -296,7 +174,7 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * The current time of the synthesizer, in seconds. You probably should not modify this directly.
+     * The current time of the synthesizer, in seconds.
      */
     public get currentTime() {
         return this.synthCore.currentTime;
@@ -333,19 +211,212 @@ export class SpessaSynthProcessor {
         return this.synthCore.soundBankManager;
     }
 
-    // noinspection JSUnusedGlobalSymbols
     /**
-     * Handles the custom key overrides: velocity and preset
+     * Executes a system exclusive message for the synthesizer.
+     *
+     * > **Tip**
+     * >
+     * > Refer to the [MIDI Implementation](../../docs/extra/midi-implementation.md)
+     * > for the list of supported System Exclusives.
+     *
+     * @param syx The system exclusive message as an array of bytes.
+     * @param channelOffset The channel offset for the message as they usually can only address the first 16 channels.
+     * For example, to send a system exclusive on channel 16,
+     * send a system exclusive for channe
      */
-    public get keyModifierManager() {
-        return this.synthCore.keyModifierManager;
+    public systemExclusive(syx: SysExAcceptedArray, channelOffset?: number) {
+        // Patched with core in the constructor.
+        void syx;
+        void channelOffset;
     }
 
     /**
-     * A handler for missing presets during program change. By default, it warns to console.
+     * Executes a MIDI controller change message on the specified channel.
+     * @param channel The MIDI channel to change the controller on.  It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param controller The MIDI controller number (0-127).
+     * Refer to the [MIDI Implementation](../../docs/extra/midi-implementation.md) for the list of controllers
+     * supported by default.
+     * @param value The value of the controller (0-127).
+     */
+    public controllerChange(
+        channel: number,
+        controller: MIDIController,
+        value: number
+    ) {
+        // Patched with core in the constructor.
+        void channel;
+        void controller;
+        void value;
+    }
+
+    /**
+     * Executes a MIDI Note On message on the specified channel.
+     * Starts playing a note.
+     * @param channel The MIDI channel to send the note on.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param midiNote The MIDI note number to play.
+     * Ranges from 0 to 127.
+     * @param velocity The velocity of the note, from 0 to 127.
+     * Ranges from 0 to 127, where 127 is the loudest and 1 is the quietest.
+     * If the velocity is 0, it will be treated as a Note Off message.
+     */
+    public noteOn(channel: number, midiNote: number, velocity: number) {
+        // Patched with core in the constructor.
+        void channel;
+        void midiNote;
+        void velocity;
+    }
+
+    /**
+     * Executes a MIDI Note Off message on the specified channel.
+     * Stops playing a note.
+     * @param channel The MIDI channel to send the note off.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param midiNote The MIDI note number to stop playing.
+     * Ranges from 0 to 127.
+     */
+    public noteOff(channel: number, midiNote: number) {
+        // Patched with core in the constructor.
+        void channel;
+        void midiNote;
+    }
+
+    /**
+     * Executes a MIDI Poly Pressure (Aftertouch) message on the specified channel.
+     * This differs from the Channel Pressure in that it's per-note and not for the whole channel.
+     * @param channel The MIDI channel to send the poly pressure on.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param midiNote The MIDI note number to apply the pressure to.
+     * Ranges from 0 to 127.
+     * @param pressure The pressure value, from 0 to 127.
+     */
+    public polyPressure(channel: number, midiNote: number, pressure: number) {
+        // Patched with core in the constructor.
+        void channel;
+        void midiNote;
+        void pressure;
+    }
+
+    /**
+     * Executes a MIDI Channel Pressure (Aftertouch) message on the specified channel.
+     * @param channel The MIDI channel to send the channel pressure on.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param pressure The pressure value, from 0 to 127.
+     */
+    public channelPressure(channel: number, pressure: number) {
+        // Patched with core in the constructor.
+        void channel;
+        void pressure;
+    }
+
+    /**
+     * Executes a MIDI Pitch Wheel message on the specified channel.
+     * @param channel The MIDI channel to send the pitch wheel on.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param pitch The new 14-bit MIDI pitch value (0-16,383). 8,192 is center.
+     * @param midiNote The MIDI note number for the per-note pitch wheel mode.
+     * Leave unset or set it to -1 for the regular pitch wheel.
+     */
+    public pitchWheel(channel: number, pitch: number, midiNote?: number) {
+        // Patched with core in the constructor.
+        void channel;
+        void pitch;
+        void midiNote;
+    }
+
+    /**
+     * Executes a MIDI Program Change message on the specified channel.
+     * @param channel The MIDI channel to send the program change on.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param programNumber The program number to change to, from 0 to 127.
+     */
+    public programChange(channel: number, programNumber: number) {
+        // Patched with core in the constructor.
+        void channel;
+        void programNumber;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Processes a raw MIDI message and allows scheduling it at a specific time.
+     * @param message The binary MIDI message data to process.
+     * @param channelOffset The channel offset for the message. It will be added to message's channel number if applicable.
+     * @param options Additional options for scheduling the message.
+     */
+    public processMessage(
+        message: SysExAcceptedArray | MIDIMessage,
+        channelOffset?: number,
+        options?: SynthMethodOptions
+    ) {
+        // Patched with core in the constructor.
+        void message;
+        void channelOffset;
+        void options;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Processes multiple MIDI messages and allows scheduling them at a specific time.
+     * @param message The binary MIDI messages to process.
+     * @param channelOffset The channel offset for the messages. It will be added to messages' channel numbers if applicable.
+     * @param options Additional options for scheduling the messages.
+     */
+    public processMessages(
+        message: (SysExAcceptedArray | MIDIMessage)[],
+        channelOffset?: number,
+        options?: SynthMethodOptions
+    ) {
+        // Patched with core in the constructor.
+        void message;
+        void channelOffset;
+        void options;
+    }
+
+    /**
+     * Renders Float32 PCM audio data to stereo outputs; buffer size must be equal or smaller than {@link SynthProcessorOptions.maxBufferSize `maxBufferSize`}.
+     * All float arrays must have the same length.
+     *
+     * > **Danger**
+     * >
+     * > This method renders a single quantum of audio.
+     * > The LFOs and envelopes are only processed at the beginning.
+     * > `sampleCount` cannot exceed `maxBufferSize`. Larger values will throw an exception!
+     *
+     * > **Tip**
+     * >
+     * > `processSplit` has been superseded by process with visualization channels.
+     * > This approach allows visualization with insertion effects and upcoming EQ.
+     *
+     * @param left The left output buffer for PCM data.
+     * @param right The right output buffer for PCM data.
+     * @param startIndex The offset at which to start rendering audio in the provided arrays. Default is 0.
+     * @param sampleCount The number of samples to render.
+     * Default is the entire length, starting from `startIndex`.
+     * @param channelOutputs optional stereo channel outputs with dry (no effects) PCM data of specific channels.
+     * These shouldn't be added to the `left` and `right` outputs. Recommended use-case is visualization.
+     */
+    public process(
+        left: Float32Array,
+        right: Float32Array,
+        startIndex?: number,
+        sampleCount?: number,
+        channelOutputs?: Float32Array[][]
+    ) {
+        // Patched with core in the constructor.
+        void left;
+        void right;
+        void startIndex;
+        void sampleCount;
+        void channelOutputs;
+    }
+
+    /**
+     * A handler for missing presets during program change.
+     * By default, it warns to console.
+     * It may be useful for allowing the synthesizer to work without any sound banks.
      * @param patch The MIDI patch that was requested.
      * @param system The MIDI System for the request.
-     * @returns If a BasicPreset instance is returned, it will be used by the channel.
+     * @returns If a {@link BasicPreset} instance is returned, it will be used by the channel as a fallback.
      */
     public onMissingPreset = (
         patch: MIDIPatch,
@@ -361,7 +432,7 @@ export class SpessaSynthProcessor {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Locks or unlocks a given Global MIDI Parameter.
+     * Locks or unlocks a given {@link GlobalMIDIParameter}.
      * This prevents any changes to it until it's unlocked.
      * @param parameter The Global MIDI Parameter to lock.
      * @param isLocked If the parameter should be locked.
@@ -374,7 +445,7 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * Sets a system parameter of the synthesizer.
+     * Sets a {@link GlobalSystemParameter} of the synthesizer.
      * @param parameter The type of the system parameter to set.
      * @param value The value to set for the system parameter.
      */
@@ -396,6 +467,11 @@ export class SpessaSynthProcessor {
 
     /**
      * Applies the snapshot to this `SpessaSynthProcessor` instance.
+     *
+     * > **Warning**
+     * >
+     * > This method overrides the existing System Parameters with the ones from the snapshot.
+     *
      * @param snapshot The snapshot to apply.
      */
     public applySnapshot(snapshot: SynthesizerSnapshot) {
@@ -462,6 +538,7 @@ export class SpessaSynthProcessor {
 
     /**
      * Creates a new MIDI channel and adds it to the synthesizer.
+     * Emits a {@link SynthesizerEvent.channelAdded} event.
      */
     public createMIDIChannel() {
         this.synthCore.createMIDIChannel(true);
@@ -469,7 +546,8 @@ export class SpessaSynthProcessor {
 
     /**
      * Stops all notes on all channels.
-     * @param force If true, all notes are stopped immediately, otherwise they are stopped gracefully.
+     * @param force If true, all notes are stopped immediately,
+     * otherwise they are stopped gracefully.
      */
     public stopAllChannels(force = false) {
         this.synthCore.stopAllChannels(force);
@@ -480,13 +558,14 @@ export class SpessaSynthProcessor {
      *  Destroy the synthesizer processor, clearing all channels and voices.
      *  This is irreversible, so use with caution.
      */
-    public destroySynthProcessor() {
+    public destroy() {
         this.synthCore.destroySynthProcessor();
     }
 
     // noinspection JSUnusedGlobalSymbols
     /**
      * Clears the synthesizer's voice cache.
+     * This can be used to hear the changes after editing a {@link BasicSoundBank}
      */
     public clearCache() {
         this.synthCore.clearCache();
@@ -503,7 +582,7 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public getVoicesForPreset(
-        preset: BasicPreset,
+        preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
     ) {
@@ -516,14 +595,14 @@ export class SpessaSynthProcessor {
      * @param eventName the event name
      * @param eventData the event data
      */
-    private callEvent<K extends keyof SynthProcessorEventData>(
+    private callEvent<K extends keyof SynthesizerEvent>(
         eventName: K,
-        eventData: SynthProcessorEventData[K]
+        eventData: SynthesizerEvent[K]
     ) {
         this.onEventCall?.({
             type: eventName,
             data: eventData
-        } as SynthProcessorEvent);
+        } as SynthesizerEventCallback);
     }
 
     private missingPreset(patch: MIDIPatch, system: MIDISystem) {

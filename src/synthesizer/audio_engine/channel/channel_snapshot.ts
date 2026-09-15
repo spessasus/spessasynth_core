@@ -1,5 +1,5 @@
 import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
-import { DrumParameters } from "./drum_parameters";
+import { DrumParameterUtils } from "../../../midi/drum_parameters";
 import type { MIDIChannel } from "./midi_channel";
 import type { ChannelGenerators } from "./awe32_nrpn";
 import type { ChannelSystemParameter } from "./parameters/system";
@@ -7,19 +7,17 @@ import type { ChannelMIDIParameter } from "./parameters/midi";
 import type { MIDIController } from "../../../midi/enums";
 import type { MIDISystem } from "../../../soundbank/types";
 import { CONTROLLER_TABLE_SIZE } from "../synth_constants";
+import type { DrumParameter } from "../../../midi/types";
+import type { CustomChannelVibrato } from "./types";
 
-export interface DrumParameterSnapshot {
-    pitch: number;
-    gain: number;
-    exclusiveClass: number;
-    pan: number;
-    reverbGain: number;
-    chorusGain: number;
-    delayGain: number;
-    rxNoteOn: boolean;
-    rxNoteOff: boolean;
-}
-
+/**
+ * This interface is a snapshot of a {@link MIDIChannel},
+ * capturing its current state, which can be saved and restored.
+ *
+ * See also {@link SynthesizerSnapshot}.
+ *
+ * @group Synthesizer.Snapshots
+ */
 export interface ChannelSnapshot {
     patch?: MIDIPatchFull;
     lockedSystem: MIDISystem;
@@ -36,7 +34,9 @@ export interface ChannelSnapshot {
 
     perNotePitch: boolean;
 
-    drumParams: DrumParameterSnapshot[];
+    customVibrato: CustomChannelVibrato;
+
+    drumParams: DrumParameter[];
     drumChannel: boolean;
     channel: number;
 }
@@ -71,6 +71,8 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
         octaveTuning: this.octaveTuning.slice(),
         perNotePitch: this.perNotePitch,
 
+        customVibrato: { ...this.customVibrato },
+
         drumParams: this.drumParams.map((d) => ({ ...d })),
         drumChannel: this._drumChannel,
         channel: this.channel
@@ -78,8 +80,6 @@ export function getChannelSnapshot(this: MIDIChannel): ChannelSnapshot {
 }
 
 export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
-    this.setDrums(snapshot.drumChannel);
-
     this._midiControllers.set(snapshot.midiControllers);
     for (let i = 0; i < CONTROLLER_TABLE_SIZE; i++)
         this.lockController(i as MIDIController, snapshot.lockedControllers[i]);
@@ -89,18 +89,31 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
 
     this.perNotePitch = snapshot.perNotePitch;
 
+    this.customVibrato.rate = snapshot.customVibrato.rate;
+    this.customVibrato.delay = snapshot.customVibrato.delay;
+    this.customVibrato.depth = snapshot.customVibrato.depth;
+
     this.generators.offsets.set(snapshot.generators.offsets);
     this.generators.overrides.set(snapshot.generators.overrides);
     this.generators.offsetsEnabled = snapshot.generators.offsetsEnabled;
     this.generators.overridesEnabled = snapshot.generators.overridesEnabled;
 
     for (let i = 0; i < 128; i++)
-        this.drumParams[i] = DrumParameters.copyFrom(snapshot.drumParams[i]);
+        DrumParameterUtils.copyInto(snapshot.drumParams[i], this.drumParams[i]);
 
     // Disable to set patch
     // Restored in system params
     this.setSystemParameter("presetLock", false);
-    if (snapshot.patch) this.setPatch(snapshot.patch);
+    if (snapshot.patch) {
+        this.setBankMSB(snapshot.patch.bankMSB);
+        this.setBankLSB(snapshot.patch.bankLSB);
+        this.setIsGMGSDrum(snapshot.patch.isGMGSDrum);
+        this.programChange(snapshot.patch.program);
+        // Fallback if no preset matched and the flag didn't sync
+        this.setDrumFlag(snapshot.drumChannel);
+    } else {
+        this.setDrumFlag(snapshot.drumChannel);
+    }
     this.lockedSystem = snapshot.lockedSystem;
 
     // Restore MIDI parameters

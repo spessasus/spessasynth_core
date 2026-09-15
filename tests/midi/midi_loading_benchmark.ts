@@ -33,7 +33,7 @@ synth.soundBankManager.addSoundBank(
     SoundBankLoader.fromArrayBuffer(sfFile),
     "main"
 );
-await synth.processorInitialized;
+await synth.ready;
 const seq = new SpessaSynthSequencer(synth);
 
 console.info("Engine initialized, loading MIDI...");

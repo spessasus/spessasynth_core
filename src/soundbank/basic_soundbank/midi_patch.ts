@@ -3,6 +3,15 @@ import { BankSelectHacks } from "../../utils/midi_hacks";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 
+/**
+ * SpessaSynth 4.0 brings the full bank LSB support in the API.
+ *
+ * The system now operates on _MIDI Patches_ - a way of selecting MIDI presets using 4 properties,
+ * compatible with GM, GS, XG and GM2.
+ * The existing MIDI files will continue to work as the preset selection system has been fine-tuned for various types of MIDI files.
+ *
+ * @group Sound Banks.MIDI Patch System
+ */
 export interface MIDIPatch {
     /**
      * The MIDI program number.
@@ -10,21 +19,46 @@ export interface MIDIPatch {
     program: number;
 
     /**
-     * The MIDI bank MSB number.
+     * Bank MSB (CC#0) of this patch.
+     *
+     * It is used for sound variation in GS, and for channel type in XG and GM2.
+     * This means that with bank MSB of 127 for example, a channel in XG mode will turn into a drum channel.
      */
     bankMSB: number;
 
     /**
-     * The MIDI bank LSB number.
+     * Bank LSB (CC#32) of this patch.
+     *
+     * This is mostly used in XG and GM2 for selecting variations of instruments, much like MSB in GS.
+     *
+     * > **Note**
+     * >
+     * > The SF2 format does not support writing the bank LSB number so the `wBank` is still interpreted as both and flattened when writing.
      */
     bankLSB: number;
 
     /**
-     * If the preset is marked as GM/GS drum preset. Note that XG drums do not have this flag.
+     * If the preset is marked as GM/GS drum preset.
+     *
+     * This flag is exclusive to GM and GS systems. These don't use bank MSB as a drum flag.
+     * GM has channel 9 hardcoded as drums, and GS has a system exclusive for setting them.
+     * This allows XG and GS drums to coexist in a single sound bank and can be thought of as bank 128 in SF2.
+     *
+     * > **Warning**
+     * >
+     * > The `isGMGSDrum` flag being set does *not* necessarily mean that this patch is a drum patch!
+     * > The {@link MIDIPatchFull} sent with the `presetListChange` event provides an additional property `isDrum` which correctly identifies drums across all MIDI systems.
      */
     isGMGSDrum: boolean;
 }
 
+/**
+ * An extended version of {@link MIDIPatch} containing two new properties.
+ * This object is sent with the `presetListChange` event of the synthesizer,
+ * and it is what {@link BasicPreset} implements.
+ *
+ * @group Sound Banks.MIDI Patch System
+ */
 export interface MIDIPatchFull extends MIDIPatch {
     /**
      * The name of the patch.
@@ -36,16 +70,25 @@ export interface MIDIPatchFull extends MIDIPatch {
      * This is the recommended way of determining if this is a drum preset.
      * If `isGMGSDrum` is true, then this is a GM/GS drum preset.
      * If `isGMGSDrum` is false, then this is a GM2/XG drum preset.
+     *
+     * > **Tip**
+     * >
+     * > This is the recommended way of determining if this is a drum preset.
      */
     isDrum: boolean;
 }
 
+/**
+ * A class containing useful functions for working with MIDI patches.
+ *
+ * @group Sound Banks.MIDI Patch System
+ */
 export class MIDIPatchTools {
     /**
-     * Converts a given `MIDIPatch` to a string.
+     * Converts a given {@link MIDIPatch} to a string.
      * The format is:
-     * - `DRUM:program` for `GMGSDrum` set to `true`.
-     * - `bankLSB:bankMSB:program` for `GMGSDrum` set to `false`.
+     * - `DRUM:program` for `isGMGSDrum` set to `true`.
+     * - `bankLSB:bankMSB:program` for `isGMGSDrum` set to `false`.
      */
     public static toMIDIString(patch: MIDIPatch) {
         if (patch.isGMGSDrum) {
@@ -56,7 +99,7 @@ export class MIDIPatchTools {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets `MIDIPatch` from a given string.
+     * Gets {@link MIDIPatch} from a given string.
      */
     public static fromMIDIString(string: string): MIDIPatch {
         const parts = string.split(":");
@@ -79,7 +122,7 @@ export class MIDIPatchTools {
     }
 
     /**
-     * Converts a given `MIDIPatchFull`to string.
+     * Converts a given {@link MIDIPatchFull} to string.
      * The format is:
      * - `<MIDIPatch string> D <name>` for `isDrum` set to `true`.
      * - `<MIDIPatch string> M <name>` for `isDrum` set to `true`.
@@ -90,7 +133,7 @@ export class MIDIPatchTools {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets `MIDIPatchFull` from a given string.
+     * Gets {@link MIDIPatchFull} from a given string.
      */
     public static fromFullMIDIString(string: string): MIDIPatchFull {
         const firstSpace = string.indexOf(" ");
@@ -149,7 +192,7 @@ export class MIDIPatchTools {
     }
 
     /**
-     * Checks if the given `MIDIPatchFull` is an XG/GM2 drum patch.
+     * Checks if the given {@link MIDIPatchFull} is an XG/GM2 drum patch.
      */
     public static isXGDrum(p: MIDIPatchFull) {
         return p.isDrum && !p.isGMGSDrum;
@@ -158,8 +201,8 @@ export class MIDIPatchTools {
     /**
      * A sophisticated patch selection system based on the MIDI Patch system.
      * This is the algorithm that the synthesizer uses for selecting presets.
-     * @param patches The `MIDIPatchFull` array to select from.
-     * @param patch The `MIDIPatch` to select.
+     * @param patches The {@link MIDIPatchFull} array to select from.
+     * @param patch The {@link MIDIPatch} to select.
      * @param system The MIDI system to select for.
      * @returns The selected patch.
      */

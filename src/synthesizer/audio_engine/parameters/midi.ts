@@ -1,12 +1,32 @@
-import type { GlobalMIDIParameterChangeCallback } from "../../types";
 import { DEFAULT_SYNTH_MODE } from "../synth_constants";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { MIDISystem } from "../../../soundbank/types";
+import type { GlobalMIDIParameterChangeEvent } from "../../events";
 
+/**
+ * Global MIDI Parameters are MIDI-only parameters
+ * that affect the entire synthesizer.
+ *
+ * They are MIDI Parameters, meaning that they can only be changed via MIDI messages,
+ * and not via the API. They get reset via MIDI reset messages.
+ *
+ * {@link DEFAULT_GLOBAL_MIDI_PARAMETERS} is provided with the library,
+ * containing the defaults.
+ *
+ * They also have an associated event ({@link GlobalMIDIParameterChangeEvent}) and can be locked.
+ *
+ * Examples:
+ *
+ * - `system`
+ * - `keyShift`
+ *
+ * @group Synthesizer.Parameters
+ */
 export interface GlobalMIDIParameter {
     /**
      * The currently enabled MIDI system used by the synthesizer
      * for bank selects and system exclusives.
+     * Can be changed with a Systme Exclusive reset message.
      * (GM, GM2, GS, XG)
      */
     system: MIDISystem;
@@ -25,6 +45,9 @@ export interface GlobalMIDIParameter {
      * The master volume.
      * From 0 (silent) to 1 (full volume).
      *
+     * > **Note**
+     * >
+     * >
      * This differs from the `gain` system parameter in that it is squared internally.
      */
     volume: number;
@@ -38,6 +61,11 @@ export interface GlobalMIDIParameter {
     pan: number;
 }
 
+/**
+ * Default values for {@link GlobalMIDIParameter}s.
+ *
+ * @group Synthesizer.Parameters
+ */
 export const DEFAULT_GLOBAL_MIDI_PARAMETERS: GlobalMIDIParameter = {
     volume: 1,
     pan: 0,
@@ -64,7 +92,7 @@ export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
     this.callEvent("globalParamChange", {
         parameter,
         value
-    } as GlobalMIDIParameterChangeCallback);
+    } as GlobalMIDIParameterChangeEvent);
 }
 
 /**

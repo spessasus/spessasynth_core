@@ -80,7 +80,7 @@ if (args.length !== 2) {
 const sf2Path = args[0];
 const sf3Path = args[1];
 
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 
 // Load
 const bin = await fs.readFile(sf2Path);

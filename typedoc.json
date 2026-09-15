@@ -1,0 +1,44 @@
+{
+    "$schema": "./node_modules/typedoc/typedoc-config.schema.json",
+    "tsconfig": "src/tsconfig.json",
+    "entryPoints": ["src/index.ts"],
+    "entryPointStrategy": "resolve",
+    "name": "spessasynth_core documentation",
+    "readme": "docs/index.md",
+    "projectDocuments": ["docs/getting-started/**/*.md", "docs/extra/**/*.md"],
+    "out": "site",
+    "favicon": "./docs/assets/favicon.png",
+    "sortEntryPoints": false,
+    "alwaysCreateEntryPointModule": false,
+    "markdownLinkExternal": true,
+    "categorizeByGroup": true,
+    "searchInDocuments": true,
+    "searchInComments": true,
+    "githubPages": true,
+    "excludeNotDocumented": true,
+    "customCss": "docs/typedoc/typedoc.css",
+    "customJs": "docs/typedoc/typedoc.js",
+    "router": "document-paths",
+    "darkHighlightTheme": "github-dark-default",
+    "lightHighlightTheme": "ayu-light",
+    "navigation": {
+        "includeGroups": true,
+        "includeCategories": true,
+        "includeFolders": false
+    },
+    "navigationLinks": {
+        "Issue Tracker": "https://github.com/spessasus/spessasynth_core/issues",
+        "GitHub": "https://github.com/spessasus/spessasynth_core",
+        "Online Demo": "https://spessasus.github.io/SpessaSynth"
+    },
+    "customFooterHtml": "Copyright &copy; 2026 spessasus, licensed under the Apache-2.0 License. If you encounter any errors in this documentation, please <strong>open an issue on GitHub.</strong>",
+    "plugin": [
+        "./docs/typedoc/plugins/markdown.ts",
+        "./docs/typedoc/plugins/groups.ts",
+        "./docs/typedoc/plugins/assets.ts",
+        "./docs/typedoc/plugins/homepage.ts",
+        "./docs/typedoc/plugins/404.ts",
+        "./docs/typedoc/plugins/search.ts",
+        "./docs/typedoc/plugins/router.ts"
+    ]
+}

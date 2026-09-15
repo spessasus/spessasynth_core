@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { readBigEndian } from "../../utils/byte_functions/big_endian";
-import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
+import { MIDI_DRUM_CHANNEL } from "../../synthesizer/audio_engine/synth_constants";
 import type { BasicMIDI } from "../basic_midi";
 import type { MIDIMessage } from "../midi_message";
 import type { NoteTime } from "../types";
@@ -56,7 +56,7 @@ export function getNoteTimesInternal(
 
         const time = elapsedTime - note.start;
         note.length =
-            channel === DEFAULT_PERCUSSION
+            channel === MIDI_DRUM_CHANNEL
                 ? Math.max(time, minDrumLength)
                 : time;
         unfinished--;
