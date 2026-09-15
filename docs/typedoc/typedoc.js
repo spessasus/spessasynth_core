@@ -142,8 +142,8 @@
              */
             const settings = document.querySelector(".tsd-navigation.settings");
             if (settings) {
-                settings.style.display = window.location.pathname.includes(
-                    "/documents/"
+                settings.style.display = document.querySelector(
+                    'meta[name="page-kind"][content="document"]'
                 )
                     ? "none"
                     : "";

@@ -4,5 +4,6 @@ dist/
 tests/files
 tests/midi_file/output
 .husky
-*.wav
-*.opus
+/node_modules/
+site/
+.cache

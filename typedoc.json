@@ -18,7 +18,7 @@
     "excludeNotDocumented": true,
     "customCss": "docs/typedoc/typedoc.css",
     "customJs": "docs/typedoc/typedoc.js",
-    "router": "kind-dir",
+    "router": "document-paths",
     "darkHighlightTheme": "github-dark-default",
     "lightHighlightTheme": "ayu-light",
     "navigation": {
@@ -35,10 +35,10 @@
     "plugin": [
         "./docs/typedoc/plugins/markdown.ts",
         "./docs/typedoc/plugins/groups.ts",
-        "./docs/typedoc/plugins/redirects.ts",
         "./docs/typedoc/plugins/assets.ts",
         "./docs/typedoc/plugins/homepage.ts",
         "./docs/typedoc/plugins/404.ts",
-        "./docs/typedoc/plugins/search.ts"
+        "./docs/typedoc/plugins/search.ts",
+        "./docs/typedoc/plugins/router.ts"
     ]
 }
