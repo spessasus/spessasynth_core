@@ -22,7 +22,7 @@
         "dev:vorbis": "npm uninstall stb-vorbis; npm install ../stb-vorbis",
         "docs": "tsx node_modules/typedoc/bin/typedoc src/index.ts --options typedoc.json",
         "docs:watch": "tsx node_modules/typedoc/bin/typedoc src/index.ts --options typedoc.json --watch",
-        "docs:serve": "npx concurrently \"npm run docs:watch\" \"npx live-server site/\"",
+        "docs:serve": "npx concurrently \"npm run docs:watch\" \"npx serve site/\"",
         "release:vorbis": "npm uninstall stb-vorbis; npm install stb-vorbis"
     },
     "repository": {
