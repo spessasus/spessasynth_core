@@ -9,12 +9,13 @@ import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
+import type { GSChorusProcessor, GSReverbProcessor } from "./effects/types";
 import {
-    type DelayProcessor,
+    type GSDelayProcessor,
     type InsertionProcessor,
     type InsertionProcessorConstructor,
     type InsertionProcessorSnapshot
-} from "../exports";
+} from "./effects/types";
 import type {
     SynthesizerEvent,
     SynthesizerPatch,
@@ -49,7 +50,6 @@ import { SpessaSynthDelay } from "./effects/gs/delay";
 import { ThruFX } from "./effects/gs/insertion/thru";
 import { INSERTION_EFFECT_LIST } from "./effects/gs/insertion_list";
 import { SpessaSynthReverb } from "./effects/gs/reverb";
-import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
@@ -217,15 +217,15 @@ export class SynthesizerCore {
     /**
      * The synthesizer's reverb processor.
      */
-    public readonly reverbProcessor: ReverbProcessor;
+    public readonly reverbProcessor: GSReverbProcessor;
     /**
      * The synthesizer's chorus processor.
      */
-    public readonly chorusProcessor: ChorusProcessor;
+    public readonly chorusProcessor: GSChorusProcessor;
     /**
      * The synthesizer's delay processor.
      */
-    public readonly delayProcessor: DelayProcessor;
+    public readonly delayProcessor: GSDelayProcessor;
     /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      */

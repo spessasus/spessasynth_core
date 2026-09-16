@@ -49,9 +49,9 @@ import type { MIDIMessage } from "../midi/midi_message"; /**
  *
  * ### Effect processors reference
  *
- * - {@link ReverbProcessor} - How to implement your own reverb processor.
- * - {@link ChorusProcessor} - How to implement your own chorus processor.
- * - {@link DelayProcessor} - How to implement your own delay processor.
+ * - {@link GSReverbProcessor} - How to implement your own reverb processor.
+ * - {@link GSChorusProcessor} - How to implement your own chorus processor.
+ * - {@link GSDelayProcessor} - How to implement your own delay processor.
  *
  * ### Managers
  *

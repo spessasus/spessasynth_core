@@ -1,6 +1,14 @@
 export * from "./types";
 export * from "./enums";
-export * from "./audio_engine/effects/types";
+export {
+    type GSChorusParameter,
+    type GSChorusProcessor,
+    type GSDelayParameter,
+    type GSDelayProcessor,
+    type GSReverbParameter,
+    type GSReverbProcessor,
+    type InsertionProcessorSnapshot
+} from "./audio_engine/effects/types";
 
 export { SoundBankManager } from "./audio_engine/sound_bank_manager";
 export { SpessaSynthProcessor } from "./processor";

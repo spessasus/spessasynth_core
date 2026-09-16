@@ -1,4 +1,4 @@
-import type { DelayProcessor, DelayProcessorSnapshot } from "../types";
+import type { GSDelayParameter, GSDelayProcessor } from "../types";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!
@@ -16,7 +16,7 @@ const delayTimeSegments = [
 
 const DELAY_GAIN = 1.66;
 
-export class SpessaSynthDelay implements DelayProcessor {
+export class SpessaSynthDelay implements GSDelayProcessor {
     /**
      * Cutoff frequency
      * @private
@@ -311,7 +311,7 @@ export class SpessaSynthDelay implements DelayProcessor {
         this.writeIndex = writeIndex;
     }
 
-    public getSnapshot(): DelayProcessorSnapshot {
+    public getSnapshot(): GSDelayParameter {
         return {
             level: this._level,
             preLowpass: this._preLowpass,

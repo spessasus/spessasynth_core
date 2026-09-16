@@ -340,42 +340,42 @@ These are global parameters, affecting the entire synthesizer.
 | Name                  | Description                                                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | REVERB MACRO          | Sets all Reverb Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 81. |
-| REVERB CHARACTER      | Sets the Reverb Processor property {@link ReverbProcessor.character `character`}.                                                                                                            |
-| REVERB PRE-LPF        | Sets the Reverb Processor property {@link ReverbProcessor.preLowpass `preLowpass`}.                                                                                                          |
-| REVERB LEVEL          | Sets the Reverb Processor property {@link ReverbProcessor.level `level`}.                                                                                                                    |
-| REVERB TIME           | Sets the Reverb Processor property {@link ReverbProcessor.time `time`}.                                                                                                                      |
-| REVERB DELAY FEEDBACK | Sets the Reverb Processor property {@link ReverbProcessor.delayFeedback `delayFeedback`}.                                                                                                    |
-| REVERB PREDELAY TIME  | Sets the Reverb Processor property {@link ReverbProcessor.preDelayTime `preDelayTime`}.                                                                                                      |
+| REVERB CHARACTER      | Sets the Reverb Processor property {@link GSReverbProcessor.character `character`}.                                                                                                          |
+| REVERB PRE-LPF        | Sets the Reverb Processor property {@link GSReverbProcessor.preLowpass `preLowpass`}.                                                                                                        |
+| REVERB LEVEL          | Sets the Reverb Processor property {@link GSReverbProcessor.level `level`}.                                                                                                                  |
+| REVERB TIME           | Sets the Reverb Processor property {@link GSReverbProcessor.time `time`}.                                                                                                                    |
+| REVERB DELAY FEEDBACK | Sets the Reverb Processor property {@link GSReverbProcessor.delayFeedback `delayFeedback`}.                                                                                                  |
+| REVERB PREDELAY TIME  | Sets the Reverb Processor property {@link GSReverbProcessor.preDelayTime `preDelayTime`}.                                                                                                    |
 
 ##### Chorus
 
 | Name                        | Description                                                                                                                                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CHORUS MACRO                | Sets all Chorus Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 83. |
-| CHORUS PRE-LPF              | Sets the Chorus Processor property {@link ChorusProcessor.preLowpass `preLowpass`}.                                                                                                          |
-| CHORUS LEVEL                | Sets the Chorus Processor property {@link ChorusProcessor.level `level`}.                                                                                                                    |
-| CHORUS FEEDBACK             | Sets the Chorus Processor property {@link ChorusProcessor.feedback `feedback`}.                                                                                                              |
-| CHORUS DELAY                | Sets the Chorus Processor property {@link ChorusProcessor.delay `delay`}.                                                                                                                    |
-| CHORUS RATE                 | Sets the Chorus Processor property {@link ChorusProcessor.rate `rate`}.                                                                                                                      |
-| CHORUS DEPTH                | Sets the Chorus Processor property {@link ChorusProcessor.depth `depth`}.                                                                                                                    |
-| CHORUS SEND LEVEL TO REVERB | Sets the Chorus Processor property {@link ChorusProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                            |
-| CHORUS SEND LEVEL TO DELAY  | Sets the Chorus Processor property {@link ChorusProcessor.sendLevelToDelay `sendLevelToDelay`}.                                                                                              |
+| CHORUS PRE-LPF              | Sets the Chorus Processor property {@link GSChorusProcessor.preLowpass `preLowpass`}.                                                                                                        |
+| CHORUS LEVEL                | Sets the Chorus Processor property {@link GSChorusProcessor.level `level`}.                                                                                                                  |
+| CHORUS FEEDBACK             | Sets the Chorus Processor property {@link GSChorusProcessor.feedback `feedback`}.                                                                                                            |
+| CHORUS DELAY                | Sets the Chorus Processor property {@link GSChorusProcessor.delay `delay`}.                                                                                                                  |
+| CHORUS RATE                 | Sets the Chorus Processor property {@link GSChorusProcessor.rate `rate`}.                                                                                                                    |
+| CHORUS DEPTH                | Sets the Chorus Processor property {@link GSChorusProcessor.depth `depth`}.                                                                                                                  |
+| CHORUS SEND LEVEL TO REVERB | Sets the Chorus Processor property {@link GSChorusProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                          |
+| CHORUS SEND LEVEL TO DELAY  | Sets the Chorus Processor property {@link GSChorusProcessor.sendLevelToDelay `sendLevelToDelay`}.                                                                                            |
 
 ##### Delay
 
 | Name                       | Description                                                                                                                                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DELAY MACRO                | Sets all Delay Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 85. |
-| DELAY PRE-LPF              | Sets the Delay Processor property {@link DelayProcessor.preLowpass `preLowpass`}.                                                                                                           |
-| DELAY TIME CENTER          | Sets the Delay Processor property {@link DelayProcessor.timeCenter `timeCenter`}.                                                                                                           |
-| DELAY TIME RATIO LEFT      | Sets the Delay Processor property {@link DelayProcessor.timeRatioLeft `timeRatioLeft`}.                                                                                                     |
-| DELAY TIME RATIO RIGHT     | Sets the Delay Processor property {@link DelayProcessor.timeRatioRight `timeRatioRight`}.                                                                                                   |
-| DELAY LEVEL CENTER         | Sets the Delay Processor property {@link DelayProcessor.levelCenter `levelCenter`}.                                                                                                         |
-| DELAY LEVEL LEFT           | Sets the Delay Processor property {@link DelayProcessor.levelLeft `levelLeft`}.                                                                                                             |
-| DELAY LEVEL RIGHT          | Sets the Delay Processor property {@link DelayProcessor.levelRight `levelRight`}.                                                                                                           |
-| DELAY LEVEL                | Sets the Delay Processor property {@link DelayProcessor.level `level`}.                                                                                                                     |
-| DELAY FEEDBACK             | Sets the Delay Processor property {@link DelayProcessor.feedback `feedback`}.                                                                                                               |
-| DELAY SEND LEVEL TO REVERB | Sets the Delay Processor property {@link DelayProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                             |
+| DELAY PRE-LPF              | Sets the Delay Processor property {@link GSDelayProcessor.preLowpass `preLowpass`}.                                                                                                         |
+| DELAY TIME CENTER          | Sets the Delay Processor property {@link GSDelayProcessor.timeCenter `timeCenter`}.                                                                                                         |
+| DELAY TIME RATIO LEFT      | Sets the Delay Processor property {@link GSDelayProcessor.timeRatioLeft `timeRatioLeft`}.                                                                                                   |
+| DELAY TIME RATIO RIGHT     | Sets the Delay Processor property {@link GSDelayProcessor.timeRatioRight `timeRatioRight`}.                                                                                                 |
+| DELAY LEVEL CENTER         | Sets the Delay Processor property {@link GSDelayProcessor.levelCenter `levelCenter`}.                                                                                                       |
+| DELAY LEVEL LEFT           | Sets the Delay Processor property {@link GSDelayProcessor.levelLeft `levelLeft`}.                                                                                                           |
+| DELAY LEVEL RIGHT          | Sets the Delay Processor property {@link GSDelayProcessor.levelRight `levelRight`}.                                                                                                         |
+| DELAY LEVEL                | Sets the Delay Processor property {@link GSDelayProcessor.level `level`}.                                                                                                                   |
+| DELAY FEEDBACK             | Sets the Delay Processor property {@link GSDelayProcessor.feedback `feedback`}.                                                                                                             |
+| DELAY SEND LEVEL TO REVERB | Sets the Delay Processor property {@link GSDelayProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                           |
 
 ##### EFX
 
@@ -622,12 +622,12 @@ Below are the supported Universal System Exclusive messages.
 | Name           | Description                                                                                                                                                                                  |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Reverb Type    | Sets all Reverb Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 81. |
-| Reverb Time    | Sets the Reverb Processor property {@link ReverbProcessor.time `time`}.                                                                                                                      |
+| Reverb Time    | Sets the Reverb Processor property {@link GSReverbProcessor.time `time`}.                                                                                                                    |
 | Chorus Type    | Sets all Chorus Processor parameters to a predefined value. All GS macros are supported. Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 83. |
-| Mod Rate       | Sets the Chorus Processor property {@link ChorusProcessor.rate `rate`}.                                                                                                                      |
-| Mod Depth      | Sets the Chorus Processor property {@link ChorusProcessor.depth `depth`}.                                                                                                                    |
-| Feedback       | Sets the Chorus Processor property {@link ChorusProcessor.feedback `feedback`}.                                                                                                              |
-| Send to Reverb | Sets the Chorus Processor property {@link ChorusProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                            |
+| Mod Rate       | Sets the Chorus Processor property {@link GSChorusProcessor.rate `rate`}.                                                                                                                    |
+| Mod Depth      | Sets the Chorus Processor property {@link GSChorusProcessor.depth `depth`}.                                                                                                                  |
+| Feedback       | Sets the Chorus Processor property {@link GSChorusProcessor.feedback `feedback`}.                                                                                                            |
+| Send to Reverb | Sets the Chorus Processor property {@link GSChorusProcessor.sendLevelToReverb `sendLevelToReverb`}.                                                                                          |
 
 #### General MIDI
 

@@ -1,4 +1,4 @@
-interface EffectProcessorSnapshot {
+interface GSSystemEffectParameter {
     /**
      * 0-127
      * This parameter sets the amount of the effect sent to the effect output.
@@ -15,11 +15,13 @@ interface EffectProcessorSnapshot {
 }
 
 /**
- * Represents stored GS-compatible reverb processor data.
+ * GS-compatible reverb parameters.
+ *
+ * Also see {@link GSReverbProcessor} to see how to implement a custom GS-compatible reverb processor.
  *
  * @group Synthesizer.Effects
  */
-export interface ReverbProcessorSnapshot extends EffectProcessorSnapshot {
+export interface GSReverbParameter extends GSSystemEffectParameter {
     /**
      * `0-7`
      *
@@ -74,7 +76,7 @@ export interface ReverbProcessorSnapshot extends EffectProcessorSnapshot {
  *
  * @group Synthesizer.Effects
  */
-export interface ReverbProcessor extends ReverbProcessorSnapshot {
+export interface GSReverbProcessor extends GSReverbParameter {
     /**
      * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -94,15 +96,17 @@ export interface ReverbProcessor extends ReverbProcessorSnapshot {
     /**
      * Gets a snapshot of this effect processor instance.
      */
-    getSnapshot(): ReverbProcessorSnapshot;
+    getSnapshot(): GSReverbParameter;
 }
 
 /**
- * Represents stored GS-compatible chorus processor data.
+ * GS-compatible chorus parameters.
+ *
+ * Also see {@link GSChorusProcessor} to see how to implement a custom GS-compatible chorus processor.
  *
  * @group Synthesizer.Effects
  */
-export interface ChorusProcessorSnapshot extends EffectProcessorSnapshot {
+export interface GSChorusParameter extends GSSystemEffectParameter {
     /**
      * `0-127`
      *
@@ -167,7 +171,7 @@ export interface ChorusProcessorSnapshot extends EffectProcessorSnapshot {
  *
  * @group Synthesizer.Effects
  */
-export interface ChorusProcessor extends ChorusProcessorSnapshot {
+export interface GSChorusProcessor extends GSChorusParameter {
     /**
      * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -191,15 +195,17 @@ export interface ChorusProcessor extends ChorusProcessorSnapshot {
     /**
      * Gets a snapshot of this effect processor instance.
      */
-    getSnapshot(): ChorusProcessorSnapshot;
+    getSnapshot(): GSChorusParameter;
 }
 
 /**
- * Represents stored GS-compatible delay processor data.
+ * GS-compatible delay parameters.
+ *
+ * Also see {@link GSDelayProcessor} to see how to implement a custom GS-compatible delay processor.
  *
  * @group Synthesizer.Effects
  */
-export interface DelayProcessorSnapshot extends EffectProcessorSnapshot {
+export interface GSDelayParameter extends GSSystemEffectParameter {
     /**
      * 0-115
      * 0.1ms-340ms-1000ms
@@ -290,7 +296,7 @@ export interface DelayProcessorSnapshot extends EffectProcessorSnapshot {
  *
  * @group Synthesizer.Effects
  */
-export interface DelayProcessor extends DelayProcessorSnapshot {
+export interface GSDelayProcessor extends GSDelayParameter {
     /**
      * Process the effect and **adds** it to the output.
      * @param input The input buffer to process. It always starts at index 0.
@@ -312,7 +318,7 @@ export interface DelayProcessor extends DelayProcessorSnapshot {
     /**
      * Gets a snapshot of this effect processor instance.
      */
-    getSnapshot(): DelayProcessorSnapshot;
+    getSnapshot(): GSDelayParameter;
 }
 
 /**
@@ -322,7 +328,7 @@ export interface DelayProcessor extends DelayProcessorSnapshot {
  */
 export interface InsertionProcessor {
     /**
-     * The EFX type of this processor, stored as MSB << | LSB.
+     * The EFX type of this processor, stored as `MSB << 8 | LSB`.
      * For example `0x30`, `0x10` is `0x3010`.
      */
     readonly type: number;
@@ -393,6 +399,14 @@ export interface InsertionProcessor {
  * @group Synthesizer.Effects
  */
 export interface InsertionProcessorSnapshot {
+    /**
+     * The EFX type of this processor, stored as `MSB << 8 | LSB`.
+     * For example `0x30`, `0x10` is `0x3010`.
+     *
+     * > **Tip**
+     * >
+     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.88, 237) for more information.
+     */
     type: number;
     /**
      * 20 parameters for the effect, 255 means "no change" + 3 effect sends (index 20, 21, 22)

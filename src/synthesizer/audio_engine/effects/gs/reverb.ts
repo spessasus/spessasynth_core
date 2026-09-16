@@ -1,10 +1,10 @@
-import type { ReverbProcessor, ReverbProcessorSnapshot } from "../types";
+import type { GSReverbParameter, GSReverbProcessor } from "../types";
 import { DattorroReverb } from "../implementation/dattorro";
 import { DelayLine } from "../implementation/delay_line";
 
 const DELAY_GAIN = 1.5;
 
-export class SpessaSynthReverb implements ReverbProcessor {
+export class SpessaSynthReverb implements GSReverbProcessor {
     /**
      * Dattorro reverb processor.
      * @private
@@ -369,7 +369,7 @@ export class SpessaSynthReverb implements ReverbProcessor {
         }
     }
 
-    public getSnapshot(): ReverbProcessorSnapshot {
+    public getSnapshot(): GSReverbParameter {
         return {
             level: this._level,
             preLowpass: this._preLowpass,

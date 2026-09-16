@@ -1,8 +1,8 @@
-import type { ChorusProcessor, ChorusProcessorSnapshot } from "../types";
+import type { GSChorusParameter, GSChorusProcessor } from "../types";
 
 const CHORUS_GAIN = 1.3;
 
-export class SpessaSynthChorus implements ChorusProcessor {
+export class SpessaSynthChorus implements GSChorusProcessor {
     /**
      * Cutoff frequency
      * @private
@@ -229,7 +229,7 @@ export class SpessaSynthChorus implements ChorusProcessor {
         this.preLPFz = z;
     }
 
-    public getSnapshot(): ChorusProcessorSnapshot {
+    public getSnapshot(): GSChorusParameter {
         return {
             preLowpass: this._preLowpass,
             depth: this._depth,

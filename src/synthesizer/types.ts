@@ -3,9 +3,9 @@ import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
 import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
 import type { VoiceParameters } from "../soundbank/types";
 import type {
-    ChorusProcessor,
-    DelayProcessor,
-    ReverbProcessor
+    GSChorusProcessor,
+    GSDelayProcessor,
+    GSReverbProcessor
 } from "./audio_engine/effects/types";
 
 /**
@@ -80,23 +80,23 @@ export interface SynthProcessorOptions {
     /**
      * Optional custom reverb processor for the synthesizer. Leave undefined to use the default.
      */
-    reverbProcessor?: ReverbProcessor;
+    reverbProcessor?: GSReverbProcessor;
 
     /**
      * Optional custom chorus processor for the synthesizer. Leave undefined to use the default.
      */
-    chorusProcessor?: ChorusProcessor;
+    chorusProcessor?: GSChorusProcessor;
 
     /**
      * Optional custom delay processor for the synthesizer. Leave undefined to use the default.
      */
-    delayProcessor?: DelayProcessor;
+    delayProcessor?: GSDelayProcessor;
 }
 
 export {
-    type ChorusProcessor,
-    type DelayProcessor,
-    type ReverbProcessor
+    type GSChorusProcessor,
+    type GSDelayProcessor,
+    type GSReverbProcessor
 } from "./audio_engine/effects/types";
 
 /**

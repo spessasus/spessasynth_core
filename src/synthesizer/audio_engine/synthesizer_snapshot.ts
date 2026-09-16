@@ -1,9 +1,9 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
 import type {
-    ChorusProcessorSnapshot,
-    DelayProcessorSnapshot,
-    InsertionProcessorSnapshot,
-    ReverbProcessorSnapshot
+    GSChorusParameter,
+    GSDelayParameter,
+    GSReverbParameter,
+    InsertionProcessorSnapshot
 } from "./effects/types";
 import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
 import type { SynthesizerCore } from "./synthesizer_core";
@@ -45,15 +45,15 @@ export interface SynthesizerSnapshot {
     /**
      * A snapshot of the reverb processor.
      */
-    reverbProcessor: ReverbProcessorSnapshot;
+    reverbProcessor: GSReverbParameter;
     /**
      * A snapshot of the chorus processor.
      */
-    chorusProcessor: ChorusProcessorSnapshot;
+    chorusProcessor: GSChorusParameter;
     /**
      * A snapshot of the delay processor.
      */
-    delayProcessor: DelayProcessorSnapshot;
+    delayProcessor: GSDelayParameter;
     /**
      * A snapshot of the insertion effect processor.
      */
@@ -79,14 +79,11 @@ export function applySnapshot(
 
     // Restore effect processors
     for (const [key, value] of Object.entries(snapshot.reverbProcessor))
-        this.reverbProcessor[key as keyof ReverbProcessorSnapshot] =
-            value as number;
+        this.reverbProcessor[key as keyof GSReverbParameter] = value as number;
     for (const [key, value] of Object.entries(this.chorusProcessor))
-        this.chorusProcessor[key as keyof ChorusProcessorSnapshot] =
-            value as number;
+        this.chorusProcessor[key as keyof GSChorusParameter] = value as number;
     for (const [key, value] of Object.entries(this.delayProcessor))
-        this.delayProcessor[key as keyof DelayProcessorSnapshot] =
-            value as number;
+        this.delayProcessor[key as keyof GSDelayParameter] = value as number;
 
     // Restore insertion
     const is = snapshot.insertionProcessor;

@@ -3,9 +3,9 @@ import type { UserDrumSetParameter } from "../midi/types";
 import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
 import type { MIDISystem } from "../soundbank/types";
 import type {
-    ChorusProcessor,
-    DelayProcessor,
-    ReverbProcessor
+    GSChorusProcessor,
+    GSDelayProcessor,
+    GSReverbProcessor
 } from "./audio_engine/effects/types";
 import type { ChannelMIDIParameter } from "./audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
@@ -194,9 +194,9 @@ export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
  *
  * The effects and their parameters can be found here:
  *
- * - {@link ReverbProcessor}
- * - {@link ChorusProcessor}
- * - {@link DelayProcessor}
+ * - {@link GSReverbProcessor}
+ * - {@link GSChorusProcessor}
+ * - {@link GSDelayProcessor}
  *
  * @group Synthesizer.Events
  */
@@ -209,7 +209,7 @@ export type EffectChangeEvent =
           /**
            * The parameter type or `macro`.
            */
-          parameter: FXType<ReverbProcessor>;
+          parameter: FXType<GSReverbProcessor>;
           /**
            * The new 7-bit value.
            */
@@ -223,7 +223,7 @@ export type EffectChangeEvent =
           /**
            * The parameter type or `macro`.
            */
-          parameter: FXType<ChorusProcessor>;
+          parameter: FXType<GSChorusProcessor>;
           /**
            * The new 7-bit value.
            */
@@ -237,7 +237,7 @@ export type EffectChangeEvent =
           /**
            * The parameter type or `macro`.
            */
-          parameter: FXType<DelayProcessor>;
+          parameter: FXType<GSDelayProcessor>;
           /**
            * The new 7-bit value.
            */
@@ -439,9 +439,9 @@ export interface SynthesizerEvent {
      *
      * The effects and their parameters can be found here:
      *
-     * - {@link ReverbProcessor}
-     * - {@link ChorusProcessor}
-     * - {@link DelayProcessor}
+     * - {@link GSReverbProcessor}
+     * - {@link GSChorusProcessor}
+     * - {@link GSDelayProcessor}
      *
      */
     effectChange: EffectChangeEvent;

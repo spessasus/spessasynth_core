@@ -11,10 +11,10 @@ import {
 import type { MIDISystem } from "../../soundbank/types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type {
-    ChorusProcessorSnapshot,
-    DelayProcessorSnapshot,
-    InsertionProcessorSnapshot,
-    ReverbProcessorSnapshot
+    GSChorusParameter,
+    GSDelayParameter,
+    GSReverbParameter,
+    InsertionProcessorSnapshot
 } from "../../synthesizer/audio_engine/effects/types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import { BankSelectHacks } from "../../utils/midi_hacks";
@@ -30,7 +30,7 @@ import { ParameterTracker } from "./parameter_tracker";
 import type { UserDrumSetParameter } from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
 
-const reverbAddressMap: ReverbProcessorSnapshot = {
+const reverbAddressMap: GSReverbParameter = {
     character: 0x31,
     preLowpass: 0x32,
     level: 0x33,
@@ -39,7 +39,7 @@ const reverbAddressMap: ReverbProcessorSnapshot = {
     preDelayTime: 0x37
 };
 
-const chorusAddressMap: ChorusProcessorSnapshot = {
+const chorusAddressMap: GSChorusParameter = {
     preLowpass: 0x39,
     level: 0x3a,
     feedback: 0x3b,
@@ -50,7 +50,7 @@ const chorusAddressMap: ChorusProcessorSnapshot = {
     sendLevelToDelay: 0x40
 };
 
-const delayAddressMap: DelayProcessorSnapshot = {
+const delayAddressMap: GSDelayParameter = {
     preLowpass: 0x51,
     timeCenter: 0x52,
     timeRatioLeft: 0x53,
@@ -192,21 +192,21 @@ export interface ModifyMIDIOptions {
     /**
      * The desired GS reverb parameters.
      * - `"clear"` - all existing parameter change MIDI messages are removed.
-     * - {@link ReverbProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     * - {@link GSReverbParameter} - clear + the new parameters are set via System Exclusive messages.
      */
-    reverbParams?: ClearableParameter<ReverbProcessorSnapshot>;
+    reverbParams?: ClearableParameter<GSReverbParameter>;
     /**
      * The GS chorus parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - {@link ChorusProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     * - {@link GSChorusParameter} - clear + the new parameters are set via System Exclusive messages.
      */
-    chorusParams?: ClearableParameter<ChorusProcessorSnapshot>;
+    chorusParams?: ClearableParameter<GSChorusParameter>;
     /**
      * The GS delay parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - {@link DelayProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     * - {@link GSDelayParameter} - clear + the new parameters are set via System Exclusive messages.
      */
-    delayParams?: ClearableParameter<DelayProcessorSnapshot>;
+    delayParams?: ClearableParameter<GSDelayParameter>;
     /**
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
