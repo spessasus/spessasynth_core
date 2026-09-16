@@ -16,3 +16,4 @@ export * from "./midi_tools/midi_builder";
 export { MIDITrack } from "./midi_track";
 export * from "./midi_tools/midi_utils";
 export { DrumParameterUtils } from "./drum_parameters";
+export * from "./midi_tools/analyzed_message";

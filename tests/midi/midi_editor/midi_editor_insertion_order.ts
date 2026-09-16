@@ -55,5 +55,24 @@ runMIDIEditorTest(midi, {
         preDelayTime: 76,
         preLowpass: 2,
         time: 64
+    },
+    delayParams: {
+        level: 123,
+        levelCenter: 34,
+        timeRatioRight: 43,
+        timeRatioLeft: 54,
+        timeCenter: 12,
+        feedback: 78,
+        levelLeft: 64,
+        levelRight: 98,
+        preLowpass: 2,
+        sendLevelToReverb: 127
+    },
+    insertionParams: {
+        type: 0x30_10,
+        params: new Uint8Array([
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+            20, 64, 120, 127
+        ])
     }
 });

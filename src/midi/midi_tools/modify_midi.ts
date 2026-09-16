@@ -24,44 +24,12 @@ import {
     MIDIControllers,
     MIDIMessageTypes
 } from "../enums";
-import { type AnalyzedMIDIMessage, MIDIUtils } from "./midi_utils";
+import { MIDIUtils } from "./midi_utils";
 import { ParameterTracker } from "./parameter_tracker";
 
 import type { UserDrumSetParameter } from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
-
-const reverbAddressMap: GSReverbParameter = {
-    character: 0x31,
-    preLowpass: 0x32,
-    level: 0x33,
-    time: 0x34,
-    delayFeedback: 0x35,
-    preDelayTime: 0x37
-};
-
-const chorusAddressMap: GSChorusParameter = {
-    preLowpass: 0x39,
-    level: 0x3a,
-    feedback: 0x3b,
-    delay: 0x3c,
-    rate: 0x3d,
-    depth: 0x3e,
-    sendLevelToReverb: 0x3f,
-    sendLevelToDelay: 0x40
-};
-
-const delayAddressMap: GSDelayParameter = {
-    preLowpass: 0x51,
-    timeCenter: 0x52,
-    timeRatioLeft: 0x53,
-    timeRatioRight: 0x54,
-    levelCenter: 0x55,
-    levelLeft: 0x56,
-    levelRight: 0x57,
-    level: 0x58,
-    feedback: 0x59,
-    sendLevelToReverb: 0x5a
-};
+import type { AnalyzedMIDIMessage } from "./analyzed_message";
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
@@ -657,7 +625,7 @@ export class MIDIEditor {
                             break;
                         }
 
-                        case "Reverb Param": {
+                        case "GS Reverb Param": {
                             // Delete all reverb params since we're setting new ones
                             if (this.reverbParams) {
                                 this.deleteCurrentEvent();
@@ -666,7 +634,7 @@ export class MIDIEditor {
                             break;
                         }
 
-                        case "Chorus Param": {
+                        case "GS Chorus Param": {
                             // Delete all chorus params since we're setting new ones
                             if (this.chorusParams) {
                                 this.deleteCurrentEvent();
@@ -675,7 +643,7 @@ export class MIDIEditor {
                             break;
                         }
 
-                        case "Delay Param": {
+                        case "GS Delay Param": {
                             // Delete all delay params since we're setting new ones
                             if (this.delayParams) {
                                 this.deleteCurrentEvent();
@@ -684,7 +652,7 @@ export class MIDIEditor {
                             break;
                         }
 
-                        case "Insertion Param": {
+                        case "GS Insertion Param": {
                             // Delete all insertion params since we're setting new ones
                             if (this.insertionParams) {
                                 this.deleteCurrentEvent();
@@ -1264,121 +1232,149 @@ export class MIDIEditor {
 
         // Add effects
         if (this.reverbParams && this.reverbParams !== "clear") {
-            const m = reverbAddressMap;
             const p = this.reverbParams;
             targetTrack.addEvents(
                 targetIndex,
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.level, [
-                    p.level
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+                MIDIUtils.setGSReverbParameter(targetTicks, "level", p.level),
+                MIDIUtils.setGSReverbParameter(
+                    targetTicks,
+                    "preLowpass",
                     p.preLowpass
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.character, [
+                ),
+                MIDIUtils.setGSReverbParameter(
+                    targetTicks,
+                    "character",
                     p.character
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.time, [p.time]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.delayFeedback, [
+                ),
+                MIDIUtils.setGSReverbParameter(targetTicks, "time", p.time),
+                MIDIUtils.setGSReverbParameter(
+                    targetTicks,
+                    "delayFeedback",
                     p.delayFeedback
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preDelayTime, [
+                ),
+                MIDIUtils.setGSReverbParameter(
+                    targetTicks,
+                    "preDelayTime",
                     p.preDelayTime
-                ])
+                )
             );
         }
         if (this.chorusParams && this.chorusParams !== "clear") {
-            const m = chorusAddressMap;
             const p = this.chorusParams;
             targetTrack.addEvents(
                 targetIndex,
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.level, [
-                    p.level
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
+                MIDIUtils.setGSChorusParameter(targetTicks, "level", p.level),
+                MIDIUtils.setGSChorusParameter(
+                    targetTicks,
+                    "preLowpass",
                     p.preLowpass
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
-                    p.feedback
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.delay, [
-                    p.delay
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.rate, [p.rate]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.depth, [
-                    p.depth
-                ]),
-                MIDIUtils.gsMessage(
-                    targetTicks,
-                    0x40,
-                    0x01,
-                    m.sendLevelToReverb,
-                    [p.sendLevelToReverb]
                 ),
-                MIDIUtils.gsMessage(
+                MIDIUtils.setGSChorusParameter(
                     targetTicks,
-                    0x40,
-                    0x01,
-                    m.sendLevelToDelay,
-                    [p.sendLevelToDelay]
+                    "feedback",
+                    p.feedback
+                ),
+                MIDIUtils.setGSChorusParameter(targetTicks, "delay", p.delay),
+                MIDIUtils.setGSChorusParameter(targetTicks, "rate", p.rate),
+                MIDIUtils.setGSChorusParameter(targetTicks, "depth", p.depth),
+                MIDIUtils.setGSChorusParameter(
+                    targetTicks,
+                    "sendLevelToReverb",
+                    p.sendLevelToReverb
+                ),
+                MIDIUtils.setGSChorusParameter(
+                    targetTicks,
+                    "sendLevelToDelay",
+                    p.sendLevelToDelay
                 )
             );
         }
         if (this.delayParams && this.delayParams !== "clear") {
-            const m = delayAddressMap;
             const p = this.delayParams;
             targetTrack.addEvents(
                 targetIndex,
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.level, [
-                    p.level
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.preLowpass, [
-                    p.preLowpass
-                ]),
-
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.timeCenter, [
-                    p.timeCenter
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioLeft, [
-                    p.timeRatioLeft
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.timeRatioRight, [
-                    p.timeRatioRight
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.levelCenter, [
-                    p.levelCenter
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.levelLeft, [
-                    p.levelLeft
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.levelRight, [
-                    p.levelRight
-                ]),
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x01, m.feedback, [
-                    p.feedback
-                ]),
-                MIDIUtils.gsMessage(
+                MIDIUtils.setGSDelayParameter(targetTicks, "level", p.level),
+                MIDIUtils.setGSDelayParameter(
                     targetTicks,
-                    0x40,
-                    0x01,
-                    m.sendLevelToReverb,
-                    [p.sendLevelToReverb]
+                    "preLowpass",
+                    p.preLowpass
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "timeCenter",
+                    p.timeCenter
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "timeRatioLeft",
+                    p.timeRatioLeft
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "timeRatioRight",
+                    p.timeRatioRight
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "levelCenter",
+                    p.levelCenter
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "levelLeft",
+                    p.levelLeft
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "levelRight",
+                    p.levelRight
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "feedback",
+                    p.feedback
+                ),
+                MIDIUtils.setGSDelayParameter(
+                    targetTicks,
+                    "sendLevelToReverb",
+                    p.sendLevelToReverb
                 )
             );
         }
 
         if (this.insertionParams && this.insertionParams !== "clear") {
             const p = this.insertionParams;
-            // Params and sends
+            // Params and sends are stored in one table (0-19: params, 20-22: sends)
+            const sendNames = [
+                "sendLevelToReverb",
+                "sendLevelToChorus",
+                "sendLevelToDelay"
+            ] as const;
+            const evs = new Array<MIDIMessage>();
             for (let param = 0; param < p.params.length; param++) {
                 const value = p.params[param];
                 if (value === 255) continue;
-                targetTrack.addEvents(
-                    targetIndex,
-                    MIDIUtils.gsMessage(targetTicks, 0x40, 0x03, param + 3, [
-                        value
-                    ])
-                );
+                if (param < 20) {
+                    evs.push(
+                        MIDIUtils.setInsertionParameter(
+                            targetTicks,
+                            param,
+                            value
+                        )
+                    );
+                } else {
+                    evs.push(
+                        MIDIUtils.setInsertionParameter(
+                            targetTicks,
+                            sendNames[param - 20],
+                            value
+                        )
+                    );
+                }
             }
+
+            // This adds them in order
+            targetTrack.addEvents(targetIndex, ...evs);
 
             // Last means that it will be first, so the order is:
             // Type
@@ -1386,10 +1382,7 @@ export class MIDIEditor {
             // Channels
             targetTrack.addEvents(
                 targetIndex,
-                MIDIUtils.gsMessage(targetTicks, 0x40, 0x03, 0x00, [
-                    p.type >> 8,
-                    p.type & 0x7f
-                ])
+                MIDIUtils.setInsertionParameter(targetTicks, "type", p.type)
             );
         }
 

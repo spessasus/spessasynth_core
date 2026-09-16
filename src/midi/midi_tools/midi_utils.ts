@@ -7,66 +7,20 @@ import {
     RegisteredParameterTypes
 } from "../enums";
 
-import type {
-    DrumParameter,
-    SysExAcceptedArray,
-    UserDrumSetParameter
-} from "../types";
+import type { SysExAcceptedArray, UserDrumSetParameter } from "../types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
-
-/**
- * Represents an analyzed global MIDI parameter change message.
- *
- * @group MIDI.Protocol
- */
-export type GlobalMIDIParameterMessage = {
-    [P in keyof GlobalMIDIParameter]: {
-        /**
-         * The message type identifier.
-         */
-        type: "Global MIDI Param";
-        /**
-         * The global MIDI parameter being modified.
-         */
-        parameter: P;
-        /**
-         * The new value of the global MIDI parameter.
-         */
-        value: GlobalMIDIParameter[P];
-    };
-}[keyof GlobalMIDIParameter];
-
-/**
- * Represents an analyzed channel MIDI parameter change message.
- *
- * > **Note**
- * >
- * > Channel number may be above 15 for multi-port MIDI setups.
- *
- * @group MIDI.Protocol
- */
-export type ChannelMIDIParameterMessage = {
-    [P in keyof ChannelMIDIParameter]: {
-        /**
-         * The message type identifier.
-         */
-        type: "Channel MIDI Param";
-        /**
-         * The channel MIDI parameter being modified.
-         */
-        parameter: P;
-        /**
-         * The new value of the channel MIDI parameter.
-         */
-        value: ChannelMIDIParameter[P];
-        /**
-         * The MIDI channel number (it may be above 15 for multi-port MIDI setups).
-         */
-        channel: number;
-    };
-}[keyof ChannelMIDIParameter];
+import type {
+    GSChorusParameter,
+    GSDelayParameter,
+    GSReverbParameter
+} from "../../synthesizer/audio_engine/effects/types";
+import type {
+    AnalyzedMIDIMessage,
+    AnalyzedParameter,
+    GSInsertionParameterMessage
+} from "./analyzed_message";
 
 const userDrumParamMap: Record<keyof UserDrumSetParameter, number> = {
     pitchCoarse: 1,
@@ -85,163 +39,39 @@ const userDrumParamMap: Record<keyof UserDrumSetParameter, number> = {
     sourceNoteNumber: 0xc
 };
 
-/**
- * The analysis result of an RPN (Registered Parameter Number) or NRPN (Non-Registered Parameter Number) MIDI message.
- *
- * > **Note**
- * >
- * > Channel number may be above 15 for multi-port MIDI setups.
- *
- * @group MIDI.Protocol
- */
-export type AnalyzedParameter =
-    | {
-          /**
-           * An unhandled or unrecognized parameter message.
-           */
-          type: "Other";
-      }
-    | {
-          /**
-           * A standard MIDI controller change mapped from an NRPN or parameter.
-           */
-          type: "Controller Change";
-          /**
-           * The MIDI controller being modified.
-           */
-          controller: MIDIController;
-          /**
-           * The 7-bit controller value (0-127).
-           */
-          value: number;
-          /**
-           * The MIDI channel number (it may be above 15).
-           */
-          channel: number;
-      }
-    | ChannelMIDIParameterMessage
-    | {
-          [K in keyof DrumParameter]: {
-              /**
-               * A drum setup parameter message.
-               */
-              type: "Drum Setup";
-              /**
-               * The MIDI drum key/note number being modified.
-               */
-              key: number;
-              /**
-               * The drum parameter name.
-               */
-              parameter: K;
-              /**
-               * The value for the drum parameter.
-               */
-              value: DrumParameter[K];
-          };
-      }[keyof DrumParameter];
-
-/**
- * The analysis result of a System Exclusive (SysEx) or (N)RPN MIDI message.
- *
- * Represents various parsed MIDI events, including effect parameters, channel setups,
- * program changes, display data, global parameters, user drum setups, and other analyzed parameters.
- *
- * @group MIDI.Protocol
- */
-export type AnalyzedMIDIMessage =
-    | AnalyzedParameter
-    | {
-          /**
-           * A reverb effect processor parameter message.
-           */
-          type: "Reverb Param";
-      }
-    | {
-          /**
-           * A chorus effect processor parameter message.
-           */
-          type: "Chorus Param";
-      }
-    | {
-          /**
-           * A delay effect processor parameter message.
-           */
-          type: "Delay Param";
-      }
-    | {
-          /**
-           * A variation effect processor parameter message (Yamaha XG).
-           */
-          type: "Variation Param";
-      }
-    | {
-          /**
-           * An insertion effect processor parameter message (Roland GS).
-           */
-          type: "Insertion Param";
-      }
-    | {
-          /**
-           * A message configuring whether a channel is set as a drum channel or melodic channel.
-           */
-          type: "Drums On";
-          /**
-           * The MIDI channel number.
-           */
-          channel: number;
-          /**
-           * `true` if the channel is set to drums, `false` if melodic.
-           */
-          isDrum: boolean;
-      }
-    | {
-          /**
-           * A MIDI program change message configured via System Exclusive.
-           */
-          type: "Program Change";
-          /**
-           * The MIDI channel number.
-           */
-          channel: number;
-          /**
-           * The MIDI program number (0-127).
-           */
-          value: number;
-      }
-    | {
-          /**
-           * A System Exclusive display data message (e.g., Roland GS or Yamaha XG LCD text or graphic display data).
-           */
-          type: "Display Data";
-      }
-    | GlobalMIDIParameterMessage
-    | {
-          [K in keyof UserDrumSetParameter]: {
-              /**
-               * A user drum set parameter setup message.
-               */
-              type: "User Drum Setup";
-              /**
-               * The 0-based user drum set index.
-               */
-              drumSet: number;
-              /**
-               * The MIDI note number within the user drum set.
-               */
-              midiNote: number;
-              /**
-               * The user drum set parameter name.
-               */
-              parameter: K;
-              /**
-               * The value for the user drum set parameter.
-               */
-              value: UserDrumSetParameter[K];
-          };
-      }[keyof UserDrumSetParameter];
-
 const OTHER = Object.freeze({ type: "Other" }) as AnalyzedParameter;
+const GSReverbAddressMap: GSReverbParameter = {
+    character: 0x31,
+    preLowpass: 0x32,
+    level: 0x33,
+    time: 0x34,
+    delayFeedback: 0x35,
+    preDelayTime: 0x37
+};
+
+const GSChorusAddressMap: GSChorusParameter = {
+    preLowpass: 0x39,
+    level: 0x3a,
+    feedback: 0x3b,
+    delay: 0x3c,
+    rate: 0x3d,
+    depth: 0x3e,
+    sendLevelToReverb: 0x3f,
+    sendLevelToDelay: 0x40
+};
+
+const GSDelayAddressMap: GSDelayParameter = {
+    preLowpass: 0x51,
+    timeCenter: 0x52,
+    timeRatioLeft: 0x53,
+    timeRatioRight: 0x54,
+    levelCenter: 0x55,
+    levelLeft: 0x56,
+    levelRight: 0x57,
+    level: 0x58,
+    feedback: 0x59,
+    sendLevelToReverb: 0x5a
+};
 
 /**
  * This class contains useful utilities for manipulating and parsing System Exclusive and other MIDI 1.0 messages.
@@ -510,8 +340,111 @@ export class MIDIUtils {
     }
 
     /**
+     * Returns a MIDI event needed to set the given GS Reverb Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this GS Reverb Parameter.
+     */
+    public static setGSReverbParameter<P extends keyof GSReverbParameter>(
+        ticks: number,
+        parameter: P,
+        value: GSReverbParameter[P]
+    ) {
+        const a3 = GSReverbAddressMap[parameter];
+        if (a3 === undefined) {
+            throw new Error(`Invalid reverb parameter: ${parameter}`);
+        }
+        return this.gsMessage(ticks, 0x40, 0x01, a3, [value]);
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given GS Chorus Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this GS Chorus Parameter.
+     */
+    public static setGSChorusParameter<P extends keyof GSChorusParameter>(
+        ticks: number,
+        parameter: P,
+        value: GSChorusParameter[P]
+    ) {
+        const a3 = GSChorusAddressMap[parameter];
+        if (a3 === undefined) {
+            throw new Error(`Invalid chorus parameter: ${parameter}`);
+        }
+        return this.gsMessage(ticks, 0x40, 0x01, a3, [value]);
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given GS Delay Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set.
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this GS Delay Parameter.
+     */
+    public static setGSDelayParameter<P extends keyof GSDelayParameter>(
+        ticks: number,
+        parameter: P,
+        value: GSDelayParameter[P]
+    ) {
+        const a3 = GSDelayAddressMap[parameter];
+        if (a3 === undefined) {
+            throw new Error(`Invalid delay parameter: ${parameter}`);
+        }
+        return this.gsMessage(ticks, 0x40, 0x01, a3, [value]);
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given GS Insertion Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set: `"type"`, a send level name,
+     * or a 0-based effect-specific parameter number (0-19).
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this GS Insertion Parameter.
+     */
+    public static setInsertionParameter(
+        ticks: number,
+        parameter: GSInsertionParameterMessage["parameter"],
+        value: number
+    ) {
+        switch (parameter) {
+            case "type": {
+                return this.gsMessage(ticks, 0x40, 0x03, 0x00, [
+                    (value >> 8) & 0x7f,
+                    value & 0x7f
+                ]);
+            }
+            case "sendLevelToReverb": {
+                return this.gsMessage(ticks, 0x40, 0x03, 0x17, [value]);
+            }
+            case "sendLevelToChorus": {
+                return this.gsMessage(ticks, 0x40, 0x03, 0x18, [value]);
+            }
+            case "sendLevelToDelay": {
+                return this.gsMessage(ticks, 0x40, 0x03, 0x19, [value]);
+            }
+            default: {
+                if (
+                    !Number.isInteger(parameter) ||
+                    parameter < 0 ||
+                    parameter > 19
+                ) {
+                    throw new Error(
+                        `Invalid insertion parameter: ${parameter}`
+                    );
+                }
+                return this.gsMessage(ticks, 0x40, 0x03, parameter + 3, [
+                    value
+                ]);
+            }
+        }
+    }
+
+    /**
      * Returns a list of MIDI events needed to set the given parameter.
-     * @param ticks The ticks for all events.
+     * @param ticks The MIDI tick time for output events.
      * @param system If the message has multiple ways of setting it,
      * this selects the preferred way. Otherwise, it prefers Universal (GM).
      * @param parameter The parameter to set.
@@ -682,7 +615,7 @@ export class MIDIUtils {
 
     /**
      * Returns a list of MIDI events needed to set the given parameter.
-     * @param ticks The ticks for all events.
+     * @param ticks The MIDI tick time for output events.
      * @param channel The channel number.
      * @param system If the message has multiple ways of setting it,
      * this selects the preferred way. Otherwise, it prefers Universal (GM).
@@ -910,7 +843,7 @@ export class MIDIUtils {
 
     /**
      * Returns a MIDI event needed to set the given GS User Drum Set parameter.
-     * @param ticks The ticks for all events.
+     * @param ticks The MIDI tick time for the output event.
      * @param drumSet The drum set to modify, either 0 or 1.
      * @param midiNote The MIDI note number of the drum key to modify.
      * @param parameter The parameter to set.
@@ -1233,17 +1166,32 @@ export class MIDIUtils {
 
                         case 0x01: {
                             // Reverb
+                            const value = syx[10];
                             // Parameter
                             switch (syx[9]) {
                                 default: {
                                     return [OTHER];
                                 }
 
-                                case 0x00:
-                                case 0x01: {
+                                case 0x00: {
+                                    // Reverb type
+                                    // Match 8850 manual, page 231
+                                    // All match except for plate which is 8 in GM and 5 in GS
                                     return [
                                         {
-                                            type: "Reverb Param"
+                                            type: "GS Reverb Param",
+                                            parameter: "macro",
+                                            value: value === 0x08 ? 0x05 : value
+                                        }
+                                    ];
+                                }
+                                case 0x01: {
+                                    // Reverb time
+                                    return [
+                                        {
+                                            type: "GS Reverb Param",
+                                            parameter: "time",
+                                            value
                                         }
                                     ];
                                 }
@@ -1252,18 +1200,65 @@ export class MIDIUtils {
 
                         case 0x02: {
                             // Chorus
+
+                            const value = syx[10];
                             // Parameter
                             switch (syx[9]) {
                                 default: {
                                     return [OTHER];
                                 }
 
-                                case 0x00:
-                                case 0x01:
-                                case 0x02:
-                                case 0x03:
+                                case 0x00: {
+                                    // Chorus type
+                                    // Match 8850 manual, page 231
+                                    // All match
+                                    return [
+                                        {
+                                            type: "GS Chorus Param",
+                                            parameter: "macro",
+                                            value
+                                        }
+                                    ];
+                                }
+                                case 0x01: {
+                                    // Mod rate
+                                    return [
+                                        {
+                                            type: "GS Chorus Param",
+                                            parameter: "rate",
+                                            value
+                                        }
+                                    ];
+                                }
+                                case 0x02: {
+                                    // Mod depth
+                                    return [
+                                        {
+                                            type: "GS Chorus Param",
+                                            parameter: "depth",
+                                            value
+                                        }
+                                    ];
+                                }
+                                case 0x03: {
+                                    // Mod feedback
+                                    return [
+                                        {
+                                            type: "GS Chorus Param",
+                                            parameter: "feedback",
+                                            value
+                                        }
+                                    ];
+                                }
                                 case 0x04: {
-                                    return [{ type: "Chorus Param" }];
+                                    // Mod send to reverb
+                                    return [
+                                        {
+                                            type: "GS Chorus Param",
+                                            parameter: "sendLevelToReverb",
+                                            value
+                                        }
+                                    ];
                                 }
                             }
                         }
@@ -1376,13 +1371,13 @@ export class MIDIUtils {
 
         // XG EFFECT 1
         if (a1 === 0x02 && a2 === 0x01) {
-            if (a3 <= 0x15) return [{ type: "Reverb Param" }];
-            if (a3 <= 0x35) return [{ type: "Chorus Param" }];
-            return [{ type: "Variation Param" }];
+            if (a3 <= 0x15) return [{ type: "XG Reverb Param" }];
+            if (a3 <= 0x35) return [{ type: "XG Chorus Param" }];
+            return [{ type: "XG Variation Param" }];
         }
 
         // XG EFFECT 2
-        if (a1 === 0x03 && a2 === 0x00) return [{ type: "Variation Param" }];
+        if (a1 === 0x03 && a2 === 0x00) return [{ type: "XG Variation Param" }];
 
         // XG MULTI PART
         if (a1 === 0x08 /* A2 is the channel number*/) {
@@ -1786,7 +1781,8 @@ export class MIDIUtils {
         const a1 = syx[4];
         const a2 = syx[5];
         const a3 = syx[6];
-        const data = syx[7];
+        // Data = syx[7]
+        const value = syx[7];
 
         // System Parameters
         // MODE SET
@@ -1794,7 +1790,7 @@ export class MIDIUtils {
         // Decoded as "master key shift" even though it means "SC-88 output assign"
         // Testcase: FADED88.mid
         if (a1 === 0x00 && a2 === 0x00 && a3 === 0x7f) {
-            switch (data) {
+            switch (value) {
                 // GS Reset/Mode-1 (Single Module Mode)
                 case 0x00:
                 // GS Reset/Mode-2 (Double Module Mode)
@@ -1828,7 +1824,7 @@ export class MIDIUtils {
                 // Master Tune
                 case 0x00: {
                     const tune =
-                        (data << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
+                        (value << 12) | (syx[8] << 8) | (syx[9] << 4) | syx[10];
                     const cents = (tune - 1024) / 10;
                     return [
                         {
@@ -1845,7 +1841,7 @@ export class MIDIUtils {
                         {
                             type: "Global MIDI Param",
                             parameter: "volume",
-                            value: data / 127
+                            value: value / 127
                         }
                     ];
                 }
@@ -1856,7 +1852,7 @@ export class MIDIUtils {
                         {
                             type: "Global MIDI Param",
                             parameter: "keyShift",
-                            value: data - 64
+                            value: value - 64
                         }
                     ];
                 }
@@ -1868,14 +1864,14 @@ export class MIDIUtils {
                             type: "Global MIDI Param",
                             parameter: "pan",
                             // 63, it ranges from 1 to 127, NOT 0 to 127!
-                            value: (data - 64) / 63
+                            value: (value - 64) / 63
                         }
                     ];
                 }
 
                 // MODE SET
                 case 0x7f: {
-                    switch (data) {
+                    switch (value) {
                         // GS Reset/Mode-1 (Single Module Mode)
                         case 0x00:
                         // GS Reset/Mode-2 (Double Module Mode)
@@ -1915,7 +1911,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "pitchCoarse",
-                            value: data - 60
+                            value: value - 60
                         }
                     ];
                 }
@@ -1927,7 +1923,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "level",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1939,7 +1935,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "assignGroup",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1951,7 +1947,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "pan",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1963,7 +1959,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "reverbSend",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1975,7 +1971,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "chorusSend",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1987,7 +1983,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "rxNoteOff",
-                            value: data === 1
+                            value: value === 1
                         }
                     ];
                 }
@@ -1999,7 +1995,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "rxNoteOn",
-                            value: data === 1
+                            value: value === 1
                         }
                     ];
                 }
@@ -2011,7 +2007,7 @@ export class MIDIUtils {
                             type: "Drum Setup",
                             key: a3,
                             parameter: "variationSend",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2021,7 +2017,7 @@ export class MIDIUtils {
 
         // User Drum Set
         if (a1 === 0x21) {
-            return [this.handleSingleUserDrum(a2, a3, data)];
+            return [this.handleSingleUserDrum(a2, a3, value)];
         }
 
         // User Drum Set Bulk Dump
@@ -2134,14 +2130,326 @@ export class MIDIUtils {
 
         // Effects
         if (a2 === 0x01) {
-            if (a3 >= 0x30 && a3 <= 0x37) return [{ type: "Reverb Param" }];
-            if (a3 >= 0x38 && a3 <= 0x40) return [{ type: "Chorus Param" }];
-            if (a3 >= 0x50 && a3 <= 0x5a) return [{ type: "Delay Param" }];
+            switch (a3) {
+                default: {
+                    return [{ type: "Other" }];
+                }
+                case 0x30: {
+                    return [
+                        { type: "GS Reverb Param", parameter: "macro", value }
+                    ];
+                }
+                case 0x31: {
+                    return [
+                        {
+                            type: "GS Reverb Param",
+                            parameter: "character",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x32: {
+                    return [
+                        {
+                            type: "GS Reverb Param",
+                            parameter: "preLowpass",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x33: {
+                    return [
+                        { type: "GS Reverb Param", parameter: "level", value }
+                    ];
+                }
+
+                case 0x34: {
+                    return [
+                        { type: "GS Reverb Param", parameter: "time", value }
+                    ];
+                }
+
+                case 0x35: {
+                    return [
+                        {
+                            type: "GS Reverb Param",
+                            parameter: "delayFeedback",
+                            value
+                        }
+                    ];
+                }
+
+                // 0x36 is intentionally gone as it was reverb send to chorus in SC-55
+
+                case 0x37: {
+                    return [
+                        {
+                            type: "GS Reverb Param",
+                            parameter: "preDelayTime",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x38: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "macro",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x39: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "preLowpass",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x3a: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "level",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x3b: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "feedback",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x3c: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "delay",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x3d: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "rate",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x3e: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "depth",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x3f: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "sendLevelToReverb",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x40: {
+                    return [
+                        {
+                            type: "GS Chorus Param",
+                            parameter: "sendLevelToDelay",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x50: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "macro",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x51: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "preLowpass",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x52: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "timeCenter",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x53: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "timeRatioLeft",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x54: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "timeRatioRight",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x55: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "levelCenter",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x56: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "levelLeft",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x57: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "levelRight",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x58: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "level",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x59: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "feedback",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x5a: {
+                    return [
+                        {
+                            type: "GS Delay Param",
+                            parameter: "sendLevelToReverb",
+                            value
+                        }
+                    ];
+                }
+            }
         }
 
         // EFX Parameter
-        if (a2 === 0x03 && a3 >= 0x00 && a3 <= 0x7f)
-            return [{ type: "Insertion Param" }];
+        if (a2 === 0x03) {
+            switch (a3) {
+                case 0x00: {
+                    return [
+                        {
+                            type: "GS Insertion Param",
+                            parameter: "type",
+                            value: (value << 8) | syx[8]
+                        }
+                    ];
+                }
+
+                case 0x17: {
+                    return [
+                        {
+                            type: "GS Insertion Param",
+                            parameter: "sendLevelToReverb",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x18: {
+                    return [
+                        {
+                            type: "GS Insertion Param",
+                            parameter: "sendLevelToChorus",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x19: {
+                    return [
+                        {
+                            type: "GS Insertion Param",
+                            parameter: "sendLevelToDelay",
+                            value
+                        }
+                    ];
+                }
+            }
+
+            if (a3 >= 0x03 && a3 <= 0x16) {
+                return [
+                    {
+                        type: "GS Insertion Param",
+                        parameter: a3 - 3,
+                        value
+                    }
+                ];
+            }
+            return [{ type: "Other" }];
+        }
 
         // Patch parameter
         if (a2 >> 4 === 1) {
@@ -2158,7 +2466,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.bankSelect,
-                            value: data
+                            value
                         },
                         {
                             type: "Program Change",
@@ -2175,7 +2483,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "polyMode",
-                            value: data === 1
+                            value: value === 1
                         }
                     ];
                 }
@@ -2187,7 +2495,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "assignMode",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2197,7 +2505,7 @@ export class MIDIUtils {
                         {
                             type: "Drums On",
                             channel,
-                            isDrum: data > 0
+                            isDrum: value > 0
                         }
                     ];
                 }
@@ -2208,7 +2516,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "keyShift",
-                            value: data - 64
+                            value: value - 64
                         }
                     ];
                 }
@@ -2220,7 +2528,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.mainVolume,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2232,7 +2540,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "velocitySenseDepth",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2244,7 +2552,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "velocitySenseOffset",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2252,7 +2560,7 @@ export class MIDIUtils {
                 case 0x1c: {
                     // Pan position, except for random,
                     // Which is a different parameter
-                    if (data === 0) {
+                    if (value === 0) {
                         return [
                             {
                                 type: "Channel MIDI Param",
@@ -2267,7 +2575,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.pan,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2279,7 +2587,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "cc1",
-                            value: data as MIDIController
+                            value: value as MIDIController
                         }
                     ];
                 }
@@ -2291,7 +2599,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "cc2",
-                            value: data as MIDIController
+                            value: value as MIDIController
                         }
                     ];
                 }
@@ -2303,7 +2611,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.chorusDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2315,7 +2623,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.reverbDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2323,7 +2631,7 @@ export class MIDIUtils {
                 case 0x2a: {
                     // Fine tune
                     // 0-16384
-                    const tune = (data << 7) | syx[8];
+                    const tune = (value << 7) | syx[8];
                     const tuneCents = (tune - 8192) / 81.92;
                     return [
                         {
@@ -2342,7 +2650,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.variationDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2354,7 +2662,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.vibratoRate,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2366,7 +2674,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.vibratoDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2378,7 +2686,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.brightness,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2390,7 +2698,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.filterResonance,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2402,7 +2710,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.attackTime,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2414,7 +2722,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.decayTime,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2426,7 +2734,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.releaseTime,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2438,7 +2746,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.vibratoDelay,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2461,7 +2769,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.bankSelectLSB,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -2472,7 +2780,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "efxAssign",
-                            value: data === 1
+                            value: value === 1
                         }
                     ];
                 }

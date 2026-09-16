@@ -180,6 +180,18 @@ for (const t of timeline) {
                         break;
                     }
 
+                    case "GS Reverb Param":
+                    case "GS Chorus Param":
+                    case "GS Delay Param":
+                    case "GS Insertion Param": {
+                        console.info(
+                            `[GLOBL] ${analyzed.type} change: ${
+                                analyzed.parameter
+                            } = ${analyzed.value}`
+                        );
+                        break;
+                    }
+
                     case "Global MIDI Param": {
                         console.info(
                             `[GLOBL] MIDI Param change: ${
