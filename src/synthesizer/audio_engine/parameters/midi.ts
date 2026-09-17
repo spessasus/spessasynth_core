@@ -26,18 +26,24 @@ export interface GlobalMIDIParameter {
     /**
      * The currently enabled MIDI system used by the synthesizer
      * for bank selects and system exclusives.
-     * Can be changed with a Systme Exclusive reset message.
+     * Can be changed with a System Exclusive reset message.
      * (GM, GM2, GS, XG)
      */
     system: MIDISystem;
     /**
      * The global key shift in semitones.
-     * Drum channels ignore this value.
+     *
+     * > **Important**
+     * >
+     * > Drum channels ignore this value.
      */
     keyShift: number;
     /**
      * The global tuning in cents.
-     * Drum channels ignore this value.
+     *
+     * > **Important**
+     * >
+     * > Drum channels ignore this value.
      */
     fineTune: number;
 
@@ -47,8 +53,7 @@ export interface GlobalMIDIParameter {
      *
      * > **Note**
      * >
-     * >
-     * This differs from the `gain` system parameter in that it is squared internally.
+     * > This differs from the {@link GlobalSystemParameter.gain `gain`} system parameter in that it is squared internally.
      */
     volume: number;
 
