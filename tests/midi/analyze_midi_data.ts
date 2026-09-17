@@ -236,7 +236,5 @@ for (const t of timeline) {
         }
     }
 }
-
-console.info("END OF ANALYSIS");
 console.groupEnd();
-console.info("---");
+console.group("--- End Of Analysis ---\n\n\n");
