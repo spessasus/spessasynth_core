@@ -5,6 +5,8 @@ import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_typ
 import { MIDIControllers } from "../../../midi/enums";
 import { LowpassFilter } from "../voice/lowpass_filter";
 
+const TWO_PI = Math.PI * 2;
+
 const HALF_PI = Math.PI / 2;
 
 const MIN_PAN = -500;
@@ -26,18 +28,12 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * Renders a voice to the stereo output buffer
  * @param voice the voice to render
  * @param timeNow current time in seconds
- * @param outputL the left output buffer
- * @param outputR the right output buffer
- * @param startIndex
- * @param sampleCount
+ * @param sampleCount the only thing needed as it's 0-based
  */
 export function renderVoice(
     this: MIDIChannel,
     voice: Voice,
     timeNow: number,
-    outputL: Float32Array,
-    outputR: Float32Array,
-    startIndex: number,
     sampleCount: number
 ) {
     // Check if release
@@ -113,11 +109,13 @@ export function renderVoice(
     // Vibrato LFO
     if (timeNow >= voice.vibLfoStartTime) {
         const vibPitchDepth = modulated[GeneratorTypes.vibLfoToPitch];
+        const vibVolDepth = modulated[GeneratorTypes.vibLfoToVolume];
         const vibFilterDepth = modulated[GeneratorTypes.vibLfoToFilterFc];
         const vibAmplitudeDepth =
             modulated[GeneratorTypes.vibLfoAmplitudeDepth];
         if (
             vibPitchDepth !== 0 ||
+            vibVolDepth !== 0 ||
             vibFilterDepth !== 0 ||
             vibAmplitudeDepth !== 0
         ) {
@@ -133,9 +131,13 @@ export function renderVoice(
             // Low pass frequency
             lowpassExcursion += vibLfoValue * vibFilterDepth;
 
+            // Vol env volume offset
+            // Negate the lfo value because audigy starts with increase rather than decrease
+            volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
+
             // Amplitude depth
-            voiceGain *=
-                1 - ((vibLfoValue + 1) / 2) * (vibAmplitudeDepth / 1000);
+            // Like SCVA: double gain at peak, 0 at lowest (times depth)
+            voiceGain *= 1 + vibLfoValue * (vibAmplitudeDepth / 1000);
         }
     }
 
@@ -169,12 +171,31 @@ export function renderVoice(
             lowpassExcursion += modLfoValue * modFilterDepth;
 
             // Amplitude depth
-            voiceGain *=
-                1 - ((modLfoValue + 1) / 2) * (modAmplitudeDepth / 1000);
+            // Like SCVA: double gain at peak, 0 at lowest (times depth)
+            voiceGain *= 1 + modLfoValue * (modAmplitudeDepth / 1000);
         }
     }
 
-    // TODO: Implement proper GS vibrato. Custom vibrato used to be here.
+    const { systemParameters } = core;
+
+    // Channel vibrato (custom vibrato)
+    // TODO: Replace this with proper GS vibrato someday
+    if (
+        systemParameters.customVibrato &&
+        this._midiControllers[MIDIControllers.modulationWheel] === 0 &&
+        this.customVibrato.depth > 0
+    ) {
+        // Inlined LFO from 4.2.0
+        const vibStart = voice.startTime + this.customVibrato.delay;
+        if (timeNow >= vibStart) {
+            const elapsed = timeNow - vibStart;
+
+            // 2pif t gives a full sine cycle at the specified frequency
+            cents +=
+                Math.sin(TWO_PI * this.customVibrato.rate * elapsed) *
+                this.customVibrato.depth;
+        }
+    }
 
     // Mod env
     const modEnvPitchDepth = modulated[GeneratorTypes.modEnvToPitch];
@@ -322,8 +343,6 @@ export function renderVoice(
         pan = voice.currentPan;
     }
 
-    const { systemParameters } = core;
-
     const outputGain = this.currentGain * voiceGain;
     const index =
         (Math.min(Math.max(-500, pan + this.currentPan), 500) + 500) | 0;
@@ -331,36 +350,31 @@ export function renderVoice(
     const gainLeft = panTableLeft[index] * outputGain;
     const gainRight = panTableRight[index] * outputGain;
 
-    // Straight into the insertion EFX, but only if it is active
-    if (
-        this._midiParameters.efxAssign &&
-        systemParameters.effectsEnabled &&
-        core.insertionActive
-    ) {
-        const insertionL = core.insertionInputL;
-        const insertionR = core.insertionInputR;
-        for (let i = 0; i < sampleCount; i++) {
-            const s = buffer[i];
-            insertionL[i] += gainLeft * s;
-            insertionR[i] += gainRight * s;
-        }
-        return;
-    }
-
-    // Mix down the audio data
+    // Mix down the audio data, always 0-based
+    const { outputLeft, outputRight } = this;
     for (let i = 0; i < sampleCount; i++) {
         const s = buffer[i];
-        const idx = i + startIndex;
-        outputL[idx] += gainLeft * s;
-        outputR[idx] += gainRight * s;
+        outputLeft[i] += gainLeft * s;
+        outputRight[i] += gainRight * s;
     }
-    if (!systemParameters.effectsEnabled) {
+
+    /**
+     * Do not send to effects if:
+     * - Either effects are disabled
+     * - Or insertion is active on this channel (Insertion takes over the voice data)
+     */
+    if (
+        (this._midiParameters.efxAssign &&
+            systemParameters.effectsEnabled &&
+            core.insertionActive) ||
+        !systemParameters.effectsEnabled
+    ) {
         return;
     }
 
     // Disable reverb and chorus if necessary
     const reverbSend =
-        modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbSend;
+        modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbGain;
     if (reverbSend > 0) {
         const reverbGain =
             systemParameters.reverbGain * outputGain * (reverbSend / 1000);
@@ -372,7 +386,7 @@ export function renderVoice(
     }
 
     const chorusSend =
-        modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusSend;
+        modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusGain;
     if (chorusSend > 0) {
         const chorusGain =
             systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
@@ -385,7 +399,7 @@ export function renderVoice(
     if (core.delayActive) {
         const delaySend =
             this._midiControllers[MIDIControllers.variationDepth] *
-            voice.delaySend;
+            voice.variationGain;
         if (delaySend > 0) {
             const delayGain =
                 outputGain *

@@ -152,8 +152,8 @@ for (const t of timeline) {
         }
 
         case MIDIMessageTypes.systemExclusive: {
-            const analyzed = MIDIUtils.analyzeSysEx(e.data);
-            if (analyzed) {
+            const analyzedMessages = MIDIUtils.analyzeSysEx(e.data);
+            for (const analyzed of analyzedMessages) {
                 switch (analyzed.type) {
                     default: {
                         // Log without type
@@ -176,6 +176,18 @@ for (const t of timeline) {
                         console.info(
                             "[UNREC] SysEx:",
                             arrayToHexString(e.data)
+                        );
+                        break;
+                    }
+
+                    case "GS Reverb Param":
+                    case "GS Chorus Param":
+                    case "GS Delay Param":
+                    case "GS Insertion Param": {
+                        console.info(
+                            `[GLOBL] ${analyzed.type} change: ${
+                                analyzed.parameter
+                            } = ${analyzed.value}`
                         );
                         break;
                     }
@@ -224,7 +236,5 @@ for (const t of timeline) {
         }
     }
 }
-
-console.info("END OF ANALYSIS");
 console.groupEnd();
-console.info("---");
+console.group("--- End Of Analysis ---\n\n\n");

@@ -10,7 +10,7 @@ if (args.length !== 1) {
 
 const filePath = args[0];
 const file = await fs.readFile(filePath);
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 const bank = SoundBankLoader.fromArrayBuffer(file.buffer);
 console.info("Loaded bank:", bank.soundBankInfo.name);
 

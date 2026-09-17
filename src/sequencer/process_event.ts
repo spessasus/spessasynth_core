@@ -19,11 +19,14 @@ export function processEventInternal(
     event: MIDIMessage,
     trackIndex: number
 ) {
+    const offset =
+        this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
+
     if (
         this.externalMIDIPlayback && // Do not send meta events
         event.statusByte >= 0x80
     ) {
-        this.sendMIDIMessage([event.statusByte, ...event.data]);
+        this.sendMIDIMessage([event.statusByte, ...event.data], offset);
         return;
     }
     const track = this._midiData!.tracks[trackIndex];
@@ -36,8 +39,7 @@ export function processEventInternal(
     } else {
         status = event.statusByte;
     }
-    const offset =
-        this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
+
     channel += offset;
     /*
      Process the event
