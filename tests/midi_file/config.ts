@@ -1,30 +1,60 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 
-const midiFileDir = import.meta.dirname;
-const rootDir = path.resolve(midiFileDir, "..", "..");
-const renderedDir = path.join(midiFileDir, "output", "wav");
-const rendererDir = path.join(midiFileDir, "renderer", "bin");
+export type RenderTargetConfig =
+    | {
+          /**
+           * Windows VST2 plugin (x64)
+           */
+          type: "vst x64";
+          /**
+           * Path to the VST file.
+           */
+          path: string;
+          /**
+           * Whether this render target supports safe multithreaded rendering.
+           * Set to false if unsure.
+           */
+          multithreaded?: boolean;
+      }
+    | {
+          /**
+           * Windows VST2 plugin (x86)
+           */
+          type: "vst x86";
+          /**
+           * Path to the VST file.
+           */
+          path: string;
+          /**
+           * Whether this render target supports safe multithreaded rendering.
+           * Set to false if unsure.
+           */
+          multithreaded?: boolean;
+      }
+    | {
+          /**
+           * A native executable
+           */
+          type: "executable";
 
-/**
- * Target architecture for the VST native host renderer binary.
- */
-export type RenderTargetArch = "x86" | "x64";
+          /**
+           * Path to the executable. Absolute, or relative to this file's directory.
+           */
+          path: string;
 
-export interface RenderTargetConfig {
-    /**
-     * Target architecture the plugin uses.
-     */
-    arch: RenderTargetArch;
-    /**
-     * Path to the VST file.
-     */
-    vstPath: string;
-    /**
-     * Whether this render target supports safe multithreaded rendering.
-     * Set to false if unsure.
-     */
-    multithreaded: boolean;
-}
+          /**
+           * The parameters to pass. The value `input` will be replaced with the MIDI file path and `output` with the target wav path.
+           * Example: `["--input", "input", "--output", "output"]` will produce `--input <midi path> --output <wav path>`
+           */
+          cli: string[];
+
+          /**
+           * Whether this render target supports safe multithreaded rendering.
+           * Recommended to keep false unless the executable supports concurrent invocations.
+           */
+          multithreaded?: boolean;
+      };
 
 export interface RenderTestsPaths {
     /**
@@ -88,53 +118,63 @@ export interface RenderTestsConfig {
         outputFileName: string;
     };
     /**
-     * Map of render target identifiers to their respective VST configuration.
+     * Map of render target identifiers to their respective native target configuration.
      */
-    renderTargets: Record<string, RenderTargetConfig>;
+    renderTargets?: Record<string, RenderTargetConfig>;
 }
 
-/**
- * Configuration options and render targets for MIDI test rendering.
- */
-export const renderTestsConfig: RenderTestsConfig = {
-    trimThreshold: 0.0005,
-    paths: {
-        rootDir,
-        midiDir: path.join(midiFileDir, "output", "midi"),
-        renderedDir,
-        checksumsDir: path.join(midiFileDir, "output", "checksums"),
-        rendererDir,
-        soundFont: path.join(
-            rootDir,
-            "tests",
-            "files",
-            "sound_bank",
-            "midi_render.sf2"
-        )
-    },
-    spessasynth: {
-        sampleRate: 48_000,
-        tailSeconds: 2,
-        bufferSize: 128,
-        logFileName: "spessa.log",
-        outputFileName: "spessa.wav"
-    },
-    renderTargets: {
-        scva: {
-            arch: "x64",
-            vstPath: path.join(
-                rootDir,
-                "tests",
-                "files",
-                "vst",
-                "SOUND Canvas VA.dll"
-            ),
-            multithreaded: false
-        },
-        syxg50: {
-            arch: "x86",
-            vstPath: path.join(rootDir, "tests", "files", "vst", "syxg50.dll"),
-            multithreaded: true
-        }
+const configDir = import.meta.dirname;
+const configPath = path.join(configDir, "config.json");
+const exampleConfigPath = path.join(configDir, "config.example.json");
+
+async function fileExists(filePath: string) {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
     }
-};
+}
+
+export async function loadConfig(): Promise<RenderTestsConfig> {
+    if (!(await fileExists(configPath))) {
+        console.warn(
+            `Configuration not found at: ${path.basename(configPath)}. Copying the example config.`
+        );
+        await fs.copyFile(exampleConfigPath, configPath);
+    }
+
+    const configJson = await fs.readFile(configPath, { encoding: "utf-8" });
+    let config: RenderTestsConfig;
+    try {
+        // Remove schema
+        const raw = JSON.parse(configJson) as RenderTestsConfig & {
+            $schema?: string;
+        };
+        delete raw.$schema;
+        config = raw;
+    } catch (error) {
+        throw new Error(`Failed to parse ${configPath}: ${String(error)}`, {
+            cause: error
+        });
+    }
+
+    // Resolve all paths to absolute
+    return {
+        ...config,
+        paths: {
+            rootDir: path.resolve(configDir, config.paths.rootDir),
+            midiDir: path.resolve(configDir, config.paths.midiDir),
+            renderedDir: path.resolve(configDir, config.paths.renderedDir),
+            checksumsDir: path.resolve(configDir, config.paths.checksumsDir),
+            rendererDir: path.resolve(configDir, config.paths.rendererDir),
+            soundFont: path.resolve(configDir, config.paths.soundFont)
+        },
+        renderTargets: Object.fromEntries(
+            Object.entries(config.renderTargets ?? {}).map(([key, target]) => [
+                key,
+                { ...target, path: path.resolve(configDir, target.path) }
+            ])
+        )
+    };
+}

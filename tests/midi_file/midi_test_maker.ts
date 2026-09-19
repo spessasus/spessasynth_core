@@ -12,7 +12,9 @@ import {
 } from "../../src";
 import { fillWithDefaults } from "../../src/utils/fill_with_defaults";
 import { arrayToHexString } from "../../src/utils/other";
-import { renderTestsConfig } from "./config";
+import { loadConfig } from "./config";
+
+const renderTestsConfig = await loadConfig();
 
 class EFXTest {
     private readonly builder;

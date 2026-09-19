@@ -1,7 +1,9 @@
 import fs, { readdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { renderTestsConfig } from "./config";
+import { loadConfig } from "./config";
+
+const renderTestsConfig = await loadConfig();
 
 const TESTS_DIR = path.resolve(import.meta.dirname, "tests");
 const OUT_DIR = renderTestsConfig.paths.midiDir;

@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { renderTestsConfig } from "./config";
+import { loadConfig } from "./config";
+
+const renderTestsConfig = await loadConfig();
 
 console.group("Cleaning MIDI test artifacts");
 const midiFileDir = import.meta.dirname;

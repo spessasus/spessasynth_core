@@ -2,3 +2,6 @@
 output/
 *.wav
 *.mid
+
+# Local configuration
+config.json

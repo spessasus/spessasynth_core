@@ -16,11 +16,9 @@ import {
 import { readLittleEndianIndexed } from "../../src/utils/byte_functions/little_endian";
 import { readBinaryStringIndexed } from "../../src/utils/byte_functions/string";
 import { RIFFChunk } from "../../src/utils/riff_chunk";
-import {
-    type RenderTargetArch,
-    type RenderTargetConfig,
-    renderTestsConfig
-} from "./config";
+import { loadConfig, type RenderTargetConfig } from "./config";
+
+const renderTestsConfig = await loadConfig();
 
 function readWav(bin: ArrayBuffer) {
     const fileData = new IndexedByteArray(bin);
@@ -197,11 +195,11 @@ console.warn(
     
     Detected OS: ${os.platform()}
     Renders all files with spessasynth_core
-    and the configured native VST renderer.
+    and the configured native targets (VST plugins and executables).
     
     Normalized and WAV.
     
-    VSTi only renders changed files.
+    Native targets only render changed files.
 ========================================
 `
 );
@@ -248,7 +246,7 @@ async function fileExists(filePath: string) {
 /**
  * This builds the renderer if not found
  */
-async function getRendererPath(arch: RenderTargetArch) {
+async function getRendererPath(arch: "x86" | "x64") {
     const rendererName = `renderer_${arch}.exe`;
     const rendererPath = path.join(rendererDir, arch, rendererName);
 
@@ -295,7 +293,7 @@ const targetChecksums = new Map<string, Record<string, string>>();
 const filesToRenderByTarget = new Map<string, string[]>();
 
 // Check if checksums exist for each target
-for (const renderTarget of Object.keys(renderTestsConfig.renderTargets)) {
+for (const renderTarget of Object.keys(renderTestsConfig.renderTargets ?? {})) {
     const targetChecksumsPath = path.join(checksumsDir, `${renderTarget}.json`);
     let checksums: Record<string, string> = {};
     try {
@@ -324,13 +322,13 @@ for (const renderTarget of Object.keys(renderTestsConfig.renderTargets)) {
 console.info("Checksum check done.\n");
 console.groupEnd();
 
-const totalVstFilesToRender = Array.from(filesToRenderByTarget.values()).reduce(
+const totalFilesToRender = Array.from(filesToRenderByTarget.values()).reduce(
     (sum, files) => sum + files.length,
     0
 );
 
 console.info(
-    `Beginning render. Files to render across VST targets: ${totalVstFilesToRender}`
+    `Beginning render. Files to render across native targets: ${totalFilesToRender}`
 );
 
 function execRenderer(command: string, args: string[], cwd: string) {
@@ -365,7 +363,7 @@ function execRenderer(command: string, args: string[], cwd: string) {
     });
 }
 
-async function renderVSTTarget(
+async function renderTarget(
     file: string,
     inputPath: string,
     outputDir: string,
@@ -381,29 +379,63 @@ async function renderVSTTarget(
     const doneLabel = `${file} for ${renderTarget} took`;
     console.time(doneLabel);
 
-    const rendererPath = await getRendererPath(params.arch);
-    const vstPath = params.vstPath;
     const renderedPath = path.join(outputDir, `${renderTarget}_temp.wav`);
 
     // Run the command
     try {
-        if (!(await fileExists(vstPath))) {
-            console.error(`VST not found: ${vstPath}. Skipping!`);
-            return false;
+        let command: string;
+        let args: string[];
+        let cwd: string;
+
+        if (params.type === "vst x64" || params.type === "vst x86") {
+            if (!(await fileExists(params.path))) {
+                console.error(`VST not found: ${params.path}. Skipping!`);
+                return false;
+            }
+
+            const arch = params.type === "vst x64" ? "x64" : "x86";
+            const rendererPath = await getRendererPath(arch);
+
+            const rendererArgument = path.relative(rendererDir, rendererPath);
+            const vstArgument = path.relative(rendererDir, params.path);
+            const inputArgument = path.relative(rendererDir, inputPath);
+            const outputArgument = path.relative(rendererDir, renderedPath);
+
+            if (isWindows) {
+                command = rendererPath;
+                args = [vstArgument, inputArgument, outputArgument];
+            } else {
+                // Add wine if linux
+                command = "wine";
+                args = [
+                    rendererArgument,
+                    vstArgument,
+                    inputArgument,
+                    outputArgument
+                ];
+            }
+            cwd = rendererDir;
+        } else {
+            const executablePath = params.path;
+            if (!(await fileExists(executablePath))) {
+                console.error(
+                    `Executable not found: ${executablePath}. Skipping!`
+                );
+                return false;
+            }
+
+            command = executablePath;
+            args = params.cli.map((arg) =>
+                arg === "input"
+                    ? inputPath
+                    : arg === "output"
+                      ? renderedPath
+                      : arg
+            );
+            cwd = path.dirname(executablePath);
         }
 
-        // Add wine if linux
-        const command = isWindows ? rendererPath : "wine";
-
-        const rendererArgument = path.relative(rendererDir, rendererPath);
-        const vstArgument = path.relative(rendererDir, vstPath);
-        const inputArgument = path.relative(rendererDir, inputPath);
-        const outputArgument = path.relative(rendererDir, renderedPath);
-
-        const args = isWindows
-            ? [vstArgument, inputArgument, outputArgument]
-            : [rendererArgument, vstArgument, inputArgument, outputArgument];
-        const result = await execRenderer(command, args, rendererDir);
+        const result = await execRenderer(command, args, cwd);
 
         // Write logs
         const logs = [[command, ...args].join(" "), ...result.stdout]
@@ -463,35 +495,39 @@ async function renderVSTTarget(
     }
 }
 
-if (totalVstFilesToRender === 0) {
-    console.info("Nothing to render with VST!");
+if (totalFilesToRender === 0) {
+    console.info("Nothing to render with native targets!");
 } else {
-    // Ensure all required renderers are built before starting rendering
+    // Ensure all VST host renderers are built before starting rendering
     const arches = new Set(
-        Object.values(renderTestsConfig.renderTargets).map((t) => t.arch)
+        Object.values(renderTestsConfig.renderTargets ?? {})
+            .filter((t) => t.type === "vst x64" || t.type === "vst x86")
+            .map((t) => (t.type === "vst x64" ? "x64" : "x86"))
     );
     for (const arch of arches) {
         await getRendererPath(arch);
     }
 
     console.group(
-        `Rendering ${totalVstFilesToRender} total files across VST targets...`
+        `Rendering ${totalFilesToRender} total files across native targets...`
     );
-    console.time("VST render completed in");
+    console.time("Native render completed in");
 
-    for (const [renderTarget, params] of Object.entries(
-        renderTestsConfig.renderTargets
+    for (const [renderTargetName, params] of Object.entries(
+        renderTestsConfig.renderTargets ?? {}
     )) {
-        const filesToRender = filesToRenderByTarget.get(renderTarget) ?? [];
+        const filesToRender = filesToRenderByTarget.get(renderTargetName) ?? [];
         if (filesToRender.length === 0) {
-            console.info(`Nothing to render for ${renderTarget}!`);
+            console.info(`Nothing to render for ${renderTargetName}!`);
             continue;
         }
 
+        const multithreaded = params.multithreaded === true;
+
         console.group(
-            `Rendering ${filesToRender.length} files for ${renderTarget} (${params.multithreaded ? "multithreaded" : "single threaded"})...`
+            `Rendering ${filesToRender.length} files for ${renderTargetName} (${multithreaded ? "multithreaded" : "single threaded"})...`
         );
-        console.time(`${renderTarget} render completed in`);
+        console.time(`${renderTargetName} render completed in`);
 
         let targetRendered = 0;
 
@@ -501,11 +537,11 @@ if (totalVstFilesToRender === 0) {
             const outputDir = path.join(renderedDir, name);
             await fs.mkdir(outputDir, { recursive: true });
 
-            const ok = await renderVSTTarget(
+            const ok = await renderTarget(
                 file,
                 inputPath,
                 outputDir,
-                renderTarget,
+                renderTargetName,
                 params,
                 logStart
                     ? `${targetRendered}/${filesToRender.length}`
@@ -513,22 +549,26 @@ if (totalVstFilesToRender === 0) {
             );
             targetRendered++;
             console.info(
-                `Finished rendering ${file} (${targetRendered}/${filesToRender.length}) for ${renderTarget}`
+                `Finished rendering ${file} (${targetRendered}/${filesToRender.length}) for ${renderTargetName}`
             );
 
             if (ok) {
                 const sha256 = fileHashes.get(file);
                 if (sha256) {
-                    const currentChecksums = targetChecksums.get(renderTarget)!;
+                    const currentChecksums =
+                        targetChecksums.get(renderTargetName)!;
                     currentChecksums[file] = sha256;
-                    await writeTargetChecksums(renderTarget, currentChecksums);
+                    await writeTargetChecksums(
+                        renderTargetName,
+                        currentChecksums
+                    );
                 }
             }
         };
 
-        if (params.multithreaded) {
+        if (multithreaded) {
             console.info(
-                `Queueing ${filesToRender.length} files for ${renderTarget}.`
+                `Queueing ${filesToRender.length} files for ${renderTargetName}.`
             );
             await Promise.all(
                 filesToRender.map((file) => renderSingleFile(file, false))
@@ -539,12 +579,12 @@ if (totalVstFilesToRender === 0) {
             }
         }
 
-        console.timeEnd(`${renderTarget} render completed in`);
+        console.timeEnd(`${renderTargetName} render completed in`);
         console.groupEnd();
     }
 
-    console.timeEnd("VSTi render completed in");
-    console.info("VSTi render completed.\n");
+    console.timeEnd("Native render completed in");
+    console.info("Native render completed.\n");
     console.groupEnd();
 }
 
