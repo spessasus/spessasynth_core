@@ -154,7 +154,7 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     // Drums only on every 16th channel 10.
     this.setBankMSB(BankSelectHacks.getDefaultBank(this.channelSystem));
     this.setBankLSB(0);
-    this.patch.program = 0;
+    this.programChange(0);
     this.setDrums(this.channel % 16 === MIDI_DRUM_CHANNEL);
 }
 
