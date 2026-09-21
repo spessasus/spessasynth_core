@@ -6,6 +6,7 @@ import type {
 import type { MIDISystem } from "../soundbank/types";
 
 export type {
+    ChannelDrumModification,
     ChannelModification,
     ClearableParameter,
     UserDrumModification

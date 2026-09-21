@@ -2,6 +2,7 @@ import type { MIDIController } from "../../../../midi/enums";
 import type { MIDIChannel } from "../midi_channel";
 import { ModulatorControllerSources } from "../../../../soundbank/enums";
 import type { ChannelMIDIParameterChangeEvent } from "../../../events";
+import { MELODIC_MAP } from "../../../../midi/midi_tools/sysex_data";
 
 /**
  * Channel MIDI Parameters are MIDI-only parameters
@@ -126,11 +127,15 @@ export interface ChannelMIDIParameter {
     cc2: MIDIController;
 
     /**
-     * Drum map for GS system exclusive tracking.
+     * Drum map for system exclusive tracking.
      * Only used for selecting the correct channel when setting drum parameters through sysEx,
      * as those don't specify the channel, but the drum number.
      *
-     * The only values that are allowed are 0 (melodic) 1 or 2.
+     * For GS, default is 1 for channel 9 and 0 for all others.
+     *
+     * For XG, default is 2 for channel 9 and 0 for all others.
+     *
+     * Setting this to any value other than 0 turns the channel into a drum channel.
      */
     drumMap: number;
 
@@ -192,7 +197,7 @@ export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     efxAssign: false,
     cc1: 0x10,
     cc2: 0x11,
-    drumMap: 0,
+    drumMap: MELODIC_MAP,
     velocitySenseDepth: 64,
     velocitySenseOffset: 64
 };

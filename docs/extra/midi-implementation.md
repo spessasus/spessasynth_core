@@ -397,37 +397,37 @@ Part (channel) parameters set a specific parameter for a specific channel.
 >
 > Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
-| Name                              | Description                                                                                                                                 |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| TONE NUMBER                       | Bank MSB and Program Change in one message.                                                                                                 |
-| Rx. CHANNEL                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                         |
-| MONO/POLY MODE                    | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation). |
-| ASSIGN MODE                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                       |
-| USE FOR RHYTHM PART               | Turns any channel into (or back out of) a drum channel.[^2]                                                                                 |
-| PITCH KEY SHIFT                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                           |
-| PART LEVEL                        | Aliased to MIDI CC#7 (Main Volume).                                                                                                         |
-| VELOCITY SENSE DEPTH              | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                       |
-| VELOCITY SENSE OFFSET             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                     |
-| PART PANPOT                       | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                       |
-| CC1 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc1 `cc1`}.                                                                     |
-| CC2 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc2 `cc2`}.                                                                     |
-| CHORUS SEND LEVEL                 | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                       |
-| REVERB SEND LEVEL                 | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                       |
-| PITCH FINE TUNE                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.fineTune `fineTune`}.                                                           |
-| DELAY SEND LEVEL                  | Aliased to MIDI CC#94 (Variation Depth).                                                                                                    |
-| TONE MODIFY1 (Vibrato rate)       | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                       |
-| TONE MODIFY2 (Vibrato depth)      | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                      |
-| TONE MODIFY3 (TVF Cutoff Freq)    | Aliased to MIDI CC#74 (Brightness).                                                                                                         |
-| TONE MODIFY4 (TVF Resonance)      | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                   |
-| TONE MODIFY5 (TVF&TVA Env.attack) | Aliased to MIDI CC#73 (Attack Time).                                                                                                        |
-| TONE MODIFY6 (TVF&TVA Env.decay)  | Aliased to MIDI CC#75 (Decay Time).                                                                                                         |
-| TONE MODIFY7 (TVA Env.release)    | Aliased to MIDI CC#72 (Release Time).                                                                                                       |
-| TONE MODIFY8 (Vibrato delay)      | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                      |
-| SCALE TUNING                      | Treated like MTS octave tuning, allows to tune an octave in cents. Tuning is repeated for all octaves.                                      |
-| \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                             |
-| TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                    |
-| TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                    |
-| PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                         |
+| Name                              | Description                                                                                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TONE NUMBER                       | Bank MSB and Program Change in one message.                                                                                                           |
+| Rx. CHANNEL                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                                   |
+| MONO/POLY MODE                    | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation).           |
+| ASSIGN MODE                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                                 |
+| USE FOR RHYTHM PART               | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`} and turns any channel into a drum channel if the value is not `0`.[^2] |
+| PITCH KEY SHIFT                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                                     |
+| PART LEVEL                        | Aliased to MIDI CC#7 (Main Volume).                                                                                                                   |
+| VELOCITY SENSE DEPTH              | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                                 |
+| VELOCITY SENSE OFFSET             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                               |
+| PART PANPOT                       | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                                 |
+| CC1 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc1 `cc1`}.                                                                               |
+| CC2 CONTROLLER NUMBER             | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc2 `cc2`}.                                                                               |
+| CHORUS SEND LEVEL                 | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                                 |
+| REVERB SEND LEVEL                 | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                                 |
+| PITCH FINE TUNE                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.fineTune `fineTune`}.                                                                     |
+| DELAY SEND LEVEL                  | Aliased to MIDI CC#94 (Variation Depth).                                                                                                              |
+| TONE MODIFY1 (Vibrato rate)       | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                                 |
+| TONE MODIFY2 (Vibrato depth)      | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                                |
+| TONE MODIFY3 (TVF Cutoff Freq)    | Aliased to MIDI CC#74 (Brightness).                                                                                                                   |
+| TONE MODIFY4 (TVF Resonance)      | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                             |
+| TONE MODIFY5 (TVF&TVA Env.attack) | Aliased to MIDI CC#73 (Attack Time).                                                                                                                  |
+| TONE MODIFY6 (TVF&TVA Env.decay)  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                   |
+| TONE MODIFY7 (TVA Env.release)    | Aliased to MIDI CC#72 (Release Time).                                                                                                                 |
+| TONE MODIFY8 (Vibrato delay)      | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                |
+| SCALE TUNING                      | Treated like MTS octave tuning, allows to tune an octave in cents. Tuning is repeated for all octaves.                                                |
+| \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                       |
+| TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
+| TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
+| PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                                   |
 
 [^2]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have. The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}. Switching resets the bank to 0 and the program to 0 and changing the drum map number re-selects the kit the same way.
 
@@ -523,34 +523,34 @@ Part (channel) parameters set a specific parameter for a specific channel.
 >
 > Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
-| Name                           | Description                                                                                                                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| BANK SELECT MSB                | Aliased to MIDI CC#0 (Bank Select).                                                                                                         |
-| BANK SELECT LSB                | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                    |
-| PROGRAM CHANGE                 | Same as a MIDI Program Change on that part's channel.                                                                                       |
-| RECEIVE CHANNEL NUMBER         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                         |
-| POLY/MONO MODE                 | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation). |
-| SAME NOTE NUMBER KEY ON ASSIGN | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                       |
-| PART MODE                      | `0` = normal (melodic) part; any non-zero value turns the part into a drum channel.[^3]                                                     |
-| NOTE SHIFT                     | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                           |
-| VOLUME                         | Aliased to MIDI CC#7 (Main Volume).                                                                                                         |
-| VELOCITY SENSE DEPTH           | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                       |
-| VELOCITY SENSE OFFSET          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                     |
-| PAN                            | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                       |
-| CHORUS                         | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                       |
-| REVERB                         | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                       |
-| VIBRATO RATE                   | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                       |
-| VIBRATO DEPTH                  | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                      |
-| VIBRATO DELAY                  | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                      |
-| FILTER CUTOFF                  | Aliased to MIDI CC#74 (Brightness).                                                                                                         |
-| FILTER RESONANCE               | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                   |
-| EG ATTACK TIME                 | Aliased to MIDI CC#73 (Attack Time).                                                                                                        |
-| EG DECAY TIME                  | Aliased to MIDI CC#75 (Decay Time).                                                                                                         |
-| EG RELEASE TIME                | Aliased to MIDI CC#72 (Release Time).                                                                                                       |
-| AC1 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc1 `cc1`}.                                                                     |
-| AC2 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc2 `cc2`}.                                                                     |
-| PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                |
-| PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                     |
+| Name                           | Description                                                                                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BANK SELECT MSB                | Aliased to MIDI CC#0 (Bank Select).                                                                                                                   |
+| BANK SELECT LSB                | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
+| PROGRAM CHANGE                 | Same as a MIDI Program Change on that part's channel.                                                                                                 |
+| RECEIVE CHANNEL NUMBER         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                                   |
+| POLY/MONO MODE                 | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation).           |
+| SAME NOTE NUMBER KEY ON ASSIGN | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                                 |
+| PART MODE                      | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`} and turns any channel into a drum channel if the value is not `0`.[^3] |
+| NOTE SHIFT                     | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                                     |
+| VOLUME                         | Aliased to MIDI CC#7 (Main Volume).                                                                                                                   |
+| VELOCITY SENSE DEPTH           | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                                 |
+| VELOCITY SENSE OFFSET          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                               |
+| PAN                            | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                                 |
+| CHORUS                         | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                                 |
+| REVERB                         | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                                 |
+| VIBRATO RATE                   | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                                 |
+| VIBRATO DEPTH                  | Aliased to MIDI CC#77 (Vibrato Depth).                                                                                                                |
+| VIBRATO DELAY                  | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                |
+| FILTER CUTOFF                  | Aliased to MIDI CC#74 (Brightness).                                                                                                                   |
+| FILTER RESONANCE               | Aliased to MIDI CC#71 (Filter Resonance).                                                                                                             |
+| EG ATTACK TIME                 | Aliased to MIDI CC#73 (Attack Time).                                                                                                                  |
+| EG DECAY TIME                  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                   |
+| EG RELEASE TIME                | Aliased to MIDI CC#72 (Release Time).                                                                                                                 |
+| AC1 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc1 `cc1`}.                                                                               |
+| AC2 CONTROLLER NUMBER          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.cc2 `cc2`}.                                                                               |
+| PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                          |
+| PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                               |
 
 [^3]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. Switching to drums re-initializes the kit, resetting the program to 0, while switching back to melodic keeps the program.
 

@@ -44,7 +44,7 @@ midi.modify({
         ]
     ]),
 
-    userDrumSetParams: new Map([
+    userDrumParams: new Map([
         [
             0,
             new Map([

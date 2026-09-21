@@ -10,9 +10,8 @@ for (const channel of synth.midiChannels) {
     console.info(
         `Channel ${channel.channel} drum flag:`,
         channel.drumChannel,
-        "Preset",
-        channel.preset?.name,
-        "Patch",
-        channel.patch
+        "Drum map:",
+        channel.midiParameters.drumMap,
+        channel.preset?.name
     );
 }

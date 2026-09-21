@@ -7,6 +7,10 @@ import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
 import { ConsoleColors } from "../../../utils/other";
+import {
+    DEFAULT_GS_DRUM_MAP,
+    MELODIC_MAP
+} from "../../../midi/midi_tools/sysex_data";
 
 function handleUserDrum(
     this: SynthesizerCore,
@@ -771,7 +775,8 @@ export function rolandSystemExclusive(
                                 const prevMap = ch.midiParameters.drumMap;
                                 ch.setMIDIParameter("drumMap", data);
                                 const newMap = ch.midiParameters.drumMap;
-                                const isDrums = data > 0; // Non-zero means a drum channel
+                                // Non-melodic means a drum channel
+                                const isDrums = data > MELODIC_MAP;
                                 // Testcase: gs_drum_change_test
                                 // GS resets to the default kit not only when toggling drums,
                                 // But on any map change too.
@@ -1196,7 +1201,9 @@ export function rolandSystemExclusive(
                     // 51 means BLOCK B (+16 channels)
                     // Testcase: 95043-2.KYC.mid
                     if (this.systemParameters.drumLock) return;
-                    const map = (a2 >> 4) + 1;
+                    // In gs, the map is offset by the default (e.g. 1)
+                    // So 0 means drum map 1, 1 means drum map 1, etc.
+                    const map = (a2 >> 4) + DEFAULT_GS_DRUM_MAP;
                     const drumKey = a3;
                     const param = a2 & 0xf;
                     switch (param) {

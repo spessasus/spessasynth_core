@@ -335,15 +335,13 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
                                 // Drum channels ignore key shift
                                 // Testcase: th07_19_user_gm.mid
                                 ch.keyShift = ch.isDrum ? 0 : syx.value;
+                            } else if (syx.parameter === "drumMap") {
+                                const sysexChannel =
+                                    syx.channel + channelOffset;
+                                // Channel may be above 15
+                                if (!channels[sysexChannel]) break;
+                                channels[sysexChannel].isDrum = syx.value > 0;
                             }
-                            break;
-                        }
-
-                        case "Drums On": {
-                            const sysexChannel = syx.channel + channelOffset;
-                            // Channel may be above 15
-                            if (!channels[sysexChannel]) break;
-                            channels[sysexChannel].isDrum = syx.isDrum;
                             break;
                         }
 

@@ -102,13 +102,14 @@ function correctBankOffsetInternal(
                         break;
                     }
 
-                    // Check for drum sysex
-                    case "Drums On": {
-                        const sysexChannel = syx.channel + portOffset;
-                        // Ensure check as syx.channel may be above 15
-                        if (!channels[sysexChannel]) break;
-                        channels[sysexChannel].isDrum = syx.isDrum;
-
+                    case "Channel MIDI Param": {
+                        if (syx.parameter === "drumMap") {
+                            // Check for drum sysex
+                            const sysexChannel = syx.channel + portOffset;
+                            // Ensure check as syx.channel may be above 15
+                            if (!channels[sysexChannel]) break;
+                            channels[sysexChannel].isDrum = syx.value > 0;
+                        }
                         break;
                     }
 

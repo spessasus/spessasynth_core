@@ -1,6 +1,9 @@
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
-import { EMBEDDED_SOUND_BANK_ID } from "./audio_engine/synth_constants";
+import {
+    DEFAULT_SYNTH_MODE,
+    EMBEDDED_SOUND_BANK_ID
+} from "./audio_engine/synth_constants";
 import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/synth_processor_options";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import {
@@ -460,9 +463,10 @@ export class SpessaSynthProcessor {
      * Executes a full synthesizer reset.
      * This will reset all controllers to their default values,
      * except for the locked controllers.
+     * @param system The MIDI system to reset the synthesizer to. Defaults to `gs`.
      */
-    public reset() {
-        this.synthCore.reset();
+    public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
+        this.synthCore.reset(system);
     }
 
     /**

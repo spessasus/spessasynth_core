@@ -82,7 +82,9 @@ export function applySnapshotInternal(
             fineTune,
             patch,
             controllers,
-            midiParams
+            midiParams,
+            // Drum lock clears all drum edits for every channel
+            drumParams: snapshot.systemParameters.drumLock ? "clear" : undefined
         });
     }
 
@@ -103,7 +105,7 @@ export function applySnapshotInternal(
     }
 
     // User Drum set
-    const userDrumSetParams = new Map<number, UserDrumModification>();
+    const userDrumParams = new Map<number, UserDrumModification>();
     if (snapshot.systemParameters.userDrumLock) {
         for (
             let drumSetNumber = 0;
@@ -119,15 +121,12 @@ export function applySnapshotInternal(
                     drumSetParams.set(midiNote, { ...param });
                 }
             }
-            userDrumSetParams.set(drumSetNumber, drumSetParams);
+            userDrumParams.set(drumSetNumber, drumSetParams);
         }
     }
 
     midi.modify({
         channels,
-        drumSetupParams: snapshot.systemParameters.drumLock
-            ? "clear"
-            : undefined,
         reverbParams: snapshot.systemParameters.reverbLock
             ? snapshot.reverbProcessor
             : undefined,
@@ -140,7 +139,7 @@ export function applySnapshotInternal(
         insertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor
             : undefined,
-        userDrumSetParams,
+        userDrumParams,
         midiParams
     });
 }

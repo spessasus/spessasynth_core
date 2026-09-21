@@ -27,9 +27,14 @@ import {
 import { MIDIUtils } from "./midi_utils";
 import { ParameterTracker } from "./parameter_tracker";
 
-import type { UserDrumSetParameter } from "../types";
+import type { DrumParameter, UserDrumSetParameter } from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
 import type { AnalyzedMIDIMessage } from "./analyzed_message";
+import {
+    DEFAULT_GS_DRUM_MAP,
+    DEFAULT_XG_DRUM_MAP,
+    MELODIC_MAP
+} from "./sysex_data";
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
@@ -42,7 +47,11 @@ import type { AnalyzedMIDIMessage } from "./analyzed_message";
  */
 export type ClearableParameter<T> = T | "clear";
 
-/** @group MIDI.Editing */
+/**
+ * This represents modifications applied to a single MIDI channel when using {@link BasicMIDI.modify}.
+ *
+ * @group MIDI.Editing
+ * */
 export interface ChannelModification {
     /**
      * All controllers that should be modified for this channel.
@@ -92,6 +101,20 @@ export interface ChannelModification {
      * and it does not overwrite it.
      */
     fineTune?: number;
+
+    /**
+     * The channel drum parameter changes, set via NRPN at the channel's first note on.
+     * - `"clear"` - all drum parameter changes for this channel are removed
+     *   (both NRPN edits and any drum map SysEx edits affecting this channel).
+     * - {@link ChannelDrumModification} - modifies the channel's drum notes.
+     *
+     * > **Note**
+     * >
+     * > `assignGroup`, `rxNoteOn` and `rxNoteOff` are SysEx-only:
+     * > `"clear"` removes them from the file, but they can not be set
+     * > and will throw an error if a value is provided.
+     */
+    drumParams?: ClearableParameter<ChannelDrumModification>;
 }
 
 /**
@@ -116,7 +139,38 @@ export type UserDrumModification = Map<
     }>
 >;
 
-/** @group MIDI.Editing */
+/**
+ * All drum note modifications for a single channel.
+ * - Key: the MIDI drum key/note number to modify.
+ * - value:
+ *   - `"clear"` - all drum parameter changes for this note are removed.
+ *   - `object` - partial parameter changes for this note:
+ *     - Key: drum parameter name.
+ *     - value:
+ *       - `"clear"` - all changes for this parameter are removed.
+ *       - `specific value` - clear + insert a message setting this at the channel's first note on.
+ *
+ *
+ * > **Note**
+ * >
+ * > `assignGroup`, `rxNoteOn` and `rxNoteOff` are SysEx-only:
+ * > `"clear"` removes them from the file, but they can not be set
+ * > and will throw an error if a value is provided.
+ *
+ * @group MIDI.Editing
+ */
+export type ChannelDrumModification = Map<
+    number,
+    ClearableParameter<{
+        [P in keyof DrumParameter]?: ClearableParameter<DrumParameter[P]>;
+    }>
+>;
+
+/**
+ * Options editing a MIDI sequence using {@link BasicMIDI.modify}.
+ *
+ * @group MIDI.Editing
+ */
 export interface ModifyMIDIOptions {
     /**
      * The channel changes.
@@ -135,13 +189,7 @@ export interface ModifyMIDIOptions {
      *   - `"clear"` - all existing changes for this drum set are removed.
      *   - {@link UserDrumModification} - modifies the drum set.
      */
-    userDrumSetParams?: Map<number, ClearableParameter<UserDrumModification>>;
-    /**
-     * The drum parameter changes.
-     * - `"clear"` - all existing drum parameter change MIDI messages are removed.
-     * - `never` - not yet implemented.
-     */
-    drumSetupParams?: ClearableParameter<never>; // Only clear for now
+    userDrumParams?: Map<number, ClearableParameter<UserDrumModification>>;
     /**
      * The global MIDI parameter changes.
      * - Key: the MIDI parameter name.
@@ -209,6 +257,9 @@ interface ChannelStatus {
     // Channel number for logging
     readonly channel: number;
 
+    // Currently tracked drum map of this channel
+    drumMap: number;
+
     // Semitones, for easier access rather than having to do "?? 0"
     readonly keyShift: number;
 
@@ -229,7 +280,6 @@ interface ChannelStatus {
  */
 export class MIDIEditor {
     private readonly midi;
-    private readonly clearDrumParams;
     private readonly channelChanges = new Map<number, ChannelModification>();
     private system;
     private readonly channelStatuses = new Array<ChannelStatus>();
@@ -295,7 +345,7 @@ export class MIDIEditor {
             chorusParams,
             delayParams,
             insertionParams,
-            userDrumSetParams,
+            userDrumParams,
             midiParams
         } = opts;
 
@@ -304,11 +354,9 @@ export class MIDIEditor {
         this.chorusParams = chorusParams;
         this.delayParams = delayParams;
         this.insertionParams = insertionParams;
-        this.userDrumSetParams = userDrumSetParams;
+        this.userDrumSetParams = userDrumParams;
         this.midiParams = midiParams;
 
-        // Optimizations
-        this.clearDrumParams = opts.drumSetupParams === "clear";
         // Track only channels to change here
         if (channels) {
             for (const [channel, ch] of channels) {
@@ -339,6 +387,10 @@ export class MIDIEditor {
             this.channelStatuses.push({
                 channel: i,
                 isFirstNoteOn: true,
+                drumMap:
+                    i % 16 === MIDI_DRUM_CHANNEL
+                        ? DEFAULT_GS_DRUM_MAP
+                        : MELODIC_MAP,
                 param: new ParameterTracker(i),
                 clearedParams: {
                     pLSB: true,
@@ -616,9 +668,15 @@ export class MIDIEditor {
                 const syxs = MIDIUtils.analyzeSysEx(e.data);
                 for (const syx of syxs) {
                     switch (syx.type) {
-                        case "Drum Setup": {
-                            // Drum setup
-                            if (this.clearDrumParams) {
+                        case "Map Drum Setup": {
+                            // Delete map drum setups affecting modified channels
+                            if (
+                                this.shouldClearMapDrum(
+                                    syx.drumMap,
+                                    syx.key,
+                                    syx.parameter
+                                )
+                            ) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
@@ -747,6 +805,10 @@ export class MIDIEditor {
         data: Extract<AnalyzedMIDIMessage, { type: "Channel MIDI Param" }>
     ) {
         const channelStatus = this.channelStatuses[channel];
+        // Track the drum map
+        if (data.parameter === "drumMap") {
+            channelStatus.drumMap = data.value;
+        }
         const channelChange = this.channelChanges.get(channel);
         if (!channelChange) return;
 
@@ -798,6 +860,42 @@ export class MIDIEditor {
             // We don't remove fineTune because we can adjust it relatively
             this.deleteCurrentEvent();
         }
+    }
+
+    private shouldClearChannelDrum(
+        channel: number,
+        key: number,
+        parameter: keyof DrumParameter
+    ) {
+        const drumParams = this.channelChanges.get(channel)?.drumParams;
+        if (drumParams === undefined) return false;
+        // "clear" removes all drum edits for this channel
+        if (drumParams === "clear") return true;
+        const noteParams = drumParams.get(key);
+        if (noteParams === undefined) return false;
+        // Either "clear" or a set value removes the file's message
+        return noteParams === "clear" || noteParams[parameter] !== undefined;
+    }
+
+    /**
+     * This checks the sysEx version of drum setup, which specifies a map rather than a channel.
+     */
+    private shouldClearMapDrum(
+        drumMap: number,
+        key: number,
+        parameter: keyof DrumParameter
+    ) {
+        for (
+            let channel = 0;
+            channel < this.channelStatuses.length;
+            channel++
+        ) {
+            if (this.channelStatuses[channel].drumMap !== drumMap) continue;
+            if (this.shouldClearChannelDrum(channel, key, parameter)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private handleControllerChange(
@@ -862,8 +960,14 @@ export class MIDIEditor {
 
                 if (!data) return;
                 switch (data.type) {
-                    case "Drum Setup": {
-                        if (this.clearDrumParams) {
+                    case "Channel Drum Setup": {
+                        if (
+                            this.shouldClearChannelDrum(
+                                data.channel,
+                                data.key,
+                                data.parameter
+                            )
+                        ) {
                             // Drum param, BEGONE!
                             this.deleteCurrentEvent();
                         }
@@ -1001,6 +1105,7 @@ export class MIDIEditor {
         // - relative fine tune
         // - controllers
         // - parameters
+        // - drum setup
 
         // Program change
         const patch = channelChange.patch;
@@ -1129,6 +1234,32 @@ export class MIDIEditor {
                 );
             }
         }
+
+        // Add drum setup parameters
+        if (channelChange.drumParams && channelChange.drumParams !== "clear") {
+            for (const [key, noteParams] of channelChange.drumParams) {
+                // Note cleared
+                if (noteParams === "clear") continue;
+                for (const [param, value] of Object.entries(noteParams) as {
+                    [P in keyof DrumParameter]: [
+                        P,
+                        ClearableParameter<DrumParameter[P]>
+                    ];
+                }[keyof DrumParameter][]) {
+                    // Parameter cleared
+                    if (value === "clear" || value === undefined) continue;
+                    this.addEventsBefore(
+                        ...MIDIUtils.setDrumChannelParameter(
+                            ticks,
+                            midiChannel,
+                            key,
+                            param,
+                            value
+                        )
+                    );
+                }
+            }
+        }
     }
 
     private handleReset(system: MIDISystem) {
@@ -1147,8 +1278,15 @@ export class MIDIEditor {
         this.resetTrack = this.trackNum;
         this.resetIndex = this.eventIndexes[this.trackNum];
         // Reset NRPN (accuracy + prevent deletion before reset)
+        // Reset tracked drum maps to defaults as well.
+        const defaultMap =
+            system === "xg" ? DEFAULT_XG_DRUM_MAP : DEFAULT_GS_DRUM_MAP;
         for (const ch of this.channelStatuses) {
             ch.param.reset();
+            ch.drumMap =
+                ch.channel % 16 === MIDI_DRUM_CHANNEL
+                    ? defaultMap
+                    : MELODIC_MAP;
             ch.clearedParams = {
                 pLSB: true,
                 pMSB: true,

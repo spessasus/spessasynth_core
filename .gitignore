@@ -79,3 +79,4 @@ site/
 *.wav
 test.ts
 out.*
+*.patch

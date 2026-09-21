@@ -3,6 +3,10 @@ import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import type { SynthesizerCore } from "../synthesizer_core";
 import type { SysExAcceptedArray } from "../../../midi/types";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
+import {
+    DEFAULT_XG_DRUM_MAP,
+    MELODIC_MAP
+} from "../../../midi/midi_tools/sysex_data";
 
 /**
  * Handles a Yamaha XG system exclusive
@@ -153,7 +157,7 @@ export function yamahaSystemExclusive(
 
                 // Part mode
                 case 0x07: {
-                    const drums = data !== 0;
+                    const drums = data !== MELODIC_MAP;
                     // Testcase: xg part_mode_drum
                     // Verified with s-yxg50
                     // SetDrums switches the bank and keeps the program,
@@ -163,6 +167,7 @@ export function yamahaSystemExclusive(
                     if (drums) {
                         ch.programChange(0);
                     }
+                    ch.setMIDIParameter("drumMap", data);
                     SpessaLog.xgInfo(
                         `Part Mode on ${channel}`,
                         drums ? "DRUM" : "MELODIC"
@@ -450,7 +455,12 @@ export function yamahaSystemExclusive(
         if (a1 >> 4 === 3) {
             // Drum part setup
             if (this.systemParameters.drumLock) return;
+
+            // In xg, the map is offset by the default (e.g. 2)
+            // So 0 means drum setup 2, 1 means drum setup 3, etc.
+            const setupNumber = (a1 & 0xf) + DEFAULT_XG_DRUM_MAP;
             const drumKey = a2;
+
             switch (a3) {
                 default: {
                     SpessaLog.xgFail("Drum Setup", [a3]);
@@ -461,7 +471,7 @@ export function yamahaSystemExclusive(
                     // Drum pitch coarse
                     const pitch = data - 64;
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].pitchCoarse = pitch;
                     }
                     SpessaLog.xgInfo(
@@ -476,7 +486,7 @@ export function yamahaSystemExclusive(
                     // Drum pitch fine
                     const pitch = data - 64;
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].pitchFine = pitch;
                         SpessaLog.xgInfo(
                             `Drum Pitch Fine for key ${drumKey}`,
@@ -490,7 +500,7 @@ export function yamahaSystemExclusive(
                 case 0x02: {
                     // Drum Level
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].level = data;
                     }
                     SpessaLog.xgInfo(`Drum Level for key ${drumKey}`, data);
@@ -500,7 +510,7 @@ export function yamahaSystemExclusive(
                 case 0x03: {
                     // Drum Alternate Group (exclusive class)
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].assignGroup = data;
                     }
                     SpessaLog.xgInfo(
@@ -513,7 +523,7 @@ export function yamahaSystemExclusive(
                 case 0x04: {
                     // Drum Pan
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].pan = data;
                     }
                     SpessaLog.xgInfo(`Drum Pan for key ${drumKey}`, data);
@@ -523,7 +533,7 @@ export function yamahaSystemExclusive(
                 case 0x05: {
                     // Drum Reverb
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].reverbSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Reverb for key ${drumKey}`, data);
@@ -533,7 +543,7 @@ export function yamahaSystemExclusive(
                 case 0x06: {
                     // Drum Chorus
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].chorusSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Chorus for key ${drumKey}`, data);
@@ -543,7 +553,7 @@ export function yamahaSystemExclusive(
                 case 0x07: {
                     // Drum Variation
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].variationSend = data;
                     }
                     SpessaLog.xgInfo(`Drum Variation for key ${drumKey}`, data);
@@ -553,7 +563,7 @@ export function yamahaSystemExclusive(
                 case 0x09: {
                     // Receive note off
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].rxNoteOff = data === 1;
                     }
                     SpessaLog.xgInfo(
@@ -566,7 +576,7 @@ export function yamahaSystemExclusive(
                 case 0x0a: {
                     // Receive note on
                     for (const ch of this.midiChannels) {
-                        if (!ch.drumChannel) continue;
+                        if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].rxNoteOn = data === 1;
                     }
                     SpessaLog.xgInfo(

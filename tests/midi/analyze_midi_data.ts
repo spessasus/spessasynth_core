@@ -36,6 +36,8 @@ const channels = Array.from({ length: channelsAmount }, (_, i) => ({
 
 const ports = mid.tracks.map((t) => t.port);
 
+let recognized = 0;
+let unrecognized = 0;
 const offsetMap = mid.portChannelOffsetMap;
 const { timeline, tracks } = mid;
 for (const t of timeline) {
@@ -104,7 +106,17 @@ for (const t of timeline) {
                         event
                     );
                     if (analyzed) {
+                        recognized++;
                         switch (analyzed.type) {
+                            case "Channel Drum Setup": {
+                                console.info(
+                                    `[CH ${analyzed.channel?.toString()?.padStart(2, " ")}] N/RPN Drum Setup: key ${analyzed.key}, ${
+                                        analyzed.parameter
+                                    } = ${analyzed.value}`
+                                );
+                                break;
+                            }
+
                             case "Channel MIDI Param": {
                                 console.info(
                                     `[CH ${analyzed.channel.toString().padStart(2, " ")}] N/RPN Param change: ${
@@ -119,6 +131,8 @@ for (const t of timeline) {
                             }
 
                             case "Other": {
+                                recognized--;
+                                unrecognized++;
                                 console.info(
                                     `[UNREC] N/RPN: param ${(ch.tracker.paramMSB.v << 7).toString(16)} ${ch.tracker.paramLSB.v.toString(16)}`
                                 );
@@ -154,25 +168,23 @@ for (const t of timeline) {
         case MIDIMessageTypes.systemExclusive: {
             const analyzedMessages = MIDIUtils.analyzeSysEx(e.data);
             for (const analyzed of analyzedMessages) {
+                recognized++;
                 switch (analyzed.type) {
                     default: {
                         // Log without type
                         const { type, ...values } = analyzed;
                         if (Object.keys(values).length === 0) {
-                            console.info(
-                                `[OTHER] ${analyzed.type} System Exclusive.`
-                            );
+                            console.info(`[OTHER] ${analyzed.type} SysEx.`);
                             break;
                         }
-                        console.info(
-                            `${analyzed.type} System Exclusive:`,
-                            values
-                        );
+                        console.info(`[OTHER] ${analyzed.type} SysEx:`, values);
                         void type;
                         break;
                     }
 
                     case "Other": {
+                        recognized--;
+                        unrecognized++;
                         console.info(
                             "[UNREC] SysEx:",
                             arrayToHexString(e.data)
@@ -185,7 +197,7 @@ for (const t of timeline) {
                     case "GS Delay Param":
                     case "GS Insertion Param": {
                         console.info(
-                            `[GLOBL] ${analyzed.type} change: ${
+                            `[GLOBL] ${analyzed.type} Change SysEx: ${
                                 analyzed.parameter
                             } = ${analyzed.value}`
                         );
@@ -207,7 +219,7 @@ for (const t of timeline) {
 
                     case "Channel MIDI Param": {
                         console.info(
-                            `[CH ${analyzed.channel.toString().padStart(2, " ")}] SysEx MIDI Param change: ${
+                            `[CH ${analyzed.channel.toString().padStart(2, " ")}] MIDI Param Change SysEx: ${
                                 analyzed.parameter
                             } = ${
                                 typeof analyzed.value === "number"
@@ -218,9 +230,16 @@ for (const t of timeline) {
                         break;
                     }
 
+                    case "Program Change": {
+                        console.info(
+                            `[CH ${analyzed.channel.toString().padStart(2, " ")}] Program Change SysEx: ${analyzed.value}`
+                        );
+                        break;
+                    }
+
                     case "Controller Change": {
                         console.info(
-                            `[CH ${analyzed.channel.toString().padStart(2, " ")}] SysEx Controller change: ${Object.keys(
+                            `[CH ${analyzed.channel.toString().padStart(2, " ")}] Controller Change SysEx: ${Object.keys(
                                 MIDIControllers
                             ).find(
                                 (k) =>
@@ -231,10 +250,22 @@ for (const t of timeline) {
                         );
                         break;
                     }
+
+                    case "Map Drum Setup": {
+                        console.info(
+                            `[MAP ${analyzed.drumMap}] Drum Setup SysEx: key ${analyzed.key} ${
+                                analyzed.parameter
+                            } = ${analyzed.value}`
+                        );
+                        break;
+                    }
                 }
             }
         }
     }
 }
+console.info(
+    `Total recognized: ${recognized}, unrecognized: ${unrecognized}.\nRecognized ${Math.round((recognized / (recognized + unrecognized)) * 100)}% of all messages.`
+);
 console.groupEnd();
-console.group("--- End Of Analysis ---\n\n\n");
+console.info("--- End Of Analysis ---\n\n\n");

@@ -1,4 +1,8 @@
-import { MIDIControllers, RegisteredParameterTypes } from "../../../src";
+import {
+    MIDIControllers,
+    NonRegisteredParameterTypesMSB,
+    RegisteredParameterTypes
+} from "../../../src";
 import { MIDITestMaker } from "../../midi_file/midi_test_maker";
 import { runMIDIEditorTest } from "./run_midi_editor_test";
 
@@ -9,11 +13,24 @@ const midi = new MIDITestMaker("MIDI Editor Insertion order", {
 midi.note(50, 127)
     .wait(480)
     .rpn(RegisteredParameterTypes.fineTuning, 16_000)
+    // Drum edit for a modified note
+    .nrpn((NonRegisteredParameterTypesMSB.drumLevel << 7) | 38, 100)
+    // Drum edit for a cleared note
+    .nrpn((NonRegisteredParameterTypesMSB.drumPan << 7) | 40, 60)
+    // Drum edit for an unmodified note
+    .nrpn((NonRegisteredParameterTypesMSB.drumChorus << 7) | 42, 30)
     .note(64, 127);
 
 midi.flush();
 
 // The event order should match the code, esp. data entries being after registered parameters
+const drumParams = new Map<
+    number,
+    "clear" | { level: number; pitchCoarse: number }
+>([
+    [38, { level: 90, pitchCoarse: 2 }],
+    [40, "clear"]
+]);
 runMIDIEditorTest(midi, {
     channels: new Map([
         [
@@ -29,6 +46,7 @@ runMIDIEditorTest(midi, {
                     [MIDIControllers.mainVolume, 69],
                     [MIDIControllers.mainVolumeLSB, 53]
                 ]),
+                drumParams,
                 patch: {
                     bankMSB: 0,
                     bankLSB: 3,

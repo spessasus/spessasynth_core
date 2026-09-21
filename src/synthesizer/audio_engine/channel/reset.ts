@@ -8,6 +8,11 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIChannel } from "./midi_channel";
+import {
+    DEFAULT_GS_DRUM_MAP,
+    DEFAULT_XG_DRUM_MAP,
+    MELODIC_MAP
+} from "../../../midi/midi_tools/sysex_data";
 
 /**
  * An array with the default MIDI controller values.
@@ -102,9 +107,12 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.setMIDIParameter("randomPan", false);
     this.setMIDIParameter("cc1", 0x10);
     this.setMIDIParameter("cc2", 0x11);
+    // Set the correct default map
+    const defaultMap =
+        this.channelSystem === "xg" ? DEFAULT_XG_DRUM_MAP : DEFAULT_GS_DRUM_MAP;
     this.setMIDIParameter(
         "drumMap",
-        this.channel % 16 === MIDI_DRUM_CHANNEL ? 1 : 0
+        this.channel % 16 === MIDI_DRUM_CHANNEL ? defaultMap : MELODIC_MAP
     );
     this.setMIDIParameter("velocitySenseOffset", 64);
     this.setMIDIParameter("velocitySenseDepth", 64);

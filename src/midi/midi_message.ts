@@ -189,4 +189,53 @@ export class MIDIMessage {
             )
         ];
     }
+
+    /**
+     * Returns a new MIDI Non-Registered Parameter message. Sends both data MSB and LSB.
+     * @param ticks The MIDI tick time of the events.
+     * @param channel The channel to use (0-16).
+     * @param parameter The 14-bit non-registered parameter number.
+     * @param value The 14-bit value for this parameter.
+     */
+    public static nonRegisteredParameter(
+        ticks: number,
+        channel: number,
+        parameter: number,
+        value: number
+    ) {
+        if (
+            parameter > 16_383 ||
+            parameter < 0 ||
+            value > 16_383 ||
+            value < 0
+        ) {
+            throw new Error("Parameter and value must be between 0 and 16383.");
+        }
+        return [
+            MIDIMessage.controllerChange(
+                ticks,
+                channel,
+                MIDIControllers.nonRegisteredParameterMSB,
+                parameter >> 7
+            ),
+            MIDIMessage.controllerChange(
+                ticks,
+                channel,
+                MIDIControllers.nonRegisteredParameterLSB,
+                parameter & 0x7f
+            ),
+            MIDIMessage.controllerChange(
+                ticks,
+                channel,
+                MIDIControllers.dataEntryMSB,
+                value >> 7
+            ),
+            MIDIMessage.controllerChange(
+                ticks,
+                channel,
+                MIDIControllers.dataEntryLSB,
+                value & 0x7f
+            )
+        ];
+    }
 }

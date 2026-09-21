@@ -219,6 +219,68 @@ export type GSInsertionParameterMessage =
           value: number;
       };
 /**
+ * Represents an analyzed channel drum setup parameter change, set via NRPN.
+ *
+ * > **Note**
+ * >
+ * > Channel number may be above 15 for multi-port MIDI setups.
+ *
+ * @group MIDI.Protocol
+ */
+export type ChannelDrumSetupMessage = {
+    [K in keyof DrumParameter]: {
+        /**
+         * A drum setup parameter message, set by NRPN.
+         */
+        type: "Channel Drum Setup";
+        /**
+         * The MIDI channel number (it may be above 15).
+         */
+        channel: number;
+        /**
+         * The MIDI drum note number being modified.
+         */
+        key: number;
+        /**
+         * The drum parameter name.
+         */
+        parameter: K;
+        /**
+         * The value for the drum parameter.
+         */
+        value: DrumParameter[K];
+    };
+}[keyof DrumParameter];
+/**
+ * Represents an analyzed map drum setup parameter change, set via System Exclusive.
+ *
+ * @group MIDI.Protocol
+ */
+export type MapDrumSetupMessage = {
+    [K in keyof DrumParameter]: {
+        /**
+         * A drum setup parameter message, set by SysEx.
+         */
+        type: "Map Drum Setup";
+        /**
+         * The drum map (or drum setup in XG) number, specifying which drum set to edit.
+         */
+        drumMap: number;
+        /**
+         * The MIDI drum note number being modified.
+         */
+        key: number;
+        /**
+         * The drum parameter name.
+         */
+        parameter: K;
+        /**
+         * The value for the drum parameter.
+         */
+        value: DrumParameter[K];
+    };
+}[keyof DrumParameter];
+/**
  * The analysis result of an RPN (Registered Parameter Number) or NRPN (Non-Registered Parameter Number) MIDI message.
  *
  * > **Note**
@@ -253,26 +315,7 @@ export type AnalyzedParameter =
           channel: number;
       }
     | ChannelMIDIParameterMessage
-    | {
-          [K in keyof DrumParameter]: {
-              /**
-               * A drum setup parameter message.
-               */
-              type: "Drum Setup";
-              /**
-               * The MIDI drum key/note number being modified.
-               */
-              key: number;
-              /**
-               * The drum parameter name.
-               */
-              parameter: K;
-              /**
-               * The value for the drum parameter.
-               */
-              value: DrumParameter[K];
-          };
-      }[keyof DrumParameter];
+    | ChannelDrumSetupMessage;
 /**
  * The analysis result of a System Exclusive (SysEx) or (N)RPN MIDI message.
  *
@@ -304,20 +347,6 @@ export type AnalyzedMIDIMessage =
            * A variation effect processor parameter message (Yamaha XG).
            */
           type: "XG Variation Param";
-      }
-    | {
-          /**
-           * A message configuring whether a channel is set as a drum channel or melodic channel.
-           */
-          type: "Drums On";
-          /**
-           * The MIDI channel number.
-           */
-          channel: number;
-          /**
-           * `true` if the channel is set to drums, `false` if melodic.
-           */
-          isDrum: boolean;
       }
     | {
           /**
@@ -363,4 +392,14 @@ export type AnalyzedMIDIMessage =
                */
               value: UserDrumSetParameter[K];
           };
-      }[keyof UserDrumSetParameter];
+      }[keyof UserDrumSetParameter]
+    | MapDrumSetupMessage;
+/**
+ * The analysis result of a System Exclusive (SysEx) MIDI message.
+ *
+ * @group MIDI.Protocol
+ */
+export type AnalyzedSysExMessage = Exclude<
+    AnalyzedMIDIMessage,
+    ChannelDrumSetupMessage
+>;
