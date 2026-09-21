@@ -163,8 +163,11 @@ export function yamahaSystemExclusive(
                     // SetDrums switches the bank and keeps the program,
                     // But switching *to* drums re-initializes the kit
                     // To program 0 instead!
+                    // But not if it's already drum
+                    // Testcase: 15. U.N. Owen was her (yoimutu).mid
+                    const drumsBefore = ch.drumChannel;
                     ch.setDrums(drums);
-                    if (drums) {
+                    if (drums && !drumsBefore) {
                         ch.programChange(0);
                     }
                     ch.setMIDIParameter("drumMap", data);
