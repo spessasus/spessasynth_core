@@ -70,7 +70,7 @@ export interface ChannelModification {
     patch?: ClearableParameter<MIDIPatch>;
 
     /**
-     * The new MIDI parameters of this channel.
+     * The {@link ChannelMIDIParameter} changes for this channel.
      * - Key: the MIDI parameter name.
      * - value:
      *   - `"clear"` - all changes for this parameter are removed.
@@ -191,14 +191,20 @@ export interface ModifyMIDIOptions {
      */
     userDrumParams?: Map<number, ClearableParameter<UserDrumModification>>;
     /**
-     * The global MIDI parameter changes.
+     * The {@link GlobalMIDIParameter} changes.
      * - Key: the MIDI parameter name.
      * - value:
      *   - `"clear"` - all changes for this parameter are removed.
      *   - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
      *
-     * Please note that `"clear"` is not supported for the `system` parameter,
-     * as it may cause issues with the MIDI system detection and reset insertion.
+     * For the `system` parameter specifically:
+     * - `"clear"` - deletes every system reset. Setup is inserted
+     *   before the first note on without any reset.
+     * - `specific value` - replaces every system reset with the desired one.
+     *
+     * > **Note**
+     * >
+     * > By default, GM reset is replaced with a GS reset. Set the `system` parameter to `gm` to keep the GM reset (and replace all others with GM)
      */
     midiParams?: {
         [P in keyof GlobalMIDIParameter]?: ClearableParameter<
@@ -260,11 +266,12 @@ interface ChannelStatus {
     // Currently tracked drum map of this channel
     drumMap: number;
 
-    // Semitones, for easier access rather than having to do "?? 0"
-    readonly keyShift: number;
+    // Direct copy of channelModification.fineTune
+    // RELATIVE semitones, for easier access rather than having to do "?? 0"
+    readonly relativeKeyShift: number;
 
-    // Cents, for easier access rather than having to do "?? 0"
-    fineTune: number;
+    // RELATIVE cents, for easier access rather than having to do "?? 0"
+    readonly relativeFineTune: number;
 
     // Since tuning has to be applied relatively,
     // We need to track the currently applied tuning
@@ -272,10 +279,48 @@ interface ChannelStatus {
 
     // Same case as with above, since total tune may exceed the RPN range.
     currentKeyShift: number;
+
+    // Pending N/RPN replacement, awaiting a possible second data entry.
+    //
+    // Parameter data arrives as two separate data entries (MSB and LSB, in any order).
+    // We don't know if the second data byte will come, so the first analysis (and potential insert) uses a partial value from the 3-message N/RPN.
+    // Each entry is analyzed independently, so the first insert uses a partial value.
+    // A later data entry for the same parameter updates the inserted messages.
+    // Selections, notes and resets all void the record (treated as a new data entry).
+    pendingParam:
+        | {
+              // The inserted [paramMSB, paramLSB, dataMSB, dataLSB] events for in-place patching
+              events: MIDIMessage[];
+          }
+        | undefined;
 }
 
 /**
- * A single-use class for editing a MIDI file
+ * A GM reset location, for meaningful resets.
+ * A reset is defined as meaningful only if notes come after it.
+ * For example, many MIDIs do:
+ *
+ * GM -> GS -> note data
+ *
+ * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
+ * Meaningful ones are removed and replaced with GS
+ * (unless the `system` parameter is explicitly set).
+ *
+ * They are replaced so bank selects (and many other parameters) actually work.
+ */
+interface PotentialGMReset {
+    /**
+     * The reset event itself.
+     */
+    event: MIDIMessage;
+    /**
+     * The track containing the event.
+     */
+    track: number;
+}
+
+/**
+ * A single-use class for editing a MIDI file.
  * @internal
  */
 export class MIDIEditor {
@@ -309,6 +354,26 @@ export class MIDIEditor {
     // Track reset position to insert effects right after
     private resetTrack = 0;
     private resetIndex = 0;
+    /**
+     * Tick time of the last system reset.
+     */
+    private resetTicks = 0;
+    /**
+     * The event of the last tracked system reset,
+     * for syncing this.system if it gets replaced later.
+     */
+    private lastReset: MIDIMessage | undefined = undefined;
+    /**
+     * Meaningful GM resets found during the initial loop.
+     * Every entry gets replaced with GS
+     * if the `system` global MIDI param has not been explicitly set.
+     */
+    private readonly gmResets: PotentialGMReset[] = [];
+    /**
+     * The most recent GM reset, still awaiting notes.
+     * Discarded whenever another reset is encountered.
+     */
+    private pendingGMReset: PotentialGMReset | undefined = undefined;
 
     private readonly reverbParams;
     private readonly chorusParams;
@@ -397,10 +462,11 @@ export class MIDIEditor {
                     pMSB: true,
                     data: true
                 },
-                keyShift: this.channelChanges.get(i)?.keyShift ?? 0,
-                fineTune: this.channelChanges.get(i)?.fineTune ?? 0,
+                relativeKeyShift: this.channelChanges.get(i)?.keyShift ?? 0,
+                relativeFineTune: this.channelChanges.get(i)?.fineTune ?? 0,
                 currentFineTune: 0,
-                currentKeyShift: 0
+                currentKeyShift: 0,
+                pendingParam: undefined
             });
         }
     }
@@ -609,21 +675,31 @@ export class MIDIEditor {
         const channelChange = this.channelChanges.get(channel);
         switch (status) {
             case MIDIMessageTypes.noteOn: {
+                // A first note after a GM reset makes it meaningful, track for replacement
+                if (this.pendingGMReset !== undefined) {
+                    this.gmResets.push(this.pendingGMReset);
+                    this.pendingGMReset = undefined;
+                }
                 // Is it first?
                 if (channelStatus.isFirstNoteOn) {
                     this.firstNoteOn(e.ticks, channel);
                     channelStatus.isFirstNoteOn = false;
                 }
+                // A note voids any pending parameter halves:
+                // Rewriting them afterward would change what it heard.
+                channelStatus.pendingParam = undefined;
                 // Transpose key (for zero it won't change anyway)
                 e.data[0] +=
-                    channelStatus.keyShift + channelStatus.currentKeyShift;
+                    channelStatus.relativeKeyShift +
+                    channelStatus.currentKeyShift;
                 break;
             }
 
             case MIDIMessageTypes.noteOff: {
                 if (!channelChange) break;
                 e.data[0] +=
-                    channelStatus.keyShift + channelStatus.currentKeyShift;
+                    channelStatus.relativeKeyShift +
+                    channelStatus.currentKeyShift;
                 break;
             }
 
@@ -736,13 +812,13 @@ export class MIDIEditor {
                         }
 
                         case "Global MIDI Param": {
+                            if (syx.parameter === "system") {
+                                this.handleReset(syx.value, e);
+                                return;
+                            }
                             if (this.midiParams?.[syx.parameter]) {
                                 // Locked, remove
                                 this.deleteCurrentEvent();
-                                return;
-                            }
-                            if (syx.parameter === "system") {
-                                this.handleReset(syx.value);
                                 return;
                             }
                             break;
@@ -802,7 +878,8 @@ export class MIDIEditor {
 
     private handleChannelMIDIParam(
         channel: number,
-        data: Extract<AnalyzedMIDIMessage, { type: "Channel MIDI Param" }>
+        data: Extract<AnalyzedMIDIMessage, { type: "Channel MIDI Param" }>,
+        isRPN = false
     ) {
         const channelStatus = this.channelStatuses[channel];
         // Track the drum map
@@ -812,10 +889,10 @@ export class MIDIEditor {
         const channelChange = this.channelChanges.get(channel);
         if (!channelChange) return;
 
-        if (data.parameter === "fineTune" && channelStatus.fineTune) {
+        if (data.parameter === "fineTune" && channelStatus.relativeFineTune) {
             channelStatus.currentFineTune = data.value;
             // Add the relative fine tune to the existing one
-            const newTune = channelStatus.fineTune + data.value;
+            const newTune = channelStatus.relativeFineTune + data.value;
 
             channelStatus.currentKeyShift = Math.trunc(newTune / 100);
             const targetTune = newTune % 100;
@@ -845,16 +922,36 @@ export class MIDIEditor {
                 return;
             }
 
-            // And update this tuning
-            this.addEventsBefore(
-                ...MIDIUtils.setChannelMIDIParameter(
-                    e.ticks,
-                    channel % 16,
-                    this.system,
-                    "fineTune",
-                    targetTune
-                )
+            // Build the replacement rpn
+            const newRPN = MIDIUtils.setChannelMIDIParameter(
+                e.ticks,
+                channel % 16,
+                this.system,
+                "fineTune",
+                targetTune
             );
+            const pending = channelStatus.pendingParam;
+
+            // If we have a pending N/RPN, then this is its extra byte
+            if (pending !== undefined && isRPN) {
+                // This is the extra byte of the RPN message, update the original with the corrected value
+                SpessaLog.info(
+                    `%cSecond RPN data byte on ${channel}%c, updating inserted parameter in place.`,
+                    ConsoleColors.info,
+                    ConsoleColors.recognized
+                );
+                pending.events[2].data[1] = newRPN[2].data[1];
+                pending.events[3].data[1] = newRPN[3].data[1];
+                channelStatus.pendingParam = undefined;
+                return;
+            }
+
+            // And update this tuning
+            this.addEventsBefore(...newRPN);
+            // Track after adding, only for RPN change.
+            // A not-RPN message voids any pending pair instead:
+            // A later half belongs to a new message, not the old one.
+            channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
         } else if (channelChange?.midiParams?.[data.parameter]) {
             // Locked, remove
             // We don't remove fineTune because we can adjust it relatively
@@ -930,6 +1027,8 @@ export class MIDIEditor {
             case MIDIControllers.registeredParameterMSB:
             case MIDIControllers.nonRegisteredParameterMSB:
             case MIDIControllers.nonRegisteredParameterLSB: {
+                // A new selection starts a new message
+                channelStatus.pendingParam = undefined;
                 // Flag the parameter as not cleaned
                 if (
                     ccNum === MIDIControllers.nonRegisteredParameterLSB ||
@@ -985,7 +1084,7 @@ export class MIDIEditor {
                     }
 
                     case "Channel MIDI Param": {
-                        this.handleChannelMIDIParam(channel, data);
+                        this.handleChannelMIDIParam(channel, data, true);
                     }
                 }
 
@@ -1180,23 +1279,24 @@ export class MIDIEditor {
             );
         }
 
-        // Apply relative tuning (`fineTune`)
-        if (
-            channelChange.midiParams?.fineTune !== undefined &&
-            channelChange.midiParams.fineTune !== "clear"
-        ) {
+        // Add absolute tuning to the inserted tune.
+        const absoluteTune = channelChange.midiParams?.fineTune;
+        let finalTune: number | undefined;
+
+        if (absoluteTune !== undefined && absoluteTune !== "clear") {
+            // The parameter "fineTune" has been explicitly set, this is the absolute
             // Add the relative tuning to the absolute MIDI param
-            const newTune =
-                channelStatus.fineTune + channelChange.midiParams.fineTune;
+            const newTune = channelStatus.relativeFineTune + absoluteTune;
             channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-            channelChange.midiParams.fineTune = newTune % 100;
-        } else if (channelStatus.fineTune !== 0) {
-            // Make the relative tuning be set in MIDI parameters
+            finalTune = newTune % 100;
+        } else if (channelStatus.relativeFineTune !== 0) {
+            // Make the relative tuning be set in MIDI parameters.
+            // Fine tune in channel MIDI Params is absolute, add the relative one to it.
+            // A cleared param still applies the relative tune, if any.
             const newTune =
-                channelStatus.fineTune + channelStatus.currentFineTune;
+                channelStatus.relativeFineTune + channelStatus.currentFineTune;
             channelStatus.currentKeyShift = Math.trunc(newTune / 100);
-            channelChange.midiParams ??= {};
-            channelChange.midiParams.fineTune = newTune % 100;
+            finalTune = newTune % 100;
         }
 
         // Add controllers
@@ -1222,7 +1322,9 @@ export class MIDIEditor {
                     ClearableParameter<ChannelMIDIParameter[P]>
                 ];
             }[keyof ChannelMIDIParameter][]) {
-                if (value === "clear") continue;
+                // Fine tune is inserted below from the calculated value above,
+                // Don't set it here
+                if (value === "clear" || param === "fineTune") continue;
                 this.addEventsBefore(
                     ...MIDIUtils.setChannelMIDIParameter(
                         ticks,
@@ -1233,6 +1335,19 @@ export class MIDIEditor {
                     )
                 );
             }
+        }
+
+        // Insert the target fine tune
+        if (finalTune !== undefined) {
+            this.addEventsBefore(
+                ...MIDIUtils.setChannelMIDIParameter(
+                    ticks,
+                    midiChannel,
+                    this.system,
+                    "fineTune",
+                    finalTune
+                )
+            );
         }
 
         // Add drum setup parameters
@@ -1262,13 +1377,51 @@ export class MIDIEditor {
         }
     }
 
-    private handleReset(system: MIDISystem) {
-        if (system === "gm") {
-            SpessaLog.info("%cGM on detected, removing!", ConsoleColors.info);
+    private handleReset(system: MIDISystem, e: MIDIMessage) {
+        const requested = this.midiParams?.system;
+        if (requested === "clear") {
+            // Delete every reset. The locked setup is inserted
+            // Before the first note on without any reset.
+            SpessaLog.info(
+                "%cSystem reset cleared, removing!",
+                ConsoleColors.info
+            );
             this.deleteCurrentEvent();
-            this.addedReset = false;
             return;
         }
+        if (requested !== undefined) {
+            // Replace every reset with the desired one, in place.
+            if (system !== requested) {
+                SpessaLog.info(
+                    `%cReplacing ${system.toUpperCase()} reset with ${requested.toUpperCase()}!`,
+                    ConsoleColors.info
+                );
+                this.midi.tracks[this.trackNum].events[
+                    this.eventIndexes[this.trackNum]
+                ] = MIDIUtils.reset(e.ticks, requested);
+            }
+            this.trackReset(requested, e.ticks);
+            return;
+        }
+        // A new reset makes the GM meaningless,
+        // It had no notes after it, so it stays as is.
+        if (this.pendingGMReset !== undefined) {
+            this.pendingGMReset = undefined;
+        }
+        if (system === "gm") {
+            // A GM reset: if notes follow, it's meaningful
+            // And gets pushed to gmResets on the first note
+            // To be replaced with GS in applyResetParams.
+            // Track it here, will be deleted if meaningless
+            this.pendingGMReset = {
+                event: e,
+                track: this.trackNum
+            };
+        }
+        this.trackReset(system, e.ticks);
+    }
+
+    private trackReset(system: MIDISystem, ticks: number) {
         SpessaLog.info(
             `%c${system.toUpperCase()} system on detected`,
             ConsoleColors.info
@@ -1277,12 +1430,18 @@ export class MIDIEditor {
         this.addedReset = true; // Flag as true so reset won't get added
         this.resetTrack = this.trackNum;
         this.resetIndex = this.eventIndexes[this.trackNum];
+        this.lastReset =
+            this.midi.tracks[this.trackNum].events[
+                this.eventIndexes[this.trackNum]
+            ];
+        this.resetTicks = Math.max(this.resetTicks, ticks);
         // Reset NRPN (accuracy + prevent deletion before reset)
         // Reset tracked drum maps to defaults as well.
         const defaultMap =
             system === "xg" ? DEFAULT_XG_DRUM_MAP : DEFAULT_GS_DRUM_MAP;
         for (const ch of this.channelStatuses) {
             ch.param.reset();
+            ch.pendingParam = undefined;
             ch.drumMap =
                 ch.channel % 16 === MIDI_DRUM_CHANNEL
                     ? defaultMap
@@ -1292,17 +1451,46 @@ export class MIDIEditor {
                 pMSB: true,
                 data: true
             };
+            // Reset means that new "first notes" are here to have the setups inserted
+            ch.isFirstNoteOn = true;
         }
     }
 
     private applyResetParams() {
+        // Replace the collected meaningful GM resets with GS, in place.
+        const replacedEvents = new Set<MIDIMessage>();
+        for (const gmReset of this.gmResets) {
+            const events = this.midi.tracks[gmReset.track].events;
+            const index = events.indexOf(gmReset.event);
+            if (index === -1) {
+                continue;
+            }
+            SpessaLog.info(
+                "%cReplacing meaningful GM reset with GS!",
+                ConsoleColors.info
+            );
+            events[index] = MIDIUtils.reset(gmReset.event.ticks, "gs");
+            replacedEvents.add(gmReset.event);
+        }
+        // If the last reset was a replaced GM, then we are now in GS.
+        if (
+            this.lastReset !== undefined &&
+            replacedEvents.has(this.lastReset)
+        ) {
+            this.system = "gs";
+        }
+
         // Check for reset and insert it to ensure that a reset always exists.
         if (
             !this.addedReset &&
-            // And only when we add changes, removing them does not warrant the need for a gs reset
-            [...this.channelChanges.values()].some(
-                (c) => c.patch && c.patch !== "clear"
-            )
+            // A cleared system never gets a replacement reset.
+            this.midiParams?.system !== "clear" &&
+            // And only when we add changes, removing them does not warrant the need for a gs reset,
+            // An explicitly requested system always needs its reset.
+            (this.midiParams?.system !== undefined ||
+                [...this.channelChanges.values()].some(
+                    (c) => c.patch && c.patch !== "clear"
+                ))
         ) {
             // There's no reset, add it on the first track at index 0 (or 1 if track name is first)
             let index = 0;
@@ -1312,11 +1500,8 @@ export class MIDIEditor {
             ) {
                 index++;
             }
-            // Add the requested system or GS. Clear breaks everything so we don't care.
-            const targetSystem =
-                (this.midiParams?.system === "clear"
-                    ? undefined
-                    : this.midiParams?.system) ?? "gs";
+            // Add the requested system or GS.
+            const targetSystem = this.midiParams?.system ?? "gs";
             this.midi.tracks[0].addEvents(
                 index,
                 MIDIUtils.reset(0, targetSystem)
@@ -1330,8 +1515,8 @@ export class MIDIEditor {
             );
         }
 
-        const targetTicks = Math.max(0, this.midi.firstNoteOn);
-        // Insert right after reset
+        // Insert right after the last reset, so the setups survive all resets.
+        const targetTicks = Math.max(0, this.midi.firstNoteOn, this.resetTicks);
         const targetTrack = this.midi.tracks[this.resetTrack];
         const targetIndex = this.resetIndex + 1;
 

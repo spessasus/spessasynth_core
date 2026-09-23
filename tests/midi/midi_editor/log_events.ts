@@ -45,14 +45,30 @@ export function logEventsTest(midi: BasicMIDI) {
                     break;
                 }
 
-                default: {
+                case MIDIMessageTypes.text:
+                case MIDIMessageTypes.trackName:
+                case MIDIMessageTypes.lyric:
+                case MIDIMessageTypes.copyright: {
                     console.info(
-                        (
+                        ((
                             Object.keys(
                                 MIDIMessageTypes
                             ) as (keyof typeof MIDIMessageTypes)[]
                         ).find((k) => MIDIMessageTypes[k] === status) ??
-                            event.statusByte.toString(16),
+                            event.statusByte.toString(16)) + ":",
+                        new TextDecoder().decode(event.data)
+                    );
+                    break;
+                }
+
+                default: {
+                    console.info(
+                        ((
+                            Object.keys(
+                                MIDIMessageTypes
+                            ) as (keyof typeof MIDIMessageTypes)[]
+                        ).find((k) => MIDIMessageTypes[k] === status) ??
+                            event.statusByte.toString(16)) + ":",
                         arrayToHexString(event.data)
                     );
                 }
