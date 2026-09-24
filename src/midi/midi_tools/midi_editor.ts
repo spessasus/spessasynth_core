@@ -1,9 +1,7 @@
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { MIDIMessage } from "../midi_message";
-
 import { MIDI_DRUM_CHANNEL } from "../../synthesizer/audio_engine/synth_constants";
-
 import {
     type MIDIPatch,
     MIDIPatchTools
@@ -26,7 +24,6 @@ import {
 } from "../enums";
 import { MIDIUtils } from "./midi_utils";
 import { ParameterTracker } from "./parameter_tracker";
-
 import type {
     DrumParameter,
     TimelineEvent,
@@ -62,14 +59,18 @@ export interface ChannelModification {
      * - Key: the MIDI controller number.
      * - value:
      *   - `"clear"` - all controller changes for this controller are removed.
-     *   - `number` - clear + sets the new controller at the start of the song, effectively locking them to the set value.
+     *   - `number` - clear + sets the new controller
+     *     before the channel's first note-on, re-applying it after every system reset,
+     *     effectively locking it to the set value.
      */
     controllers?: Map<MIDIController, ClearableParameter<number>>;
 
     /**
      * The new program of this channel.
      * - `"clear"` - all program changes for this channel are removed.
-     * - {@link MIDIPatch} - clear + sets the new patch according to the MIDI system at the start of the sequence.
+     * - {@link MIDIPatch} - clear + sets the new patch according to the MIDI system
+     *     before the channel's first note-on, re-applying it after every system reset,
+     *     effectively locking it to the set value.
      */
     patch?: ClearableParameter<MIDIPatch>;
 
@@ -78,7 +79,9 @@ export interface ChannelModification {
      * - Key: the MIDI parameter name.
      * - value:
      *   - `"clear"` - all changes for this parameter are removed.
-     *   - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
+     *   - `specific value` - clear + sets the new parameter
+     *     before the channel's first note-on, re-applying it after every system reset,
+     *     effectively locking it to the set value.
      */
     midiParams?: {
         [P in keyof ChannelMIDIParameter]?: ClearableParameter<
@@ -98,7 +101,13 @@ export interface ChannelModification {
     /**
      * The channel tuning in cents.
      * Tuned using RPN Fine Tune.
-     * Range is `[-100; 99.986]` cents.
+     *
+     * > **Note**
+     * >
+     * > Values outside the RPN range [-100; 99.986] get added to the key shift,
+     * > so e.g. 150 cents is applied as
+     * > +1 semitone + 50 cents.
+     *
      *
      * This differs from the `fineTune` MIDI Parameter
      * in that it is relative to the tuning applied in the MIDI file,
@@ -199,7 +208,9 @@ export interface ModifyMIDIOptions {
      * - Key: the MIDI parameter name.
      * - value:
      *   - `"clear"` - all changes for this parameter are removed.
-     *   - `specific value` - clear + sets the new parameter at the start of the song, effectively locking them to the set value.
+     *   - `specific value` - clear + sets the new parameter,
+     *      re-applying it after every system reset,
+     *      effectively locking it to the set value.
      *
      * For the `system` parameter specifically:
      * - `"clear"` - deletes every system reset. Setup is inserted
@@ -208,7 +219,10 @@ export interface ModifyMIDIOptions {
      *
      * > **Note**
      * >
-     * > By default, GM reset is replaced with a GS reset. Set the `system` parameter to `gm` to keep the GM reset (and replace all others with GM)
+     * > By default, a meaningful GM reset (one with notes after it)
+     * > is replaced with a GS reset. Set the `system` parameter to `gm`
+     * > to keep the GM reset (and replace all others with GM).
+     * > This is done to allow the bank selections and other parameters to work.
      */
     midiParams?: {
         [P in keyof GlobalMIDIParameter]?: ClearableParameter<
@@ -243,7 +257,7 @@ export interface ModifyMIDIOptions {
 
 // Internal tracking interface
 interface ChannelStatus {
-    // Tracks if the channel already had its first note on
+    // True while the channel has not yet had its first note on after a reset
     isFirstNoteOn: boolean;
     // RPN/NRPN tracking
     param: ParameterTracker;
@@ -270,10 +284,11 @@ interface ChannelStatus {
     // Currently tracked drum map of this channel
     drumMap: number;
 
-    // Direct copy of channelModification.fineTune
+    // Direct copy of channelModification.keyShift
     // RELATIVE semitones, for easier access rather than having to do "?? 0"
     readonly relativeKeyShift: number;
 
+    // Direct copy of channelModification.fineTune
     // RELATIVE cents, for easier access rather than having to do "?? 0"
     readonly relativeFineTune: number;
 
@@ -290,7 +305,7 @@ interface ChannelStatus {
     // We don't know if the second data byte will come, so the first analysis (and potential insert) uses a partial value from the 3-message N/RPN.
     // Each entry is analyzed independently, so the first insert uses a partial value.
     // A later data entry for the same parameter updates the inserted messages.
-    // Selections, notes and resets all void the record (treated as a new data entry).
+    // Selections, note-ons and resets all void the record (treated as a new data entry).
     pendingParam:
         | {
               // The inserted [paramMSB, paramLSB, dataMSB, dataLSB] events for in-place patching
@@ -307,7 +322,7 @@ interface ChannelStatus {
  * GM -> GS -> note data
  *
  * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
- * Meaningful ones are removed and replaced with GS
+ * Meaningful ones are replaced with GS in-place
  * (unless the `system` parameter is explicitly set).
  *
  * They are replaced so bank selects (and many other parameters) actually work.
@@ -343,9 +358,8 @@ export class MIDIEditor {
 
     private currentPortOffset = 0;
     /**
-     * If the current event is an N/RPN event, this is set,
-     * otherwise 0
-     * @private
+     * If the current event is an N/RPN event,
+     * this is set, otherwise -1.
      */
     private currentParameterChannel = -1;
 
@@ -355,7 +369,7 @@ export class MIDIEditor {
     private readonly clearedChannels = new Set<number>();
 
     private addedReset = false;
-    // Track reset position to insert effects right after
+    // Track reset position to insert setups right after
     private readonly resetPosition: TimelineEvent = {
         tr: 0,
         ev: 0
@@ -370,7 +384,7 @@ export class MIDIEditor {
      */
     private lastReset: MIDIMessage | undefined = undefined;
     /**
-     * Meaningful GM resets found during the initial loop.
+     * Meaningful GM resets found during the main loop.
      * Every entry gets replaced with GS
      * if the `system` global MIDI param has not been explicitly set.
      */
@@ -401,7 +415,8 @@ export class MIDIEditor {
 
     /**
      * Allows easy editing of the file by removing channels, changing programs,
-     * changing controllers and transposing channels. Note that this modifies the MIDI in-place.
+     * changing controllers and transposing channels, plus lots of other parameters.
+     * Note that this modifies the MIDI in-place.
      * @internal
      */
     public constructor(midi: BasicMIDI, opts: ModifyMIDIOptions) {
@@ -436,7 +451,6 @@ export class MIDIEditor {
             }
         }
 
-        // Go through all events one by one
         this.system =
             (opts.midiParams?.system === "clear"
                 ? undefined
@@ -478,6 +492,7 @@ export class MIDIEditor {
     }
 
     public apply() {
+        // Go through all events one by one
         this.midi.iterate(this.handleEvent.bind(this));
         this.applyResetParams();
     }
@@ -609,7 +624,7 @@ export class MIDIEditor {
         // Delete the current data entry event first.
         // This is safe because it's the event currently being processed in the loop,
         // Meaning its index is always higher than or equal
-        // To the cached MSB/LSB (on a different track).
+        // To the cached MSB/LSB (possibly on a different track).
         if (!ch.clearedParams.data) {
             this.deleteThisEvent();
             SpessaLog.info(
@@ -723,7 +738,8 @@ export class MIDIEditor {
                 // A note voids any pending parameter halves:
                 // Rewriting them afterward would change what it heard.
                 channelStatus.pendingParam = undefined;
-                // Transpose key (for zero it won't change anyway)
+                // Transpose key and clamp if needed
+                // For 0 it will stay as is
                 e.data[0] = Math.max(
                     0,
                     Math.min(
@@ -792,6 +808,15 @@ export class MIDIEditor {
             case MIDIMessageTypes.systemExclusive: {
                 const syxs = MIDIUtils.analyzeSysEx(e.data);
                 for (const syx of syxs) {
+                    // Clear channel sysExes too
+                    if (
+                        "channel" in syx &&
+                        this.clearedChannels.has(syx.channel + portOffset)
+                    ) {
+                        // BEGONE, CHANNEL CHANGE!
+                        this.deleteCurrentEvent();
+                        return;
+                    }
                     switch (syx.type) {
                         case "Map Drum Setup": {
                             // Delete map drum setups affecting modified channels
@@ -1078,7 +1103,7 @@ export class MIDIEditor {
             case MIDIControllers.nonRegisteredParameterLSB: {
                 // A new selection starts a new message
                 channelStatus.pendingParam = undefined;
-                // Flag the parameter as not cleaned
+                // Flag the parameter as not cleared
                 if (
                     ccNum === MIDIControllers.nonRegisteredParameterLSB ||
                     ccNum === MIDIControllers.registeredParameterLSB
@@ -1250,9 +1275,9 @@ export class MIDIEditor {
         // All right, so this is the first note on for this channel
         // The order is:
         // - patch selection
-        // - relative fine tune
         // - controllers
         // - parameters
+        // - relative fine tune
         // - drum setup
 
         // Program change
@@ -1461,7 +1486,7 @@ export class MIDIEditor {
             // A GM reset: if notes follow, it's meaningful
             // And gets pushed to gmResets on the first note
             // To be replaced with GS in applyResetParams.
-            // Track it here, will be deleted if meaningless
+            // Track it here
             this.pendingGMReset = {
                 event: e,
                 track: this.trackNum
@@ -1529,7 +1554,7 @@ export class MIDIEditor {
             this.system = "gs";
         }
 
-        // Check for reset and insert it to ensure that a reset always exists.
+        // Check for a reset and insert one, only if we have setups to apply after it.
         if (
             !this.addedReset &&
             // A cleared system never gets a replacement reset.
@@ -1566,7 +1591,7 @@ export class MIDIEditor {
             this.resetPosition.ev = index;
             this.system = targetSystem;
             SpessaLog.info(
-                `%c${targetSystem} reset on not detected. Adding it.`,
+                `%c${targetSystem} reset not detected. Adding it.`,
                 ConsoleColors.info
             );
         }
@@ -1758,7 +1783,6 @@ export class MIDIEditor {
             // Last means that it will be first, so the order is:
             // Type
             // Params and sends
-            // Channels
             targetTrack.addEvents(
                 targetIndex,
                 MIDIUtils.setInsertionParameter(targetTicks, "type", p.type)
