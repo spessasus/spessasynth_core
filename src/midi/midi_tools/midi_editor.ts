@@ -24,11 +24,7 @@ import {
 } from "../enums";
 import { MIDIUtils } from "./midi_utils";
 import { ParameterTracker } from "./parameter_tracker";
-import type {
-    DrumParameter,
-    TimelineEvent,
-    UserDrumSetParameter
-} from "../types";
+import type { DrumParameter, UserDrumSetParameter } from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
 import type { AnalyzedMIDIMessage } from "./analyzed_message";
 import {
@@ -315,23 +311,19 @@ interface ChannelStatus {
 }
 
 /**
- * A GM reset location, for meaningful resets.
- * A reset is defined as meaningful only if notes come after it.
- * For example, many MIDIs do:
- *
- * GM -> GS -> note data
- *
- * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
- * Meaningful ones are replaced with GS in-place
- * (unless the `system` parameter is explicitly set).
- *
- * They are replaced so bank selects (and many other parameters) actually work.
+ * A position surviving additions and deletions for tracking resets.
  */
-interface PotentialGMReset {
+interface ResetPosition {
     /**
      * The reset event itself.
      */
     event: MIDIMessage;
+
+    /**
+     * The system this reset switches to.
+     */
+    system: MIDISystem;
+
     /**
      * The track containing the event.
      */
@@ -369,15 +361,19 @@ export class MIDIEditor {
     private readonly clearedChannels = new Set<number>();
 
     private addedReset = false;
-    // Track reset position to insert setups right after
-    private readonly resetPosition: TimelineEvent = {
-        tr: 0,
-        ev: 0
-    };
+
     /**
-     * Tick time of the last system reset.
+     * All resets which will have a setup inserted after them.
+     * A reset is defined as meaningful only if notes come after it.
+     * For example, many MIDIs do:
+     *
+     * GM -> GS -> note data
+     *
+     * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
+     * Meaningful ones are replaced with GS in-place
+     * (unless the `system` parameter is explicitly set).
      */
-    private resetTicks = 0;
+    private meaningfulResets = new Array<ResetPosition>();
     /**
      * The event of the last tracked system reset,
      * for syncing this.system if it gets replaced later.
@@ -385,15 +381,30 @@ export class MIDIEditor {
     private lastReset: MIDIMessage | undefined = undefined;
     /**
      * Meaningful GM resets found during the main loop.
+     * A reset is defined as meaningful only if notes come after it.
+     * For example, many MIDIs do:
+     *
+     * GM -> GS -> note data
+     *
+     * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
+     * Meaningful ones are replaced with GS in-place
+     * (unless the `system` parameter is explicitly set).
+     *
      * Every entry gets replaced with GS
      * if the `system` global MIDI param has not been explicitly set.
      */
-    private readonly gmResets: PotentialGMReset[] = [];
+    private readonly gmResets: ResetPosition[] = [];
     /**
-     * The most recent GM reset, still awaiting notes.
-     * Discarded whenever another reset is encountered.
+     * The most recent reset, still awaiting notes.
+     * Discarded as meaningless whenever another reset is encountered.
+     * Removed and added to meaningful resets if a note is encountered.
      */
-    private pendingGMReset: PotentialGMReset | undefined = undefined;
+    private pendingReset: ResetPosition | undefined = undefined;
+    /**
+     * If the current pending reset is GM.
+     * This is used to track meaningful GM resets for replacements
+     */
+    private isPendingResetGM = false;
 
     private readonly reverbParams;
     private readonly chorusParams;
@@ -492,9 +503,106 @@ export class MIDIEditor {
     }
 
     public apply() {
-        // Go through all events one by one
+        // Go through all events one by one and perform the initial edit
         this.midi.iterate(this.handleEvent.bind(this));
-        this.applyResetParams();
+
+        // Now the global setup
+        // Replace the collected meaningful GM resets with GS, in place.
+        const replacedEvents = new Set<MIDIMessage>();
+        for (const gmReset of this.gmResets) {
+            const events = this.midi.tracks[gmReset.track].events;
+            const index = events.indexOf(gmReset.event);
+            if (index === -1) {
+                continue;
+            }
+            SpessaLog.info(
+                "%cReplacing meaningful GM reset with GS!",
+                ConsoleColors.info
+            );
+            const replaced = MIDIUtils.reset(gmReset.event.ticks, "gs");
+            events[index] = replaced;
+            replacedEvents.add(gmReset.event);
+            // All GM resets here are meaningful
+            this.meaningfulResets.push({
+                event: replaced,
+                track: gmReset.track,
+                system: "gs"
+            });
+        }
+        // If the last reset was a replaced GM, then we are now in GS.
+        if (
+            this.lastReset !== undefined &&
+            replacedEvents.has(this.lastReset)
+        ) {
+            this.system = "gs";
+        }
+
+        // Check for a reset and insert one, only if we have setups to apply after it.
+        if (
+            // Firstly there can't be another one.
+            !this.addedReset &&
+            // A cleared system never gets a replacement reset.
+            this.midiParams?.system !== "clear" &&
+            // An explicitly requested system always needs its reset.
+            (this.midiParams?.system !== undefined ||
+                // Effects need reset too
+                (this.reverbParams && this.reverbParams !== "clear") ||
+                (this.chorusParams && this.chorusParams !== "clear") ||
+                (this.delayParams && this.delayParams !== "clear") ||
+                (this.insertionParams && this.insertionParams !== "clear") ||
+                // User drum as well
+                this.userDrumSetParams?.size ||
+                // Add only when we have changes, removing them does not warrant the need for a gs reset.
+                [...this.channelChanges.values()].some(
+                    (c) => c.patch && c.patch !== "clear"
+                ))
+        ) {
+            // There's no reset, add it on the first track at the first index after all meta messages
+            let index = 0;
+            const firstTrack = this.midi.tracks[0];
+            while (
+                index < firstTrack.events.length &&
+                firstTrack.events[index].statusByte < MIDIMessageTypes.noteOff
+            ) {
+                index++;
+            }
+            // Add the requested system or GS.
+            const targetSystem = this.midiParams?.system ?? "gs";
+            const event = MIDIUtils.reset(0, targetSystem);
+            firstTrack.addEvents(index, event);
+            // The only reset means that it is always meaningful
+            this.meaningfulResets.push({
+                track: 0,
+                event,
+                system: targetSystem
+            });
+            this.system = targetSystem;
+            SpessaLog.info(
+                `%c${targetSystem} reset not detected. Adding it.`,
+                ConsoleColors.info
+            );
+        }
+
+        for (const reset of this.meaningfulResets) {
+            const index = this.midi.tracks[reset.track].events.indexOf(
+                reset.event
+            );
+            SpessaLog.info(
+                `%cInserting after reset detected on track %c${reset.track}%c on index %c${index}%c!`,
+                ConsoleColors.recognized,
+                ConsoleColors.value,
+                ConsoleColors.recognized,
+                ConsoleColors.value,
+                ConsoleColors.recognized
+            );
+            this.midi.tracks[reset.track].addEvents(
+                index + 1,
+                ...this.generateSetup(reset.event.ticks, reset.system)
+            );
+        }
+
+        this.midi.flush();
+        SpessaLog.groupEnd();
     }
 
     private assignMIDIPort(trackNum: number, port: number) {
@@ -523,15 +631,10 @@ export class MIDIEditor {
      */
     private addEventsBefore(...events: MIDIMessage[]) {
         const track = this.trackNum;
-        const at = this.eventIndexes[track];
         for (const item of events) {
             this.midi.tracks[track].addEvents(this.eventIndexes[track], item);
             // Update event indexes
             this.eventIndexes[track]++;
-        }
-        // Update reset position if needed
-        if (track === this.resetPosition.tr && at <= this.resetPosition.ev) {
-            this.resetPosition.ev += events.length;
         }
     }
 
@@ -542,7 +645,6 @@ export class MIDIEditor {
      */
     private addEventsAfter(...events: MIDIMessage[]) {
         const track = this.trackNum;
-        const at = this.eventIndexes[track] + 1;
         for (const item of events) {
             this.midi.tracks[track].addEvents(
                 this.eventIndexes[track] + 1,
@@ -550,10 +652,6 @@ export class MIDIEditor {
             );
             // Update event indexes
             this.eventIndexes[track]++;
-        }
-        // Update reset position if needed
-        if (track === this.resetPosition.tr && at <= this.resetPosition.ev) {
-            this.resetPosition.ev += events.length;
         }
     }
 
@@ -590,11 +688,6 @@ export class MIDIEditor {
         // Update all trackers accordingly
         for (const channelStatus of this.channelStatuses) {
             channelStatus.param.deleteEvent(track, index);
-        }
-
-        // Update reset index if needed
-        if (track === this.resetPosition.tr && index <= this.resetPosition.ev) {
-            this.resetPosition.ev--;
         }
     }
 
@@ -725,10 +818,16 @@ export class MIDIEditor {
                     );
                     break;
                 }
-                // A first note after a GM reset makes it meaningful, track for replacement
-                if (this.pendingGMReset !== undefined) {
-                    this.gmResets.push(this.pendingGMReset);
-                    this.pendingGMReset = undefined;
+                // A first note after a reset makes it meaningful, track for replacement
+                if (this.pendingReset !== undefined) {
+                    if (this.isPendingResetGM) {
+                        // Track as GM, the replacements will be counted as meaningful
+                        this.gmResets.push(this.pendingReset);
+                        this.isPendingResetGM = false;
+                    } else {
+                        this.meaningfulResets.push(this.pendingReset);
+                    }
+                    this.pendingReset = undefined;
                 }
                 // Is it first?
                 if (channelStatus.isFirstNoteOn) {
@@ -1461,54 +1560,55 @@ export class MIDIEditor {
                 ConsoleColors.info
             );
             this.deleteCurrentEvent();
+            // Do not track
             return;
         }
         if (requested !== undefined) {
+            let toTrack = e;
             // Replace every reset with the desired one, in place.
             if (system !== requested) {
                 SpessaLog.info(
                     `%cReplacing ${system.toUpperCase()} reset with ${requested.toUpperCase()}!`,
                     ConsoleColors.info
                 );
+                toTrack = MIDIUtils.reset(e.ticks, requested);
                 this.midi.tracks[this.trackNum].events[
                     this.eventIndexes[this.trackNum]
-                ] = MIDIUtils.reset(e.ticks, requested);
+                ] = toTrack;
             }
-            this.trackReset(requested, e.ticks);
+            // Track with the newly replaced system.
+            this.trackReset(requested, toTrack);
             return;
         }
-        // A new reset makes the GM meaningless,
-        // It had no notes after it, so it stays as is.
-        if (this.pendingGMReset !== undefined) {
-            this.pendingGMReset = undefined;
-        }
-        if (system === "gm") {
-            // A GM reset: if notes follow, it's meaningful
-            // And gets pushed to gmResets on the first note
-            // To be replaced with GS in applyResetParams.
-            // Track it here
-            this.pendingGMReset = {
-                event: e,
-                track: this.trackNum
-            };
-        }
-        this.trackReset(system, e.ticks);
+        this.trackReset(system, e);
     }
 
-    private trackReset(system: MIDISystem, ticks: number) {
+    private trackReset(system: MIDISystem, e: MIDIMessage) {
         SpessaLog.info(
             `%c${system.toUpperCase()} system on detected`,
             ConsoleColors.info
         );
         this.system = system;
         this.addedReset = true; // Flag as true so reset won't get added
-        this.resetPosition.tr = this.trackNum;
-        this.resetPosition.ev = this.eventIndexes[this.trackNum];
+
+        // A new reset makes the previous one meaningless.
+        // If it is still present, then it means that that reset had no notes,
+        // So it can be safely replaced.
+        this.pendingReset = {
+            event: e,
+            track: this.trackNum,
+            system
+        };
+        // A GM reset: if notes follow, it's meaningful
+        // And gets pushed to gmResets on the first note
+        // To be replaced with GS in applyResetParams.
+        // Track it here.
+        this.isPendingResetGM = system === "gm";
+
         this.lastReset =
             this.midi.tracks[this.trackNum].events[
                 this.eventIndexes[this.trackNum]
             ];
-        this.resetTicks = Math.max(this.resetTicks, ticks);
         // Reset NRPN (accuracy + prevent deletion before reset)
         // Reset tracked drum maps to defaults as well.
         const defaultMap =
@@ -1530,91 +1630,19 @@ export class MIDIEditor {
         }
     }
 
-    private applyResetParams() {
-        // Replace the collected meaningful GM resets with GS, in place.
-        const replacedEvents = new Set<MIDIMessage>();
-        for (const gmReset of this.gmResets) {
-            const events = this.midi.tracks[gmReset.track].events;
-            const index = events.indexOf(gmReset.event);
-            if (index === -1) {
-                continue;
-            }
-            SpessaLog.info(
-                "%cReplacing meaningful GM reset with GS!",
-                ConsoleColors.info
-            );
-            events[index] = MIDIUtils.reset(gmReset.event.ticks, "gs");
-            replacedEvents.add(gmReset.event);
-        }
-        // If the last reset was a replaced GM, then we are now in GS.
-        if (
-            this.lastReset !== undefined &&
-            replacedEvents.has(this.lastReset)
-        ) {
-            this.system = "gs";
-        }
-
-        // Check for a reset and insert one, only if we have setups to apply after it.
-        if (
-            !this.addedReset &&
-            // A cleared system never gets a replacement reset.
-            this.midiParams?.system !== "clear" &&
-            // An explicitly requested system always needs its reset.
-            (this.midiParams?.system !== undefined ||
-                // Effects need reset too
-                (this.reverbParams && this.reverbParams !== "clear") ||
-                (this.chorusParams && this.chorusParams !== "clear") ||
-                (this.delayParams && this.delayParams !== "clear") ||
-                (this.insertionParams && this.insertionParams !== "clear") ||
-                // User drum as well
-                this.userDrumSetParams?.size ||
-                // Add only when we have changes, removing them does not warrant the need for a gs reset.
-                [...this.channelChanges.values()].some(
-                    (c) => c.patch && c.patch !== "clear"
-                ))
-        ) {
-            // There's no reset, add it on the first track at index 0 (or 1 if track name is first)
-            let index = 0;
-            if (
-                this.midi.tracks[0].events[0].statusByte ===
-                MIDIMessageTypes.trackName
-            ) {
-                index++;
-            }
-            // Add the requested system or GS.
-            const targetSystem = this.midiParams?.system ?? "gs";
-            this.midi.tracks[0].addEvents(
-                index,
-                MIDIUtils.reset(0, targetSystem)
-            );
-            this.resetPosition.tr = 0;
-            this.resetPosition.ev = index;
-            this.system = targetSystem;
-            SpessaLog.info(
-                `%c${targetSystem} reset not detected. Adding it.`,
-                ConsoleColors.info
-            );
-        }
-
-        // Insert right after the last reset, so the setups survive all resets.
-        const targetTicks = Math.max(0, this.midi.firstNoteOn, this.resetTicks);
-        const targetTrack = this.midi.tracks[this.resetPosition.tr];
-        const targetIndex = this.resetPosition.ev + 1;
-
+    /**
+     * Generates a full setup after a reset is encountered.
+     * @param targetTicks
+     * @param system
+     */
+    private generateSetup(targetTicks: number, system: MIDISystem) {
         /*
         ---
         MIDI RESET
         Here is the code that inserts all parameters after a reset
         ---
          */
-        SpessaLog.info(
-            `%cInserting after reset detected on track %c${this.resetPosition.tr}%c on index %c${targetIndex}%c!`,
-            ConsoleColors.recognized,
-            ConsoleColors.value,
-            ConsoleColors.recognized,
-            ConsoleColors.value,
-            ConsoleColors.recognized
-        );
+        const output = new Array<MIDIMessage>();
 
         // Add MIDI parameters
         for (const param of Object.keys(
@@ -1623,11 +1651,10 @@ export class MIDIEditor {
             if (param === "system") continue;
             const value = this.midiParams?.[param];
             if (value === undefined || value === "clear") continue;
-            targetTrack.addEvents(
-                targetIndex,
+            output.push(
                 ...MIDIUtils.setGlobalMIDIParameter(
                     targetTicks,
-                    this.system,
+                    system,
                     param,
                     value
                 )
@@ -1637,8 +1664,7 @@ export class MIDIEditor {
         // Add effects
         if (this.reverbParams && this.reverbParams !== "clear") {
             const p = this.reverbParams;
-            targetTrack.addEvents(
-                targetIndex,
+            output.push(
                 MIDIUtils.setGSReverbParameter(targetTicks, "level", p.level),
                 MIDIUtils.setGSReverbParameter(
                     targetTicks,
@@ -1665,8 +1691,7 @@ export class MIDIEditor {
         }
         if (this.chorusParams && this.chorusParams !== "clear") {
             const p = this.chorusParams;
-            targetTrack.addEvents(
-                targetIndex,
+            output.push(
                 MIDIUtils.setGSChorusParameter(targetTicks, "level", p.level),
                 MIDIUtils.setGSChorusParameter(
                     targetTicks,
@@ -1695,8 +1720,7 @@ export class MIDIEditor {
         }
         if (this.delayParams && this.delayParams !== "clear") {
             const p = this.delayParams;
-            targetTrack.addEvents(
-                targetIndex,
+            output.push(
                 MIDIUtils.setGSDelayParameter(targetTicks, "level", p.level),
                 MIDIUtils.setGSDelayParameter(
                     targetTicks,
@@ -1778,14 +1802,12 @@ export class MIDIEditor {
             }
 
             // This adds them in order
-            targetTrack.addEvents(targetIndex, ...evs);
-
-            // Last means that it will be first, so the order is:
+            // The order is:
             // Type
             // Params and sends
-            targetTrack.addEvents(
-                targetIndex,
-                MIDIUtils.setInsertionParameter(targetTicks, "type", p.type)
+            output.push(
+                MIDIUtils.setInsertionParameter(targetTicks, "type", p.type),
+                ...evs
             );
         }
 
@@ -1808,8 +1830,7 @@ export class MIDIEditor {
                             // Parameter cleared
                             if (value === "clear" || value === undefined)
                                 continue;
-                            targetTrack.addEvents(
-                                targetIndex,
+                            output.push(
                                 MIDIUtils.setUserDrumParameter(
                                     targetTicks,
                                     drumSet,
@@ -1823,7 +1844,6 @@ export class MIDIEditor {
                 }
             }
 
-        this.midi.flush();
-        SpessaLog.groupEnd();
+        return output;
     }
 }

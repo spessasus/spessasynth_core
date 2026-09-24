@@ -165,7 +165,7 @@ export class MIDIBuilder extends BasicMIDI {
                 "Can't add voice messages to the conductor track (0) in format 1. Consider using format 0 using a different track."
             );
         }
-        this.tracks[track].pushEvent(
+        this.tracks[track].pushEvents(
             new MIDIMessage(ticks, statusByte, new IndexedByteArray(eventData))
         );
     }

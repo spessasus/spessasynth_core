@@ -76,10 +76,10 @@ export class MIDITrack {
     }
 
     /**
-     * Appends an event to the end of the track.
-     * @param event The event to add.
+     * Appends events to the end of the track.
+     * @param events The events to add.
      */
-    public pushEvent(event: MIDIMessage) {
-        (this.events as MIDIMessage[]).push(event);
+    public pushEvents(...events: MIDIMessage[]) {
+        (this.events as MIDIMessage[]).push(...events);
     }
 }

@@ -114,7 +114,8 @@ export class MIDITestMaker extends MIDIBuilder {
         this.fileName = name.replaceAll(" ", "_").toLowerCase();
         this.system = o.system;
         this.track = this.tracks[0];
-        this.track.addEvents(0, MIDIUtilities.reset(0, o.system));
+        // Add after MIDIBuilder stuff (track name + port)
+        this.track.pushEvents(MIDIUtilities.reset(0, o.system));
     }
 
     public switchChannel(channel: number) {
@@ -124,10 +125,7 @@ export class MIDITestMaker extends MIDIBuilder {
 
     public reset(system: MIDISystem) {
         this.text(`${system.toUpperCase()} RESET`);
-        this.track.addEvents(
-            this.track.events.length,
-            MIDIUtilities.reset(this.ticks, system)
-        );
+        this.track.pushEvents(MIDIUtilities.reset(this.ticks, system));
         this.system = system;
         return this.wait(480);
     }
@@ -136,8 +134,7 @@ export class MIDITestMaker extends MIDIBuilder {
         parameter: P,
         value: GlobalMIDIParameter[P]
     ) {
-        this.track.addEvents(
-            this.track.events.length,
+        this.track.pushEvents(
             ...MIDIUtilities.setGlobalMIDIParameter(
                 this.ticks,
                 this.system,
@@ -152,8 +149,7 @@ export class MIDITestMaker extends MIDIBuilder {
         parameter: P,
         value: ChannelMIDIParameter[P]
     ) {
-        this.track.addEvents(
-            this.track.events.length,
+        this.track.pushEvents(
             ...MIDIUtilities.setChannelMIDIParameter(
                 this.ticks,
                 this.channel,

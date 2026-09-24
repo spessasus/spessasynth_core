@@ -8,8 +8,11 @@ import { arrayToHexString } from "../../../src/utils/other";
 
 export function logEventsTest(midi: BasicMIDI) {
     console.group(`MIDI: ${midi.getName()}`);
-    for (const track of midi.tracks) {
-        console.group(`Track ${track.name}, events: ${track.events.length}`);
+    for (let i = 0; i < midi.tracks.length; i++) {
+        const track = midi.tracks[i];
+        console.group(
+            `Track ${i}: ${track.name}, events: ${track.events.length}`
+        );
 
         for (const event of track.events) {
             const ch = event.statusByte & 0xf;

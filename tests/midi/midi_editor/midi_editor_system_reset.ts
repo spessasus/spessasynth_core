@@ -32,40 +32,43 @@ const lockOpts: ModifyMIDIOptions = {
 };
 
 // 1. Same-tick GS + GS  (constructor adds the first GS reset).
-// Expect: both kept, one program, reverb after the last reset.
+// Expect: both kept. The first is meaningless (no notes between the two),
+// So one program and one reverb setup, both after the second reset.
 {
     console.info("\n===== 1. duplicate GS =====");
     const midi = new MIDITestMaker("Reset: duplicate GS at the start");
-    midi.tracks[0].addEvents(1, MIDIUtils.reset(0, "gs"));
+    midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gs"));
     midi.note(60, 100).flush();
     runMIDIEditorTest(midi, lockOpts);
 }
 
 // 2. Same-tick mixed GS -> XG.
-// Expect: both kept in order, one program, reverb after XG.
+// Expect: both kept in order. The GS is meaningless,
+// So one program and one reverb setup, both after XG.
 {
     console.info("\n===== 2. mixed GS + XG =====");
     const midi = new MIDITestMaker("Reset: mixed GS -> XG at the start");
-    midi.tracks[0].addEvents(1, MIDIUtils.reset(0, "xg"));
+    midi.tracks[0].pushEvents(MIDIUtils.reset(0, "xg"));
     midi.note(60, 100).flush();
     runMIDIEditorTest(midi, lockOpts);
 }
 
 // 3. Same-tick mixed XG -> GS.
-// Expect: both kept in order, one program, reverb after GS.
+// Expect: both kept in order. The XG is meaningless,
+// So one program and one reverb setup, both after GS.
 {
     console.info("\n===== 3. mixed XG + GS =====");
     const midi = new MIDITestMaker("Reset: mixed XG -> GS at the start", {
         system: "xg"
     });
-    midi.tracks[0].addEvents(1, MIDIUtils.reset(0, "gs"));
+    midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gs"));
     midi.note(60, 100).flush();
     runMIDIEditorTest(midi, lockOpts);
 }
 
 // 4. Mid-file duplicate GS reset.
-// Expect: both kept, program re-inserted after the second reset,
-// Reverb after the second reset.
+// Expect: both kept and both meaningful (notes come after each),
+// So program and reverb setup are re-applied after every reset.
 {
     console.info("\n===== 4. mid-file duplicate GS =====");
     const midi = new MIDITestMaker("Reset: mid-file duplicate GS");
@@ -74,7 +77,8 @@ const lockOpts: ModifyMIDIOptions = {
 }
 
 // 5. Mid-file GM reset (notes come after it, so it's considered as meaningful).
-// Expect: GM replaced with GS, so GS -> GS with two programs.
+// Expect: GM replaced with GS in place, so GS -> GS
+// With two programs and two reverb setups (one after each reset).
 {
     console.info("\n===== 5. mid-file GM =====");
     const midi = new MIDITestMaker("Reset: mid-file GM");
@@ -83,7 +87,8 @@ const lockOpts: ModifyMIDIOptions = {
 }
 
 // 6. Trailing GM2 reset.
-// Expect: GM2 is valid like GS/XG, so GS -> GM2 with two programs.
+// Expect: GM2 is valid like GS/XG, so GS -> GM2
+// With two programs and two reverb setups (one after each reset).
 {
     console.info("\n===== 6. trailing GM2 =====");
     const midi = new MIDITestMaker("Reset: trailing GM2");
@@ -92,7 +97,8 @@ const lockOpts: ModifyMIDIOptions = {
 }
 
 // 7. Mid-file GS -> XG.
-// Expect: both kept, program re-inserted after XG, reverb after XG.
+// Expect: both kept and both meaningful,
+// So program and reverb setup are re-applied after every reset.
 {
     console.info("\n===== 7. mid-file GS + XG =====");
     const midi = new MIDITestMaker("Reset: mid-file GS -> XG");
@@ -126,30 +132,32 @@ const lockOpts: ModifyMIDIOptions = {
 
 // 9. GM followed by GS before any notes.
 // Expect: GM is meaningless here (a reset comes before any notes),
-// So it's left as is: GM -> GS
+// So it's left as is: GM -> GS, with the setup after GS only.
 {
     console.info("\n===== 9. GM + GS at the start =====");
     const midi = new MIDITestMaker("Reset: GM -> GS at the start", {
         system: "gm"
     });
-    midi.tracks[0].addEvents(1, MIDIUtils.reset(0, "gs"));
+    midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gs"));
     midi.note(60, 100).flush();
     runMIDIEditorTest(midi, lockOpts);
 }
 
 // 10. GS followed by GM before any notes.
-// Expect: GM is meaningful (notes come after it),
-// So it's replaced with GS: GS -> GS
+// Expect: GS is meaningless, GM is meaningful (notes come after it),
+// So GM is replaced with GS in place: GS -> GS,
+// With the setup after the replaced reset only.
 {
     console.info("\n===== 10. GS + GM at the start =====");
     const midi = new MIDITestMaker("GS -> GM at the start");
-    midi.tracks[0].addEvents(1, MIDIUtils.reset(0, "gm"));
+    midi.tracks[0].pushEvents(MIDIUtils.reset(0, "gm"));
     midi.note(60, 100).flush();
     runMIDIEditorTest(midi, lockOpts);
 }
 
 // 11. Sole GM before the first note on.
-// Expect: replaced with GS at the GM's with the same tick time.
+// Expect: replaced with GS in place at the same tick time,
+// With the setup inserted right after it.
 {
     console.info("\n===== 11. sole GM replaced with GS =====");
     const midi = new MIDITestMaker("Sole GM replaced", {
@@ -165,7 +173,8 @@ const lockOpts: ModifyMIDIOptions = {
 }
 
 // 12. GM, then notes, then GS.
-// Expect: GM replaced with GS, so GS -> GS with two programs.
+// Expect: GM replaced with GS in place, so GS -> GS
+// With two programs and two reverb setups (one after each reset).
 {
     console.info("\n===== 12. GM, notes, then GS =====");
     const midi = new MIDITestMaker("GM -> notes -> GS", { system: "gm" });
@@ -198,7 +207,7 @@ const lockOpts: ModifyMIDIOptions = {
 }
 
 // 15. System locked to a value: every reset is replaced with it in place.
-// Expect: XG -> XG, programs reinserted, reverb after the last reset.
+// Expect: XG -> XG, programs and reverb setups re-applied after every reset.
 {
     console.info("\n===== 15. system locked to XG =====");
     const midi = new MIDITestMaker("System locked");
@@ -211,7 +220,7 @@ const lockOpts: ModifyMIDIOptions = {
 }
 
 // 16. Trailing GM reset (no notes come after it, so it's considered as meaningless).
-// Expect: left as is: GS -> GM, locks stay where they are.
+// Expect: left as is: GS -> GM, setups only after the meaningful GS reset.
 {
     console.info("\n===== 16. trailing GM =====");
     const midi = new MIDITestMaker("reset: trailing GM");
