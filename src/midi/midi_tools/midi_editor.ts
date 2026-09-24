@@ -27,7 +27,11 @@ import {
 import { MIDIUtils } from "./midi_utils";
 import { ParameterTracker } from "./parameter_tracker";
 
-import type { DrumParameter, UserDrumSetParameter } from "../types";
+import type {
+    DrumParameter,
+    TimelineEvent,
+    UserDrumSetParameter
+} from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
 import type { AnalyzedMIDIMessage } from "./analyzed_message";
 import {
@@ -84,7 +88,7 @@ export interface ChannelModification {
 
     /**
      * The channel key shift in semitones.
-     * Note on/off numbers are shifted.
+     * Note on/off and poly pressure MIDI note numbers are shifted.
      *
      * This differs from the `keyShift` MIDI Parameter in that it shifts the actual note numbers,
      * and doesn't delete or overwrite existing shifts.
@@ -352,8 +356,10 @@ export class MIDIEditor {
 
     private addedReset = false;
     // Track reset position to insert effects right after
-    private resetTrack = 0;
-    private resetIndex = 0;
+    private readonly resetPosition: TimelineEvent = {
+        tr: 0,
+        ev: 0
+    };
     /**
      * Tick time of the last system reset.
      */
@@ -501,12 +507,16 @@ export class MIDIEditor {
      * @param events
      */
     private addEventsBefore(...events: MIDIMessage[]) {
+        const track = this.trackNum;
+        const at = this.eventIndexes[track];
         for (const item of events) {
-            this.midi.tracks[this.trackNum].addEvents(
-                this.eventIndexes[this.trackNum],
-                item
-            );
-            this.eventIndexes[this.trackNum]++;
+            this.midi.tracks[track].addEvents(this.eventIndexes[track], item);
+            // Update event indexes
+            this.eventIndexes[track]++;
+        }
+        // Update reset position if needed
+        if (track === this.resetPosition.tr && at <= this.resetPosition.ev) {
+            this.resetPosition.ev += events.length;
         }
     }
 
@@ -516,12 +526,19 @@ export class MIDIEditor {
      * @param events
      */
     private addEventsAfter(...events: MIDIMessage[]) {
+        const track = this.trackNum;
+        const at = this.eventIndexes[track] + 1;
         for (const item of events) {
-            this.midi.tracks[this.trackNum].addEvents(
-                this.eventIndexes[this.trackNum] + 1,
+            this.midi.tracks[track].addEvents(
+                this.eventIndexes[track] + 1,
                 item
             );
-            this.eventIndexes[this.trackNum]++;
+            // Update event indexes
+            this.eventIndexes[track]++;
+        }
+        // Update reset position if needed
+        if (track === this.resetPosition.tr && at <= this.resetPosition.ev) {
+            this.resetPosition.ev += events.length;
         }
     }
 
@@ -530,9 +547,7 @@ export class MIDIEditor {
      * @private
      */
     private deleteThisEvent() {
-        this.midi.tracks[this.trackNum].deleteEvent(
-            this.eventIndexes[this.trackNum]--
-        );
+        this.deleteTrackEvent(this.trackNum, this.eventIndexes[this.trackNum]);
     }
 
     /**
@@ -560,6 +575,11 @@ export class MIDIEditor {
         // Update all trackers accordingly
         for (const channelStatus of this.channelStatuses) {
             channelStatus.param.deleteEvent(track, index);
+        }
+
+        // Update reset index if needed
+        if (track === this.resetPosition.tr && index <= this.resetPosition.ev) {
+            this.resetPosition.ev--;
         }
     }
 
@@ -648,7 +668,7 @@ export class MIDIEditor {
         this.currentParameterChannel = -1;
 
         const portOffset =
-            this.midiPortChannelOffsets[this.midiPorts[trackNum]] || 0;
+            this.midiPortChannelOffsets[this.midiPorts[trackNum]] ?? 0;
         if (e.statusByte === MIDIMessageTypes.midiPort) {
             this.assignMIDIPort(trackNum, e.data[0]);
             return;
@@ -675,6 +695,21 @@ export class MIDIEditor {
         const channelChange = this.channelChanges.get(channel);
         switch (status) {
             case MIDIMessageTypes.noteOn: {
+                // Check velocity 0
+                if (e.data[1] === 0) {
+                    // That is a note off
+                    if (!channelChange) break;
+                    e.data[0] = Math.max(
+                        0,
+                        Math.min(
+                            127,
+                            e.data[0] +
+                                channelStatus.relativeKeyShift +
+                                channelStatus.currentKeyShift
+                        )
+                    );
+                    break;
+                }
                 // A first note after a GM reset makes it meaningful, track for replacement
                 if (this.pendingGMReset !== undefined) {
                     this.gmResets.push(this.pendingGMReset);
@@ -689,17 +724,31 @@ export class MIDIEditor {
                 // Rewriting them afterward would change what it heard.
                 channelStatus.pendingParam = undefined;
                 // Transpose key (for zero it won't change anyway)
-                e.data[0] +=
-                    channelStatus.relativeKeyShift +
-                    channelStatus.currentKeyShift;
+                e.data[0] = Math.max(
+                    0,
+                    Math.min(
+                        127,
+                        e.data[0] +
+                            channelStatus.relativeKeyShift +
+                            channelStatus.currentKeyShift
+                    )
+                );
                 break;
             }
 
-            case MIDIMessageTypes.noteOff: {
+            case MIDIMessageTypes.noteOff:
+            // Poly pressure is also transposed
+            case MIDIMessageTypes.polyPressure: {
                 if (!channelChange) break;
-                e.data[0] +=
-                    channelStatus.relativeKeyShift +
-                    channelStatus.currentKeyShift;
+                e.data[0] = Math.max(
+                    0,
+                    Math.min(
+                        127,
+                        e.data[0] +
+                            channelStatus.relativeKeyShift +
+                            channelStatus.currentKeyShift
+                    )
+                );
                 break;
             }
 
@@ -1146,15 +1195,15 @@ export class MIDIEditor {
      */
     private handleResetAllControllers(channel: number) {
         const track = this.midi.tracks[this.trackNum];
-        // Add after
-        const index = this.eventIndexes[this.trackNum] + 1;
+        // Add after this event, on the same tick.
+        const index = this.eventIndexes[this.trackNum];
         const ticks = track.events[index].ticks;
         const channelChange = this.channelChanges.get(channel);
         if (!channelChange) return;
 
         // Restore MIDI parameters
         if (
-            channelChange.midiParams?.pitchWheel &&
+            channelChange.midiParams?.pitchWheel !== undefined &&
             channelChange.midiParams?.pitchWheel !== "clear"
         ) {
             this.addEventsAfter(
@@ -1168,7 +1217,7 @@ export class MIDIEditor {
             );
         }
         if (
-            channelChange.midiParams?.pressure &&
+            channelChange.midiParams?.pressure !== undefined &&
             channelChange.midiParams?.pressure !== "clear"
         ) {
             this.addEventsAfter(
@@ -1183,7 +1232,7 @@ export class MIDIEditor {
         }
         for (const cc of RP_15_RESET_CC_NUMS) {
             const value = channelChange.controllers?.get(cc);
-            if (value && value !== "clear") {
+            if (value !== undefined && value !== "clear") {
                 this.addEventsAfter(
                     MIDIMessage.controllerChange(ticks, channel, cc, value)
                 );
@@ -1428,8 +1477,8 @@ export class MIDIEditor {
         );
         this.system = system;
         this.addedReset = true; // Flag as true so reset won't get added
-        this.resetTrack = this.trackNum;
-        this.resetIndex = this.eventIndexes[this.trackNum];
+        this.resetPosition.tr = this.trackNum;
+        this.resetPosition.ev = this.eventIndexes[this.trackNum];
         this.lastReset =
             this.midi.tracks[this.trackNum].events[
                 this.eventIndexes[this.trackNum]
@@ -1485,9 +1534,16 @@ export class MIDIEditor {
             !this.addedReset &&
             // A cleared system never gets a replacement reset.
             this.midiParams?.system !== "clear" &&
-            // And only when we add changes, removing them does not warrant the need for a gs reset,
             // An explicitly requested system always needs its reset.
             (this.midiParams?.system !== undefined ||
+                // Effects need reset too
+                (this.reverbParams && this.reverbParams !== "clear") ||
+                (this.chorusParams && this.chorusParams !== "clear") ||
+                (this.delayParams && this.delayParams !== "clear") ||
+                (this.insertionParams && this.insertionParams !== "clear") ||
+                // User drum as well
+                this.userDrumSetParams?.size ||
+                // Add only when we have changes, removing them does not warrant the need for a gs reset.
                 [...this.channelChanges.values()].some(
                     (c) => c.patch && c.patch !== "clear"
                 ))
@@ -1506,8 +1562,8 @@ export class MIDIEditor {
                 index,
                 MIDIUtils.reset(0, targetSystem)
             );
-            this.resetTrack = 0;
-            this.resetIndex = index;
+            this.resetPosition.tr = 0;
+            this.resetPosition.ev = index;
             this.system = targetSystem;
             SpessaLog.info(
                 `%c${targetSystem} reset on not detected. Adding it.`,
@@ -1517,8 +1573,8 @@ export class MIDIEditor {
 
         // Insert right after the last reset, so the setups survive all resets.
         const targetTicks = Math.max(0, this.midi.firstNoteOn, this.resetTicks);
-        const targetTrack = this.midi.tracks[this.resetTrack];
-        const targetIndex = this.resetIndex + 1;
+        const targetTrack = this.midi.tracks[this.resetPosition.tr];
+        const targetIndex = this.resetPosition.ev + 1;
 
         /*
         ---
@@ -1527,7 +1583,7 @@ export class MIDIEditor {
         ---
          */
         SpessaLog.info(
-            `%cInserting after reset detected on track %c${this.resetTrack}%c on index %c${targetIndex}%c!`,
+            `%cInserting after reset detected on track %c${this.resetPosition.tr}%c on index %c${targetIndex}%c!`,
             ConsoleColors.recognized,
             ConsoleColors.value,
             ConsoleColors.recognized,
@@ -1541,7 +1597,7 @@ export class MIDIEditor {
         ) as (keyof GlobalMIDIParameter)[]) {
             if (param === "system") continue;
             const value = this.midiParams?.[param];
-            if (!value || value === "clear") continue;
+            if (value === undefined || value === "clear") continue;
             targetTrack.addEvents(
                 targetIndex,
                 ...MIDIUtils.setGlobalMIDIParameter(
