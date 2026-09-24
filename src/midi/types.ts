@@ -10,7 +10,7 @@ export type {
     ChannelModification,
     ClearableParameter,
     UserDrumModification
-} from "./midi_tools/modify_midi";
+} from "./midi_tools/midi_editor";
 
 /**
  * RMIDInfoData type represents metadata for an RMIDI file.

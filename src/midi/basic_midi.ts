@@ -19,7 +19,7 @@ import { MIDIControllers, MIDIMessageTypes } from "./enums";
 import { MIDIMessage } from "./midi_message";
 import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
-import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/modify_midi";
+import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/midi_editor";
 import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
 import { MIDITrack } from "./midi_track";
 import { parseSMFInternal } from "./read/midi";

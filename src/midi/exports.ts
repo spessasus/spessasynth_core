@@ -11,7 +11,7 @@ export {
 
 export { MIDIMessage } from "./midi_message";
 export { BasicMIDI } from "./basic_midi";
-export type { ModifyMIDIOptions } from "./midi_tools/modify_midi";
+export type { ModifyMIDIOptions } from "./midi_tools/midi_editor";
 export * from "./midi_tools/midi_builder";
 export { MIDITrack } from "./midi_track";
 export * from "./midi_tools/midi_utils";
