@@ -608,7 +608,7 @@ export class MIDIUtils {
         value: ChannelMIDIParameter[P]
     ): MIDIMessage[] {
         channel %= 16;
-        const gsChannel = MIDIUtils.channelToSyx(channel);
+        const gsChannel = MIDIUtils.channelToGSPart(channel);
         switch (parameter) {
             case "pressure": {
                 return [
@@ -1002,7 +1002,7 @@ export class MIDIUtils {
      * @param part The part number.
      * @returns The MIDI Channel number.
      */
-    public static syxToChannel(part: number) {
+    public static gsPartToChannel(part: number) {
         return [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15][
             part % 16
         ];
@@ -1013,7 +1013,7 @@ export class MIDIUtils {
      * @param channel The MIDI channel number.
      * @returns The GS part number.
      */
-    public static channelToSyx(channel: number) {
+    public static channelToGSPart(channel: number) {
         return [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15][
             channel % 16
         ];
@@ -2623,7 +2623,7 @@ export class MIDIUtils {
             // Patch part parameter
             case 1: {
                 const channel =
-                    MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                    MIDIUtils.gsPartToChannel(a2 & 0x0f) + channelOffset;
                 switch (a3) {
                     default: {
                         return [OTHER];
@@ -2927,7 +2927,7 @@ export class MIDIUtils {
             // Patch Part Parameters (Controllers)
             case 2: {
                 const channel =
-                    MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                    MIDIUtils.gsPartToChannel(a2 & 0x0f) + channelOffset;
                 switch (a3) {
                     case 0x04: {
                         // LFO1 Pitch depth
@@ -2968,7 +2968,7 @@ export class MIDIUtils {
             // Patch Parameter Tone Map
             case 4: {
                 const channel =
-                    MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                    MIDIUtils.gsPartToChannel(a2 & 0x0f) + channelOffset;
                 switch (a3) {
                     default: {
                         return [OTHER];

@@ -705,7 +705,8 @@ export function rolandSystemExclusive(
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
                         const channel =
-                            MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
+                            channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
@@ -1029,7 +1030,8 @@ export function rolandSystemExclusive(
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
                         const channel =
-                            MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
+                            channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
                         switch (a3 & 0xf0) {
@@ -1159,7 +1161,8 @@ export function rolandSystemExclusive(
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
                         const channel =
-                            MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
+                            channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
 

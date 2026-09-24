@@ -32,7 +32,7 @@ class EFXTest {
         // EFX to channel
         this.builder.gs(
             0x40,
-            0x40 | MIDIUtilities.channelToSyx(channel),
+            0x40 | MIDIUtilities.channelToGSPart(channel),
             0x22,
             [1]
         );
