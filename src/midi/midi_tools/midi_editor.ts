@@ -507,34 +507,46 @@ export class MIDIEditor {
         this.midi.iterate(this.handleEvent.bind(this));
 
         // Now the global setup
-        // Replace the collected meaningful GM resets with GS, in place.
-        const replacedEvents = new Set<MIDIMessage>();
-        for (const gmReset of this.gmResets) {
-            const events = this.midi.tracks[gmReset.track].events;
-            const index = events.indexOf(gmReset.event);
-            if (index === -1) {
-                continue;
+        if (this.midiParams?.system === "gm") {
+            // Explicit GM lock: meaningful GM resets stay GM,
+            // But setups still go after them.
+            for (const gmReset of this.gmResets) {
+                this.meaningfulResets.push({
+                    event: gmReset.event,
+                    track: gmReset.track,
+                    system: "gm"
+                });
             }
-            SpessaLog.info(
-                "%cReplacing meaningful GM reset with GS!",
-                ConsoleColors.info
-            );
-            const replaced = MIDIUtils.reset(gmReset.event.ticks, "gs");
-            events[index] = replaced;
-            replacedEvents.add(gmReset.event);
-            // All GM resets here are meaningful
-            this.meaningfulResets.push({
-                event: replaced,
-                track: gmReset.track,
-                system: "gs"
-            });
-        }
-        // If the last reset was a replaced GM, then we are now in GS.
-        if (
-            this.lastReset !== undefined &&
-            replacedEvents.has(this.lastReset)
-        ) {
-            this.system = "gs";
+        } else {
+            // Replace the collected meaningful GM resets with GS, in place.
+            const replacedEvents = new Set<MIDIMessage>();
+            for (const gmReset of this.gmResets) {
+                const events = this.midi.tracks[gmReset.track].events;
+                const index = events.indexOf(gmReset.event);
+                if (index === -1) {
+                    continue;
+                }
+                SpessaLog.info(
+                    "%cReplacing meaningful GM reset with GS!",
+                    ConsoleColors.info
+                );
+                const replaced = MIDIUtils.reset(gmReset.event.ticks, "gs");
+                events[index] = replaced;
+                replacedEvents.add(gmReset.event);
+                // All GM resets here are meaningful
+                this.meaningfulResets.push({
+                    event: replaced,
+                    track: gmReset.track,
+                    system: "gs"
+                });
+            }
+            // If the last reset was a replaced GM, then we are now in GS.
+            if (
+                this.lastReset !== undefined &&
+                replacedEvents.has(this.lastReset)
+            ) {
+                this.system = "gs";
+            }
         }
 
         // Check for a reset and insert one, only if we have setups to apply after it.
@@ -581,6 +593,35 @@ export class MIDIEditor {
                 `%c${targetSystem} reset not detected. Adding it.`,
                 ConsoleColors.info
             );
+        }
+
+        // Cleared system: every reset was deleted,
+        // So there is nothing to add the setup to.
+        // Insert the locked setup once on the first track instead.
+        if (this.midiParams?.system === "clear") {
+            const targetTicks = Math.max(0, this.midi.firstNoteOn);
+            const output = this.generateSetup(targetTicks, this.system);
+            if (output.length > 0) {
+                let index = 0;
+                const firstTrack = this.midi.tracks[0];
+                // On the first message that is not a meta message.
+                while (
+                    index < firstTrack.events.length &&
+                    firstTrack.events[index].statusByte <
+                        MIDIMessageTypes.noteOff
+                ) {
+                    index++;
+                }
+                SpessaLog.info(
+                    `%cInserting setup without a reset on track %c0%c on index %c${index}%c!`,
+                    ConsoleColors.recognized,
+                    ConsoleColors.value,
+                    ConsoleColors.recognized,
+                    ConsoleColors.value,
+                    ConsoleColors.recognized
+                );
+                firstTrack.addEvents(index, ...output);
+            }
         }
 
         for (const reset of this.meaningfulResets) {
@@ -1601,7 +1642,7 @@ export class MIDIEditor {
         };
         // A GM reset: if notes follow, it's meaningful
         // And gets pushed to gmResets on the first note
-        // To be replaced with GS in applyResetParams.
+        // To be replaced with GS in apply().
         // Track it here.
         this.isPendingResetGM = system === "gm";
 
