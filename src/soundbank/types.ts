@@ -5,6 +5,12 @@ import type { ModulatorControllerSource } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
 import type { MIDIPatchFull } from "./basic_soundbank/midi_patch";
 
+/**
+ * Represents a channel in an SF2-compatible synthesizer.
+ * Its data is used for computing  {@link Modulator}s.
+ *
+ * @group Sound Banks.Modulators
+ */
 export interface SF2Channel {
     /**
      * All MIDI controller values for modulation.
@@ -37,6 +43,11 @@ export interface SF2Channel {
     };
 }
 
+/**
+ * Represents an SF2 version number.
+ *
+ * @group Sound Banks.Info
+ */
 export interface SF2VersionTag {
     /**
      * The major revision number of the sound bank.
@@ -48,6 +59,11 @@ export interface SF2VersionTag {
     minor: number;
 }
 
+/**
+ * RIFF Four Character Codes found in all sound bank formats.
+ *
+ * @group Utilities.FourCC
+ */
 export type GenericBankInfoFourCC =
     | "INAM"
     | "ICRD"
@@ -57,6 +73,11 @@ export type GenericBankInfoFourCC =
     | "ICMT"
     | "ISFT";
 
+/**
+ * RIFF Four Character Codes found in SF2 INFO chunk.
+ *
+ * @group Utilities.FourCC
+ */
 export type SF2InfoFourCC =
     | GenericBankInfoFourCC
     | "ifil"
@@ -66,6 +87,11 @@ export type SF2InfoFourCC =
     | "DMOD"
     | "LIST";
 
+/**
+ * RIFF Four Character Codes found in the SF2 structure.
+ *
+ * @group Utilities.FourCC
+ */
 export type SF2ChunkFourCC =
     | "pdta"
     | "xdta"
@@ -82,8 +108,18 @@ export type SF2ChunkFourCC =
     | "igen"
     | "shdr";
 
+/**
+ * RIFF Four Character Codes found in the DLS INFO chunk.
+ *
+ * @group Utilities.FourCC
+ */
 export type DLSInfoFourCC = GenericBankInfoFourCC | "ISBJ";
 
+/**
+ * RIFF Four Character Codes found in the DLS structure.
+ *
+ * @group Utilities.FourCC
+ */
 export type DLSChunkFourCC =
     | WAVFourCC
     | "dls "
@@ -113,7 +149,7 @@ export type DLSChunkFourCC =
 /**
  * Metadata object representing information associated with a {@link BasicSoundBank}.
  *
- * @group Sound Banks
+ * @group Sound Banks.Info
  */
 export interface SoundBankInfoData {
     /**
@@ -171,11 +207,23 @@ export interface SoundBankInfoData {
     romVersion?: SF2VersionTag;
 }
 
-export type SoundBankInfoFourCC = keyof SoundBankInfoData;
-
+/**
+ * Parameters for rendering a single voice in the SoundFont2 format.
+ *
+ * @group Sound Banks.Zones
+ */
 export interface VoiceParameters {
+    /**
+     * The summed generators.
+     */
     generators: Int16Array;
+    /**
+     * The summed modulators.
+     */
     modulators: Modulator[];
+    /**
+     * The sample used for this voice.
+     */
     sample: BasicSample;
 }
 
@@ -199,6 +247,12 @@ export type SampleEncodingFunction = (
     sampleRate: number
 ) => Promise<Uint8Array>;
 
+/**
+ * An index of the modulator source.
+ * Either an SF2 modulator source or a MIDI controller.
+ *
+ * @group Sound Banks.Modulators
+ */
 export type ModulatorSourceIndex = ModulatorControllerSource | MIDIController;
 
 /**

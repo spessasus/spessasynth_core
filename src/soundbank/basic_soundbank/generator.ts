@@ -42,6 +42,9 @@ export class Generator {
         }
     }
 
+    /**
+     * @internal
+     */
     public write(genData: IndexedByteArray) {
         // Name is deceptive, it works on negatives
         writeWord(genData, this.type);

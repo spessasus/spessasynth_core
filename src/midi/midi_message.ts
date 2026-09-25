@@ -57,7 +57,7 @@ export class MIDIMessage {
     /**
      * Returns a new MIDI Pitch Wheel message.
      * @param ticks The MIDI tick time of this message.
-     * @param channel The channel number of this message (0-16).
+     * @param channel The channel number of this message (0-15).
      * @param value The new 14-bit value (0-16,383), where 8192 is the center (no pitch change).
      */
     public static pitchWheel(ticks: number, channel: number, value: number) {
@@ -71,7 +71,7 @@ export class MIDIMessage {
     /**
      * Returns a new MIDI Channel Pressure message.
      * @param ticks The MIDI tick time of this message.
-     * @param channel The channel number of this message (0-16).
+     * @param channel The channel number of this message (0-15).
      * @param value The pressure (0-127).
      */
     public static channelPressure(
@@ -90,7 +90,7 @@ export class MIDIMessage {
     /**
      * Returns a new MIDI Program Change message.
      * @param ticks The MIDI tick time of this message.
-     * @param channel The channel number of this message (0-16).
+     * @param channel The channel number of this message (0-15).
      * @param program The MIDI program number (0-127).
      */
     public static programChange(
@@ -109,7 +109,7 @@ export class MIDIMessage {
     /**
      * Returns a new MIDI Controller Change message.
      * @param ticks The MIDI tick time of this message.
-     * @param channel The channel number of this message (0-16).
+     * @param channel The channel number of this message (0-15).
      * @param controller The MIDI controller number (0-127).
      * @param value The controller value (0-127).
      */
@@ -144,7 +144,7 @@ export class MIDIMessage {
     /**
      * Returns a new MIDI Registered Parameter message. Sends both data MSB and LSB.
      * @param ticks The MIDI tick time of the events.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param parameter The 14-bit registered parameter number. For example 0 is pitch wheel range.
      * @param value The 14-bit value for this parameter.
      */
@@ -193,7 +193,7 @@ export class MIDIMessage {
     /**
      * Returns a new MIDI Non-Registered Parameter message. Sends both data MSB and LSB.
      * @param ticks The MIDI tick time of the events.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param parameter The 14-bit non-registered parameter number.
      * @param value The 14-bit value for this parameter.
      */

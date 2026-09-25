@@ -5,6 +5,11 @@ import {
 import type { MIDIChannel } from "./midi_channel";
 import { SpessaLog } from "../../../utils/loggin";
 
+/**
+ * Handlers for tuning SF2 generators with NRPN.
+ *
+ * @group Synthesizer.Channel
+ */
 export interface ChannelGenerators {
     /**
      * An array of offsets generators for SF2 NRPN support.
@@ -18,7 +23,7 @@ export interface ChannelGenerators {
 
     /**
      * An array of overrides generators for AWE32 NRPN support.
-     * A value of GENERATOR_OVERRIDE_NO_CHANGE_VALUE (-32,767) means no change;
+     * A value of GENERATOR_OVERRIDE_NO_CHANGE_VALUE (32,767) means no change;
      * other values replace current generators.
      */
     overrides: Int16Array;

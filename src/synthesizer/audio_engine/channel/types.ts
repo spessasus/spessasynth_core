@@ -1,6 +1,12 @@
+/**
+ * Represents the [custom channel vibrato](../../../../docs/extra/midi-implementation.md#custom-vibrato)
+ * of the channel.
+ *
+ * @group Synthesizer.Channel
+ */
 export interface CustomChannelVibrato {
     /**
-     * Vibrato depth, as gain.
+     * Vibrato depth, in cents.
      */
     depth: number;
     /**

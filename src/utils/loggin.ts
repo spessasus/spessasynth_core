@@ -62,7 +62,7 @@ export class SpessaLog {
     }
 
     /**
-     * Equivalent to `console.info`.
+     * Equivalent to `console.info` when `infoEnabled`. Disabled by default
      * @param message
      */
     public static info(...message: unknown[]) {
@@ -70,7 +70,7 @@ export class SpessaLog {
     }
 
     /**
-     * Equivalent to `console.warn`.
+     * Equivalent to `console.warn` when `warnEnabled`.
      * @param message
      */
     public static warn(...message: unknown[]) {
@@ -78,7 +78,7 @@ export class SpessaLog {
     }
 
     /**
-     * Equivalent to `console.group`.
+     * Equivalent to `console.group` when `groupEnabled`.
      * @param message
      */
     public static group(...message: unknown[]) {
@@ -86,7 +86,7 @@ export class SpessaLog {
     }
 
     /**
-     * Equivalent to `console.groupCollapsed`.
+     * Equivalent to `console.groupCollapsed` when `groupEnabled`.
      * @param message
      */
     public static groupCollapsed(...message: unknown[]) {
@@ -94,7 +94,7 @@ export class SpessaLog {
     }
 
     /**
-     * Equivalent to `console.groupEnd`.
+     * Equivalent to `console.groupEnd` when `groupEnabled`.
      */
     public static groupEnd() {
         if (this.groupEnabled) this.logFunctions.groupEnd();
@@ -174,7 +174,7 @@ export class SpessaLog {
     ) {
         if (!this.infoEnabled) return;
         if (unit)
-            SpessaLog.info(
+            this.info(
                 `%c${what}%c is now set to %c${value}%c ${unit}.`,
                 ConsoleColors.recognized,
                 ConsoleColors.info,
@@ -182,7 +182,7 @@ export class SpessaLog {
                 ConsoleColors.info
             );
         else
-            SpessaLog.info(
+            this.info(
                 `%c${what}%c is now set to %c${value}%c.`,
                 ConsoleColors.recognized,
                 ConsoleColors.info,

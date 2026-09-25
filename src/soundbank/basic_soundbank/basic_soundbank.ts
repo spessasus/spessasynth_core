@@ -93,12 +93,12 @@ export class BasicSoundBank {
     public presets: BasicPreset[] = [];
 
     /**
-     * An array of all instruments in the bank.
+     * An array of all samples in the bank.
      */
     public samples: BasicSample[] = [];
 
     /**
-     * An array of all samples in the bank.
+     * An array of all instruments in the bank.
      */
     public instruments: BasicInstrument[] = [];
 

@@ -11,6 +11,7 @@ import { readVariableLengthQuantity } from "./byte_functions/variable_length_qua
 import { ConsoleColors } from "./other";
 
 // You shouldn't use these...
+// Note: intentionally no JSDoc so these don't show in the generated docs
 // noinspection JSUnusedGlobalSymbols
 export const SpessaSynthCoreUtils = {
     ConsoleColors,
@@ -56,6 +57,11 @@ export interface WaveWriteOptions {
     metadata: Partial<WaveMetadata>;
 }
 
+/**
+ * Metadata to write into a WAVE file.
+ *
+ * @group Utilities
+ */
 export interface WaveMetadata {
     /**
      * The song's title.

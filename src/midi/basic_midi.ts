@@ -538,7 +538,7 @@ export class BasicMIDI {
      *  const url = URL.createObjectURL(blob);
      *  const a = document.createElement("a");
      *  a.href = url;
-     *  a.download = midi.name + ".mid";
+     *  a.download = midi.getName() + ".mid";
      *  a.click();
         ```
      * 
@@ -598,7 +598,7 @@ export class BasicMIDI {
      *     );
      *
      *     // trim the soundfont
-     *     soundBank.trim(midi);
+     *     soundBank.trim(midi.getUsedProgramsAndKeys(soundBank));
      *     // write out with compression to save space (0.5 is medium quality)
      *     await soundBank.setSampleFormat({
      *         format: "compressed",
@@ -623,7 +623,7 @@ export class BasicMIDI {
      *     const url = URL.createObjectURL(blob);
      *     const a = document.createElement("a");
      *     a.href = url;
-     *     a.download = midi.name + ".rmi";
+     *     a.download = midi.getName() + ".rmi";
      *     a.click();
      * };
      * ```
@@ -663,6 +663,7 @@ export class BasicMIDI {
      * > **Warning**
      * >
      * > `fineTune` parameter will be truncated to range -100 to 99 cents.
+     * > Overflow will be applied to the `keyShift` parameter.
      *
      * > **Note**
      * >
@@ -686,7 +687,7 @@ export class BasicMIDI {
      * > The RMIDI encoding overrides the provided encoding.
      *
      * @param encoding The encoding to use if the MIDI uses an extended code page.
-     * @returns Rhe name of the song or the file name if it's not specified. Otherwise, empty.
+     * @returns The name of the song or the file name if it's not specified. Empty otherwise.
      */
     public getName(encoding = "Shift_JIS") {
         let rawName = "";
@@ -810,7 +811,7 @@ export class BasicMIDI {
      * > if you are not editing the MIDI file in your loop.
      * > It is usually a faster solution and allows custom loops.
      *
-     *     If the track data is being edited, remember to call {@link BasicMIDI.timeline} it after editing!
+     *     If the track data is being edited, remember to call {@link BasicMIDI.flush} it after editing!
      *
      * @param callback The callback function to process each event.
      */

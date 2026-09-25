@@ -60,7 +60,7 @@ export interface RMIDInfoData {
 
     /**
      * The copyright string.
-     * If not provided, `midi.getExtraMetadata()` is used.
+     * If not provided, `Created with SpessaSynth` is used.
      */
     copyright: string;
 
@@ -128,6 +128,11 @@ export interface MIDILoop {
 }
 
 /**
+ *
+ * The MIDI file track format.
+ * Format 0 allows only one track while format 1 allows more than one.
+ * Format 2 is very rare and should not be used.
+ *
  * @group MIDI.Sequence
  */
 export type MIDIFormat = 0 | 1 | 2;
@@ -190,6 +195,12 @@ export interface RMIDIWriteOptions {
      */
     soundBank?: BasicSoundBank;
 }
+
+/**
+ * RIFF Four Character Codes found in the RMIDI INFO chunk.
+ *
+ * @group Utilities.FourCC
+ */
 export type RMIDInfoFourCC =
     // Name
     | "INAM"

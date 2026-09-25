@@ -7,7 +7,6 @@ import {
     MIDIPatchTools
 } from "../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../utils/midi_hacks";
-import { SpessaLog } from "../../utils/loggin";
 import type { SoundBankManagerListEntry, SynthesizerPatch } from "../types";
 import { UserDrumSet } from "./user_drum_set";
 import { GS_USER_DRUM_1, GS_USER_DRUM_2 } from "./synth_constants";
@@ -121,12 +120,9 @@ export class SoundBankManager {
     /**
      * This method removes a sound bank with a given ID from the sound bank list.
      * @param id The ID of the sound bank to delete.
+     * @throws Error An error if there's no sound bank with the given ID.
      */
     public deleteSoundBank(id: string) {
-        if (this.soundBankList.length === 0) {
-            SpessaLog.warn("1 soundbank left. Aborting!");
-            return;
-        }
         const index = this.soundBankList.findIndex((s) => s.id === id);
         if (index === -1) {
             throw new Error(`No sound bank with id "${id}"`);
@@ -163,7 +159,7 @@ export class SoundBankManager {
      * Gets a given preset from the sound bank stack.
      * @param patch The MIDI patch to search for.
      * @param system The MIDI system to select the preset for.
-     * @returns An object containing the preset and its bank offset.
+     * @returns The preset with the added bank offset or undefined if no sound banks are present.
      * @internal
      */
     public getPreset(

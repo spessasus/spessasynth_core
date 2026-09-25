@@ -55,9 +55,10 @@ export interface ChannelMIDIParameter {
     /**
      * The channel's receiving number (0-based index).
      * This allows triggering multiple parts (channels) with a single note message.
+     *
      * > **Note**
      * >
-     * > The `DEFAULT_CHANNEL_MIDI_PARAMETERS` reports the default as 0, but it is initialized with the corresponding channel's number.
+     * > {@link DEFAULT_CHANNEL_MIDI_PARAMETERS} reports the default as 0, but it is initialized with the corresponding channel's number.
      */
     rxChannel: number;
 
@@ -131,11 +132,15 @@ export interface ChannelMIDIParameter {
      * Only used for selecting the correct channel when setting drum parameters through sysEx,
      * as those don't specify the channel, but the drum number.
      *
-     * For GS, default is 1 for channel 9 and 0 for all others.
+     * For `GS`, default is `1` for channel `9` and `0` for all others.
      *
-     * For XG, default is 2 for channel 9 and 0 for all others.
+     * For `XG`, default is `2` for channel `9` and `0` for all others.
      *
      * Setting this to any value other than 0 turns the channel into a drum channel.
+     *
+     * > **Note**
+     * >
+     * > {@link DEFAULT_CHANNEL_MIDI_PARAMETERS} reports the default as 0, but each channel is initialized depending on the channel number. See above for details.
      */
     drumMap: number;
 
@@ -180,6 +185,12 @@ export interface ChannelMIDIParameter {
 
 /**
  * The default values for {@link ChannelMIDIParameter}s.
+ *
+ * > **Warning**
+ * >
+ * > {@link ChannelMIDIParameter.rxChannel `rxChannel`} and {@link ChannelMIDIParameter.drumMap `drumMap`}
+ * > have defaults which depend on the channel number.
+ * > Please check their descriptions for more details.
  *
  * @group Synthesizer.Parameters
  */

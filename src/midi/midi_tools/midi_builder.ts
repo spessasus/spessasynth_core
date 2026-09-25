@@ -20,7 +20,7 @@ export interface MIDIBuilderOptions {
     /**
      * The MIDI file's tick precision (how many ticks fit in a quarter note).
      * Defaults to 480.
-     * See {@BasicMIDI.timeDivision}
+     * See {@link BasicMIDI.timeDivision}
      */
     timeDivision: number;
     /**
@@ -175,9 +175,9 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Note On event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param midiNote The MIDI note number (0-127).
-     * @param velocity The velocity of the note (0-127). THe higher, the louder the note is. Velocity of 0 is interpreted as note-off.
+     * @param velocity The velocity of the note (0-127). The higher, the louder the note is. Velocity of 0 is interpreted as note-off.
      */
     public noteOn(
         ticks: number,
@@ -202,7 +202,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Note Off event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param midiNote The MIDI note number (0-127).
      * @param velocity The optional velocity of the release.
      * This parameter is not recognized by {@link SpessaSynthProcessor} and can safely be left at default.
@@ -229,7 +229,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Program Change event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param programNumber The MIDI program number to use (0-127).
      */
     public programChange(
@@ -253,7 +253,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Controller Change event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param controller The MIDI controller number to use (0-127).
      * @param value The new MIDI controller value (0-127).
      */
@@ -279,7 +279,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Pitch Wheel event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param pitch The new 14-bit value (0-16,383), where 8192 is the center (no pitch change).
      */
     public pitchWheel(
@@ -302,7 +302,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Poly Pressure event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param midiNote The MIDI note number to apply the pressure to (0-127).
      * @param pressure The pressure value (0-127).
      */
@@ -326,7 +326,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Adds a new Channel Pressure event.
      * @param ticks The MIDI tick time of this event.
      * @param track The MIDI track number to put this event on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param pressure The pressure value (0-127)
      */
     public channelPressure(
@@ -364,7 +364,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Selects a new Registered Parameter Number.
      * @param ticks The MIDI tick time of the events.
      * @param track The MIDI track number to put these events on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param parameter The 14-bit registered parameter number. For example 0 is pitch wheel range.
      * @param value The 14-bit value for this parameter.
      */
@@ -410,7 +410,7 @@ export class MIDIBuilder extends BasicMIDI {
      * Selects a new Non-Registered Parameter Number.
      * @param ticks The MIDI tick time of the events.
      * @param track The MIDI track number to put these events on.
-     * @param channel The channel to use (0-16).
+     * @param channel The channel to use (0-15).
      * @param parameter The 14-bit non-registered parameter number.
      * @param value The 14-bit value for this parameter.
      */

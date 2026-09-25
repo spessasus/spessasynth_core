@@ -172,9 +172,6 @@ export interface GlobalSystemParameter {
      * The interpolation type used for sample playback.
      * Interpolation defines how sample points between the sample data are calculated.
      * This has high cost on performance but can improve the quality.
-     *
-     *
-     * Overrides the global parameter if set.
      */
     interpolationType: InterpolationType;
 

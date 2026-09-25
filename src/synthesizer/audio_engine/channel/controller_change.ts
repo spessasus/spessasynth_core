@@ -17,7 +17,6 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
  * midiControllers table and handling special cases like bank select,
  * data entry, and sustain pedal. It also computes modulators for all voices
  * in the channel based on the controller change.
- * to allow changes.
  */
 export function controllerChange(
     this: MIDIChannel,

@@ -17,6 +17,11 @@ import {
 import type { Voice } from "../../synthesizer/audio_engine/voice/voice";
 import { MIDIControllers } from "../../midi/enums";
 
+/**
+ * Represents a single {@link Modulator} source.
+ *
+ * @group Sound Banks.Modulators
+ */
 export class ModulatorSource {
     /**
      * If this field is set to false, the controller should be mapped with a minimum value of 0 and a maximum value of 1. This is also

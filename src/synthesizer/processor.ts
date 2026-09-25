@@ -225,7 +225,7 @@ export class SpessaSynthProcessor {
      * @param syx The system exclusive message as an array of bytes.
      * @param channelOffset The channel offset for the message as they usually can only address the first 16 channels.
      * For example, to send a system exclusive on channel 16,
-     * send a system exclusive for channe
+     * send a system exclusive for channel 0 and set an offset of 16.
      */
     public systemExclusive(syx: SysExAcceptedArray, channelOffset?: number) {
         // Patched with core in the constructor.
@@ -235,7 +235,8 @@ export class SpessaSynthProcessor {
 
     /**
      * Executes a MIDI controller change message on the specified channel.
-     * @param channel The MIDI channel to change the controller on.  It usually ranges from 0 to 15, but it depends on the channel count.
+     * @param channel The MIDI channel to change the controller on.
+     * It usually ranges from 0 to 15, but it depends on the channel count.
      * @param controller The MIDI controller number (0-127).
      * Refer to the [MIDI Implementation](../../docs/extra/midi-implementation.md) for the list of controllers
      * supported by default.
@@ -387,7 +388,7 @@ export class SpessaSynthProcessor {
      *
      * > **Tip**
      * >
-     * > `processSplit` has been superseded by process with visualization channels.
+     * > The legacy `processSplit` method has been superseded in 4.4.0 by process with visualization channels.
      * > This approach allows visualization with insertion effects and upcoming EQ.
      *
      * @param left The left output buffer for PCM data.
@@ -581,8 +582,6 @@ export class SpessaSynthProcessor {
      * @param midiNote The MIDI note to use.
      * @param velocity The velocity to use.
      * @returns Output is an array of voices.
-     * @remarks
-     * This is a public method, but it is only intended to be used by the sequencer.
      * @internal
      */
     public getVoicesForPreset(

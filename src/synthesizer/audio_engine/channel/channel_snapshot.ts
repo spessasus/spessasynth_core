@@ -19,25 +19,88 @@ import type { CustomChannelVibrato } from "./types";
  * @group Synthesizer.Snapshots
  */
 export interface ChannelSnapshot {
+    /**
+     * The currently selected MIDI patch of the channel.
+     */
     patch?: MIDIPatchFull;
+    /**
+     * Indicates the MIDI system when the preset was locked.
+     */
     lockedSystem: MIDISystem;
 
+    /**
+     * An array of MIDI controllers for the channel.
+     * This array is used to store the state of various MIDI controllers
+     * such as volume, pan, modulation, etc.
+     * @remarks
+     * A bit of an explanation:
+     * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
+     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
+     * Data entries do store it!
+     */
     midiControllers: Int16Array;
+    /**
+     * An array indicating if a controller, at the equivalent index in the {@link MIDIChannel.midiControllers `midiControllers`} array, is locked
+     * (i.e., not allowed changing).
+     * A locked controller cannot be modified.
+     */
     lockedControllers: boolean[];
+    /**
+     * An array for the MIDI 2.0 Per-note pitch wheels.
+     */
     pitchWheels: Int16Array;
+    /**
+     * Used for handling SF2/AWE32 NRPN generator adjustments.
+     */
     generators: ChannelGenerators;
 
+    /**
+     * The Channel MIDI Parameters of this channel.
+     * These are only editable via MIDI messages.
+     */
     midiParameters: ChannelMIDIParameter;
+    /**
+     * An object indicating if a Channel MIDI parameter, at the equivalent key, is locked
+     * (i.e., not allowed changing).
+     * A locked parameter cannot be modified.
+     */
     lockedMIDIParameters: Record<keyof ChannelMIDIParameter, boolean>;
+    /**
+     * The Channel System Parameters of this channel.
+     * These are only editable via the API.
+     */
     systemParameters: ChannelSystemParameter;
+    /**
+     * An array of octave tuning values for each note on the channel.
+     * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
+     * Note: Repeated every 12 notes.
+     */
     octaveTuning: Int8Array;
 
+    /**
+     * Per-note pitch wheel mode uses the pitchWheels table as source
+     * instead of the regular entry in the midiControllers table.
+     */
     perNotePitch: boolean;
 
+    /**
+     * The vibrato settings for the channel.
+     */
     customVibrato: CustomChannelVibrato;
 
+    /**
+     * Parameters for each drum instrument.
+     */
     drumParams: DrumParameter[];
+
+    /**
+     * Indicates whether this channel is a drum channel.
+     */
     drumChannel: boolean;
+
+    /**
+     * The channel's number (0-based index).
+     */
     channel: number;
 }
 

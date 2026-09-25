@@ -68,8 +68,10 @@ export interface MIDIPatchFull extends MIDIPatch {
     /**
      * Indicates if this patch is a drum patch.
      * This is the recommended way of determining if this is a drum preset.
-     * If `isGMGSDrum` is true, then this is a GM/GS drum preset.
-     * If `isGMGSDrum` is false, then this is a GM2/XG drum preset.
+     *
+     * If this value is true:
+     * - If `isGMGSDrum` is true, then this is a GM/GS drum preset.
+     * - If `isGMGSDrum` is false, then this is a GM2/XG drum preset.
      *
      * > **Tip**
      * >
@@ -125,7 +127,7 @@ export class MIDIPatchTools {
      * Converts a given {@link MIDIPatchFull} to string.
      * The format is:
      * - `<MIDIPatch string> D <name>` for `isDrum` set to `true`.
-     * - `<MIDIPatch string> M <name>` for `isDrum` set to `true`.
+     * - `<MIDIPatch string> M <name>` for `isDrum` set to `false`.
      */
     public static toFullMIDIString(patch: MIDIPatchFull) {
         return `${this.toMIDIString(patch)} ${patch.isDrum ? "D" : "M"} ${patch.name}`;
@@ -205,6 +207,7 @@ export class MIDIPatchTools {
      * @param patch The {@link MIDIPatch} to select.
      * @param system The MIDI system to select for.
      * @returns The selected patch.
+     * @throws Error An error if the array is empty,
      */
     public static selectPatch<T extends MIDIPatchFull>(
         patches: T[],

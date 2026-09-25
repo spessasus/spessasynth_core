@@ -141,7 +141,7 @@ export class BasicPreset implements MIDIPatchFull {
     }
 
     /**
-     * Deletes an instrument zone from this preset.
+     * Deletes a preset zone from this preset.
      * @param index The zone's index to delete.
      */
     public deleteZone(index: number) {

@@ -55,7 +55,7 @@ import { SpessaLog } from "../../../utils/loggin";
 /**
  * This class represents a single MIDI channel within a {@link SpessaSynthProcessor}.
  *
- * @group Synthesizer
+ * @group Synthesizer.Channel
  */
 export class MIDIChannel {
     /**
@@ -326,7 +326,10 @@ export class MIDIChannel {
      * @internal
      */
     protected readonly playingNotes = new Array<boolean>(128).fill(false);
-    /** @internal */
+    /**
+     * Used for handling SF2/AWE32 NRPN generator adjustments.
+     * @internal
+     */
     protected readonly generators: ChannelGenerators = {
         offsets: new Int16Array(GENERATORS_AMOUNT),
         offsetsEnabled: false,
@@ -520,6 +523,7 @@ export class MIDIChannel {
     /**
      * Releases a note by its MIDI note number.
      * If the note is in high performance mode and the channel is not a drum channel,
+     * or the drum channel has an rxNoteOff enabled,
      * it kills the note instead of releasing it.
      * @param midiNote The MIDI note number to release (0-127).
      * @internal
@@ -542,25 +546,24 @@ export class MIDIChannel {
     // CC (Continuous Controller)
     /**
      * Handles MIDI controller changes for a channel.
-     * @param controllerNumber The MIDI controller number (0-127).
-     * @param controllerValue The value of the controller (0-127).
+     * @param controller The MIDI controller number (0-127).
+     * @param value The value of the controller (0-127).
      * @param sendEvent If an event should be emitted.
      * @remarks
      * This function processes MIDI controller changes, updating the channel's
      * midiControllers table and handling special cases like bank select,
      * data entry, and sustain pedal. It also computes modulators for all voices
      * in the channel based on the controller change.
-     * to allow changes.
      * @internal
      */
     public controllerChange(
-        controllerNumber: MIDIController,
-        controllerValue: number,
+        controller: MIDIController,
+        value: number,
         sendEvent = true
     ) {
         // Patched with core in the constructor.
-        void controllerNumber;
-        void controllerValue;
+        void controller;
+        void value;
         void sendEvent;
     }
 

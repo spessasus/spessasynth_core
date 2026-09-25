@@ -51,6 +51,11 @@ setResetValue(MIDIControllers.registeredParameterMSB, DEFAULT_RPN);
 setResetValue(MIDIControllers.nonRegisteredParameterLSB, DEFAULT_NRPN);
 setResetValue(MIDIControllers.nonRegisteredParameterMSB, DEFAULT_NRPN);
 
+/**
+ * Default reverb level for each drum instrument.
+ *
+ * @group Synthesizer.Drum Sets
+ */
 export const DEFAULT_DRUM_REVERB = new Int8Array(128).fill(127);
 // Kicks have no reverb
 DEFAULT_DRUM_REVERB[35] = 0;
