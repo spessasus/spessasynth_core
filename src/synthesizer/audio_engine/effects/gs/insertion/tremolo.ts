@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -19,7 +19,7 @@ effect to the sound.
 
 Type: Stereo
  */
-export class TremoloFX implements InsertionProcessor {
+export class TremoloFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

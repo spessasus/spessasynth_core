@@ -16,7 +16,12 @@ const delayTimeSegments = [
 
 const DELAY_GAIN = 1.66;
 
-export class SpessaSynthDelay implements GSDelayProcessor {
+/**
+ * The default GS Delay implementation for {@link SpessaSynthProcessor}.
+ *
+ * @group Synthesizer.Effects
+ */
+export class SpessaSynthGSDelay implements GSDelayProcessor {
     /**
      * Cutoff frequency
      * @private
@@ -57,6 +62,12 @@ export class SpessaSynthDelay implements GSDelayProcessor {
     private gainRight = 0;
     private writeIndex = 0;
 
+    /**
+     * Constructs a new default GS delay processor.
+     * @param sampleRate The sample rate, in Hertz.
+     * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
+     * Attempting to `.process()` more samples than this will result in an error.
+     */
     public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
         this.buffer = new Float32Array(sampleRate);

@@ -4,7 +4,12 @@ import { DelayLine } from "../implementation/delay_line";
 
 const DELAY_GAIN = 1.5;
 
-export class SpessaSynthReverb implements GSReverbProcessor {
+/**
+ * The default GS Reverb implementation for {@link SpessaSynthProcessor}.
+ *
+ * @group Synthesizer.Effects
+ */
+export class SpessaSynthGSReverb implements GSReverbProcessor {
     /**
      * Dattorro reverb processor.
      * @private
@@ -92,6 +97,12 @@ export class SpessaSynthReverb implements GSReverbProcessor {
      */
     private panDelayFeedback = 0;
 
+    /**
+     * Constructs a new default GS reverb processor.
+     * @param sampleRate The sample rate, in Hertz.
+     * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
+     * Attempting to `.process()` more samples than this will result in an error.
+     */
     public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
 

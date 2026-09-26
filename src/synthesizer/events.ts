@@ -198,6 +198,8 @@ export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
  * - {@link GSChorusProcessor}
  * - {@link GSDelayProcessor}
  *
+ * Insertion has a special treatment.
+ *
  * @group Synthesizer.Events
  */
 export type EffectChangeEvent =
@@ -442,6 +444,9 @@ export interface SynthesizerEvent {
      * - {@link GSReverbProcessor}
      * - {@link GSChorusProcessor}
      * - {@link GSDelayProcessor}
+     *
+     *
+     * Insertion has a special treatment.
      *
      */
     effectChange: EffectChangeEvent;

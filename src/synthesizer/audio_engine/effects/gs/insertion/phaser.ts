@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import { InsertionValueConverter } from "./convert";
 import {
     applyShelves,
@@ -29,7 +29,7 @@ const PHASE_START = 0.35;
  *
  * Note: seems to use a triangle LFO for modulation
  */
-export class PhaserFX implements InsertionProcessor {
+export class PhaserFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

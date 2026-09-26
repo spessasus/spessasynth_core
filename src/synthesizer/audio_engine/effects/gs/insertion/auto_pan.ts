@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -21,7 +21,7 @@ const LEVEL_EXP = 2;
 const PAN_SMOOTHING = 0.01;
 
 const DEFAULT_LEVEL = 127;
-export class AutoPanFX implements InsertionProcessor {
+export class AutoPanFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -35,7 +35,7 @@ const FC_SMOOTH = 0.005;
 const DEPTH_MUL = 5;
 const LFO_SMOOTH_FRAC = DEPTH_MUL * 0.5;
 
-export class AutoWahFX implements InsertionProcessor {
+export class AutoWahFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

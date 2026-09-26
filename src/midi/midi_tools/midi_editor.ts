@@ -11,8 +11,8 @@ import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channe
 import type {
     GSChorusParameter,
     GSDelayParameter,
-    GSReverbParameter,
-    InsertionProcessorSnapshot
+    GSInsertionProcessorSnapshot,
+    GSReverbParameter
 } from "../../synthesizer/audio_engine/effects/types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import { BankSelectHacks } from "../../utils/midi_hacks";
@@ -246,9 +246,9 @@ export interface ModifyMIDIOptions {
     /**
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - {@link InsertionProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     * - {@link GSInsertionProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
-    insertionParams?: ClearableParameter<InsertionProcessorSnapshot>;
+    insertionParams?: ClearableParameter<GSInsertionProcessorSnapshot>;
 }
 
 // Internal tracking interface

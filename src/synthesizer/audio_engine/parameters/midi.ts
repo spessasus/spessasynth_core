@@ -24,9 +24,11 @@ import type { GlobalMIDIParameterChangeEvent } from "../../events";
  */
 export interface GlobalMIDIParameter {
     /**
-     * The currently enabled MIDI system used by the synthesizer
-     * for bank selects and system exclusives.
-     * Can be changed with a System Exclusive reset message.
+     * The currently enabled MIDI system used by the synthesizer.
+     * It changes how the synthesizer behaves,
+     * including things such as effects or bank selection.
+     *
+     * It can be changed with a System Exclusive reset message.
      * (GM, GM2, GS, XG)
      */
     system: MIDISystem;

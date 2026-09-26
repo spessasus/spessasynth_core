@@ -128,13 +128,13 @@ export function applySnapshotInternal(
     midi.modify({
         channels,
         reverbParams: snapshot.systemParameters.reverbLock
-            ? snapshot.reverbProcessor
+            ? snapshot.gsReverbProcessor
             : undefined,
         chorusParams: snapshot.systemParameters.chorusLock
-            ? snapshot.chorusProcessor
+            ? snapshot.gsChorusProcessor
             : undefined,
         delayParams: snapshot.systemParameters.delayLock
-            ? snapshot.delayProcessor
+            ? snapshot.gsDelayProcessor
             : undefined,
         insertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor

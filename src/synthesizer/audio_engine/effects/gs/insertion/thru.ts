@@ -1,6 +1,6 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 
-export class ThruFX implements InsertionProcessor {
+export class ThruFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

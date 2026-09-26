@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
 import { PAN_TABLE_LEFT, PAN_TABLE_RIGHT } from "./utils";
@@ -12,7 +12,7 @@ Type: mono processors, stereo mix
 
 const DEFAULT_LEVEL = 127;
 
-export class PhAutoWahFx implements InsertionProcessor {
+export class PhAutoWahFx implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

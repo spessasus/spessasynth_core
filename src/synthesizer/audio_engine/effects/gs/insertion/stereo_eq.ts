@@ -1,4 +1,4 @@
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import { InsertionValueConverter } from "./convert";
 import {
     type BiquadCoeffs,
@@ -13,7 +13,7 @@ import {
  * This is a four-band stereo equalizer (low, mid x 2, high).
  * Type: Stereo
  */
-export class StereoEQFX implements InsertionProcessor {
+export class StereoEQFX implements GSInsertionProcessor {
     public readonly type = 0x01_00;
     public sendLevelToReverb = 0;
     public sendLevelToChorus = 0;

@@ -2,7 +2,12 @@ import type { GSChorusParameter, GSChorusProcessor } from "../types";
 
 const CHORUS_GAIN = 1.3;
 
-export class SpessaSynthChorus implements GSChorusProcessor {
+/**
+ * The default GS Chorus implementation for {@link SpessaSynthProcessor}.
+ *
+ * @group Synthesizer.Effects
+ */
+export class SpessaSynthGSChorus implements GSChorusProcessor {
     /**
      * Cutoff frequency
      * @private
@@ -31,6 +36,12 @@ export class SpessaSynthChorus implements GSChorusProcessor {
     private rateInc = 0;
     private feedbackGain = 0;
 
+    /**
+     * Constructs a new default GS chorus processor.
+     * @param sampleRate The sample rate, in Hertz.
+     * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
+     * Attempting to `.process()` more samples than this will result in an error.
+     */
     public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;
         this.leftDelayBuffer = new Float32Array(sampleRate);

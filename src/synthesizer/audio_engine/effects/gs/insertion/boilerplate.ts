@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { InsertionProcessor } from "../../types";
+import type { GSInsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -21,7 +21,7 @@ It already has EQ and level implemented.
 
 //@ts-expect-error Boilerplate class
 // noinspection JSUnusedLocalSymbols
-class BoilerplateFX implements InsertionProcessor {
+class BoilerplateFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

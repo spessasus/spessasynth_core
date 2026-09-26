@@ -183,30 +183,6 @@ export class SpessaSynthProcessor {
         return this.synthCore.currentTime;
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Synthesizer's reverb processor.
-     */
-    public get reverbProcessor() {
-        return this.synthCore.reverbProcessor;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Synthesizer's chorus processor.
-     */
-    public get chorusProcessor() {
-        return this.synthCore.chorusProcessor;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Synthesizer's delay processor.
-     */
-    public get delayProcessor() {
-        return this.synthCore.delayProcessor;
-    }
-
     /**
      * The sound bank manager, which manages all sound banks and presets.
      */

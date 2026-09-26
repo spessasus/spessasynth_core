@@ -78,19 +78,19 @@ export interface SynthProcessorOptions {
     initialTime: number;
 
     /**
-     * Optional custom reverb processor for the synthesizer. Leave undefined to use the default.
+     * Optional custom GS reverb processor for the synthesizer. Leave undefined to use {@link SpessaSynthGSReverb}.
      */
-    reverbProcessor?: GSReverbProcessor;
+    gsReverbProcessor?: GSReverbProcessor;
 
     /**
-     * Optional custom chorus processor for the synthesizer. Leave undefined to use the default.
+     * Optional custom GS chorus processor for the synthesizer. Leave undefined to use {@link SpessaSynthGSChorus}.
      */
-    chorusProcessor?: GSChorusProcessor;
+    gsChorusProcessor?: GSChorusProcessor;
 
     /**
-     * Optional custom delay processor for the synthesizer. Leave undefined to use the default.
+     * Optional custom GS delay processor for the synthesizer. Leave undefined to use {@link SpessaSynthGSDelay}.
      */
-    delayProcessor?: GSDelayProcessor;
+    gsDelayProcessor?: GSDelayProcessor;
 }
 
 export {

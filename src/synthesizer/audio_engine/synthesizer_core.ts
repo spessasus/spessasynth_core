@@ -12,9 +12,9 @@ import { ConsoleColors } from "../../utils/other";
 import type { GSChorusProcessor, GSReverbProcessor } from "./effects/types";
 import {
     type GSDelayProcessor,
-    type InsertionProcessor,
-    type InsertionProcessorConstructor,
-    type InsertionProcessorSnapshot
+    type GSInsertionProcessor,
+    type GSInsertionProcessorConstructor,
+    type GSInsertionProcessorSnapshot
 } from "./effects/types";
 import type {
     SynthesizerEvent,
@@ -45,11 +45,11 @@ import type {
     UserDrumSetParameter
 } from "../../midi/types";
 import type { MIDISystem } from "../../soundbank/types";
-import { SpessaSynthChorus } from "./effects/gs/chorus";
-import { SpessaSynthDelay } from "./effects/gs/delay";
+import { SpessaSynthGSChorus } from "./effects/gs/chorus";
+import { SpessaSynthGSDelay } from "./effects/gs/delay";
 import { ThruFX } from "./effects/gs/insertion/thru";
-import { INSERTION_EFFECT_LIST } from "./effects/gs/insertion_list";
-import { SpessaSynthReverb } from "./effects/gs/reverb";
+import { GS_INSERTION_EFFECT_LIST } from "./effects/gs/insertion_list";
+import { SpessaSynthGSReverb } from "./effects/gs/reverb";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
@@ -215,21 +215,27 @@ export class SynthesizerCore {
     public readonly systemExclusive: typeof systemExclusiveInternal =
         systemExclusiveInternal.bind(this);
     /**
-     * The synthesizer's reverb processor.
-     */
-    public readonly reverbProcessor: GSReverbProcessor;
-    /**
-     * The synthesizer's chorus processor.
-     */
-    public readonly chorusProcessor: GSChorusProcessor;
-    /**
-     * The synthesizer's delay processor.
-     */
-    public readonly delayProcessor: GSDelayProcessor;
-    /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      */
     public insertionActive = false;
+    /**
+     * The synthesizer's GS reverb processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     */
+    protected readonly gsReverbProcessor: GSReverbProcessor;
+    /**
+     * The synthesizer's GS chorus processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     */
+    protected readonly gsChorusProcessor: GSChorusProcessor;
+    /**
+     * The synthesizer's GS delay processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     */
+    protected readonly gsDelayProcessor: GSDelayProcessor;
     /**
      * A sysEx may set a "Part" (channel) to receive on a different channel number.
      * This slows down the access, so this toggle tracks if it's enabled or not.
@@ -249,12 +255,15 @@ export class SynthesizerCore {
     /**
      * The current insertion processor.
      */
-    protected insertionProcessor: InsertionProcessor = this.insertionFallback;
+    protected insertionProcessor: GSInsertionProcessor = this.insertionFallback;
     /**
      * All the insertion effects available to the processor.
      * The key is the EFX type stored as MSB << 8 | LSB
      */
-    protected readonly insertionEffects = new Map<number, InsertionProcessor>();
+    protected readonly insertionEffects = new Map<
+        number,
+        GSInsertionProcessor
+    >();
     /**
      * For F5 system exclusive.
      */
@@ -318,14 +327,15 @@ export class SynthesizerCore {
 
         const bufSize = this.maxBufferSize;
         // Initialize effects
-        this.reverbProcessor =
-            options.reverbProcessor ??
-            new SpessaSynthReverb(sampleRate, bufSize);
-        this.chorusProcessor =
-            options.chorusProcessor ??
-            new SpessaSynthChorus(sampleRate, bufSize);
-        this.delayProcessor =
-            options.delayProcessor ?? new SpessaSynthDelay(sampleRate, bufSize);
+        this.gsReverbProcessor =
+            options.gsReverbProcessor ??
+            new SpessaSynthGSReverb(sampleRate, bufSize);
+        this.gsChorusProcessor =
+            options.gsChorusProcessor ??
+            new SpessaSynthGSChorus(sampleRate, bufSize);
+        this.gsDelayProcessor =
+            options.gsDelayProcessor ??
+            new SpessaSynthGSDelay(sampleRate, bufSize);
 
         // Initialize buffers
         this.voiceBuffer = new Float32Array(bufSize);
@@ -336,7 +346,7 @@ export class SynthesizerCore {
         this.delayInput = new Float32Array(bufSize);
 
         // Register insertion
-        for (const insertion of INSERTION_EFFECT_LIST)
+        for (const insertion of GS_INSERTION_EFFECT_LIST)
             this.registerInsertionProcessor(insertion);
         this.resetInsertionParams(); // Initial setup
 
@@ -795,7 +805,7 @@ export class SynthesizerCore {
             }
 
             // Chorus first, it feeds to reverb and delay
-            this.chorusProcessor.process(
+            this.gsChorusProcessor.process(
                 chorusInput,
                 left,
                 right,
@@ -807,7 +817,7 @@ export class SynthesizerCore {
             // CC#94 in XG is variation, not delay
             if (this.delayActive && this.midiParameters.system !== "xg") {
                 // Process delay
-                this.delayProcessor.process(
+                this.gsDelayProcessor.process(
                     delayInput,
                     left,
                     right,
@@ -817,7 +827,7 @@ export class SynthesizerCore {
                 );
             }
             // Finally process the reverb processor (it goes directly into the output buffer)
-            this.reverbProcessor.process(
+            this.gsReverbProcessor.process(
                 reverbInput,
                 left,
                 right,
@@ -900,7 +910,7 @@ export class SynthesizerCore {
             this.delayActive =
                 this.midiParameters.system === "xg"
                     ? false
-                    : this.chorusProcessor.sendLevelToDelay > 0 ||
+                    : this.gsChorusProcessor.sendLevelToDelay > 0 ||
                       this.insertionProcessor.sendLevelToDelay > 0 ||
                       this.midiChannels.some(
                           (c) =>
@@ -946,7 +956,7 @@ export class SynthesizerCore {
         );
     }
 
-    protected getInsertionSnapshot(): InsertionProcessorSnapshot {
+    protected getInsertionSnapshot(): GSInsertionProcessorSnapshot {
         return {
             type: this.insertionProcessor.type,
             params: this.insertionParams.slice()
@@ -980,7 +990,7 @@ export class SynthesizerCore {
     protected setReverbMacro(macro: number) {
         if (this.systemParameters.reverbLock) return;
         // SC-8850 manual page 81
-        const rev = this.reverbProcessor;
+        const rev = this.gsReverbProcessor;
         rev.level = 64;
         rev.preDelayTime = 0;
         rev.character = macro;
@@ -1087,7 +1097,7 @@ export class SynthesizerCore {
     protected setChorusMacro(macro: number) {
         if (this.systemParameters.chorusLock) return;
         // SC-8850 manual page 83
-        const chr = this.chorusProcessor;
+        const chr = this.gsChorusProcessor;
         chr.level = 64;
         chr.preLowpass = 0;
         chr.delay = 127;
@@ -1200,7 +1210,7 @@ export class SynthesizerCore {
     protected setDelayMacro(macro: number) {
         if (this.systemParameters.delayLock) return;
         // SC-8850 manual page 85
-        const dly = this.delayProcessor;
+        const dly = this.gsDelayProcessor;
         dly.level = 64;
         dly.preLowpass = 0;
         dly.sendLevelToReverb = 0;
@@ -1381,7 +1391,7 @@ export class SynthesizerCore {
             this.voices.push(new Voice(this.sampleRate, this.maxBufferSize));
     }
 
-    private registerInsertionProcessor(proc: InsertionProcessorConstructor) {
+    private registerInsertionProcessor(proc: GSInsertionProcessorConstructor) {
         const p = new proc(this.sampleRate, this.maxBufferSize);
         this.insertionEffects.set(p.type, p);
     }

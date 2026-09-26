@@ -63,12 +63,14 @@ export interface GSReverbParameter extends GSSystemEffectParameter {
  *
  * This is a Roland GS-compatible reverb interface.
  *
+ * It is used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+ *
  * {@link SpessaSynthProcessor} allows you to supply a custom reverb processor.
  * A custom reverb processor must implement this interface.
  *
  * ### Editing the parameters
  *
- * Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing the {@link SpessaSynthProcessor.reverbProcessor} property.
+ * Editing the parameters can be done via GS/GM2 system exclusive messages.
  *
  * > **Tip**
  * >
@@ -158,12 +160,14 @@ export interface GSChorusParameter extends GSSystemEffectParameter {
  *
  * This is a Roland GS-compatible chorus interface.
  *
+ * It is used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+ *
  * {@link SpessaSynthProcessor} allows you to supply a custom chorus processor.
  * A custom chorus processor must implement this interface.
  *
  * ### Editing the parameters
  *
- * Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing {@link SpessaSynthProcessor.chorusProcessor} property.
+ * Editing the parameters can be done via GS/GM2 system exclusive messages.
  *
  * > **Tip**
  * >
@@ -279,6 +283,8 @@ export interface GSDelayParameter extends GSSystemEffectParameter {
  *
  * This is a Roland GS-compatible delay interface.
  *
+ * It is used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+ *
  * > **Note**
  * >
  * > Delay is disabled in XG mode.
@@ -288,7 +294,7 @@ export interface GSDelayParameter extends GSSystemEffectParameter {
  *
  * ### Editing the parameters
  *
- * Editing the parameters can be done via GS/GM2 system exclusive messages or by accessing {@link SpessaSynthProcessor.delayProcessor} property.
+ * Editing the parameters can be done via GS/GM2 system exclusive messages.
  *
  * > **Tip**
  * >
@@ -326,7 +332,7 @@ export interface GSDelayProcessor extends GSDelayParameter {
  *
  * @group Synthesizer.Effects
  */
-export interface InsertionProcessor {
+export interface GSInsertionProcessor {
     /**
      * The EFX type of this processor, stored as `MSB << 8 | LSB`.
      * For example `0x30`, `0x10` is `0x3010`.
@@ -398,7 +404,7 @@ export interface InsertionProcessor {
  *
  * @group Synthesizer.Effects
  */
-export interface InsertionProcessorSnapshot {
+export interface GSInsertionProcessorSnapshot {
     /**
      * The EFX type of this processor, stored as `MSB << 8 | LSB`.
      * For example `0x30`, `0x10` is `0x3010`.
@@ -409,13 +415,20 @@ export interface InsertionProcessorSnapshot {
      */
     type: number;
     /**
-     * 20 parameters for the effect, 255 means "no change" + 3 effect sends (index 20, 21, 22)
+     * 20 parameters for the effect. These depend on effect type.
+     * After that 3 effect sends follow (index 20, 21, 22),
+     * the length totaling to 23.
+     *
+     * Value `255` means "no change" for that parameter.
+     *
      */
     params: Uint8Array;
 }
 
-/** @group Synthesizer.Effects */
-export type InsertionProcessorConstructor = new (
+/**
+ * Constructor for a GS insertion processor.
+ */
+export type GSInsertionProcessorConstructor = new (
     sampleRate: number,
     maxBufferSize: number
-) => InsertionProcessor;
+) => GSInsertionProcessor;

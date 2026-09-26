@@ -287,7 +287,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x31: {
                                 // Reverb character
-                                this.reverbProcessor.character = data;
+                                this.gsReverbProcessor.character = data;
                                 SpessaLog.gsInfo("Reverb Character", data);
                                 this.callEvent("effectChange", {
                                     effect: "reverb",
@@ -298,7 +298,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x32: {
                                 // Reverb pre-PLF
-                                this.reverbProcessor.preLowpass = data;
+                                this.gsReverbProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Reverb Pre-LPF", data);
                                 this.callEvent("effectChange", {
                                     effect: "reverb",
@@ -309,7 +309,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x33: {
                                 // Reverb level
-                                this.reverbProcessor.level = data;
+                                this.gsReverbProcessor.level = data;
                                 SpessaLog.gsInfo("Reverb Level", data);
                                 this.callEvent("effectChange", {
                                     effect: "reverb",
@@ -320,7 +320,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x34: {
                                 // Reverb time
-                                this.reverbProcessor.time = data;
+                                this.gsReverbProcessor.time = data;
                                 SpessaLog.gsInfo("Reverb Time", data);
                                 this.callEvent("effectChange", {
                                     effect: "reverb",
@@ -331,7 +331,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x35: {
                                 // Reverb delay feedback
-                                this.reverbProcessor.delayFeedback = data;
+                                this.gsReverbProcessor.delayFeedback = data;
                                 SpessaLog.gsInfo("Reverb Delay Feedback", data);
                                 this.callEvent("effectChange", {
                                     effect: "reverb",
@@ -348,7 +348,7 @@ export function rolandSystemExclusive(
 
                             case 0x37: {
                                 // Reverb predelay time
-                                this.reverbProcessor.preDelayTime = data;
+                                this.gsReverbProcessor.preDelayTime = data;
                                 SpessaLog.gsInfo("Reverb Predelay Time", data);
                                 this.callEvent("effectChange", {
                                     effect: "reverb",
@@ -368,7 +368,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x39: {
                                 // Chorus pre-LPF
-                                this.chorusProcessor.preLowpass = data;
+                                this.gsChorusProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Chorus Pre-LPF", data);
                                 this.callEvent("effectChange", {
                                     effect: "chorus",
@@ -379,7 +379,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x3a: {
                                 // Chorus level
-                                this.chorusProcessor.level = data;
+                                this.gsChorusProcessor.level = data;
                                 SpessaLog.gsInfo("Chorus Level", data);
                                 this.callEvent("effectChange", {
                                     effect: "chorus",
@@ -390,7 +390,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x3b: {
                                 // Chorus feedback
-                                this.chorusProcessor.feedback = data;
+                                this.gsChorusProcessor.feedback = data;
                                 SpessaLog.gsInfo("Chorus Feedback", data);
                                 this.callEvent("effectChange", {
                                     effect: "chorus",
@@ -401,7 +401,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x3c: {
                                 // Chorus delay
-                                this.chorusProcessor.delay = data;
+                                this.gsChorusProcessor.delay = data;
                                 SpessaLog.gsInfo("Chorus Delay", data);
                                 this.callEvent("effectChange", {
                                     effect: "chorus",
@@ -412,7 +412,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x3d: {
                                 // Chorus rate
-                                this.chorusProcessor.rate = data;
+                                this.gsChorusProcessor.rate = data;
                                 SpessaLog.gsInfo("Chorus Rate", data);
                                 this.callEvent("effectChange", {
                                     effect: "chorus",
@@ -423,7 +423,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x3e: {
                                 // Chorus depth
-                                this.chorusProcessor.depth = data;
+                                this.gsChorusProcessor.depth = data;
                                 SpessaLog.gsInfo("Chorus Depth", data);
                                 this.callEvent("effectChange", {
                                     effect: "chorus",
@@ -434,7 +434,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x3f: {
                                 // Chorus send level to reverb
-                                this.chorusProcessor.sendLevelToReverb = data;
+                                this.gsChorusProcessor.sendLevelToReverb = data;
                                 SpessaLog.gsInfo(
                                     "Chorus Send Level To Reverb",
                                     data
@@ -448,7 +448,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x40: {
                                 // Chorus send level to delay
-                                this.chorusProcessor.sendLevelToDelay = data;
+                                this.gsChorusProcessor.sendLevelToDelay = data;
                                 this.updateActiveEffects();
                                 SpessaLog.gsInfo(
                                     "Chorus Send Level To Delay",
@@ -472,7 +472,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x51: {
                                 // Delay pre-PLF
-                                this.delayProcessor.preLowpass = data;
+                                this.gsDelayProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Delay Pre-LPF", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -483,7 +483,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x52: {
                                 // Delay time center
-                                this.delayProcessor.timeCenter = data;
+                                this.gsDelayProcessor.timeCenter = data;
                                 SpessaLog.gsInfo("Delay Time Center", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -494,7 +494,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x53: {
                                 // Delay time ratio left
-                                this.delayProcessor.timeRatioLeft = data;
+                                this.gsDelayProcessor.timeRatioLeft = data;
                                 SpessaLog.gsInfo("Delay Time Ratio Left", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -505,7 +505,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x54: {
                                 // Delay time ratio right
-                                this.delayProcessor.timeRatioRight = data;
+                                this.gsDelayProcessor.timeRatioRight = data;
                                 SpessaLog.gsInfo(
                                     "Delay Time Ratio Right",
                                     data
@@ -519,7 +519,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x55: {
                                 // Delay level center
-                                this.delayProcessor.levelCenter = data;
+                                this.gsDelayProcessor.levelCenter = data;
                                 SpessaLog.gsInfo("Delay Level Center", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -530,7 +530,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x56: {
                                 // Delay level left
-                                this.delayProcessor.levelLeft = data;
+                                this.gsDelayProcessor.levelLeft = data;
                                 SpessaLog.gsInfo("Delay Level Left", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -541,7 +541,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x57: {
                                 // Delay level right
-                                this.delayProcessor.levelRight = data;
+                                this.gsDelayProcessor.levelRight = data;
                                 SpessaLog.gsInfo("Delay Level Right", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -552,7 +552,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x58: {
                                 // Delay level
-                                this.delayProcessor.level = data;
+                                this.gsDelayProcessor.level = data;
                                 SpessaLog.gsInfo("Delay Level", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -563,7 +563,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x59: {
                                 // Delay feedback
-                                this.delayProcessor.feedback = data;
+                                this.gsDelayProcessor.feedback = data;
                                 SpessaLog.gsInfo("Delay Feedback", data);
                                 this.callEvent("effectChange", {
                                     effect: "delay",
@@ -574,7 +574,7 @@ export function rolandSystemExclusive(
                             }
                             case 0x5a: {
                                 // Delay send level to reverb
-                                this.delayProcessor.sendLevelToReverb = data;
+                                this.gsDelayProcessor.sendLevelToReverb = data;
                                 SpessaLog.gsInfo(
                                     "Delay Send Level To Reverb",
                                     data
