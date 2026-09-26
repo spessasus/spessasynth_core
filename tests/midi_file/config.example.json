@@ -1,0 +1,19 @@
+{
+    "$schema": "./config.schema.json",
+    "trimThreshold": 0.0005,
+    "paths": {
+        "rootDir": "../..",
+        "midiDir": "output/midi",
+        "renderedDir": "output/wav",
+        "checksumsDir": "output/checksums",
+        "rendererDir": "renderer/bin",
+        "soundFont": "../files/sound_bank/midi_render.sf2"
+    },
+    "spessasynth": {
+        "sampleRate": 48000,
+        "tailSeconds": 2,
+        "bufferSize": 128,
+        "logFileName": "spessa.log",
+        "outputFileName": "spessa.wav"
+    }
+}

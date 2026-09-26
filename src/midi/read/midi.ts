@@ -177,7 +177,9 @@ export function parseSMFInternal(
                     trackData.currentIndex + dataSize
                 )
             );
-            track.pushEvent(new MIDIMessage(totalTicks, statusByte, eventData));
+            track.pushEvents(
+                new MIDIMessage(totalTicks, statusByte, eventData)
+            );
 
             // Advance the track chunk
             trackData.currentIndex += dataSize;

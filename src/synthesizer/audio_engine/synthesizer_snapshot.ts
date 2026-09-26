@@ -1,41 +1,74 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
-import { type KeyModifier } from "./key_modifier_manager";
 import type {
-    ChorusProcessorSnapshot,
-    DelayProcessorSnapshot,
-    InsertionProcessorSnapshot,
-    ReverbProcessorSnapshot
+    GSChorusParameter,
+    GSDelayParameter,
+    GSInsertionProcessorSnapshot,
+    GSReverbParameter
 } from "./effects/types";
 import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
 import type { SynthesizerCore } from "./synthesizer_core";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
+import { DrumParameterUtils } from "../../midi/drum_parameters";
+import type { UserDrumSetParameter } from "../../midi/types";
+
+/**
+ * This interface is a snapshot of a {@link SpessaSynthProcessor},
+ * capturing its current state, which can be saved and restored.
+ *
+ * This can be useful for creating a different processor
+ * (for example, for rendering to an audio file)
+ * and copying the current processor's state.
+ *
+ * @group Synthesizer.Snapshots
+ */
 export interface SynthesizerSnapshot {
+    /**
+     * The snapshots of all MIDI channels of the synth.
+     */
     midiChannels: ChannelSnapshot[];
 
     /**
-     * Key modifiers.
+     * All Global MIDI Parameters of the synthesizer.
      */
-    keyMappings: (KeyModifier | undefined)[][];
-
     midiParameters: GlobalMIDIParameter;
+    /**
+     * Locks of all Global MIDI Parameters of the synthesizer.
+     */
     lockedMIDIParameters: Record<keyof GlobalMIDIParameter, boolean>;
+    /**
+     * All Global System Parameters of the synthesizer.
+     */
     systemParameters: GlobalSystemParameter;
 
-    reverbProcessor: ReverbProcessorSnapshot;
-    chorusProcessor: ChorusProcessorSnapshot;
-    delayProcessor: DelayProcessorSnapshot;
-    insertionProcessor: InsertionProcessorSnapshot;
+    /**
+     * A snapshot of the reverb processor.
+     */
+    gsReverbProcessor: GSReverbParameter;
+    /**
+     * A snapshot of the chorus processor.
+     */
+    gsChorusProcessor: GSChorusParameter;
+    /**
+     * A snapshot of the delay processor.
+     */
+    gsDelayProcessor: GSDelayParameter;
+    /**
+     * A snapshot of the insertion effect processor.
+     */
+    insertionProcessor: GSInsertionProcessorSnapshot;
+
+    /**
+     * A snapshot of the User Drum Set parameters.
+     */
+    userDrumSets: UserDrumSetParameter[][];
 }
 
 export function applySnapshot(
     this: SynthesizerCore,
     snapshot: SynthesizerSnapshot
 ) {
-    // Restore key modifiers
-    this.keyModifierManager.setMappings(snapshot.keyMappings);
-
     // Add channels if more needed
     while (this.midiChannels.length < snapshot.midiChannels.length)
         this.createMIDIChannel(true);
@@ -45,15 +78,14 @@ export function applySnapshot(
         this.midiChannels[i].applySnapshot(snapshot.midiChannels[i]);
 
     // Restore effect processors
-    for (const [key, value] of Object.entries(snapshot.reverbProcessor))
-        this.reverbProcessor[key as keyof ReverbProcessorSnapshot] =
+    for (const [key, value] of Object.entries(snapshot.gsReverbProcessor))
+        this.gsReverbProcessor[key as keyof GSReverbParameter] =
             value as number;
-    for (const [key, value] of Object.entries(this.chorusProcessor))
-        this.chorusProcessor[key as keyof ChorusProcessorSnapshot] =
+    for (const [key, value] of Object.entries(this.gsChorusProcessor))
+        this.gsChorusProcessor[key as keyof GSChorusParameter] =
             value as number;
-    for (const [key, value] of Object.entries(this.delayProcessor))
-        this.delayProcessor[key as keyof DelayProcessorSnapshot] =
-            value as number;
+    for (const [key, value] of Object.entries(this.gsDelayProcessor))
+        this.gsDelayProcessor[key as keyof GSDelayParameter] = value as number;
 
     // Restore insertion
     const is = snapshot.insertionProcessor;
@@ -66,6 +98,17 @@ export function applySnapshot(
             this.systemExclusive(
                 MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]])
             );
+    }
+
+    // Restore user drum sets
+    for (let drumSet = 0; drumSet < snapshot.userDrumSets.length; drumSet++) {
+        const userDrumSet = snapshot.userDrumSets[drumSet];
+        for (let midiNote = 0; midiNote < userDrumSet.length; midiNote++) {
+            DrumParameterUtils.copyIntoUser(
+                userDrumSet[midiNote],
+                this.soundBankManager.userDrumSets[drumSet].keyParams[midiNote]
+            );
+        }
     }
 
     // Restore MIDI parameters
@@ -118,10 +161,12 @@ export function getSynthesizerSnapshot(
         lockedMIDIParameters: { ...this.lockedMIDIParameters },
         systemParameters: { ...this.systemParameters },
         midiChannels: this.midiChannels.map((c) => c.getSnapshot()),
-        keyMappings: this.keyModifierManager.getMappings(),
-        reverbProcessor: this.reverbProcessor.getSnapshot(),
-        chorusProcessor: this.chorusProcessor.getSnapshot(),
-        delayProcessor: this.delayProcessor.getSnapshot(),
-        insertionProcessor: this.getInsertionSnapshot()
+        gsReverbProcessor: this.gsReverbProcessor.getSnapshot(),
+        gsChorusProcessor: this.gsChorusProcessor.getSnapshot(),
+        gsDelayProcessor: this.gsDelayProcessor.getSnapshot(),
+        insertionProcessor: this.getInsertionSnapshot(),
+        userDrumSets: this.soundBankManager.userDrumSets.map((d) =>
+            d.getSnapshot()
+        )
     };
 }

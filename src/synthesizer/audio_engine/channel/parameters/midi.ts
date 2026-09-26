@@ -1,8 +1,28 @@
 import type { MIDIController } from "../../../../midi/enums";
 import type { MIDIChannel } from "../midi_channel";
 import { ModulatorControllerSources } from "../../../../soundbank/enums";
-import type { ChannelMIDIParameterChange } from "../types";
+import type { ChannelMIDIParameterChangeEvent } from "../../../events";
+import { MELODIC_MAP } from "../../../../midi/midi_tools/sysex_data";
 
+/**
+ * Channel MIDI Parameters are MIDI-only parameters
+ * that affect a single MIDI channel.
+ *
+ * They are MIDI Parameters, meaning that they can only be changed via MIDI messages,
+ * and not via the API. They get reset via MIDI reset messages.
+ *
+ * {@link DEFAULT_CHANNEL_MIDI_PARAMETERS} is provided with the library,
+ * containing the defaults.
+ *
+ * They also have an associated event ({@link ChannelMIDIParameterChangeEvent}) and can be locked.
+ *
+ * Examples:
+ *
+ * - `pitchWheel`
+ * - `pressure`
+ *
+ * @group Synthesizer.Parameters
+ */
 export interface ChannelMIDIParameter {
     /**
      * The current pressure (aftertouch) of this channel.
@@ -35,8 +55,10 @@ export interface ChannelMIDIParameter {
     /**
      * The channel's receiving number (0-based index).
      * This allows triggering multiple parts (channels) with a single note message.
-     * @remarks
-     * Only used when customChannelNumbers is enabled.
+     *
+     * > **Note**
+     * >
+     * > {@link DEFAULT_CHANNEL_MIDI_PARAMETERS} reports the default as 0, but it is initialized with the corresponding channel's number.
      */
     rxChannel: number;
 
@@ -45,6 +67,10 @@ export interface ChannelMIDIParameter {
      * - `true` - POLY ON - regular playback.
      * - `false` - MONO ON - one note per channel,
      * highest still pressed note is restored after releasing the currently playing one.
+     *
+     * > **Tip**
+     * >
+     * > Consider reading [the MIDI Implementation of mono mode.](../../../../../docs/extra/midi-implementation.md#polymono-implementation)
      */
     polyMode: boolean;
 
@@ -75,8 +101,10 @@ export interface ChannelMIDIParameter {
      *
      * This may be useful for emulating SC-55 hi-hat cutoff or MSGS note cutoff.
      *
-     * Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 238 for more description.
-     * Note that `SAME NOTE NUMBER KEY ON ASSIGN` in XG is also recognized as assign mode.
+     * > **Tip**
+     * >
+     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 238 for more description.
+     * > Note that `SAME NOTE NUMBER KEY ON ASSIGN` in XG is also recognized as assign mode.
      */
     assignMode: number;
 
@@ -100,19 +128,27 @@ export interface ChannelMIDIParameter {
     cc2: MIDIController;
 
     /**
-     * Drum map for GS system exclusive tracking.
+     * Drum map for system exclusive tracking.
      * Only used for selecting the correct channel when setting drum parameters through sysEx,
      * as those don't specify the channel, but the drum number.
      *
-     * The only values that are allowed are 0 (melodic) 1 or 2.
+     * For `GS`, default is `1` for channel `9` and `0` for all others.
+     *
+     * For `XG`, default is `2` for channel `9` and `0` for all others.
+     *
+     * Setting this to any value other than 0 turns the channel into a drum channel.
+     *
+     * > **Note**
+     * >
+     * > {@link DEFAULT_CHANNEL_MIDI_PARAMETERS} reports the default as 0, but each channel is initialized depending on the channel number. See above for details.
      */
     drumMap: number;
 
     /**
      * The relation between the input and the actual velocity.
      *
-     * If Velo Depth is increased, small differences in your playing dynamics will make a large difference in the loudness of the sound.
-     * If Velo Depth is decreased, even large differences in your playing dynamics will make only a small difference in the loudness of the sound.
+     * If Velocity Depth is increased, small differences in your playing dynamics will make a large difference in the loudness of the sound.
+     * If Velocity Depth is decreased, even large differences in your playing dynamics will make only a small difference in the loudness of the sound.
      *
      * Examples (with offset being set to normal):
      *
@@ -120,15 +156,17 @@ export interface ChannelMIDIParameter {
      * - 32 is half velocity at max volume.
      * - 127 is max velocity at half volume.
      *
-     * Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
+     * > **Tip**
+     * >
+     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
      */
     velocitySenseDepth: number;
 
     /**
      * The offset to add to the input velocity.
      *
-     * If Velo Offset is set higher than 64, even softly played notes (i.e., notes with a low velocity)
-     * will be sounded loudly. If Velo Offset is set lower than 64,
+     * If Velocity Offset is set higher than 64, even softly played notes (i.e., notes with a low velocity)
+     * will be sounded loudly. If Velocity Offset is set lower than 64,
      * even strongly played notes (i.e., notes with a high velocity) will be sounded softly.
      *
      * Examples (with depth set to normal):
@@ -138,11 +176,24 @@ export interface ChannelMIDIParameter {
      * - 96 starts at half volume and reaches max volume at half velocity.
      * - 127 always forces velocity to max.
      *
-     * Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
+     * > **Tip**
+     * >
+     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
      */
     velocitySenseOffset: number;
 }
 
+/**
+ * The default values for {@link ChannelMIDIParameter}s.
+ *
+ * > **Warning**
+ * >
+ * > {@link ChannelMIDIParameter.rxChannel `rxChannel`} and {@link ChannelMIDIParameter.drumMap `drumMap`}
+ * > have defaults which depend on the channel number.
+ * > Please check their descriptions for more details.
+ *
+ * @group Synthesizer.Parameters
+ */
 export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     pitchWheel: 8192,
     pitchWheelRange: 2,
@@ -157,7 +208,7 @@ export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     efxAssign: false,
     cc1: 0x10,
     cc2: 0x11,
-    drumMap: 0,
+    drumMap: MELODIC_MAP,
     velocitySenseDepth: 64,
     velocitySenseOffset: 64
 };
@@ -198,7 +249,7 @@ export function setMIDIParameterInternal<P extends keyof ChannelMIDIParameter>(
         channel: this.channel,
         parameter,
         value
-    } as ChannelMIDIParameterChange);
+    } as ChannelMIDIParameterChangeEvent);
 }
 
 /**

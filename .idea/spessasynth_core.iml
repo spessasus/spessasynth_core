@@ -16,6 +16,12 @@
       <excludeFolder url="file://$MODULE_DIR$/tests/files" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
       <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/generated" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/rendered" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/renderer/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/output" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/renderer/cmake-build-debug" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/renderer/cmake-build-debug/.cmake" />
+      <excludeFolder url="file://$MODULE_DIR$/tests/midi_file/renderer/cmake-build-debug/CMakeFiles" />
       <excludePattern pattern=".eslintcache" />
     </content>
     <orderEntry type="inheritedJdk" />

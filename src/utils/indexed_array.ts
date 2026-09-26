@@ -3,6 +3,11 @@
  * purpose: extends Uint8Array with a currentIndex property.
  */
 
+/**
+ * This class extends a generic `Uint8Array` with a current index for sequential reading.
+ *
+ * @group Utilities
+ */
 export class IndexedByteArray extends Uint8Array {
     /**
      * The current index of the array.

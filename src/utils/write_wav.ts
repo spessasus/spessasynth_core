@@ -1,9 +1,9 @@
-import { IndexedByteArray } from "./indexed_array";
-import { writeBinaryStringIndexed } from "./byte_functions/string";
-import { RIFFChunk } from "./riff_chunk";
 import { writeLittleEndianIndexed } from "./byte_functions/little_endian";
+import { writeBinaryStringIndexed } from "./byte_functions/string";
 import { type WaveWriteOptions } from "./exports";
 import { fillWithDefaults } from "./fill_with_defaults";
+import { IndexedByteArray } from "./indexed_array";
+import { RIFFChunk } from "./riff_chunk";
 
 export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
     normalizeAudio: true,
@@ -12,11 +12,24 @@ export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
 };
 
 /**
- * Writes an audio into a valid WAV file.
- * @param audioData the audio data channels.
- * @param sampleRate the sample rate, in Hertz.
+ * Converts PCM audio data into a fully valid wave file.
+ *
+ * The metadata uses the `INFO` chunk to write the information. It is encoded with `utf-8`.
+ *
+ * > **Note**
+ * >
+ * > The audio is saved as PCM S16LE (signed 16-bit little-endian integers)
+ *
+ * @example
+ * Refer to `examples/midi_to_wav_node.ts` for an example of rendering audio data to a wav file.
+ *
+ *
+ * @param audioData The PCM audio data. For stereo, pass `[leftData, rightData]`.
+ * @param sampleRate The sample rate, in Hertz.
  * @param options Additional options for writing the file.
- * @returns the binary file.
+ * @returns The binary file.
+ *
+ * @group Utilities
  */
 export function audioToWav(
     audioData: Float32Array[],

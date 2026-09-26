@@ -1,78 +1,23 @@
-import type { MIDIController } from "../../../midi/enums";
-import type { ChannelMIDIParameter } from "./parameters/midi";
-import type { MIDIPatchFull } from "../../../soundbank/basic_soundbank/midi_patch";
-
-export interface NoteOnCallback {
-    /** The MIDI note number. */
-    midiNote: number;
-
-    /** The MIDI channel number. */
-    channel: number;
-
-    /** The velocity of the note. */
-    velocity: number;
-}
-
-export interface NoteOffCallback {
-    /** The MIDI note number. */
-    midiNote: number;
-
-    /** The MIDI channel number. */
-    channel: number;
-}
-
-export interface ProgramChangeCallback extends MIDIPatchFull {
-    /** The MIDI channel number. */
-    channel: number;
-}
-
-export interface ControllerChangeCallback {
-    /** The MIDI channel number. */
-    channel: number;
-
-    /** The controller number. */
-    controller: MIDIController;
-
-    /** The value of the controller. */
-    value: number;
-}
-
-export interface PolyPressureCallback {
-    /** The MIDI channel number. */
-    channel: number;
-
-    /** The MIDI note number. */
-    midiNote: number;
-
-    /** The pressure value. */
-    pressure: number;
-}
-
-export interface StopAllCallback {
+/**
+ * Represents the [custom channel vibrato](../../../../docs/extra/midi-implementation.md#custom-vibrato)
+ * of the channel.
+ *
+ * @group Synthesizer.Channel
+ */
+export interface CustomChannelVibrato {
     /**
-     * The MIDI channel number.
+     * Vibrato depth, in cents.
      */
-    channel: number;
-
+    depth: number;
     /**
-     * If the channel was force stopped. (no release time)
+     * Vibrato delay, in seconds from the voice's start time.
      */
-    force: boolean;
+    delay: number;
+    /**
+     * Vibrato rate in Hertz.
+     */
+    rate: number;
 }
 
-export type ChannelMIDIParameterChange = {
-    [P in keyof ChannelMIDIParameter]: {
-        /**
-         * The channel that was affected.
-         */
-        channel: number;
-        /**
-         * The parameter that was changed.
-         */
-        parameter: P;
-        /**
-         * The new value of this parameter.
-         */
-        value: ChannelMIDIParameter[P];
-    };
-}[keyof ChannelMIDIParameter];
+export type { ChannelSnapshot } from "./channel_snapshot";
+export type { ChannelGenerators } from "./awe32_nrpn";

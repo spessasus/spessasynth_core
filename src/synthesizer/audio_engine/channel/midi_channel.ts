@@ -7,8 +7,8 @@ import { noteOff } from "./note_off";
 import { programChange } from "./program_change";
 import {
     CONTROLLER_TABLE_SIZE,
-    DEFAULT_PERCUSSION,
     GENERATOR_OVERRIDE_NO_CHANGE_VALUE,
+    MIDI_DRUM_CHANNEL,
     SPESSASYNTH_GAIN_FACTOR
 } from "../synth_constants";
 import { DynamicModulatorManager } from "./dynamic_modulator_system";
@@ -21,12 +21,10 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import { type BasicPreset } from "../../../soundbank/basic_soundbank/basic_preset";
 import { type SynthesizerCore } from "../synthesizer_core";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
-import { DrumParameters } from "./drum_parameters";
 import {
     applySnapshot,
     type ChannelSnapshot,
@@ -47,8 +45,17 @@ import {
 import type { MIDISystem } from "../../../soundbank/types";
 import type { MIDIController } from "../../../midi/enums";
 
+import type { SynthesizerPatch } from "../../types";
+import { DrumParameterUtils as DrumParameterUtilities } from "../../../midi/drum_parameters";
+import type { DrumParameter } from "../../../midi/types";
+import type { CustomChannelVibrato } from "./types";
+import type { Voice } from "../voice/voice";
+import { SpessaLog } from "../../../utils/loggin";
+
 /**
- * This class represents a single MIDI Channel within the synthesizer.
+ * This class represents a single MIDI channel within a {@link SpessaSynthProcessor}.
+ *
+ * @group Synthesizer.Channel
  */
 export class MIDIChannel {
     /**
@@ -56,11 +63,23 @@ export class MIDIChannel {
      * @internal
      */
     public readonly pitchWheels = new Int16Array(128).fill(8192);
+
+    /**
+     * An array of poly pressure values for the channel.
+     * Poly pressure persists across notes, much like per-note pitch wheels.
+     * @internal
+     */
+    public readonly polyPressures = new Uint8Array(128);
+
     /**
      * Parameters for each drum instrument.
      * @internal
      */
-    public readonly drumParams: DrumParameters[] = [];
+    public readonly drumParams: readonly DrumParameter[] = Array.from(
+        { length: 128 },
+        // eslint-disable-next-line unicorn/consistent-function-scoping
+        (_, index) => ({ ...DrumParameterUtilities.DEFAULT_DATA[index] })
+    );
     /**
      * A system for dynamic modulator assignment for advanced system exclusives.
      * @internal
@@ -73,7 +92,10 @@ export class MIDIChannel {
     public sf2NRPNGeneratorLSB = 0;
     /**
      * The currently selected MIDI patch of the channel.
-     * Note that the exact matching preset may not be available, but this represents exactly what MIDI asks for.
+     * > **Note**
+     * >
+     * > The exact matching preset may not be available in the sound bank list,
+     * > but this property represents exactly what MIDI asks for.
      */
     public readonly patch: MIDIPatch = {
         bankMSB: 0,
@@ -83,106 +105,51 @@ export class MIDIChannel {
     };
     /**
      * The preset currently assigned to the channel.
-     * Note that this may be undefined in some cases.
+     * This property can be set to directly replace a preset on this channel.
+     *
+     * > **Note**
+     * >
+     * > This may be undefined in some cases.
+     *
      */
-    public preset?: BasicPreset;
+    public preset?: SynthesizerPatch;
     /**
      * Indicates the MIDI system when the preset was locked.
      * @internal
      */
     public lockedSystem: MIDISystem = "gs";
     /**
-     * The channel's number (0-based index)
+     * The channel's number (0-based index).
      */
     public readonly channel: number;
+
+    /**
+     * The vibrato settings for the channel.
+     * @internal
+     */
+    public readonly customVibrato: CustomChannelVibrato = {
+        delay: 0,
+        depth: 0,
+        rate: 0
+    };
     /**
      * Core synthesis engine.
      * @internal
      */
     public readonly synthCore: SynthesizerCore;
-    /*
-    ==========
-    PUBLIC API
-    ==========
-     */
-    /**
-     * Sets a system parameter of the channel.
-     * @param parameter The type of the system parameter to set.
-     * @param value The value to set for the system parameter.
-     */
-    public readonly setSystemParameter: typeof setSystemParameterInternal =
-        setSystemParameterInternal.bind(this);
 
-    // noinspection JSUnusedGlobalSymbols
     /**
-     * Locks or unlocks a given Channel MIDI Parameter.
-     * This prevents any changes to it until it's unlocked.
-     * @param parameter The Channel MIDI Parameter to lock.
-     * @param isLocked If the parameter should be locked.
-     */
-    public readonly lockMIDIParameter: typeof lockMIDIParameterInternal =
-        lockMIDIParameterInternal.bind(this);
-
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-     */
-    // MIDI messages
-    /**
-     * Sends a "MIDI Note on" message and starts a note.
-     * @param midiNote The MIDI note number (0-127).
-     * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
+     * Current left PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
+     * Always 0-based index.
      * @internal
      */
-    public readonly noteOn = noteOn.bind(this);
+    public readonly outputLeft: Float32Array;
     /**
-     * Releases a note by its MIDI note number.
-     * If the note is in high performance mode and the channel is not a drum channel,
-     * it kills the note instead of releasing it.
-     * @param midiNote The MIDI note number to release (0-127).
+     * Current right PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
+     * Always 0-based index.
      * @internal
      */
-    public readonly noteOff = noteOff.bind(this);
-    /**
-     * Changes the program (preset) of the channel.
-     * @param programNumber The program number (0-127) to change to.
-     * @internal
-     */
-    public readonly programChange = programChange.bind(this);
-    // CC (Continuous Controller)
-    /**
-     * Handles MIDI controller changes for a channel.
-     * @param controllerNumber The MIDI controller number (0-127).
-     * @param controllerValue The value of the controller (0-127).
-     * @param sendEvent If an event should be emitted.
-     * @remarks
-     * This function processes MIDI controller changes, updating the channel's
-     * midiControllers table and handling special cases like bank select,
-     * data entry, and sustain pedal. It also computes modulators for all voices
-     * in the channel based on the controller change.
-     * to allow changes.
-     * @internal
-     */
-    public readonly controllerChange = controllerChange.bind(this);
-    /**
-     * Reset this channel to its default state.
-     * Except for the locked controllers.
-     * @internal
-     */
-    public readonly reset = resetChannelInternal.bind(this);
-    // Voice rendering methods
-    /**
-     * Renders a voice to the stereo output buffer
-     * @param voice the voice to render
-     * @param timeNow current time in seconds
-     * @param outputL the left output buffer
-     * @param outputR the right output buffer
-     * @param startIndex
-     * @param sampleCount
-     * @internal
-     */
-    public readonly renderVoice = renderVoice.bind(this);
+    public readonly outputRight: Float32Array;
     /**
      * Sets a channel MIDI parameter of the synthesizer.
      * @param parameter The type of the channel MIDI parameter to set.
@@ -192,7 +159,7 @@ export class MIDIChannel {
     public readonly setMIDIParameter: typeof setMIDIParameterInternal =
         setMIDIParameterInternal.bind(this);
     /**
-     * An array indicating if a controller, at the equivalent index in the midiControllers array, is locked
+     * An array indicating if a controller, at the equivalent index in the {@link MIDIChannel.midiControllers `midiControllers`} array, is locked
      * (i.e., not allowed changing).
      * A locked controller cannot be modified.
      * @internal
@@ -200,6 +167,12 @@ export class MIDIChannel {
     protected readonly lockedControllers = new Array(
         CONTROLLER_TABLE_SIZE
     ).fill(false) as boolean[];
+
+    /*
+    =================
+    END OF PUBLIC API
+    =================
+     */
     /**
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
@@ -209,6 +182,7 @@ export class MIDIChannel {
      * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
      * The only exception from this are the Registered and Non-Registered Parameter Numbers.
      * Data entries do store it!
+     * @internal
      */
     protected readonly _midiControllers: Int16Array = new Int16Array(
         CONTROLLER_TABLE_SIZE
@@ -217,6 +191,7 @@ export class MIDIChannel {
      * An array of octave tuning values for each note on the channel.
      * Each index corresponds to a note (0 = C, 1 = C#, ..., 11 = B).
      * Note: Repeated every 12 notes.
+     * @internal
      */
     protected readonly octaveTuning: Int8Array = new Int8Array(128);
     /**
@@ -231,7 +206,6 @@ export class MIDIChannel {
      * @internal
      */
     protected readonly dataEntry = dataEntry.bind(this);
-
     /**
      * An object indicating if a Channel MIDI parameter, at the equivalent key, is locked
      * (i.e., not allowed changing).
@@ -246,7 +220,7 @@ export class MIDIChannel {
             ) as (keyof ChannelMIDIParameter)[]
         ).map((key) => [key, false])
     ) as Record<keyof ChannelMIDIParameter, boolean>;
-
+    /** @internal*/
     protected readonly _midiParameters: Readonly<ChannelMIDIParameter> = {
         ...DEFAULT_CHANNEL_MIDI_PARAMETERS
     };
@@ -257,58 +231,62 @@ export class MIDIChannel {
     protected readonly _systemParameters: Readonly<ChannelSystemParameter> = {
         ...DEFAULT_CHANNEL_SYSTEM_PARAMETERS
     }; // Copy, not set!
-
     /**
      * Note On message tracking, for grouping voices for specific Note On messages.
      * Used for overlapping Note Ons.
      * MIDI note: current note on ID
      * @protected
+     * @internal
      */
     protected readonly noteOnID = new Array<number>(128).fill(0);
-
     /**
      * Note Off message tracking, for grouping voices for specific Note On messages.
      * Used for overlapping Note Ons.
      * MIDI note: current note on ID
      * @protected
+     * @internal
      */
     protected readonly noteOffID = new Array<number>(128).fill(0);
-
     /**
      * If the last Parameter was RPN.
      * If false then the last parameter was NRPN.
      * @protected
+     * @internal
      */
     protected lastParameterIsRegistered = true;
     /**
      * Per-note pitch wheel mode uses the pitchWheels table as source
      * instead of the regular entry in the midiControllers table.
+     * @internal
      */
     protected perNotePitch = false;
     /**
      * Current pan in range [-500;500]
      * Updated in `updateInternalParams`.
      * This is used to avoid a big addition for every voice rendering call.
+     * @internal
      */
     protected currentPan = 0;
     /**
      * Current tuning in cents.
      * Updated in `updateInternalParams`.
      * This is used to avoid a big addition for every voice rendering call.
+     * @internal
      */
     protected currentTuning = 0;
     /**
      * Current key-shift.
      * Updated in `updateInternalParams`.
+     * @internal
      */
     protected currentKeyShift = 0;
     /**
      * Current gain.
      * Updated in `updateInternalParams`.
      * This is used to avoid a big multiplication for every voice rendering call.
+     * @internal
      */
     protected currentGain = 0;
-
     /**
      * The last pressed note on this channel for portamento tracking.
      * -1 means none.
@@ -316,6 +294,7 @@ export class MIDIChannel {
      * mostly because we don't want to send events for every note on message.
      * It can be set with Portamento Control CC anyway.
      * @protected
+     * @internal
      */
     protected lastPortamentoNote = -1;
     /**
@@ -323,35 +302,43 @@ export class MIDIChannel {
      * Adhering to the MIDI spec, CC#84 ignores on/off.
      * This is also not a `ChannelMIDIParameter` for the same reason as `lastPortamentoNote`
      * @protected
+     * @internal
      */
     protected portamentoForce = false;
-
     /**
      * The last pressed note on this channel in mono mode.
      * Used for tracking and releasing this note on a new Note On event.
      * -1 means none.
      * @protected
+     * @internal
      */
     protected lastMonoNote = -1;
     /**
      * The last pressed note's velocity on this channel in mono mode.
      * @protected
+     * @internal
      */
     protected lastMonoVelocity = 0;
     /**
      * For Mono Mode restoring notes.
      * playingNotes[midiNote]
      * @protected
+     * @internal
      */
     protected readonly playingNotes = new Array<boolean>(128).fill(false);
-
+    /**
+     * Used for handling SF2/AWE32 NRPN generator adjustments.
+     * @internal
+     */
     protected readonly generators: ChannelGenerators = {
         offsets: new Int16Array(GENERATORS_AMOUNT),
         offsetsEnabled: false,
         overrides: new Int16Array(GENERATORS_AMOUNT),
         overridesEnabled: false
     };
+    /** @internal*/
     protected readonly computeModulator = computeModulator.bind(this);
+    /** @internal*/
     protected readonly computeModulators = computeModulators.bind(this);
 
     /**
@@ -359,26 +346,50 @@ export class MIDIChannel {
      * @internal
      */
     public constructor(
-        synthProps: SynthesizerCore,
-        preset: BasicPreset | undefined,
+        synthProperties: SynthesizerCore,
+        preset: SynthesizerPatch | undefined,
+        drumPreset: SynthesizerPatch | undefined,
         channelNumber: number
     ) {
-        this.synthCore = synthProps;
+        this.synthCore = synthProperties;
         this.preset = preset;
         this.channel = channelNumber;
+        this.outputLeft = new Float32Array(this.synthCore.maxBufferSize);
+        this.outputRight = new Float32Array(this.synthCore.maxBufferSize);
+
+        this.noteOn = noteOn.bind(this);
+        this.noteOff = noteOff.bind(this);
+        this.controllerChange = controllerChange.bind(this);
+        this.programChange = programChange.bind(this);
+        this.lockMIDIParameter = lockMIDIParameterInternal.bind(this);
+        this.setSystemParameter = setSystemParameterInternal.bind(this);
+        this.reset = resetChannelInternal.bind(this);
+        this.renderVoice = renderVoice.bind(this);
+
         // @ts-expect-error Rx Channel init here!
         this._midiParameters.rxChannel = channelNumber;
         this.dynamicModulators = new DynamicModulatorManager(channelNumber);
+        // Init
         this.resetGeneratorOverrides();
         this.resetGeneratorOffsets();
-        for (let i = 0; i < 128; i++) {
-            this.drumParams.push(new DrumParameters());
-        }
         this.resetDrumParams();
+        this.resetVibratoParams();
+        // Drum preset
+        if (this.channel % 16 === MIDI_DRUM_CHANNEL) {
+            if (drumPreset) {
+                this.preset = drumPreset;
+                this.patch.program = drumPreset.program;
+                this.patch.bankLSB = drumPreset.bankLSB;
+                this.patch.bankMSB = drumPreset.bankMSB;
+                this.patch.isGMGSDrum = drumPreset.isGMGSDrum;
+            }
+            this.setDrumFlag(true);
+        }
     }
 
     /**
      * Current amount of voices that are playing on this channel.
+     * @internal
      */
     protected _voiceCount = 0;
 
@@ -399,6 +410,7 @@ export class MIDIChannel {
 
     /**
      * Indicates whether this channel is a drum channel.
+     * @internal
      */
     protected _drumChannel = false;
 
@@ -414,11 +426,19 @@ export class MIDIChannel {
      * An array of MIDI controllers for the channel.
      * This array is used to store the state of various MIDI controllers
      * such as volume, pan, modulation, etc.
-     * @remarks
-     * A bit of an explanation:
-     * The controller table is stored as an int16 array, it stores 14-bit values, allowing for full 14-bit LSB resolution.
-     * The only exception from this are the Registered and Non-Registered Parameter Numbers.
-     * Data entries do store it!
+     *
+     * > **Note**
+     * >
+     * > A bit of an explanation:
+     * > The controller table is stored as an `Int16Array`,
+     * > it stores 14-bit values, allowing for full 14-bit LSB resolution.
+     * > The only exception from this are
+     * > the Registered and Non-Registered Parameter Numbers.
+     * > Data entries do store it!
+     *
+     * > **Warning**
+     * >
+     * > Readonly, do not modify directly!
      */
     public get midiControllers() {
         return this._midiControllers as Readonly<Int16Array>;
@@ -426,34 +446,25 @@ export class MIDIChannel {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * The channel system parameters of this channel.
+     * The Channel System Parameters of this channel.
      * These are only editable via the API.
+     *
+     * Use {@link MIDIChannel.setSystemParameter} to set them.
      */
     public get systemParameters(): Readonly<ChannelSystemParameter> {
         return this._systemParameters;
     }
 
-    /*
-    ==========
-    PUBLIC API
-    ==========
-     */
-
     /**
-     * The channel MIDI parameters of this channel.
+     * The Channel MIDI Parameters of this channel.
      * These are only editable via MIDI messages.
      */
     public get midiParameters(): Readonly<ChannelMIDIParameter> {
         return this._midiParameters;
     }
 
-    /*
-    =================
-    END OF PUBLIC API
-    =================
-    */
-
-    protected get channelSystem(): MIDISystem {
+    /** @internal */
+    public get channelSystem(): MIDISystem {
         return this._systemParameters.presetLock
             ? this.lockedSystem
             : this.synthCore.midiParameters.system;
@@ -464,10 +475,144 @@ export class MIDIChannel {
     PUBLIC API
     ==========
      */
+    /**
+     * Sets a system parameter of the channel.
+     * @param parameter The type of the system parameter to set.
+     * @param value The value to set for the system parameter.
+     */
+    public setSystemParameter<P extends keyof ChannelSystemParameter>(
+        parameter: P,
+        value: ChannelSystemParameter[P]
+    ) {
+        // Patched with core in the constructor.
+        void parameter;
+        void value;
+    }
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Locks or unlocks a given controller.
+     * Locks or unlocks a given Channel MIDI Parameter.
+     * This prevents any changes to it until it's unlocked.
+     * @param parameter The Channel MIDI Parameter to lock.
+     * @param isLocked If the parameter should be locked.
+     */
+    public lockMIDIParameter(
+        parameter: keyof ChannelMIDIParameter,
+        isLocked: boolean
+    ) {
+        // Patched with core in the constructor.
+        void parameter;
+        void isLocked;
+    }
+
+    // MIDI messages
+    /**
+     * Sends a "MIDI Note on" message and starts a note.
+     * @param midiNote The MIDI note number (0-127).
+     * @param velocity The velocity of the note (0-127). If less than 1, it will send a note off instead.
+     * @param emit If the note on should be updated and emitted (non-internal)
+     * @internal
+     */
+    public noteOn(midiNote: number, velocity: number, emit = true) {
+        // Patched with core in the constructor.
+        void midiNote;
+        void velocity;
+        void emit;
+    }
+
+    /**
+     * Releases a note by its MIDI note number.
+     * If the note is in high performance mode and the channel is not a drum channel,
+     * or the drum channel has an rxNoteOff enabled,
+     * it kills the note instead of releasing it.
+     * @param midiNote The MIDI note number to release (0-127).
+     * @internal
+     */
+    public noteOff(midiNote: number) {
+        // Patched with core in the constructor.
+        void midiNote;
+    }
+
+    /**
+     * Changes the program (preset) of the channel.
+     * @param programNumber The program number (0-127) to change to.
+     * @internal
+     */
+    public programChange(programNumber: number) {
+        // Patched with core in the constructor.
+        void programNumber;
+    }
+
+    // CC (Continuous Controller)
+    /**
+     * Handles MIDI controller changes for a channel.
+     * @param controller The MIDI controller number (0-127).
+     * @param value The value of the controller (0-127).
+     * @param sendEvent If an event should be emitted.
+     * @remarks
+     * This function processes MIDI controller changes, updating the channel's
+     * midiControllers table and handling special cases like bank select,
+     * data entry, and sustain pedal. It also computes modulators for all voices
+     * in the channel based on the controller change.
+     * @internal
+     */
+    public controllerChange(
+        controller: MIDIController,
+        value: number,
+        sendEvent = true
+    ) {
+        // Patched with core in the constructor.
+        void controller;
+        void value;
+        void sendEvent;
+    }
+
+    /*
+    ==========
+    PUBLIC API
+    ==========
+     */
+
+    /**
+     * Reset this channel to its default state.
+     * Except for the locked controllers.
+     * @internal
+     */
+    public reset(sendEvent = true) {
+        // Patched with core in the constructor.
+        void sendEvent;
+    }
+
+    /*
+    =================
+    END OF PUBLIC API
+    =================
+    */
+
+    // Voice rendering methods
+    /**
+     * Renders a voice to the stereo output buffer
+     * @param voice the voice to render
+     * @param timeNow current time in seconds
+     * @param sampleCount the only thing needed as it's 0-based
+     * @internal
+     */
+    public renderVoice(voice: Voice, timeNow: number, sampleCount: number) {
+        // Patched with core in the constructor.
+        void voice;
+        void timeNow;
+        void sampleCount;
+    }
+
+    /*
+    ==========
+    PUBLIC API
+    ==========
+     */
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Locks or unlocks a given MIDI controller.
      * This prevents any changes to it until it's unlocked.
      * @param controller The MIDI controller number (0-127).
      * @param isLocked If the controller should be locked.
@@ -481,36 +626,52 @@ export class MIDIChannel {
     }
 
     /**
-     * Changes the preset to, or from drums.
-     * Note that this executes a program change.
-     * @param isDrum If the channel should be a drum preset or not.
+     * Toggles drums on the channel and keeps the current program number.
+     * Executes a program change so the change is immediately audible.
+     *
+     * > **Note**
+     * >
+     * > This does _not_ bypass {@link ChannelSystemParameter.presetLock `presetLock`}.
+     *
+     * @param isDrum If the channel should be a drum channel or not.
      */
     public setDrums(isDrum: boolean) {
+        if (this._systemParameters.presetLock) return;
+
         if (BankSelectHacks.isSystemXG(this.channelSystem)) {
             if (isDrum) {
+                if (BankSelectHacks.isXGDrum(this.patch.bankMSB)) return;
                 this.setBankMSB(
                     BankSelectHacks.getDrumBank(this.channelSystem)
                 );
-                this.setBankLSB(0);
             } else {
-                if (this.channel % 16 === DEFAULT_PERCUSSION) {
-                    throw new Error(
+                if (this.channel % 16 === MIDI_DRUM_CHANNEL) {
+                    SpessaLog.warn(
                         `Cannot disable drums on channel ${this.channel} for XG.`
                     );
+                    return;
                 }
-                this.setBankMSB(0);
-                this.setBankLSB(0);
+                this.setBankMSB(
+                    BankSelectHacks.getDefaultBank(this.channelSystem)
+                );
             }
-        } else {
-            this.setGSDrums(isDrum);
+
+            // Commit the changes and return
+            this.programChange(this.patch.program);
+            return;
         }
-        this.setDrumFlag(isDrum);
+        if (isDrum === this._drumChannel) return;
+        // Flip the drums for GS
+        this.setIsGMGSDrum(isDrum);
         this.programChange(this.patch.program);
+        // Fallback if no preset matched and the flag didn't sync
+        this.setDrumFlag(isDrum);
     }
 
     /**
      * Stops all notes on the channel.
-     * @param force If true, stops all notes immediately, otherwise applies release time.
+     * @param force If true, stops all notes immediately,
+     * otherwise applies release time.
      */
     public stopAllNotes(force = false) {
         // Clear IDs
@@ -569,8 +730,8 @@ export class MIDIChannel {
         if (tuning.length !== 12) {
             throw new Error("Tuning is not the length of 12.");
         }
-        for (let i = 0; i < 128; i++) {
-            this.octaveTuning[i] = tuning[i % 12];
+        for (let index = 0; index < 128; index++) {
+            this.octaveTuning[index] = tuning[index % 12];
         }
     }
 
@@ -608,23 +769,8 @@ export class MIDIChannel {
      */
     public polyPressure(midiNote: number, pressure: number) {
         // Note to self: don't use computeModulatorsAll here as we're setting the pressure!
-        let vc = 0;
-        if (this._voiceCount > 0)
-            for (const v of this.synthCore.voices) {
-                if (
-                    v.isActive &&
-                    v.channel === this.channel &&
-                    v.midiNote === midiNote
-                ) {
-                    v.pressure = pressure;
-                    this.computeModulators(
-                        v,
-                        0,
-                        ModulatorControllerSources.polyPressure
-                    );
-                    if (++vc >= this._voiceCount) break; // We already checked all the voices
-                }
-            }
+        this.polyPressures[midiNote] = pressure;
+        this.computeModulatorsAll(0, ModulatorControllerSources.polyPressure);
         this.synthCore.callEvent("polyPressure", {
             channel: this.channel,
             midiNote: midiNote,
@@ -699,33 +845,6 @@ export class MIDIChannel {
     }
 
     /**
-     * Sets the channel to a given MIDI patch.
-     * Note that this executes a program change.
-     * @param patch The MIDI patch to set the channel to.
-     * @internal
-     */
-    public setPatch(patch: MIDIPatch) {
-        this.setBankMSB(patch.bankMSB);
-        this.setBankLSB(patch.bankLSB);
-        this.setGSDrums(patch.isGMGSDrum);
-        this.programChange(patch.program);
-    }
-
-    /**
-     * Sets the GM/GS drum flag.
-     * @param drums
-     * @internal
-     */
-    public setGSDrums(drums: boolean) {
-        if (drums === this.patch.isGMGSDrum) {
-            return;
-        }
-        this.setBankLSB(0);
-        this.setBankMSB(0);
-        this.patch.isGMGSDrum = drums;
-    }
-
-    /**
      * Stops a note nearly instantly.
      * @param midiNote The note to stop.
      * @param releaseTime in timecents, defaults to -12000 (very short release).
@@ -791,11 +910,31 @@ export class MIDIChannel {
         this._midiParameters = undefined;
     }
 
+    /** @internal */
+    protected setBankMSB(bankMSB: number) {
+        if (this._systemParameters.presetLock) return;
+        this.patch.bankMSB = bankMSB;
+    }
+
+    /** @internal */
+    protected setBankLSB(bankLSB: number) {
+        if (this._systemParameters.presetLock) return;
+        this.patch.bankLSB = bankLSB;
+    }
+
+    /** @internal */
+    protected setIsGMGSDrum(isGMGSDrum: boolean) {
+        if (this._systemParameters.presetLock) return;
+        this.patch.isGMGSDrum = isGMGSDrum;
+    }
+
+    /** @internal */
     protected resetGeneratorOverrides() {
         this.generators.overrides.fill(GENERATOR_OVERRIDE_NO_CHANGE_VALUE);
         this.generators.overridesEnabled = false;
     }
 
+    /** @internal */
     protected setGeneratorOverride(
         gen: GeneratorType,
         value: number,
@@ -816,11 +955,13 @@ export class MIDIChannel {
         }
     }
 
+    /** @internal */
     protected resetGeneratorOffsets() {
         this.generators.offsets.fill(0);
         this.generators.offsetsEnabled = false;
     }
 
+    /** @internal */
     protected setGeneratorOffset(gen: GeneratorType, value: number) {
         this.generators.offsets[gen] = value * GeneratorLimits[gen].nrpn;
         this.generators.offsetsEnabled = true;
@@ -834,24 +975,50 @@ export class MIDIChannel {
             }
     }
 
+    /** @internal */
     protected resetDrumParams() {
         if (this.synthCore.systemParameters.drumLock || !this._drumChannel)
             return;
-        for (let i = 0; i < 128; i++) {
-            const p = this.drumParams[i];
-            p.pitch = 0;
-            p.gain = 1;
-            p.exclusiveClass = 0;
-            p.pan = 64;
-            p.reverbGain = DEFAULT_DRUM_REVERB[i] / 127;
-            p.chorusGain =
-                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[i] / 127 : 0; // Mirror reverb on XG only, GS has no chorus by default
-            p.delayGain = 0; // No drums have delay
-            p.rxNoteOn = true;
-            p.rxNoteOff = false;
+        for (let index = 0; index < 128; index++) {
+            const p = this.drumParams[index];
+            DrumParameterUtilities.copyInto(
+                DrumParameterUtilities.DEFAULT_DATA[index],
+                p
+            );
+            p.chorusSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0; // Mirror reverb on XG only, GS has no chorus by default
+            p.variationSend =
+                this.channelSystem === "xg" ? DEFAULT_DRUM_REVERB[index] : 0;
         }
     }
 
+    /** @internal */
+    protected resetVibratoParams() {
+        if (!this.synthCore.systemParameters.customVibrato) return;
+        this.customVibrato.rate = 0;
+        this.customVibrato.depth = 0;
+        this.customVibrato.delay = 0;
+    }
+
+    /** @internal */
+    protected addDefaultVibrato() {
+        if (
+            this.customVibrato.delay === 0 &&
+            this.customVibrato.rate === 0 &&
+            this.customVibrato.depth === 0
+        ) {
+            this.customVibrato.depth = 50;
+            this.customVibrato.rate = 8;
+            this.customVibrato.delay = 0.6;
+        }
+    }
+
+    /**
+     *
+     * @param sourceUsesCC what modulators should be computed, -1 means all, 0 means modulator source enum 1 means midi controller.
+     * @param sourceIndex
+     * @internal
+     */
     protected computeModulatorsAll(
         sourceUsesCC: -1 | 0 | 1,
         sourceIndex: number
@@ -866,25 +1033,12 @@ export class MIDIChannel {
             }
     }
 
-    protected setBankMSB(bankMSB: number) {
-        if (this._systemParameters.presetLock) return;
-        this.patch.bankMSB = bankMSB;
-    }
-
-    protected setBankLSB(bankLSB: number) {
-        if (this._systemParameters.presetLock) return;
-        this.patch.bankLSB = bankLSB;
-    }
-
     /**
      * Sets drums on channel.
+     * @internal
      */
     protected setDrumFlag(isDrum: boolean) {
-        if (
-            this._systemParameters.presetLock ||
-            !this.preset ||
-            this._drumChannel === isDrum
-        )
+        if (this._systemParameters.presetLock || this._drumChannel === isDrum)
             return;
 
         this._drumChannel = isDrum;

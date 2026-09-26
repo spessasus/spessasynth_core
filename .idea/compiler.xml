@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="TypeScriptCompiler">
+    <option name="memoryAutoIncrease" value="true" />
     <option name="useServicePoweredTypesEnabledManually" value="true" />
     <option name="versionType" value="TS_GO_PROXY_RECOMMENDED_VERSION" />
   </component>

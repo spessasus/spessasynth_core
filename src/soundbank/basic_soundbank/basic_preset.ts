@@ -35,6 +35,12 @@ for (let i = 0; i < defaultGeneratorValues.length; i++) {
         defaultGeneratorValues[i] = GeneratorLimits[i as GeneratorType].def;
 }
 
+/**
+ * Represents a single preset.
+ * This is what is used for MIDI playback.
+ *
+ * @group Sound Banks
+ */
 export class BasicPreset implements MIDIPatchFull {
     /**
      * The parent soundbank instance
@@ -43,7 +49,7 @@ export class BasicPreset implements MIDIPatchFull {
     public readonly parentSoundBank: BasicSoundBank;
 
     /**
-     * The preset's name
+     * The preset's name.
      */
     public name = "";
 
@@ -56,32 +62,34 @@ export class BasicPreset implements MIDIPatchFull {
     public isGMGSDrum = false;
 
     /**
-     * The preset's zones
+     * The preset's zones.
+     * These are limited to specific key/velocity ranges and contain associated instruments.
      */
     public zones: BasicPresetZone[] = [];
 
     /**
-     * Preset's global zone
+     * Preset's global zone.
+     * Its parameters are overridden by the local zone parameters.
      */
     public readonly globalZone: BasicZone;
 
     /**
-     * Unused metadata
+     * Unused preset metadata, preserved.
      */
     public library = 0;
     /**
-     * Unused metadata
+     * Unused preset metadata, preserved.
      */
     public genre = 0;
     /**
-     * Unused metadata
+     * Unused preset metadata, preserved.
      */
     public morphology = 0;
 
     /**
-     * Creates a new preset representation.
-     * @param parentSoundBank the sound bank this preset belongs to.
-     * @param globalZone optional, a global zone to use.
+     * Creates a new preset.
+     * @param parentSoundBank The sound bank this preset belongs to.
+     * @param globalZone The optional global zone to associate within the preset.
      */
     public constructor(
         parentSoundBank: BasicSoundBank,
@@ -93,7 +101,7 @@ export class BasicPreset implements MIDIPatchFull {
 
     // Note: a getter and not a constant value for editing purposes.
     /**
-     * Checks if this preset is a drum preset
+     * A boolean indicating if this preset is a drum preset.
      */
     public get isDrum(): boolean {
         const xg = this.parentSoundBank.isXGBank;
@@ -126,14 +134,15 @@ export class BasicPreset implements MIDIPatchFull {
 
     /**
      * Unlinks everything from this preset.
+     * @internal
      */
     public delete() {
         for (const z of this.zones) z.instrument?.unlinkFrom(this);
     }
 
     /**
-     * Deletes an instrument zone from this preset.
-     * @param index the zone's index to delete.
+     * Deletes a preset zone from this preset.
+     * @param index The zone's index to delete.
      */
     public deleteZone(index: number) {
         this.zones[index]?.instrument?.unlinkFrom(this);
@@ -142,7 +151,7 @@ export class BasicPreset implements MIDIPatchFull {
 
     /**
      * Creates a new preset zone and returns it.
-     * @param instrument the instrument to use in the zone.
+     * @param instrument The instrument to associate with the zone.
      */
     public createZone(instrument: BasicInstrument): BasicPresetZone {
         const z = new BasicPresetZone(this, instrument);
@@ -153,6 +162,8 @@ export class BasicPreset implements MIDIPatchFull {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Preloads (loads and caches synthesis data) for a given key range.
+     * @param keyMin The lowest allowed MIDI note number.
+     * @param keyMax The highest allowed MIDI note number.
      */
     public preload(keyMin: number, keyMax: number) {
         for (let key = keyMin; key < keyMax + 1; key++) {
@@ -169,6 +180,7 @@ export class BasicPreset implements MIDIPatchFull {
 
     /**
      * Checks if the bank and program numbers are the same for the given preset as this one.
+     * Shortened version of {@link MIDIPatchTools.matches}
      * @param preset The preset to check.
      */
     public matches(preset: MIDIPatch) {
@@ -177,9 +189,16 @@ export class BasicPreset implements MIDIPatchFull {
 
     /**
      * Returns the voice synthesis data for this preset.
-     * @param midiNote the MIDI note number.
-     * @param velocity the MIDI velocity.
-     * @returns the returned sound data.
+     *
+     * > **Note**
+     * >
+     * > The `E-mu` attenuation correction
+     * > (`initialAttenuation` generator value being multiplied by `0.4`) is already performed.
+     *
+     * @param midiNote The MIDI note number.
+     * @param velocity The MIDI velocity.
+     * @returns The returned sound data.
+     * @internal
      */
     public getVoiceParameters(
         midiNote: number,
@@ -321,12 +340,15 @@ export class BasicPreset implements MIDIPatchFull {
     }
 
     /**
-     * BankMSB:bankLSB:program:isGMGSDrum
+     * Alias for {@link MIDIPatchTools.toMIDIString}
      */
     public toMIDIString() {
         return MIDIPatchTools.toMIDIString(this);
     }
 
+    /**
+     * Alias for {@link MIDIPatchTools.toFullMIDIString}
+     */
     public toString() {
         return MIDIPatchTools.toFullMIDIString(this);
     }
@@ -334,7 +356,12 @@ export class BasicPreset implements MIDIPatchFull {
     /**
      * Combines preset into an instrument, flattening the preset zones into instrument zones.
      * This is a really complex function that attempts to work around the DLS limitations of only having the instrument layer.
-     * @returns The instrument containing the flattened zones. In theory, it should exactly the same as this preset.
+     *
+     * > **Tip**
+     * >
+     * > Consider reading about [the DLS conversion problem](../../../docs/extra/dls-conversion-problem.md).
+     *
+     * @returns The instrument containing the flattened zones. If flattening was successful, it should exactly the same as this preset.
      */
     public toFlattenedInstrument(): BasicInstrument {
         const addUnique = (main: Generator[], adder: Generator[]) => {

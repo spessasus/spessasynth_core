@@ -1,9 +1,9 @@
 # This is the tests' folder.
 
-It contains various test scripts that either test functionality or generate MIDI files.
+It contains focused tests and test assets for `spessasynth_core`.
 
-- `midi` - `BasicMIDI` testing
-- `midi_file` - test MIDI file generation and a MIDI test framework
-- `soundbank` - sound bank related tests
-- `synth` - synthesizer tests
-- `files` - dump your various test files here, it is ignored in the repo!
+- `midi` - `BasicMIDI` parsing, creation, conversion, editor and other tests.
+- `midi_file` - test MIDI file generation and a MIDI test framework + wav rendering comparison framework.
+- `soundbank` - sound bank related tests.
+- `synth` - synthesizer behavior, voice allocation, and performance tests.
+- `files` - dump your various test files here, it is ignored in the repo! Some files required by `midi_file` should be put here.

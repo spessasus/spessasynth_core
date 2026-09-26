@@ -6,7 +6,6 @@ import { LowpassFilter } from "./lowpass_filter";
 import { VolumeEnvelope } from "./volume_envelope";
 import { ModulationEnvelope } from "./modulation_envelope";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
-import type { SampleLoopingMode } from "../../types";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "../synth_constants";
 import {
     HermiteOscillator,
@@ -19,6 +18,16 @@ import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../parameters/system";
 import type { VoiceModulator } from "./voice_modulator";
 
 const EXCLUSIVE_CUTOFF_TIME = -2320;
+
+/**
+ * Looping mode of the sample.
+ * 0 - no loop.
+ * 1 - loop.
+ * 2 - UNOFFICIAL: polyphone 2.4 added start on release.
+ * 3 - loop then play when released.
+
+ */
+export type SampleLoopingMode = 0 | 1 | 2 | 3;
 
 /**
  * Voice represents a single instance of the
@@ -160,12 +169,7 @@ export class Voice {
     public rootKey = 0;
 
     /**
-     * The pressure of the voice
-     */
-    public pressure = 0;
-
-    /**
-     * Linear gain of the voice. Used with Key Modifiers.
+     * Linear gain of the voice.
      */
     public gainModifier = 1;
 
@@ -224,19 +228,19 @@ export class Voice {
     public pitchOffset = 0;
 
     /**
-     * Reverb send of the voice, used for drum parts, otherwise 1.
+     * Reverb gain of the voice, used for drum parts, otherwise 1.
      */
-    public reverbSend = 1;
+    public reverbGain = 1;
 
     /**
-     * Chorus send of the voice, used for drum parts, otherwise 1.
+     * Chorus gain of the voice, used for drum parts, otherwise 1.
      */
-    public chorusSend = 1;
+    public chorusGain = 1;
 
     /**
-     * Delay send of the voice, used for drum parts, otherwise 1.
+     * Delay/variation gain of the voice, used for drum parts, otherwise 1.
      */
-    public delaySend = 1;
+    public variationGain = 1;
 
     /**
      * Exclusive class number for hi-hats etc.
@@ -299,7 +303,6 @@ export class Voice {
         this.hasRendered = false;
         this.isHeld = false;
         this.releaseStartTime = Infinity;
-        this.pressure = 0;
         this.overrideReleaseVolEnv = 0;
         this.portamentoDuration = 0;
         this.portamentoFromKey = -1;

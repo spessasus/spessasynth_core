@@ -3,9 +3,14 @@ import type { SynthesizerSnapshot } from "../../synthesizer/audio_engine/synthes
 import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { type MIDIController, MIDIControllers } from "../enums";
 import { CONTROLLER_TABLE_SIZE } from "../../synthesizer/audio_engine/synth_constants";
-import type { ChannelModification, ClearableParameter } from "./modify_midi";
+import type {
+    ChannelModification,
+    ClearableParameter,
+    UserDrumModification
+} from "./midi_editor";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
+import { DrumParameterUtils } from "../drum_parameters";
 
 /**
  * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
@@ -77,7 +82,9 @@ export function applySnapshotInternal(
             fineTune,
             patch,
             controllers,
-            midiParams
+            midiParams,
+            // Drum lock clears all drum edits for every channel
+            drumParams: snapshot.systemParameters.drumLock ? "clear" : undefined
         });
     }
 
@@ -97,23 +104,42 @@ export function applySnapshotInternal(
             midiParams[parameter] = value as never;
     }
 
+    // User Drum set
+    const userDrumParams = new Map<number, UserDrumModification>();
+    if (snapshot.systemParameters.userDrumLock) {
+        for (
+            let drumSetNumber = 0;
+            drumSetNumber < snapshot.userDrumSets.length;
+            drumSetNumber++
+        ) {
+            const userDrumSet = snapshot.userDrumSets[drumSetNumber];
+            // Only set the ones that were changed
+            const drumSetParams: UserDrumModification = new Map();
+            for (let midiNote = 0; midiNote < userDrumSet.length; midiNote++) {
+                const param = userDrumSet[midiNote];
+                if (!DrumParameterUtils.isUserDefault(param, midiNote)) {
+                    drumSetParams.set(midiNote, { ...param });
+                }
+            }
+            userDrumParams.set(drumSetNumber, drumSetParams);
+        }
+    }
+
     midi.modify({
         channels,
-        drumSetupParams: snapshot.systemParameters.drumLock
-            ? "clear"
-            : undefined,
         reverbParams: snapshot.systemParameters.reverbLock
-            ? snapshot.reverbProcessor
+            ? snapshot.gsReverbProcessor
             : undefined,
         chorusParams: snapshot.systemParameters.chorusLock
-            ? snapshot.chorusProcessor
+            ? snapshot.gsChorusProcessor
             : undefined,
         delayParams: snapshot.systemParameters.delayLock
-            ? snapshot.delayProcessor
+            ? snapshot.gsDelayProcessor
             : undefined,
         insertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor
             : undefined,
+        userDrumParams,
         midiParams
     });
 }

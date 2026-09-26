@@ -1,3 +1,7 @@
+---
+title: About Multi-Port MIDI Files
+---
+
 # About Multi-Port MIDI Files
 
 The standard MIDI protocol limits the number of channels to 16 per MIDI port,
@@ -9,9 +13,9 @@ To overcome this limitation, MIDI supports meta-messages to specify the MIDI por
 **Meta Status:** `0x21`  
 **Data:** `pp` (Port Number)
 
-!!! Note
-
-    Description adapted from [Mixage Software](https://www.mixagesoftware.com/en/midikit/help/HTML/meta_events.html)
+> **Note**
+>
+> Description adapted from [Mixage Software](https://www.mixagesoftware.com/en/midikit/help/HTML/meta_events.html)
 
 This optional meta-event typically appears at the beginning of a track, before any MIDI events.
 It specifies which MIDI port (or bus) the track's events will use.
@@ -21,21 +25,20 @@ While the MIDI spec limits each MIDI port to 16 channels (0–15),
 multiple ports can be used to extend the number of channels available.
 This meta-event allows for distinguishing events on different ports, effectively enabling more channels at once.
 
-!!! Important
-
-    Multiple Port events in a track are acceptable if the track needs to switch ports mid-way.
+> **Important**
+>
+> Multiple Port events in a track are acceptable if the track needs to switch ports mid-way.
 
 ## SpessaSynth Implementation
 
-[**The code responsible for assigning the ports.
-**](https://github.com/spessasus/SpessaSynth/blob/7724bfc6fa67f35741e5778de8c1e4df19dc184d/src/spessasynth_lib/sequencer/worklet_sequencer/song_control.js#L19-L45)
+**[The code responsible for assigning the ports.](https://github.com/spessasus/SpessaSynth/blob/7724bfc6fa67f35741e5778de8c1e4df19dc184d/src/spessasynth_lib/sequencer/worklet_sequencer/song_control.js#L19-L45)**
 
 Here is how SpessaSynth handles multi-port MIDI files.
 It seems to work with various multi-port files and might be helpful for others implementing this functionality as well.
 
-!!! Note
-
-    This is specific to SpessaSynth’s implementation and may differ in other MIDI tools
+> **Note**
+>
+> This is specific to SpessaSynth’s implementation and may differ in other MIDI tools
 
 1. During MIDI file parsing, assign the detected MIDI ports to each track. If no port is found, use the next track's
    port. If no ports are specified, default to port `0`.
@@ -52,12 +55,12 @@ It seems to work with various multi-port files and might be helpful for others i
 5. For voice and system exclusive messages, add the port offset to the channel number to determine the final channel
    used.
 
-!!! Important
-
-    If the MIDI track has MIDI port events, the first port applies to starting from the first event,
-    even if the port event is not the first one.
-
-    This is a behavior that seems to fix most of musescore's MIDI files.
+> **Important**
+>
+> If the MIDI track has MIDI port events, the first port applies to starting from the first event,
+> even if the port event is not the first one.
+>
+> This is a behavior that seems to fix most of MuseScore's MIDI files.
 
 ### Example
 

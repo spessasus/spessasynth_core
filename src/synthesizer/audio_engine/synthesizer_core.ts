@@ -9,20 +9,20 @@ import type { MIDIPatch } from "../../soundbank/basic_soundbank/midi_patch";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
+import type { GSChorusProcessor, GSReverbProcessor } from "./effects/types";
 import {
-    type DelayProcessor,
-    type InsertionProcessor,
-    type InsertionProcessorConstructor,
-    type InsertionProcessorSnapshot
-} from "../exports";
+    type GSDelayProcessor,
+    type GSInsertionProcessor,
+    type GSInsertionProcessorConstructor,
+    type GSInsertionProcessorSnapshot
+} from "./effects/types";
 import type {
-    CachedVoiceList,
+    SynthesizerEvent,
+    SynthesizerPatch,
     SynthMethodOptions,
-    SynthProcessorEventData,
     SynthProcessorOptions
 } from "../types";
 import { MIDIChannel } from "./channel/midi_channel";
-import { KeyModifierManager } from "./key_modifier_manager";
 import {
     DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
     type GlobalSystemParameter,
@@ -40,26 +40,38 @@ import { Voice } from "./voice/voice";
 import { CachedVoice } from "./voice/voice_cache";
 
 import { MIDIMessage } from "../../midi/midi_message";
-import type { SysExAcceptedArray } from "../../midi/types";
+import type {
+    SysExAcceptedArray,
+    UserDrumSetParameter
+} from "../../midi/types";
 import type { MIDISystem } from "../../soundbank/types";
-import { SpessaSynthChorus } from "./effects/chorus/chorus";
-import { SpessaSynthDelay } from "./effects/delay/delay";
-import { ThruFX } from "./effects/insertion/thru";
-import { INSERTION_EFFECT_LIST } from "./effects/insertion_list";
-import { SpessaSynthReverb } from "./effects/reverb/reverb";
-import type { ChorusProcessor, ReverbProcessor } from "./effects/types";
+import { SpessaSynthGSChorus } from "./effects/gs/chorus";
+import { SpessaSynthGSDelay } from "./effects/gs/delay";
+import { ThruFX } from "./effects/gs/insertion/thru";
+import { GS_INSERTION_EFFECT_LIST } from "./effects/gs/insertion_list";
+import { SpessaSynthGSReverb } from "./effects/gs/reverb";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
     lockMIDIParameterInternal,
     setMIDIParameterInternal
 } from "./parameters/midi";
+import type { UserDrumSetChangeEvent } from "../events";
 
-// Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+/**
+ * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
+ */
 const GAIN_SMOOTHING_FACTOR = 0.01;
 
-// Pan smoothing for rapid pan changes
+/**
+ * Pan smoothing for rapid pan changes
+ */
 const PAN_SMOOTHING_FACTOR = 0.05;
+/**
+ * A list of voices for a given key:velocity.
+ */
+type CachedVoiceList = CachedVoice[];
+
 /**
  * The core synthesis engine which interacts with channels and holds all the synth parameters.
  */
@@ -110,10 +122,6 @@ export class SynthesizerCore {
     public soundBankManager: SoundBankManager = new SoundBankManager(
         this.updatePresetList.bind(this)
     );
-    /**
-     * Handles the custom key overrides: velocity and preset
-     */
-    public keyModifierManager: KeyModifierManager = new KeyModifierManager();
     public readonly sampleRate;
     /**
      * This.tunings[program * 128 + key] = midiNote,cents (fraction)
@@ -156,11 +164,11 @@ export class SynthesizerCore {
     /**
      * Synth's default (reset) preset.
      */
-    public defaultPreset: BasicPreset | undefined;
+    public defaultPreset: SynthesizerPatch | undefined;
     /**
      * Synth's default (reset) drum preset.
      */
-    public drumPreset: BasicPreset | undefined;
+    public drumPreset: SynthesizerPatch | undefined;
     /**
      * Gain smoothing factor, adjusted to the sample rate.
      */
@@ -174,9 +182,9 @@ export class SynthesizerCore {
      * @param eventType The event type.
      * @param eventData The event data.
      */
-    public eventCallbackHandler: <K extends keyof SynthProcessorEventData>(
+    public eventCallbackHandler: <K extends keyof SynthesizerEvent>(
         eventType: K,
-        eventData: SynthProcessorEventData[K]
+        eventData: SynthesizerEvent[K]
     ) => unknown;
     public readonly missingPresetHandler: (
         patch: MIDIPatch,
@@ -207,21 +215,27 @@ export class SynthesizerCore {
     public readonly systemExclusive: typeof systemExclusiveInternal =
         systemExclusiveInternal.bind(this);
     /**
-     * The synthesizer's reverb processor.
-     */
-    public readonly reverbProcessor: ReverbProcessor;
-    /**
-     * The synthesizer's chorus processor.
-     */
-    public readonly chorusProcessor: ChorusProcessor;
-    /**
-     * The synthesizer's delay processor.
-     */
-    public readonly delayProcessor: DelayProcessor;
-    /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      */
     public insertionActive = false;
+    /**
+     * The synthesizer's GS reverb processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     */
+    protected readonly gsReverbProcessor: GSReverbProcessor;
+    /**
+     * The synthesizer's GS chorus processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     */
+    protected readonly gsChorusProcessor: GSChorusProcessor;
+    /**
+     * The synthesizer's GS delay processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     */
+    protected readonly gsDelayProcessor: GSDelayProcessor;
     /**
      * A sysEx may set a "Part" (channel) to receive on a different channel number.
      * This slows down the access, so this toggle tracks if it's enabled or not.
@@ -241,12 +255,15 @@ export class SynthesizerCore {
     /**
      * The current insertion processor.
      */
-    protected insertionProcessor: InsertionProcessor = this.insertionFallback;
+    protected insertionProcessor: GSInsertionProcessor = this.insertionFallback;
     /**
      * All the insertion effects available to the processor.
      * The key is the EFX type stored as MSB << 8 | LSB
      */
-    protected readonly insertionEffects = new Map<number, InsertionProcessor>();
+    protected readonly insertionEffects = new Map<
+        number,
+        GSInsertionProcessor
+    >();
     /**
      * For F5 system exclusive.
      */
@@ -278,9 +295,9 @@ export class SynthesizerCore {
     private readonly sampleTime: number;
 
     public constructor(
-        eventCallbackHandler: <K extends keyof SynthProcessorEventData>(
+        eventCallbackHandler: <K extends keyof SynthesizerEvent>(
             eventType: K,
-            eventData: SynthProcessorEventData[K]
+            eventData: SynthesizerEvent[K]
         ) => unknown,
         missingPresetHandler: (
             patch: MIDIPatch,
@@ -297,6 +314,9 @@ export class SynthesizerCore {
         this.setSystemParameter("effectsEnabled", options.effectsEnabled);
         this.setSystemParameter("eventsEnabled", options.eventsEnabled);
         this.maxBufferSize = options.maxBufferSize;
+
+        // For GS user drum set
+        this.soundBankManager.systemGetter = () => this.midiParameters.system;
         // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
         // Volume  smoothing factor
         this.gainSmoothingFactor =
@@ -307,14 +327,15 @@ export class SynthesizerCore {
 
         const bufSize = this.maxBufferSize;
         // Initialize effects
-        this.reverbProcessor =
-            options.reverbProcessor ??
-            new SpessaSynthReverb(sampleRate, bufSize);
-        this.chorusProcessor =
-            options.chorusProcessor ??
-            new SpessaSynthChorus(sampleRate, bufSize);
-        this.delayProcessor =
-            options.delayProcessor ?? new SpessaSynthDelay(sampleRate, bufSize);
+        this.gsReverbProcessor =
+            options.gsReverbProcessor ??
+            new SpessaSynthGSReverb(sampleRate, bufSize);
+        this.gsChorusProcessor =
+            options.gsChorusProcessor ??
+            new SpessaSynthGSChorus(sampleRate, bufSize);
+        this.gsDelayProcessor =
+            options.gsDelayProcessor ??
+            new SpessaSynthGSDelay(sampleRate, bufSize);
 
         // Initialize buffers
         this.voiceBuffer = new Float32Array(bufSize);
@@ -325,7 +346,7 @@ export class SynthesizerCore {
         this.delayInput = new Float32Array(bufSize);
 
         // Register insertion
-        for (const insertion of INSERTION_EFFECT_LIST)
+        for (const insertion of GS_INSERTION_EFFECT_LIST)
             this.registerInsertionProcessor(insertion);
         this.resetInsertionParams(); // Initial setup
 
@@ -550,20 +571,7 @@ export class SynthesizerCore {
     ): CachedVoiceList {
         const channelObject = this.midiChannels[channel];
 
-        // Override patch
-        const overridePatch = this.keyModifierManager.hasOverridePatch(
-            channel,
-            midiNote
-        );
-
-        let preset = channelObject.preset;
-        if (overridePatch) {
-            const patch = this.keyModifierManager.getPatch(channel, midiNote);
-            preset = this.soundBankManager.getPreset(
-                patch,
-                this.midiParameters.system
-            );
-        }
+        const preset = channelObject.preset;
 
         // Warning is handled in program change
         if (!preset) {
@@ -577,13 +585,11 @@ export class SynthesizerCore {
         const channel: MIDIChannel = new MIDIChannel(
             this,
             this.defaultPreset,
+            this.drumPreset,
             this.midiChannels.length
         );
         this.midiChannels.push(channel);
-        if (sendEvent) {
-            this.callEvent("channelAdded", undefined);
-            channel.setDrums(true);
-        }
+        if (sendEvent) this.callEvent("channelAdded", undefined);
     }
 
     /**
@@ -616,27 +622,17 @@ export class SynthesizerCore {
         // Avoid crashing
         if (!this.drumPreset || !this.defaultPreset) return;
 
+        // Reset GS user drums
+        if (!this.systemParameters.userDrumLock)
+            for (const userDrum of this.soundBankManager.userDrumSets)
+                userDrum.reset();
+
         // Reset channels
         // Do not send CC changes as we call reset
         for (const ch of this.midiChannels) ch.reset(false);
 
         // Update if the effects should still be active.
         this.updateActiveEffects();
-    }
-
-    public process(
-        left: Float32Array,
-        right: Float32Array,
-        startIndex = 0,
-        sampleCount = 0
-    ) {
-        this.processSplit(
-            [[left, right]],
-            left,
-            right,
-            startIndex,
-            sampleCount
-        );
     }
 
     /**
@@ -672,24 +668,25 @@ export class SynthesizerCore {
      *              │              │          │                   │
      *              │              │          │                   │
      *              𜸊              𜸊          𜸊                   𜸊
-     *    ┌─────────┴──────────┐ ┌─┴──────────┴───────────────────┴────┐
-     *    │  Dry Output Pairs  │ │        Stereo Effects Output        │
-     *    └────────────────────┘ └─────────────────────────────────────┘
+     *    ┌─────────┴──────────────┴──────────┴───────────────────┴────┐
+     *    │                        Stereo Output                       │
+     *    └────────────────────────────────────────────────────────────┘
      * ```
+     * Each channel's dry signal is also copied to the optional `channelOutputs` pairs for visualization only.
      * The pipeline is quite similar to the one on SC-8850 manual page 78.
      * All output arrays must be the same length, the method will crash otherwise.
-     * @param outputs The stereo pairs for each MIDI channel's dry output, will be wrapped if less.
-     * @param effectsLeft The left stereo effect output buffer.
-     * @param effectsRight The right stereo effect output buffer.
+     * @param left the left output channel.
+     * @param right the right output channel.
      * @param startIndex The index to start writing at into the output buffer.
      * @param samples The amount of samples to write.
+     * @param channelOutputs optional stereo channel outputs for visualization _only_. These shouldn't be added to the direct outputs.
      */
-    public processSplit(
-        outputs: Float32Array[][],
-        effectsLeft: Float32Array,
-        effectsRight: Float32Array,
+    public process(
+        left: Float32Array,
+        right: Float32Array,
         startIndex = 0,
-        samples = 0
+        samples = 0,
+        channelOutputs?: Float32Array[][]
     ) {
         // Process event queue
         if (this.eventQueue.length > 0) {
@@ -704,7 +701,7 @@ export class SynthesizerCore {
 
         // Validate
         startIndex = Math.max(startIndex, 0);
-        const sampleCount = samples || outputs[0][0].length - startIndex;
+        const sampleCount = samples || left.length - startIndex;
         if (sampleCount > this.maxBufferSize)
             throw new Error(
                 `Requested ${sampleCount} samples, but maxBufferSize is ${this.maxBufferSize}`
@@ -718,35 +715,68 @@ export class SynthesizerCore {
             this.insertionInputL.fill(0);
             this.insertionInputR.fill(0);
         }
-
-        // Clear voice count
         for (const c of this.midiChannels) {
+            // And voice count
             c.clearVoiceCount();
+            c.outputRight.fill(0);
+            c.outputLeft.fill(0);
         }
         this._voiceCount = 0;
 
         // Process voices
         const cap = this.systemParameters.voiceCap;
-        const outputCount = outputs.length;
+        const outputCount = channelOutputs?.length ?? 0;
         for (let i = 0; i < cap; i++) {
             const v = this.voices[i];
             const ch = this.midiChannels[v.channel];
             if (!v.isActive) continue;
 
-            // Send the voice to appropriate output
-            const outputIndex = v.channel % outputCount;
-            ch.renderVoice(
-                v,
-                this.currentTime,
-                outputs[outputIndex][0],
-                outputs[outputIndex][1],
-                startIndex,
-                sampleCount
-            );
+            ch.renderVoice(v, this.currentTime, sampleCount);
 
             // Update voice count
             ch.voiceCount++;
             this._voiceCount++;
+        }
+
+        // Mix channel data
+        for (let channel = 0; channel < this.midiChannels.length; channel++) {
+            const { outputLeft, outputRight, midiParameters } =
+                this.midiChannels[channel];
+            // Mix visualization first
+            if (outputCount) {
+                const out = channelOutputs![channel % outputCount];
+                const outL = out[0];
+                const outR = out[1];
+
+                for (let i = 0; i < sampleCount; i++) {
+                    const idx = startIndex + i;
+                    outL[idx] += outputLeft[i];
+                    outR[idx] += outputRight[i];
+                }
+            }
+
+            // Straight into the insertion EFX, but only if it is active
+            if (
+                midiParameters.efxAssign &&
+                this.systemParameters.effectsEnabled &&
+                this.insertionActive
+            ) {
+                const insertionL = this.insertionInputL;
+                const insertionR = this.insertionInputR;
+                // Index is 0-based here as it's internal
+                for (let i = 0; i < sampleCount; i++) {
+                    insertionL[i] += outputLeft[i];
+                    insertionR[i] += outputRight[i];
+                }
+                continue;
+            }
+
+            // Mix down normally
+            for (let i = 0; i < sampleCount; i++) {
+                const idx = startIndex + i;
+                left[idx] += outputLeft[i];
+                right[idx] += outputRight[i];
+            }
         }
 
         // Process effects
@@ -764,8 +794,8 @@ export class SynthesizerCore {
                 this.insertionProcessor.process(
                     insertionInputL,
                     insertionInputR,
-                    effectsLeft,
-                    effectsRight,
+                    left,
+                    right,
                     reverbInput,
                     chorusInput,
                     delayInput,
@@ -775,10 +805,10 @@ export class SynthesizerCore {
             }
 
             // Chorus first, it feeds to reverb and delay
-            this.chorusProcessor.process(
+            this.gsChorusProcessor.process(
                 chorusInput,
-                effectsLeft,
-                effectsRight,
+                left,
+                right,
                 reverbInput,
                 delayInput,
                 startIndex,
@@ -787,20 +817,20 @@ export class SynthesizerCore {
             // CC#94 in XG is variation, not delay
             if (this.delayActive && this.midiParameters.system !== "xg") {
                 // Process delay
-                this.delayProcessor.process(
+                this.gsDelayProcessor.process(
                     delayInput,
-                    effectsLeft,
-                    effectsRight,
+                    left,
+                    right,
                     reverbInput,
                     startIndex,
                     sampleCount
                 );
             }
             // Finally process the reverb processor (it goes directly into the output buffer)
-            this.reverbProcessor.process(
+            this.gsReverbProcessor.process(
                 reverbInput,
-                effectsLeft,
-                effectsRight,
+                left,
+                right,
                 startIndex,
                 sampleCount
             );
@@ -818,7 +848,7 @@ export class SynthesizerCore {
      * @returns Output is an array of voices.
      */
     public getVoicesForPreset(
-        preset: BasicPreset,
+        preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
     ): CachedVoiceList {
@@ -860,9 +890,9 @@ export class SynthesizerCore {
     /**
      * Copied callback so MIDI channels can call it.
      */
-    public callEvent<K extends keyof SynthProcessorEventData>(
+    public callEvent<K extends keyof SynthesizerEvent>(
         eventName: K,
-        eventData: SynthProcessorEventData[K]
+        eventData: SynthesizerEvent[K]
     ) {
         this.eventCallbackHandler(eventName, eventData);
     }
@@ -880,7 +910,7 @@ export class SynthesizerCore {
             this.delayActive =
                 this.midiParameters.system === "xg"
                     ? false
-                    : this.chorusProcessor.sendLevelToDelay > 0 ||
+                    : this.gsChorusProcessor.sendLevelToDelay > 0 ||
                       this.insertionProcessor.sendLevelToDelay > 0 ||
                       this.midiChannels.some(
                           (c) =>
@@ -890,7 +920,43 @@ export class SynthesizerCore {
                       );
     }
 
-    protected getInsertionSnapshot(): InsertionProcessorSnapshot {
+    // Bad code... make sure to call only when necessary!!!
+    public purgeCachedPatch(patch: MIDIPatch) {
+        for (let midiNote = 0; midiNote < 128; midiNote++) {
+            for (let velocity = 0; velocity < 128; velocity++) {
+                this.cachedVoices.delete(
+                    this.getCachedVoiceIndex(patch, midiNote, velocity)
+                );
+            }
+        }
+    }
+
+    protected setUserDrumSetParam<K extends keyof UserDrumSetParameter>(
+        drumSet: number,
+        midiNote: number,
+        parameter: K,
+        value: UserDrumSetParameter[K]
+    ) {
+        const set = this.soundBankManager.userDrumSets[drumSet];
+        // Optimization for bulk dump
+        // Testcase FADED88.mid
+        if (set.keyParams[midiNote][parameter] === value) {
+            return;
+        }
+        set.keyParams[midiNote][parameter] = value;
+        this.callEvent("userDrumSetChange", {
+            midiNote,
+            drumSet,
+            parameter,
+            value
+        } as UserDrumSetChangeEvent);
+        SpessaLog.gsInfo(
+            `User Drum Set ${drumSet} ${parameter}, key ${midiNote}`,
+            value.toString()
+        );
+    }
+
+    protected getInsertionSnapshot(): GSInsertionProcessorSnapshot {
         return {
             type: this.insertionProcessor.type,
             params: this.insertionParams.slice()
@@ -924,7 +990,7 @@ export class SynthesizerCore {
     protected setReverbMacro(macro: number) {
         if (this.systemParameters.reverbLock) return;
         // SC-8850 manual page 81
-        const rev = this.reverbProcessor;
+        const rev = this.gsReverbProcessor;
         rev.level = 64;
         rev.preDelayTime = 0;
         rev.character = macro;
@@ -1031,7 +1097,7 @@ export class SynthesizerCore {
     protected setChorusMacro(macro: number) {
         if (this.systemParameters.chorusLock) return;
         // SC-8850 manual page 83
-        const chr = this.chorusProcessor;
+        const chr = this.gsChorusProcessor;
         chr.level = 64;
         chr.preLowpass = 0;
         chr.delay = 127;
@@ -1144,7 +1210,7 @@ export class SynthesizerCore {
     protected setDelayMacro(macro: number) {
         if (this.systemParameters.delayLock) return;
         // SC-8850 manual page 85
-        const dly = this.delayProcessor;
+        const dly = this.gsDelayProcessor;
         dly.level = 64;
         dly.preLowpass = 0;
         dly.sendLevelToReverb = 0;
@@ -1325,7 +1391,7 @@ export class SynthesizerCore {
             this.voices.push(new Voice(this.sampleRate, this.maxBufferSize));
     }
 
-    private registerInsertionProcessor(proc: InsertionProcessorConstructor) {
+    private registerInsertionProcessor(proc: GSInsertionProcessorConstructor) {
         const p = new proc(this.sampleRate, this.maxBufferSize);
         this.insertionEffects.set(p.type, p);
     }

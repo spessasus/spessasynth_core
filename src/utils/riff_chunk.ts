@@ -15,17 +15,30 @@ import type {
     DLSChunkFourCC,
     DLSInfoFourCC,
     SF2ChunkFourCC,
-    SF2InfoFourCC,
-    SoundBankInfoFourCC
+    SF2InfoFourCC
 } from "../soundbank/types";
 
 import type { RMIDInfoFourCC } from "../midi/types";
 
+/**
+ * General RIFF (and RIFF64) Four Character Codes defined in the RIFF spec.
+ *
+ * @group Utilities.FourCC
+ */
 export type GenericRIFFFourCC = "RIFF" | "RIFS" | "LIST" | "INFO";
+/**
+ * RIFF Four Character Codes found in a WAVE file.
+ *
+ * @group Utilities.FourCC
+ */
 export type WAVFourCC = "wave" | "cue " | "fmt ";
+/**
+ * All RIFF Four Character Codes recognized by the library.
+ *
+ * @group Utilities.FourCC
+ */
 export type FourCC =
     | GenericRIFFFourCC
-    | SoundBankInfoFourCC
     | SF2InfoFourCC
     | SF2ChunkFourCC
     | DLSInfoFourCC
