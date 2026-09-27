@@ -264,8 +264,9 @@ for (const t of timeline) {
         }
     }
 }
+
+console.groupEnd();
+console.info("--- End Of Analysis ---\n");
 console.info(
     `Total recognized: ${recognized}, unrecognized: ${unrecognized}.\nRecognized ${Math.round((recognized / (recognized + unrecognized)) * 100)}% of all messages.`
 );
-console.groupEnd();
-console.info("--- End Of Analysis ---\n\n\n");

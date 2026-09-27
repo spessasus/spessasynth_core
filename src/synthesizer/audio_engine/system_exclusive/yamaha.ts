@@ -199,7 +199,7 @@ export function yamahaSystemExclusive(
                         `Velocity Sense Depth on ${channel}`,
                         data
                     );
-                    return;
+                    break;
                 }
 
                 // Velocity Sense Offset
@@ -209,7 +209,7 @@ export function yamahaSystemExclusive(
                         `Velocity Sense Offset on ${channel}`,
                         data
                     );
-                    return;
+                    break;
                 }
 
                 // Pan position
@@ -221,7 +221,6 @@ export function yamahaSystemExclusive(
                         // 0 means random
                         SpessaLog.xgInfo(`Random Pan for ${channel}`, "ON");
                     else ch.controllerChange(MIDIControllers.pan, pan);
-
                     break;
                 }
 
