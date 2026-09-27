@@ -34,7 +34,6 @@ import {
     DEFAULT_SYNTH_MODE,
     EFX_SENDS_GAIN_CORRECTION
 } from "./synth_constants";
-import { systemExclusiveInternal } from "./system_exclusive/system_exclusive";
 import { LowpassFilter } from "./voice/lowpass_filter";
 import { Voice } from "./voice/voice";
 import { CachedVoice } from "./voice/voice_cache";
@@ -57,6 +56,9 @@ import {
     setMIDIParameterInternal
 } from "./parameters/midi";
 import type { UserDrumSetChangeEvent } from "../events";
+import { universalSystemExclusive } from "./system_exclusive/universal";
+import { rolandSystemExclusive } from "./system_exclusive/roland";
+import { yamahaSystemExclusive } from "./system_exclusive/yamaha";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -212,8 +214,6 @@ export class SynthesizerCore {
      */
     public readonly setSystemParameter: typeof setSystemParameterInternal =
         setSystemParameterInternal.bind(this);
-    public readonly systemExclusive: typeof systemExclusiveInternal =
-        systemExclusiveInternal.bind(this);
     /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      */
@@ -364,6 +364,86 @@ export class SynthesizerCore {
      */
     public get voiceCount(): number {
         return this._voiceCount;
+    }
+
+    /**
+     * Executes a system exclusive message for the synthesizer.
+     * @param syx The system exclusive message as an array of bytes.
+     * @param channelOffset The channel offset to apply (default is 0).
+     * @remarks
+     * This is a rather extensive method that handles various system exclusive messages,
+     * including Roland GS, MIDI Tuning Standard, and other non-realtime messages.
+     */
+    public systemExclusive(
+        this: SynthesizerCore,
+        syx: SysExAcceptedArray,
+        channelOffset = 0
+    ) {
+        channelOffset += this.portSelectChannelOffset;
+        const manufacturer = syx[0];
+        // Ensure that the device ID matches
+        if (
+            // The device ID can be set to "all" which it is by default
+            this.systemParameters.deviceID !== -1 &&
+            syx[1] !== 0x7f && // 0x7f means broadcast, i.e. all MIDI devices
+            this.systemParameters.deviceID !== syx[1]
+        ) {
+            // Not our device ID
+            return;
+        }
+
+        switch (manufacturer) {
+            default: {
+                SpessaLog.unsupported(
+                    "System Exclusive",
+                    syx,
+                    `Unknown manufacturer: ${manufacturer}`
+                );
+                break;
+            }
+
+            // Non realtime GM
+            case 0x7e:
+            // Realtime GM
+            case 0x7f: {
+                universalSystemExclusive.call(this, syx, channelOffset);
+                break;
+            }
+
+            // Roland
+            case 0x41: {
+                rolandSystemExclusive.call(this, syx, channelOffset);
+                break;
+            }
+
+            // Yamaha
+            case 0x43: {
+                yamahaSystemExclusive.call(this, syx, channelOffset);
+                break;
+            }
+
+            // Port select (Falcosoft MIDI Player)
+            // https://www.vogons.org/viewtopic.php?p=1404746#p1404746
+            case 0xf5: {
+                if (syx.length < 2) return;
+                this.portSelectChannelOffset = (syx[1] - 1) * 16;
+                // Create new port if needed
+                while (
+                    this.midiChannels.length <= this.portSelectChannelOffset
+                ) {
+                    SpessaLog.info(
+                        `%cPort select, channel offset %c${this.portSelectChannelOffset}%c. Creating a new port!`,
+                        ConsoleColors.info,
+                        ConsoleColors.value,
+                        ConsoleColors.info
+                    );
+                    for (let i = 0; i < 16; i++) {
+                        this.createMIDIChannel(true);
+                    }
+                }
+                break;
+            }
+        }
     }
 
     public controllerChange(
