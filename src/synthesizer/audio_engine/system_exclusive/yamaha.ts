@@ -1,6 +1,6 @@
 import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import type { SysExAcceptedArray } from "../../../midi/types";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import {
@@ -15,7 +15,7 @@ import {
  * @param channelOffset
  */
 export function yamahaSystemExclusive(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {

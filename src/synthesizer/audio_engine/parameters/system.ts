@@ -1,6 +1,6 @@
 import { VOICE_CAP } from "../synth_constants";
 import { type InterpolationType, InterpolationTypes } from "../../enums";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import { SpessaLog } from "../../../utils/loggin";
 
 /**
@@ -246,9 +246,10 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
  */
 export function setSystemParameterInternal<
     P extends keyof GlobalSystemParameter
->(this: SynthesizerCore, parameter: P, value: GlobalSystemParameter[P]) {
+>(this: SpessaSynthProcessor, parameter: P, value: GlobalSystemParameter[P]) {
     if (this.systemParameters[parameter] === value) return;
     const prev = this.systemParameters[parameter];
+    // @ts-expect-error Only setter here, readonly for consumers
     this.systemParameters[parameter] = value;
     for (const ch of this.midiChannels) ch.updateInternalParams();
     // Additional handling for specific parameters
@@ -260,6 +261,7 @@ export function setSystemParameterInternal<
         case "voiceCap": {
             // Infinity is not allowed
             const cap = Math.min(value as number, 1_000_000);
+            // @ts-expect-error Only setter here, readonly for consumers
             this.systemParameters.voiceCap = cap;
             // Disable all voices after cap
             for (let i = cap; i < this.voices.length; i++) {
@@ -275,8 +277,7 @@ export function setSystemParameterInternal<
         }
 
         case "keyShift": {
-            if ((prev as number) !== (value as number))
-                this.stopAllChannels(true);
+            if ((prev as number) !== (value as number)) this.stopAll(true);
         }
     }
 }

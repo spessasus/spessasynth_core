@@ -497,7 +497,7 @@ export class SpessaSynthSequencer {
             this.sendMIDICC(i, MIDIControllers.sustainPedal, 0);
         }
         if (!this.externalMIDIPlayback) {
-            this.synth.stopAllChannels();
+            this.synth.stopAll();
             return;
         }
         // External

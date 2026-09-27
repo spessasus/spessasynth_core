@@ -1,5 +1,5 @@
 import { DEFAULT_SYNTH_MODE } from "../synth_constants";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import type { MIDISystem } from "../../../soundbank/types";
 import type { GlobalMIDIParameterChangeEvent } from "../../events";
 
@@ -87,11 +87,12 @@ export const DEFAULT_GLOBAL_MIDI_PARAMETERS: GlobalMIDIParameter = {
  * @param value The value to set for the global MIDI parameter.
  */
 export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     parameter: P,
     value: GlobalMIDIParameter[P]
 ) {
     if (this.lockedMIDIParameters[parameter]) return;
+    // @ts-expect-error Only setter here, readonly for consumers
     this.midiParameters[parameter] = value;
 
     for (const ch of this.midiChannels) ch.updateInternalParams();
@@ -109,7 +110,7 @@ export function setMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
  * @param isLocked If the parameter should be locked.
  */
 export function lockMIDIParameterInternal<P extends keyof GlobalMIDIParameter>(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     parameter: P,
     isLocked: boolean
 ) {

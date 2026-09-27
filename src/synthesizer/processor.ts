@@ -1,16 +1,27 @@
+import {
+    type MIDIController,
+    MIDIControllers,
+    type MIDIMessageType,
+    MIDIMessageTypes
+} from "../midi/enums";
+import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../soundbank/basic_soundbank/midi_patch";
+import { IndexedByteArray } from "../utils/indexed_array";
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
+import type {
+    GSChorusProcessor,
+    GSReverbProcessor
+} from "./audio_engine/effects/types";
 import {
-    DEFAULT_SYNTH_MODE,
-    EMBEDDED_SOUND_BANK_ID
-} from "./audio_engine/synth_constants";
-import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/synth_processor_options";
-import { fillWithDefaults } from "../utils/fill_with_defaults";
-import {
-    applySnapshot,
-    getSynthesizerSnapshot,
-    type SynthesizerSnapshot
-} from "./audio_engine/synthesizer_snapshot";
+    type GSDelayProcessor,
+    type GSInsertionProcessor,
+    type GSInsertionProcessorConstructor,
+    type GSInsertionProcessorSnapshot
+} from "./audio_engine/effects/types";
 import type {
     SynthesizerEvent,
     SynthesizerEventCallback,
@@ -18,29 +29,64 @@ import type {
     SynthMethodOptions,
     SynthProcessorOptions
 } from "./types";
-import { type MIDIController } from "../midi/enums";
-import { SynthesizerCore } from "./audio_engine/synthesizer_core";
-import { SoundBankLoader } from "../soundbank/sound_bank_loader";
-import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
+import { MIDIChannel } from "./audio_engine/channel/midi_channel";
 import {
-    type MIDIPatch,
-    MIDIPatchTools
-} from "../soundbank/basic_soundbank/midi_patch";
-import type { GlobalSystemParameter } from "./audio_engine/parameters/system";
-import type { MIDIChannel } from "./audio_engine/channel/midi_channel";
-import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
+    DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
+    type GlobalSystemParameter,
+    setSystemParameterInternal
+} from "./audio_engine/parameters/system";
+import { SoundBankManager } from "./audio_engine/sound_bank_manager";
+import {
+    DEFAULT_SYNTH_METHOD_OPTIONS,
+    DEFAULT_SYNTH_MODE,
+    EFX_SENDS_GAIN_CORRECTION,
+    EMBEDDED_SOUND_BANK_ID
+} from "./audio_engine/synth_constants";
+import { LowpassFilter } from "./audio_engine/voice/lowpass_filter";
+import { Voice } from "./audio_engine/voice/voice";
+import { CachedVoice } from "./audio_engine/voice/voice_cache";
+
+import { MIDIMessage } from "../midi/midi_message";
+import type { SysExAcceptedArray, UserDrumSetParameter } from "../midi/types";
 import type { MIDISystem } from "../soundbank/types";
-import type { SysExAcceptedArray } from "../midi/types";
-import { BasicSoundBank } from "../soundbank/exports";
-import type { MIDIMessage } from "../midi/midi_message"; /**
- * Processor.ts
- * purpose: the core synthesis engine
- */
+import { SpessaSynthGSChorus } from "./audio_engine/effects/gs/chorus";
+import { SpessaSynthGSDelay } from "./audio_engine/effects/gs/delay";
+import { ThruFX } from "./audio_engine/effects/gs/insertion/thru";
+import { GS_INSERTION_EFFECT_LIST } from "./audio_engine/effects/gs/insertion_list";
+import { SpessaSynthGSReverb } from "./audio_engine/effects/gs/reverb";
+import {
+    DEFAULT_GLOBAL_MIDI_PARAMETERS,
+    type GlobalMIDIParameter,
+    lockMIDIParameterInternal,
+    setMIDIParameterInternal
+} from "./audio_engine/parameters/midi";
+import type { UserDrumSetChangeEvent } from "./events";
+import { universalSystemExclusive } from "./audio_engine/system_exclusive/universal";
+import { rolandSystemExclusive } from "./audio_engine/system_exclusive/roland";
+import { yamahaSystemExclusive } from "./audio_engine/system_exclusive/yamaha";
+import { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { DEFAULT_SYNTH_OPTIONS } from "./audio_engine/synth_processor_options";
+import { SoundBankLoader } from "../soundbank/sound_bank_loader";
+import {
+    applySnapshot,
+    getSynthesizerSnapshot,
+    type SynthesizerSnapshot
+} from "./audio_engine/synthesizer_snapshot";
 
 /**
- * Processor.ts
- * purpose: the core synthesis engine
+ * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
  */
+const GAIN_SMOOTHING_FACTOR = 0.01;
+
+/**
+ * Pan smoothing for rapid pan changes
+ */
+const PAN_SMOOTHING_FACTOR = 0.05;
+/**
+ * A list of voices for a given key:velocity.
+ */
+type CachedVoiceList = CachedVoice[];
 
 /**
  * The core synthesis engine of SpessaSynth.
@@ -70,9 +116,128 @@ export class SpessaSynthProcessor {
      */
     public readonly ready = BasicSoundBank.ready;
     /**
-     * Sample rate, in Hertz.
+     * Voices of this synthesizer, as a fixed voice pool.
+     * @internal
      */
-    public readonly sampleRate: number;
+    public readonly voices: Voice[] = [];
+    /**
+     * All MIDI channels of the synthesizer.
+     */
+    public readonly midiChannels: MIDIChannel[] = [];
+    /**
+     * The maximum allowed buffer size to render.
+     * @internal
+     */
+    public readonly maxBufferSize: number;
+    /**
+     * The buffer to use when rendering a voice.
+     * @internal
+     */
+    public readonly voiceBuffer;
+    /**
+     * The insertion processor's left input buffer.
+     * @internal
+     */
+    public readonly insertionInputL;
+    /**
+     * The insertion processor's right input buffer.
+     * @internal
+     */
+    public readonly insertionInputR;
+    /**
+     * The reverb processor's input buffer.
+     * @internal
+     */
+    public readonly reverbInput;
+    /**
+     * The chorus processor's input buffer.
+     * @internal
+     */
+    public readonly chorusInput;
+    /**
+     * The delay processor's input buffer.
+     * @internal
+     */
+    public readonly delayInput;
+    /**
+     * Delay is not used outside SC-88+ MIDIs, this is an optimization.
+     * @internal
+     */
+    public delayActive = false;
+    /**
+     * The sound bank manager, which manages all sound banks and presets.
+     */
+    public readonly soundBankManager: SoundBankManager = new SoundBankManager(
+        this.updatePresetList.bind(this)
+    );
+    /**
+     * The sample rate, in Hertz.
+     */
+    public readonly sampleRate;
+    /**
+     * This.tunings[program * 128 + key] = midiNote,cents (fraction)
+     * All MIDI Tuning Standard tunings, 128 keys for each of 128 programs.
+     * -1 means no change.
+     * @internal
+     */
+    public readonly tunings = new Float32Array(128 * 128).fill(-1);
+
+    /**
+     * An object indicating if a Global MIDI parameter, at the equivalent key, is locked
+     * (i.e., not allowed changing).
+     * A locked parameter cannot be modified.
+     * @internal
+     */
+    public readonly lockedMIDIParameters = Object.fromEntries(
+        // This funky code takes DEFAULT_PARAMETERS and sets the values to false
+        (
+            Object.keys(
+                DEFAULT_GLOBAL_MIDI_PARAMETERS
+            ) as (keyof GlobalMIDIParameter)[]
+        ).map((key) => [key, false])
+    ) as Record<keyof GlobalMIDIParameter, boolean>;
+
+    /**
+     * The global MIDI parameters of the synthesizer.
+     * These are only editable via MIDI messages.
+     */
+    public readonly midiParameters: Readonly<GlobalMIDIParameter> = {
+        ...DEFAULT_GLOBAL_MIDI_PARAMETERS
+    }; // Copy, not set!
+    /**
+     * The global system parameters of the synthesizer.
+     * These are only editable via the API.
+     *
+     * Use {@link SpessaSynthProcessor.setSystemParameter} to set them.
+     */
+    public readonly systemParameters: Readonly<GlobalSystemParameter> = {
+        ...DEFAULT_GLOBAL_SYSTEM_PARAMETERS
+    }; // Copy, not set!
+    /**
+     * The current time of the synthesizer, in seconds.
+     */
+    public readonly currentTime;
+    /**
+     * Synth's default (reset) preset.
+     * @internal
+     */
+    public defaultPreset: SynthesizerPatch | undefined;
+    /**
+     * Synth's default (reset) drum preset.
+     * @internal
+     */
+    public drumPreset: SynthesizerPatch | undefined;
+    /**
+     * Gain smoothing factor, adjusted to the sample rate.
+     * @internal
+     */
+    public readonly gainSmoothingFactor: number;
+    /**
+     * Pan smoothing factor, adjusted to the sample rate.
+     * @internal
+     */
+    public readonly panSmoothingFactor: number;
+
     /**
      * This property can be defined as a function that listens for events.
      * All events are defined in {@link SynthesizerEvent}.
@@ -81,9 +246,93 @@ export class SpessaSynthProcessor {
      */
     public onEventCall?: (event: SynthesizerEventCallback) => unknown;
     /**
-     * Core synthesis engine.
+     * Cached voices for all presets for this synthesizer.
+     * Nesting is calculated in getCachedVoiceIndex, returns a list of voices for this note.
+     * @internal
      */
-    private readonly synthCore: SynthesizerCore;
+    public readonly cachedVoices = new Map<number, CachedVoiceList>();
+    /**
+     * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
+     * @internal
+     */
+    public insertionActive = false;
+    /**
+     * The synthesizer's GS reverb processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     * @internal
+     */
+    protected readonly gsReverbProcessor: GSReverbProcessor;
+    /**
+     * The synthesizer's GS chorus processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     * @internal
+     */
+    protected readonly gsChorusProcessor: GSChorusProcessor;
+    /**
+     * The synthesizer's GS delay processor.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     * @internal
+     */
+    protected readonly gsDelayProcessor: GSDelayProcessor;
+    /**
+     * A sysEx may set a "Part" (channel) to receive on a different channel number.
+     * This slows down the access, so this toggle tracks if it's enabled or not.
+     * @internal
+     */
+    protected customChannelNumbers = false;
+    /**
+     * The fallback processor when the requested insertion is not available.
+     * @internal
+     */
+    protected readonly insertionFallback = new ThruFX();
+    /**
+     * The current insertion processor.
+     * @internal
+     */
+    protected insertionProcessor: GSInsertionProcessor = this.insertionFallback;
+    /**
+     * All the insertion effects available to the processor.
+     * The key is the EFX type stored as MSB << 8 | LSB
+     * @internal
+     */
+    protected readonly insertionEffects = new Map<
+        number,
+        GSInsertionProcessor
+    >();
+    /**
+     * For F5 system exclusive.
+     * @internal
+     */
+    protected portSelectChannelOffset = 0;
+    /**
+     * For insertion snapshot tracking
+     * 20 parameters (0-19) + 3 sends
+     * Index to gs is Addr3 - 3 (for example EFX PARAMETER 1 is 0x03 and here it's 0)
+     * note: 255 means "no change"
+     * @internal
+     */
+    protected insertionParams = new Uint8Array(23).fill(255);
+    /**
+     * Last time the priorities were assigned.
+     * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
+     * @internal
+     */
+    private lastPriorityAssignmentTime = 0;
+    /**
+     * Synth's event queue from the main thread
+     */
+    private eventQueue: {
+        message: SysExAcceptedArray;
+        channelOffset: number;
+        time: number;
+    }[] = [];
+    /**
+     * The time of a single sample, in seconds.
+     */
+    private readonly sampleTime: number;
     /**
      * For applying the snapshot after an override sound bank too.
      */
@@ -99,7 +348,6 @@ export class SpessaSynthProcessor {
         opts: Partial<SynthProcessorOptions> = {}
     ) {
         const options = fillWithDefaults(opts, DEFAULT_SYNTH_OPTIONS);
-        this.sampleRate = sampleRate;
         if (
             !Number.isFinite(options.initialTime) ||
             !Number.isFinite(sampleRate)
@@ -108,32 +356,59 @@ export class SpessaSynthProcessor {
                 `Initial time or sample rate is invalid! initial time: ${options.initialTime}, sample rate: ${sampleRate}`
             );
         }
+        this.sampleRate = sampleRate;
+        this.sampleTime = 1 / sampleRate;
+        this.currentTime = options.initialTime ?? 0;
+        // Replace the stubs with bound functions for less overhead
+        this.lockMIDIParameter = lockMIDIParameterInternal.bind(this);
+        this.setSystemParameter = setSystemParameterInternal.bind(this);
+        this.setMIDIParameter = setMIDIParameterInternal.bind(this);
 
-        // Initialize the protected synth values
-        this.synthCore = new SynthesizerCore(
-            this.callEvent.bind(this),
-            this.missingPreset.bind(this),
-            this.sampleRate,
-            options
-        );
+        this.setSystemParameter("effectsEnabled", options.effectsEnabled);
+        this.setSystemParameter("eventsEnabled", options.eventsEnabled);
+        this.maxBufferSize = options.maxBufferSize;
 
-        // Bind methods for less overhead
-        const c = this.synthCore;
-        this.process = c.process.bind(c);
-        this.systemExclusive = c.systemExclusive.bind(c);
-        this.controllerChange = c.controllerChange.bind(c);
-        this.noteOn = c.noteOn.bind(c);
-        this.noteOff = c.noteOff.bind(c);
-        this.polyPressure = c.polyPressure.bind(c);
-        this.channelPressure = c.channelPressure.bind(c);
-        this.pitchWheel = c.pitchWheel.bind(c);
-        this.programChange = c.programChange.bind(c);
-        this.processMessage = c.processMessage.bind(c);
-        this.processMessages = c.processMessages.bind(c);
+        // For GS user drum set
+        this.soundBankManager.systemGetter = () => this.midiParameters.system;
+        // These smoothing factors were tested on 44,100 Hz, adjust them to target sample rate here
+        // Volume  smoothing factor
+        this.gainSmoothingFactor =
+            GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
+        // Pan smoothing factor
+        this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44_100 / sampleRate);
+        LowpassFilter.initCache(this.sampleRate);
+
+        const bufSize = this.maxBufferSize;
+        // Initialize effects
+        this.gsReverbProcessor =
+            options.gsReverbProcessor ??
+            new SpessaSynthGSReverb(sampleRate, bufSize);
+        this.gsChorusProcessor =
+            options.gsChorusProcessor ??
+            new SpessaSynthGSChorus(sampleRate, bufSize);
+        this.gsDelayProcessor =
+            options.gsDelayProcessor ??
+            new SpessaSynthGSDelay(sampleRate, bufSize);
+
+        // Initialize buffers
+        this.voiceBuffer = new Float32Array(bufSize);
+        this.insertionInputL = new Float32Array(bufSize);
+        this.insertionInputR = new Float32Array(bufSize);
+        this.reverbInput = new Float32Array(bufSize);
+        this.chorusInput = new Float32Array(bufSize);
+        this.delayInput = new Float32Array(bufSize);
+
+        // Register insertion
+        for (const insertion of GS_INSERTION_EFFECT_LIST)
+            this.registerInsertionProcessor(insertion);
+        this.resetInsertionParams(); // Initial setup
+
+        // Initialize voices
+        this.allocateNewVoices(this.systemParameters.voiceCap);
 
         for (let i = 0; i < 16; i++) {
             // Don't send events as we're creating the initial channels
-            this.synthCore.createMIDIChannel(false);
+            this.createMIDIChannelInternal(false);
         }
         void this.ready.then(() => {
             SpessaLog.info("%cSpessaSynth is ready!", ConsoleColors.recognized);
@@ -141,54 +416,65 @@ export class SpessaSynthProcessor {
     }
 
     /**
-     * All MIDI channels of the synthesizer.
-     * @readonly
+     * Current total amount of voices that are playing.
      */
-    public get midiChannels(): readonly MIDIChannel[] {
-        return this.synthCore.midiChannels;
-    }
+    private _voiceCount = 0;
 
-    // noinspection JSUnusedGlobalSymbols
     /**
-     * The global MIDI parameters of the synthesizer.
-     * These are only editable via MIDI messages.
+     * Current total amount of voices that are playing.
      */
-    public get midiParameters(): Readonly<GlobalMIDIParameter> {
-        return this.synthCore.midiParameters;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * The global system parameters of the synthesizer.
-     * These are only editable via the API.
-     *
-     * Use {@link SpessaSynthProcessor.setSystemParameter} to set them.
-     */
-    public get systemParameters(): Readonly<GlobalSystemParameter> {
-        return this.synthCore.systemParameters;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Current total amount of voices that are currently playing.
-     */
-    public get voiceCount() {
-        return this.synthCore.voiceCount;
+    public get voiceCount(): number {
+        return this._voiceCount;
     }
 
     /**
-     * The current time of the synthesizer, in seconds.
+     * Locks or unlocks a given {@link GlobalMIDIParameter}.
+     * This prevents any changes to it until it's unlocked.
+     * @param parameter The Global MIDI Parameter to lock.
+     * @param isLocked If the parameter should be locked.
      */
-    public get currentTime() {
-        return this.synthCore.currentTime;
+    public lockMIDIParameter<P extends keyof GlobalMIDIParameter>(
+        parameter: P,
+        isLocked: boolean
+    ) {
+        // Patched with the actual function in the constructor.
+        void parameter;
+        void isLocked;
     }
 
     /**
-     * The sound bank manager, which manages all sound banks and presets.
+     * Sets a {@link GlobalSystemParameter} of the synthesizer.
+     * @param parameter The type of the system parameter to set.
+     * @param value The value to set for the system parameter.
      */
-    public get soundBankManager() {
-        return this.synthCore.soundBankManager;
+    public setSystemParameter<P extends keyof GlobalSystemParameter>(
+        parameter: P,
+        value: GlobalSystemParameter[P]
+    ) {
+        // Patched with the actual function in the constructor.
+        void parameter;
+        void value;
     }
+
+    /**
+     * A handler for missing presets during program change.
+     * By default, it warns to console.
+     * It may be useful for allowing the synthesizer to work without any sound banks.
+     * @param patch The MIDI patch that was requested.
+     * @param system The MIDI System for the request.
+     * @returns If a {@link BasicPreset} instance is returned, it will be used by the channel as a fallback.
+     */
+    public onMissingPreset = (
+        patch: MIDIPatch,
+        system: MIDISystem
+    ): BasicPreset | undefined => {
+        SpessaLog.warn(
+            `No preset found for ${MIDIPatchTools.toMIDIString(patch)}! Did you forget to add a sound bank?`
+        );
+        // Make tsc happy!
+        void system;
+        return undefined;
+    };
 
     /**
      * Executes a system exclusive message for the synthesizer.
@@ -203,10 +489,76 @@ export class SpessaSynthProcessor {
      * For example, to send a system exclusive on channel 16,
      * send a system exclusive for channel 0 and set an offset of 16.
      */
-    public systemExclusive(syx: SysExAcceptedArray, channelOffset?: number) {
-        // Patched with core in the constructor.
-        void syx;
-        void channelOffset;
+    public systemExclusive(
+        this: SpessaSynthProcessor,
+        syx: SysExAcceptedArray,
+        channelOffset = 0
+    ) {
+        channelOffset += this.portSelectChannelOffset;
+        const manufacturer = syx[0];
+        // Ensure that the device ID matches
+        if (
+            // The device ID can be set to "all" which it is by default
+            this.systemParameters.deviceID !== -1 &&
+            syx[1] !== 0x7f && // 0x7f means broadcast, i.e. all MIDI devices
+            this.systemParameters.deviceID !== syx[1]
+        ) {
+            // Not our device ID
+            return;
+        }
+
+        switch (manufacturer) {
+            default: {
+                SpessaLog.unsupported(
+                    "System Exclusive",
+                    syx,
+                    `Unknown manufacturer: ${manufacturer}`
+                );
+                break;
+            }
+
+            // Non realtime GM
+            case 0x7e:
+            // Realtime GM
+            case 0x7f: {
+                universalSystemExclusive.call(this, syx, channelOffset);
+                break;
+            }
+
+            // Roland
+            case 0x41: {
+                rolandSystemExclusive.call(this, syx, channelOffset);
+                break;
+            }
+
+            // Yamaha
+            case 0x43: {
+                yamahaSystemExclusive.call(this, syx, channelOffset);
+                break;
+            }
+
+            // Port select (Falcosoft MIDI Player)
+            // https://www.vogons.org/viewtopic.php?p=1404746#p1404746
+            case 0xf5: {
+                if (syx.length < 2) return;
+                this.portSelectChannelOffset = (syx[1] - 1) * 16;
+                // Create new port if needed
+                while (
+                    this.midiChannels.length <= this.portSelectChannelOffset
+                ) {
+                    SpessaLog.info(
+                        `%cPort select, channel offset %c${this.portSelectChannelOffset}%c. Creating a new port!`,
+                        ConsoleColors.info,
+                        ConsoleColors.value,
+                        ConsoleColors.info
+                    );
+                    for (let i = 0; i < 16; i++) {
+                        this.createMIDIChannel();
+                    }
+                }
+                break;
+            }
+        }
     }
 
     /**
@@ -223,10 +575,15 @@ export class SpessaSynthProcessor {
         controller: MIDIController,
         value: number
     ) {
-        // Patched with core in the constructor.
-        void channel;
-        void controller;
-        void value;
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.controllerChange(controller, value);
+            return;
+        }
+        this.midiChannels[
+            channel + this.portSelectChannelOffset
+        ].controllerChange(controller, value);
     }
 
     /**
@@ -241,10 +598,16 @@ export class SpessaSynthProcessor {
      * If the velocity is 0, it will be treated as a Note Off message.
      */
     public noteOn(channel: number, midiNote: number, velocity: number) {
-        // Patched with core in the constructor.
-        void channel;
-        void midiNote;
-        void velocity;
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.noteOn(midiNote, velocity);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].noteOn(
+            midiNote,
+            velocity
+        );
     }
 
     /**
@@ -256,9 +619,15 @@ export class SpessaSynthProcessor {
      * Ranges from 0 to 127.
      */
     public noteOff(channel: number, midiNote: number) {
-        // Patched with core in the constructor.
-        void channel;
-        void midiNote;
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.noteOff(midiNote);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].noteOff(
+            midiNote
+        );
     }
 
     /**
@@ -271,10 +640,16 @@ export class SpessaSynthProcessor {
      * @param pressure The pressure value, from 0 to 127.
      */
     public polyPressure(channel: number, midiNote: number, pressure: number) {
-        // Patched with core in the constructor.
-        void channel;
-        void midiNote;
-        void pressure;
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.polyPressure(midiNote, pressure);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].polyPressure(
+            midiNote,
+            pressure
+        );
     }
 
     /**
@@ -284,9 +659,15 @@ export class SpessaSynthProcessor {
      * @param pressure The pressure value, from 0 to 127.
      */
     public channelPressure(channel: number, pressure: number) {
-        // Patched with core in the constructor.
-        void channel;
-        void pressure;
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.setMIDIParameter("pressure", pressure);
+            return;
+        }
+        this.midiChannels[
+            channel + this.portSelectChannelOffset
+        ].setMIDIParameter("pressure", pressure);
     }
 
     /**
@@ -297,11 +678,17 @@ export class SpessaSynthProcessor {
      * @param midiNote The MIDI note number for the per-note pitch wheel mode.
      * Leave unset or set it to -1 for the regular pitch wheel.
      */
-    public pitchWheel(channel: number, pitch: number, midiNote?: number) {
-        // Patched with core in the constructor.
-        void channel;
-        void pitch;
-        void midiNote;
+    public pitchWheel(channel: number, pitch: number, midiNote = -1) {
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.pitchWheel(pitch, midiNote);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].pitchWheel(
+            pitch,
+            midiNote
+        );
     }
 
     /**
@@ -311,12 +698,69 @@ export class SpessaSynthProcessor {
      * @param programNumber The program number to change to, from 0 to 127.
      */
     public programChange(channel: number, programNumber: number) {
-        // Patched with core in the constructor.
-        void channel;
-        void programNumber;
+        if (this.customChannelNumbers) {
+            for (const ch of this.midiChannels)
+                if (ch.midiParameters.rxChannel === channel)
+                    ch.programChange(programNumber);
+            return;
+        }
+        this.midiChannels[channel + this.portSelectChannelOffset].programChange(
+            programNumber
+        );
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Assigns the first available voice for use.
+     * If none available, will assign priorities.
+     * @internal
+     */
+    public assignVoice() {
+        for (let i = 0; i < this.systemParameters.voiceCap; i++) {
+            const v = this.voices[i];
+            if (!v.isActive) {
+                // Prevent this voice from being stolen
+                v.priority = Infinity;
+                return v;
+            }
+        }
+        // No match, assign priorities
+        if (this.systemParameters.autoAllocateVoices) {
+            SpessaLog.info(
+                `%cAllocating a new voice, total count %c${this.systemParameters.voiceCap + 1}.`,
+                ConsoleColors.info,
+                ConsoleColors.value
+            );
+            // Allocate a new voice and return it
+            this.allocateNewVoices(1);
+            const v = this.voices[this.voices.length - 1];
+            // @ts-expect-error Setter here, readonly for consumers
+            this.systemParameters.voiceCap++;
+            // Prevent this voice from being stolen
+            v.priority = Infinity;
+            return v;
+        }
+        this.assignVoicePriorities();
+        let lowest = this.voices[0];
+        for (let i = 0; i < this.systemParameters.voiceCap; i++) {
+            const v = this.voices[i];
+            if (v.priority < lowest.priority) lowest = v;
+        }
+        lowest.priority = Infinity;
+        return lowest;
+    }
+
+    /**
+     * Stops all notes on all channels.
+     * @param force If true, all notes are stopped immediately,
+     * otherwise they are stopped gracefully.
+     */
+    public stopAll(force = false) {
+        SpessaLog.info("%cStop all received!", ConsoleColors.info);
+        for (const channel of this.midiChannels) {
+            channel.stopAllNotes(force);
+        }
+    }
+
     /**
      * Processes a raw MIDI message and allows scheduling it at a specific time.
      * @param message The binary MIDI message data to process.
@@ -325,31 +769,202 @@ export class SpessaSynthProcessor {
      */
     public processMessage(
         message: SysExAcceptedArray | MIDIMessage,
-        channelOffset?: number,
-        options?: SynthMethodOptions
+        channelOffset = 0,
+        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
-        // Patched with core in the constructor.
-        void message;
-        void channelOffset;
-        void options;
+        const raw =
+            message instanceof MIDIMessage
+                ? [message.statusByte, ...message.data]
+                : message;
+
+        const time = options.time;
+        if (time > this.currentTime) {
+            this.eventQueue.push({
+                message: raw,
+                channelOffset,
+                time
+            });
+            this.eventQueue.sort((e1, e2) => e1.time - e2.time);
+        } else {
+            this.processMessageInternal(raw, channelOffset);
+        }
     }
 
     // noinspection JSUnusedGlobalSymbols
     /**
      * Processes multiple MIDI messages and allows scheduling them at a specific time.
-     * @param message The binary MIDI messages to process.
+     * @param messages The binary MIDI messages to process.
      * @param channelOffset The channel offset for the messages. It will be added to messages' channel numbers if applicable.
      * @param options Additional options for scheduling the messages.
      */
     public processMessages(
-        message: (SysExAcceptedArray | MIDIMessage)[],
-        channelOffset?: number,
-        options?: SynthMethodOptions
+        messages: (SysExAcceptedArray | MIDIMessage)[],
+        channelOffset = 0,
+        options: SynthMethodOptions = DEFAULT_SYNTH_METHOD_OPTIONS
     ) {
-        // Patched with core in the constructor.
-        void message;
-        void channelOffset;
-        void options;
+        for (const message of messages)
+            this.processMessage(message, channelOffset, options);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     *  Destroy the synthesizer processor, clearing all channels and voices.
+     *
+     *  > **Warning**
+     *  >
+     *  > This is irreversible, so use with caution.
+     */
+    public destroy() {
+        this.voices.length = 0;
+        for (const c of this.midiChannels) c.destroy();
+        this.clearCache();
+        this.midiChannels.length = 0;
+        this.soundBankManager.destroy();
+    }
+
+    /**
+     * @param channel channel to get voices for
+     * @param midiNote the MIDI note to use
+     * @param velocity the velocity to use
+     * @returns output is an array of Voices
+     * @internal
+     */
+    public getVoices(
+        channel: number,
+        midiNote: number,
+        velocity: number
+    ): CachedVoiceList {
+        const channelObject = this.midiChannels[channel];
+
+        const preset = channelObject.preset;
+
+        // Warning is handled in program change
+        if (!preset) {
+            return [];
+        }
+
+        return this.getVoicesForPreset(preset, midiNote, velocity);
+    }
+
+    /**
+     * Applies the snapshot to this `SpessaSynthProcessor` instance.
+     *
+     * > **Warning**
+     * >
+     * > This method overrides the existing System Parameters with the ones from the snapshot.
+     *
+     * @param snapshot The snapshot to apply.
+     */
+    public applySnapshot(snapshot: SynthesizerSnapshot) {
+        this.savedSnapshot = snapshot;
+        applySnapshot.call(this, snapshot);
+        // Don't reset here, I don't know why I put a reset here previously.
+    }
+
+    /**
+     * Gets a synthesizer snapshot from this processor instance.
+     */
+    public getSnapshot(): SynthesizerSnapshot {
+        return getSynthesizerSnapshot.call(this);
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Sets the embedded sound bank.
+     * @param bank The sound bank file to set.
+     * @param offset The bank offset of the embedded sound bank.
+     * @internal
+     */
+    public setEmbeddedSoundBank(bank: ArrayBuffer, offset: number) {
+        // The embedded bank is set as the first bank in the manager,
+        // With a special ID that is randomized.
+        const loadedFont = SoundBankLoader.fromArrayBuffer(bank);
+        this.soundBankManager.addSoundBank(
+            loadedFont,
+            EMBEDDED_SOUND_BANK_ID,
+            offset
+        );
+        // Rearrange so the embedded is first (most important as it overrides all others)
+        const order = this.soundBankManager.priorityOrder;
+        order.pop();
+        order.unshift(EMBEDDED_SOUND_BANK_ID);
+        this.soundBankManager.priorityOrder = order;
+
+        // Apply snapshot again if applicable
+        if (this.savedSnapshot !== undefined) {
+            this.applySnapshot(this.savedSnapshot);
+        }
+        SpessaLog.info(
+            `%cEmbedded sound bank set at offset %c${offset}`,
+            ConsoleColors.recognized,
+            ConsoleColors.value
+        );
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Removes the embedded sound bank from the synthesizer.
+     * @internal
+     */
+    public clearEmbeddedSoundBank() {
+        if (
+            this.soundBankManager.soundBankList.some(
+                (s) => s.id === EMBEDDED_SOUND_BANK_ID
+            )
+        ) {
+            this.soundBankManager.deleteSoundBank(EMBEDDED_SOUND_BANK_ID);
+        }
+    }
+
+    /**
+     * Creates a new MIDI channel and adds it to the synthesizer.
+     * Emits a {@link SynthesizerEvent.channelAdded} event.
+     */
+    public createMIDIChannel() {
+        this.createMIDIChannelInternal(true);
+    }
+
+    /**
+     * Executes a full system reset of the synthesizer.
+     * This will reset all controllers to their default values,
+     * except for the locked controllers.
+     * @param system The MIDI system to reset the synthesizer to. Defaults to `gs`.
+     */
+    public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
+        // Call here because there are returns in this function.
+        this.callEvent("reset", system);
+        // Reset MIDI parameters
+        this.setMIDIParameter("system", system);
+        this.setMIDIParameter("volume", 1);
+        this.setMIDIParameter("pan", 0);
+        this.setMIDIParameter("keyShift", 0);
+        this.setMIDIParameter("fineTune", 0);
+        // Reset private props
+        this.tunings.fill(-1); // Set all to no change
+        this.portSelectChannelOffset = 0;
+        this.customChannelNumbers = false;
+        // Hall2 default
+        this.setReverbMacro(4);
+        // Chorus3 default
+        this.setChorusMacro(2);
+        // Delay1 default
+        this.setDelayMacro(0);
+        this.resetInsertion();
+
+        // Avoid crashing
+        if (!this.drumPreset || !this.defaultPreset) return;
+
+        // Reset GS user drums
+        if (!this.systemParameters.userDrumLock)
+            for (const userDrum of this.soundBankManager.userDrumSets)
+                userDrum.reset();
+
+        // Reset channels
+        // Do not send CC changes as we call reset
+        for (const ch of this.midiChannels) ch.reset(false);
+
+        // Update if the effects should still be active.
+        this.updateActiveEffects();
     }
 
     /**
@@ -378,178 +993,199 @@ export class SpessaSynthProcessor {
     public process(
         left: Float32Array,
         right: Float32Array,
-        startIndex?: number,
-        sampleCount?: number,
+        startIndex = 0,
+        sampleCount = 0,
         channelOutputs?: Float32Array[][]
     ) {
-        // Patched with core in the constructor.
-        void left;
-        void right;
-        void startIndex;
-        void sampleCount;
-        void channelOutputs;
-    }
-
-    /**
-     * A handler for missing presets during program change.
-     * By default, it warns to console.
-     * It may be useful for allowing the synthesizer to work without any sound banks.
-     * @param patch The MIDI patch that was requested.
-     * @param system The MIDI System for the request.
-     * @returns If a {@link BasicPreset} instance is returned, it will be used by the channel as a fallback.
-     */
-    public onMissingPreset = (
-        patch: MIDIPatch,
-        system: MIDISystem
-    ): BasicPreset | undefined => {
-        SpessaLog.warn(
-            `No preset found for ${MIDIPatchTools.toMIDIString(patch)}! Did you forget to add a sound bank?`
-        );
-        // Make tsc happy!
-        void system;
-        return undefined;
-    };
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Locks or unlocks a given {@link GlobalMIDIParameter}.
-     * This prevents any changes to it until it's unlocked.
-     * @param parameter The Global MIDI Parameter to lock.
-     * @param isLocked If the parameter should be locked.
-     */
-    public lockMIDIParameter<P extends keyof GlobalMIDIParameter>(
-        parameter: P,
-        isLocked: boolean
-    ) {
-        this.synthCore.lockMIDIParameter(parameter, isLocked);
-    }
-
-    /**
-     * Sets a {@link GlobalSystemParameter} of the synthesizer.
-     * @param parameter The type of the system parameter to set.
-     * @param value The value to set for the system parameter.
-     */
-    public setSystemParameter<P extends keyof GlobalSystemParameter>(
-        parameter: P,
-        value: GlobalSystemParameter[P]
-    ) {
-        this.synthCore.setSystemParameter(parameter, value);
-    }
-
-    /**
-     * Executes a full synthesizer reset.
-     * This will reset all controllers to their default values,
-     * except for the locked controllers.
-     * @param system The MIDI system to reset the synthesizer to. Defaults to `gs`.
-     */
-    public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
-        this.synthCore.reset(system);
-    }
-
-    /**
-     * Applies the snapshot to this `SpessaSynthProcessor` instance.
-     *
-     * > **Warning**
-     * >
-     * > This method overrides the existing System Parameters with the ones from the snapshot.
-     *
-     * @param snapshot The snapshot to apply.
-     */
-    public applySnapshot(snapshot: SynthesizerSnapshot) {
-        this.savedSnapshot = snapshot;
-        applySnapshot.call(this.synthCore, snapshot);
-        // Don't reset here, I don't know why I put a reset here previously.
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Gets a synthesizer snapshot from this processor instance.
-     */
-    public getSnapshot(): SynthesizerSnapshot {
-        return getSynthesizerSnapshot.call(this.synthCore);
-    }
-
-    /**
-     * Sets the embedded sound bank.
-     * @param bank The sound bank file to set.
-     * @param offset The bank offset of the embedded sound bank.
-     * @internal
-     */
-    public setEmbeddedSoundBank(bank: ArrayBuffer, offset: number) {
-        // The embedded bank is set as the first bank in the manager,
-        // With a special ID that is randomized.
-        const loadedFont = SoundBankLoader.fromArrayBuffer(bank);
-        this.synthCore.soundBankManager.addSoundBank(
-            loadedFont,
-            EMBEDDED_SOUND_BANK_ID,
-            offset
-        );
-        // Rearrange so the embedded is first (most important as it overrides all others)
-        const order = this.synthCore.soundBankManager.priorityOrder;
-        order.pop();
-        order.unshift(EMBEDDED_SOUND_BANK_ID);
-        this.synthCore.soundBankManager.priorityOrder = order;
-
-        // Apply snapshot again if applicable
-        if (this.savedSnapshot !== undefined) {
-            this.applySnapshot(this.savedSnapshot);
+        /**
+         * The main rendering pipeline, renders all voices and processes the effects:
+         * ```
+         *                   ┌────────────────────────────────┐
+         *                   │        Voice Processor         │
+         *                   └───────────────┬────────────────┘
+         *                                   │
+         *                   ┌───────────────┴────────────────┐
+         *                   │      Insertion Processor       │
+         *                   │      (Bypass or Process)       │
+         *                   └───────────────┬────────────────┘
+         *                                   │
+         *              ┌──────────┬─────────┼────────────────────────┐
+         *              │          │         │                        │
+         *              │          │         𜸊                        │
+         *              │          │ ┌───────┴───────┐                │
+         *              │          │ │    Chorus     │                │
+         *              │          │ │   Processor   ├──────────┐     │
+         *              │          │ └─┬──────────┬──┘          │     │
+         *              │          │   │          │             │     │
+         *              │          │   │          │             │     │
+         *              │          │   │          │             │     │
+         *              │          │   │          │             │     │
+         *              │          │   │          𜸊             𜸊     𜸊
+         *              │          │   │ ┌────────┴───────┐   ┌─┴─────┴────────┐
+         *              │          └───┼>┤     Delay      ├─>>┤     Reverb     │
+         *              │              │ │   Processor    │   │   Processor    │
+         *              │              │ └────────┬───────┘   └───────┬────────┘
+         *              │              │          │                   │
+         *              │              │          │                   │
+         *              │              │          │                   │
+         *              │              │          │                   │
+         *              𜸊              𜸊          𜸊                   𜸊
+         *    ┌─────────┴──────────────┴──────────┴───────────────────┴────┐
+         *    │                        Stereo Output                       │
+         *    └────────────────────────────────────────────────────────────┘
+         * ```
+         */
+        // Process event queue
+        if (this.eventQueue.length > 0) {
+            const time = this.currentTime;
+            while (this.eventQueue[0]?.time <= time) {
+                const q = this.eventQueue.shift();
+                if (q) {
+                    this.processMessageInternal(q.message, q.channelOffset);
+                }
+            }
         }
-        SpessaLog.info(
-            `%cEmbedded sound bank set at offset %c${offset}`,
-            ConsoleColors.recognized,
-            ConsoleColors.value
-        );
-    }
 
-    /**
-     * Removes the embedded sound bank from the synthesizer.
-     * @internal
-     */
-    public clearEmbeddedSoundBank() {
-        if (
-            this.synthCore.soundBankManager.soundBankList.some(
-                (s) => s.id === EMBEDDED_SOUND_BANK_ID
-            )
-        ) {
-            this.synthCore.soundBankManager.deleteSoundBank(
-                EMBEDDED_SOUND_BANK_ID
+        // Validate
+        startIndex = Math.max(startIndex, 0);
+        sampleCount = sampleCount || left.length - startIndex;
+        if (sampleCount > this.maxBufferSize)
+            throw new Error(
+                `Requested ${sampleCount} samples, but maxBufferSize is ${this.maxBufferSize}`
+            );
+
+        // Clear the buffers
+        this.reverbInput.fill(0);
+        this.chorusInput.fill(0);
+        if (this.delayActive) this.delayInput.fill(0);
+        if (this.insertionActive) {
+            this.insertionInputL.fill(0);
+            this.insertionInputR.fill(0);
+        }
+        for (const c of this.midiChannels) {
+            // And voice count
+            c.clearVoiceCount();
+            c.outputRight.fill(0);
+            c.outputLeft.fill(0);
+        }
+        this._voiceCount = 0;
+
+        // Process voices
+        const cap = this.systemParameters.voiceCap;
+        const outputCount = channelOutputs?.length ?? 0;
+        for (let i = 0; i < cap; i++) {
+            const v = this.voices[i];
+            const ch = this.midiChannels[v.channel];
+            if (!v.isActive) continue;
+
+            ch.renderVoice(v, this.currentTime, sampleCount);
+
+            // Update voice count
+            ch.voiceCount++;
+            this._voiceCount++;
+        }
+
+        // Mix channel data
+        for (let channel = 0; channel < this.midiChannels.length; channel++) {
+            const { outputLeft, outputRight, midiParameters } =
+                this.midiChannels[channel];
+            // Mix visualization first
+            if (outputCount) {
+                const out = channelOutputs![channel % outputCount];
+                const outL = out[0];
+                const outR = out[1];
+
+                for (let i = 0; i < sampleCount; i++) {
+                    const idx = startIndex + i;
+                    outL[idx] += outputLeft[i];
+                    outR[idx] += outputRight[i];
+                }
+            }
+
+            // Straight into the insertion EFX, but only if it is active
+            if (
+                midiParameters.efxAssign &&
+                this.systemParameters.effectsEnabled &&
+                this.insertionActive
+            ) {
+                const insertionL = this.insertionInputL;
+                const insertionR = this.insertionInputR;
+                // Index is 0-based here as it's internal
+                for (let i = 0; i < sampleCount; i++) {
+                    insertionL[i] += outputLeft[i];
+                    insertionR[i] += outputRight[i];
+                }
+                continue;
+            }
+
+            // Mix down normally
+            for (let i = 0; i < sampleCount; i++) {
+                const idx = startIndex + i;
+                left[idx] += outputLeft[i];
+                right[idx] += outputRight[i];
+            }
+        }
+
+        // Process effects
+        if (this.systemParameters.effectsEnabled) {
+            const {
+                chorusInput,
+                delayInput,
+                reverbInput,
+                insertionInputR,
+                insertionInputL
+            } = this;
+
+            // Insertion first
+            if (this.insertionActive) {
+                this.insertionProcessor.process(
+                    insertionInputL,
+                    insertionInputR,
+                    left,
+                    right,
+                    reverbInput,
+                    chorusInput,
+                    delayInput,
+                    startIndex,
+                    sampleCount
+                );
+            }
+
+            // Chorus first, it feeds to reverb and delay
+            this.gsChorusProcessor.process(
+                chorusInput,
+                left,
+                right,
+                reverbInput,
+                delayInput,
+                startIndex,
+                sampleCount
+            );
+            // CC#94 in XG is variation, not delay
+            if (this.delayActive && this.midiParameters.system !== "xg") {
+                // Process delay
+                this.gsDelayProcessor.process(
+                    delayInput,
+                    left,
+                    right,
+                    reverbInput,
+                    startIndex,
+                    sampleCount
+                );
+            }
+            // Finally process the reverb processor (it goes directly into the output buffer)
+            this.gsReverbProcessor.process(
+                reverbInput,
+                left,
+                right,
+                startIndex,
+                sampleCount
             );
         }
-    }
 
-    /**
-     * Creates a new MIDI channel and adds it to the synthesizer.
-     * Emits a {@link SynthesizerEvent.channelAdded} event.
-     */
-    public createMIDIChannel() {
-        this.synthCore.createMIDIChannel(true);
-    }
-
-    /**
-     * Stops all notes on all channels.
-     * @param force If true, all notes are stopped immediately,
-     * otherwise they are stopped gracefully.
-     */
-    public stopAllChannels(force = false) {
-        this.synthCore.stopAllChannels(force);
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     *  Destroy the synthesizer processor, clearing all channels and voices.
-     *  This is irreversible, so use with caution.
-     */
-    public destroy() {
-        this.synthCore.destroySynthProcessor();
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    /**
-     * Clears the synthesizer's voice cache.
-     * This can be used to hear the changes after editing a {@link BasicSoundBank}
-     */
-    public clearCache() {
-        this.synthCore.clearCache();
+        // Advance the time appropriately
+        // @ts-expect-error This is readonly to consumers
+        this.currentTime += sampleCount * this.sampleTime;
     }
 
     /**
@@ -564,27 +1200,786 @@ export class SpessaSynthProcessor {
         preset: SynthesizerPatch,
         midiNote: number,
         velocity: number
-    ) {
-        return this.synthCore.getVoicesForPreset(preset, midiNote, velocity);
+    ): CachedVoiceList {
+        const cached = this.getCachedVoice(preset, midiNote, velocity);
+        // If cached, return it!
+        if (cached !== undefined) {
+            return cached;
+        }
+        // Not cached...
+        // Create the voices
+        const voices = new Array<CachedVoice>();
+        for (const voiceParams of preset.getVoiceParameters(
+            midiNote,
+            velocity
+        )) {
+            const sample = voiceParams.sample;
+            if (voiceParams.sample.getAudioData() === undefined) {
+                SpessaLog.warn(`Discarding invalid sample: ${sample.name}`);
+                continue;
+            }
+            voices.push(
+                new CachedVoice(
+                    voiceParams,
+                    midiNote,
+                    velocity,
+                    this.sampleRate
+                )
+            );
+        }
+        // Cache the voice
+        this.setCachedVoice(preset, midiNote, velocity, voices);
+        return voices;
     }
 
-    // Private methods
     /**
-     * Calls synth event
-     * @param eventName the event name
-     * @param eventData the event data
+     * Clears the synthesizer's voice cache.
+     * This can be used to hear the changes after editing a {@link BasicSoundBank}
      */
-    private callEvent<K extends keyof SynthesizerEvent>(
-        eventName: K,
-        eventData: SynthesizerEvent[K]
+    public clearCache() {
+        this.cachedVoices.clear();
+    }
+
+    /**
+     * Copied callback so MIDI channels can call it.
+     * @internal
+     */
+    public callEvent<K extends keyof SynthesizerEvent>(
+        type: K,
+        data: SynthesizerEvent[K]
     ) {
         this.onEventCall?.({
-            type: eventName,
-            data: eventData
+            type,
+            data
         } as SynthesizerEventCallback);
     }
 
-    private missingPreset(patch: MIDIPatch, system: MIDISystem) {
-        return this.onMissingPreset(patch, system);
+    /**
+     * @internal
+     * Checks if we can disable insertion and delay effects.
+     */
+    public updateActiveEffects() {
+        if (!this.systemParameters.insertionEffectLock)
+            this.insertionActive = this.midiChannels.some(
+                (c) => c.midiParameters.efxAssign
+            );
+        if (!this.systemParameters.delayLock)
+            this.delayActive =
+                this.midiParameters.system === "xg"
+                    ? false
+                    : this.gsChorusProcessor.sendLevelToDelay > 0 ||
+                      this.insertionProcessor.sendLevelToDelay > 0 ||
+                      this.midiChannels.some(
+                          (c) =>
+                              c.midiControllers[
+                                  MIDIControllers.variationDepth
+                              ] > 0
+                      );
+    }
+
+    // Bad code... make sure to call only when necessary!!!
+    /**
+     * @internal
+     */
+    public purgeCachedPatch(patch: MIDIPatch) {
+        for (let midiNote = 0; midiNote < 128; midiNote++) {
+            for (let velocity = 0; velocity < 128; velocity++) {
+                this.cachedVoices.delete(
+                    this.getCachedVoiceIndex(patch, midiNote, velocity)
+                );
+            }
+        }
+    }
+
+    /**
+     * Sets a global MIDI parameter of the synthesizer.
+     * @param parameter The type of the global MIDI parameter to set.
+     * @param value The value to set for the global MIDI parameter.
+     * @internal
+     */
+    protected setMIDIParameter<P extends keyof GlobalMIDIParameter>(
+        parameter: P,
+        value: GlobalMIDIParameter[P]
+    ) {
+        // Patched with the actual function in the constructor.
+        void parameter;
+        void value;
+    }
+
+    /**
+     * @internal
+     */
+    protected setUserDrumSetParam<K extends keyof UserDrumSetParameter>(
+        drumSet: number,
+        midiNote: number,
+        parameter: K,
+        value: UserDrumSetParameter[K]
+    ) {
+        const set = this.soundBankManager.userDrumSets[drumSet];
+        // Optimization for bulk dump
+        // Testcase FADED88.mid
+        if (set.keyParams[midiNote][parameter] === value) {
+            return;
+        }
+        set.keyParams[midiNote][parameter] = value;
+        this.callEvent("userDrumSetChange", {
+            midiNote,
+            drumSet,
+            parameter,
+            value
+        } as UserDrumSetChangeEvent);
+        SpessaLog.gsInfo(
+            `User Drum Set ${drumSet} ${parameter}, key ${midiNote}`,
+            value.toString()
+        );
+    }
+    /**
+     * @internal
+     */
+    protected getInsertionSnapshot(): GSInsertionProcessorSnapshot {
+        return {
+            type: this.insertionProcessor.type,
+            params: this.insertionParams.slice()
+        };
+    }
+    /**
+     * @internal
+     */
+    protected resetInsertionParams() {
+        // No change
+        this.insertionParams.fill(255);
+        this.insertionParams[20] = 40; // Reverb
+        this.insertionParams[21] = 0; // Chorus
+        this.insertionParams[22] = 0; // Delay
+    }
+    /**
+     * @internal
+     */
+    protected resetInsertion() {
+        if (this.systemParameters.insertionEffectLock) return;
+        this.insertionProcessor = this.insertionFallback;
+        this.insertionProcessor.reset();
+        this.resetInsertionParams();
+        this.insertionProcessor.sendLevelToReverb =
+            (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
+        this.insertionProcessor.sendLevelToChorus = 0;
+        this.insertionProcessor.sendLevelToDelay = 0;
+        this.callEvent("effectChange", {
+            effect: "insertion",
+            parameter: 0,
+            value: this.insertionProcessor.type
+        });
+    }
+    /**
+     * @internal
+     */
+    protected setReverbMacro(macro: number) {
+        if (this.systemParameters.reverbLock) return;
+        // SC-8850 manual page 81
+        const rev = this.gsReverbProcessor;
+        rev.level = 64;
+        rev.preDelayTime = 0;
+        rev.character = macro;
+        switch (macro) {
+            /**
+             * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
+             * When you select the reverb type with REVERB MACRO, each reverb parameter will be set to their most
+             * suitable value.
+             *
+             * Room1, Room2, Room3
+             * These reverbs simulate the reverberation of a room. They provide a well-defined
+             * spacious reverberation.
+             * Hall1, Hall2
+             * These reverbs simulate the reverberation of a concert hall. They provide a deeper
+             * reverberation than the Room reverbs.
+             * Plate
+             * This simulates a plate reverb (a studio device using a metal plate).
+             * Delay
+             * This is a conventional delay that produces echo effects.
+             * Panning Delay
+             * This is a special delay in which the delayed sounds move left and right.
+             * It is effective when you are listening in stereo.
+             */
+            case 0: {
+                // Room1
+                rev.character = 0;
+                rev.preLowpass = 3;
+                rev.time = 80;
+                rev.delayFeedback = 0;
+                rev.preDelayTime = 0;
+                break;
+            }
+
+            case 1: {
+                // Room2
+                rev.preLowpass = 4;
+                rev.time = 56;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 2: {
+                // Room3
+                rev.preLowpass = 0;
+                rev.time = 72;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 3: {
+                // Hall1
+                rev.preLowpass = 4;
+                rev.time = 72;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 4: {
+                // Hall2
+                rev.preLowpass = 0;
+                rev.time = 64;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 5: {
+                // Plate
+                rev.preLowpass = 0;
+                rev.time = 88;
+                rev.delayFeedback = 0;
+                break;
+            }
+
+            case 6: {
+                // Delay
+                rev.preLowpass = 0;
+                rev.time = 32;
+                rev.delayFeedback = 40;
+                break;
+            }
+
+            case 7: {
+                // Panning delay
+                rev.preLowpass = 0;
+                rev.time = 64;
+                rev.delayFeedback = 32;
+                break;
+            }
+
+            default: {
+                // Check for invalid macros
+                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+                SpessaLog.warn(`Invalid reverb macro: ${macro}`);
+                return;
+            }
+        }
+        this.callEvent("effectChange", {
+            effect: "reverb",
+            parameter: "macro",
+            value: macro
+        });
+    }
+    /**
+     * @internal
+     */
+    protected setChorusMacro(macro: number) {
+        if (this.systemParameters.chorusLock) return;
+        // SC-8850 manual page 83
+        const chr = this.gsChorusProcessor;
+        chr.level = 64;
+        chr.preLowpass = 0;
+        chr.delay = 127;
+        chr.sendLevelToDelay = 0;
+        chr.sendLevelToReverb = 0;
+        switch (macro) {
+            /**
+             * CHORUS MACRO is a macro parameter that allows global setting of chorus parameters.
+             * When you select the chorus type with CHORUS MACRO, each chorus parameter will be set to their
+             * most suitable value.
+             *
+             * Chorus1, Chorus2, Chorus3, Chorus4
+             * These are conventional chorus effects that add spaciousness and depth to the
+             * sound.
+             * Feedback Chorus
+             * This is a chorus with a flanger-like effect and a soft sound.
+             * Flanger
+             * This is an effect sounding somewhat like a jet airplane taking off and landing.
+             * Short Delay
+             * This is a delay with a short delay time.
+             * Short Delay (FB)
+             * This is a short delay with many repeats.
+             */
+            case 0: {
+                // Chorus1
+                chr.feedback = 0;
+                chr.delay = 112;
+                chr.rate = 3;
+                chr.depth = 5;
+                break;
+            }
+
+            case 1: {
+                // Chorus2
+                chr.feedback = 5;
+                chr.delay = 80;
+                chr.rate = 9;
+                chr.depth = 19;
+                break;
+            }
+
+            case 2: {
+                // Chorus3
+                chr.feedback = 8;
+                chr.delay = 80;
+                chr.rate = 3;
+                chr.depth = 19;
+                break;
+            }
+
+            case 3: {
+                // Chorus4
+                chr.feedback = 16;
+                chr.delay = 64;
+                chr.rate = 9;
+                chr.depth = 16;
+                break;
+            }
+
+            case 4: {
+                // FbChorus
+                chr.feedback = 64;
+                chr.delay = 127;
+                chr.rate = 2;
+                chr.depth = 24;
+                break;
+            }
+
+            case 5: {
+                // Flanger
+                chr.feedback = 112;
+                chr.delay = 127;
+                chr.rate = 1;
+                chr.depth = 5;
+                break;
+            }
+
+            case 6: {
+                // SDelay
+                chr.feedback = 0;
+                chr.depth = 127;
+                chr.rate = 0;
+                chr.depth = 127;
+                break;
+            }
+
+            case 7: {
+                // SDelayFb
+                chr.feedback = 80;
+                chr.depth = 127;
+                chr.rate = 0;
+                chr.depth = 127;
+                break;
+            }
+
+            default: {
+                // Check for invalid macros
+                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+                SpessaLog.warn(`Invalid chorus macro: ${macro}`);
+                return;
+            }
+        }
+        this.callEvent("effectChange", {
+            effect: "chorus",
+            parameter: "macro",
+            value: macro
+        });
+    }
+    /**
+     * @internal
+     */
+    protected setDelayMacro(macro: number) {
+        if (this.systemParameters.delayLock) return;
+        // SC-8850 manual page 85
+        const dly = this.gsDelayProcessor;
+        dly.level = 64;
+        dly.preLowpass = 0;
+        dly.sendLevelToReverb = 0;
+        dly.levelRight = dly.levelLeft = 0;
+        dly.levelCenter = 127;
+        switch (macro) {
+            /**
+             * DELAY MACRO is a macro parameter that allows global setting of delay parameters. When you select the delay type with DELAY MACRO, each delay parameter will be set to their most
+             * suitable value.
+             *
+             * Delay1, Delay2, Delay3
+             * These are conventional delays. 1, 2 and 3 have progressively longer delay times.
+             * Delay4
+             * This is a delay with a rather short delay time.
+             * Pan Delay1. Pan Delay2. Pan Delay3
+             * The delay sound moves between left and right. This is effective when listening in
+             * stereo. 1, 2 and 3 have progressively longer delay times.
+             * Pan Delay4
+             * This is a rather short delay with the delayed sound moving between left and
+             * right.
+             * It is effective when listening in stereo.
+             * Dly To Rev
+             * Reverb is added to the delay sound, which moves between left and right.
+             * It is effective when listening in stereo.
+             * PanRepeat
+             * The delay sound moves between left and right,
+             * but the pan positioning is different from the effects listed above.
+             * It is effective when listening in stereo.
+             */
+            case 0: {
+                // Delay1
+                dly.timeCenter = 97;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 80;
+                break;
+            }
+
+            case 1: {
+                // Delay2
+                dly.timeCenter = 106;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 80;
+                break;
+            }
+
+            case 2: {
+                // Delay3
+                dly.timeCenter = 115;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 3: {
+                // Delay4
+                dly.timeCenter = 83;
+                dly.timeRatioRight = dly.timeRatioLeft = 1;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 4: {
+                // PanDelay1
+                dly.timeCenter = 105;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 125;
+                dly.levelRight = 60;
+                dly.feedback = 74;
+                break;
+            }
+
+            case 5: {
+                // PanDelay2
+                dly.timeCenter = 109;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 125;
+                dly.levelRight = 60;
+                dly.feedback = 71;
+                break;
+            }
+
+            case 6: {
+                // PanDelay3
+                dly.timeCenter = 115;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 120;
+                dly.levelRight = 64;
+                dly.feedback = 73;
+                break;
+            }
+
+            case 7: {
+                // PanDelay4
+                dly.timeCenter = 93;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 120;
+                dly.levelRight = 64;
+                dly.feedback = 72;
+                break;
+            }
+
+            case 8: {
+                // DelayToReverb
+                dly.timeCenter = 109;
+                dly.timeRatioLeft = 12;
+                dly.timeRatioRight = 24;
+                dly.levelCenter = 0;
+                dly.levelLeft = 114;
+                dly.levelRight = 60;
+                dly.feedback = 61;
+                dly.sendLevelToReverb = 36;
+                break;
+            }
+
+            case 9: {
+                // PanRepeat
+                dly.timeCenter = 110;
+                dly.timeRatioLeft = 21;
+                dly.timeRatioRight = 32;
+                dly.levelCenter = 97;
+                dly.levelLeft = 127;
+                dly.levelRight = 67;
+                dly.feedback = 40;
+                break;
+            }
+
+            default: {
+                // Check for invalid macros
+                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+                SpessaLog.warn(`Invalid delay macro: ${macro}`);
+                return;
+            }
+        }
+        this.callEvent("effectChange", {
+            effect: "delay",
+            parameter: "macro",
+            value: macro
+        });
+    }
+
+    /**
+     * @internal
+     */
+    protected getCachedVoice(
+        patch: MIDIPatch,
+        midiNote: number,
+        velocity: number
+    ): CachedVoiceList | undefined {
+        return this.cachedVoices.get(
+            this.getCachedVoiceIndex(patch, midiNote, velocity)
+        );
+    }
+
+    /**
+     * @internal
+     */
+    protected setCachedVoice(
+        patch: MIDIPatch,
+        midiNote: number,
+        velocity: number,
+        voices: CachedVoiceList
+    ) {
+        this.cachedVoices.set(
+            this.getCachedVoiceIndex(patch, midiNote, velocity),
+            voices
+        );
+    }
+
+    /**
+     * Allocates new voices.
+     * @param count
+     * @internal
+     */
+    protected allocateNewVoices(count: number) {
+        for (let i = 0; i < count; i++)
+            this.voices.push(new Voice(this.sampleRate, this.maxBufferSize));
+    }
+
+    private createMIDIChannelInternal(sendEvent: boolean) {
+        const channel: MIDIChannel = new MIDIChannel(
+            this,
+            this.defaultPreset,
+            this.drumPreset,
+            this.midiChannels.length
+        );
+        this.midiChannels.push(channel);
+        if (sendEvent) this.callEvent("channelAdded", undefined);
+    }
+
+    private registerInsertionProcessor(proc: GSInsertionProcessorConstructor) {
+        const p = new proc(this.sampleRate, this.maxBufferSize);
+        this.insertionEffects.set(p.type, p);
+    }
+
+    private processMessageInternal(
+        message: SysExAcceptedArray,
+        channelOffset: number
+    ) {
+        const byte = message[0] as MIDIMessageType;
+        let status: MIDIMessageType;
+        let channel = 0;
+        if (byte >= 0x80 && byte < 0xf0) {
+            // Voice message
+            status = (byte & 0xf0) as MIDIMessageType;
+            channel = byte & 0x0f;
+        } else {
+            status = byte;
+        }
+
+        channel += channelOffset;
+        // Process the event
+        switch (status) {
+            case MIDIMessageTypes.noteOn: {
+                const velocity = message[2];
+                if (velocity > 0) {
+                    this.noteOn(channel, message[1], velocity);
+                } else {
+                    this.noteOff(channel, message[1]);
+                }
+                break;
+            }
+
+            case MIDIMessageTypes.noteOff: {
+                this.noteOff(channel, message[1]);
+                break;
+            }
+
+            case MIDIMessageTypes.pitchWheel: {
+                // LSB | (MSB << 7)
+                this.pitchWheel(channel, (message[2] << 7) | message[1]);
+                break;
+            }
+
+            case MIDIMessageTypes.controllerChange: {
+                this.controllerChange(
+                    channel,
+                    message[1] as MIDIController,
+                    message[2]
+                );
+                break;
+            }
+
+            case MIDIMessageTypes.programChange: {
+                this.programChange(channel, message[1]);
+                break;
+            }
+
+            case MIDIMessageTypes.polyPressure: {
+                this.polyPressure(channel, message[1], message[2]);
+                break;
+            }
+
+            case MIDIMessageTypes.channelPressure: {
+                this.channelPressure(channel, message[1]);
+                break;
+            }
+
+            case MIDIMessageTypes.systemExclusive: {
+                this.systemExclusive(
+                    new IndexedByteArray(message.slice(1)),
+                    channelOffset
+                );
+                break;
+            }
+
+            case MIDIMessageTypes.reset: {
+                // Do not **force** stop channels (breaks seamless loops, for example th06)
+                this.stopAll(false);
+                this.reset();
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Assigns priorities to the voices.
+     * Gets the priority of a voice based on its channel and state.
+     * Higher priority means the voice is more important and should be kept longer.
+     */
+    private assignVoicePriorities() {
+        if (this.lastPriorityAssignmentTime === this.currentTime) return;
+        SpessaLog.info(
+            "%cPolyphony exceeded, stealing voices",
+            ConsoleColors.warn
+        );
+        this.lastPriorityAssignmentTime = this.currentTime;
+        const cap = this.systemParameters.voiceCap;
+        for (let i = 0; i < cap; i++) {
+            const voice = this.voices[i];
+            voice.priority = 0;
+            if (this.midiChannels[voice.channel].drumChannel) {
+                // Important
+                voice.priority += 5;
+            }
+            if (voice.isInRelease) {
+                // Not important
+                voice.priority -= 5;
+            }
+            // Less velocity = less important
+            voice.priority += voice.velocity / 25; // Map to 0-5
+            // The newer, more important
+            voice.priority -= voice.volEnv.state;
+            if (voice.isInRelease) {
+                voice.priority -= 5;
+            }
+            voice.priority -= voice.volEnv.attenuationCb / 200;
+        }
+    }
+
+    private updatePresetList() {
+        const mainFont = this.soundBankManager.presetList;
+        this.clearCache();
+        this.callEvent("presetListChange", mainFont);
+        this.getDefaultPresets();
+        // Update presets
+        for (const c of this.midiChannels) {
+            const lock = c.systemParameters.presetLock;
+            // Unlock and set
+            c.setSystemParameter("presetLock", false);
+            c.programChange(c.patch.program);
+            // Restore
+            c.setSystemParameter("presetLock", lock);
+        }
+        this.reset();
+    }
+
+    private getDefaultPresets() {
+        // Override this to XG, to set the default preset to NOT be XG drums!
+        this.defaultPreset = this.soundBankManager.getPreset(
+            {
+                bankLSB: 0,
+                bankMSB: 0,
+                program: 0,
+                isGMGSDrum: false
+            },
+            "xg"
+        );
+        this.drumPreset = this.soundBankManager.getPreset(
+            {
+                bankLSB: 0,
+                bankMSB: 0,
+                program: 0,
+                isGMGSDrum: true
+            },
+            "gs"
+        );
+    }
+
+    private getCachedVoiceIndex(
+        patch: MIDIPatch,
+        midiNote: number,
+        velocity: number
+    ) {
+        let bankMSB = patch.bankMSB;
+        let bankLSB = patch.bankLSB;
+        const { isGMGSDrum, program } = patch;
+        if (isGMGSDrum) {
+            bankMSB = 128;
+            bankLSB = 0;
+        }
+        // 128x128x128x128x128 array!
+        return (
+            bankMSB + // 128 ^ 0
+            bankLSB * 128 + // 128 ^ 1
+            program * 16_384 + // 128 ^ 2
+            2_097_152 * midiNote + // 128 ^ 3
+            268_435_456 * velocity
+        ); // 128 ^ 4
     }
 }

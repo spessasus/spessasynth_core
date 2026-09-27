@@ -21,7 +21,7 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import { type SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
@@ -136,7 +136,7 @@ export class MIDIChannel {
      * Core synthesis engine.
      * @internal
      */
-    public readonly synthCore: SynthesizerCore;
+    public readonly synthCore: SpessaSynthProcessor;
 
     /**
      * Current left PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
@@ -346,7 +346,7 @@ export class MIDIChannel {
      * @internal
      */
     public constructor(
-        synthProperties: SynthesizerCore,
+        synthProperties: SpessaSynthProcessor,
         preset: SynthesizerPatch | undefined,
         drumPreset: SynthesizerPatch | undefined,
         channelNumber: number

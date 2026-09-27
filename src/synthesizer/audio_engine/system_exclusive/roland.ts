@@ -2,7 +2,7 @@ import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
@@ -13,7 +13,7 @@ import {
 } from "../../../midi/midi_tools/sysex_data";
 
 function handleUserDrum(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     a2: number,
     a3: number,
     data: number,
@@ -132,7 +132,7 @@ function handleUserDrum(
  * @param channelOffset
  */
 export function rolandSystemExclusive(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -160,7 +160,7 @@ export function rolandSystemExclusive(
                         // Double module mode, ensure at least 32 channels
                         SpessaLog.gsInfo("Mode", "Double Module");
                         while (this.midiChannels.length < 32) {
-                            this.createMIDIChannel(true);
+                            this.createMIDIChannel();
                         }
                     }
                     // This is a GS reset

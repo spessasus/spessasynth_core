@@ -20,10 +20,7 @@ export function programChange(this: MIDIChannel, program: number) {
         this.channelSystem
     );
     if (!preset) {
-        preset = this.synthCore.missingPresetHandler(
-            this.patch,
-            this.channelSystem
-        );
+        preset = this.synthCore.onMissingPreset(this.patch, this.channelSystem);
         if (!preset) {
             return;
         }

@@ -1,6 +1,6 @@
 import { SpessaLog } from "../../../utils/loggin";
 import { readBinaryString } from "../../../utils/byte_functions/string";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
@@ -29,7 +29,7 @@ function getTuning(byte1: number, byte2: number, byte3: number): number {
  * @param channelOffset
  */
 export function universalSystemExclusive(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {

@@ -6,7 +6,7 @@ import type {
     GSReverbParameter
 } from "./effects/types";
 import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
-import type { SynthesizerCore } from "./synthesizer_core";
+import { SpessaSynthProcessor } from "../processor";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
@@ -66,12 +66,12 @@ export interface SynthesizerSnapshot {
 }
 
 export function applySnapshot(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     snapshot: SynthesizerSnapshot
 ) {
     // Add channels if more needed
     while (this.midiChannels.length < snapshot.midiChannels.length)
-        this.createMIDIChannel(true);
+        this.createMIDIChannel();
 
     // Restore channels
     for (let i = 0; i < snapshot.midiChannels.length; i++)
@@ -154,7 +154,7 @@ export function applySnapshot(
 }
 
 export function getSynthesizerSnapshot(
-    this: SynthesizerCore
+    this: SpessaSynthProcessor
 ): SynthesizerSnapshot {
     return {
         midiParameters: { ...this.midiParameters },
