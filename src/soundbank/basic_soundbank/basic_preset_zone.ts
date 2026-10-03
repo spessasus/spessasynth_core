@@ -5,6 +5,11 @@ import type { BasicSoundBank } from "./basic_soundbank";
 import { Generator } from "./generator";
 import { GeneratorTypes } from "./generator_types";
 
+/**
+ * Represents a single preset zone with an associated {@link BasicInstrument}.
+ *
+ * @group Sound Banks.Zones
+ */
 export class BasicPresetZone extends BasicZone {
     /**
      * The preset this zone belongs to.
@@ -15,6 +20,7 @@ export class BasicPresetZone extends BasicZone {
      * Creates a new preset zone.
      * @param preset the preset this zone belongs to.
      * @param instrument the instrument to use in this zone.
+     * @internal
      */
     public constructor(preset: BasicPreset, instrument: BasicInstrument) {
         super();
@@ -24,12 +30,12 @@ export class BasicPresetZone extends BasicZone {
     }
 
     /**
-     * Zone's instrument.
+     * The instrument associated with this zone.
      */
     private _instrument: BasicInstrument;
 
     /**
-     * Zone's instrument.
+     * The instrument associated with this zone.
      */
     public get instrument() {
         return this._instrument;
@@ -37,7 +43,8 @@ export class BasicPresetZone extends BasicZone {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Zone's instrument.
+     * Sets an instrument for this zone, unliking the previous one from it.
+     * @param instrument The instrument to set.
      */
     public set instrument(instrument: BasicInstrument) {
         if (this._instrument) {
@@ -47,6 +54,10 @@ export class BasicPresetZone extends BasicZone {
         this._instrument.linkTo(this.parentPreset);
     }
 
+    /**
+     * @internal
+     * @param bank
+     */
     public getWriteGenerators(bank: BasicSoundBank): Generator[] {
         const gens = super.getWriteGenerators(bank);
         if (!bank) {

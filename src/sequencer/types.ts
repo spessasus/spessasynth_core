@@ -1,25 +1,40 @@
 import type { BasicMIDI } from "../midi/basic_midi";
 import type { MIDIMessage } from "../midi/midi_message";
 
-export interface SequencerEventData {
+/**
+ * {@link SequencerEvent} represents an event that {@link SpessaSynthSequencer} emits.
+ *
+ * Events can be received by specifying a {@link SpessaSynthSequencer.onEventCall} callback.
+ *
+ * @group Sequencer
+ */
+export interface SequencerEvent {
     /**
-     * Called when a MIDI message is sent and externalMIDIPlayback is true.
+     * This event is called when a MIDI message is sent and {@link SpessaSynthSequencer.externalMIDIPlayback `externalMIDIPlayback`} is true.
      */
     midiMessage: {
         /**
-         * The binary MIDI message.
+         * The binary MIDI message data.
          */
-        message: Iterable<number>;
+        message: number[];
 
         /**
-         * The synthesizer's current time when this event was sent.
+         * The value of {@link SpessaSynthProcessor.currentTime} when this event was sent.
          * Use this for scheduling MIDI messages to your external MIDI device.
          */
         time: number;
+
+        /**
+         * The channel offset of this message, it is useful for multi-port MIDI files.
+         * For example, offset of 0 means the first 16 channels (0-15). Offset of 16 means the second port (channels 16-31).
+         * The second port could be routed to a second MIDI output or a second MIDI device.
+         */
+        channelOffset: number;
     };
     /**
-     * Called when the time is changed.
-     * It also gets called when a song gets changed.
+     * This event is called when {@link SpessaSynthSequencer.currentTime} is changed.
+     *
+     * This event also gets called when a song gets changed.
      */
     timeChange: {
         /**
@@ -29,33 +44,22 @@ export interface SequencerEventData {
     };
 
     /**
-     * Called when the playback stops.
-     * @deprecated use songEnded instead.
-     */
-    pause: {
-        /**
-         * True if the playback stopped because it finished playing the song, false if it was stopped manually.
-         */
-        isFinished: boolean;
-    };
-
-    /**
-     * Called when the playback stops.
+     * This event is called when the playback stops.
      */
     songEnded: object;
 
     /**
-     * Called when the song changes.
+     * This event is called when the song changes.
      */
     songChange: {
         /**
-         * The index of the new song in the song list.
+         * The index of the new song in {@link SpessaSynthSequencer.songs}.
          */
         songIndex: number;
     };
 
     /**
-     * Called when the song list changes.
+     *  This event is called when the song list changes.
      */
     songListChange: {
         /**
@@ -65,7 +69,9 @@ export interface SequencerEventData {
     };
 
     /**
-     * Called when a MIDI Meta event is encountered.
+     * This event is called when a MIDI Meta event is encountered.
+     *
+     * It may be useful for listening for events such as tempo change or lyric event.
      */
     metaEvent: {
         /**
@@ -79,7 +85,7 @@ export interface SequencerEventData {
     };
 
     /**
-     * Called when the loop count changes (decreases).
+     * This event is called when the loop count changes (decreases).
      */
     loopCountChange: {
         /**
@@ -89,9 +95,14 @@ export interface SequencerEventData {
     };
 }
 
-export type SequencerEvent = {
-    [K in keyof SequencerEventData]: {
+/**
+ * @inheritDoc SequencerEvent
+ *
+ * @group Sequencer
+ */
+export type SequencerEventCallback = {
+    [K in keyof SequencerEvent]: {
         type: K;
-        data: SequencerEventData[K];
+        data: SequencerEvent[K];
     };
-}[keyof SequencerEventData];
+}[keyof SequencerEvent];

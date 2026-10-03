@@ -1,3 +1,7 @@
+---
+title: Kinds Of Parameters
+---
+
 # Kinds Of Parameters
 
 SpessaSynth recognizes 4 kinds of parameters in the API.
@@ -5,13 +9,9 @@ They are all independent of each other,
 and parameters at the same level get summed/multiplied
 to get the total value for the level.
 
-## Global
+## Global System Parameters
 
-These parameters affect the entire synthesizer.
-
-### System Parameters
-
-[See the exact parameters here](../spessa-synth-processor/global-parameters.md#system)
+{@link GlobalSystemParameter See the exact parameters here.}
 
 Global System Parameters are API-only parameters
 that affect the entire synthesizer.
@@ -21,12 +21,12 @@ and not via MIDI messages.
 
 Examples:
 
-- `voiceCap`
-- `interpolationType`
+- {@link GlobalSystemParameter.voiceCap `voiceCap`}
+- {@link GlobalSystemParameter.interpolationType `interpolationType`}
 
-### MIDI Parameters
+## Global MIDI Parameters
 
-[See the exact parameters here](../spessa-synth-processor/global-parameters.md#midi)
+{@link GlobalMIDIParameter See the exact parameters here.}
 
 Global MIDI Parameters are MIDI-only parameters
 that affect the entire synthesizer.
@@ -38,16 +38,12 @@ They also have an associated event and can be locked.
 
 Examples:
 
-- `system`
-- `keyShift`
+- {@link GlobalMIDIParameter.system `system`}
+- {@link GlobalMIDIParameter.keyShift `keyShift`}
 
-## Channel
+## Channel System Parameters
 
-These parameters affect a single MIDI channel.
-
-### System Parameters
-
-[See the exact parameters here](../spessa-synth-processor/midi-channel/channel-parameters.md#system)
+{@link ChannelSystemParameter See the exact parameters here.}
 
 Channel System Parameters are API-only parameters
 that affect a single MIDI channel.
@@ -60,12 +56,12 @@ and not via MIDI messages.
 
 Examples:
 
-- `presetLock`
-- `isMuted`
+- {@link ChannelSystemParameter.presetLock `presetLock`}
+- {@link ChannelSystemParameter.isMuted `isMuted`}
 
-### MIDI Parameters
+## Channel MIDI Parameters
 
-[See the exact parameters here](../spessa-synth-processor/midi-channel/channel-parameters.md#midi)
+{@link ChannelMIDIParameter See the exact parameters here.}
 
 Channel MIDI Parameters are MIDI-only parameters
 that affect a single MIDI channel.
@@ -77,5 +73,5 @@ They also have an associated event and can be locked.
 
 Examples:
 
-- `pitchWheel`
-- `pressure`
+- {@link ChannelMIDIParameter.pitchWheel `pitchWheel`}
+- {@link ChannelMIDIParameter.pressure `pressure`}

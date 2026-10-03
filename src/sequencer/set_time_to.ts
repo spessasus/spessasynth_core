@@ -163,44 +163,46 @@ export function setTimeToInternal(
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const analyzed = MIDIUtils.analyzeSysEx(event.data);
-                // Sysex may change controllers
-                switch (analyzed.type) {
-                    default: {
-                        this.processEvent(event, trackIndex);
-                        break;
-                    }
-
-                    /*
-                    Program change cannot be skipped.
-                    Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
-                    Testcase: (GS88Pro)Th19_1S(KR.Palto47)
-                     */
-
-                    case "Controller Change": {
-                        const { controller, value, channel } = analyzed;
-                        // Channel number may be above 15
-                        if (channel >= channelsToSave) break;
-                        // Empty tracks cannot controller change
-                        if (
-                            this._midiData.isMultiPort &&
-                            track.channels.size === 0
-                        )
-                            break;
-
-                        if (
-                            controller === MIDIControllers.resetAllControllers
-                        ) {
-                            resetAllControllers(channel);
+                const analyzedMessages = MIDIUtils.analyzeSysEx(event.data);
+                for (const analyzed of analyzedMessages)
+                    // Sysex may change controllers
+                    switch (analyzed.type) {
+                        default: {
+                            this.processEvent(event, trackIndex);
                             break;
                         }
-                        if (nonSkippableCCs.has(controller))
-                            this.sendMIDICC(channel, controller, value);
-                        else
-                            channels[channel].controllers[controller] =
-                                value << 7;
+
+                        /*
+                        Program change cannot be skipped.
+                        Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
+                        Testcase: (GS88Pro)Th19_1S(KR.Palto47)
+                         */
+
+                        case "Controller Change": {
+                            const { controller, value, channel } = analyzed;
+                            // Channel number may be above 15
+                            if (channel >= channelsToSave) break;
+                            // Empty tracks cannot controller change
+                            if (
+                                this._midiData.isMultiPort &&
+                                track.channels.size === 0
+                            )
+                                break;
+
+                            if (
+                                controller ===
+                                MIDIControllers.resetAllControllers
+                            ) {
+                                resetAllControllers(channel);
+                                break;
+                            }
+                            if (nonSkippableCCs.has(controller))
+                                this.sendMIDICC(channel, controller, value);
+                            else
+                                channels[channel].controllers[controller] =
+                                    value << 7;
+                        }
                     }
-                }
                 break;
             }
 

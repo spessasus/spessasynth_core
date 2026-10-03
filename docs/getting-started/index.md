@@ -1,10 +1,14 @@
-# Getting started with `spessasynth_core`
+---
+title: Getting started with spessasynth_core
+---
 
-!!! Tip
+# Getting started with <code>spessasynth_core</code>
 
-    If you encounter any errors in this documentation, please **open an issue!**
+> **Tip**
+>
+> If you encounter any errors in this documentation, please **open an issue!**
 
-## `spessasynth_core` vs `spessasynth_lib`
+## <code>spessasynth_core</code> vs <code>spessasynth_lib</code>
 
 There are two similar libraries: `spessasynth_lib` and `spessasynth_core`:
 
@@ -15,14 +19,14 @@ There are two similar libraries: `spessasynth_lib` and `spessasynth_core`:
 
 So:
 
-### Use `spessasynth_lib` if:
+### Use <code>spessasynth_lib</code> if:
 
 - You want to play MIDI files in the browser without much work.
 - You don't want to have to program your own audio processor.
 - The default effects are good enough for you.
 - You don't need direct access to the audio engine.
 
-### Use `spessasynth_core` if:
+### Use <code>spessasynth_core</code> if:
 
 - You want access to raw PCM samples.
 - You want custom effect processors.
@@ -84,15 +88,15 @@ for (let i = 0; i < 16; i++) {
 }
 ```
 
-Check out the [`.process()` method](../spessa-synth-processor/index.md#process) for more information.
+Check out the {@link SpessaSynthProcessor.process} for more information.
 
 ## Examples
 
 You can find all examples in the `examples` directory in this repository.
 
-!!! Note
-
-    To run these examples, run `npm run install:examples` in the root directory.
+> **Note**
+>
+> To run these examples, run `npm run install:examples` in the root directory.
 
 ### MIDI to WAV converter
 

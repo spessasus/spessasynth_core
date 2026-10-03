@@ -1,4 +1,3 @@
-import type { DLSLoop } from "../types";
 import { RIFFChunk } from "../../utils/riff_chunk";
 import {
     readLittleEndianIndexed,
@@ -17,6 +16,19 @@ import { SpessaLog } from "../../utils/loggin";
 
 const WSMP_SIZE = 20;
 const WSMP_LOOP_SIZE = 16;
+
+export interface DLSLoop {
+    loopType: DLSLoopType;
+    /**
+     * Specifies the start point of the loop in samples as an absolute offset from the beginning of the
+     * data in the <data-ck> subchunk of the <wave-list> wave file chunk.
+     */
+    loopStart: number;
+    /**
+     * Specifies the length of the loop in samples.
+     */
+    loopLength: number;
+}
 
 export class WaveSample extends DLSVerifier {
     /**

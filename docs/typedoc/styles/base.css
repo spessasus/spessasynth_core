@@ -1,0 +1,46 @@
+body {
+    font-family:
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        Helvetica,
+        Arial,
+        sans-serif;
+    font-size: 1rem;
+}
+
+code,
+pre {
+    font-family: "JetBrains Mono", SFMono-Regular, Consolas, Menlo, monospace;
+    padding: 0.2rem;
+    border-radius: 0.35rem;
+}
+
+pre .ts {
+    display: block;
+}
+
+.tsd-page-toolbar {
+    background-color: var(--color-background);
+}
+
+.tsd-signature,
+code,
+pre {
+    font-size: 0.95em !important;
+}
+
+.tsd-signature {
+    border: none;
+    background: var(--color-icon-background);
+    border-radius: 0.4rem;
+}
+
+.tsd-kind-icon {
+    font-family: monospace;
+}
+
+.tsd-typography,
+.tsd-hierarchy {
+    line-height: 1.75em;
+}

@@ -1,0 +1,36 @@
+.tsd-admonition-tip {
+    --color-accent: #189300;
+}
+
+.tsd-admonition-note {
+    --color-accent: #3b82f6;
+}
+
+.tsd-admonition-important {
+    --color-accent: #8b5cf6;
+}
+
+.tsd-admonition-warning {
+    --color-accent: #f59e0b;
+}
+
+.tsd-admonition-danger {
+    --color-accent: #ef4444;
+}
+
+.tsd-admonition {
+    border-left: 0.4rem solid var(--color-accent);
+    border-radius: var(--radius);
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent) 100%;
+}
+
+.tsd-admonition > strong {
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.tsd-admonition > :last-child {
+    margin-bottom: 0;
+}

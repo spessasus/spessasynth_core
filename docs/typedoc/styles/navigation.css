@@ -1,0 +1,9 @@
+.tsd-navigation {
+    margin-right: 0.5rem;
+}
+
+.tsd-navigation a {
+    padding: 0.3rem;
+    margin: 0.2rem;
+    border-radius: var(--radius);
+}

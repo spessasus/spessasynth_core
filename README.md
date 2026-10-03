@@ -50,7 +50,7 @@ and reworked, more powerful API!
 - **Flexible:** _It's not just a MIDI player!_
 - **Easy to Use:** _Basic setup is
   just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
-- **No external dependencies:** _Only vorbis decoder for SF3 support!_
+- **Minimal dependencies:** _Only tiny `fflate` for XMF and `stb-vorbis` for SF3 support!_
 - **Full TypeScript definitions:** _Autocompletion in IDEs!_
 
 ### Powerful MIDI Synthesizer
@@ -248,7 +248,7 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(soundBank, "main");
-await synth.processorInitialized;
+await synth.ready;
 // Enable verbose information during render
 SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count
@@ -310,6 +310,10 @@ npm run build
 ```
 
 The files will be placed in the `dist` folder.
+
+#### Test Suite
+
+This library has a comprehensive MIDI testing suite. For more information, please read the [tests `README`](tests/README.md).
 
 ## License
 

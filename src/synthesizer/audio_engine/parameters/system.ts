@@ -1,11 +1,24 @@
 import { VOICE_CAP } from "../synth_constants";
 import { type InterpolationType, InterpolationTypes } from "../../enums";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import { SpessaLog } from "../../../utils/loggin";
 
 /**
- * The global parameters of the synthesizer.
- * These can only be changed via the API.
+ * Global System Parameters are API-only parameters
+ * that affect the entire synthesizer.
+ *
+ * They are System Parameters, meaning that they can only be changed via the API,
+ * and not via MIDI messages.
+ *
+ * {@link DEFAULT_GLOBAL_SYSTEM_PARAMETERS} is provided with the library,
+ * containing the defaults.
+ *
+ * Examples:
+ *
+ * - `voiceCap`
+ * - `interpolationType`
+ *
+ * @group Synthesizer.Parameters
  */
 export interface GlobalSystemParameter {
     // Synth exclusive
@@ -22,16 +35,20 @@ export interface GlobalSystemParameter {
     /**
      * The maximum number of voices that can be played at once.
      *
-     * Increasing this value causes memory allocation for more voices.
-     * It is recommended to set it at the beginning, before rendering audio to avoid GC.
-     * Decreasing it does not cause memory usage change, so it's fine to use.
+     * > **Warning**
+     * >
+     * > Increasing this value causes memory allocation for more voices.
+     * > It is recommended to set it at the beginning, before rendering audio to avoid GC.
+     * > Decreasing it does not cause memory usage change, so it's fine to use.
      */
     voiceCap: number;
 
     /**
      * Enabling this parameter will cause a new voice allocation when the voice cap is hit, rather than stealing existing voices.
      *
-     * This is not recommended in real-time environments.
+     * > **Warning**
+     * >
+     * > This is not recommended in real-time environments.
      */
     autoAllocateVoices: boolean;
 
@@ -83,7 +100,9 @@ export interface GlobalSystemParameter {
      * the recommended use case would be setting
      * the insertion effect type and parameters then locking it to prevent changes by MIDI files.
      *
-     * To lock the channel insertion assign, lock the `efxAssign` parameter instead.
+     * > **Warning**
+     * >
+     * > To lock the channel insertion assign, lock the {@link ChannelMIDIParameter.efxAssign `efxAssign`} parameter instead.
      */
     insertionEffectLock: boolean;
 
@@ -94,6 +113,14 @@ export interface GlobalSystemParameter {
      * the drum parameters then locking it to prevent changes by MIDI files.
      */
     drumLock: boolean;
+
+    /**
+     * If the synthesizer should prevent editing of the User Drum Set (GS only) parameters.
+     * These params are modified using MIDI system exclusive messages or NRPN, so
+     * the recommended use case would be setting
+     * the User Drum Set parameters then locking it to prevent changes by MIDI files.
+     */
+    userDrumLock: boolean;
 
     /**
      * Forces note killing instead of releasing. Improves performance in black MIDIs.
@@ -129,11 +156,22 @@ export interface GlobalSystemParameter {
     /**
      * The global tuning in cents.
      * Drum channels ignore this value.
+     *
+     * > **Tip**
+     * >
+     * > While the range of this parameter is unlimited, it is recommended to keep it in the range of -100 to 100 cents.
+     * > The values above that should be applied to `keyShift` instead.
+     * > For example, if the target value is 156, the recommended approach is:
+     * >
+     * > - `keyShift` = 1
+     * > - `fineTune` = 56
      */
     fineTune: number;
 
     /**
      * The interpolation type used for sample playback.
+     * Interpolation defines how sample points between the sample data are calculated.
+     * This has high cost on performance but can improve the quality.
      */
     interpolationType: InterpolationType;
 
@@ -148,8 +186,24 @@ export interface GlobalSystemParameter {
      * Where a new note will kill the previous one if it is still playing.
      */
     monophonicRetrigger: boolean;
+
+    /**
+     * If the synthesizer should use the custom vibrato implementation.
+     *
+     * This effect is modified using NRPN, so
+     * the recommended use case would be setting
+     * the custom vibrato then locking it to prevent changes by MIDI files.
+     *
+     * Disabled by default to avoid altering songs that don't expect it.
+     */
+    customVibrato: boolean;
 }
 
+/**
+ * Default values for {@link GlobalSystemParameter}s.
+ *
+ * @group Synthesizer.Parameters
+ */
 export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
     // Synth exclusive
     effectsEnabled: true,
@@ -168,6 +222,7 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
 
     insertionEffectLock: false,
     drumLock: false,
+    userDrumLock: false,
 
     blackMIDIMode: false,
     deviceID: -1,
@@ -180,7 +235,8 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
 
     interpolationType: InterpolationTypes.hermite,
     nrpnParamLock: false,
-    monophonicRetrigger: false
+    monophonicRetrigger: false,
+    customVibrato: false
 };
 
 /**
@@ -190,9 +246,10 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
  */
 export function setSystemParameterInternal<
     P extends keyof GlobalSystemParameter
->(this: SynthesizerCore, parameter: P, value: GlobalSystemParameter[P]) {
+>(this: SpessaSynthProcessor, parameter: P, value: GlobalSystemParameter[P]) {
     if (this.systemParameters[parameter] === value) return;
     const prev = this.systemParameters[parameter];
+    // @ts-expect-error Only setter here, readonly for consumers
     this.systemParameters[parameter] = value;
     for (const ch of this.midiChannels) ch.updateInternalParams();
     // Additional handling for specific parameters
@@ -204,6 +261,7 @@ export function setSystemParameterInternal<
         case "voiceCap": {
             // Infinity is not allowed
             const cap = Math.min(value as number, 1_000_000);
+            // @ts-expect-error Only setter here, readonly for consumers
             this.systemParameters.voiceCap = cap;
             // Disable all voices after cap
             for (let i = cap; i < this.voices.length; i++) {
@@ -219,8 +277,7 @@ export function setSystemParameterInternal<
         }
 
         case "keyShift": {
-            if ((prev as number) !== (value as number))
-                this.stopAllChannels(true);
+            if ((prev as number) !== (value as number)) this.stopAll(true);
         }
     }
 }

@@ -1,33 +1,49 @@
 import { MIDIMessage } from "./midi_message";
 import { IndexedByteArray } from "../utils/indexed_array";
 
+/**
+ * This class represents a single MIDI track in a {@link BasicMIDI} sequence.
+ *
+ * @group MIDI.Sequence
+ */
 export class MIDITrack {
     /**
      * The name of this track.
+     * Empty if the track has no name.
      */
     public name = "";
     /**
      * The MIDI port number used by the track.
+     * Will be 0 for non-Multi-Port MIDIs.
      */
     public port = 0;
     /**
-     * A set that contains the MIDI channels used by the track in the sequence.
+     * A set that contains the MIDI channel numbers used by this track.
      */
     public channels = new Set<number>();
     /**
-     * All the MIDI messages of this track.
+     * All the MIDI messages of this track, ordered by their tick time.
      */
     public events: Omit<
         MIDIMessage[],
         "push" | "splice" | "shift" | "unshift"
     > = [];
 
+    /**
+     * Creates a copy of a `MIDITrack`.
+     * @param track The track to copy.
+     * @returns The new copy.
+     */
     public static copyFrom(track: MIDITrack) {
         const t = new MIDITrack();
         t.copyFrom(track);
         return t;
     }
 
+    /**
+     * Copies a `MIDITrack` into this track.
+     * @param track The track to copy.
+     */
     public copyFrom(track: MIDITrack) {
         this.name = track.name;
         this.port = track.port;
@@ -40,16 +56,6 @@ export class MIDITrack {
                     new IndexedByteArray(e.data)
                 )
         );
-    }
-
-    /**
-     * Adds an event to the track.
-     * @param event The event to add.
-     * @param index The index at which to add this event.
-     * @deprecated Use addEvents instead
-     */
-    public addEvent(event: MIDIMessage, index: number) {
-        (this.events as MIDIMessage[]).splice(index, 0, event);
     }
 
     /**
@@ -70,10 +76,10 @@ export class MIDITrack {
     }
 
     /**
-     * Appends an event to the end of the track.
-     * @param event The event to add.
+     * Appends events to the end of the track.
+     * @param events The events to add.
      */
-    public pushEvent(event: MIDIMessage) {
-        (this.events as MIDIMessage[]).push(event);
+    public pushEvents(...events: MIDIMessage[]) {
+        (this.events as MIDIMessage[]).push(...events);
     }
 }
