@@ -1502,6 +1502,11 @@ export function rolandSystemExclusive(
                 if (syx[4] === 0x10) {
                     this.callEvent("displayMessage", [...syx]);
                 }
+                // 0x20: SC-8850 160x64 display
+                // Thanks to midi-movie-player for details on this message
+                else if (syx[4] === 0x20) {
+                    this.callEvent("displayMessage", [...syx]);
+                }
                 return;
             }
 
