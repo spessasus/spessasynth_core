@@ -218,6 +218,257 @@ export type GSInsertionParameterMessage =
            */
           value: number;
       };
+
+/**
+ * Represents an analyzed Yamaha XG Reverb Processor change.
+ *
+ * @group MIDI.Protocol
+ */
+export type XGReverbParameterMessage =
+    | {
+          /**
+           * A reverb effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Reverb Param";
+          /**
+           * The reverb type, stored as a 16-bit number `MSB << 8 | LSB`.
+           */
+          parameter: "type";
+          /**
+           * The value, stored as `MSB << 8 | LSB`.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A reverb effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Reverb Param";
+          /**
+           * Mixer setting for the reverb block.
+           */
+          parameter: "return" | "pan";
+          /**
+           * The new value of the parameter (0-127).
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A reverb effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Reverb Param";
+          /**
+           * The 0-based type-specific parameter number (0-15).
+           * Meaning depends on the current `type`.
+           */
+          parameter: number;
+          /**
+           * The new value of the parameter (0-127).
+           */
+          value: number;
+      };
+/**
+ * Represents an analyzed Yamaha XG Chorus Processor change.
+ *
+ * @group MIDI.Protocol
+ */
+export type XGChorusParameterMessage =
+    | {
+          /**
+           * A chorus effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Chorus Param";
+          /**
+           * The chorus type, stored as a 16-bit number `MSB << 8 | LSB`.
+           */
+          parameter: "type";
+          /**
+           * The value, stored as `MSB << 8 | LSB`.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A chorus effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Chorus Param";
+          /**
+           * Mixer/routing setting for the chorus block.
+           */
+          parameter: "return" | "pan" | "sendToReverb";
+          /**
+           * The new value of the parameter (0-127).
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A chorus effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Chorus Param";
+          /**
+           * The 0-based type-specific parameter number (0-15).
+           * Meaning depends on the current `type`.
+           */
+          parameter: number;
+          /**
+           * The new value of the parameter (0-127).
+           */
+          value: number;
+      };
+/**
+ * Variation connection mode:
+ * - `system` routes all channels via sends (like reverb and chorus).
+ * - `insertion` routes a single `partNumber` channel straight through.
+ *
+ * @group MIDI.Protocol
+ */
+export type XGVariationConnection = "system" | "insertion";
+/**
+ * Represents an analyzed Yamaha XG Variation Processor change.
+ *
+ * Variation runs either as a system effect (all channels via sends, similarly to reverb and chorus and using the same CC as the GS delay)
+ * or as an insertion effect (single `partNumber` channel routed straight
+ * through it), selected by `connection`.
+ *
+ * @group MIDI.Protocol
+ */
+export type XGVariationParameterMessage =
+    | {
+          /**
+           * A variation effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Variation Param";
+          /**
+           * The variation type, stored as a 16-bit number `MSB << 8 | LSB`.
+           */
+          parameter: "type";
+          /**
+           * The value, stored as `MSB << 8 | LSB`.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A variation effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Variation Param";
+          /**
+           * Mixer/routing setting for the variation block.
+           *
+           * `partNumber` is the channel routed through the variation effect in the insertion mode.
+           * (0-63 parts, 127 OFF).
+           */
+          parameter:
+              | "return"
+              | "pan"
+              | "sendToReverb"
+              | "sendToChorus"
+              | "partNumber";
+          /**
+           * The new value of the parameter (0-127).
+           */
+          value: number;
+      }
+    | {
+          /**
+           * A variation effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Variation Param";
+          /**
+           * Switches the variation block between system and insertion mode.
+           */
+          parameter: "connection";
+          /**
+           * The connection mode.
+           */
+          value: XGVariationConnection;
+      }
+    | {
+          /**
+           * A variation effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Variation Param";
+          /**
+           * The 0-based type-specific parameter number (0-15).
+           * Meaning depends on the current `type`.
+           */
+          parameter: number;
+          /**
+           * The new value of the parameter, stored as a 14-bit number `(MSB << 7) | LSB`.
+           * This is also the case for parameters 10-15! (MSB << 7)
+           */
+          value: number;
+      };
+
+/**
+ * Represents an analyzed Yamaha XG Insertion Processor change (EFFECT 2).
+ *
+ * Insertion runs like variation in `insertion` mode, where it attaches to a single `partNumber` channel and its audio is routed straight through it.
+ *
+ * @group MIDI.Protocol
+ */
+export type XGInsertionParameterMessage =
+    | {
+          /**
+           * An insertion effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Insertion Param";
+          /**
+           * The insertion effect number.
+           * For example 0 is the first insertion effect.
+           */
+          insertionNumber: number;
+          /**
+           * The insertion type, stored as a 16-bit number `MSB << 8 | LSB`.
+           */
+          parameter: "type";
+          /**
+           * The value, stored as `MSB << 8 | LSB`.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * An insertion effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Insertion Param";
+          /**
+           * The insertion effect number (second address byte).
+           */
+          insertionNumber: number;
+          /**
+           * The channel routed through the insertion effect
+           * (0-63 parts, 64-126 A/D, 127 OFF).
+           */
+          parameter: "partNumber";
+          /**
+           * The new value of the parameter.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * An insertion effect processor parameter message (Yamaha XG).
+           */
+          type: "XG Insertion Param";
+          /**
+           * The insertion effect number (second address byte).
+           */
+          insertionNumber: number;
+          /**
+           * The 0-based type-specific parameter number (0-15).
+           * Meaning depends on the current `type`.
+           */
+          parameter: number;
+          /**
+           * The new value of the parameter, stored as a 14-bit number `(MSB << 7) | LSB`.
+           * This is also the case for MSB only setters! (MSB << 7)
+           */
+          value: number;
+      };
+
 /**
  * Represents an analyzed channel drum setup parameter change, set via NRPN.
  *
@@ -330,23 +581,15 @@ export type AnalyzedMIDIMessage =
     | GSChorusParameterMessage
     | GSDelayParameterMessage
     | GSInsertionParameterMessage
+    | XGReverbParameterMessage
+    | XGChorusParameterMessage
+    | XGVariationParameterMessage
+    | XGInsertionParameterMessage
     | {
           /**
-           * A reverb effect processor parameter message (Yamaha XG).
+           * An XG insertion (EFFECT2) message.
            */
-          type: "XG Reverb Param";
-      }
-    | {
-          /**
-           * A chorus effect processor parameter message (Yamaha XG).
-           */
-          type: "XG Chorus Param";
-      }
-    | {
-          /**
-           * A variation effect processor parameter message (Yamaha XG).
-           */
-          type: "XG Variation Param";
+          type: "XG Insertion Param";
       }
     | {
           /**

@@ -23,7 +23,12 @@ import type {
 import type {
     AnalyzedParameter,
     AnalyzedSysExMessage,
-    GSInsertionParameterMessage
+    GSInsertionParameterMessage,
+    XGChorusParameterMessage,
+    XGInsertionParameterMessage,
+    XGReverbParameterMessage,
+    XGVariationConnection,
+    XGVariationParameterMessage
 } from "./analyzed_message";
 import {
     DEFAULT_GS_DRUM_MAP,
@@ -35,6 +40,7 @@ import {
     GSUserDrumParamMap,
     XGDrumParamMap
 } from "./sysex_data";
+import { SpessaLog } from "../../utils/loggin";
 
 const OTHER = Object.freeze({ type: "Other" as const }) as {
     type: "Other";
@@ -381,7 +387,7 @@ export class MIDIUtils {
      * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this GS Insertion Parameter.
      */
-    public static setInsertionParameter(
+    public static setGSInsertionParameter(
         ticks: number,
         parameter: GSInsertionParameterMessage["parameter"],
         value: number
@@ -415,6 +421,266 @@ export class MIDIUtils {
                 return this.gsMessage(ticks, 0x40, 0x03, parameter + 3, [
                     value
                 ]);
+            }
+        }
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given XG Reverb Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set:
+     * - `"type"` (16-bit),
+     * - `"return"`, `"pan"` (7-bit),
+     * - 0-based type-specific parameter number (0-15) (7-bit).
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this XG Reverb Parameter.
+     */
+    public static setXGReverbParameter(
+        ticks: number,
+        parameter: XGReverbParameterMessage["parameter"],
+        value: number
+    ) {
+        switch (parameter) {
+            case "type": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x00, [
+                    (value >> 8) & 0x7f,
+                    value & 0x7f
+                ]);
+            }
+            case "return": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x0c, [value]);
+            }
+            case "pan": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x0d, [value]);
+            }
+            default: {
+                if (
+                    !Number.isInteger(parameter) ||
+                    parameter < 0 ||
+                    parameter > 15
+                ) {
+                    throw new Error(
+                        `Invalid XG reverb parameter: ${parameter}`
+                    );
+                }
+                const a3 = parameter < 10 ? parameter + 0x02 : parameter + 0x06;
+                return this.xgMessage(ticks, 0x02, 0x01, a3, [value]);
+            }
+        }
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given XG Chorus Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set:
+     * - `"type"` (16-bit),
+     * - `"return"`, `"pan"`, `"sendToReverb"` (7-bit),
+     * - 0-based type-specific parameter number (0-15) (7-bit).
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this XG Chorus Parameter.
+     */
+    public static setXGChorusParameter(
+        ticks: number,
+        parameter: XGChorusParameterMessage["parameter"],
+        value: number
+    ) {
+        switch (parameter) {
+            case "type": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x20, [
+                    (value >> 8) & 0x7f,
+                    value & 0x7f
+                ]);
+            }
+            case "return": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x2c, [value]);
+            }
+            case "pan": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x2d, [value]);
+            }
+            case "sendToReverb": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x2e, [value]);
+            }
+            default: {
+                if (
+                    !Number.isInteger(parameter) ||
+                    parameter < 0 ||
+                    parameter > 15
+                ) {
+                    throw new Error(
+                        `Invalid XG chorus parameter: ${parameter}`
+                    );
+                }
+                const a3 = parameter < 10 ? parameter + 0x22 : parameter + 0x26;
+                return this.xgMessage(ticks, 0x02, 0x01, a3, [value]);
+            }
+        }
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given XG Variation Parameter.
+     * @param ticks The MIDI tick time for the output event.
+     * @param parameter The parameter to set:
+     * - `"type"` (16-bit),
+     * - `"return"`, `"pan"`, `"sendToReverb"`, `"sendToChorus"` (7-bit),
+     * - `"connection"` (`"system"` or `"insertion"`)
+     * - `"partNumber"` (insertion target, generally 0-63),
+     * - 0-based type-specific parameter number (0-15) (14-bit).
+     * @param value The value to set it to.
+     * @returns The {@link MIDIMessage} needed to set this XG Variation Parameter.
+     */
+    public static setXGVariationParameter(
+        ticks: number,
+        parameter: XGVariationParameterMessage["parameter"],
+        value: number | XGVariationConnection
+    ) {
+        switch (parameter) {
+            case "type": {
+                const v = value as number;
+                return this.xgMessage(ticks, 0x02, 0x01, 0x40, [
+                    (v >> 8) & 0x7f,
+                    v & 0x7f
+                ]);
+            }
+            case "return": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x56, [
+                    value as number
+                ]);
+            }
+            case "pan": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x57, [
+                    value as number
+                ]);
+            }
+            case "sendToReverb": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x58, [
+                    value as number
+                ]);
+            }
+            case "sendToChorus": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x59, [
+                    value as number
+                ]);
+            }
+            case "connection": {
+                if (value !== "system" && value !== "insertion") {
+                    throw new Error(
+                        `Invalid XG variation connection: ${value}`
+                    );
+                }
+                return this.xgMessage(ticks, 0x02, 0x01, 0x5a, [
+                    value === "system" ? 1 : 0
+                ]);
+            }
+            case "partNumber": {
+                return this.xgMessage(ticks, 0x02, 0x01, 0x5b, [
+                    value as number
+                ]);
+            }
+            default: {
+                if (
+                    !Number.isInteger(parameter) ||
+                    parameter < 0 ||
+                    parameter > 15
+                ) {
+                    throw new Error(
+                        `Invalid XG variation parameter: ${parameter}`
+                    );
+                }
+                const v = value as number;
+                if (parameter < 10) {
+                    return this.xgMessage(
+                        ticks,
+                        0x02,
+                        0x01,
+                        0x42 + parameter * 2,
+                        [(v >> 7) & 0x7f, v & 0x7f]
+                    );
+                }
+                return this.xgMessage(
+                    ticks,
+                    0x02,
+                    0x01,
+                    0x70 + parameter - 10,
+                    [(v >> 7) & 0x7f]
+                );
+            }
+        }
+    }
+
+    /**
+     * Returns a MIDI event needed to set the given XG Insertion Parameter (EFFECT 2).
+     * @param ticks The MIDI tick time for the output event.
+     * @param insertionNumber The insertion effect number (second address byte).
+     * @param parameter The parameter to set:
+     * - `"type"` (16-bit),
+     * - `"partNumber"` (insertion target),
+     * - or a 0-based type-specific parameter number (0-15) (14-bit).
+     * @param value The value to set it to. If the 14-bit parameter has LSB of zero, the MSB-only version will be used.
+     * @returns The {@link MIDIMessage} needed to set this XG Insertion Parameter.
+     */
+    public static setXGInsertionParameter(
+        ticks: number,
+        insertionNumber: number,
+        parameter: XGInsertionParameterMessage["parameter"],
+        value: number
+    ) {
+        switch (parameter) {
+            case "type": {
+                return this.xgMessage(ticks, 0x03, insertionNumber, 0x00, [
+                    (value >> 8) & 0x7f,
+                    value & 0x7f
+                ]);
+            }
+            case "partNumber": {
+                return this.xgMessage(ticks, 0x03, insertionNumber, 0x0c, [
+                    value
+                ]);
+            }
+            default: {
+                if (
+                    !Number.isInteger(parameter) ||
+                    parameter < 0 ||
+                    parameter > 15
+                ) {
+                    throw new Error(
+                        `Invalid XG insertion parameter: ${parameter}`
+                    );
+                }
+                if (parameter < 10) {
+                    if ((value & 0x7f) === 0) {
+                        // Fits in the MSB alone: MSB-only address
+                        return this.xgMessage(
+                            ticks,
+                            0x03,
+                            insertionNumber,
+                            0x02 + parameter,
+                            [(value >> 7) & 0x7f]
+                        );
+                    }
+                    // Needs the LSB: two-byte [Ext.2] address
+                    // Yamaha XG spec v1.32, page 41.
+                    return this.xgMessage(
+                        ticks,
+                        0x03,
+                        insertionNumber,
+                        0x30 + parameter * 2,
+                        [(value >> 7) & 0x7f, value & 0x7f]
+                    );
+                }
+
+                // Parameters 10-15 only have MSB versions, use that
+                if ((value & 0x7f) !== 0) {
+                    SpessaLog.warn(
+                        "Attempting to set 14-bit value for XG insertion parameter 10-15 (11-16 in the spec). It will be truncated to MSB!"
+                    );
+                }
+                return this.xgMessage(
+                    ticks,
+                    0x03,
+                    insertionNumber,
+                    0x20 + parameter - 10,
+                    [(value >> 7) & 0x7f]
+                );
             }
         }
     }
@@ -1430,7 +1696,8 @@ export class MIDIUtils {
         const a1 = syx[3]; // Address 1
         const a2 = syx[4]; // Address 2
         const a3 = syx[5]; // Address 3
-        const data = syx[6];
+        // Value = syx[6]
+        const value = syx[6];
 
         if (
             a1 === 0x06 || // Display letters
@@ -1469,7 +1736,7 @@ export class MIDIUtils {
                         {
                             type: "Global MIDI Param",
                             parameter: "keyShift",
-                            value: data - 64
+                            value: value - 64
                         }
                     ];
                 }
@@ -1491,13 +1758,361 @@ export class MIDIUtils {
 
         // XG EFFECT 1
         if (a1 === 0x02 && a2 === 0x01) {
-            if (a3 <= 0x15) return [{ type: "XG Reverb Param" }];
-            if (a3 <= 0x35) return [{ type: "XG Chorus Param" }];
-            return [{ type: "XG Variation Param" }];
+            switch (a3) {
+                case 0x00: {
+                    // Reverb type: 2 bytes MSB, LSB
+                    if (syx.length < 9) return [OTHER];
+                    return [
+                        {
+                            type: "XG Reverb Param",
+                            parameter: "type",
+                            value: (value << 8) | syx[7]
+                        }
+                    ];
+                }
+
+                case 0x02:
+                case 0x03:
+                case 0x04:
+                case 0x05:
+                case 0x06:
+                case 0x07:
+                case 0x08:
+                case 0x09:
+                case 0x0a:
+                case 0x0b: {
+                    return [
+                        {
+                            type: "XG Reverb Param",
+                            parameter: a3 - 0x02,
+                            value
+                        }
+                    ];
+                }
+
+                case 0x0c: {
+                    return [
+                        {
+                            type: "XG Reverb Param",
+                            parameter: "return",
+                            value
+                        }
+                    ];
+                }
+                case 0x0d: {
+                    return [
+                        {
+                            type: "XG Reverb Param",
+                            parameter: "pan",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x10:
+                case 0x11:
+                case 0x12:
+                case 0x13:
+                case 0x14:
+                case 0x15: {
+                    return [
+                        {
+                            type: "XG Reverb Param",
+                            parameter: a3 - 0x06, // 0x10 -> 10 ... 0x15 -> 15
+                            value
+                        }
+                    ];
+                }
+
+                case 0x20: {
+                    // Chorus type: 2 bytes MSB, LSB
+                    if (syx.length < 9) return [OTHER];
+                    return [
+                        {
+                            type: "XG Chorus Param",
+                            parameter: "type",
+                            value: (value << 8) | syx[7]
+                        }
+                    ];
+                }
+
+                case 0x22:
+                case 0x23:
+                case 0x24:
+                case 0x25:
+                case 0x26:
+                case 0x27:
+                case 0x28:
+                case 0x29:
+                case 0x2a:
+                case 0x2b: {
+                    return [
+                        {
+                            type: "XG Chorus Param",
+                            parameter: a3 - 0x22,
+                            value
+                        }
+                    ];
+                }
+
+                case 0x2c: {
+                    return [
+                        {
+                            type: "XG Chorus Param",
+                            parameter: "return",
+                            value
+                        }
+                    ];
+                }
+                case 0x2d: {
+                    return [
+                        {
+                            type: "XG Chorus Param",
+                            parameter: "pan",
+                            value
+                        }
+                    ];
+                }
+                case 0x2e: {
+                    return [
+                        {
+                            type: "XG Chorus Param",
+                            parameter: "sendToReverb",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x30:
+                case 0x31:
+                case 0x32:
+                case 0x33:
+                case 0x34:
+                case 0x35: {
+                    return [
+                        {
+                            type: "XG Chorus Param",
+                            parameter: a3 - 0x26, // 0x30 -> 10 ... 0x35 -> 15
+                            value
+                        }
+                    ];
+                }
+
+                case 0x40: {
+                    // Variation type: 2 bytes MSB, LSB
+                    if (syx.length < 9) return [OTHER];
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: "type",
+                            value: (value << 8) | syx[7]
+                        }
+                    ];
+                }
+
+                case 0x42:
+                case 0x44:
+                case 0x46:
+                case 0x48:
+                case 0x4a:
+                case 0x4c:
+                case 0x4e:
+                case 0x50:
+                case 0x52:
+                case 0x54: {
+                    // Variation params 1-10: 14-bit! Not 16-bit!
+                    if (syx.length < 9) return [OTHER];
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: (a3 - 0x42) >> 1, // 0x42 -> 0 ... 0x54 -> 9
+                            value: (value << 7) | syx[7]
+                        }
+                    ];
+                }
+
+                case 0x56: {
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: "return",
+                            value
+                        }
+                    ];
+                }
+                case 0x57: {
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: "pan",
+                            value
+                        }
+                    ];
+                }
+                case 0x58: {
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: "sendToReverb",
+                            value
+                        }
+                    ];
+                }
+                case 0x59: {
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: "sendToChorus",
+                            value
+                        }
+                    ];
+                }
+                case 0x5a: {
+                    // 0 = insertion, 1 = system
+                    if (value === 0) {
+                        return [
+                            {
+                                type: "XG Variation Param",
+                                parameter: "connection",
+                                value: "insertion"
+                            }
+                        ];
+                    }
+                    if (value === 1) {
+                        return [
+                            {
+                                type: "XG Variation Param",
+                                parameter: "connection",
+                                value: "system"
+                            }
+                        ];
+                    }
+                    return [OTHER];
+                }
+                case 0x5b: {
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: "partNumber",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x70:
+                case 0x71:
+                case 0x72:
+                case 0x73:
+                case 0x74:
+                case 0x75: {
+                    return [
+                        {
+                            type: "XG Variation Param",
+                            parameter: a3 - 0x66, // 0x70 -> 10 ... 0x75 -> 15
+                            value: value << 7
+                        }
+                    ];
+                }
+
+                default: {
+                    return [OTHER];
+                }
+            }
         }
 
-        // XG EFFECT 2
-        if (a1 === 0x03 && a2 === 0x00) return [{ type: "XG Variation Param" }];
+        // XG EFFECT 2 (insertion, a2 = insertion effect number)
+        if (a1 === 0x03) {
+            const insertionNumber = a2;
+            switch (a3) {
+                case 0x00: {
+                    // Insertion type: 2 bytes MSB, LSB
+                    if (syx.length < 9) return [OTHER];
+                    return [
+                        {
+                            type: "XG Insertion Param",
+                            insertionNumber,
+                            parameter: "type",
+                            value: (value << 8) | syx[7]
+                        }
+                    ];
+                }
+
+                case 0x02:
+                case 0x03:
+                case 0x04:
+                case 0x05:
+                case 0x06:
+                case 0x07:
+                case 0x08:
+                case 0x09:
+                case 0x0a:
+                case 0x0b: {
+                    return [
+                        {
+                            type: "XG Insertion Param",
+                            insertionNumber,
+                            parameter: a3 - 0x02,
+                            value: value << 7
+                        }
+                    ];
+                }
+
+                case 0x0c: {
+                    return [
+                        {
+                            type: "XG Insertion Param",
+                            insertionNumber,
+                            parameter: "partNumber",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                case 0x23:
+                case 0x24:
+                case 0x25: {
+                    return [
+                        {
+                            type: "XG Insertion Param",
+                            insertionNumber,
+                            parameter: a3 - 0x16, // 0x20 -> 10 ... 0x25 -> 15
+                            value: value << 7
+                        }
+                    ];
+                }
+
+                case 0x30:
+                case 0x32:
+                case 0x34:
+                case 0x36:
+                case 0x38:
+                case 0x3a:
+                case 0x3c:
+                case 0x3e:
+                case 0x40:
+                case 0x42: {
+                    // Insertion params 1-10, full MSB/LSB form (14-bit)
+                    if (syx.length < 9) return [OTHER];
+                    return [
+                        {
+                            type: "XG Insertion Param",
+                            insertionNumber,
+                            parameter: (a3 - 0x30) >> 1, // 0x30 -> 0 ... 0x42 -> 9
+                            value: (value << 7) | syx[7]
+                        }
+                    ];
+                }
+
+                default: {
+                    // 0x0d-0x11 control depths (not modeled, like variation
+                    // 0x5c-0x60) and gaps
+                    return [OTHER];
+                }
+            }
+        }
 
         // XG MULTI PART
         if (a1 === 0x08 /* A2 is the channel number*/) {
@@ -1514,7 +2129,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.bankSelect,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1526,7 +2141,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.bankSelectLSB,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1537,7 +2152,7 @@ export class MIDIUtils {
                         {
                             type: "Program Change",
                             channel,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1549,7 +2164,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller:
-                                data === 1
+                                value === 1
                                     ? MIDIControllers.polyModeOn
                                     : MIDIControllers.monoModeOn,
                             value: 0
@@ -1564,7 +2179,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "assignMode",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1576,7 +2191,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "drumMap",
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1588,7 +2203,7 @@ export class MIDIUtils {
                             type: "Channel MIDI Param",
                             channel,
                             parameter: "keyShift",
-                            value: data - 64
+                            value: value - 64
                         }
                     ];
                 }
@@ -1600,7 +2215,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.mainVolume,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1608,7 +2223,7 @@ export class MIDIUtils {
                 case 0x0e: {
                     // Pan, except for random,
                     // Which is a different parameter
-                    if (data === 0) {
+                    if (value === 0) {
                         return [
                             {
                                 type: "Channel MIDI Param",
@@ -1623,7 +2238,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.pan,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1635,7 +2250,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.chorusDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1647,7 +2262,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.reverbDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1659,7 +2274,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.vibratoRate,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1671,7 +2286,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.vibratoDepth,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1683,7 +2298,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.vibratoDelay,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1695,7 +2310,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.brightness,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1707,7 +2322,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.filterResonance,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1719,7 +2334,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.attackTime,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1731,7 +2346,7 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.decayTime,
-                            value: data
+                            value
                         }
                     ];
                 }
@@ -1743,14 +2358,14 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.releaseTime,
-                            value: data
+                            value
                         }
                     ];
                 }
 
                 case 0x20: {
                     // MW LFO PMOD Depth (alias to modulation wheel range)
-                    const cents = ((data - 63) / 127) * 600;
+                    const cents = ((value - 63) / 127) * 600;
                     return [
                         {
                             type: "Channel MIDI Param",
@@ -1763,7 +2378,7 @@ export class MIDIUtils {
 
                 case 0x23: {
                     // Bend pitch control (alias to pitch wheel range)
-                    const centeredValue = data - 64;
+                    const centeredValue = value - 64;
                     return [
                         {
                             type: "Channel MIDI Param",
@@ -1787,7 +2402,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "pitchCoarse",
-                            value: data - 64,
+                            value: value - 64,
                             drumMap
                         }
                     ];
@@ -1800,7 +2415,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "pitchFine",
-                            value: data - 64,
+                            value: value - 64,
                             drumMap
                         }
                     ];
@@ -1813,7 +2428,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "level",
-                            value: data,
+                            value: value,
                             drumMap
                         }
                     ];
@@ -1826,7 +2441,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "assignGroup",
-                            value: data,
+                            value: value,
                             drumMap
                         }
                     ];
@@ -1839,7 +2454,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "pan",
-                            value: data,
+                            value: value,
                             drumMap
                         }
                     ];
@@ -1852,7 +2467,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "reverbSend",
-                            value: data,
+                            value: value,
                             drumMap
                         }
                     ];
@@ -1865,7 +2480,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "chorusSend",
-                            value: data,
+                            value: value,
                             drumMap
                         }
                     ];
@@ -1878,7 +2493,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "variationSend",
-                            value: data,
+                            value: value,
                             drumMap
                         }
                     ];
@@ -1891,7 +2506,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "rxNoteOff",
-                            value: data === 1,
+                            value: value === 1,
                             drumMap
                         }
                     ];
@@ -1904,7 +2519,7 @@ export class MIDIUtils {
                             type: "Map Drum Setup",
                             key: a2,
                             parameter: "rxNoteOn",
-                            value: data === 1,
+                            value: value === 1,
                             drumMap
                         }
                     ];

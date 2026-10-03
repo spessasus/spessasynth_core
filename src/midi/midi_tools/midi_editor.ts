@@ -1825,7 +1825,7 @@ export class MIDIEditor {
                 if (value === 255) continue;
                 if (param < 20) {
                     evs.push(
-                        MIDIUtils.setInsertionParameter(
+                        MIDIUtils.setGSInsertionParameter(
                             targetTicks,
                             param,
                             value
@@ -1833,7 +1833,7 @@ export class MIDIEditor {
                     );
                 } else {
                     evs.push(
-                        MIDIUtils.setInsertionParameter(
+                        MIDIUtils.setGSInsertionParameter(
                             targetTicks,
                             sendNames[param - 20],
                             value
@@ -1847,7 +1847,7 @@ export class MIDIEditor {
             // Type
             // Params and sends
             output.push(
-                MIDIUtils.setInsertionParameter(targetTicks, "type", p.type),
+                MIDIUtils.setGSInsertionParameter(targetTicks, "type", p.type),
                 ...evs
             );
         }
