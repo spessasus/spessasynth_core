@@ -14,15 +14,7 @@ import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors } from "../utils/other";
 import type {
     GSChorusProcessor,
-    GSReverbProcessor
-} from "./audio_engine/effects/types";
-import {
-    type GSDelayProcessor,
-    type GSInsertionProcessor,
-    type GSInsertionProcessorConstructor,
-    type GSInsertionProcessorSnapshot
-} from "./audio_engine/effects/types";
-import type {
+    GSDelayProcessor,
     SynthesizerEvent,
     SynthesizerEventCallback,
     SynthesizerPatch,
@@ -73,6 +65,12 @@ import {
     getSynthesizerSnapshot,
     type SynthesizerSnapshot
 } from "./audio_engine/synthesizer_snapshot";
+import type {
+    GSInsertionProcessor,
+    GSInsertionProcessorConstructor,
+    GSInsertionProcessorSnapshot,
+    GSReverbProcessor
+} from "./audio_engine/effects/gs/types";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE

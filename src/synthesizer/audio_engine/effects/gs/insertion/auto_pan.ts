@@ -1,4 +1,3 @@
-import type { GSInsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -9,6 +8,7 @@ import {
     ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
+import type { GSInsertionProcessor } from "../types";
 
 const PI_2 = Math.PI * 2;
 

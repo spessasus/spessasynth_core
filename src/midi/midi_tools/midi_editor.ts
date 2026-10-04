@@ -8,12 +8,6 @@ import {
 } from "../../soundbank/basic_soundbank/midi_patch";
 import type { MIDISystem } from "../../soundbank/types";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
-import type {
-    GSChorusParameter,
-    GSDelayParameter,
-    GSInsertionProcessorSnapshot,
-    GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import type { BasicMIDI } from "../basic_midi";
@@ -32,6 +26,12 @@ import {
     DEFAULT_XG_DRUM_MAP,
     MELODIC_MAP
 } from "./sysex_data";
+import type {
+    GSChorusParameter,
+    GSDelayParameter,
+    GSInsertionProcessorSnapshot,
+    GSReverbParameter
+} from "../../synthesizer/audio_engine/effects/gs/types";
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".

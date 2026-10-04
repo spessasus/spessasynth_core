@@ -1,7 +1,7 @@
-import type { GSInsertionProcessor } from "../../types";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
 import { PAN_TABLE_LEFT, PAN_TABLE_RIGHT } from "./utils";
+import type { GSInsertionProcessor } from "../types";
 
 /*
 This connects a Phaser effect and an Auto-wah effect in

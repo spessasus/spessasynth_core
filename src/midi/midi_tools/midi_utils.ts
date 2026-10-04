@@ -16,11 +16,6 @@ import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/paramet
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
 import type { MIDISystem } from "../../soundbank/types";
 import type {
-    GSChorusParameter,
-    GSDelayParameter,
-    GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/types";
-import type {
     AnalyzedParameter,
     AnalyzedSysExMessage,
     GSInsertionParameterMessage,
@@ -41,6 +36,11 @@ import {
     XGDrumParamMap
 } from "./sysex_data";
 import { SpessaLog } from "../../utils/loggin";
+import type {
+    GSChorusParameter,
+    GSDelayParameter,
+    GSReverbParameter
+} from "../../synthesizer/audio_engine/effects/gs/types";
 
 const OTHER = Object.freeze({ type: "Other" as const }) as {
     type: "Other";

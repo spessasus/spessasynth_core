@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { GSInsertionProcessor } from "../../types";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -9,6 +8,7 @@ import {
     zeroState,
     ZeroStateC
 } from "./utils";
+import type { GSInsertionProcessor } from "../types";
 
 const DEFAULT_LEVEL = 127; // CHANGE THIS
 

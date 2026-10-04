@@ -2,7 +2,7 @@ import type {
     GSChorusParameter,
     GSDelayParameter,
     GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/types";
+} from "../../synthesizer/audio_engine/effects/gs/types";
 import type { GlobalMIDIParameter } from "../../synthesizer/audio_engine/parameters/midi";
 import type { MIDIController } from "../enums";
 import type { DrumParameter, UserDrumSetParameter } from "../types";

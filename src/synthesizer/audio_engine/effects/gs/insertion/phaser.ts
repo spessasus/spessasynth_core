@@ -1,4 +1,3 @@
-import type { GSInsertionProcessor } from "../../types";
 import { InsertionValueConverter } from "./convert";
 import {
     applyShelves,
@@ -8,6 +7,7 @@ import {
     ZERO_COEFFS,
     zeroState
 } from "./utils";
+import type { GSInsertionProcessor } from "../types";
 
 /*
 After lots of testing, this was the closest I've been able to get.

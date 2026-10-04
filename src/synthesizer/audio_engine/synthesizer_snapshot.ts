@@ -1,10 +1,4 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
-import type {
-    GSChorusParameter,
-    GSDelayParameter,
-    GSInsertionProcessorSnapshot,
-    GSReverbParameter
-} from "./effects/types";
 import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
 import { SpessaSynthProcessor } from "../processor";
 import type { GlobalMIDIParameter } from "./parameters/midi";
@@ -12,6 +6,12 @@ import type { GlobalSystemParameter } from "./parameters/system";
 
 import { DrumParameterUtils } from "../../midi/drum_parameters";
 import type { UserDrumSetParameter } from "../../midi/types";
+import type {
+    GSChorusParameter,
+    GSDelayParameter,
+    GSInsertionProcessorSnapshot,
+    GSReverbParameter
+} from "./effects/gs/types";
 
 /**
  * This interface is a snapshot of a {@link SpessaSynthProcessor},

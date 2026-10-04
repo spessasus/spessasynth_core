@@ -1,4 +1,4 @@
-import type { GSChorusParameter, GSChorusProcessor } from "../types";
+import type { GSChorusParameter, GSChorusProcessor } from "./types";
 
 const CHORUS_GAIN = 1.3;
 

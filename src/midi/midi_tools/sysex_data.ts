@@ -3,7 +3,7 @@ import type {
     GSChorusParameter,
     GSDelayParameter,
     GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/types";
+} from "../../synthesizer/audio_engine/effects/gs/types";
 
 export const GSUserDrumParamMap: Record<keyof UserDrumSetParameter, number> = {
     pitchCoarse: 1,

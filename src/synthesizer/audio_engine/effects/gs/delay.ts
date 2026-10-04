@@ -1,4 +1,4 @@
-import type { GSDelayParameter, GSDelayProcessor } from "../types";
+import type { GSDelayParameter, GSDelayProcessor } from "./types";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!

@@ -1,4 +1,3 @@
-import type { GSInsertionProcessor } from "../../types";
 import { InsertionValueConverter } from "./convert";
 import {
     type BiquadCoeffs,
@@ -7,6 +6,7 @@ import {
     zeroState,
     ZeroStateC
 } from "./utils";
+import type { GSInsertionProcessor } from "../types";
 
 /**
  * Stereo-EQ

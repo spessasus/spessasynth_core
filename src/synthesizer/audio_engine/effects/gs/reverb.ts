@@ -1,4 +1,4 @@
-import type { GSReverbParameter, GSReverbProcessor } from "../types";
+import type { GSReverbParameter, GSReverbProcessor } from "./types";
 import { DattorroReverb } from "../implementation/dattorro";
 import { DelayLine } from "../implementation/delay_line";
 

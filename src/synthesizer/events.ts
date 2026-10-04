@@ -2,13 +2,13 @@ import type { MIDIController } from "../midi/enums";
 import type { UserDrumSetParameter } from "../midi/types";
 import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
 import type { MIDISystem } from "../soundbank/types";
+import type { ChannelMIDIParameter } from "./audio_engine/channel/parameters/midi";
+import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type {
     GSChorusProcessor,
     GSDelayProcessor,
     GSReverbProcessor
-} from "./audio_engine/effects/types";
-import type { ChannelMIDIParameter } from "./audio_engine/channel/parameters/midi";
-import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
+} from "./audio_engine/effects/gs/types";
 
 /**
  * A shared interface for all channel events.

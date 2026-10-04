@@ -6,7 +6,7 @@ import type {
     GSChorusProcessor,
     GSDelayProcessor,
     GSReverbProcessor
-} from "./audio_engine/effects/types";
+} from "./audio_engine/effects/gs/types";
 
 /**
  * Represents a single entry in the {@link SoundBankManager} list.
