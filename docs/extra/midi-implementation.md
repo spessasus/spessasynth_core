@@ -106,7 +106,7 @@ Legend for the "Type" column:
 | 124 or 125           | Omni mode On/Off                    | Engine   | Stops all notes, respecting their release time.                                                                                                                                     |
 | 126 or 127           | Poly/Mono Mode On/Off               | Engine   | Setting the corresponding controller to any value switches the Poly mode on or off, immediately terminating all active voices on the channel. [More info](#polymono-implementation) |
 
-[^1]: In XG mode `variationSend` is still stored per channel and per drum key, but `gsDelayActive` is forced off, so there is no audible effect.
+[^1]: In XG mode it controls the variation send level instead (only when variation connection is set to "system").
 
 ### Default Controller Values
 
@@ -181,7 +181,7 @@ rr: Drum MIDI note number (0 - 127)
 | 0x1E     | rr       | Drum Chorus          | Controls the chorus level of the drum instrument. (multiplicative of channel)                                                     | 0, or on XG reset: 0 for kick drums, otherwise 127.        |
 | 0x1F     | rr       | Drum Variation       | Controls the variation level of the drum instrument.[^7] (multiplicative of channel)                                              | 0 (none), or on XG reset: 0 for kick drums, otherwise 127. |
 
-[^7]: This controls the delay level in GS/GM mode. In XG, it has no effect.
+[^7]: This controls the delay level in GS/GM mode. In XG mode, it controls the variation send level (only when variation connection is set to "system").
 
 ##### Custom Vibrato
 
@@ -492,7 +492,7 @@ SpessaSynth currently recognizes the bulk dump messages for User Drum Set only.
 
 ### Yamaha XG
 
-SpessaSynth has decent support for the XG standard, but it does not include any effects.
+SpessaSynth has decent support for the XG standard, including effect routing.
 Below are the supported Yamaha XG System Exclusive messages.
 
 #### System parameters
@@ -508,10 +508,51 @@ These are global parameters, affecting the entire synthesizer.
 | XG SYSTEM ON        | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `xg`. |
 | ALL PARAMETER RESET | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `xg`. |
 
-#### Reverb, chorus, and variation block
+#### Reverb, chorus, and variation block (EFFECT 1)
 
-Reverb, chorus, and variation parameter addresses are _not supported (yet)_.
-They are ignored and logged to console in verbose output.
+All reverb, chorus, and variation parameter addresses are recognized.
+Selecting an unimplemented type falls back to "THRU" processor.
+See [currently implemented XG effects](#currently-implemented-xg-effects).
+
+Variation can act like a system effect (reverb, chorus), being global with sends for each channel,
+or like an insertion effect, routing all audio of a single channel through it.
+
+| Name                      | Description                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| REVERB TYPE               | Sets the reverb block type. Unknown types are silent (NO EFFECT).                                                             |
+| REVERB PARAMETER 1-16     | Type-specific reverb parameters.                                                                                              |
+| REVERB RETURN             | Output level of the reverb block. `0` is silence, `64` is normal, `127` is double volume.                                     |
+| REVERB PAN                | Stereo panning of the reverb block. `1` is hard left, `64` is center, `127` is hard right.                                    |
+| CHORUS TYPE               | Sets the chorus block type). Unknown types are silent (NO EFFECT).                                                            |
+| CHORUS PARAMETER 1-16     | Type-specific chorus parameters.                                                                                              |
+| CHORUS RETURN             | Output level of the chorus block. `0` is silence, `64` is normal, `127` is double volume.                                     |
+| CHORUS PAN                | Stereo panning of the chorus block. `1` is hard left, `64` is center, `127` is hard right.                                    |
+| SEND CHORUS TO REVERB     | Amount of chorus output sent to the reverb block. Heard even at chorus return `0`.                                            |
+| VARIATION TYPE            | Sets the variation block type. Unknown types pass dry (THRU).                                                                 |
+| VARIATION PARAMETER 1-10  | Type-specific variation parameters, two-byte.                                                                                 |
+| VARIATION PARAMETER 11-16 | Type-specific variation parameters, single-byte.                                                                              |
+| VARIATION RETURN          | Output level of the variation block. `0` is silence, `64` is normal, `127` is double volume. Ignored in insertion mode.       |
+| VARIATION PAN             | Stereo panning of the variation block. `1` is hard left, `64` is center, `127` is hard right. Ignored in insertion mode.      |
+| SEND VARIATION TO REVERB  | Amount of variation output sent to the reverb block.                                                                          |
+| SEND VARIATION TO CHORUS  | Amount of variation output sent to the chorus block.                                                                          |
+| VARIATION CONNECTION      | `0: INSERTION` routes a single part through the block (like EFFECT 2), `1: SYSTEM` feeds it via sends like reverb and chorus. |
+| VARIATION PART            | The part (channel) routed through the block in insertion mode. `127` (OFF) disables the block. Ignored in system mode.        |
+
+The `MW`/`BEND`/`CAT`/`AC1`/`AC2` VARIATION CONTROL DEPTHs are not recognized.
+
+#### Insertion effect (EFFECT 2)
+
+Currently, there are four insertion blocks (`n` is the insertion effect number), each routing a single part straight through the effect.
+
+Unknown types use THRU.
+
+| Name                            | Description                                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| INSERTION EFFECT TYPE           | Sets the insertion block type.                                                                                                  |
+| INSERTION EFFECT PARAMETER 1-16 | Type-specific parameters. Parameters 1-10 use the single-byte form, or the two-byte form when the value needs the upper 7 bits. |
+| INSERTION EFFECT PART           | The part (channel) routed through the block. `127` (OFF) disables the block.                                                    |
+
+The `MW`/`BEND`/`CAT`/`AC1`/`AC2` INSERTION CONTROL DEPTHs are not recognized.
 
 #### Part Setup
 
@@ -590,11 +631,9 @@ all drum channels get the same stored parameters, as there isn't a MAP system, l
 | PAN             | Pan position of the instrument, except value `0` enables random panning for every note. Value `64` leaves the channel pan unchanged (additive of channel). |
 | REVERB SEND     | Reverb send level of the instrument. (multiplicative of channel)                                                                                           |
 | CHORUS SEND     | Chorus send level of the instrument. (multiplicative of channel)                                                                                           |
-| VARIATION SEND  | Variation send level of the instrument.[^4] (multiplicative of channel)                                                                                    |
+| VARIATION SEND  | Variation send level of the instrument. (multiplicative of channel)                                                                                        |
 | Rev NOTE OFF    | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                              |
 | Rev NOTE ON     | This allows to disable a specific drum instrument from receiving Note On events.                                                                           |
-
-[^4]: XG Variation is not yet implemented.
 
 #### Display Data
 
@@ -724,14 +763,21 @@ For GS: It depends on the bank LSB number (MSB and drum map are ignored for this
 >
 > NRPN drum pitch uses base 64 (`pitch = data - 64`), while GS SysEx `PLAY NOTE NUMBER` uses base 60.
 
-## System Effects
+## GS Effects
 
-SpessaSynth's effects are modeled after the Sound Canvas line.
-There are currently 3 effect processors, below are their built-in, default implementations.
+SpessaSynth's GS effects are modeled after the Sound Canvas line.
+There are currently 3 system effect processors and the insertion processors,
+below are their built-in, default implementations.
+
+> **Note**
+>
+> These effects are disabled in XG mode.
+
+### System Effects
 
 Note that all three can be replaced with custom effect processors.
 
-### Reverb
+#### Reverb
 
 Characters 0-5 use the Dattorro reverb model, based on [this processor](https://github.com/khoin/DattorroReverbNode).
 Each of the characters has parameters tuned to match the SC-55 effects more closely.
@@ -740,20 +786,18 @@ The built-in pre-lowpass filter is used for the pre-LPF param.
 Character 6 uses a single delay line while character 7 uses a ping-pong delay.
 A simple 1st order lowpass filter is used for the pre-LPF param.
 
-### Chorus
+#### Chorus
 
 Implemented using 2 delay lines modulated by triangle LFOs.
 A simple 1st order lowpass filter is used for the pre-LPF param.
 
-### Delay
+#### Delay
 
 Implemented using a single shared circular buffer with three read indexes (center, left, right),
 with the central tap having feedback and feeding into the stereo taps.
 Input is fed to all three taps.
 
-Disabled in XG mode as CC#94 (used as delay send level) is used for Variation which is not implemented.
-
-## Insertion Effects
+### Insertion Effects
 
 SpessaSynth has an architecture in place to support SC-88Pro+ insertion effects.
 
@@ -765,3 +809,40 @@ SpessaSynth has an architecture in place to support SC-88Pro+ insertion effects.
 - Auto Wah (needs improvements)
 - Tremolo
 - PH + Auto Wah
+
+## XG Effects
+
+SpessaSynth's XG effect routing is fully in place: system sends, post-insertion channel processing,
+variation system/insertion dual mode and four EFFECT 2 blocks.
+
+Each effect can have a type which has its own DSP processor.
+
+> **Note**
+>
+> These effects are only active in XG mode.
+
+### System Effects
+
+Appies to: Reverb, Chorus, Variation in System mode.
+
+These effects behave similarly to their GS counterparts, respecting channel send values and having them routed globally.
+
+### Insertion Effects
+
+Applies to: Insertion (EFFECT2), Variation in Insertion mode.
+
+These effects behave similarly to GS insertion, but they only apply to one part (channel). Multiple insertions may be applied to a part, chaining the effects.
+
+### Variation
+
+Variation is a unique effect which can both function both as a System Effect and as an Insertion Effect.
+The behavior depends on "VARIATION CONNECTION" which defaults to "INSERTION" and can be changed to "SYSTEM".
+
+### Currently implemented XG effects
+
+- NO EFFECT (`00 00`) - silence in every block.
+- THRU (`40 00` variation) - passes dry. Also used as the fallback:
+  unknown variation types and unknown EFFECT 2 types pass dry,
+  while unknown reverb and chorus types are silent (NO EFFECT).
+
+## Notes
