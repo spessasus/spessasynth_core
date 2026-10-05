@@ -362,37 +362,87 @@ export function renderVoice(
      * Do not send to effects if:
      * - Either effects are disabled
      * - Or insertion is active on this channel (Insertion takes over the voice data)
+     * - Or the channel is assigned to an XG insertion effect.
+     * XG ignores per-drum sends when insertion is enabled, and only the post-insertion (global) audio is sent (so whole drum audio, even if send is 0 for a specific drum)
      */
     if (
-        (this._midiParameters.efxAssign &&
-            systemParameters.effectsEnabled &&
-            core.insertionActive) ||
-        !systemParameters.effectsEnabled
+        !systemParameters.effectsEnabled ||
+        (this._midiParameters.efxAssign && core.insertionActive) ||
+        this.xgInsertionAssigned
     ) {
         return;
     }
+
+    const isXG = core.midiParameters.system === "xg";
 
     // Disable reverb and chorus if necessary
     const reverbSend =
         modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbGain;
     if (reverbSend > 0) {
-        const reverbGain =
-            systemParameters.reverbGain * outputGain * (reverbSend / 1000);
+        if (isXG) {
+            // XG effects have stereo inputs
+            const send = systemParameters.reverbGain * (reverbSend / 1000);
+            const gainL = send * gainLeft;
+            const gainR = send * gainRight;
+            const outL = core.xgReverbInputL;
+            const outR = core.xgReverbInputR;
+            for (let i = 0; i < sampleCount; i++) {
+                const s = buffer[i];
+                outL[i] += s * gainL;
+                outR[i] += s * gainR;
+            }
+        } else {
+            const reverbGain =
+                systemParameters.reverbGain * outputGain * (reverbSend / 1000);
 
-        const reverb = core.reverbInput;
-        for (let i = 0; i < sampleCount; i++) {
-            reverb[i] += reverbGain * buffer[i];
+            const reverb = core.reverbInput;
+            for (let i = 0; i < sampleCount; i++) {
+                reverb[i] += reverbGain * buffer[i];
+            }
         }
     }
 
     const chorusSend =
         modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusGain;
     if (chorusSend > 0) {
-        const chorusGain =
-            systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
-        const chorus = core.chorusInput;
-        for (let i = 0; i < sampleCount; i++) {
-            chorus[i] += chorusGain * buffer[i];
+        if (isXG) {
+            const send = systemParameters.chorusGain * (chorusSend / 1000);
+            const gainL = send * gainLeft;
+            const gainR = send * gainRight;
+            const outL = core.xgChorusInputL;
+            const outR = core.xgChorusInputR;
+            for (let i = 0; i < sampleCount; i++) {
+                const s = buffer[i];
+                outL[i] += s * gainL;
+                outR[i] += s * gainR;
+            }
+        } else {
+            const chorusGain =
+                systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
+            const chorus = core.chorusInput;
+            for (let i = 0; i < sampleCount; i++) {
+                chorus[i] += chorusGain * buffer[i];
+            }
+        }
+    }
+
+    // XG variation send is system-only.
+    // In insertion mode CC94 does nothing.
+    if (isXG && !core.xgVariationBlock.insertionMode) {
+        const variationSend =
+            this._midiControllers[MIDIControllers.variationDepth] *
+            voice.variationGain;
+        if (variationSend > 0) {
+            const send = variationSend / 127;
+            const gainL = send * gainLeft;
+            const gainR = send * gainRight;
+            const outL = core.xgVariationInputL;
+            const outR = core.xgVariationInputR;
+            for (let i = 0; i < sampleCount; i++) {
+                const s = buffer[i];
+                outL[i] += s * gainL;
+                outR[i] += s * gainR;
+            }
         }
     }
 

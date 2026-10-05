@@ -71,6 +71,10 @@ import type {
     GSInsertionProcessorSnapshot,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
+import { XGReverbBlock } from "./audio_engine/effects/xg/reverb";
+import { XGChorusBlock } from "./audio_engine/effects/xg/chorus";
+import { XGVariationBlock } from "./audio_engine/effects/xg/variation";
+import { XGInsertionBlock } from "./audio_engine/effects/xg/insertion";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -85,6 +89,11 @@ const PAN_SMOOTHING_FACTOR = 0.05;
  * A list of voices for a given key:velocity.
  */
 type CachedVoiceList = CachedVoice[];
+
+/**
+ * MU2000 has 4 insertion effects. We can do more but leave it at 4 for now
+ */
+const XG_INSERTION_COUNT = 4;
 
 /**
  * The core synthesis engine of SpessaSynth.
@@ -138,25 +147,56 @@ export class SpessaSynthProcessor {
      */
     public readonly insertionInputL;
     /**
-     * The insertion processor's right input buffer.
+     * The GS insertion processor's right input buffer.
      * @internal
      */
     public readonly insertionInputR;
     /**
-     * The reverb processor's input buffer.
+     * The GS reverb processor's input buffer.
      * @internal
      */
     public readonly reverbInput;
     /**
-     * The chorus processor's input buffer.
+     * The GS chorus processor's input buffer.
      * @internal
      */
     public readonly chorusInput;
     /**
-     * The delay processor's input buffer.
+     * The GS delay processor's input buffer.
      * @internal
      */
     public readonly delayInput;
+    /**
+     * The XG reverb block's left input buffer.
+     * XG effects are stereo, unlike GS effects (except insertion).
+     * @internal
+     */
+    public readonly xgReverbInputL;
+    /**
+     * The XG reverb block's right input buffer.
+     * @internal
+     */
+    public readonly xgReverbInputR;
+    /**
+     * The XG chorus block's left input buffer.
+     * @internal
+     */
+    public readonly xgChorusInputL;
+    /**
+     * The XG chorus block's right input buffer.
+     * @internal
+     */
+    public readonly xgChorusInputR;
+    /**
+     * The XG variation block's left input buffer (system mode).
+     * @internal
+     */
+    public readonly xgVariationInputL;
+    /**
+     * The XG variation block's right input buffer (system mode).
+     * @internal
+     */
+    public readonly xgVariationInputR;
     /**
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
      * @internal
@@ -255,6 +295,15 @@ export class SpessaSynthProcessor {
      */
     public insertionActive = false;
     /**
+     * The synthesizer's XG variation block.
+     *
+     * Variation is public so voice render can check if sends should be routed to it.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `xg`.
+     * @internal
+     */
+    public readonly xgVariationBlock: XGVariationBlock;
+    /**
      * The synthesizer's GS reverb processor.
      *
      * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
@@ -275,6 +324,28 @@ export class SpessaSynthProcessor {
      * @internal
      */
     protected readonly gsDelayProcessor: GSDelayProcessor;
+    /**
+     * The synthesizer's XG reverb block.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `xg`.
+     * @internal
+     */
+    protected readonly xgReverbBlock: XGReverbBlock;
+    /**
+     * The synthesizer's XG reverb block.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `xg`.
+     * @internal
+     */
+    protected readonly xgChorusBlock: XGChorusBlock;
+    /**
+     * XG insertion effect blocks.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `xg`.
+     * @internal
+     */
+    protected readonly xgInsertionBlocks = new Array<XGInsertionBlock>();
+
     /**
      * A sysEx may set a "Part" (channel) to receive on a different channel number.
      * This slows down the access, so this toggle tracks if it's enabled or not.
@@ -388,6 +459,15 @@ export class SpessaSynthProcessor {
             options.gsDelayProcessor ??
             new SpessaSynthGSDelay(sampleRate, bufSize);
 
+        this.xgReverbBlock = new XGReverbBlock(sampleRate, bufSize);
+        this.xgChorusBlock = new XGChorusBlock(sampleRate, bufSize);
+        this.xgVariationBlock = new XGVariationBlock(sampleRate, bufSize);
+        for (let i = 0; i < XG_INSERTION_COUNT; i++) {
+            this.xgInsertionBlocks.push(
+                new XGInsertionBlock(sampleRate, bufSize)
+            );
+        }
+
         // Initialize buffers
         this.voiceBuffer = new Float32Array(bufSize);
         this.insertionInputL = new Float32Array(bufSize);
@@ -395,6 +475,12 @@ export class SpessaSynthProcessor {
         this.reverbInput = new Float32Array(bufSize);
         this.chorusInput = new Float32Array(bufSize);
         this.delayInput = new Float32Array(bufSize);
+        this.xgReverbInputL = new Float32Array(bufSize);
+        this.xgReverbInputR = new Float32Array(bufSize);
+        this.xgChorusInputL = new Float32Array(bufSize);
+        this.xgChorusInputR = new Float32Array(bufSize);
+        this.xgVariationInputL = new Float32Array(bufSize);
+        this.xgVariationInputR = new Float32Array(bufSize);
 
         // Register insertion
         for (const insertion of GS_INSERTION_EFFECT_LIST)
@@ -859,6 +945,7 @@ export class SpessaSynthProcessor {
         // Don't reset here, I don't know why I put a reset here previously.
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Gets a synthesizer snapshot from this processor instance.
      */
@@ -948,6 +1035,13 @@ export class SpessaSynthProcessor {
         // Delay1 default
         this.setDelayMacro(0);
         this.resetInsertion();
+
+        this.xgReverbBlock.reset();
+        this.xgChorusBlock.reset();
+        this.xgVariationBlock.reset();
+        for (const insertion of this.xgInsertionBlocks) {
+            insertion.reset();
+        }
 
         // Avoid crashing
         if (!this.drumPreset || !this.defaultPreset) return;
@@ -1052,10 +1146,39 @@ export class SpessaSynthProcessor {
                 `Requested ${sampleCount} samples, but maxBufferSize is ${this.maxBufferSize}`
             );
 
+        const isXG = this.midiParameters.system === "xg";
+        const fx = this.systemParameters.effectsEnabled;
+
+        // For XG, renderVoice always checks if insertion is assigned to bypass effect sends
+        // Cache it here
+        if (isXG && fx) {
+            for (const channel of this.midiChannels)
+                channel.xgInsertionAssigned = false;
+
+            for (const insertion of this.xgInsertionBlocks) {
+                const channel = this.midiChannels[insertion.partNumber];
+                if (channel) channel.xgInsertionAssigned = true;
+            }
+            if (this.xgVariationBlock.insertionMode) {
+                const channel =
+                    this.midiChannels[this.xgVariationBlock.partNumber];
+                if (channel) channel.xgInsertionAssigned = true;
+            }
+        }
+
         // Clear the buffers
-        this.reverbInput.fill(0);
-        this.chorusInput.fill(0);
-        if (this.delayActive) this.delayInput.fill(0);
+        if (isXG) {
+            this.xgReverbInputL.fill(0);
+            this.xgReverbInputR.fill(0);
+            this.xgChorusInputL.fill(0);
+            this.xgChorusInputR.fill(0);
+            this.xgVariationInputL.fill(0);
+            this.xgVariationInputR.fill(0);
+        } else {
+            this.reverbInput.fill(0);
+            this.chorusInput.fill(0);
+            if (this.delayActive) this.delayInput.fill(0);
+        }
         if (this.insertionActive) {
             this.insertionInputL.fill(0);
             this.insertionInputR.fill(0);
@@ -1083,6 +1206,55 @@ export class SpessaSynthProcessor {
             this._voiceCount++;
         }
 
+        // Process insertion effects
+        if (isXG && fx) {
+            for (const insertion of this.xgInsertionBlocks) {
+                const channel = this.midiChannels[insertion.partNumber];
+                if (channel) {
+                    insertion.processInsertion(
+                        channel.outputLeft,
+                        channel.outputRight,
+                        sampleCount
+                    );
+                }
+            }
+
+            // Variation is processed last
+            // See MU128 manual, page 154
+            if (this.xgVariationBlock.insertionMode) {
+                const channel =
+                    this.midiChannels[this.xgVariationBlock.partNumber];
+                if (channel)
+                    this.xgVariationBlock.processInsertion(
+                        channel.outputLeft,
+                        channel.outputRight,
+                        sampleCount
+                    );
+            }
+
+            // If a channel has insertion assigned (or variation in insertion mode) then its sends are routed globally (not in renderVoice)
+            // If effectsEnabled is false it does not matter, so the code here can also be skipped.
+            for (const ch of this.midiChannels) {
+                if (!ch.xgInsertionAssigned) continue;
+
+                const revSend =
+                    ch.midiControllers[MIDIControllers.reverbDepth] / 127;
+                const choSend =
+                    ch.midiControllers[MIDIControllers.chorusDepth] / 127;
+                if (revSend <= 0 && choSend <= 0) continue;
+
+                const { outputLeft, outputRight } = ch;
+                for (let i = 0; i < sampleCount; i++) {
+                    const wetL = outputLeft[i];
+                    const wetR = outputRight[i];
+                    this.xgReverbInputL[i] += wetL * revSend;
+                    this.xgReverbInputR[i] += wetR * revSend;
+                    this.xgChorusInputL[i] += wetL * choSend;
+                    this.xgChorusInputR[i] += wetR * choSend;
+                }
+            }
+        }
+
         // Mix channel data
         for (let channel = 0; channel < this.midiChannels.length; channel++) {
             const { outputLeft, outputRight, midiParameters } =
@@ -1101,11 +1273,7 @@ export class SpessaSynthProcessor {
             }
 
             // Straight into the insertion EFX, but only if it is active
-            if (
-                midiParameters.efxAssign &&
-                this.systemParameters.effectsEnabled &&
-                this.insertionActive
-            ) {
+            if (midiParameters.efxAssign && fx && this.insertionActive) {
                 const insertionL = this.insertionInputL;
                 const insertionR = this.insertionInputR;
                 // Index is 0-based here as it's internal
@@ -1125,7 +1293,7 @@ export class SpessaSynthProcessor {
         }
 
         // Process effects
-        if (this.systemParameters.effectsEnabled) {
+        if (fx) {
             const {
                 chorusInput,
                 delayInput,
@@ -1134,51 +1302,89 @@ export class SpessaSynthProcessor {
                 insertionInputL
             } = this;
 
-            // Insertion first
-            if (this.insertionActive) {
-                this.insertionProcessor.process(
-                    insertionInputL,
-                    insertionInputR,
+            if (isXG) {
+                // Variation system first, feeds the chorus and reverb
+                if (!this.xgVariationBlock.insertionMode) {
+                    this.xgVariationBlock.process(
+                        this.xgVariationInputL,
+                        this.xgVariationInputR,
+                        left,
+                        right,
+                        this.xgChorusInputL,
+                        this.xgChorusInputR,
+                        this.xgReverbInputL,
+                        this.xgReverbInputR,
+                        startIndex,
+                        sampleCount
+                    );
+                }
+                // Chorus feeds reverb, reverb goes straight to the output
+                this.xgChorusBlock.process(
+                    this.xgChorusInputL,
+                    this.xgChorusInputR,
                     left,
                     right,
-                    reverbInput,
-                    chorusInput,
-                    delayInput,
+                    this.xgReverbInputL,
+                    this.xgReverbInputR,
                     startIndex,
                     sampleCount
                 );
-            }
 
-            // Chorus first, it feeds to reverb and delay
-            this.gsChorusProcessor.process(
-                chorusInput,
-                left,
-                right,
-                reverbInput,
-                delayInput,
-                startIndex,
-                sampleCount
-            );
-            // CC#94 in XG is variation, not delay
-            if (this.delayActive && this.midiParameters.system !== "xg") {
-                // Process delay
-                this.gsDelayProcessor.process(
-                    delayInput,
+                // Reverb last, doesn't feed to anything.
+                this.xgReverbBlock.process(
+                    this.xgReverbInputL,
+                    this.xgReverbInputR,
+                    left,
+                    right,
+                    startIndex,
+                    sampleCount
+                );
+            } else {
+                // Insertion first
+                if (this.insertionActive) {
+                    this.insertionProcessor.process(
+                        insertionInputL,
+                        insertionInputR,
+                        left,
+                        right,
+                        reverbInput,
+                        chorusInput,
+                        delayInput,
+                        startIndex,
+                        sampleCount
+                    );
+                }
+
+                // Chorus first, it feeds to reverb and delay
+                this.gsChorusProcessor.process(
+                    chorusInput,
                     left,
                     right,
                     reverbInput,
+                    delayInput,
+                    startIndex,
+                    sampleCount
+                );
+                if (this.delayActive) {
+                    // Process delay
+                    this.gsDelayProcessor.process(
+                        delayInput,
+                        left,
+                        right,
+                        reverbInput,
+                        startIndex,
+                        sampleCount
+                    );
+                }
+                // Finally process the reverb processor (it goes directly into the output buffer)
+                this.gsReverbProcessor.process(
+                    reverbInput,
+                    left,
+                    right,
                     startIndex,
                     sampleCount
                 );
             }
-            // Finally process the reverb processor (it goes directly into the output buffer)
-            this.gsReverbProcessor.process(
-                reverbInput,
-                left,
-                right,
-                startIndex,
-                sampleCount
-            );
         }
 
         // Advance the time appropriately

@@ -24,6 +24,7 @@ export function yamahaSystemExclusive(
         const a1 = syx[3]; // Address 1
         const a2 = syx[4]; // Address 2
         const a3 = syx[5]; // Address 3
+        // Data = syx[6]
         const data = syx[6];
         // XG system parameter
         if (a1 === 0x00 && a2 === 0x00) {
@@ -77,15 +78,272 @@ export function yamahaSystemExclusive(
             }
             return;
         }
-        if (a1 === 0x02 && a2 === 0x01) {
-            let effectType: string;
-            const effect = a3;
-            if (effect <= 0x15) effectType = "Reverb";
-            else if (effect <= 0x35) effectType = "Chorus";
-            else effectType = "Variation";
 
-            SpessaLog.xgFail(`${effectType} parameter`, [effect]);
+        // XG EFFECT 1 (reverb, chorus, variation)
+        if (a1 === 0x02 && a2 === 0x01) {
+            switch (a3) {
+                default: {
+                    SpessaLog.xgFail("EFFECT 1 Parameter", [a3]);
+                    break;
+                }
+
+                case 0x00: {
+                    const type = (data << 8) | syx[7];
+                    this.xgReverbBlock.setType(type);
+                    SpessaLog.xgInfo("Reverb Type", type.toString(16));
+                    return;
+                }
+
+                case 0x02:
+                case 0x03:
+                case 0x04:
+                case 0x05:
+                case 0x06:
+                case 0x07:
+                case 0x08:
+                case 0x09:
+                case 0x0a:
+                case 0x0b: {
+                    this.xgReverbBlock.setParameter(a3 - 0x02, data);
+                    SpessaLog.xgInfo(`Reverb Parameter ${a3 - 0x01}`, data);
+                    return;
+                }
+
+                case 0x0c: {
+                    this.xgReverbBlock.returnLevel = data;
+                    SpessaLog.xgInfo(`Reverb Return`, data);
+                    return;
+                }
+
+                case 0x0d: {
+                    this.xgReverbBlock.pan = data;
+                    SpessaLog.xgInfo(`Reverb Pan`, data);
+                    return;
+                }
+
+                case 0x10:
+                case 0x11:
+                case 0x12:
+                case 0x13:
+                case 0x14:
+                case 0x15: {
+                    this.xgReverbBlock.setParameter(a3 - 0x06, data);
+                    SpessaLog.xgInfo(`Reverb Parameter ${a3 - 0x05}`, data);
+                    return;
+                }
+
+                case 0x20: {
+                    const type = (data << 8) | syx[7];
+                    this.xgChorusBlock.setType(type);
+                    SpessaLog.xgInfo("Chorus Type", type.toString(16));
+                    return;
+                }
+
+                case 0x22:
+                case 0x23:
+                case 0x24:
+                case 0x25:
+                case 0x26:
+                case 0x27:
+                case 0x28:
+                case 0x29:
+                case 0x2a:
+                case 0x2b: {
+                    this.xgChorusBlock.setParameter(a3 - 0x22, data);
+                    SpessaLog.xgInfo(`Chorus Parameter ${a3 - 0x21}`, data);
+                    return;
+                }
+
+                case 0x2c: {
+                    this.xgChorusBlock.returnLevel = data;
+                    SpessaLog.xgInfo(`Chorus Return`, data);
+                    return;
+                }
+
+                case 0x2d: {
+                    this.xgChorusBlock.pan = data;
+                    SpessaLog.xgInfo(`Chorus Pan`, data);
+                    return;
+                }
+
+                case 0x2e: {
+                    this.xgChorusBlock.sendToReverb = data;
+                    SpessaLog.xgInfo(`Chorus Send To Reverb`, data);
+                    return;
+                }
+
+                case 0x30:
+                case 0x31:
+                case 0x32:
+                case 0x33:
+                case 0x34:
+                case 0x35: {
+                    this.xgChorusBlock.setParameter(a3 - 0x26, data);
+                    SpessaLog.xgInfo(`Chorus Parameter ${a3 - 0x25}`, data);
+                    return;
+                }
+
+                case 0x40: {
+                    const type = (data << 8) | syx[7];
+                    this.xgVariationBlock.setType(type);
+                    SpessaLog.xgInfo("Variation Type", type.toString(16));
+                    return;
+                }
+
+                case 0x42:
+                case 0x44:
+                case 0x46:
+                case 0x48:
+                case 0x4a:
+                case 0x4c:
+                case 0x4e:
+                case 0x50:
+                case 0x52:
+                case 0x54: {
+                    // Params are 14-bit!
+                    const value = (data << 7) | syx[7];
+                    // Bit shift by 1 because address increases by two
+                    this.xgVariationBlock.setParameter((a3 - 0x42) >> 1, value);
+                    SpessaLog.xgInfo(
+                        `Variation Parameter ${a3 - 0x41} (14-bit)`,
+                        value.toString(16)
+                    );
+                    return;
+                }
+
+                case 0x56: {
+                    this.xgVariationBlock.returnLevel = data;
+                    SpessaLog.xgInfo(`Variation Return`, data);
+                    return;
+                }
+
+                case 0x57: {
+                    this.xgVariationBlock.pan = data;
+                    SpessaLog.xgInfo(`Variation Pan`, data);
+                    return;
+                }
+
+                case 0x58: {
+                    this.xgVariationBlock.sendToReverb = data;
+                    SpessaLog.xgInfo(`Variation Send To Reverb`, data);
+                    return;
+                }
+
+                case 0x59: {
+                    this.xgVariationBlock.sendToChorus = data;
+                    SpessaLog.xgInfo(`Variation Send To Chorus`, data);
+                    return;
+                }
+
+                case 0x5a: {
+                    this.xgVariationBlock.insertionMode = data === 0;
+                    SpessaLog.xgInfo(
+                        "Variation Connection",
+                        data === 0 ? "INSERTION" : "SYSTEM"
+                    );
+                    return;
+                }
+
+                case 0x5b: {
+                    this.xgVariationBlock.partNumber = data;
+                    SpessaLog.xgInfo("Variation Part Number", data);
+                    return;
+                }
+
+                case 0x70:
+                case 0x71:
+                case 0x72:
+                case 0x73:
+                case 0x74:
+                case 0x75: {
+                    // These are 7-bit only
+                    this.xgVariationBlock.setParameter(a3 - 0x66, data);
+                    SpessaLog.xgInfo(`Variation Parameter ${a3 - 0x65}`, data);
+                    return;
+                }
+            }
             return;
+        }
+
+        // XG EFFECT 2 (insertion)
+        if (a1 === 0x03) {
+            const insertion = this.xgInsertionBlocks[a2];
+            if (!insertion) {
+                SpessaLog.xgFail("Insertion Effect Number", [a2]);
+                return;
+            }
+
+            switch (a3) {
+                default: {
+                    SpessaLog.xgFail("EFFECT 2 Parameter", [a3]);
+                    break;
+                }
+
+                case 0x00: {
+                    const type = (data << 8) | syx[7];
+                    insertion.setType(type);
+                    SpessaLog.xgInfo(`Insertion ${a2} Type`, type.toString(16));
+                    return;
+                }
+
+                case 0x02:
+                case 0x03:
+                case 0x04:
+                case 0x05:
+                case 0x06:
+                case 0x07:
+                case 0x08:
+                case 0x09:
+                case 0x0a:
+                case 0x0b: {
+                    insertion.setParameter(a3 - 0x02, data);
+                    SpessaLog.xgInfo(
+                        `Insertion ${a2} Parameter ${a3 - 0x01}`,
+                        data
+                    );
+                    return;
+                }
+
+                case 0x0c: {
+                    insertion.partNumber = data;
+                    SpessaLog.xgInfo(`Insertion ${a2} Part Number`, data);
+                    return;
+                }
+
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                case 0x23:
+                case 0x24:
+                case 0x25: {
+                    insertion.setParameter(a3 - 0x16, data);
+                    SpessaLog.xgInfo(
+                        `Insertion ${a2} Parameter ${a3 - 0x15}`,
+                        data
+                    );
+                    return;
+                }
+
+                case 0x30:
+                case 0x32:
+                case 0x34:
+                case 0x36:
+                case 0x38:
+                case 0x3a:
+                case 0x3c:
+                case 0x3e:
+                case 0x40:
+                case 0x42: {
+                    const value = (data << 7) | syx[7];
+                    // Bit shift by 1 because address increases by two
+                    insertion.setParameter((a3 - 0x30) >> 1, value);
+                    SpessaLog.xgInfo(
+                        `Insertion ${a2} Parameter ${a3 - 0x2f} (14-bit)`,
+                        value
+                    );
+                    return;
+                }
+            }
         }
 
         if (a1 === 0x08 /* A2 is the channel number*/) {

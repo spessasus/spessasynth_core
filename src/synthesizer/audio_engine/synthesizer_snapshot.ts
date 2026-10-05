@@ -12,6 +12,10 @@ import type {
     GSInsertionProcessorSnapshot,
     GSReverbParameter
 } from "./effects/gs/types";
+import type { XGSystemEffectBlockSnapshot } from "./effects/xg/framework/xg_effect_block";
+import type { XGChorusBlockSnapshot } from "./effects/xg/chorus";
+import type { XGVariationBlockSnapshot } from "./effects/xg/variation";
+import type { XGInsertionBlockSnapshot } from "./effects/xg/insertion";
 
 /**
  * This interface is a snapshot of a {@link SpessaSynthProcessor},
@@ -60,6 +64,23 @@ export interface SynthesizerSnapshot {
     insertionProcessor: GSInsertionProcessorSnapshot;
 
     /**
+     * A snapshot of the XG reverb block.
+     */
+    xgReverbBlock: XGSystemEffectBlockSnapshot;
+    /**
+     * A snapshot of the XG chorus block.
+     */
+    xgChorusBlock: XGChorusBlockSnapshot;
+    /**
+     * A snapshot of the XG variation block.
+     */
+    xgVariationBlock: XGVariationBlockSnapshot;
+    /**
+     * Snapshots of the XG insertion blocks.
+     */
+    xgInsertionBlocks: XGInsertionBlockSnapshot[];
+
+    /**
      * A snapshot of the User Drum Set parameters.
      */
     userDrumSets: UserDrumSetParameter[][];
@@ -98,6 +119,15 @@ export function applySnapshot(
             this.systemExclusive(
                 MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]])
             );
+    }
+
+    // Restore XG effects
+    this.xgReverbBlock.applySnapshot(snapshot.xgReverbBlock);
+    this.xgChorusBlock.applySnapshot(snapshot.xgChorusBlock);
+    this.xgVariationBlock.applySnapshot(snapshot.xgVariationBlock);
+    for (let i = 0; i < this.xgInsertionBlocks.length; i++) {
+        const insertion = this.xgInsertionBlocks[i];
+        insertion.applySnapshot(snapshot.xgInsertionBlocks[i]);
     }
 
     // Restore user drum sets
@@ -165,6 +195,10 @@ export function getSynthesizerSnapshot(
         gsChorusProcessor: this.gsChorusProcessor.getSnapshot(),
         gsDelayProcessor: this.gsDelayProcessor.getSnapshot(),
         insertionProcessor: this.getInsertionSnapshot(),
+        xgReverbBlock: this.xgReverbBlock.getSnapshot(),
+        xgChorusBlock: this.xgChorusBlock.getSnapshot(),
+        xgVariationBlock: this.xgVariationBlock.getSnapshot(),
+        xgInsertionBlocks: this.xgInsertionBlocks.map((i) => i.getSnapshot()),
         userDrumSets: this.soundBankManager.userDrumSets.map((d) =>
             d.getSnapshot()
         )

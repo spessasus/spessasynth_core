@@ -396,8 +396,8 @@ export type XGVariationParameterMessage =
            */
           parameter: number;
           /**
-           * The new value of the parameter, stored as a 14-bit number `(MSB << 7) | LSB`.
-           * This is also the case for parameters 10-15! (MSB << 7)
+           * The new value of the parameter: two-byte params as
+           * `(MSB << 7) | LSB`, single-byte params raw (lower 7 bits).
            */
           value: number;
       };
@@ -440,7 +440,7 @@ export type XGInsertionParameterMessage =
           insertionNumber: number;
           /**
            * The channel routed through the insertion effect
-           * (0-63 parts, 64-126 A/D, 127 OFF).
+           * (0-63 parts, 127 OFF).
            */
           parameter: "partNumber";
           /**
@@ -463,8 +463,8 @@ export type XGInsertionParameterMessage =
            */
           parameter: number;
           /**
-           * The new value of the parameter, stored as a 14-bit number `(MSB << 7) | LSB`.
-           * This is also the case for MSB only setters! (MSB << 7)
+           * The new value of the parameter: two-byte params as
+           * `(MSB << 7) | LSB`, single-byte params raw (lower 7 bits).
            */
           value: number;
       };

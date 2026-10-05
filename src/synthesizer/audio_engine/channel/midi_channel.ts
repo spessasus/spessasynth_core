@@ -139,6 +139,12 @@ export class MIDIChannel {
     public readonly synthCore: SpessaSynthProcessor;
 
     /**
+     * If true, this skips sends as they all go through insertion.
+     * Set by {@link SpessaSynthProcessor}.
+     */
+    public xgInsertionAssigned = false;
+
+    /**
      * Current left PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
      * Always 0-based index.
      * @internal

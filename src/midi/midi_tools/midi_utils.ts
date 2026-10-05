@@ -524,7 +524,7 @@ export class MIDIUtils {
      * - `"return"`, `"pan"`, `"sendToReverb"`, `"sendToChorus"` (7-bit),
      * - `"connection"` (`"system"` or `"insertion"`)
      * - `"partNumber"` (insertion target, generally 0-63),
-     * - 0-based type-specific parameter number (0-15) (14-bit).
+     * - 0-based type-specific parameter number (0-15) (14-bit) Note that for 7-bit parameters, only the lower 7 bits will be used.
      * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this XG Variation Parameter.
      */
@@ -601,7 +601,7 @@ export class MIDIUtils {
                     0x02,
                     0x01,
                     0x70 + parameter - 10,
-                    [(v >> 7) & 0x7f]
+                    [v & 0x7f]
                 );
             }
         }
@@ -614,8 +614,8 @@ export class MIDIUtils {
      * @param parameter The parameter to set:
      * - `"type"` (16-bit),
      * - `"partNumber"` (insertion target),
-     * - or a 0-based type-specific parameter number (0-15) (14-bit).
-     * @param value The value to set it to. If the 14-bit parameter has LSB of zero, the MSB-only version will be used.
+     * - or a 0-based type-specific parameter number (0-15) (14-bit) Note that for 7-bit parameters, only the lower 7 bits will be used. If the 14-bit parameter has MSB of zero, the LSB-only version will be used.
+     * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this XG Insertion Parameter.
      */
     public static setXGInsertionParameter(
@@ -647,14 +647,14 @@ export class MIDIUtils {
                     );
                 }
                 if (parameter < 10) {
-                    if ((value & 0x7f) === 0) {
-                        // Fits in the MSB alone: MSB-only address
+                    if (value >> 7 === 0) {
+                        // Fits in the LSB alone: LSB-only address
                         return this.xgMessage(
                             ticks,
                             0x03,
                             insertionNumber,
                             0x02 + parameter,
-                            [(value >> 7) & 0x7f]
+                            [value & 0x7f]
                         );
                     }
                     // Needs the LSB: two-byte [Ext.2] address
@@ -668,10 +668,10 @@ export class MIDIUtils {
                     );
                 }
 
-                // Parameters 10-15 only have MSB versions, use that
-                if ((value & 0x7f) !== 0) {
+                // Parameters 10-15 only have single-byte versions, use that
+                if (value >> 7 !== 0) {
                     SpessaLog.warn(
-                        "Attempting to set 14-bit value for XG insertion parameter 10-15 (11-16 in the spec). It will be truncated to MSB!"
+                        "Attempting to set value over 127 for XG insertion parameter 10-15 (11-16 in the spec). It will be truncated to 7-bit!"
                     );
                 }
                 return this.xgMessage(
@@ -679,7 +679,7 @@ export class MIDIUtils {
                     0x03,
                     insertionNumber,
                     0x20 + parameter - 10,
-                    [(value >> 7) & 0x7f]
+                    [value & 0x7f]
                 );
             }
         }
@@ -1925,6 +1925,7 @@ export class MIDIUtils {
                     return [
                         {
                             type: "XG Variation Param",
+                            // Bit shift by 1 because address increases by two
                             parameter: (a3 - 0x42) >> 1, // 0x42 -> 0 ... 0x54 -> 9
                             value: (value << 7) | syx[7]
                         }
@@ -2009,7 +2010,7 @@ export class MIDIUtils {
                         {
                             type: "XG Variation Param",
                             parameter: a3 - 0x66, // 0x70 -> 10 ... 0x75 -> 15
-                            value: value << 7
+                            value
                         }
                     ];
                 }
@@ -2052,7 +2053,7 @@ export class MIDIUtils {
                             type: "XG Insertion Param",
                             insertionNumber,
                             parameter: a3 - 0x02,
-                            value: value << 7
+                            value
                         }
                     ];
                 }
@@ -2079,7 +2080,7 @@ export class MIDIUtils {
                             type: "XG Insertion Param",
                             insertionNumber,
                             parameter: a3 - 0x16, // 0x20 -> 10 ... 0x25 -> 15
-                            value: value << 7
+                            value
                         }
                     ];
                 }
@@ -2100,6 +2101,7 @@ export class MIDIUtils {
                         {
                             type: "XG Insertion Param",
                             insertionNumber,
+                            // Bit shift by 1 because address increases by two
                             parameter: (a3 - 0x30) >> 1, // 0x30 -> 0 ... 0x42 -> 9
                             value: (value << 7) | syx[7]
                         }
@@ -2107,8 +2109,6 @@ export class MIDIUtils {
                 }
 
                 default: {
-                    // 0x0d-0x11 control depths (not modeled, like variation
-                    // 0x5c-0x60) and gaps
                     return [OTHER];
                 }
             }
