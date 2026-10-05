@@ -32,6 +32,10 @@ import type {
     GSInsertionProcessorSnapshot,
     GSReverbParameter
 } from "../../synthesizer/audio_engine/effects/gs/types";
+import type { XGSystemEffectBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/framework/xg_effect_block";
+import type { XGChorusBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/chorus";
+import type { XGVariationBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/variation";
+import type { XGInsertionBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/insertion";
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
@@ -230,25 +234,69 @@ export interface ModifyMIDIOptions {
      * - `"clear"` - all existing parameter change MIDI messages are removed.
      * - {@link GSReverbParameter} - clear + the new parameters are set via System Exclusive messages.
      */
-    reverbParams?: ClearableParameter<GSReverbParameter>;
+    gsReverbParams?: ClearableParameter<GSReverbParameter>;
     /**
      * The GS chorus parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
      * - {@link GSChorusParameter} - clear + the new parameters are set via System Exclusive messages.
      */
-    chorusParams?: ClearableParameter<GSChorusParameter>;
+    gsChorusParams?: ClearableParameter<GSChorusParameter>;
     /**
      * The GS delay parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
      * - {@link GSDelayParameter} - clear + the new parameters are set via System Exclusive messages.
      */
-    delayParams?: ClearableParameter<GSDelayParameter>;
+    gsDelayParams?: ClearableParameter<GSDelayParameter>;
     /**
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
      * - {@link GSInsertionProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
-    insertionParams?: ClearableParameter<GSInsertionProcessorSnapshot>;
+    gsInsertionParams?: ClearableParameter<GSInsertionProcessorSnapshot>;
+
+    /**
+     * The desired XG reverb parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - {@link XGSystemEffectBlockSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     */
+    xgReverbParams?: ClearableParameter<XGSystemEffectBlockSnapshot>;
+    /**
+     * The desired XG chorus parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - {@link XGChorusBlockSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     */
+    xgChorusParams?: ClearableParameter<XGChorusBlockSnapshot>;
+    /**
+     * The desired XG variation parameters.
+     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - {@link XGVariationBlockSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     */
+    xgVariationParams?: ClearableParameter<XGVariationBlockSnapshot>;
+
+    /**
+     * The desired XG insertion parameters.
+     * Key is the insertion effect number.
+     *
+     * Value is:
+     * - `"clear"` - all existing parameter change MIDI messages are removed.
+     * - {@link XGInsertionBlockSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     */
+    xgInsertionParams?: Map<
+        number,
+        ClearableParameter<XGInsertionBlockSnapshot>
+    >;
+
+    /**
+     * The system reset to add when the file contains no reset.
+     * Unlike `midiParams.system`, existing resets are left untouched.
+     * Ignored when `midiParams.system` is set (it takes precedence)
+     * and when `midiParams.system` is `"clear"` (no reset is added).
+     * When unset, the added reset defaults to `"xg"`
+     * if only XG setups are requested, otherwise to `"gs"`.
+     *
+     * Also, if GM resets are replaced, they use this system if provided, otherwise `"gs"`.
+     */
+    fallbackReset?: MIDISystem;
 }
 
 // Internal tracking interface
@@ -387,10 +435,10 @@ export class MIDIEditor {
      * GM -> GS -> note data
      *
      * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
-     * Meaningful ones are replaced with GS in-place
+     * Meaningful ones are replaced with fallback in-place
      * (unless the `system` parameter is explicitly set).
      *
-     * Every entry gets replaced with GS
+     * Every entry gets replaced with fallback
      * if the `system` global MIDI param has not been explicitly set.
      */
     private readonly gmResets: ResetPosition[] = [];
@@ -406,12 +454,19 @@ export class MIDIEditor {
      */
     private isPendingResetGM = false;
 
-    private readonly reverbParams;
-    private readonly chorusParams;
-    private readonly delayParams;
-    private readonly insertionParams;
+    private readonly gsReverbParams;
+    private readonly gsChorusParams;
+    private readonly gsDelayParams;
+    private readonly gsInsertionParams;
+
+    private readonly xgReverbParams;
+    private readonly xgChorusParams;
+    private readonly xgVariationParams;
+    private readonly xgInsertionParams;
+
     private readonly userDrumSetParams;
     private readonly midiParams;
+    private readonly fallbackReset;
     /**
      * Current, for handleEvent
      * @private
@@ -438,21 +493,32 @@ export class MIDIEditor {
         );
         const {
             channels,
-            reverbParams,
-            chorusParams,
-            delayParams,
-            insertionParams,
+            gsReverbParams,
+            gsChorusParams,
+            gsDelayParams,
+            gsInsertionParams,
+            xgReverbParams,
+            xgChorusParams,
+            xgVariationParams,
+            xgInsertionParams,
             userDrumParams,
             midiParams
         } = opts;
 
         // Save options
-        this.reverbParams = reverbParams;
-        this.chorusParams = chorusParams;
-        this.delayParams = delayParams;
-        this.insertionParams = insertionParams;
+        this.gsReverbParams = gsReverbParams;
+        this.gsChorusParams = gsChorusParams;
+        this.gsDelayParams = gsDelayParams;
+        this.gsInsertionParams = gsInsertionParams;
+
+        this.xgReverbParams = xgReverbParams;
+        this.xgChorusParams = xgChorusParams;
+        this.xgVariationParams = xgVariationParams;
+        this.xgInsertionParams = xgInsertionParams;
+
         this.userDrumSetParams = userDrumParams;
         this.midiParams = midiParams;
+        this.fallbackReset = opts.fallbackReset;
 
         // Track only channels to change here
         if (channels) {
@@ -465,7 +531,9 @@ export class MIDIEditor {
         this.system =
             (opts.midiParams?.system === "clear"
                 ? undefined
-                : opts.midiParams?.system) ?? "gs";
+                : opts.midiParams?.system) ??
+            opts.fallbackReset ??
+            "gs";
 
         // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
         /**
@@ -518,7 +586,7 @@ export class MIDIEditor {
                 });
             }
         } else {
-            // Replace the collected meaningful GM resets with GS, in place.
+            // Replace the collected meaningful GM resets with fallback, in place.
             const replacedEvents = new Set<MIDIMessage>();
             for (const gmReset of this.gmResets) {
                 const events = this.midi.tracks[gmReset.track].events;
@@ -526,26 +594,27 @@ export class MIDIEditor {
                 if (index === -1) {
                     continue;
                 }
+                const fallback = this.fallbackReset ?? "gs";
                 SpessaLog.info(
-                    "%cReplacing meaningful GM reset with GS!",
+                    `%cReplacing meaningful GM reset with ${fallback.toUpperCase()}!`,
                     ConsoleColors.info
                 );
-                const replaced = MIDIUtils.reset(gmReset.event.ticks, "gs");
+                const replaced = MIDIUtils.reset(gmReset.event.ticks, fallback);
                 events[index] = replaced;
                 replacedEvents.add(gmReset.event);
                 // All GM resets here are meaningful
                 this.meaningfulResets.push({
                     event: replaced,
                     track: gmReset.track,
-                    system: "gs"
+                    system: fallback
                 });
             }
-            // If the last reset was a replaced GM, then we are now in GS.
+            // If the last reset was a replaced GM, then we are now in the fallback.
             if (
                 this.lastReset !== undefined &&
                 replacedEvents.has(this.lastReset)
             ) {
-                this.system = "gs";
+                this.system = this.fallbackReset ?? "gs";
             }
         }
 
@@ -557,11 +626,20 @@ export class MIDIEditor {
             this.midiParams?.system !== "clear" &&
             // An explicitly requested system always needs its reset.
             (this.midiParams?.system !== undefined ||
+                this.fallbackReset !== undefined ||
                 // Effects need reset too
-                (this.reverbParams && this.reverbParams !== "clear") ||
-                (this.chorusParams && this.chorusParams !== "clear") ||
-                (this.delayParams && this.delayParams !== "clear") ||
-                (this.insertionParams && this.insertionParams !== "clear") ||
+                (this.gsReverbParams && this.gsReverbParams !== "clear") ||
+                (this.gsChorusParams && this.gsChorusParams !== "clear") ||
+                (this.gsDelayParams && this.gsDelayParams !== "clear") ||
+                (this.gsInsertionParams &&
+                    this.gsInsertionParams !== "clear") ||
+                (this.xgReverbParams && this.xgReverbParams !== "clear") ||
+                (this.xgChorusParams && this.xgChorusParams !== "clear") ||
+                (this.xgVariationParams &&
+                    this.xgVariationParams !== "clear") ||
+                [...(this.xgInsertionParams?.values() ?? [])].some(
+                    (p) => p !== "clear"
+                ) ||
                 // User drum as well
                 this.userDrumSetParams?.size ||
                 // Add only when we have changes, removing them does not warrant the need for a gs reset.
@@ -579,7 +657,31 @@ export class MIDIEditor {
                 index++;
             }
             // Add the requested system or GS.
-            const targetSystem = this.midiParams?.system ?? "gs";
+            // Default to XG when only XG setups are requested,
+            // Otherwise the XG branch of generateSetup would never run.
+            const hasXG =
+                (this.xgReverbParams !== undefined &&
+                    this.xgReverbParams !== "clear") ||
+                (this.xgChorusParams !== undefined &&
+                    this.xgChorusParams !== "clear") ||
+                (this.xgVariationParams !== undefined &&
+                    this.xgVariationParams !== "clear") ||
+                [...(this.xgInsertionParams?.values() ?? [])].some(
+                    (p) => p !== "clear"
+                );
+            const hasGS =
+                (this.gsReverbParams !== undefined &&
+                    this.gsReverbParams !== "clear") ||
+                (this.gsChorusParams !== undefined &&
+                    this.gsChorusParams !== "clear") ||
+                (this.gsDelayParams !== undefined &&
+                    this.gsDelayParams !== "clear") ||
+                (this.gsInsertionParams !== undefined &&
+                    this.gsInsertionParams !== "clear");
+            const targetSystem =
+                this.midiParams?.system ??
+                this.fallbackReset ??
+                (hasXG && !hasGS ? "xg" : "gs");
             const event = MIDIUtils.reset(0, targetSystem);
             firstTrack.addEvents(index, event);
             // The only reset means that it is always meaningful
@@ -975,7 +1077,7 @@ export class MIDIEditor {
 
                         case "GS Reverb Param": {
                             // Delete all reverb params since we're setting new ones
-                            if (this.reverbParams) {
+                            if (this.gsReverbParams) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
@@ -984,7 +1086,7 @@ export class MIDIEditor {
 
                         case "GS Chorus Param": {
                             // Delete all chorus params since we're setting new ones
-                            if (this.chorusParams) {
+                            if (this.gsChorusParams) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
@@ -993,7 +1095,7 @@ export class MIDIEditor {
 
                         case "GS Delay Param": {
                             // Delete all delay params since we're setting new ones
-                            if (this.delayParams) {
+                            if (this.gsDelayParams) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
@@ -1002,7 +1104,44 @@ export class MIDIEditor {
 
                         case "GS Insertion Param": {
                             // Delete all insertion params since we're setting new ones
-                            if (this.insertionParams) {
+                            if (this.gsInsertionParams) {
+                                this.deleteCurrentEvent();
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "XG Reverb Param": {
+                            // Delete all reverb params since we're setting new ones
+                            if (this.xgReverbParams) {
+                                this.deleteCurrentEvent();
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "XG Chorus Param": {
+                            // Delete all chorus params since we're setting new ones
+                            if (this.xgChorusParams) {
+                                this.deleteCurrentEvent();
+                                return;
+                            }
+                            break;
+                        }
+                        case "XG Variation Param": {
+                            // Delete all variation params since we're setting new ones
+                            if (this.xgVariationParams) {
+                                this.deleteCurrentEvent();
+                                return;
+                            }
+                            break;
+                        }
+
+                        case "XG Insertion Param": {
+                            // Delete all reverb params since we're setting new ones
+                            if (
+                                this.xgInsertionParams?.get(syx.insertionNumber)
+                            ) {
                                 this.deleteCurrentEvent();
                                 return;
                             }
@@ -1703,153 +1842,311 @@ export class MIDIEditor {
         }
 
         // Add effects
-        if (this.reverbParams && this.reverbParams !== "clear") {
-            const p = this.reverbParams;
-            output.push(
-                MIDIUtils.setGSReverbParameter(targetTicks, "level", p.level),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "preLowpass",
-                    p.preLowpass
-                ),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "character",
-                    p.character
-                ),
-                MIDIUtils.setGSReverbParameter(targetTicks, "time", p.time),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "delayFeedback",
-                    p.delayFeedback
-                ),
-                MIDIUtils.setGSReverbParameter(
-                    targetTicks,
-                    "preDelayTime",
-                    p.preDelayTime
-                )
-            );
-        }
-        if (this.chorusParams && this.chorusParams !== "clear") {
-            const p = this.chorusParams;
-            output.push(
-                MIDIUtils.setGSChorusParameter(targetTicks, "level", p.level),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "preLowpass",
-                    p.preLowpass
-                ),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "feedback",
-                    p.feedback
-                ),
-                MIDIUtils.setGSChorusParameter(targetTicks, "delay", p.delay),
-                MIDIUtils.setGSChorusParameter(targetTicks, "rate", p.rate),
-                MIDIUtils.setGSChorusParameter(targetTicks, "depth", p.depth),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "sendLevelToReverb",
-                    p.sendLevelToReverb
-                ),
-                MIDIUtils.setGSChorusParameter(
-                    targetTicks,
-                    "sendLevelToDelay",
-                    p.sendLevelToDelay
-                )
-            );
-        }
-        if (this.delayParams && this.delayParams !== "clear") {
-            const p = this.delayParams;
-            output.push(
-                MIDIUtils.setGSDelayParameter(targetTicks, "level", p.level),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "preLowpass",
-                    p.preLowpass
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "timeCenter",
-                    p.timeCenter
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "timeRatioLeft",
-                    p.timeRatioLeft
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "timeRatioRight",
-                    p.timeRatioRight
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "levelCenter",
-                    p.levelCenter
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "levelLeft",
-                    p.levelLeft
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "levelRight",
-                    p.levelRight
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "feedback",
-                    p.feedback
-                ),
-                MIDIUtils.setGSDelayParameter(
-                    targetTicks,
-                    "sendLevelToReverb",
-                    p.sendLevelToReverb
-                )
-            );
-        }
-
-        if (this.insertionParams && this.insertionParams !== "clear") {
-            const p = this.insertionParams;
-            // Params and sends are stored in one table (0-19: params, 20-22: sends)
-            const sendNames = [
-                "sendLevelToReverb",
-                "sendLevelToChorus",
-                "sendLevelToDelay"
-            ] as const;
-            const evs = new Array<MIDIMessage>();
-            for (let param = 0; param < p.params.length; param++) {
-                const value = p.params[param];
-                if (value === 255) continue;
-                if (param < 20) {
-                    evs.push(
-                        MIDIUtils.setGSInsertionParameter(
+        if (system === "xg") {
+            if (this.xgReverbParams && this.xgReverbParams !== "clear") {
+                const p = this.xgReverbParams;
+                output.push(
+                    MIDIUtils.setXGReverbParameter(targetTicks, "type", p.type),
+                    MIDIUtils.setXGReverbParameter(
+                        targetTicks,
+                        "return",
+                        p.returnLevel
+                    ),
+                    MIDIUtils.setXGReverbParameter(targetTicks, "pan", p.pan)
+                );
+                for (let param = 0; param < p.params.length; param++) {
+                    output.push(
+                        MIDIUtils.setXGReverbParameter(
                             targetTicks,
                             param,
-                            value
-                        )
-                    );
-                } else {
-                    evs.push(
-                        MIDIUtils.setGSInsertionParameter(
-                            targetTicks,
-                            sendNames[param - 20],
-                            value
+                            p.params[param]
                         )
                     );
                 }
             }
+            if (this.xgChorusParams && this.xgChorusParams !== "clear") {
+                const p = this.xgChorusParams;
+                output.push(
+                    MIDIUtils.setXGChorusParameter(targetTicks, "type", p.type),
+                    MIDIUtils.setXGChorusParameter(
+                        targetTicks,
+                        "return",
+                        p.returnLevel
+                    ),
+                    MIDIUtils.setXGChorusParameter(targetTicks, "pan", p.pan),
+                    MIDIUtils.setXGChorusParameter(
+                        targetTicks,
+                        "sendToReverb",
+                        p.sendToReverb
+                    )
+                );
+                for (let param = 0; param < p.params.length; param++) {
+                    output.push(
+                        MIDIUtils.setXGChorusParameter(
+                            targetTicks,
+                            param,
+                            p.params[param]
+                        )
+                    );
+                }
+            }
+            if (this.xgVariationParams && this.xgVariationParams !== "clear") {
+                const p = this.xgVariationParams;
+                output.push(
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "type",
+                        p.type
+                    ),
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "return",
+                        p.returnLevel
+                    ),
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "pan",
+                        p.pan
+                    ),
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "sendToReverb",
+                        p.sendToReverb
+                    ),
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "sendToChorus",
+                        p.sendToChorus
+                    ),
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "connection",
+                        p.insertionMode ? "insertion" : "system"
+                    ),
+                    MIDIUtils.setXGVariationParameter(
+                        targetTicks,
+                        "partNumber",
+                        p.partNumber
+                    )
+                );
+                for (let param = 0; param < p.params.length; param++) {
+                    output.push(
+                        MIDIUtils.setXGVariationParameter(
+                            targetTicks,
+                            param,
+                            p.params[param]
+                        )
+                    );
+                }
+            }
+            if (this.xgInsertionParams) {
+                for (const [insertionNumber, snapshot] of this
+                    .xgInsertionParams) {
+                    if (snapshot === "clear") {
+                        continue;
+                    }
+                    output.push(
+                        MIDIUtils.setXGInsertionParameter(
+                            targetTicks,
+                            insertionNumber,
+                            "type",
+                            snapshot.type
+                        ),
+                        MIDIUtils.setXGInsertionParameter(
+                            targetTicks,
+                            insertionNumber,
+                            "partNumber",
+                            snapshot.partNumber
+                        )
+                    );
+                    for (
+                        let param = 0;
+                        param < snapshot.params.length;
+                        param++
+                    ) {
+                        output.push(
+                            MIDIUtils.setXGInsertionParameter(
+                                targetTicks,
+                                insertionNumber,
+                                param,
+                                snapshot.params[param]
+                            )
+                        );
+                    }
+                }
+            }
+        } else {
+            if (this.gsReverbParams && this.gsReverbParams !== "clear") {
+                const p = this.gsReverbParams;
+                output.push(
+                    MIDIUtils.setGSReverbParameter(
+                        targetTicks,
+                        "level",
+                        p.level
+                    ),
+                    MIDIUtils.setGSReverbParameter(
+                        targetTicks,
+                        "preLowpass",
+                        p.preLowpass
+                    ),
+                    MIDIUtils.setGSReverbParameter(
+                        targetTicks,
+                        "character",
+                        p.character
+                    ),
+                    MIDIUtils.setGSReverbParameter(targetTicks, "time", p.time),
+                    MIDIUtils.setGSReverbParameter(
+                        targetTicks,
+                        "delayFeedback",
+                        p.delayFeedback
+                    ),
+                    MIDIUtils.setGSReverbParameter(
+                        targetTicks,
+                        "preDelayTime",
+                        p.preDelayTime
+                    )
+                );
+            }
+            if (this.gsChorusParams && this.gsChorusParams !== "clear") {
+                const p = this.gsChorusParams;
+                output.push(
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "level",
+                        p.level
+                    ),
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "preLowpass",
+                        p.preLowpass
+                    ),
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "feedback",
+                        p.feedback
+                    ),
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "delay",
+                        p.delay
+                    ),
+                    MIDIUtils.setGSChorusParameter(targetTicks, "rate", p.rate),
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "depth",
+                        p.depth
+                    ),
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "sendLevelToReverb",
+                        p.sendLevelToReverb
+                    ),
+                    MIDIUtils.setGSChorusParameter(
+                        targetTicks,
+                        "sendLevelToDelay",
+                        p.sendLevelToDelay
+                    )
+                );
+            }
+            if (this.gsDelayParams && this.gsDelayParams !== "clear") {
+                const p = this.gsDelayParams;
+                output.push(
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "level",
+                        p.level
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "preLowpass",
+                        p.preLowpass
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "timeCenter",
+                        p.timeCenter
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "timeRatioLeft",
+                        p.timeRatioLeft
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "timeRatioRight",
+                        p.timeRatioRight
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "levelCenter",
+                        p.levelCenter
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "levelLeft",
+                        p.levelLeft
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "levelRight",
+                        p.levelRight
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "feedback",
+                        p.feedback
+                    ),
+                    MIDIUtils.setGSDelayParameter(
+                        targetTicks,
+                        "sendLevelToReverb",
+                        p.sendLevelToReverb
+                    )
+                );
+            }
+            if (this.gsInsertionParams && this.gsInsertionParams !== "clear") {
+                const p = this.gsInsertionParams;
+                // Params and sends are stored in one table (0-19: params, 20-22: sends)
+                const sendNames = [
+                    "sendLevelToReverb",
+                    "sendLevelToChorus",
+                    "sendLevelToDelay"
+                ] as const;
+                const evs = new Array<MIDIMessage>();
+                for (let param = 0; param < p.params.length; param++) {
+                    const value = p.params[param];
+                    if (value === 255) continue;
+                    if (param < 20) {
+                        evs.push(
+                            MIDIUtils.setGSInsertionParameter(
+                                targetTicks,
+                                param,
+                                value
+                            )
+                        );
+                    } else {
+                        evs.push(
+                            MIDIUtils.setGSInsertionParameter(
+                                targetTicks,
+                                sendNames[param - 20],
+                                value
+                            )
+                        );
+                    }
+                }
 
-            // This adds them in order
-            // The order is:
-            // Type
-            // Params and sends
-            output.push(
-                MIDIUtils.setGSInsertionParameter(targetTicks, "type", p.type),
-                ...evs
-            );
+                // This adds them in order
+                // The order is:
+                // Type
+                // Params and sends
+                output.push(
+                    MIDIUtils.setGSInsertionParameter(
+                        targetTicks,
+                        "type",
+                        p.type
+                    ),
+                    ...evs
+                );
+            }
         }
 
         // User Drum parameters

@@ -127,17 +127,37 @@ export function applySnapshotInternal(
 
     midi.modify({
         channels,
-        reverbParams: snapshot.systemParameters.reverbLock
+        gsReverbParams: snapshot.systemParameters.reverbLock
             ? snapshot.gsReverbProcessor
             : undefined,
-        chorusParams: snapshot.systemParameters.chorusLock
+        gsChorusParams: snapshot.systemParameters.chorusLock
             ? snapshot.gsChorusProcessor
             : undefined,
-        delayParams: snapshot.systemParameters.delayLock
+        gsDelayParams: snapshot.systemParameters.delayLock
             ? snapshot.gsDelayProcessor
             : undefined,
-        insertionParams: snapshot.systemParameters.insertionEffectLock
+        gsInsertionParams: snapshot.systemParameters.insertionEffectLock
             ? snapshot.insertionProcessor
+            : undefined,
+        // XG blocks reuse the GS locks: setup emission is system-gated,
+        // So passing both engines is safe and bakes the full live state.
+        // Note that yamaha.ts does not enforce locks for XG (only drumLock),
+        // This only controls what gets written into the file.
+        xgReverbParams: snapshot.systemParameters.reverbLock
+            ? snapshot.xgReverbBlock
+            : undefined,
+        xgChorusParams: snapshot.systemParameters.chorusLock
+            ? snapshot.xgChorusBlock
+            : undefined,
+        xgVariationParams: snapshot.systemParameters.insertionEffectLock
+            ? snapshot.xgVariationBlock
+            : undefined,
+        xgInsertionParams: snapshot.systemParameters.insertionEffectLock
+            ? new Map(
+                  snapshot.xgInsertionBlocks.map(
+                      (block, index) => [index, block] as const
+                  )
+              )
             : undefined,
         userDrumParams,
         midiParams

@@ -21,7 +21,7 @@ const lockOpts: ModifyMIDIOptions = {
             }
         ]
     ]),
-    reverbParams: {
+    gsReverbParams: {
         level: 100,
         character: 1,
         delayFeedback: 45,
@@ -201,7 +201,7 @@ const lockOpts: ModifyMIDIOptions = {
     midi.note(60, 100).reset("xg").note(62, 100).flush();
     runMIDIEditorTest(midi, {
         channels: lockOpts.channels,
-        reverbParams: lockOpts.reverbParams,
+        gsReverbParams: lockOpts.gsReverbParams,
         midiParams: { system: "clear" }
     });
 }
@@ -214,7 +214,7 @@ const lockOpts: ModifyMIDIOptions = {
     midi.note(60, 100).reset("xg").note(62, 100).flush();
     runMIDIEditorTest(midi, {
         channels: lockOpts.channels,
-        reverbParams: lockOpts.reverbParams,
+        gsReverbParams: lockOpts.gsReverbParams,
         midiParams: { system: "xg" }
     });
 }

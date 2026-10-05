@@ -587,12 +587,6 @@ export type AnalyzedMIDIMessage =
     | XGInsertionParameterMessage
     | {
           /**
-           * An XG insertion (EFFECT2) message.
-           */
-          type: "XG Insertion Param";
-      }
-    | {
-          /**
            * A MIDI program change message configured via System Exclusive.
            */
           type: "Program Change";
