@@ -517,6 +517,46 @@ interface InsertionProcessorSnapshot {
 }
 ```
 
+### removeEMIDINonGMTracks
+
+Removes the tracks that EMIDI (Apogee's Extended MIDI) either does not designate as General MIDI, or marks for exclusion by General MIDI
+
+EMIDI marks each track with either one or both of two Track Designation controllers.
+CC#110 indicates one possible device type this track is included for, and may be specified
+more than once for multiple includes. A value of 127 on this control indicates "all devices"
+pass, and this track should be included always. CC#111 indicates one or more possible device
+types which this track should be excluded for. It never specifies the 127 wildcard, because
+that would defeat its purpose.
+
+Following an archived copy of eduke32 source code, the default match type is set to 1, or
+General MIDI. It also looks for the first CC#110 which matches this variable setting, ignoring
+any non-matching values, except for 127, which it also matches. Non-matching values are not
+considered a rejection on CC#110. As for CC#111, it rejects the track if any value set on it
+matches the set device ID, which again is 0 for General MIDI.
+
+The only file where CC#111 seems to have once had a mistaken effect was ALFREDH, which has a
+single track which is excluded by CC#111 value of 0 for General MIDI. However, it also had
+another failure that caught up my own implementation: CC#110 matching values other than the
+original desired filter values of 0 or 127 caused the track to be rejected, and this file
+contains a track which passes values of [0, 2, 9] for inclusion, which broke when a subsequent
+2 and then 9 failed to match the original filter. Thus, all three of the variants of the
+"Crystal" track were dropped incorrectly.
+
+Tracks that carry no designation are left alone, so this is a no-op on a file that is not EMIDI.
+
+This modifies the MIDI sequence _in-place_.
+
+```ts
+const removed = midi.removeEMIDINonGMTracks();
+```
+
+The returned value is a number - the count of tracks that were removed.
+
+!!! Note
+
+    This calls [`flush`](#flush) internally, so the loop points, ports and timeline
+    are recalculated automatically.
+
 ### applySnapshot
 
 Applies a [SynthesizerSnapshot](../spessa-synth-processor/synthesizer-snapshot.md) to the sequence _in place_.
