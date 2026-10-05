@@ -106,7 +106,7 @@ Legend for the "Type" column:
 | 124 or 125           | Omni mode On/Off                    | Engine   | Stops all notes, respecting their release time.                                                                                                                                     |
 | 126 or 127           | Poly/Mono Mode On/Off               | Engine   | Setting the corresponding controller to any value switches the Poly mode on or off, immediately terminating all active voices on the channel. [More info](#polymono-implementation) |
 
-[^1]: In XG mode `variationSend` is still stored per channel and per drum key, but `delayActive` is forced off, so there is no audible effect.
+[^1]: In XG mode `variationSend` is still stored per channel and per drum key, but `gsDelayActive` is forced off, so there is no audible effect.
 
 ### Default Controller Values
 

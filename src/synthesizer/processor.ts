@@ -155,17 +155,17 @@ export class SpessaSynthProcessor {
      * The GS reverb processor's input buffer.
      * @internal
      */
-    public readonly reverbInput;
+    public readonly gsReverbInput;
     /**
      * The GS chorus processor's input buffer.
      * @internal
      */
-    public readonly chorusInput;
+    public readonly gsChorusInput;
     /**
      * The GS delay processor's input buffer.
      * @internal
      */
-    public readonly delayInput;
+    public readonly gsDelayInput;
     /**
      * The XG reverb block's left input buffer.
      * XG effects are stereo, unlike GS effects (except insertion).
@@ -201,7 +201,7 @@ export class SpessaSynthProcessor {
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
      * @internal
      */
-    public delayActive = false;
+    public gsDelayActive = false;
     /**
      * The sound bank manager, which manages all sound banks and presets.
      */
@@ -293,7 +293,7 @@ export class SpessaSynthProcessor {
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      * @internal
      */
-    public insertionActive = false;
+    public gsInsertionActive = false;
     /**
      * The synthesizer's XG variation block.
      *
@@ -353,15 +353,16 @@ export class SpessaSynthProcessor {
      */
     protected customChannelNumbers = false;
     /**
-     * The fallback processor when the requested insertion is not available.
+     * The fallback GS processor when the requested insertion is not available.
      * @internal
      */
-    protected readonly insertionFallback = new ThruFX();
+    protected readonly gsInsertionFallback = new ThruFX();
     /**
-     * The current insertion processor.
+     * The GS current insertion processor.
      * @internal
      */
-    protected insertionProcessor: GSInsertionProcessor = this.insertionFallback;
+    protected gsInsertionProcessor: GSInsertionProcessor =
+        this.gsInsertionFallback;
     /**
      * All the insertion effects available to the processor.
      * The key is the EFX type stored as MSB << 8 | LSB
@@ -377,13 +378,13 @@ export class SpessaSynthProcessor {
      */
     protected portSelectChannelOffset = 0;
     /**
-     * For insertion snapshot tracking
+     * For GS insertion snapshot tracking
      * 20 parameters (0-19) + 3 sends
      * Index to gs is Addr3 - 3 (for example EFX PARAMETER 1 is 0x03 and here it's 0)
      * note: 255 means "no change"
      * @internal
      */
-    protected insertionParams = new Uint8Array(23).fill(255);
+    protected gsInsertionParams = new Uint8Array(23).fill(255);
     /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
@@ -472,9 +473,9 @@ export class SpessaSynthProcessor {
         this.voiceBuffer = new Float32Array(bufSize);
         this.insertionInputL = new Float32Array(bufSize);
         this.insertionInputR = new Float32Array(bufSize);
-        this.reverbInput = new Float32Array(bufSize);
-        this.chorusInput = new Float32Array(bufSize);
-        this.delayInput = new Float32Array(bufSize);
+        this.gsReverbInput = new Float32Array(bufSize);
+        this.gsChorusInput = new Float32Array(bufSize);
+        this.gsDelayInput = new Float32Array(bufSize);
         this.xgReverbInputL = new Float32Array(bufSize);
         this.xgReverbInputR = new Float32Array(bufSize);
         this.xgChorusInputL = new Float32Array(bufSize);
@@ -485,7 +486,7 @@ export class SpessaSynthProcessor {
         // Register insertion
         for (const insertion of GS_INSERTION_EFFECT_LIST)
             this.registerInsertionProcessor(insertion);
-        this.resetInsertionParams(); // Initial setup
+        this.resetGSInsertionParams(); // Initial setup
 
         // Initialize voices
         this.allocateNewVoices(this.systemParameters.voiceCap);
@@ -1034,7 +1035,7 @@ export class SpessaSynthProcessor {
         this.setChorusMacro(2);
         // Delay1 default
         this.setDelayMacro(0);
-        this.resetInsertion();
+        this.resetGSInsertion();
 
         this.xgReverbBlock.reset();
         this.xgChorusBlock.reset();
@@ -1056,7 +1057,7 @@ export class SpessaSynthProcessor {
         for (const ch of this.midiChannels) ch.reset(false);
 
         // Update if the effects should still be active.
-        this.updateActiveEffects();
+        this.updateActiveGSEffects();
     }
 
     /**
@@ -1175,11 +1176,11 @@ export class SpessaSynthProcessor {
             this.xgVariationInputL.fill(0);
             this.xgVariationInputR.fill(0);
         } else {
-            this.reverbInput.fill(0);
-            this.chorusInput.fill(0);
-            if (this.delayActive) this.delayInput.fill(0);
+            this.gsReverbInput.fill(0);
+            this.gsChorusInput.fill(0);
+            if (this.gsDelayActive) this.gsDelayInput.fill(0);
         }
-        if (this.insertionActive) {
+        if (this.gsInsertionActive) {
             this.insertionInputL.fill(0);
             this.insertionInputR.fill(0);
         }
@@ -1273,7 +1274,7 @@ export class SpessaSynthProcessor {
             }
 
             // Straight into the insertion EFX, but only if it is active
-            if (midiParameters.efxAssign && fx && this.insertionActive) {
+            if (midiParameters.efxAssign && fx && this.gsInsertionActive) {
                 const insertionL = this.insertionInputL;
                 const insertionR = this.insertionInputR;
                 // Index is 0-based here as it's internal
@@ -1295,9 +1296,9 @@ export class SpessaSynthProcessor {
         // Process effects
         if (fx) {
             const {
-                chorusInput,
-                delayInput,
-                reverbInput,
+                gsChorusInput,
+                gsDelayInput,
+                gsReverbInput,
                 insertionInputR,
                 insertionInputL
             } = this;
@@ -1341,15 +1342,15 @@ export class SpessaSynthProcessor {
                 );
             } else {
                 // Insertion first
-                if (this.insertionActive) {
-                    this.insertionProcessor.process(
+                if (this.gsInsertionActive) {
+                    this.gsInsertionProcessor.process(
                         insertionInputL,
                         insertionInputR,
                         left,
                         right,
-                        reverbInput,
-                        chorusInput,
-                        delayInput,
+                        gsReverbInput,
+                        gsChorusInput,
+                        gsDelayInput,
                         startIndex,
                         sampleCount
                     );
@@ -1357,28 +1358,28 @@ export class SpessaSynthProcessor {
 
                 // Chorus first, it feeds to reverb and delay
                 this.gsChorusProcessor.process(
-                    chorusInput,
+                    gsChorusInput,
                     left,
                     right,
-                    reverbInput,
-                    delayInput,
+                    gsReverbInput,
+                    gsDelayInput,
                     startIndex,
                     sampleCount
                 );
-                if (this.delayActive) {
+                if (this.gsDelayActive) {
                     // Process delay
                     this.gsDelayProcessor.process(
-                        delayInput,
+                        gsDelayInput,
                         left,
                         right,
-                        reverbInput,
+                        gsReverbInput,
                         startIndex,
                         sampleCount
                     );
                 }
                 // Finally process the reverb processor (it goes directly into the output buffer)
                 this.gsReverbProcessor.process(
-                    reverbInput,
+                    gsReverbInput,
                     left,
                     right,
                     startIndex,
@@ -1462,17 +1463,17 @@ export class SpessaSynthProcessor {
      * @internal
      * Checks if we can disable insertion and delay effects.
      */
-    public updateActiveEffects() {
-        if (!this.systemParameters.insertionEffectLock)
-            this.insertionActive = this.midiChannels.some(
+    public updateActiveGSEffects() {
+        if (!this.systemParameters.gsInsertionLock)
+            this.gsInsertionActive = this.midiChannels.some(
                 (c) => c.midiParameters.efxAssign
             );
-        if (!this.systemParameters.delayLock)
-            this.delayActive =
+        if (!this.systemParameters.gsDelayLock)
+            this.gsDelayActive =
                 this.midiParameters.system === "xg"
                     ? false
                     : this.gsChorusProcessor.sendLevelToDelay > 0 ||
-                      this.insertionProcessor.sendLevelToDelay > 0 ||
+                      this.gsInsertionProcessor.sendLevelToDelay > 0 ||
                       this.midiChannels.some(
                           (c) =>
                               c.midiControllers[
@@ -1540,45 +1541,45 @@ export class SpessaSynthProcessor {
     /**
      * @internal
      */
-    protected getInsertionSnapshot(): GSInsertionProcessorSnapshot {
+    protected getGSInsertionSnapshot(): GSInsertionProcessorSnapshot {
         return {
-            type: this.insertionProcessor.type,
-            params: this.insertionParams.slice()
+            type: this.gsInsertionProcessor.type,
+            params: this.gsInsertionParams.slice()
         };
     }
     /**
      * @internal
      */
-    protected resetInsertionParams() {
+    protected resetGSInsertionParams() {
         // No change
-        this.insertionParams.fill(255);
-        this.insertionParams[20] = 40; // Reverb
-        this.insertionParams[21] = 0; // Chorus
-        this.insertionParams[22] = 0; // Delay
+        this.gsInsertionParams.fill(255);
+        this.gsInsertionParams[20] = 40; // Reverb
+        this.gsInsertionParams[21] = 0; // Chorus
+        this.gsInsertionParams[22] = 0; // Delay
     }
     /**
      * @internal
      */
-    protected resetInsertion() {
-        if (this.systemParameters.insertionEffectLock) return;
-        this.insertionProcessor = this.insertionFallback;
-        this.insertionProcessor.reset();
-        this.resetInsertionParams();
-        this.insertionProcessor.sendLevelToReverb =
+    protected resetGSInsertion() {
+        if (this.systemParameters.gsInsertionLock) return;
+        this.gsInsertionProcessor = this.gsInsertionFallback;
+        this.gsInsertionProcessor.reset();
+        this.resetGSInsertionParams();
+        this.gsInsertionProcessor.sendLevelToReverb =
             (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
-        this.insertionProcessor.sendLevelToChorus = 0;
-        this.insertionProcessor.sendLevelToDelay = 0;
+        this.gsInsertionProcessor.sendLevelToChorus = 0;
+        this.gsInsertionProcessor.sendLevelToDelay = 0;
         this.callEvent("effectChange", {
             effect: "insertion",
             parameter: 0,
-            value: this.insertionProcessor.type
+            value: this.gsInsertionProcessor.type
         });
     }
     /**
      * @internal
      */
     protected setReverbMacro(macro: number) {
-        if (this.systemParameters.reverbLock) return;
+        if (this.systemParameters.gsReverbLock) return;
         // SC-8850 manual page 81
         const rev = this.gsReverbProcessor;
         rev.level = 64;
@@ -1687,7 +1688,7 @@ export class SpessaSynthProcessor {
      * @internal
      */
     protected setChorusMacro(macro: number) {
-        if (this.systemParameters.chorusLock) return;
+        if (this.systemParameters.gsChorusLock) return;
         // SC-8850 manual page 83
         const chr = this.gsChorusProcessor;
         chr.level = 64;
@@ -1802,7 +1803,7 @@ export class SpessaSynthProcessor {
      * @internal
      */
     protected setDelayMacro(macro: number) {
-        if (this.systemParameters.delayLock) return;
+        if (this.systemParameters.gsDelayLock) return;
         // SC-8850 manual page 85
         const dly = this.gsDelayProcessor;
         dly.level = 64;

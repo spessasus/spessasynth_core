@@ -127,32 +127,29 @@ export function applySnapshotInternal(
 
     midi.modify({
         channels,
-        gsReverbParams: snapshot.systemParameters.reverbLock
+        gsReverbParams: snapshot.systemParameters.gsReverbLock
             ? snapshot.gsReverbProcessor
             : undefined,
-        gsChorusParams: snapshot.systemParameters.chorusLock
+        gsChorusParams: snapshot.systemParameters.gsChorusLock
             ? snapshot.gsChorusProcessor
             : undefined,
-        gsDelayParams: snapshot.systemParameters.delayLock
+        gsDelayParams: snapshot.systemParameters.gsDelayLock
             ? snapshot.gsDelayProcessor
             : undefined,
-        gsInsertionParams: snapshot.systemParameters.insertionEffectLock
-            ? snapshot.insertionProcessor
+        gsInsertionParams: snapshot.systemParameters.gsInsertionLock
+            ? snapshot.gsInsertionProcessor
             : undefined,
-        // XG blocks reuse the GS locks: setup emission is system-gated,
-        // So passing both engines is safe and bakes the full live state.
-        // Note that yamaha.ts does not enforce locks for XG (only drumLock),
-        // This only controls what gets written into the file.
-        xgReverbParams: snapshot.systemParameters.reverbLock
+        // XG blocks have dedicated locks mirroring the GS ones.
+        xgReverbParams: snapshot.systemParameters.xgReverbLock
             ? snapshot.xgReverbBlock
             : undefined,
-        xgChorusParams: snapshot.systemParameters.chorusLock
+        xgChorusParams: snapshot.systemParameters.xgChorusLock
             ? snapshot.xgChorusBlock
             : undefined,
-        xgVariationParams: snapshot.systemParameters.insertionEffectLock
+        xgVariationParams: snapshot.systemParameters.xgVariationLock
             ? snapshot.xgVariationBlock
             : undefined,
-        xgInsertionParams: snapshot.systemParameters.insertionEffectLock
+        xgInsertionParams: snapshot.systemParameters.xgInsertionLock
             ? new Map(
                   snapshot.xgInsertionBlocks.map(
                       (block, index) => [index, block] as const

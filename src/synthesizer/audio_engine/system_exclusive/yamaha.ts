@@ -81,6 +81,21 @@ export function yamahaSystemExclusive(
 
         // XG EFFECT 1 (reverb, chorus, variation)
         if (a1 === 0x02 && a2 === 0x01) {
+            const isReverb =
+                a3 === 0x00 ||
+                (a3 >= 0x02 && a3 <= 0x0d) ||
+                (a3 >= 0x10 && a3 <= 0x15);
+            if (isReverb && this.systemParameters.xgReverbLock) return;
+            const isChorus =
+                a3 === 0x20 ||
+                (a3 >= 0x22 && a3 <= 0x2e) ||
+                (a3 >= 0x30 && a3 <= 0x35);
+            if (isChorus && this.systemParameters.xgChorusLock) return;
+            const isVariation =
+                a3 === 0x40 ||
+                (a3 >= 0x42 && a3 <= 0x5b) ||
+                (a3 >= 0x70 && a3 <= 0x75);
+            if (isVariation && this.systemParameters.xgVariationLock) return;
             switch (a3) {
                 default: {
                     SpessaLog.xgFail("EFFECT 1 Parameter", [a3]);
@@ -267,6 +282,7 @@ export function yamahaSystemExclusive(
 
         // XG EFFECT 2 (insertion)
         if (a1 === 0x03) {
+            if (this.systemParameters.xgInsertionLock) return;
             const insertion = this.xgInsertionBlocks[a2];
             if (!insertion) {
                 SpessaLog.xgFail("Insertion Effect Number", [a2]);

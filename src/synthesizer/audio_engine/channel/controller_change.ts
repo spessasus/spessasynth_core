@@ -100,7 +100,7 @@ export function controllerChange(
             }
 
             case MIDIControllers.variationDepth: {
-                this.synthCore.updateActiveEffects();
+                this.synthCore.updateActiveGSEffects();
                 break;
             }
 

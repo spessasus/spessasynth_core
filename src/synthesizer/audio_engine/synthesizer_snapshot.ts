@@ -61,7 +61,7 @@ export interface SynthesizerSnapshot {
     /**
      * A snapshot of the insertion effect processor.
      */
-    insertionProcessor: GSInsertionProcessorSnapshot;
+    gsInsertionProcessor: GSInsertionProcessorSnapshot;
 
     /**
      * A snapshot of the XG reverb block.
@@ -109,7 +109,7 @@ export function applySnapshot(
         this.gsDelayProcessor[key as keyof GSDelayParameter] = value as number;
 
     // Restore insertion
-    const is = snapshot.insertionProcessor;
+    const is = snapshot.gsInsertionProcessor;
     this.systemExclusive(
         MIDIUtils.gs(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
     );
@@ -180,7 +180,7 @@ export function applySnapshot(
     }
 
     // Then update active effects
-    this.updateActiveEffects();
+    this.updateActiveGSEffects();
 }
 
 export function getSynthesizerSnapshot(
@@ -194,7 +194,7 @@ export function getSynthesizerSnapshot(
         gsReverbProcessor: this.gsReverbProcessor.getSnapshot(),
         gsChorusProcessor: this.gsChorusProcessor.getSnapshot(),
         gsDelayProcessor: this.gsDelayProcessor.getSnapshot(),
-        insertionProcessor: this.getInsertionSnapshot(),
+        gsInsertionProcessor: this.getGSInsertionSnapshot(),
         xgReverbBlock: this.xgReverbBlock.getSnapshot(),
         xgChorusBlock: this.xgChorusBlock.getSnapshot(),
         xgVariationBlock: this.xgVariationBlock.getSnapshot(),

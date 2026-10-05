@@ -169,7 +169,7 @@ export function noteOn(
         reverbGain = p.reverbSend / 127;
         chorusGain = p.chorusSend / 127;
         variationGain = p.variationSend / 127;
-        this.synthCore.delayActive ||= variationGain > 0;
+        this.synthCore.gsDelayActive ||= variationGain > 0;
         voiceGain = Math.pow(p.level / 120, 2);
     }
 

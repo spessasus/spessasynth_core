@@ -109,7 +109,7 @@ export interface ChannelMIDIParameter {
     assignMode: number;
 
     /**
-     * Indicates whether this channel uses the insertion EFX processor.
+     * Indicates whether this channel uses the GS insertion EFX processor.
      */
     efxAssign: boolean;
 

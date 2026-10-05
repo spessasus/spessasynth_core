@@ -55,47 +55,81 @@ export interface GlobalSystemParameter {
     /**
      * The reverb effect gain.
      * From 0 to any number. 1 is 100% reverb.
+     *
+     * Applies to both GS and XG reverb.
      */
     reverbGain: number;
 
     /**
-     * If the synthesizer should prevent editing of the reverb parameters.
+     * If the synthesizer should prevent editing of the GS reverb parameters.
      * This effect is modified using MIDI system exclusive messages, so
      * the recommended use case would be setting
      * the reverb parameters then locking it to prevent changes by MIDI files.
      */
-    reverbLock: boolean;
+    gsReverbLock: boolean;
+
+    /**
+     * If the synthesizer should prevent editing of the XG reverb block.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the reverb parameters then locking it to prevent changes by MIDI files.
+     */
+    xgReverbLock: boolean;
 
     /**
      * The chorus effect gain.
      * From 0 to any number. 1 is 100% chorus.
+     *
+     * Applies to both GS and XG chorus.
      */
     chorusGain: number;
 
     /**
-     * If the synthesizer should prevent editing of the chorus parameters.
+     * If the synthesizer should prevent editing of the GS chorus parameters.
      * This effect is modified using MIDI system exclusive messages, so
      * the recommended use case would be setting
      * the chorus parameters then locking it to prevent changes by MIDI files.
      */
-    chorusLock: boolean;
+    gsChorusLock: boolean;
 
     /**
-     * The delay effect gain.
+     * If the synthesizer should prevent editing of the XG chorus block.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the chorus parameters then locking it to prevent changes by MIDI files.
+     */
+    xgChorusLock: boolean;
+
+    /**
+     * The GS delay effect gain.
      * From 0 to any number. 1 is 100% delay.
      */
-    delayGain: number;
+    gsDelayGain: number;
 
     /**
-     * If the synthesizer should prevent editing of the delay parameters.
+     * If the synthesizer should prevent editing of the GS delay parameters.
      * This effect is modified using MIDI system exclusive messages, so
      * the recommended use case would be setting
      * the delay parameters then locking it to prevent changes by MIDI files.
      */
-    delayLock: boolean;
+    gsDelayLock: boolean;
 
     /**
-     * If the synthesizer should prevent changing the insertion effect type and parameters.
+     * The XG variation gain when in system mode. {@link XGVariationConnection}
+     * From 0 to any number. 1 is 100% variation.
+     */
+    xgVariationGain: number;
+
+    /**
+     * If the synthesizer should prevent editing of the XG variation block.
+     * This effect is modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the variation parameters then locking it to prevent changes by MIDI files.
+     */
+    xgVariationLock: boolean;
+
+    /**
+     * If the synthesizer should prevent editing of the GS insertion effect type and parameters.
      * This effect is modified using MIDI system exclusive messages, so
      * the recommended use case would be setting
      * the insertion effect type and parameters then locking it to prevent changes by MIDI files.
@@ -104,7 +138,15 @@ export interface GlobalSystemParameter {
      * >
      * > To lock the channel insertion assign, lock the {@link ChannelMIDIParameter.efxAssign `efxAssign`} parameter instead.
      */
-    insertionEffectLock: boolean;
+    gsInsertionLock: boolean;
+
+    /**
+     * If the synthesizer should prevent editing of _ALL_ the XG insertion (EFFECT 2) blocks.
+     * These effects are modified using MIDI system exclusive messages, so
+     * the recommended use case would be setting
+     * the insertion parameters then locking them to prevent changes by MIDI files.
+     */
+    xgInsertionLock: boolean;
 
     /**
      * If the synthesizer should prevent editing of the drum parameters.
@@ -212,15 +254,22 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
     autoAllocateVoices: false,
 
     reverbGain: 1,
-    reverbLock: false,
+    gsReverbLock: false,
+    xgReverbLock: false,
 
     chorusGain: 1,
-    chorusLock: false,
+    gsChorusLock: false,
+    xgChorusLock: false,
 
-    delayGain: 1,
-    delayLock: false,
+    gsDelayGain: 1,
+    gsDelayLock: false,
 
-    insertionEffectLock: false,
+    xgVariationGain: 1,
+    xgVariationLock: false,
+
+    gsInsertionLock: false,
+    xgInsertionLock: false,
+
     drumLock: false,
     userDrumLock: false,
 

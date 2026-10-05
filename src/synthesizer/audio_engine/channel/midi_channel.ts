@@ -55,6 +55,8 @@ import { SpessaLog } from "../../../utils/loggin";
 /**
  * This class represents a single MIDI channel within a {@link SpessaSynthProcessor}.
  *
+ * In terms of old sound modules, it can also be considered a "Part", since the receiving MIDI channel number can be changed.
+ *
  * @group Synthesizer.Channel
  */
 export class MIDIChannel {

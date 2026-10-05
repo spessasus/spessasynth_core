@@ -367,7 +367,7 @@ export function renderVoice(
      */
     if (
         !systemParameters.effectsEnabled ||
-        (this._midiParameters.efxAssign && core.insertionActive) ||
+        (this._midiParameters.efxAssign && core.gsInsertionActive) ||
         this.xgInsertionAssigned
     ) {
         return;
@@ -395,7 +395,7 @@ export function renderVoice(
             const reverbGain =
                 systemParameters.reverbGain * outputGain * (reverbSend / 1000);
 
-            const reverb = core.reverbInput;
+            const reverb = core.gsReverbInput;
             for (let i = 0; i < sampleCount; i++) {
                 reverb[i] += reverbGain * buffer[i];
             }
@@ -419,7 +419,7 @@ export function renderVoice(
         } else {
             const chorusGain =
                 systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
-            const chorus = core.chorusInput;
+            const chorus = core.gsChorusInput;
             for (let i = 0; i < sampleCount; i++) {
                 chorus[i] += chorusGain * buffer[i];
             }
@@ -433,7 +433,8 @@ export function renderVoice(
             this._midiControllers[MIDIControllers.variationDepth] *
             voice.variationGain;
         if (variationSend > 0) {
-            const send = variationSend / 127;
+            const send =
+                ((variationSend >> 7) / 127) * systemParameters.xgVariationGain;
             const gainL = send * gainLeft;
             const gainR = send * gainRight;
             const outL = core.xgVariationInputL;
@@ -446,16 +447,16 @@ export function renderVoice(
         }
     }
 
-    if (core.delayActive) {
+    if (core.gsDelayActive) {
         const delaySend =
             this._midiControllers[MIDIControllers.variationDepth] *
             voice.variationGain;
         if (delaySend > 0) {
             const delayGain =
                 outputGain *
-                systemParameters.delayGain *
+                systemParameters.gsDelayGain *
                 ((delaySend >> 7) / 127);
-            const delay = core.delayInput;
+            const delay = core.gsDelayInput;
             for (let i = 0; i < sampleCount; i++) {
                 delay[i] += delayGain * buffer[i];
             }
