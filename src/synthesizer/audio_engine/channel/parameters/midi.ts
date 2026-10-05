@@ -181,6 +181,18 @@ export interface ChannelMIDIParameter {
      * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf), page 56.
      */
     velocitySenseOffset: number;
+
+    /**
+     * The dry audio data amount being sent to the output.
+     * 127 is full, 0 is none (only effect audio).
+     * For example setting dry to 0 and reverb send to 127 results in only reverb.
+     * Setting dry to 0 and all sends to 0 effectively mutes the channel.
+     *
+     * > **Important**
+     * >
+     * > This parameter is only active when {@link GlobalMIDIParameter.system} is set to `xg` and variation connection is set to system.
+     */
+    dryLevel: number;
 }
 
 /**
@@ -195,9 +207,9 @@ export interface ChannelMIDIParameter {
  * @group Synthesizer.Parameters
  */
 export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
+    pressure: 0,
     pitchWheel: 8192,
     pitchWheelRange: 2,
-    pressure: 0,
     modulationDepth: 50,
     rxChannel: 0,
     polyMode: true,
@@ -210,7 +222,8 @@ export const DEFAULT_CHANNEL_MIDI_PARAMETERS: ChannelMIDIParameter = {
     cc2: 0x11,
     drumMap: MELODIC_MAP,
     velocitySenseDepth: 64,
-    velocitySenseOffset: 64
+    velocitySenseOffset: 64,
+    dryLevel: 127
 };
 
 /**

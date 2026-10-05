@@ -498,6 +498,13 @@ export function yamahaSystemExclusive(
                     break;
                 }
 
+                // Dry level
+                case 0x11: {
+                    ch.setMIDIParameter("dryLevel", data);
+                    SpessaLog.xgInfo(`Dry Level on ${channel}`, data);
+                    break;
+                }
+
                 // Chorus
                 case 0x12: {
                     ch.controllerChange(MIDIControllers.chorusDepth, data);

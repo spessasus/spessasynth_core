@@ -578,6 +578,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | VELOCITY SENSE DEPTH           | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                                 |
 | VELOCITY SENSE OFFSET          | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseOffset `velocitySenseOffset`}.                                               |
 | PAN                            | Aliased to MIDI CC#10 (Pan), except value `0` enables random pan for every new voice on that channel.                                                 |
+| DRY LEVEL                      | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.dryLevel `dryLevel`}.                                                                     |
 | CHORUS                         | Aliased to MIDI CC#93 (Chorus Depth).                                                                                                                 |
 | REVERB                         | Aliased to MIDI CC#91 (Reverb Depth).                                                                                                                 |
 | VIBRATO RATE                   | Aliased to MIDI CC#76 (Vibrato Rate).                                                                                                                 |

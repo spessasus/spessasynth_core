@@ -8,11 +8,6 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIChannel } from "./midi_channel";
-import {
-    DEFAULT_GS_DRUM_MAP,
-    DEFAULT_XG_DRUM_MAP,
-    MELODIC_MAP
-} from "../../../midi/midi_tools/sysex_data";
 
 /**
  * An array with the default MIDI controller values.
@@ -100,29 +95,23 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     this.polyPressures.fill(0);
 
     // Reset MIDI parameters (locked will remain in place)
-    this.setMIDIParameter("pressure", 0);
-    this.setMIDIParameter("pitchWheelRange", 2);
-    this.setMIDIParameter("modulationDepth", 50);
-    this.setMIDIParameter("rxChannel", this.channel);
-    this.setMIDIParameter("efxAssign", false);
-    this.setMIDIParameter("polyMode", true);
-    this.setMIDIParameter("keyShift", 0);
-    this.setMIDIParameter("fineTune", 0);
-    this.setMIDIParameter("assignMode", 2);
-    this.setMIDIParameter("randomPan", false);
-    this.setMIDIParameter("cc1", 0x10);
-    this.setMIDIParameter("cc2", 0x11);
-    // Set the correct default map
-    const defaultMap =
-        this.channelSystem === "xg" ? DEFAULT_XG_DRUM_MAP : DEFAULT_GS_DRUM_MAP;
-    this.setMIDIParameter(
-        "drumMap",
-        this.channel % 16 === MIDI_DRUM_CHANNEL ? defaultMap : MELODIC_MAP
-    );
-    this.setMIDIParameter("velocitySenseOffset", 64);
-    this.setMIDIParameter("velocitySenseDepth", 64);
-    // This one has a wrapper, for per-note pitch wheel
-    this.pitchWheel(8192);
+    this.resetMIDIParameter("pressure");
+    this.resetMIDIParameter("pitchWheel");
+    this.resetMIDIParameter("pitchWheelRange");
+    this.resetMIDIParameter("modulationDepth");
+    this.resetMIDIParameter("rxChannel");
+    this.resetMIDIParameter("efxAssign");
+    this.resetMIDIParameter("polyMode");
+    this.resetMIDIParameter("keyShift");
+    this.resetMIDIParameter("fineTune");
+    this.resetMIDIParameter("assignMode");
+    this.resetMIDIParameter("randomPan");
+    this.resetMIDIParameter("cc1");
+    this.resetMIDIParameter("cc2");
+    this.resetMIDIParameter("drumMap");
+    this.resetMIDIParameter("velocitySenseOffset");
+    this.resetMIDIParameter("velocitySenseDepth");
+    this.resetMIDIParameter("dryLevel");
 
     // Reset various other things
     this.octaveTuning.fill(0);

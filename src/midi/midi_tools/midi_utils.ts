@@ -1080,6 +1080,16 @@ export class MIDIUtils {
                           )
                       ];
             }
+
+            case "dryLevel": {
+                // XG only
+                return [
+                    MIDIUtils.xgMessage(ticks, 0x08, channel, 0x11, [
+                        value as number
+                    ])
+                ];
+            }
+
             // That's it!
         }
     }
@@ -2238,6 +2248,18 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.pan,
+                            value
+                        }
+                    ];
+                }
+
+                case 0x11: {
+                    // Dry level
+                    return [
+                        {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "dryLevel",
                             value
                         }
                     ];

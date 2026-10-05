@@ -1021,10 +1021,16 @@ export class SpessaSynthProcessor {
         this.callEvent("reset", system);
         // Reset MIDI parameters
         this.setMIDIParameter("system", system);
-        this.setMIDIParameter("volume", 1);
-        this.setMIDIParameter("pan", 0);
-        this.setMIDIParameter("keyShift", 0);
-        this.setMIDIParameter("fineTune", 0);
+        this.setMIDIParameter("volume", DEFAULT_GLOBAL_MIDI_PARAMETERS.volume);
+        this.setMIDIParameter("pan", DEFAULT_GLOBAL_MIDI_PARAMETERS.pan);
+        this.setMIDIParameter(
+            "keyShift",
+            DEFAULT_GLOBAL_MIDI_PARAMETERS.keyShift
+        );
+        this.setMIDIParameter(
+            "fineTune",
+            DEFAULT_GLOBAL_MIDI_PARAMETERS.fineTune
+        );
         // Reset private props
         this.tunings.fill(-1); // Set all to no change
         this.portSelectChannelOffset = 0;
@@ -1148,6 +1154,7 @@ export class SpessaSynthProcessor {
             );
 
         const isXG = this.midiParameters.system === "xg";
+        const variationInsertion = this.xgVariationBlock.insertionMode;
         const fx = this.systemParameters.effectsEnabled;
 
         // For XG, renderVoice always checks if insertion is assigned to bypass effect sends
@@ -1160,7 +1167,7 @@ export class SpessaSynthProcessor {
                 const channel = this.midiChannels[insertion.partNumber];
                 if (channel) channel.xgInsertionAssigned = true;
             }
-            if (this.xgVariationBlock.insertionMode) {
+            if (variationInsertion) {
                 const channel =
                     this.midiChannels[this.xgVariationBlock.partNumber];
                 if (channel) channel.xgInsertionAssigned = true;
@@ -1222,7 +1229,7 @@ export class SpessaSynthProcessor {
 
             // Variation is processed last
             // See MU128 manual, page 154
-            if (this.xgVariationBlock.insertionMode) {
+            if (variationInsertion) {
                 const channel =
                     this.midiChannels[this.xgVariationBlock.partNumber];
                 if (channel)
@@ -1285,11 +1292,22 @@ export class SpessaSynthProcessor {
                 continue;
             }
 
-            // Mix down normally
-            for (let i = 0; i < sampleCount; i++) {
-                const idx = startIndex + i;
-                left[idx] += outputLeft[i];
-                right[idx] += outputRight[i];
+            // Dry level is only active in XG with variation connection set to SYSTEM.
+            if (isXG && !variationInsertion) {
+                // Mix down taking dry level into account
+                const gain = midiParameters.dryLevel / 127;
+                for (let i = 0; i < sampleCount; i++) {
+                    const idx = startIndex + i;
+                    left[idx] += outputLeft[i] * gain;
+                    right[idx] += outputRight[i] * gain;
+                }
+            } else {
+                // Mix down normally
+                for (let i = 0; i < sampleCount; i++) {
+                    const idx = startIndex + i;
+                    left[idx] += outputLeft[i];
+                    right[idx] += outputRight[i];
+                }
             }
         }
 
@@ -1305,7 +1323,7 @@ export class SpessaSynthProcessor {
 
             if (isXG) {
                 // Variation system first, feeds the chorus and reverb
-                if (!this.xgVariationBlock.insertionMode) {
+                if (!variationInsertion) {
                     this.xgVariationBlock.process(
                         this.xgVariationInputL,
                         this.xgVariationInputR,

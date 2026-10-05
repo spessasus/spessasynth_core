@@ -51,6 +51,11 @@ import type { DrumParameter } from "../../../midi/types";
 import type { CustomChannelVibrato } from "./types";
 import type { Voice } from "../voice/voice";
 import { SpessaLog } from "../../../utils/loggin";
+import {
+    DEFAULT_GS_DRUM_MAP,
+    DEFAULT_XG_DRUM_MAP,
+    MELODIC_MAP
+} from "../../../midi/midi_tools/sysex_data";
 
 /**
  * This class represents a single MIDI channel within a {@link SpessaSynthProcessor}.
@@ -916,6 +921,48 @@ export class MIDIChannel {
         this._midiControllers = undefined;
         // @ts-expect-error destruction
         this._midiParameters = undefined;
+    }
+
+    /**
+     * Resets the given Channel MIDI Parameter to the default value, taking special actions depending on the parameter.
+     * @internal
+     */
+    protected resetMIDIParameter(param: keyof ChannelMIDIParameter) {
+        switch (param) {
+            default: {
+                this.setMIDIParameter(
+                    param,
+                    DEFAULT_CHANNEL_MIDI_PARAMETERS[param]
+                );
+                break;
+            }
+
+            case "rxChannel": {
+                this.setMIDIParameter("rxChannel", this.channel);
+                break;
+            }
+
+            case "drumMap": {
+                // Set the correct default map
+                const defaultMap =
+                    this.channelSystem === "xg"
+                        ? DEFAULT_XG_DRUM_MAP
+                        : DEFAULT_GS_DRUM_MAP;
+                this.setMIDIParameter(
+                    "drumMap",
+                    this.channel % 16 === MIDI_DRUM_CHANNEL
+                        ? defaultMap
+                        : MELODIC_MAP
+                );
+                break;
+            }
+
+            case "pitchWheel": {
+                // This one has a wrapper, for per-note pitch wheel
+                this.pitchWheel(8192);
+                break;
+            }
+        }
     }
 
     /** @internal */
