@@ -102,10 +102,10 @@ export function applySnapshot(
     for (const [key, value] of Object.entries(snapshot.gsReverbProcessor))
         this.gsReverbProcessor[key as keyof GSReverbParameter] =
             value as number;
-    for (const [key, value] of Object.entries(this.gsChorusProcessor))
+    for (const [key, value] of Object.entries(snapshot.gsChorusProcessor))
         this.gsChorusProcessor[key as keyof GSChorusParameter] =
             value as number;
-    for (const [key, value] of Object.entries(this.gsDelayProcessor))
+    for (const [key, value] of Object.entries(snapshot.gsDelayProcessor))
         this.gsDelayProcessor[key as keyof GSDelayParameter] = value as number;
 
     // Restore insertion
