@@ -5,7 +5,7 @@ const CHORUS_GAIN = 1.3;
 /**
  * The default GS Chorus implementation for {@link SpessaSynthProcessor}.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export class SpessaSynthGSChorus implements GSChorusProcessor {
     /**

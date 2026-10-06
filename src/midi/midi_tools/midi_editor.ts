@@ -32,10 +32,10 @@ import type {
     GSInsertionProcessorSnapshot,
     GSReverbParameter
 } from "../../synthesizer/audio_engine/effects/gs/types";
-import type { XGSystemEffectBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/framework/xg_effect_block";
-import type { XGChorusBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/chorus";
-import type { XGVariationBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/variation";
-import type { XGInsertionBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/insertion";
+import type { XGSystemEffectBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_system_effect_block";
+import type { XGChorusBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_chorus_block";
+import type { XGVariationBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_variation_block";
+import type { XGInsertionBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_insertion_block";
 
 /**
  * Represents a value that means "clear this parameter" instead of "replace this parameter with".
@@ -1850,7 +1850,7 @@ export class MIDIEditor {
                     MIDIUtils.setXGReverbParameter(
                         targetTicks,
                         "return",
-                        p.returnLevel
+                        p.return
                     ),
                     MIDIUtils.setXGReverbParameter(targetTicks, "pan", p.pan)
                 );
@@ -1871,7 +1871,7 @@ export class MIDIEditor {
                     MIDIUtils.setXGChorusParameter(
                         targetTicks,
                         "return",
-                        p.returnLevel
+                        p.return
                     ),
                     MIDIUtils.setXGChorusParameter(targetTicks, "pan", p.pan),
                     MIDIUtils.setXGChorusParameter(
@@ -1901,7 +1901,7 @@ export class MIDIEditor {
                     MIDIUtils.setXGVariationParameter(
                         targetTicks,
                         "return",
-                        p.returnLevel
+                        p.return
                     ),
                     MIDIUtils.setXGVariationParameter(
                         targetTicks,

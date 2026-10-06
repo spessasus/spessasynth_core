@@ -125,7 +125,7 @@ export function yamahaSystemExclusive(
                 }
 
                 case 0x0c: {
-                    this.xgReverbBlock.returnLevel = data;
+                    this.xgReverbBlock.return = data;
                     SpessaLog.xgInfo(`Reverb Return`, data);
                     return;
                 }
@@ -170,7 +170,7 @@ export function yamahaSystemExclusive(
                 }
 
                 case 0x2c: {
-                    this.xgChorusBlock.returnLevel = data;
+                    this.xgChorusBlock.return = data;
                     SpessaLog.xgInfo(`Chorus Return`, data);
                     return;
                 }
@@ -227,7 +227,7 @@ export function yamahaSystemExclusive(
                 }
 
                 case 0x56: {
-                    this.xgVariationBlock.returnLevel = data;
+                    this.xgVariationBlock.return = data;
                     SpessaLog.xgInfo(`Variation Return`, data);
                     return;
                 }

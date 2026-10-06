@@ -777,6 +777,7 @@ below are their built-in, default implementations.
 ### System Effects
 
 Note that all three can be replaced with custom effect processors.
+The XG effect blocks can likewise be replaced, see [XG effects](#xg-effects).
 
 #### Reverb
 

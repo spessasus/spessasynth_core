@@ -12,10 +12,10 @@ import type {
     GSInsertionProcessorSnapshot,
     GSReverbParameter
 } from "./effects/gs/types";
-import type { XGSystemEffectBlockSnapshot } from "./effects/xg/framework/xg_effect_block";
-import type { XGChorusBlockSnapshot } from "./effects/xg/chorus";
-import type { XGVariationBlockSnapshot } from "./effects/xg/variation";
-import type { XGInsertionBlockSnapshot } from "./effects/xg/insertion";
+import type { XGSystemEffectBlockSnapshot } from "./effects/xg/interface/xg_system_effect_block";
+import type { XGChorusBlockSnapshot } from "./effects/xg/interface/xg_chorus_block";
+import type { XGVariationBlockSnapshot } from "./effects/xg/interface/xg_variation_block";
+import type { XGInsertionBlockSnapshot } from "./effects/xg/interface/xg_insertion_block";
 
 /**
  * This interface is a snapshot of a {@link SpessaSynthProcessor},

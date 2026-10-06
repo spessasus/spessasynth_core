@@ -1,8 +1,10 @@
 /**
  * The raw DSP processor for Yamaha XG effects.
  * Reverb, Chorus, Variation and Insertion all use it.
+ *
+ * Used only in the default implementation.
  */
-export interface XGEffectProcessor {
+export interface DefaultXGEffectProcesor {
     /**
      * The type of the effect.
      * 16-bit ID, `(MSB << 8) | LSB` (e.g. 0x4100)
@@ -46,4 +48,4 @@ export interface XGEffectProcessor {
 export type XGEffectProcessorConstructor = new (
     sampleRate: number,
     maxBufferSize: number
-) => XGEffectProcessor;
+) => DefaultXGEffectProcesor;

@@ -19,7 +19,7 @@ const DELAY_GAIN = 1.66;
 /**
  * The default GS Delay implementation for {@link SpessaSynthProcessor}.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export class SpessaSynthGSDelay implements GSDelayProcessor {
     /**

@@ -71,10 +71,14 @@ import type {
     GSInsertionProcessorSnapshot,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
-import { XGReverbBlock } from "./audio_engine/effects/xg/reverb";
-import { XGChorusBlock } from "./audio_engine/effects/xg/chorus";
-import { XGVariationBlock } from "./audio_engine/effects/xg/variation";
-import { XGInsertionBlock } from "./audio_engine/effects/xg/insertion";
+import type { XGVariationBlock } from "./audio_engine/effects/xg/interface/xg_variation_block";
+import type { XGReverbBlock } from "./audio_engine/effects/xg/interface/xg_reverb_block";
+import type { XGChorusBlock } from "./audio_engine/effects/xg/interface/xg_chorus_block";
+import type { XGInsertionBlock } from "./audio_engine/effects/xg/interface/xg_insertion_block";
+import { DefaultXGReverb } from "./audio_engine/effects/xg/implementation/reverb";
+import { DefaultXGChorus } from "./audio_engine/effects/xg/implementation/chorus";
+import { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/variation";
+import { DefaultXGInsertion } from "./audio_engine/effects/xg/implementation/insertion";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -105,9 +109,22 @@ const XG_INSERTION_COUNT = 4;
  *
  * ### Effect processors reference
  *
- * - {@link GSReverbProcessor} - How to implement your own reverb processor.
- * - {@link GSChorusProcessor} - How to implement your own chorus processor.
- * - {@link GSDelayProcessor} - How to implement your own delay processor.
+ * #### GS
+ *
+ * These are active when {@link GlobalMIDIParameter.system} is set to `gm`, `gm2`, or `gs`.
+ *
+ * - {@link GSReverbProcessor} - How to implement your own GS reverb processor.
+ * - {@link GSChorusProcessor} - How to implement your own GS chorus processor.
+ * - {@link GSDelayProcessor} - How to implement your own GS delay processor.
+ *
+ * #### XG
+ *
+ * These are active when {@link GlobalMIDIParameter.system} is set to `xg`.
+ *
+ * - {@link XGReverbBlock} - How to implement your own XG reverb processor.
+ * - {@link XGChorusBlock} - How to implement your own XG chorus processor.
+ * - {@link XGVariationBlock} - How to implement your own XG variation processor.
+ * - {@link XGInsertionBlock} - How to implement your own XG insertion processor.
  *
  * ### Managers
  *
@@ -460,14 +477,19 @@ export class SpessaSynthProcessor {
             options.gsDelayProcessor ??
             new SpessaSynthGSDelay(sampleRate, bufSize);
 
-        this.xgReverbBlock = new XGReverbBlock(sampleRate, bufSize);
-        this.xgChorusBlock = new XGChorusBlock(sampleRate, bufSize);
-        this.xgVariationBlock = new XGVariationBlock(sampleRate, bufSize);
-        for (let i = 0; i < XG_INSERTION_COUNT; i++) {
-            this.xgInsertionBlocks.push(
-                new XGInsertionBlock(sampleRate, bufSize)
+        this.xgReverbBlock =
+            options.xgReverbBlock ?? new DefaultXGReverb(sampleRate, bufSize);
+        this.xgChorusBlock =
+            options.xgChorusBlock ?? new DefaultXGChorus(sampleRate, bufSize);
+        this.xgVariationBlock =
+            options.xgVariationBlock ??
+            new DefaultXGVariation(sampleRate, bufSize);
+        this.xgInsertionBlocks =
+            options.xgInsertionBlocks ??
+            Array.from(
+                { length: XG_INSERTION_COUNT },
+                () => new DefaultXGInsertion(sampleRate, bufSize)
             );
-        }
 
         // Initialize buffers
         this.voiceBuffer = new Float32Array(bufSize);

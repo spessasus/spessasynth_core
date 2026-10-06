@@ -143,7 +143,7 @@ runMIDIEditorTest(midi2, {
     ]),
     xgReverbParams: {
         type: 0x01_00,
-        returnLevel: 70,
+        return: 70,
         pan: 80,
         params: new Int16Array([
             11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99
@@ -151,7 +151,7 @@ runMIDIEditorTest(midi2, {
     },
     xgChorusParams: {
         type: 0x41_00,
-        returnLevel: 71,
+        return: 71,
         pan: 81,
         sendToReverb: 72,
         params: new Int16Array([
@@ -160,7 +160,7 @@ runMIDIEditorTest(midi2, {
     },
     xgVariationParams: {
         type: 0x05_00,
-        returnLevel: 73,
+        return: 73,
         pan: 82,
         sendToReverb: 74,
         sendToChorus: 75,

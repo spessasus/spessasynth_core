@@ -7,6 +7,10 @@ import type {
     GSDelayProcessor,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
+import type { XGReverbBlock } from "./audio_engine/effects/xg/interface/xg_reverb_block";
+import type { XGChorusBlock } from "./audio_engine/effects/xg/interface/xg_chorus_block";
+import type { XGVariationBlock } from "./audio_engine/effects/xg/interface/xg_variation_block";
+import type { XGInsertionBlock } from "./audio_engine/effects/xg/interface/xg_insertion_block";
 
 /**
  * Represents a single entry in the {@link SoundBankManager} list.
@@ -91,13 +95,46 @@ export interface SynthProcessorOptions {
      * Optional custom GS delay processor for the synthesizer. Leave undefined to use {@link SpessaSynthGSDelay}.
      */
     gsDelayProcessor?: GSDelayProcessor;
+
+    /**
+     * Optional custom XG reverb block for the synthesizer. Leave undefined to use {@link DefaultXGReverb}.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgReverbBlock?: XGReverbBlock;
+
+    /**
+     * Optional custom XG chorus block for the synthesizer. Leave undefined to use {@link DefaultXGChorus}.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgChorusBlock?: XGChorusBlock;
+
+    /**
+     * Optional custom XG variation block for the synthesizer. Leave undefined to use {@link DefaultXGVariation}.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgVariationBlock?: XGVariationBlock;
+
+    /**
+     * Optional custom XG insertion blocks for the synthesizer. Leave undefined to use {@link DefaultXGInsertion}.
+     * Default amount is 4 but theoretically any amount up to 127 (so 128 blocks) can be addressed.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgInsertionBlocks?: XGInsertionBlock[];
 }
 
-export {
-    type GSChorusProcessor,
-    type GSDelayProcessor,
-    type GSReverbProcessor
-} from "./audio_engine/effects/types";
+export * from "./audio_engine/effects/types";
 
 /**
  * A generic synthesizer patch that can return voice parameters.

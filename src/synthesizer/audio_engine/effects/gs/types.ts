@@ -19,7 +19,7 @@ interface GSSystemEffectParameter {
  *
  * Also see {@link GSReverbProcessor} to see how to implement a custom GS-compatible reverb processor.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSReverbParameter extends GSSystemEffectParameter {
     /**
@@ -76,7 +76,7 @@ export interface GSReverbParameter extends GSSystemEffectParameter {
  * >
  * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSReverbProcessor extends GSReverbParameter {
     /**
@@ -106,7 +106,7 @@ export interface GSReverbProcessor extends GSReverbParameter {
  *
  * Also see {@link GSChorusProcessor} to see how to implement a custom GS-compatible chorus processor.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSChorusParameter extends GSSystemEffectParameter {
     /**
@@ -173,7 +173,7 @@ export interface GSChorusParameter extends GSSystemEffectParameter {
  * >
  * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSChorusProcessor extends GSChorusParameter {
     /**
@@ -207,7 +207,7 @@ export interface GSChorusProcessor extends GSChorusParameter {
  *
  * Also see {@link GSDelayProcessor} to see how to implement a custom GS-compatible delay processor.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSDelayParameter extends GSSystemEffectParameter {
     /**
@@ -300,7 +300,7 @@ export interface GSDelayParameter extends GSSystemEffectParameter {
  * >
  * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.79, 235-236) for more information.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSDelayProcessor extends GSDelayParameter {
     /**
@@ -330,7 +330,7 @@ export interface GSDelayProcessor extends GSDelayParameter {
 /**
  * Represents a GS-compatible Insertion EFX processor.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSInsertionProcessor {
     /**
@@ -403,7 +403,7 @@ export interface GSInsertionProcessor {
 /**
  * Represents stored GS-compatible insertion processor data.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export interface GSInsertionProcessorSnapshot {
     /**
@@ -428,6 +428,7 @@ export interface GSInsertionProcessorSnapshot {
 
 /**
  * Constructor for a GS insertion processor.
+ * @internal
  */
 export type GSInsertionProcessorConstructor = new (
     sampleRate: number,

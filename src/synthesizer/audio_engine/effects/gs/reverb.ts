@@ -7,7 +7,7 @@ const DELAY_GAIN = 1.5;
 /**
  * The default GS Reverb implementation for {@link SpessaSynthProcessor}.
  *
- * @group Synthesizer.Effects
+ * @group Synthesizer.GS Effects
  */
 export class SpessaSynthGSReverb implements GSReverbProcessor {
     /**
