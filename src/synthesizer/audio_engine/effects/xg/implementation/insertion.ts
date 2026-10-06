@@ -1,5 +1,5 @@
 import { XGNoEffect } from "./dsp/no_effect";
-import type { XGEffectProcessorConstructor } from "./dsp/effect_processor";
+import type { DefaultXGEffectProcessorConstructor } from "./dsp/effect_processor";
 import { XGThru } from "./dsp/thru";
 import { DefaultXGEffect } from "./effect";
 import type {
@@ -7,7 +7,7 @@ import type {
     XGInsertionBlockSnapshot
 } from "../interface/xg_insertion_block";
 
-const INSERTION_MAP = new Map<number, XGEffectProcessorConstructor>([
+const INSERTION_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
     [0x00_00, XGNoEffect]
 ]);
 

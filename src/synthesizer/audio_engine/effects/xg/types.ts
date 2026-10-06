@@ -8,3 +8,5 @@ export { DefaultXGReverb } from "./implementation/reverb";
 export { DefaultXGChorus } from "./implementation/chorus";
 export { DefaultXGVariation } from "./implementation/variation";
 export { DefaultXGInsertion } from "./implementation/insertion";
+export { DefaultXGEffect } from "./implementation/effect";
+export { DefaultXGSystemEffect } from "./implementation/system_effect";

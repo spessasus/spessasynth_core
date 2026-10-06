@@ -1,5 +1,5 @@
 import { XGNoEffect } from "./dsp/no_effect";
-import type { XGEffectProcessorConstructor } from "./dsp/effect_processor";
+import type { DefaultXGEffectProcessorConstructor } from "./dsp/effect_processor";
 import { XGThru } from "./dsp/thru";
 import { DefaultXGSystemEffect } from "./system_effect";
 import type {
@@ -7,7 +7,7 @@ import type {
     XGVariationBlockSnapshot
 } from "../interface/xg_variation_block";
 
-const VARIATION_MAP = new Map<number, XGEffectProcessorConstructor>([
+const VARIATION_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
     [0x00_00, XGNoEffect],
     [0x40_00, XGThru]
 ]);

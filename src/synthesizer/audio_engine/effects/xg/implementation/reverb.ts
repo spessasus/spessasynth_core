@@ -1,9 +1,9 @@
 import { XGNoEffect } from "./dsp/no_effect";
-import type { XGEffectProcessorConstructor } from "./dsp/effect_processor";
+import type { DefaultXGEffectProcessorConstructor } from "./dsp/effect_processor";
 import type { XGReverbBlock } from "../interface/xg_reverb_block";
 import { DefaultXGSystemEffect } from "./system_effect";
 
-const REVERB_MAP = new Map<number, XGEffectProcessorConstructor>([
+const REVERB_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
     [0x00_00, XGNoEffect]
 ]);
 

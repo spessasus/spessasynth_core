@@ -1,6 +1,6 @@
 import type {
-    DefaultXGEffectProcesor,
-    XGEffectProcessorConstructor
+    DefaultXGEffectProcessor,
+    DefaultXGEffectProcessorConstructor
 } from "./dsp/effect_processor";
 import type {
     XGEffectBlock,
@@ -18,15 +18,15 @@ export abstract class DefaultXGEffect implements XGEffectBlock {
     /**
      * The currently used processor.
      */
-    protected processor: DefaultXGEffectProcesor;
+    protected processor: DefaultXGEffectProcessor;
     protected readonly outputLeft;
     protected readonly outputRight;
     /**
      * The list of effects available in this block.
      * Effect type: processor.
      */
-    private readonly effectMap = new Map<number, DefaultXGEffectProcesor>();
-    private readonly fallbackProcessor: DefaultXGEffectProcesor;
+    private readonly effectMap = new Map<number, DefaultXGEffectProcessor>();
+    private readonly fallbackProcessor: DefaultXGEffectProcessor;
     private readonly defaultType;
     private type;
 
@@ -40,8 +40,8 @@ export abstract class DefaultXGEffect implements XGEffectBlock {
      * Attempting to `.process()` more samples than this will result in an error.
      */
     protected constructor(
-        effectMap: Map<number, XGEffectProcessorConstructor>,
-        fallbackProcessor: XGEffectProcessorConstructor,
+        effectMap: Map<number, DefaultXGEffectProcessorConstructor>,
+        fallbackProcessor: DefaultXGEffectProcessorConstructor,
         defaultType: number,
         sampleRate: number,
         maxBufferSize: number

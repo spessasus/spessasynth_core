@@ -12,6 +12,27 @@ export {
 export { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
 export { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
 export { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
+export type {
+    XGReverbBlock,
+    XGChorusBlock,
+    XGVariationBlock,
+    XGInsertionBlock,
+    XGSystemEffectParameter,
+    XGChorusParameter,
+    XGVariationParameter,
+    XGInsertionParameter,
+    XGEffectBlockSnapshot,
+    XGSystemEffectBlockSnapshot,
+    XGChorusBlockSnapshot,
+    XGVariationBlockSnapshot,
+    XGInsertionBlockSnapshot
+} from "./audio_engine/effects/types";
+export { DefaultXGReverb } from "./audio_engine/effects/xg/implementation/reverb";
+export { DefaultXGChorus } from "./audio_engine/effects/xg/implementation/chorus";
+export { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/variation";
+export { DefaultXGInsertion } from "./audio_engine/effects/xg/implementation/insertion";
+export { DefaultXGEffect } from "./audio_engine/effects/xg/implementation/effect";
+export { DefaultXGSystemEffect } from "./audio_engine/effects/xg/implementation/system_effect";
 
 export { SoundBankManager } from "./audio_engine/sound_bank_manager";
 export { SpessaSynthProcessor } from "./processor";

@@ -1,10 +1,10 @@
-import type { DefaultXGEffectProcesor } from "./effect_processor";
+import type { DefaultXGEffectProcessor } from "./effect_processor";
 
 /**
  * MU128 manual description:
  * Turn off the effect.
  */
-export class XGNoEffect implements DefaultXGEffectProcesor {
+export class XGNoEffect implements DefaultXGEffectProcessor {
     public readonly type = 0x00_00;
 
     public setParameter(param: number, value: number) {

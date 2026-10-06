@@ -4,7 +4,7 @@
  *
  * Used only in the default implementation.
  */
-export interface DefaultXGEffectProcesor {
+export interface DefaultXGEffectProcessor {
     /**
      * The type of the effect.
      * 16-bit ID, `(MSB << 8) | LSB` (e.g. 0x4100)
@@ -45,7 +45,7 @@ export interface DefaultXGEffectProcesor {
      */
     getSnapshot(): Int16Array;
 }
-export type XGEffectProcessorConstructor = new (
+export type DefaultXGEffectProcessorConstructor = new (
     sampleRate: number,
     maxBufferSize: number
-) => DefaultXGEffectProcesor;
+) => DefaultXGEffectProcessor;

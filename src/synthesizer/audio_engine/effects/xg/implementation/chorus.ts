@@ -1,12 +1,12 @@
 import { XGNoEffect } from "./dsp/no_effect";
-import type { XGEffectProcessorConstructor } from "./dsp/effect_processor";
+import type { DefaultXGEffectProcessorConstructor } from "./dsp/effect_processor";
 import { DefaultXGSystemEffect } from "./system_effect";
 import type {
     XGChorusBlock,
     XGChorusBlockSnapshot
 } from "../interface/xg_chorus_block";
 
-const CHORUS_MAP = new Map<number, XGEffectProcessorConstructor>([
+const CHORUS_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
     [0x00_00, XGNoEffect]
 ]);
 

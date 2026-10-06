@@ -1,10 +1,10 @@
-import type { DefaultXGEffectProcesor } from "./effect_processor";
+import type { DefaultXGEffectProcessor } from "./effect_processor";
 
 /**
  * MU128 manual description:
  * Bypass without applying an effect.
  */
-export class XGThru implements DefaultXGEffectProcesor {
+export class XGThru implements DefaultXGEffectProcessor {
     public readonly type = 0x40_00;
 
     public setParameter(param: number, value: number) {
