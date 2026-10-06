@@ -1,4 +1,7 @@
-import type { GSChorusParameter, GSChorusProcessor } from "./types";
+import type {
+    GSChorusParameter,
+    GSChorusProcessor
+} from "../interface/gs_chorus_processor";
 
 const CHORUS_GAIN = 1.3;
 
@@ -7,7 +10,7 @@ const CHORUS_GAIN = 1.3;
  *
  * @group Synthesizer.GS Effects
  */
-export class SpessaSynthGSChorus implements GSChorusProcessor {
+export class DefaultGSChorus implements GSChorusProcessor {
     /**
      * Cutoff frequency
      * @private

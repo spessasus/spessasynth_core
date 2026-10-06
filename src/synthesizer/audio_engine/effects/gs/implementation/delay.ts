@@ -1,4 +1,7 @@
-import type { GSDelayParameter, GSDelayProcessor } from "./types";
+import type {
+    GSDelayParameter,
+    GSDelayProcessor
+} from "../interface/gs_delay_processor";
 
 // SC-8850 manual p.236
 // How nice of Roland to provide the conversion values to ms!
@@ -21,7 +24,7 @@ const DELAY_GAIN = 1.66;
  *
  * @group Synthesizer.GS Effects
  */
-export class SpessaSynthGSDelay implements GSDelayProcessor {
+export class DefaultGSDelay implements GSDelayProcessor {
     /**
      * Cutoff frequency
      * @private

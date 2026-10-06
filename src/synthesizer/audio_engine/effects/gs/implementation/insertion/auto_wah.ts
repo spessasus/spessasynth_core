@@ -11,7 +11,7 @@ import {
     ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
-import type { GSInsertionProcessor } from "../types";
+import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
 
 const DEFAULT_LEVEL = 96;
 

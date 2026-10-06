@@ -6,7 +6,7 @@ import {
     zeroState,
     ZeroStateC
 } from "./utils";
-import type { GSInsertionProcessor } from "../types";
+import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
 
 /**
  * Stereo-EQ

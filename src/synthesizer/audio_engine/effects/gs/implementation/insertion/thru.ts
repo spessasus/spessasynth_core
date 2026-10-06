@@ -1,4 +1,4 @@
-import type { GSInsertionProcessor } from "../types";
+import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
 
 export class ThruFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;

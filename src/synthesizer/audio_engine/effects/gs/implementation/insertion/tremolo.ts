@@ -8,24 +8,22 @@ import {
     ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
-import type { GSInsertionProcessor } from "../types";
-
-const PI_2 = Math.PI * 2;
-
-// This EFX seems to lower the gain (checking after normalizing with a dry voice at the same velocity)
-// Why, Roland???
-const GAIN_LVL = 0.935;
-// Sonic visualizer is very helpful here
-const LEVEL_EXP = 2;
-
-const PAN_SMOOTHING = 0.01;
+import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
 
 const DEFAULT_LEVEL = 127;
-export class AutoPanFX implements GSInsertionProcessor {
+const PI_2 = Math.PI * 2;
+const GAIN_SMOOTHING = 0.01;
+/*
+Tremolo cyclically modulates the volume to add tremolo
+effect to the sound.
+
+Type: Stereo
+ */
+export class TremoloFX implements GSInsertionProcessor {
     public sendLevelToReverb = 40 / 127;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
-    public readonly type = 0x01_26;
+    public readonly type = 0x01_25;
 
     /**
      * Selects the type of modulation.
@@ -82,8 +80,8 @@ export class AutoPanFX implements GSInsertionProcessor {
      */
     private level = DEFAULT_LEVEL / 127;
 
-    private currentPan = 0;
     private phase = 0;
+    private currentGain = 1;
 
     // Biquad shelving coefficients and states (per channel)
     private readonly lsCoeffs: BiquadCoeffs = { ...ZERO_COEFFS };
@@ -109,8 +107,8 @@ export class AutoPanFX implements GSInsertionProcessor {
         this.lowGain = 0;
         this.hiGain = 0;
         this.level = DEFAULT_LEVEL / 127;
-        this.currentPan = 0;
         this.phase = 0;
+        this.currentGain = 1;
         zeroState(this.hsStateR);
         zeroState(this.hsStateL);
         zeroState(this.lsStateR);
@@ -140,12 +138,11 @@ export class AutoPanFX implements GSInsertionProcessor {
             hsCoeffs,
             hsStateR,
             hsStateL,
+            modDepth,
             modWave
         } = this;
-        const depth = Math.pow(this.modDepth / 127, LEVEL_EXP);
-        const scale = (2 / (1 + depth)) * GAIN_LVL;
         const rateInc = this.modRate / this.sampleRate;
-        let { phase, currentPan } = this;
+        let { currentGain, phase } = this;
         for (let i = 0; i < sampleCount; i++) {
             // Apply EQ to input (EQ is applied regardless of mix)
             const sL = applyShelves(
@@ -163,8 +160,6 @@ export class AutoPanFX implements GSInsertionProcessor {
                 hsStateR
             );
 
-            // -1 left
-            // 1 right
             let lfo: number;
             switch (modWave) {
                 default: {
@@ -199,13 +194,12 @@ export class AutoPanFX implements GSInsertionProcessor {
                 }
             }
             if ((phase += rateInc) >= 1) phase -= 1;
-            currentPan += (lfo - currentPan) * PAN_SMOOTHING;
-            const pan = currentPan * depth;
-            const gainL = (1 - pan) * 0.5 * scale;
-            const gainR = (1 + pan) * 0.5 * scale;
 
-            const outL = sL * level * gainL;
-            const outR = sR * level * gainR;
+            const tremoloLevel = 1 - (lfo / 2 + 0.5) * (modDepth / 127);
+            currentGain += (tremoloLevel - currentGain) * GAIN_SMOOTHING;
+
+            const outL = sL * level * currentGain;
+            const outR = sR * level * currentGain;
 
             // Mix
             const idx = startIndex + i;
@@ -216,8 +210,8 @@ export class AutoPanFX implements GSInsertionProcessor {
             outputChorus[i] += mono * sendLevelToChorus;
             outputDelay[i] += mono * sendLevelToDelay;
         }
-        this.currentPan = currentPan;
         this.phase = phase;
+        this.currentGain = currentGain;
     }
 
     public setParameter(parameter: number, value: number) {

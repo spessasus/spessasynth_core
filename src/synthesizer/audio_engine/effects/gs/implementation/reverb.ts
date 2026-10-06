@@ -1,6 +1,9 @@
-import type { GSReverbParameter, GSReverbProcessor } from "./types";
-import { DattorroReverb } from "../implementation/dattorro";
-import { DelayLine } from "../implementation/delay_line";
+import type {
+    GSReverbParameter,
+    GSReverbProcessor
+} from "../interface/gs_reverb_processor";
+import { DattorroReverb } from "../../implementation/dattorro";
+import { DelayLine } from "../../implementation/delay_line";
 
 const DELAY_GAIN = 1.5;
 
@@ -9,7 +12,7 @@ const DELAY_GAIN = 1.5;
  *
  * @group Synthesizer.GS Effects
  */
-export class SpessaSynthGSReverb implements GSReverbProcessor {
+export class DefaultGSReverb implements GSReverbProcessor {
     /**
      * Dattorro reverb processor.
      * @private

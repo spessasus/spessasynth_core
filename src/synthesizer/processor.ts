@@ -41,11 +41,11 @@ import { CachedVoice } from "./audio_engine/voice/voice_cache";
 import { MIDIMessage } from "../midi/midi_message";
 import type { SysExAcceptedArray, UserDrumSetParameter } from "../midi/types";
 import type { MIDISystem } from "../soundbank/types";
-import { SpessaSynthGSChorus } from "./audio_engine/effects/gs/chorus";
-import { SpessaSynthGSDelay } from "./audio_engine/effects/gs/delay";
-import { ThruFX } from "./audio_engine/effects/gs/insertion/thru";
-import { GS_INSERTION_EFFECT_LIST } from "./audio_engine/effects/gs/insertion_list";
-import { SpessaSynthGSReverb } from "./audio_engine/effects/gs/reverb";
+import { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
+import { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
+import { ThruFX } from "./audio_engine/effects/gs/implementation/insertion/thru";
+import { GS_INSERTION_EFFECT_LIST } from "./audio_engine/effects/gs/implementation/insertion_list";
+import { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
     type GlobalMIDIParameter,
@@ -469,13 +469,12 @@ export class SpessaSynthProcessor {
         // Initialize effects
         this.gsReverbProcessor =
             options.gsReverbProcessor ??
-            new SpessaSynthGSReverb(sampleRate, bufSize);
+            new DefaultGSReverb(sampleRate, bufSize);
         this.gsChorusProcessor =
             options.gsChorusProcessor ??
-            new SpessaSynthGSChorus(sampleRate, bufSize);
+            new DefaultGSChorus(sampleRate, bufSize);
         this.gsDelayProcessor =
-            options.gsDelayProcessor ??
-            new SpessaSynthGSDelay(sampleRate, bufSize);
+            options.gsDelayProcessor ?? new DefaultGSDelay(sampleRate, bufSize);
 
         this.xgReverbBlock =
             options.xgReverbBlock ?? new DefaultXGReverb(sampleRate, bufSize);

@@ -9,9 +9,9 @@ export {
     type GSReverbProcessor,
     type GSInsertionProcessorSnapshot
 } from "./audio_engine/effects/types";
-export { SpessaSynthGSReverb } from "./audio_engine/effects/gs/reverb";
-export { SpessaSynthGSChorus } from "./audio_engine/effects/gs/chorus";
-export { SpessaSynthGSDelay } from "./audio_engine/effects/gs/delay";
+export { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
+export { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
+export { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
 
 export { SoundBankManager } from "./audio_engine/sound_bank_manager";
 export { SpessaSynthProcessor } from "./processor";
