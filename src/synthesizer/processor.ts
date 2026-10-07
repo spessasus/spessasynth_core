@@ -1267,9 +1267,11 @@ export class SpessaSynthProcessor {
                 if (!ch.xgInsertionAssigned) continue;
 
                 const revSend =
-                    ch.midiControllers[MIDIControllers.reverbDepth] / 127;
+                    (ch.midiControllers[MIDIControllers.reverbDepth] >> 7) /
+                    127;
                 const choSend =
-                    ch.midiControllers[MIDIControllers.chorusDepth] / 127;
+                    (ch.midiControllers[MIDIControllers.chorusDepth] >> 7) /
+                    127;
                 if (revSend <= 0 && choSend <= 0) continue;
 
                 const { outputLeft, outputRight } = ch;
