@@ -1,200 +1,67 @@
 import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
-import type { CachedVoice } from "./audio_engine/voice/voice_cache";
 
+import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import type { VoiceParameters } from "../soundbank/types";
 import type {
-    ChorusProcessor,
-    DelayProcessor,
-    ReverbProcessor
-} from "./audio_engine/effects/types";
-import type {
-    ChannelMIDIParameterChange,
-    ControllerChangeCallback,
-    NoteOffCallback,
-    NoteOnCallback,
-    PolyPressureCallback,
-    ProgramChangeCallback,
-    StopAllCallback
-} from "./audio_engine/channel/types";
-import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
-import type { MIDISystem } from "../soundbank/types";
+    GSChorusProcessor,
+    GSDelayProcessor,
+    GSReverbProcessor
+} from "./audio_engine/effects/gs/types";
+import type { XGReverbBlock } from "./audio_engine/effects/xg/interface/xg_reverb_block";
+import type { XGChorusBlock } from "./audio_engine/effects/xg/interface/xg_chorus_block";
+import type { XGVariationBlock } from "./audio_engine/effects/xg/interface/xg_variation_block";
+import type { XGInsertionBlock } from "./audio_engine/effects/xg/interface/xg_insertion_block";
 
 /**
- * The synthesizer display system exclusive data, EXCLUDING THE F0 BYTE!
+ * Represents a single entry in the {@link SoundBankManager} list.
+ *
+ * @group Synthesizer.Sound Bank Integration
  */
-type DisplayMessageData = number[];
-
-export type GlobalMIDIParameterChangeCallback = {
-    [P in keyof GlobalMIDIParameter]: {
-        /**
-         * The parameter that was changed.
-         */
-        parameter: P;
-        /**
-         * The new value of this parameter.
-         */
-        value: GlobalMIDIParameter[P];
-    };
-}[keyof GlobalMIDIParameter];
-
-type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
-
-export type EffectChangeCallback =
-    | {
-          /**
-           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
-           */
-          effect: "reverb";
-          /**
-           * The parameter type or "macro".
-           */
-          parameter: FXType<ReverbProcessor>;
-          /**
-           * The new 7-bit value.
-           */
-          value: number;
-      }
-    | {
-          /**
-           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
-           */
-          effect: "chorus";
-          /**
-           * The parameter type or "macro".
-           */
-          parameter: FXType<ChorusProcessor>;
-          /**
-           * The new 7-bit value.
-           */
-          value: number;
-      }
-    | {
-          /**
-           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
-           */
-          effect: "delay";
-          /**
-           * The parameter type or "macro".
-           */
-          parameter: FXType<DelayProcessor>;
-          /**
-           * The new 7-bit value.
-           */
-          value: number;
-      }
-    | {
-          /**
-           * The effect that was changed, "reverb", "chorus", "delay" or "insertion"
-           */
-          effect: "insertion";
-
-          /**
-           * The parameter that was changed. This maps to GS address map at addr2 = 0x03.
-           * See SC-8850 Manual p.237,
-           * for example:
-           * - 0x0 - EFX type, the value is 16 bit in this special case. Note that this resets the parameters!
-           * - 0x3 - EFX param 1
-           * - 0x16 - EFX param 20 (usually level)
-           * - 0x17 - EFX send to reverb
-           */
-          parameter: number;
-
-          /**
-           * The new value for the parameter.
-           */
-          value: number;
-      };
-
-export interface SynthProcessorEventData {
+export interface SoundBankManagerListEntry {
     /**
-     * This event fires when a note is played.
+     * The unique string identifier of the sound bank,
+     * used to specify which one to add/remove.
      */
-    noteOn: NoteOnCallback;
+    id: string;
     /**
-     * This event fires when a note is released.
+     * The sound bank itself.
      */
-    noteOff: NoteOffCallback;
+    soundBank: BasicSoundBank;
     /**
-     * This event fires when a controller is changed.
+     * The bank MSB offset for this sound bank.
+     * This value will be added to all {@link BasicPreset.bankMSB} fields when resolving the preset list.
      */
-    controllerChange: ControllerChangeCallback;
-    /**
-     * This event fires when a program is changed.
-     */
-    programChange: ProgramChangeCallback;
-    /**
-     * This event fires when a polyphonic pressure is changed.
-     */
-    polyPressure: PolyPressureCallback;
-    /**
-     * This event fires when all notes on a channel are stopped.
-     */
-    stopAll: StopAllCallback;
-    /**
-     * This event fires when a new channel is created. There is no data for this event.
-     */
-    channelAdded: void;
-    /**
-     * This event fires when the preset list is changed.
-     */
-    presetListChange: MIDIPatchFull[];
-    /**
-     * This event fires when the synthesizer is reset.
-     */
-    reset: MIDISystem;
-    /**
-     * This event fires when the synthesizer receives a display message.
-     */
-    displayMessage: DisplayMessageData;
-
-    /**
-     * This event fires when a global MIDI parameter changes.
-     */
-    globalParamChange: GlobalMIDIParameterChangeCallback;
-
-    /**
-     * This event fires when a channel MIDI parameter changes.
-     */
-    channelParamChange: ChannelMIDIParameterChange;
-
-    /**
-     * This event fires when an effect processor is modified.
-     */
-    effectChange: EffectChangeCallback;
+    bankOffset: number;
 }
 
-export type SynthProcessorEvent = {
-    [K in keyof SynthProcessorEventData]: {
-        type: K;
-        data: SynthProcessorEventData[K];
-    };
-}[keyof SynthProcessorEventData];
+export * from "./events";
 
+/**
+ * Additional scheduling options for {@link SpessaSynthProcessor}.
+ *
+ * @group Synthesizer.Options
+ */
 export interface SynthMethodOptions {
     /**
-     * The audio context time when the event should execute, in seconds.
+     * The {@link SpessaSynthProcessor.currentTime} when the event should execute, in seconds.
      */
     time: number;
 }
 
 /**
- * Looping mode of the sample.
- * 0 - no loop.
- * 1 - loop.
- * 2 - UNOFFICIAL: polyphone 2.4 added start on release.
- * 3 - loop then play when released.
+ * Additional options when initializing a {@link SpessaSynthProcessor}.
+ *
+ * @group Synthesizer.Options
  */
-export type SampleLoopingMode = 0 | 1 | 2 | 3;
-
-/**
- * A list of voices for a given key:velocity.
- */
-export type CachedVoiceList = CachedVoice[];
-
 export interface SynthProcessorOptions {
     /**
      * The maximum buffer size the synthesizer can render at once.
      * Attempting to `.process()` more samples than this will result in an error.
      * Defaults to 128.
+     *
+     * > **Important**
+     * >
+     * > It is recommended to not increase this value.
      */
     maxBufferSize: number;
     /**
@@ -205,31 +72,82 @@ export interface SynthProcessorOptions {
     /**
      * If the event system is enabled.
      * This can be changed later.
+     *
+     * Event types are described here: {@link SynthesizerEvent}
      */
     eventsEnabled: boolean;
     /**
-     * The initial time of the synth, in seconds.
+     * The initial time of the synthesizer, in seconds.
      */
     initialTime: number;
 
     /**
-     * Reverb processor for the synthesizer. Leave undefined to use the default.
+     * Optional custom GS reverb processor for the synthesizer. Leave undefined to use {@link DefaultGSReverb}.
      */
-    reverbProcessor?: ReverbProcessor;
+    gsReverbProcessor?: GSReverbProcessor;
 
     /**
-     * Chorus processor for the synthesizer. Leave undefined to use the default.
+     * Optional custom GS chorus processor for the synthesizer. Leave undefined to use {@link DefaultGSChorus}.
      */
-    chorusProcessor?: ChorusProcessor;
+    gsChorusProcessor?: GSChorusProcessor;
 
     /**
-     * Delay processor for the synthesizer. Leave undefined to use the default.
+     * Optional custom GS delay processor for the synthesizer. Leave undefined to use {@link DefaultGSDelay}.
      */
-    delayProcessor?: DelayProcessor;
+    gsDelayProcessor?: GSDelayProcessor;
+
+    /**
+     * Optional custom XG reverb block for the synthesizer. Leave undefined to use {@link DefaultXGReverb}.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgReverbBlock?: XGReverbBlock;
+
+    /**
+     * Optional custom XG chorus block for the synthesizer. Leave undefined to use {@link DefaultXGChorus}.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgChorusBlock?: XGChorusBlock;
+
+    /**
+     * Optional custom XG variation block for the synthesizer. Leave undefined to use {@link DefaultXGVariation}.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgVariationBlock?: XGVariationBlock;
+
+    /**
+     * Optional custom XG insertion blocks for the synthesizer. Leave undefined to use {@link DefaultXGInsertion}.
+     * Default amount is 4 but theoretically any amount up to 127 (so 128 blocks) can be addressed.
+     *
+     * > **Note**
+     * >
+     * > Only active in XG mode.
+     */
+    xgInsertionBlocks?: XGInsertionBlock[];
 }
 
-export {
-    type ChorusProcessor,
-    type DelayProcessor,
-    type ReverbProcessor
-} from "./audio_engine/effects/types";
+export * from "./audio_engine/effects/types";
+
+/**
+ * A generic synthesizer patch that can return voice parameters.
+ * This is used for the virtual GS user drum preset.
+ *
+ * @group Synthesizer.Sound Bank Integration
+ */
+export interface SynthesizerPatch extends MIDIPatchFull {
+    /**
+     * Returns the voice synthesis data for this preset.
+     * @param midiNote the MIDI note number.
+     * @param velocity the MIDI velocity.
+     * @returns the returned sound data.
+     */
+    getVoiceParameters(midiNote: number, velocity: number): VoiceParameters[];
+}

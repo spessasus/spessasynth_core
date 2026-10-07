@@ -1,0 +1,9 @@
+# Build artifacts
+*.obj
+*.pdb
+
+# Renderer binaries and BASS SDK files
+bin/
+
+# Cmake
+cmake-build-debug/

@@ -1,53 +1,54 @@
+import type { MIDIPatchFull } from "../soundbank/basic_soundbank/midi_patch";
+import type {
+    GenericRange,
+    PresetsWithKeyCombinations
+} from "../soundbank/types";
+import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
+import type { SpessaSynthProcessor } from "../synthesizer/processor";
+import { readBigEndian } from "../utils/byte_functions/big_endian";
 import {
     getStringBytes,
     readBinaryString
 } from "../utils/byte_functions/string";
-import { MIDIMessage } from "./midi_message";
-import { readBigEndian } from "../utils/byte_functions/big_endian";
+import { parseDateString, toISODateString } from "../utils/date";
+import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { IndexedByteArray } from "../utils/indexed_array";
 import { SpessaLog } from "../utils/loggin";
 import { ConsoleColors, formatTime } from "../utils/other";
-import { writeMIDIInternal } from "./write/midi";
-import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
-import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
-import { IndexedByteArray } from "../utils/indexed_array";
+import { MIDIControllers, MIDIMessageTypes } from "./enums";
+import { MIDIMessage } from "./midi_message";
+import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
 import { getNoteTimesInternal } from "./midi_tools/get_note_times";
-import type { BasicSoundBank } from "../soundbank/basic_soundbank/basic_soundbank";
+import { MIDIEditor, type ModifyMIDIOptions } from "./midi_tools/midi_editor";
+import { getUsedProgramsAndKeys } from "./midi_tools/used_programs_and_keys";
+import { MIDITrack } from "./midi_track";
+import { parseSMFInternal } from "./read/midi";
+import { parseRMIDIInternal } from "./read/rmidi";
+import { loadXMF } from "./read/xmf";
 import type {
+    CallableSoundBank,
     MIDIFormat,
     MIDILoop,
-    MIDILoopType,
     NoteTime,
     RMIDInfoData,
     RMIDIWriteOptions,
     TempoChange,
     TimelineEvent
 } from "./types";
-import {
-    modifyMIDIInternal,
-    type ModifyMIDIOptions
-} from "./midi_tools/modify_midi";
-import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/synthesizer_snapshot";
-import { parseSMFInternal } from "./read/midi";
-import { MIDIControllers, MIDIMessageTypes } from "./enums";
-import type {
-    GenericRange,
-    PresetsWithKeyCombinations
-} from "../soundbank/types";
-import { MIDITrack } from "./midi_track";
-import { fillWithDefaults } from "../utils/fill_with_defaults";
-import { parseDateString, toISODateString } from "../utils/date";
-import type { SoundBankManager } from "../synthesizer/audio_engine/sound_bank_manager";
-import type { SpessaSynthProcessor } from "../synthesizer/processor";
-import { parseRMIDIInternal } from "./read/rmidi";
-import { loadXMF } from "./read/xmf";
-import { applySnapshotInternal } from "./midi_tools/apply_snapshot";
+import { writeMIDIInternal } from "./write/midi";
+import { DEFAULT_RMIDI_WRITE_OPTIONS, writeRMIDIInternal } from "./write/rmidi";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
+ * It represents a single MIDI sequence, with an optional sound bank attached to it.
+ *
+ * Initialize the class using {@link BasicMIDI.fromArrayBuffer}.
+ *
+ * @group MIDI
  */
 export class BasicMIDI {
     /**
-     * The tracks in the sequence.
+     * The tracks in the sequence, represented as an array of {@link MIDITrack}.
      */
     public tracks: MIDITrack[] = [];
 
@@ -57,29 +58,70 @@ export class BasicMIDI {
      * Each entry points to the event's track number and its index within that track.
      * This is the recommended way of iterating over the MIDI sequence's events.
      *
-     * Do not change this array.
+     * > **Tip**
+     * >
+     * > This is the recommended way of iterating over the MIDI sequence's events.
+     *
+     * > **Warning**
+     * >
+     * > Do not change this array.
+     * > If you need to edit the file while iterating over it,
+     * > consider using {@link BasicMIDI.iterate} instead.
      */
     public readonly timeline: readonly Readonly<TimelineEvent>[] = [];
 
     /**
-     * The time division of the sequence, representing the number of MIDI ticks per beat.
+     * The time division of the MIDI file. The amount of MIDI ticks per beat, usually 480 ticks.
+     * Essentially the resolution of the file.
+     *
+     * For example a time division of 1 would mean that one MIDI tick (the smallest time unit) lasts one beat,
+     * so no shorter notes can be stored in the file.
      */
     public timeDivision = 480;
 
     /**
      * The duration of the sequence, in seconds.
+     *
+     * > **Note**
+     * >
+     * > The MIDI file's duration is the start of the file to {@link BasicMIDI.lastVoiceEventTick}.
+     * > To alter the end time,
+     * > add a controller change (preferably an unused CC, like CC#50) at the time you want the file to end,
+     * > then run {@link BasicMIDI.flush}
      */
     public duration = 0;
 
     /**
      * The tempo changes in the sequence, ordered from the last change to the first.
      * Each change is represented by an object with a MIDI tick position and a tempo value in beats per minute.
+     *
+     * It will always contain at least one tempo change (the default 120BPM at zero ticks).
+     *
+     * @example
+     *
+     * ```ts
+     * [
+     *     {
+     *         tempo: 140 // tempo in BPM ,
+     *         ticks: 5437 // absolute amount of MIDI Ticks from the start
+     *     },
+     *
+     *     // ...
+     *
+     *     {
+     *         // the default tempo change
+     *         tempo: 120,
+     *         ticks: 0
+     *     }
+     * ];
+     * ```
      */
     public tempoChanges: TempoChange[] = [{ ticks: 0, tempo: 120 }];
 
     /**
      * Any extra metadata found in the file.
      * These messages were deemed "interesting" by the parsing algorithm
+     * and can be displayed by the MIDI player as some form of metadata.
      */
     public extraMetadata: MIDIMessage[] = [];
 
@@ -89,28 +131,40 @@ export class BasicMIDI {
     public lyrics: MIDIMessage[] = [];
 
     /**
-     * The tick position of the first note-on event in the MIDI sequence.
+     * The MIDI tick time of the first note-on event in the MIDI sequence.
      */
     public firstNoteOn = 0;
 
     /**
-     * The MIDI key range used in the sequence, represented by a minimum and maximum note value.
+     * The MIDI key range used in the sequence,
+     * represented by a minimum and maximum MIDI note numbers.
      */
     public keyRange: GenericRange = { min: 0, max: 127 };
 
     /**
-     * The tick position of the last voice event (such as note-on, note-off, or control change) in the sequence.
+     * The MIDI tick time of the last voice event (such as note-on, note-off, or control change) in the sequence.
+     *
+     * > **Note**
+     * >
+     * > To alter the end time,
+     * > add a controller change (preferably an unused CC,
+     * > like CC#50) at the time you want the file to end,
+     * > then run {@link BasicMIDI.flush}
      */
     public lastVoiceEventTick = 0;
 
     /**
-     * An array of channel offsets for each MIDI port, using the SpessaSynth method.
+     * An array of channel offsets for each MIDI port, using the [SpessaSynth method](../../docs/extra/about-multi-port.md#spessasynth-implementation).
      * The index is the port number and the value is the channel offset.
+     *
      */
     public portChannelOffsetMap: number[] = [0];
 
     /**
      * The loop points (in ticks) of the sequence, including both start and end points.
+     *
+     * If there's nothing detected, the loop will start from the first note on event and end will be the last voice message.
+     * Current looping detection is: CC 2/4, 116/117 and "start," "loopStart" and "loopEnd" markers.
      */
     public loop: MIDILoop = { start: 0, end: 0, type: "hard" };
 
@@ -120,7 +174,8 @@ export class BasicMIDI {
     public fileName?: string;
 
     /**
-     * The format of the MIDI file, which can be 0, 1, or 2, indicating the type of the MIDI file.
+     * The [MIDI file format.](https://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html#BM2_2) Usually 0 or
+     * 1, rarely 2, indicating the type of the MIDI file.
      */
     public format: MIDIFormat = 0;
 
@@ -128,7 +183,15 @@ export class BasicMIDI {
      * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
      * Otherwise, this object is empty.
      * Info type: Chunk data as a binary array.
-     * Note that text chunks contain a terminal zero byte.
+     *
+     * > **Note**
+     * >
+     * > Text chunks contain a terminal zero byte, please take that into account when feeding the data to a `TextDecoder`.
+     * > {@link BasicMIDI.getRMIDInfo} takes care of this automatically.
+     *
+     * > **Tip**
+     * >
+     * > See [SF2 RMIDI Extension Specification](https://github.com/spessasus/sf2-rmidi-specification#readme) for more info.
      */
     public rmidiInfo: Partial<
         Record<keyof RMIDInfoData, Uint8Array<ArrayBuffer>>
@@ -136,12 +199,13 @@ export class BasicMIDI {
 
     /**
      * The bank offset used for RMID files.
+     * Only applies to RMID, for normal MIDIs it's set to 0.
      */
     public bankOffset = 0;
 
     /**
      * If the MIDI file is a Soft Karaoke file (.kar), this is set to true.
-     * https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
+     * [More information about this format here.](https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html)
      */
     public isKaraokeFile = false;
 
@@ -152,11 +216,21 @@ export class BasicMIDI {
 
     /**
      * If the MIDI file is a DLS RMIDI file.
+     *
+     * > **Tip**
+     * >
+     * > See [SF2 RMIDI Extension Specification](https://github.com/spessasus/sf2-rmidi-specification#readme) for more info.
      */
     public isDLSRMIDI = false;
 
     /**
-     * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
+     * The embedded sound bank in the MIDI file, represented as the binary `ArrayBuffer`,
+     * if available. It will be undefined for regular MIDI files.
+     *
+     * > **Warning**
+     * >
+     * > If the embedded sound bank is defined, {@link SpessaSynthSequencer} will automatically pass it to the synthesizer.
+     * > If you want to avoid this behavior, make sure you set it to undefined before passing the BasicMIDI.
      */
     public embeddedSoundBank?: ArrayBuffer;
 
@@ -168,7 +242,8 @@ export class BasicMIDI {
     protected binaryName?: Uint8Array;
 
     /**
-     * The encoding of the RMIDI info in file, if specified.
+     * The encoding of the RMIDI info in file (for example `Shift_JIS` or `utf-8`), if specified.
+     * Otherwise, undefined.
      */
     public get infoEncoding() {
         const encodingInfo = this.rmidiInfo.infoEncoding;
@@ -186,15 +261,13 @@ export class BasicMIDI {
     /**
      * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
      * @param arrayBuffer The ArrayBuffer containing the binary file data.
-     * @param fileName The optional name of the file, will be used if the MIDI file does not have a name.
+     * @param fileName The _optional_ name of the file, will be used if the MIDI file does not have a name.
+     *
      * @remarks
      * This function reads the MIDI file format, extracts the header and track chunks,
      * and populates the BasicMIDI instance with the parsed data.
      * It supports Standard MIDI Files (SMF), RIFF MIDI (RMIDI), and Extensible Music Format (XMF).
      * It also handles embedded soundbanks in RMIDI files.
-     * If the file is an RMIDI file, it will extract the embedded soundbank and store
-     * it in the `embeddedSoundBank` property of the BasicMIDI instance.
-     * If the file is an XMF file, it will parse the XMF structure and extract the MIDI data.
      */
     public static fromArrayBuffer(
         arrayBuffer: ArrayBuffer,
@@ -235,7 +308,7 @@ export class BasicMIDI {
     }
 
     /**
-     * Copies a MIDI.
+     * Copies a `BasicMIDI` instance, including track data.
      * @param mid The MIDI to copy.
      * @returns The copied MIDI.
      */
@@ -246,7 +319,7 @@ export class BasicMIDI {
     }
 
     /**
-     * Copies a MIDI.
+     * Copies another instance this `BasicMIDI` instance, including track data.
      * @param mid The MIDI to copy.
      */
     public copyFrom(mid: BasicMIDI) {
@@ -262,7 +335,7 @@ export class BasicMIDI {
     /**
      * Converts MIDI ticks to time in seconds.
      * @param ticks The time in MIDI ticks.
-     * @returns The time in seconds.
+     * @returns The returned value is the time in seconds from the start of the MIDI to the given tick.
      */
     public midiTicksToSeconds(ticks: number): number {
         ticks = Math.max(ticks, 0);
@@ -300,8 +373,13 @@ export class BasicMIDI {
 
     /**
      * Converts seconds to time in MIDI ticks.
+     *
+     * > **Note**
+     * >
+     * > The returned value will always be rounded to the nearest integer.
+     *
      * @param seconds The time in seconds.
-     * @returns The time in MIDI ticks.
+     * @returns The returned value is the time in MIDI ticks from the start of the MIDI to the given second.
      */
     public secondsToMIDITicks(seconds: number): number {
         seconds = Math.max(seconds, 0);
@@ -352,21 +430,24 @@ export class BasicMIDI {
     }
 
     /**
-     * Gets the used programs and keys for this MIDI file with a given sound bank.
-     * @param soundbank the sound bank.
-     * @returns The output data is a key-value pair: preset -> Map<midiNote, Set<velocity>>
+     * Goes through the MIDI file and returns all used program numbers and MIDI key:velocity combinations for them,
+     * for a given sound bank (used for capital tone fallback).
+     * @param soundbank An instance of the parsed sound bank to "play" the MIDI with.
+     *   Anything that implements the {@link BasicSoundBank.getPreset} method.
+     *   This can be used to provide custom selectors and sound bank lists.
+     * @returns The output data is a key-value pair: {@link MIDIPatchFull} -> `Map<midiNote, Set<velocity>>`
      */
-    public getUsedProgramsAndKeys(
-        soundbank: BasicSoundBank | SoundBankManager
-    ): PresetsWithKeyCombinations {
+    public getUsedProgramsAndKeys<T extends MIDIPatchFull>(
+        soundbank: CallableSoundBank<T>
+    ): PresetsWithKeyCombinations<T> {
         return getUsedProgramsAndKeys(this, soundbank);
     }
 
     /**
-     * Preloads all voices for this sequence in a given synth.
+     * Preloads all voices for this sequence in a given {@link SpessaSynthProcessor}.
      * This caches all the needed voices for playing back this sequencer, resulting in a smooth playback.
-     * The sequencer calls this function by default when loading the songs.
-     * @param synth
+     * The sequencer calls this function by default when loading the songs. (it can be disabled: {@link SpessaSynthSequencer.preload}).
+     * @param synth The synthesizer to preload.
      */
     public preloadSynth(synth: SpessaSynthProcessor) {
         SpessaLog.groupCollapsed(`%cPreloading samples...`, ConsoleColors.info);
@@ -389,7 +470,14 @@ export class BasicMIDI {
     }
 
     /**
-     * Updates all internal values of the MIDI.
+     * Updates all parameters. Call this after editing the contents of {@link BasicMIDI.tracks} (the events).
+     *
+     * This updates parameters like `firstNoteOn`, `lastVoiceEventTick` or `loop`.
+     *
+     * > **Warning**
+     * >
+     * > Not calling `flush` after making any changes to the track may result in unexpected behavior.
+     *
      * @param sortEvents if the events should be sorted by ticks. Recommended to be true.
      */
     public flush(sortEvents = true) {
@@ -405,9 +493,19 @@ export class BasicMIDI {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Calculates all note times in seconds.
-     * @param minDrumLength the shortest a drum note (channel 10) can be, in seconds.
-     * @returns an array of 16 channels, each channel containing its notes,
+     * @param minDrumLength In seconds, represents the minimum allowed time for a drum note,
+     *   since they sometimes have a length of 0.
+     * @returns An array of 16 channels, each channel containing its notes,
      * with their key number, velocity, absolute start time and length in seconds.
+     *
+     * @example
+     * ```ts
+     * const data = [
+     *     [{ midiNote: 60, velocity: 100, start: 0.5, length: 0.25 }], // channel 1
+     *     // other 14 channels...
+     *     [{ midiNote: 36, velocity: 96, start: 41.54, length: 0.1 }] // channel 16
+     * ];
+     * ```
      */
     public getNoteTimes(minDrumLength = 0): NoteTime[][] {
         return getNoteTimesInternal(this, minDrumLength);
@@ -415,17 +513,120 @@ export class BasicMIDI {
 
     /**
      * Exports the midi as a standard MIDI file.
-     * @returns the binary file data.
+     * @returns A binary representation of the Standard MIDI File.
+     * 
+     * @example
+     * 
+     * Below is a basic example of writing a modified MIDI file:
+     *
+     *  ```ts
+     *  // create your midi and synthesizer
+     *  const midi = BasicMIDI.fromArrayBuffer(yourBufferGoesHere);
+     *  const synth = new SpessaSynthProcessor(44100);
+     *
+     *  // ...
+     *
+     *  // get the snapshot and apply it
+     *  const snapshot = synth.getSnapshot();
+     *  midi.applySnapshot(snapshot);
+     *
+     *  // write midi
+     *  const midiBinary = midi.writeMIDI();
+     *
+     *  // save the file
+     *  const blob = new Blob([midiBinary.buffer], { type: "audio/midi" });
+     *  const url = URL.createObjectURL(blob);
+     *  const a = document.createElement("a");
+     *  a.href = url;
+     *  a.download = midi.getName() + ".mid";
+     *  a.click();
+        ```
+     * 
      */
     public writeMIDI(): ArrayBuffer {
         return writeMIDIInternal(this);
     }
 
     /**
-     * Writes an RMIDI file. Note that this method modifies the MIDI file in-place.
-     * @param soundBankBinary the binary sound bank to embed into the file.
+     * Writes out an RMIDI file (MIDI + SF2).
+     * [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme).
+     *
+     * Note that this method modifies the MIDI file in-place.
+     *
+     *
+     * The method is called on a `BasicMIDI` instance;
+     * that instance is the MIDI file to embed.
+     *
+     * > **Tip**
+     * >
+     * > Use {@link BasicSoundBank.trim} to drastically reduce the file size.
+     * > consider also using compression (like shown in example) to save even more space.
+     * > (using these both methods, I managed to shrink a 1GB sound bank into a 5MB RMIDI!)
+     *
+     * @param soundBankBinary The binary sound bank (SF2 or DLS) to embed into the file.
      * @param configuration Extra options for writing the file.
      * @returns the binary file data.
+     *
+     *
+     * @example
+     *
+     * Below is a simple example for exporting an RMIDI file
+     *
+     * ```html
+     * <label for="soundfont_upload">Upload soundfont</label>
+     * <input type="file" id="soundfont_upload" />
+     * <label for="midi_upload">Upload MIDI</label>
+     * <input type="file" id="midi_upload" />
+     * <button id="export">Export</button>
+     * ```
+     *
+     * > **Note**
+     * >
+     * > This example uses soundfont3 compression.
+     * > Make sure you've read {@link SampleEncodingFunction}
+     *
+     * ```ts
+     * const sfInput = document.getElementById("soundfont_upload");
+     * const midiInput = document.getElementById("midi_upload");
+     * document.getElementById("export").onchange = async () => {
+     *     // get the files
+     *     const soundBank = SoundBankLoader.fromArrayBuffer(
+     *         await sfInput.files[0].arrayBuffer()
+     *     );
+     *     const midi = BasicMIDI.fromArrayBuffer(
+     *         await midiInput.files[0].arrayBuffer()
+     *     );
+     *
+     *     // trim the soundfont
+     *     soundBank.trim(midi.getUsedProgramsAndKeys(soundBank));
+     *     // write out with compression to save space (0.5 is medium quality)
+     *     await soundBank.setSampleFormat({
+     *         format: "compressed",
+     *         compressionFunction: SampleEncodingFunction // Remember to get your compression function
+     *     });
+     *     const soundfontBinary = soundBank.writeSF2();
+     *     // get the rmidi
+     *     const rmidiBinary = midi.writeRMIDI(soundfontBinary, {
+     *         soundBank,
+     *         metadata: {
+     *             name: "A cool song",
+     *             artist: "John",
+     *             creationDate: new Date(),
+     *             album: "John's songs",
+     *             genre: "Rock",
+     *             comment: "My favorite!"
+     *         }
+     *     });
+     *
+     *     // save the file
+     *     const blob = new Blob([rmidiBinary.buffer], { type: "audio/rmid" });
+     *     const url = URL.createObjectURL(blob);
+     *     const a = document.createElement("a");
+     *     a.href = url;
+     *     a.download = midi.getName() + ".rmi";
+     *     a.click();
+     * };
+     * ```
      */
     public writeRMIDI(
         soundBankBinary: ArrayBuffer,
@@ -446,15 +647,30 @@ export class BasicMIDI {
      * This modifies the MIDI sequence _in-place_.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
-        modifyMIDIInternal(this, opts);
+        const editor = new MIDIEditor(this, opts);
+        editor.apply();
     }
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Modifies the sequence *in-place* according to the locked presets and controllers in the given snapshot.
+     * Applies a {@link SynthesizerSnapshot} to the sequence _in place_.
+     * This means changing the programs and controllers if they are locked.
      *
-     * Note that System Parameters `fineTune` and `keyShift` are passed to the relative tuning parameters of the channels.
-     * Only locked MIDI parameters and controllers are applied.
+     * For example, if channel 1 has locked preset on `Drawbar Organ`,
+     * this will remove all program changes for channel 1 and add one at the start to change the program to
+     * `Drawbar organ` (using bank MSB/LSB and program change).
+     *
+     * > **Warning**
+     * >
+     * > `fineTune` parameter will be truncated to range -100 to 99 cents.
+     * > Overflow will be applied to the `keyShift` parameter.
+     *
+     * > **Note**
+     * >
+     * > System Parameters `fineTune` and `keyShift` are passed to the relative tuning parameters of the channels.
+     * > MIDI Parameters are passed directly.
+     * > Only locked MIDI parameters and controllers are applied.
+     *
      * @param snapshot the snapshot to apply.
      */
     public applySnapshot(snapshot: SynthesizerSnapshot) {
@@ -464,10 +680,14 @@ export class BasicMIDI {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Gets the MIDI's decoded name.
+     *
+     * > **Warning**
+     * >
+     * > Do not call in audioWorkletGlobalScope as it uses TextDecoder.
+     * > The RMIDI encoding overrides the provided encoding.
+     *
      * @param encoding The encoding to use if the MIDI uses an extended code page.
-     * @remarks
-     * Do not call in audioWorkletGlobalScope as it uses TextDecoder.
-     * RMIDI encoding overrides the provided encoding.
+     * @returns The name of the song or the file name if it's not specified. Empty otherwise.
      */
     public getName(encoding = "Shift_JIS") {
         let rawName = "";
@@ -494,11 +714,15 @@ export class BasicMIDI {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets the decoded extra metadata as text and removes any unneeded characters (such as "@T" for karaoke files)
+     * Gets the decoded extra metadata as text and removes any unneeded characters (such as `@T` for karaoke files)
+     *
+     * > **Warning**
+     * >
+     * > Do not call in audioWorkletGlobalScope as it uses TextDecoder.
+     * > The RMIDI encoding overrides the provided encoding.
+     *
      * @param encoding The encoding to use if the MIDI uses an extended code page.
-     * @remarks
-     * Do not call in audioWorkletGlobalScope as it uses TextDecoder.
-     * RMIDI encoding overrides the provided encoding.
+     * @returns An array of strings - each `extraMetadata` decoded and sanitized.
      */
     public getExtraMetadata(encoding = "Shift_JIS") {
         encoding = this.infoEncoding ?? encoding;
@@ -511,10 +735,13 @@ export class BasicMIDI {
 
     /**
      * Sets a given RMIDI info value.
+     *
+     * > **Note**
+     * >
+     * > This sets the Info encoding to `utf-8`.
+     *
      * @param infoType The type to set.
      * @param infoData The value to set it to.
-     * @remarks
-     * This sets the Info encoding to utf-8.
      */
     public setRMIDInfo<K extends keyof RMIDInfoData>(
         infoType: K,
@@ -539,9 +766,9 @@ export class BasicMIDI {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets a given chunk from the RMIDI information, undefined if it does not exist.
+     * Gets a given chunk from the RMIDI information.
      * @param infoType The metadata type.
-     * @returns String, Date, ArrayBuffer or undefined.
+     * @returns `string`, `Date`, `ArrayBuffer` or undefined if the info is not set.
      */
     public getRMIDInfo<K extends keyof RMIDInfoData>(
         infoType: K
@@ -577,8 +804,15 @@ export class BasicMIDI {
 
     /**
      * Iterates over the MIDI file, ordered by the time the events happen.
-     * You probably should use the `timeline` property
-     * if you're not mutating the MIDI in the iteration loop.
+     *
+     * > **Tip**
+     * >
+     * > Consider iterating over the {@link BasicMIDI.timeline} property
+     * > if you are not editing the MIDI file in your loop.
+     * > It is usually a faster solution and allows custom loops.
+     *
+     *     If the track data is being edited, remember to call {@link BasicMIDI.flush} it after editing!
+     *
      * @param callback The callback function to process each event.
      */
     public iterate(
@@ -700,7 +934,7 @@ export class BasicMIDI {
         // Loop tracking
         let loopStart = null;
         let loopEnd = null;
-        let loopType: MIDILoopType = "hard";
+        let loopType = "hard" as "hard" | "soft";
 
         for (const track of this.tracks) {
             const usedChannels = new Set<number>();
@@ -999,6 +1233,36 @@ export class BasicMIDI {
                 if (this.portChannelOffsetMap[port] === undefined) {
                     this.portChannelOffsetMap[port] = portOffset;
                     portOffset += 16;
+                }
+            }
+        }
+
+        // Attempt to determine ports from track names:
+        // A<num> or PartA<num>
+        // B<num> or PartB<num>
+        // C<num> or PartC<num>
+        // D<num> or PartD<num>
+        if (portOffset === 0) {
+            for (const track of this.tracks) {
+                const n = track.name;
+                if (n.includes("PartA") || /^A\d/.test(n)) {
+                    track.port = 0;
+                    this.portChannelOffsetMap[0] = 0;
+                    continue;
+                }
+                if (n.includes("PartB") || /^B\d/.test(n)) {
+                    track.port = 1;
+                    this.portChannelOffsetMap[1] = 16;
+                    continue;
+                }
+                if (n.includes("PartC") || /^C\d/.test(n)) {
+                    track.port = 2;
+                    this.portChannelOffsetMap[2] = 32;
+                    continue;
+                }
+                if (n.includes("PartD") || /^D\d/.test(n)) {
+                    track.port = 3;
+                    this.portChannelOffsetMap[3] = 48;
                 }
             }
         }

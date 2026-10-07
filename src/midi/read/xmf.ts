@@ -6,11 +6,11 @@ import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { readBigEndianIndexed } from "../../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
-import { inflateSync } from "../../externals/fflate/fflate_wrapper";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { BasicMIDI } from "../basic_midi";
 import type { RMIDInfoData } from "../types";
 import { parseSMFInternal } from "./midi";
+import { inflateSync } from "fflate";
 
 const metadataTypes = {
     XMFFileType: 0,

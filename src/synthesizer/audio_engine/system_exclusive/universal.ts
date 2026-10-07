@@ -1,6 +1,6 @@
 import { SpessaLog } from "../../../utils/loggin";
 import { readBinaryString } from "../../../utils/byte_functions/string";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
@@ -29,7 +29,7 @@ function getTuning(byte1: number, byte2: number, byte3: number): number {
  * @param channelOffset
  */
 export function universalSystemExclusive(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -122,8 +122,13 @@ export function universalSystemExclusive(
 
                                 case 0x01: {
                                     // Reverb time
-                                    this.reverbProcessor.time = value;
+                                    this.gsReverbProcessor.time = value;
                                     SpessaLog.gmInfo("Reverb Time", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsReverb",
+                                        parameter: "time",
+                                        value
+                                    });
                                 }
                             }
                             break;
@@ -153,36 +158,56 @@ export function universalSystemExclusive(
 
                                 case 0x01: {
                                     // Mod rate
-                                    this.chorusProcessor.rate = value;
+                                    this.gsChorusProcessor.rate = value;
                                     SpessaLog.gmInfo("Chorus Mod Rate", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "rate",
+                                        value
+                                    });
                                     break;
                                 }
 
                                 case 0x02: {
                                     // Mod depth
-                                    this.chorusProcessor.depth = value;
+                                    this.gsChorusProcessor.depth = value;
                                     SpessaLog.gmInfo("Chorus Mod Depth", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "depth",
+                                        value
+                                    });
                                     break;
                                 }
 
                                 case 0x03: {
                                     // Mod feedback
-                                    this.chorusProcessor.feedback = value;
+                                    this.gsChorusProcessor.feedback = value;
                                     SpessaLog.gmInfo(
                                         "Chorus Mod Feedback",
                                         value
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "feedback",
+                                        value
+                                    });
                                     break;
                                 }
 
                                 case 0x04: {
                                     // Mod send to reverb
-                                    this.chorusProcessor.sendLevelToReverb =
+                                    this.gsChorusProcessor.sendLevelToReverb =
                                         value;
                                     SpessaLog.gmInfo(
                                         "Chorus Send to Reverb",
                                         value
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "sendLevelToReverb",
+                                        value
+                                    });
                                     break;
                                 }
                             }

@@ -3,10 +3,10 @@ import { DownloadableSoundsSample } from "./sample";
 import { DownloadableSoundsInstrument } from "./instrument";
 import type {
     DLSInfoFourCC,
-    DLSWriteOptions,
     ProgressFunction,
     SF2VersionTag,
-    SoundBankInfoData
+    SoundBankInfoData,
+    SoundBankWriteOptions
 } from "../types";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { ConsoleColors } from "../../utils/other";
@@ -29,7 +29,7 @@ import { ConnectionBlock } from "./connection_block";
 import { ConnectionSource } from "./connection_source";
 import { DLSDestinations, DLSSources } from "./enums";
 
-export const DEFAULT_DLS_OPTIONS: DLSWriteOptions = {
+export const DEFAULT_DLS_OPTIONS: SoundBankWriteOptions = {
     software: "SpessaSynth" // ( ͡° ͜ʖ ͡°)
 };
 
@@ -364,8 +364,10 @@ export class DownloadableSounds extends DLSVerifier {
      * Writes a DLS file.
      * @param writeOptions the options for writing the file.
      */
-    public write(writeOptions: Partial<DLSWriteOptions> = DEFAULT_DLS_OPTIONS) {
-        const options: DLSWriteOptions = fillWithDefaults(
+    public write(
+        writeOptions: Partial<SoundBankWriteOptions> = DEFAULT_DLS_OPTIONS
+    ) {
+        const options: SoundBankWriteOptions = fillWithDefaults(
             writeOptions,
             DEFAULT_DLS_OPTIONS
         );

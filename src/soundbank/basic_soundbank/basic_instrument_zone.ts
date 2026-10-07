@@ -5,6 +5,11 @@ import { Generator } from "./generator";
 import type { BasicSoundBank } from "./basic_soundbank";
 import { GeneratorTypes } from "./generator_types";
 
+/**
+ * Represents a single instrument zone with an associated {@link BasicSample}.
+ *
+ * @group Sound Banks.Zones
+ */
 export class BasicInstrumentZone extends BasicZone {
     /**
      * The instrument this zone belongs to.
@@ -12,6 +17,7 @@ export class BasicInstrumentZone extends BasicZone {
     public readonly parentInstrument: BasicInstrument;
     /**
      * For tracking on the individual zone level, since multiple presets can refer to the same instrument.
+     * @internal
      */
     public useCount: number;
 
@@ -19,6 +25,7 @@ export class BasicInstrumentZone extends BasicZone {
      * Creates a new instrument zone.
      * @param instrument The parent instrument.
      * @param sample The sample to use in this zone.
+     * @internal
      */
     public constructor(instrument: BasicInstrument, sample: BasicSample) {
         super();
@@ -34,7 +41,7 @@ export class BasicInstrumentZone extends BasicZone {
     private _sample: BasicSample;
 
     /**
-     * Zone's sample.
+     * The sample associated with this zone.
      */
     public get sample() {
         return this._sample;
@@ -42,8 +49,8 @@ export class BasicInstrumentZone extends BasicZone {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Sets a sample for this zone.
-     * @param sample the sample to set.
+     * Sets a sample for this zone, unliking the previous one from it.
+     * @param sample The sample to set.
      */
     public set sample(sample: BasicSample) {
         if (this._sample) {
@@ -53,6 +60,10 @@ export class BasicInstrumentZone extends BasicZone {
         sample.linkTo(this.parentInstrument);
     }
 
+    /**
+     * @internal
+     * @param bank
+     */
     public getWriteGenerators(bank: BasicSoundBank): Generator[] {
         const gens = super.getWriteGenerators(bank);
         const sampleID = bank.samples.indexOf(this.sample);

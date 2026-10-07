@@ -1,3 +1,7 @@
+---
+title: The DLS Conversion problem
+---
+
 # The DLS Conversion problem
 
 SpessaSynth supports DLS conversion, but it's limited.
@@ -10,9 +14,9 @@ For example:
 
 And most importantly: **only one instrument layer.**
 
-!!! Note
-
-    As of 4.0.0, the DLS parser has been improved and works better than at the time of writing.
+> **Note**
+>
+> As of 4.0.0, the DLS parser has been improved and works better than at the time of writing.
 
 This means that the program has to combine all zones from all instruments in a preset **into a single zone list.**
 And since soundfont can have up to 2^16 generators, complex sound banks **cannot be converted back from DLS into SF2.**
