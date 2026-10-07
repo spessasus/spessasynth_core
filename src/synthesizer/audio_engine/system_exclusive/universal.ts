@@ -124,6 +124,11 @@ export function universalSystemExclusive(
                                     // Reverb time
                                     this.gsReverbProcessor.time = value;
                                     SpessaLog.gmInfo("Reverb Time", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsReverb",
+                                        parameter: "time",
+                                        value
+                                    });
                                 }
                             }
                             break;
@@ -155,6 +160,11 @@ export function universalSystemExclusive(
                                     // Mod rate
                                     this.gsChorusProcessor.rate = value;
                                     SpessaLog.gmInfo("Chorus Mod Rate", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "rate",
+                                        value
+                                    });
                                     break;
                                 }
 
@@ -162,6 +172,11 @@ export function universalSystemExclusive(
                                     // Mod depth
                                     this.gsChorusProcessor.depth = value;
                                     SpessaLog.gmInfo("Chorus Mod Depth", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "depth",
+                                        value
+                                    });
                                     break;
                                 }
 
@@ -172,6 +187,11 @@ export function universalSystemExclusive(
                                         "Chorus Mod Feedback",
                                         value
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "feedback",
+                                        value
+                                    });
                                     break;
                                 }
 
@@ -183,6 +203,11 @@ export function universalSystemExclusive(
                                         "Chorus Send to Reverb",
                                         value
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "sendLevelToReverb",
+                                        value
+                                    });
                                     break;
                                 }
                             }

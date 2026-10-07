@@ -106,6 +106,11 @@ export function yamahaSystemExclusive(
                     const type = (data << 8) | syx[7];
                     this.xgReverbBlock.setType(type);
                     SpessaLog.xgInfo("Reverb Type", type.toString(16));
+                    this.callEvent("effectChange", {
+                        effect: "xgReverb",
+                        parameter: "type",
+                        value: type
+                    });
                     return;
                 }
 
@@ -121,18 +126,33 @@ export function yamahaSystemExclusive(
                 case 0x0b: {
                     this.xgReverbBlock.setParameter(a3 - 0x02, data);
                     SpessaLog.xgInfo(`Reverb Parameter ${a3 - 0x01}`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgReverb",
+                        parameter: a3 - 0x02,
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x0c: {
                     this.xgReverbBlock.return = data;
                     SpessaLog.xgInfo(`Reverb Return`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgReverb",
+                        parameter: "return",
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x0d: {
                     this.xgReverbBlock.pan = data;
                     SpessaLog.xgInfo(`Reverb Pan`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgReverb",
+                        parameter: "pan",
+                        value: data
+                    });
                     return;
                 }
 
@@ -144,6 +164,11 @@ export function yamahaSystemExclusive(
                 case 0x15: {
                     this.xgReverbBlock.setParameter(a3 - 0x06, data);
                     SpessaLog.xgInfo(`Reverb Parameter ${a3 - 0x05}`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgReverb",
+                        parameter: a3 - 0x06,
+                        value: data
+                    });
                     return;
                 }
 
@@ -151,6 +176,11 @@ export function yamahaSystemExclusive(
                     const type = (data << 8) | syx[7];
                     this.xgChorusBlock.setType(type);
                     SpessaLog.xgInfo("Chorus Type", type.toString(16));
+                    this.callEvent("effectChange", {
+                        effect: "xgChorus",
+                        parameter: "type",
+                        value: type
+                    });
                     return;
                 }
 
@@ -166,24 +196,44 @@ export function yamahaSystemExclusive(
                 case 0x2b: {
                     this.xgChorusBlock.setParameter(a3 - 0x22, data);
                     SpessaLog.xgInfo(`Chorus Parameter ${a3 - 0x21}`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgChorus",
+                        parameter: a3 - 0x22,
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x2c: {
                     this.xgChorusBlock.return = data;
                     SpessaLog.xgInfo(`Chorus Return`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgChorus",
+                        parameter: "return",
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x2d: {
                     this.xgChorusBlock.pan = data;
                     SpessaLog.xgInfo(`Chorus Pan`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgChorus",
+                        parameter: "pan",
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x2e: {
                     this.xgChorusBlock.sendToReverb = data;
                     SpessaLog.xgInfo(`Chorus Send To Reverb`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgChorus",
+                        parameter: "sendToReverb",
+                        value: data
+                    });
                     return;
                 }
 
@@ -195,6 +245,11 @@ export function yamahaSystemExclusive(
                 case 0x35: {
                     this.xgChorusBlock.setParameter(a3 - 0x26, data);
                     SpessaLog.xgInfo(`Chorus Parameter ${a3 - 0x25}`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgChorus",
+                        parameter: a3 - 0x26,
+                        value: data
+                    });
                     return;
                 }
 
@@ -202,6 +257,11 @@ export function yamahaSystemExclusive(
                     const type = (data << 8) | syx[7];
                     this.xgVariationBlock.setType(type);
                     SpessaLog.xgInfo("Variation Type", type.toString(16));
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "type",
+                        value: type
+                    });
                     return;
                 }
 
@@ -223,30 +283,55 @@ export function yamahaSystemExclusive(
                         `Variation Parameter ${a3 - 0x41} (14-bit)`,
                         value.toString(16)
                     );
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: (a3 - 0x42) >> 1,
+                        value
+                    });
                     return;
                 }
 
                 case 0x56: {
                     this.xgVariationBlock.return = data;
                     SpessaLog.xgInfo(`Variation Return`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "return",
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x57: {
                     this.xgVariationBlock.pan = data;
                     SpessaLog.xgInfo(`Variation Pan`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "pan",
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x58: {
                     this.xgVariationBlock.sendToReverb = data;
                     SpessaLog.xgInfo(`Variation Send To Reverb`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "sendToReverb",
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x59: {
                     this.xgVariationBlock.sendToChorus = data;
                     SpessaLog.xgInfo(`Variation Send To Chorus`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "sendToChorus",
+                        value: data
+                    });
                     return;
                 }
 
@@ -256,12 +341,22 @@ export function yamahaSystemExclusive(
                         "Variation Connection",
                         data === 0 ? "INSERTION" : "SYSTEM"
                     );
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "connection",
+                        value: data === 0 ? "insertion" : "system"
+                    });
                     return;
                 }
 
                 case 0x5b: {
                     this.xgVariationBlock.partNumber = data;
                     SpessaLog.xgInfo("Variation Part Number", data);
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: "partNumber",
+                        value: data
+                    });
                     return;
                 }
 
@@ -274,6 +369,11 @@ export function yamahaSystemExclusive(
                     // These are 7-bit only
                     this.xgVariationBlock.setParameter(a3 - 0x66, data);
                     SpessaLog.xgInfo(`Variation Parameter ${a3 - 0x65}`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgVariation",
+                        parameter: a3 - 0x66,
+                        value: data
+                    });
                     return;
                 }
             }
@@ -299,6 +399,12 @@ export function yamahaSystemExclusive(
                     const type = (data << 8) | syx[7];
                     insertion.setType(type);
                     SpessaLog.xgInfo(`Insertion ${a2} Type`, type.toString(16));
+                    this.callEvent("effectChange", {
+                        effect: "xgInsertion",
+                        insertionNumber: a2,
+                        parameter: "type",
+                        value: type
+                    });
                     return;
                 }
 
@@ -317,12 +423,24 @@ export function yamahaSystemExclusive(
                         `Insertion ${a2} Parameter ${a3 - 0x01}`,
                         data
                     );
+                    this.callEvent("effectChange", {
+                        effect: "xgInsertion",
+                        insertionNumber: a2,
+                        parameter: a3 - 0x02,
+                        value: data
+                    });
                     return;
                 }
 
                 case 0x0c: {
                     insertion.partNumber = data;
                     SpessaLog.xgInfo(`Insertion ${a2} Part Number`, data);
+                    this.callEvent("effectChange", {
+                        effect: "xgInsertion",
+                        insertionNumber: a2,
+                        parameter: "partNumber",
+                        value: data
+                    });
                     return;
                 }
 
@@ -337,6 +455,12 @@ export function yamahaSystemExclusive(
                         `Insertion ${a2} Parameter ${a3 - 0x15}`,
                         data
                     );
+                    this.callEvent("effectChange", {
+                        effect: "xgInsertion",
+                        insertionNumber: a2,
+                        parameter: a3 - 0x16,
+                        value: data
+                    });
                     return;
                 }
 
@@ -357,6 +481,12 @@ export function yamahaSystemExclusive(
                         `Insertion ${a2} Parameter ${a3 - 0x2f} (14-bit)`,
                         value
                     );
+                    this.callEvent("effectChange", {
+                        effect: "xgInsertion",
+                        insertionNumber: a2,
+                        parameter: (a3 - 0x30) >> 1,
+                        value
+                    });
                     return;
                 }
             }

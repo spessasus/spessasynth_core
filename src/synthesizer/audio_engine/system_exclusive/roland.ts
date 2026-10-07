@@ -291,7 +291,7 @@ export function rolandSystemExclusive(
                                 this.gsReverbProcessor.character = data;
                                 SpessaLog.gsInfo("Reverb Character", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "character",
                                     value: data
                                 });
@@ -302,7 +302,7 @@ export function rolandSystemExclusive(
                                 this.gsReverbProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Reverb Pre-LPF", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "preLowpass",
                                     value: data
                                 });
@@ -313,7 +313,7 @@ export function rolandSystemExclusive(
                                 this.gsReverbProcessor.level = data;
                                 SpessaLog.gsInfo("Reverb Level", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "level",
                                     value: data
                                 });
@@ -324,7 +324,7 @@ export function rolandSystemExclusive(
                                 this.gsReverbProcessor.time = data;
                                 SpessaLog.gsInfo("Reverb Time", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "time",
                                     value: data
                                 });
@@ -335,7 +335,7 @@ export function rolandSystemExclusive(
                                 this.gsReverbProcessor.delayFeedback = data;
                                 SpessaLog.gsInfo("Reverb Delay Feedback", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "delayFeedback",
                                     value: data
                                 });
@@ -352,7 +352,7 @@ export function rolandSystemExclusive(
                                 this.gsReverbProcessor.preDelayTime = data;
                                 SpessaLog.gsInfo("Reverb Predelay Time", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "preDelayTime",
                                     value: data
                                 });
@@ -372,7 +372,7 @@ export function rolandSystemExclusive(
                                 this.gsChorusProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Chorus Pre-LPF", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "preLowpass",
                                     value: data
                                 });
@@ -383,7 +383,7 @@ export function rolandSystemExclusive(
                                 this.gsChorusProcessor.level = data;
                                 SpessaLog.gsInfo("Chorus Level", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "level",
                                     value: data
                                 });
@@ -394,7 +394,7 @@ export function rolandSystemExclusive(
                                 this.gsChorusProcessor.feedback = data;
                                 SpessaLog.gsInfo("Chorus Feedback", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "feedback",
                                     value: data
                                 });
@@ -405,7 +405,7 @@ export function rolandSystemExclusive(
                                 this.gsChorusProcessor.delay = data;
                                 SpessaLog.gsInfo("Chorus Delay", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "delay",
                                     value: data
                                 });
@@ -416,7 +416,7 @@ export function rolandSystemExclusive(
                                 this.gsChorusProcessor.rate = data;
                                 SpessaLog.gsInfo("Chorus Rate", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "rate",
                                     value: data
                                 });
@@ -427,7 +427,7 @@ export function rolandSystemExclusive(
                                 this.gsChorusProcessor.depth = data;
                                 SpessaLog.gsInfo("Chorus Depth", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "depth",
                                     value: data
                                 });
@@ -441,7 +441,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "sendLevelToReverb",
                                     value: data
                                 });
@@ -456,7 +456,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "sendLevelToDelay",
                                     value: data
                                 });
@@ -476,7 +476,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Delay Pre-LPF", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "preLowpass",
                                     value: data
                                 });
@@ -487,7 +487,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.timeCenter = data;
                                 SpessaLog.gsInfo("Delay Time Center", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "timeCenter",
                                     value: data
                                 });
@@ -498,7 +498,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.timeRatioLeft = data;
                                 SpessaLog.gsInfo("Delay Time Ratio Left", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "timeRatioLeft",
                                     value: data
                                 });
@@ -512,7 +512,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "timeRatioRight",
                                     value: data
                                 });
@@ -523,7 +523,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.levelCenter = data;
                                 SpessaLog.gsInfo("Delay Level Center", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "levelCenter",
                                     value: data
                                 });
@@ -534,7 +534,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.levelLeft = data;
                                 SpessaLog.gsInfo("Delay Level Left", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "levelLeft",
                                     value: data
                                 });
@@ -545,7 +545,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.levelRight = data;
                                 SpessaLog.gsInfo("Delay Level Right", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "levelRight",
                                     value: data
                                 });
@@ -556,7 +556,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.level = data;
                                 SpessaLog.gsInfo("Delay Level", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "level",
                                     value: data
                                 });
@@ -567,7 +567,7 @@ export function rolandSystemExclusive(
                                 this.gsDelayProcessor.feedback = data;
                                 SpessaLog.gsInfo("Delay Feedback", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "feedback",
                                     value: data
                                 });
@@ -581,7 +581,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "sendLevelToReverb",
                                     value: data
                                 });
@@ -603,7 +603,7 @@ export function rolandSystemExclusive(
                             this.gsInsertionProcessor.setParameter(a3, data);
                             SpessaLog.gsInfo(`EFX Parameter ${a3 - 2}`, data);
                             this.callEvent("effectChange", {
-                                effect: "insertion",
+                                effect: "gsInsertion",
                                 parameter: a3,
                                 value: data
                             });
@@ -638,7 +638,7 @@ export function rolandSystemExclusive(
                                 this.gsInsertionProcessor.reset();
                                 // Special case: 16-bit value
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: 0,
                                     value: type
                                 });
@@ -655,7 +655,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: a3,
                                     value: data
                                 });
@@ -672,7 +672,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: a3,
                                     value: data
                                 });
@@ -690,7 +690,7 @@ export function rolandSystemExclusive(
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: a3,
                                     value: data
                                 });

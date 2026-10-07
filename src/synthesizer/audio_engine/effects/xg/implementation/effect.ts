@@ -71,6 +71,10 @@ export abstract class DefaultXGEffect implements XGEffectBlock {
         this.processor.reset();
     }
 
+    public getType() {
+        return this.type;
+    }
+
     public reset() {
         this.setType(this.defaultType);
     }

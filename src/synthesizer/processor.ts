@@ -1064,11 +1064,46 @@ export class SpessaSynthProcessor {
         this.setDelayMacro(0);
         this.resetGSInsertion();
 
-        this.xgReverbBlock.reset();
-        this.xgChorusBlock.reset();
-        this.xgVariationBlock.reset();
-        for (const insertion of this.xgInsertionBlocks) {
-            insertion.reset();
+        // Reset XG params
+        if (!this.systemParameters.xgReverbLock) {
+            this.xgReverbBlock.reset();
+            this.callEvent("effectChange", {
+                effect: "xgReverb",
+                parameter: "type",
+                value: this.xgReverbBlock.getType()
+            });
+        }
+        if (!this.systemParameters.xgChorusLock) {
+            this.xgChorusBlock.reset();
+            this.callEvent("effectChange", {
+                effect: "xgChorus",
+                parameter: "type",
+                value: this.xgChorusBlock.getType()
+            });
+        }
+        if (!this.systemParameters.xgVariationLock) {
+            this.xgVariationBlock.reset();
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "type",
+                value: this.xgVariationBlock.getType()
+            });
+        }
+        if (!this.systemParameters.xgInsertionLock) {
+            for (
+                let insertionNumber = 0;
+                insertionNumber < this.xgInsertionBlocks.length;
+                insertionNumber++
+            ) {
+                const insertion = this.xgInsertionBlocks[insertionNumber];
+                insertion.reset();
+                this.callEvent("effectChange", {
+                    effect: "xgInsertion",
+                    insertionNumber,
+                    parameter: "type",
+                    value: insertion.getType()
+                });
+            }
         }
 
         // Avoid crashing
@@ -1611,7 +1646,7 @@ export class SpessaSynthProcessor {
         this.gsInsertionProcessor.sendLevelToChorus = 0;
         this.gsInsertionProcessor.sendLevelToDelay = 0;
         this.callEvent("effectChange", {
-            effect: "insertion",
+            effect: "gsInsertion",
             parameter: 0,
             value: this.gsInsertionProcessor.type
         });
@@ -1720,7 +1755,7 @@ export class SpessaSynthProcessor {
             }
         }
         this.callEvent("effectChange", {
-            effect: "reverb",
+            effect: "gsReverb",
             parameter: "macro",
             value: macro
         });
@@ -1835,7 +1870,7 @@ export class SpessaSynthProcessor {
             }
         }
         this.callEvent("effectChange", {
-            effect: "chorus",
+            effect: "gsChorus",
             parameter: "macro",
             value: macro
         });
@@ -1989,7 +2024,7 @@ export class SpessaSynthProcessor {
             }
         }
         this.callEvent("effectChange", {
-            effect: "delay",
+            effect: "gsDelay",
             parameter: "macro",
             value: macro
         });

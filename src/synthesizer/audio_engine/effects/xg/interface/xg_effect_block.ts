@@ -45,6 +45,12 @@ export interface XGEffectBlock {
     setType(type: number): void;
 
     /**
+     * Gets the current 16-bit type of the processor.
+     * @returns The 16-bit (`(MSB << 8) | LSB`) type of the processor used.
+     */
+    getType(): number;
+
+    /**
      * Resets this block to default values, including the processor type.
      */
     reset(): void;

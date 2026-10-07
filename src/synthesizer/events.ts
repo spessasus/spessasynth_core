@@ -9,6 +9,7 @@ import type {
     GSDelayProcessor,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
+import type { XGVariationConnection } from "../midi/midi_tools/analyzed_message";
 
 /**
  * A shared interface for all channel events.
@@ -194,22 +195,26 @@ export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
  *
  * The effects and their parameters can be found here:
  *
- * - {@link GSReverbProcessor}
- * - {@link GSChorusProcessor}
- * - {@link GSDelayProcessor}
+ * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
+ * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
+ * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
+ * - GS insertion (`effect: "gsInsertion"`). It has special treatment.
+ * - {@link XGReverbBlock} (`effect: "xgReverb"`)
+ * - {@link XGChorusBlock} (`effect: "xgChorus"`)
+ * - {@link XGVariationBlock} (`effect: "xgVariation"`)
+ * - {@link XGInsertionBlock} (`effect: "xgInsertion"`)
  *
- * Insertion has a special treatment.
  *
  * @group Synthesizer.Events
  */
 export type EffectChangeEvent =
     | {
           /**
-           * The effect that was changed, `reverb`, `chorus`,`delay` or `insertion`
+           * The effect that was changed: Roland GS reverb.
            */
-          effect: "reverb";
+          effect: "gsReverb";
           /**
-           * The parameter type or `macro`.
+           * The parameter, see {@link GSReverbProcessor}, or `macro`.
            */
           parameter: FXType<GSReverbProcessor>;
           /**
@@ -219,11 +224,11 @@ export type EffectChangeEvent =
       }
     | {
           /**
-           * The effect that was changed, `reverb`, `chorus`, `delay` or `insertion`
+           * The effect that was changed: Roland GS chorus.
            */
-          effect: "chorus";
+          effect: "gsChorus";
           /**
-           * The parameter type or `macro`.
+           * The parameter, see {@link GSChorusProcessor}, or `macro`.
            */
           parameter: FXType<GSChorusProcessor>;
           /**
@@ -233,11 +238,11 @@ export type EffectChangeEvent =
       }
     | {
           /**
-           * The effect that was changed, `reverb`, `chorus`, `delay` or `insertion`
+           * The effect that was changed: Roland GS delay.
            */
-          effect: "delay";
+          effect: "gsDelay";
           /**
-           * The parameter type or `macro`.
+           * The parameter, see {@link GSDelayProcessor}, or `macro`.
            */
           parameter: FXType<GSDelayProcessor>;
           /**
@@ -247,9 +252,9 @@ export type EffectChangeEvent =
       }
     | {
           /**
-           * The effect that was changed, `reverb`, `chorus`, `delay` or `insertion`
+           * The effect that was changed: Roland GS insertion.
            */
-          effect: "insertion";
+          effect: "gsInsertion";
 
           /**
            * The parameter that was changed. This maps to GS address map at addr2 = `0x03`.
@@ -264,6 +269,102 @@ export type EffectChangeEvent =
 
           /**
            * The new value for the parameter.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed: Yamaha XG reverb block.
+           */
+          effect: "xgReverb";
+          /**
+           * The parameter that was changed:
+           * - `"type"` - 16-bit effect type (`MSB << 8 | LSB`). Note that this resets the parameters!
+           * - `"return" | "pan"` - common parameters (7-bit).
+           * - `number` - 0-based type-specific parameter index (0-15). Value is 14-bit/7-bit. 7-bit values use the lower 7 bits.
+           */
+          parameter: "type" | "return" | "pan" | number;
+          /**
+           * The new value for this parameter.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed: Yamaha XG chorus block.
+           */
+          effect: "xgChorus";
+          /**
+           * The parameter that was changed:
+           * - `"type"` - 16-bit effect type (`MSB << 8 | LSB`). Note that this resets the parameters!
+           * - `"return" | "pan" | "sendToReverb"` - common parameters (7-bit).
+           * - `number` - 0-based type-specific parameter index (0-15). Value is 14-bit/7-bit. 7-bit values use the lower 7 bits.
+           */
+          parameter: "type" | "return" | "pan" | "sendToReverb" | number;
+          /**
+           * The new value for this parameter.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed: Yamaha XG variation block.
+           */
+          effect: "xgVariation";
+          /**
+           * The parameter that was changed:
+           * - `"type"` - 16-bit effect type (`MSB << 8 | LSB`). Note that this resets the parameters!
+           * - `"return" | "pan" | "sendToReverb" | "sendToChorus"` - common parameters (7-bit).
+           * - `"partNumber"` - the channel routed through the effect in insertion mode (127 = OFF).
+           * - `number` - 0-based type-specific parameter index (0-15). Value is 14-bit/7-bit. 7-bit values use the lower 7 bits.
+           */
+          parameter:
+              | "type"
+              | "return"
+              | "pan"
+              | "sendToReverb"
+              | "sendToChorus"
+              | "partNumber"
+              | number;
+          /**
+           * The new value for this parameter.
+           */
+          value: number;
+      }
+    | {
+          /**
+           * The effect that was changed: Yamaha XG variation block.
+           */
+          effect: "xgVariation";
+          /**
+           * Switches the variation block between system and insertion mode.
+           *
+           * Corresponds to {@link XGVariationBlock.insertionMode}.
+           */
+          parameter: "connection";
+          /**
+           * The new connection mode.
+           */
+          value: XGVariationConnection;
+      }
+    | {
+          /**
+           * The effect that was changed: Yamaha XG insertion block (EFFECT 2).
+           */
+          effect: "xgInsertion";
+          /**
+           * The 0-based insertion effect number.
+           */
+          insertionNumber: number;
+          /**
+           * The parameter that was changed:
+           * - `"type"` - 16-bit effect type (`MSB << 8 | LSB`). Note that this resets the parameters!
+           * - `"partNumber"` - the channel routed through the insertion effect (127 = OFF).
+           * - `number` - 0-based type-specific parameter index (0-15). Value is 14-bit/7-bit. 7-bit values use the lower 7 bits.
+           */
+          parameter: "type" | "partNumber" | number;
+          /**
+           * The new value for this parameter.
            */
           value: number;
       };
@@ -441,13 +542,14 @@ export interface SynthesizerEvent {
      *
      * The effects and their parameters can be found here:
      *
-     * - {@link GSReverbProcessor}
-     * - {@link GSChorusProcessor}
-     * - {@link GSDelayProcessor}
-     *
-     *
-     * Insertion has a special treatment.
-     *
+     * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
+     * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
+     * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
+     * - GS insertion (`effect: "gsInsertion"`). It has special treatment.
+     * - {@link XGReverbBlock} (`effect: "xgReverb"`)
+     * - {@link XGChorusBlock} (`effect: "xgChorus"`)
+     * - {@link XGVariationBlock} (`effect: "xgVariation"`)
+     * - {@link XGInsertionBlock} (`effect: "xgInsertion"`)
      */
     effectChange: EffectChangeEvent;
 
