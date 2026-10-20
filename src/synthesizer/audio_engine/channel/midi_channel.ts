@@ -154,15 +154,24 @@ export class MIDIChannel {
     /**
      * Current left PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
      * Always 0-based index.
+     * Double precision, as voices accumulate into it (faster than float32 in JS).
      * @internal
      */
-    public readonly outputLeft: Float32Array;
+    public readonly outputLeft: Float64Array;
     /**
      * Current right PCM output of this channel. Will be routed to either EFX or EQ if needed, and extracted for visualization.
      * Always 0-based index.
+     * Double precision, as voices accumulate into it (faster than float32 in JS).
      * @internal
      */
-    public readonly outputRight: Float32Array;
+    public readonly outputRight: Float64Array;
+    /**
+     * If the output buffers may contain audio.
+     * If not, clearing and mixing them can be skipped.
+     * Set by {@link SpessaSynthProcessor}.
+     * @internal
+     */
+    public outputDirty = true;
     /**
      * Sets a channel MIDI parameter of the synthesizer.
      * @param parameter The type of the channel MIDI parameter to set.
@@ -367,8 +376,8 @@ export class MIDIChannel {
         this.synthCore = synthProperties;
         this.preset = preset;
         this.channel = channelNumber;
-        this.outputLeft = new Float32Array(this.synthCore.maxBufferSize);
-        this.outputRight = new Float32Array(this.synthCore.maxBufferSize);
+        this.outputLeft = new Float64Array(this.synthCore.maxBufferSize);
+        this.outputRight = new Float64Array(this.synthCore.maxBufferSize);
 
         this.noteOn = noteOn.bind(this);
         this.noteOff = noteOff.bind(this);

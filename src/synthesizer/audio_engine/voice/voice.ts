@@ -2,7 +2,7 @@
  * Voice.ts
  * purpose: prepares Voices from sample and generator data
  */
-import { LowpassFilter } from "./lowpass_filter";
+import { type FilterCoefficientCache, LowpassFilter } from "./lowpass_filter";
 import { VolumeEnvelope } from "./volume_envelope";
 import { ModulationEnvelope } from "./modulation_envelope";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
@@ -260,9 +260,13 @@ export class Voice {
     public modLfoPhase = 0;
     public modLfoStartTime = 0;
 
-    public constructor(sampleRate: number, bufferSize: number) {
+    public constructor(
+        sampleRate: number,
+        bufferSize: number,
+        filterCoefficients: FilterCoefficientCache
+    ) {
         this.volEnv = new VolumeEnvelope(sampleRate, bufferSize);
-        this.filter = new LowpassFilter(sampleRate);
+        this.filter = new LowpassFilter(sampleRate, filterCoefficients);
     }
 
     /**

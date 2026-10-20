@@ -158,6 +158,23 @@ export class DattorroReverb {
         const m11 = this.delayMask[11];
 
         const TWO_PI = 6.283_185_307_179_586;
+        const preLPF = this.preLPF;
+
+        // Excursion LFOs
+        // Computed by rotating a phasor
+        // It starts from the exact values every block,
+        // So no error accumulates.
+        // Different values for stereo effect
+        const step1 = ex * TWO_PI;
+        const step2 = ex * 6.2847;
+        const stepCos1 = Math.cos(step1);
+        const stepSin1 = Math.sin(step1);
+        const stepCos2 = Math.cos(step2);
+        const stepSin2 = Math.sin(step2);
+        let cos1 = Math.cos(p1);
+        let sin1 = Math.sin(p1);
+        let cos2 = Math.cos(p2);
+        let sin2 = Math.sin(p2);
 
         for (let i = 0; i < sampleCount; i++) {
             // Write/read predelay
@@ -165,7 +182,7 @@ export class DattorroReverb {
             const inSample = pDelay[(blockStart + i - pd) & pDMask];
 
             // Lowpass filter
-            lp1 += this.preLPF * (inSample - lp1);
+            lp1 += preLPF * (inSample - lp1);
 
             // Pre-tank
             const read0 = d0[r0];
@@ -187,9 +204,8 @@ export class DattorroReverb {
             const split = si * pre + read3;
 
             // Excursions
-            // Could be optimized?
-            const exc = ed * (1 + Math.cos(p1));
-            const exc2 = ed * (1 + Math.sin(p2));
+            const exc = ed * (1 + cos1);
+            const exc2 = ed * (1 + sin2);
 
             // Left loop
             const read11 = d11[r11];
@@ -275,12 +291,13 @@ export class DattorroReverb {
             outputLeft[idx] += leftSample * gain;
             outputRight[idx] += rightSample * gain;
 
-            // Update LFOs and wrap them
-            // Different values for stereo effect
-            p1 += ex * TWO_PI;
-            p2 += ex * 6.2847;
-            if (p1 > TWO_PI) p1 -= TWO_PI;
-            if (p2 > TWO_PI) p2 -= TWO_PI;
+            // Update LFOs (rotate the phasors)
+            const nextCos1 = cos1 * stepCos1 - sin1 * stepSin1;
+            sin1 = sin1 * stepCos1 + cos1 * stepSin1;
+            cos1 = nextCos1;
+            const nextCos2 = cos2 * stepCos2 - sin2 * stepSin2;
+            sin2 = sin2 * stepCos2 + cos2 * stepSin2;
+            cos2 = nextCos2;
 
             // Advance delays
             w0 = (w0 + 1) & m0;
@@ -308,6 +325,10 @@ export class DattorroReverb {
             w11 = (w11 + 1) & m11;
             r11 = (r11 + 1) & m11;
         }
+        // Advance the LFO phases and wrap them
+        p1 = (p1 + step1 * sampleCount) % TWO_PI;
+        p2 = (p2 + step2 * sampleCount) % TWO_PI;
+
         // Update preDelay index
         this.pDWrite = (blockStart + sampleCount) & pDMask;
 

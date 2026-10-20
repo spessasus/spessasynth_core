@@ -336,6 +336,7 @@ export function noteOn(
             voice.wavetable.loopEnd - voice.wavetable.loopStart;
         voice.wavetable.isLooping =
             voice.loopingMode === 1 || voice.loopingMode === 3;
+        voice.wavetable.hasLooped = false;
 
         // Apply portamento
         voice.portamentoFromKey = portaFromKey;

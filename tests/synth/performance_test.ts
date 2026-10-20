@@ -1,6 +1,7 @@
 // Process arguments
 import {
     BasicMIDI,
+    BasicSoundBank,
     SoundBankLoader,
     SpessaSynthProcessor,
     SpessaSynthSequencer
@@ -8,7 +9,8 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const fileName = `performance-test-${new Date().toISOString()}.txt`;
+// Colons are not allowed in file names on Windows
+const fileName = `performance-test-${new Date().toISOString().replaceAll(":", "-")}.txt`;
 
 const LOG_PATH = path.join(import.meta.dirname, "../files/other/", fileName);
 
@@ -36,6 +38,16 @@ export async function runPerformanceTest(
     const sampleCount = Math.ceil(44_100 * (midi.duration + 2));
     const sbk = SoundBankLoader.fromArrayBuffer(sf.buffer);
     const BUFFER_SIZE = 128;
+
+    // Samples are decoded on the first note on
+    // Decode all of them here,
+    // So compressed decoding is not measured in the first pass.
+    await BasicSoundBank.ready;
+    const decodeStart = performance.now();
+    for (const sample of sbk.samples) sample.getAudioData();
+    await writeLog(
+        `Decoded ${sbk.samples.length} samples in ${Math.floor(performance.now() - decodeStart)}ms`
+    );
 
     const outLeft = new Float32Array(sampleCount);
     const outRight = new Float32Array(sampleCount);
@@ -70,7 +82,11 @@ export async function runPerformanceTest(
         times.push(time);
     }
     const avg = times.reduce((sum, i) => sum + i, 0) / times.length;
+    times.sort((a, b) => a - b);
+    const median = times[Math.floor(times.length / 2)];
     await writeLog(`Average time: ${Math.floor(avg)}ms`);
+    await writeLog(`Median time: ${Math.floor(median)}ms`);
+    await writeLog(`Min time: ${Math.floor(times[0])}ms`);
     console.info("File written to", LOG_PATH);
 }
 

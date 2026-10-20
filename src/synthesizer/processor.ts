@@ -34,7 +34,10 @@ import {
     EFX_SENDS_GAIN_CORRECTION,
     EMBEDDED_SOUND_BANK_ID
 } from "./audio_engine/synth_constants";
-import { LowpassFilter } from "./audio_engine/voice/lowpass_filter";
+import {
+    type FilterCoefficientCache,
+    LowpassFilter
+} from "./audio_engine/voice/lowpass_filter";
 import { Voice } from "./audio_engine/voice/voice";
 import { CachedVoice } from "./audio_engine/voice/voice_cache";
 
@@ -98,6 +101,23 @@ type CachedVoiceList = CachedVoice[];
  * MU2000 has 4 insertion effects. We can do more but leave it at 4 for now
  */
 const XG_INSERTION_COUNT = 4;
+
+/**
+ * Moves the voice sends into an effect input buffer, clearing the sends for the next quantum.
+ * @param sends The double precision voice sends.
+ * @param input The effect input buffer, overwritten.
+ * @param sampleCount The number of samples to move.
+ */
+function moveSends(
+    sends: Float64Array,
+    input: Float32Array,
+    sampleCount: number
+) {
+    for (let i = 0; i < sampleCount; i++) {
+        input[i] = sends[i];
+        sends[i] = 0;
+    }
+}
 
 /**
  * The core synthesis engine of SpessaSynth.
@@ -215,6 +235,78 @@ export class SpessaSynthProcessor {
      */
     public readonly xgVariationInputR;
     /**
+     * Voice sends for {@link gsReverbInput}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly gsReverbSend;
+    /**
+     * Voice sends for {@link gsChorusInput}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly gsChorusSend;
+    /**
+     * Voice sends for {@link gsDelayInput}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly gsDelaySend;
+    /**
+     * Voice sends for {@link xgReverbInputL}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly xgReverbSendL;
+    /**
+     * Voice sends for {@link xgReverbInputR}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly xgReverbSendR;
+    /**
+     * Voice sends for {@link xgChorusInputL}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly xgChorusSendL;
+    /**
+     * Voice sends for {@link xgChorusInputR}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly xgChorusSendR;
+    /**
+     * Voice sends for {@link xgVariationInputL}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly xgVariationSendL;
+    /**
+     * Voice sends for {@link xgVariationInputR}.
+     *
+     * F64 instead of f32 here, as that is faster in JS than float32 for the voice path.
+     * This is moved into f32 effect input buffers once per quantum.
+     * @internal
+     */
+    public readonly xgVariationSendR;
+    /**
      * Delay is not used outside SC-88+ MIDIs, this is an optimization.
      * @internal
      */
@@ -236,7 +328,6 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public readonly tunings = new Float32Array(128 * 128).fill(-1);
-
     /**
      * An object indicating if a Global MIDI parameter, at the equivalent key, is locked
      * (i.e., not allowed changing).
@@ -403,6 +494,20 @@ export class SpessaSynthProcessor {
      */
     protected gsInsertionParams = new Uint8Array(23).fill(255);
     /**
+     * The lowpass filter coefficient cache of this synthesizer, shared by all its voices.
+     * It is per synthesizer, as the coefficients depend on the sample rate.
+     */
+    private readonly filterCoefficients: FilterCoefficientCache;
+    /**
+     * Left float32 buffer for processing XG insertion effects in-place.
+     * (channel outputs are double precision)
+     */
+    private readonly xgInsertionBufferL;
+    /**
+     * Right float32 buffer for processing XG insertion effects in-place.
+     */
+    private readonly xgInsertionBufferR;
+    /**
      * Last time the priorities were assigned.
      * Used to prevent assigning priorities multiple times when more than one voice is triggered during a quantum.
      * @internal
@@ -463,7 +568,7 @@ export class SpessaSynthProcessor {
             GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
         // Pan smoothing factor
         this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44_100 / sampleRate);
-        LowpassFilter.initCache(this.sampleRate);
+        this.filterCoefficients = LowpassFilter.initCache(this.sampleRate);
 
         const bufSize = this.maxBufferSize;
         // Initialize effects
@@ -491,7 +596,7 @@ export class SpessaSynthProcessor {
             );
 
         // Initialize buffers
-        this.voiceBuffer = new Float32Array(bufSize);
+        this.voiceBuffer = new Float64Array(bufSize);
         this.insertionInputL = new Float32Array(bufSize);
         this.insertionInputR = new Float32Array(bufSize);
         this.gsReverbInput = new Float32Array(bufSize);
@@ -503,6 +608,17 @@ export class SpessaSynthProcessor {
         this.xgChorusInputR = new Float32Array(bufSize);
         this.xgVariationInputL = new Float32Array(bufSize);
         this.xgVariationInputR = new Float32Array(bufSize);
+        this.gsReverbSend = new Float64Array(bufSize);
+        this.gsChorusSend = new Float64Array(bufSize);
+        this.gsDelaySend = new Float64Array(bufSize);
+        this.xgReverbSendL = new Float64Array(bufSize);
+        this.xgReverbSendR = new Float64Array(bufSize);
+        this.xgChorusSendL = new Float64Array(bufSize);
+        this.xgChorusSendR = new Float64Array(bufSize);
+        this.xgVariationSendL = new Float64Array(bufSize);
+        this.xgVariationSendR = new Float64Array(bufSize);
+        this.xgInsertionBufferL = new Float32Array(bufSize);
+        this.xgInsertionBufferR = new Float32Array(bufSize);
 
         // Register insertion
         for (const insertion of GS_INSERTION_EFFECT_LIST)
@@ -1231,18 +1347,7 @@ export class SpessaSynthProcessor {
         }
 
         // Clear the buffers
-        if (isXG) {
-            this.xgReverbInputL.fill(0);
-            this.xgReverbInputR.fill(0);
-            this.xgChorusInputL.fill(0);
-            this.xgChorusInputR.fill(0);
-            this.xgVariationInputL.fill(0);
-            this.xgVariationInputR.fill(0);
-        } else {
-            this.gsReverbInput.fill(0);
-            this.gsChorusInput.fill(0);
-            if (this.gsDelayActive) this.gsDelayInput.fill(0);
-        }
+        // (The effect inputs are overwritten with the voice sends after rendering)
         if (this.gsInsertionActive) {
             this.insertionInputL.fill(0);
             this.insertionInputR.fill(0);
@@ -1250,8 +1355,12 @@ export class SpessaSynthProcessor {
         for (const c of this.midiChannels) {
             // And voice count
             c.clearVoiceCount();
-            c.outputRight.fill(0);
-            c.outputLeft.fill(0);
+            // Silent channels are already cleared
+            if (c.outputDirty) {
+                c.outputRight.fill(0);
+                c.outputLeft.fill(0);
+                c.outputDirty = false;
+            }
         }
         this._voiceCount = 0;
 
@@ -1260,27 +1369,47 @@ export class SpessaSynthProcessor {
         const outputCount = channelOutputs?.length ?? 0;
         for (let i = 0; i < cap; i++) {
             const v = this.voices[i];
-            const ch = this.midiChannels[v.channel];
             if (!v.isActive) continue;
+            const ch = this.midiChannels[v.channel];
 
             ch.renderVoice(v, this.currentTime, sampleCount);
 
             // Update voice count
             ch.voiceCount++;
+            ch.outputDirty = true;
             this._voiceCount++;
+        }
+
+        // Move the voice sends into the effect inputs
+        if (isXG) {
+            // Not worth inlining after testing with node
+            moveSends(this.xgReverbSendL, this.xgReverbInputL, sampleCount);
+            moveSends(this.xgReverbSendR, this.xgReverbInputR, sampleCount);
+            moveSends(this.xgChorusSendL, this.xgChorusInputL, sampleCount);
+            moveSends(this.xgChorusSendR, this.xgChorusInputR, sampleCount);
+            moveSends(
+                this.xgVariationSendL,
+                this.xgVariationInputL,
+                sampleCount
+            );
+            moveSends(
+                this.xgVariationSendR,
+                this.xgVariationInputR,
+                sampleCount
+            );
+        } else {
+            moveSends(this.gsReverbSend, this.gsReverbInput, sampleCount);
+            moveSends(this.gsChorusSend, this.gsChorusInput, sampleCount);
+            if (this.gsDelayActive)
+                moveSends(this.gsDelaySend, this.gsDelayInput, sampleCount);
         }
 
         // Process insertion effects
         if (isXG && fx) {
             for (const insertion of this.xgInsertionBlocks) {
                 const channel = this.midiChannels[insertion.partNumber];
-                if (channel) {
-                    insertion.processInsertion(
-                        channel.outputLeft,
-                        channel.outputRight,
-                        sampleCount
-                    );
-                }
+                if (channel)
+                    this.processXGInsertion(insertion, channel, sampleCount);
             }
 
             // Variation is processed last
@@ -1289,9 +1418,9 @@ export class SpessaSynthProcessor {
                 const channel =
                     this.midiChannels[this.xgVariationBlock.partNumber];
                 if (channel)
-                    this.xgVariationBlock.processInsertion(
-                        channel.outputLeft,
-                        channel.outputRight,
+                    this.processXGInsertion(
+                        this.xgVariationBlock,
+                        channel,
                         sampleCount
                     );
             }
@@ -1323,8 +1452,10 @@ export class SpessaSynthProcessor {
 
         // Mix channel data
         for (let channel = 0; channel < this.midiChannels.length; channel++) {
-            const { outputLeft, outputRight, midiParameters } =
-                this.midiChannels[channel];
+            const ch = this.midiChannels[channel];
+            // Nothing to mix
+            if (!ch.outputDirty) continue;
+            const { outputLeft, outputRight, midiParameters } = ch;
             // Mix visualization first
             if (outputCount) {
                 const out = channelOutputs![channel % outputCount];
@@ -2065,7 +2196,41 @@ export class SpessaSynthProcessor {
      */
     protected allocateNewVoices(count: number) {
         for (let i = 0; i < count; i++)
-            this.voices.push(new Voice(this.sampleRate, this.maxBufferSize));
+            this.voices.push(
+                new Voice(
+                    this.sampleRate,
+                    this.maxBufferSize,
+                    this.filterCoefficients
+                )
+            );
+    }
+
+    /**
+     * Processes an XG insertion block in-place on a channel's output.
+     * Channel outputs are double precision, while insertion blocks take float32 buffers.
+     * @param block The insertion block to process.
+     * @param channel The channel assigned to the block.
+     * @param sampleCount The number of samples to process.
+     */
+    private processXGInsertion(
+        block: XGInsertionBlock,
+        channel: MIDIChannel,
+        sampleCount: number
+    ) {
+        const bufferL = this.xgInsertionBufferL;
+        const bufferR = this.xgInsertionBufferR;
+        const { outputLeft, outputRight } = channel;
+        for (let i = 0; i < sampleCount; i++) {
+            bufferL[i] = outputLeft[i];
+            bufferR[i] = outputRight[i];
+        }
+        block.processInsertion(bufferL, bufferR, sampleCount);
+        for (let i = 0; i < sampleCount; i++) {
+            outputLeft[i] = bufferL[i];
+            outputRight[i] = bufferR[i];
+        }
+        // The insertion output (including its tail) is now in the channel
+        channel.outputDirty = true;
     }
 
     private createMIDIChannelInternal(sendEvent: boolean) {
