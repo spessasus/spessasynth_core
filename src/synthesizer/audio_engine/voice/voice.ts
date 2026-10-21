@@ -2,17 +2,15 @@
  * Voice.ts
  * purpose: prepares Voices from sample and generator data
  */
-import { type FilterCoefficientCache, LowpassFilter } from "./lowpass_filter";
+import { LowpassFilter } from "./lowpass_filter";
 import { VolumeEnvelope } from "./volume_envelope";
 import { ModulationEnvelope } from "./modulation_envelope";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "../synth_constants";
-import {
-    HermiteOscillator,
-    LinearOscillator,
-    NearestOscillator,
-    WavetableOscillator
-} from "./wavetable_oscillator";
+import type { WavetableOscillator } from "./wavetable_oscillator/wavetable_oscillator";
+import { LinearOscillator } from "./wavetable_oscillator/linear";
+import { NearestOscillator } from "./wavetable_oscillator/nearest";
+import { HermiteOscillator } from "./wavetable_oscillator/hermite";
 import { type InterpolationType } from "../../enums";
 import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../parameters/system";
 import type { VoiceModulator } from "./voice_modulator";
@@ -260,13 +258,9 @@ export class Voice {
     public modLfoPhase = 0;
     public modLfoStartTime = 0;
 
-    public constructor(
-        sampleRate: number,
-        bufferSize: number,
-        filterCoefficients: FilterCoefficientCache
-    ) {
+    public constructor(sampleRate: number, bufferSize: number) {
         this.volEnv = new VolumeEnvelope(sampleRate, bufferSize);
-        this.filter = new LowpassFilter(sampleRate, filterCoefficients);
+        this.filter = new LowpassFilter(sampleRate);
     }
 
     /**

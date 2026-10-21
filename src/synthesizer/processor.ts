@@ -23,6 +23,10 @@ import type {
 } from "./types";
 import { MIDIChannel } from "./audio_engine/channel/midi_channel";
 import {
+    mixVoiceSendBuffer,
+    VoiceSendBuffer
+} from "./audio_engine/channel/render_voice";
+import {
     DEFAULT_GLOBAL_SYSTEM_PARAMETERS,
     type GlobalSystemParameter,
     setSystemParameterInternal
@@ -34,10 +38,6 @@ import {
     EFX_SENDS_GAIN_CORRECTION,
     EMBEDDED_SOUND_BANK_ID
 } from "./audio_engine/synth_constants";
-import {
-    type FilterCoefficientCache,
-    LowpassFilter
-} from "./audio_engine/voice/lowpass_filter";
 import { Voice } from "./audio_engine/voice/voice";
 import { CachedVoice } from "./audio_engine/voice/voice_cache";
 
@@ -178,6 +178,11 @@ export class SpessaSynthProcessor {
      * @internal
      */
     public readonly voiceBuffer;
+    /**
+     * The voice buffer used when a channel has no free voice send buffers.
+     * @internal
+     */
+    public readonly sharedVoiceSendBuffer;
     /**
      * The insertion processor's left input buffer.
      * @internal
@@ -494,11 +499,6 @@ export class SpessaSynthProcessor {
      */
     protected gsInsertionParams = new Uint8Array(23).fill(255);
     /**
-     * The lowpass filter coefficient cache of this synthesizer, shared by all its voices.
-     * It is per synthesizer, as the coefficients depend on the sample rate.
-     */
-    private readonly filterCoefficients: FilterCoefficientCache;
-    /**
      * Left float32 buffer for processing XG insertion effects in-place.
      * (channel outputs are double precision)
      */
@@ -568,7 +568,6 @@ export class SpessaSynthProcessor {
             GAIN_SMOOTHING_FACTOR * (44_100 / sampleRate);
         // Pan smoothing factor
         this.panSmoothingFactor = PAN_SMOOTHING_FACTOR * (44_100 / sampleRate);
-        this.filterCoefficients = LowpassFilter.initCache(this.sampleRate);
 
         const bufSize = this.maxBufferSize;
         // Initialize effects
@@ -597,6 +596,7 @@ export class SpessaSynthProcessor {
 
         // Initialize buffers
         this.voiceBuffer = new Float64Array(bufSize);
+        this.sharedVoiceSendBuffer = new VoiceSendBuffer(bufSize);
         this.insertionInputL = new Float32Array(bufSize);
         this.insertionInputR = new Float32Array(bufSize);
         this.gsReverbInput = new Float32Array(bufSize);
@@ -1378,6 +1378,13 @@ export class SpessaSynthProcessor {
             ch.voiceCount++;
             ch.outputDirty = true;
             this._voiceCount++;
+        }
+        for (const c of this.midiChannels) {
+            if (c.voiceSendBufferCount > 0) {
+                for (let i = 0; i < c.voiceSendBufferCount; i++)
+                    mixVoiceSendBuffer(c, c.voiceSendBuffers[i], sampleCount);
+                c.voiceSendBufferCount = 0;
+            }
         }
 
         // Move the voice sends into the effect inputs
@@ -2196,13 +2203,7 @@ export class SpessaSynthProcessor {
      */
     protected allocateNewVoices(count: number) {
         for (let i = 0; i < count; i++)
-            this.voices.push(
-                new Voice(
-                    this.sampleRate,
-                    this.maxBufferSize,
-                    this.filterCoefficients
-                )
-            );
+            this.voices.push(new Voice(this.sampleRate, this.maxBufferSize));
     }
 
     /**

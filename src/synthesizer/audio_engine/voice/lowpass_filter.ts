@@ -35,11 +35,15 @@ type CoefficientChunks = (Float64Array | undefined)[];
  * Cached filter coefficients.
  * Key is resonanceCb, then cutoff cents.
  *
- * Stored per-synth as synths can have different sample rates.
+ * There is one cache per sample rate, shared by all synthesizers using that rate.
  */
 export type FilterCoefficientCache = Map<number, CoefficientChunks>;
 
 export class LowpassFilter {
+    /**
+     * Global coefficient caches, shared between all synthesizer instances.
+     */
+    private static readonly caches = new Map<number, FilterCoefficientCache>();
     /**
      * For smoothing the filter cutoff frequency.
      * This is per filter, as it depends on the sample rate.
@@ -123,28 +127,32 @@ export class LowpassFilter {
     /**
      * Initializes a new instance of the filter.
      * @param sampleRate the sample rate of the audio engine in Hz.
-     * @param coefficientCache the coefficient cache of the synthesizer.
      */
-    public constructor(
-        sampleRate: number,
-        coefficientCache: FilterCoefficientCache
-    ) {
+    public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
         this.maxCutoff = sampleRate * 0.45;
         this.smoothingConstant =
             FILTER_SMOOTHING_FACTOR * (44_100 / sampleRate);
-        this.coefficientCache = coefficientCache;
+        this.coefficientCache = LowpassFilter.initCache(sampleRate);
     }
 
-    public static initCache(sampleRate: number) {
-        const cache: FilterCoefficientCache = new Map();
-        // Precompute selected cutoffs for 0q (most common)
-        const dummy = new LowpassFilter(sampleRate, cache);
-        dummy.resonanceCb = 0;
-        // 8000 is roughly 830 Hz and 13,500 is max
-        for (let i = 8000; i < 13_500; i++) {
-            dummy.currentInitialFc = i;
-            dummy.calculateCoefficients(i);
+    /**
+     * Gets the shared coefficient cache for a sample rate, creating it if needed.
+     * @param sampleRate The sample rate in Hertz.
+     */
+    public static initCache(sampleRate: number): FilterCoefficientCache {
+        let cache = this.caches.get(sampleRate);
+        if (cache === undefined) {
+            cache = new Map<number, CoefficientChunks>();
+            this.caches.set(sampleRate, cache);
+            // Precompute selected cutoffs for 0q (most common)
+            const dummy = new LowpassFilter(sampleRate);
+            dummy.resonanceCb = 0;
+            // 8000 is roughly 830 Hz and 13,500 is max
+            for (let i = 8000; i < 13_500; i++) {
+                dummy.currentInitialFc = i;
+                dummy.calculateCoefficients(i);
+            }
         }
         return cache;
     }

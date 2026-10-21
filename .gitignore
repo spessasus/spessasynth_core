@@ -80,3 +80,5 @@ site/
 test.ts
 out.*
 *.patch
+*.md
+!README.md

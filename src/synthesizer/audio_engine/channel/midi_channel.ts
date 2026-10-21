@@ -1,5 +1,5 @@
 import { DEFAULT_DRUM_REVERB, resetChannelInternal, resetRP15 } from "./reset";
-import { renderVoice } from "./render_voice";
+import { renderVoice, VoiceSendBuffer } from "./render_voice";
 import { controllerChange } from "./controller_change";
 import { dataEntry } from "./data_entry";
 import { noteOn } from "./note_on";
@@ -172,6 +172,17 @@ export class MIDIChannel {
      * @internal
      */
     public outputDirty = true;
+    /**
+     * The voice send buffers of this channel.
+     * Used for grouping sends for better performance.
+     * @internal
+     */
+    public readonly voiceSendBuffers: VoiceSendBuffer[] = [];
+    /**
+     * The number of voice send buffers used in the current rendering block.
+     * @internal
+     */
+    public voiceSendBufferCount = 0;
     /**
      * Sets a channel MIDI parameter of the synthesizer.
      * @param parameter The type of the channel MIDI parameter to set.
