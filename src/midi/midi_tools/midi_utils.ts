@@ -908,19 +908,19 @@ export class MIDIUtils {
             }
 
             case "rxChannel": {
+                let v: number;
+                if (value === -1) v = system === "xg" ? 0x7f : 0x10;
+                else v = (value as number) % 16;
+
                 return system === "xg"
-                    ? [
-                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x04, [
-                              value as number
-                          ])
-                      ]
+                    ? [MIDIUtils.xgMessage(ticks, 0x08, channel, 0x04, [v])]
                     : [
                           MIDIUtils.gsMessage(
                               ticks,
                               0x40,
                               0x10 | gsChannel,
                               0x02,
-                              [value as number]
+                              [v]
                           )
                       ];
             }
@@ -967,6 +967,15 @@ export class MIDIUtils {
             }
 
             case "randomPan": {
+                if (value === false)
+                    return [
+                        MIDIMessage.controllerChange(
+                            ticks,
+                            channel,
+                            MIDIControllers.pan,
+                            64
+                        )
+                    ];
                 // Only set via SysEx in both GS and XG (value 0 means random pan)
                 return system === "xg"
                     ? [MIDIUtils.xgMessage(ticks, 0x08, channel, 0x0e, [0])]
@@ -1462,7 +1471,7 @@ export class MIDIUtils {
                     0x7f, // Broadcast
                     0x09, // General MIDI
                     0x01, // General MIDI 1 On
-                    0x7f // End of exclusive
+                    0xf7 // End of exclusive
                 ]);
             }
 
@@ -1472,7 +1481,7 @@ export class MIDIUtils {
                     0x7f, // Broadcast
                     0x09, // General MIDI
                     0x03, // General MIDI 2 On
-                    0x7f // End of exclusive
+                    0xf7 // End of exclusive
                 ]);
             }
         }
@@ -1493,13 +1502,12 @@ export class MIDIUtils {
                 case 0x01: {
                     // Master Volume
                     const value = ((syx[5] << 7) | syx[4]) / 16_383;
-                    // It corresponds to CC volume, so volume is squared.
-                    const gain = Math.pow(value, 2);
+                    // The volume is squared, but this is specific to the parameter, so use linear here.
                     return [
                         {
                             type: "Global MIDI Param",
                             parameter: "volume",
-                            value: gain
+                            value
                         }
                     ];
                 }
@@ -1736,6 +1744,28 @@ export class MIDIUtils {
                             type: "Global MIDI Param",
                             parameter: "fineTune",
                             value: cents
+                        }
+                    ];
+                }
+
+                case 0x04: {
+                    // MASTER VOLUME
+                    return [
+                        {
+                            type: "Global MIDI Param",
+                            parameter: "volume",
+                            value: value / 127
+                        }
+                    ];
+                }
+
+                case 0x05: {
+                    // MASTER ATTENUATOR
+                    return [
+                        {
+                            type: "Global MIDI Param",
+                            parameter: "volume",
+                            value: (127 - value) / 127
                         }
                     ];
                 }
@@ -2167,6 +2197,18 @@ export class MIDIUtils {
                     ];
                 }
 
+                case 0x04: {
+                    // Rev. channel
+                    return [
+                        {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "rxChannel",
+                            value: value === 0x7f ? -1 : value
+                        }
+                    ];
+                }
+
                 case 0x05: {
                     // Poly/mono
                     return [
@@ -2225,6 +2267,30 @@ export class MIDIUtils {
                             type: "Controller Change",
                             channel,
                             controller: MIDIControllers.mainVolume,
+                            value
+                        }
+                    ];
+                }
+
+                case 0x0c: {
+                    // Velocity sense depth
+                    return [
+                        {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "velocitySenseDepth",
+                            value
+                        }
+                    ];
+                }
+
+                case 0x0d: {
+                    // Velocity sense offset
+                    return [
+                        {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "velocitySenseOffset",
                             value
                         }
                     ];
@@ -2373,7 +2439,7 @@ export class MIDIUtils {
                     ];
                 }
 
-                case 0x0c: {
+                case 0x1c: {
                     // Release time
                     return [
                         {
@@ -3279,6 +3345,18 @@ export class MIDIUtils {
                                 type: "Program Change",
                                 channel,
                                 value: syx[8]
+                            }
+                        ];
+                    }
+
+                    case 0x2: {
+                        // Rx. channel
+                        return [
+                            {
+                                type: "Channel MIDI Param",
+                                channel,
+                                parameter: "rxChannel",
+                                value: value === 0x10 ? -1 : value
                             }
                         ];
                     }

@@ -99,6 +99,13 @@ export function controllerChange(
                 break;
             }
 
+            case MIDIControllers.pan: {
+                // Pan disables random pan
+                if (this._midiParameters.randomPan)
+                    this.setMIDIParameter("randomPan", false);
+                break;
+            }
+
             case MIDIControllers.variationDepth: {
                 this.synthCore.updateActiveGSEffects();
                 break;

@@ -56,6 +56,8 @@ export interface ChannelMIDIParameter {
      * The channel's receiving number (0-based index).
      * This allows triggering multiple parts (channels) with a single note message.
      *
+     * -1 indicates OFF (no channel).
+     *
      * > **Note**
      * >
      * > {@link DEFAULT_CHANNEL_MIDI_PARAMETERS} reports the default as 0, but it is initialized with the corresponding channel's number.
@@ -88,6 +90,8 @@ export interface ChannelMIDIParameter {
 
     /**
      * Enables random panning for every note played on this channel.
+     *
+     * Disabled on any pan (CC#10) changes.
      */
     randomPan: boolean;
 

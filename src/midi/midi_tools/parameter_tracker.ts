@@ -5,6 +5,12 @@ import {
 import { type MIDIController, MIDIControllers } from "../enums";
 import { MIDIUtils } from "./midi_utils";
 
+export type ParameterCC =
+    | typeof MIDIControllers.registeredParameterMSB
+    | typeof MIDIControllers.registeredParameterLSB
+    | typeof MIDIControllers.nonRegisteredParameterMSB
+    | typeof MIDIControllers.nonRegisteredParameterLSB;
+
 interface ParameterController {
     /**
      * Value
@@ -54,8 +60,8 @@ export class ParameterTracker {
         track: 0,
         event: 0
     };
+    public isRegistered = true;
     private readonly channel;
-    private isRegistered = true;
 
     public constructor(channel: number) {
         this.channel = channel;
@@ -67,6 +73,42 @@ export class ParameterTracker {
 
     public get paramLSB() {
         return this.isRegistered ? this.rpnLSB : this.nrpnLSB;
+    }
+
+    /**
+     * The controller numbers of the currently selected parameter as array: [MSB, LSB].
+     */
+    public get paramControllers() {
+        return this.isRegistered
+            ? ([
+                  MIDIControllers.registeredParameterMSB,
+                  MIDIControllers.registeredParameterLSB
+              ] as const)
+            : ([
+                  MIDIControllers.nonRegisteredParameterMSB,
+                  MIDIControllers.nonRegisteredParameterLSB
+              ] as const);
+    }
+
+    /**
+     * Returns the tracked selection controller.
+     * @param cc the selection controller number
+     */
+    public getParameterSelect(cc: ParameterCC) {
+        switch (cc) {
+            case MIDIControllers.registeredParameterMSB: {
+                return this.rpnMSB;
+            }
+            case MIDIControllers.registeredParameterLSB: {
+                return this.rpnLSB;
+            }
+            case MIDIControllers.nonRegisteredParameterMSB: {
+                return this.nrpnMSB;
+            }
+            case MIDIControllers.nonRegisteredParameterLSB: {
+                return this.nrpnLSB;
+            }
+        }
     }
 
     /**
@@ -84,23 +126,6 @@ export class ParameterTracker {
         this.shiftEvent(this.dataLSB, track, index);
     }
 
-    /**
-     *
-     * @param param the parameter affected
-     * @param track the track number
-     * @param index the index of the event
-     */
-    private shiftEvent(
-        param: ParameterController,
-        track: number,
-        index: number
-    ) {
-        // If an event before the tracked one was deleted, the index goes down
-        if (param.track === track && param.event > index) {
-            param.event--;
-        }
-    }
-
     public reset() {
         this.isRegistered = true;
         this.rpnLSB.v = DEFAULT_RPN;
@@ -108,6 +133,25 @@ export class ParameterTracker {
         this.nrpnMSB.v = DEFAULT_NRPN;
         this.nrpnLSB.v = DEFAULT_NRPN;
         this.resetData();
+    }
+
+    /**
+     * Reset All Controllers (RP-15) sets the selection to null.
+     * Mirrors the synth, which sends a controller change for every changed selection controller,
+     * So the last changed one decides if the parameter is registered.
+     */
+    public resetAllControllers() {
+        for (const [param, isRegistered, defaultValue] of [
+            [this.rpnMSB, true, DEFAULT_RPN],
+            [this.rpnLSB, true, DEFAULT_RPN],
+            [this.nrpnMSB, false, DEFAULT_NRPN],
+            [this.nrpnLSB, false, DEFAULT_NRPN]
+        ] as const) {
+            if (param.v === defaultValue) continue;
+            param.v = defaultValue;
+            this.isRegistered = isRegistered;
+            this.resetData();
+        }
     }
 
     public controllerChange(
@@ -180,6 +224,23 @@ export class ParameterTracker {
             }
         }
         return undefined;
+    }
+
+    /**
+     *
+     * @param param the parameter affected
+     * @param track the track number
+     * @param index the index of the event
+     */
+    private shiftEvent(
+        param: ParameterController,
+        track: number,
+        index: number
+    ) {
+        // If an event before the tracked one was deleted, the index goes down
+        if (param.track === track && param.event > index) {
+            param.event--;
+        }
     }
 
     private resetData() {

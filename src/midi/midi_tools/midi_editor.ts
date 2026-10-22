@@ -17,7 +17,7 @@ import {
     MIDIMessageTypes
 } from "../enums";
 import { MIDIUtils } from "./midi_utils";
-import { ParameterTracker } from "./parameter_tracker";
+import { type ParameterCC, ParameterTracker } from "./parameter_tracker";
 import type { DrumParameter, UserDrumSetParameter } from "../types";
 import { RP_15_RESET_CC_NUMS } from "../../synthesizer/audio_engine/channel/reset";
 import type { AnalyzedMIDIMessage } from "./analyzed_message";
@@ -314,13 +314,24 @@ interface ChannelStatus {
     // Data,
     // And even though it violates MIDI 1.0, it works...
     clearedParams: {
-        // Param LSB
-        pLSB: boolean;
-        // Param MSB
-        pMSB: boolean;
+        // Param selection, per controller.
+        // RPN and NRPN selections are separate,
+        // The synth remembers both (all 4, msb + lsb for both rpn and nrpn).
+        selection: Record<ParameterCC, boolean>;
         // Data (any)
         data: boolean;
     };
+
+    // If the current N/RPN selection was changed from what the file selected, per controller.
+    // Happens when the editor deletes a file's selection (cleared data entry)
+    // Or inserts its own (locked parameters).
+    // A later kept data entry relies on the file's selection,
+    // So the modified ones get reinserted right before it, then they are unchanged again.
+    // This way, nothing is added if nothing uses the selection.
+    selectionModified: Record<ParameterCC, boolean>;
+
+    // If the output's last selection was registered (RPN).
+    outputRegistered: boolean;
 
     // Channel number for logging
     readonly channel: number;
@@ -454,6 +465,11 @@ export class MIDIEditor {
      */
     private isPendingResetGM = false;
 
+    /**
+     * If the current event has already been deleted.
+     */
+    private currentEventDeleted = false;
+
     private readonly gsReverbParams;
     private readonly gsChorusParams;
     private readonly gsDelayParams;
@@ -557,10 +573,21 @@ export class MIDIEditor {
                         : MELODIC_MAP,
                 param: new ParameterTracker(i),
                 clearedParams: {
-                    pLSB: true,
-                    pMSB: true,
+                    selection: {
+                        [MIDIControllers.registeredParameterMSB]: true,
+                        [MIDIControllers.registeredParameterLSB]: true,
+                        [MIDIControllers.nonRegisteredParameterMSB]: true,
+                        [MIDIControllers.nonRegisteredParameterLSB]: true
+                    },
                     data: true
                 },
+                selectionModified: {
+                    [MIDIControllers.registeredParameterMSB]: false,
+                    [MIDIControllers.registeredParameterLSB]: false,
+                    [MIDIControllers.nonRegisteredParameterMSB]: false,
+                    [MIDIControllers.nonRegisteredParameterLSB]: false
+                },
+                outputRegistered: true,
                 relativeKeyShift: this.channelChanges.get(i)?.keyShift ?? 0,
                 relativeFineTune: this.channelChanges.get(i)?.fineTune ?? 0,
                 currentFineTune: 0,
@@ -778,6 +805,7 @@ export class MIDIEditor {
             this.midi.tracks[track].addEvents(this.eventIndexes[track], item);
             // Update event indexes
             this.eventIndexes[track]++;
+            this.trackInsertedSelection(item);
         }
     }
 
@@ -795,7 +823,35 @@ export class MIDIEditor {
             );
             // Update event indexes
             this.eventIndexes[track]++;
+            this.trackInsertedSelection(item);
         }
+    }
+
+    /**
+     * Tracks the N/RPN selection controllers inserted by the editor.
+     * They change the output's selection, which may no longer match what the file selected.
+     * Testcase: midi_editor_nrpn_test.ts (Case: inserted RPN before a file's LSB-only NRPN)
+     * @param e The inserted event.
+     */
+    private trackInsertedSelection(e: MIDIMessage) {
+        if ((e.statusByte & 0xf0) !== MIDIMessageTypes.controllerChange) return;
+        const cc = e.data[0];
+        if (
+            cc !== MIDIControllers.registeredParameterMSB &&
+            cc !== MIDIControllers.registeredParameterLSB &&
+            cc !== MIDIControllers.nonRegisteredParameterMSB &&
+            cc !== MIDIControllers.nonRegisteredParameterLSB
+        )
+            return;
+        const portOffset =
+            this.midiPortChannelOffsets[this.midiPorts[this.trackNum]] ?? 0;
+        const ch = this.channelStatuses[(e.statusByte & 0xf) + portOffset];
+        if (!ch) return;
+        ch.selectionModified[cc] =
+            e.data[1] !== ch.param.getParameterSelect(cc).v;
+        ch.outputRegistered =
+            cc === MIDIControllers.registeredParameterMSB ||
+            cc === MIDIControllers.registeredParameterLSB;
     }
 
     /**
@@ -803,6 +859,8 @@ export class MIDIEditor {
      * @private
      */
     private deleteThisEvent() {
+        if (this.currentEventDeleted) return;
+        this.currentEventDeleted = true;
         this.deleteTrackEvent(this.trackNum, this.eventIndexes[this.trackNum]);
     }
 
@@ -854,6 +912,7 @@ export class MIDIEditor {
         // Testcase: MIDI_Jam & Spoon_Right In The Night.mid, channel 12.
         // That's why we track what we can and can't delete.
         const p = ch.param;
+        const [msbCC, lsbCC] = p.paramControllers;
         const msb = p.paramMSB;
         const lsb = p.paramLSB;
 
@@ -878,12 +937,14 @@ export class MIDIEditor {
 
         // The cached MSB/LSB indexes are kept valid by `deleteTrackEvent`.
         // It shifts all cached indexes whenever an event is deleted.
-        if (!ch.clearedParams.pMSB) {
+        // The output no longer has them, but a later kept data entry may still rely on them.
+        if (!ch.clearedParams.selection[msbCC]) {
             // Delete param MSB
             this.deleteTrackEvent(msb.track, msb.event);
+            ch.selectionModified[msbCC] = true;
 
             // Flag MSB as deleted
-            ch.clearedParams.pMSB = true;
+            ch.clearedParams.selection[msbCC] = true;
 
             SpessaLog.info(
                 `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Param MSB)`,
@@ -893,12 +954,13 @@ export class MIDIEditor {
             );
         }
 
-        if (!ch.clearedParams.pLSB) {
+        if (!ch.clearedParams.selection[lsbCC]) {
             // Delete param LSB
             this.deleteTrackEvent(lsb.track, lsb.event);
+            ch.selectionModified[lsbCC] = true;
 
             // Flag LSB as deleted
-            ch.clearedParams.pLSB = true;
+            ch.clearedParams.selection[lsbCC] = true;
 
             SpessaLog.info(
                 `%cClearing Non/Registered Parameter on %c${ch.channel}%c. (Param LSB)`,
@@ -914,6 +976,7 @@ export class MIDIEditor {
         trackNum: number,
         eventIndexes: number[]
     ) {
+        this.currentEventDeleted = false;
         this.trackNum = trackNum;
         this.eventIndexes = eventIndexes;
         this.currentParameterChannel = -1;
@@ -1022,7 +1085,7 @@ export class MIDIEditor {
 
             case MIDIMessageTypes.pitchWheel: {
                 // Do we delete it?
-                if (channelChange?.midiParams?.pitchWheel) {
+                if (channelChange?.midiParams?.pitchWheel !== undefined) {
                     // Locked, remove
                     this.deleteCurrentEvent();
                 }
@@ -1031,7 +1094,7 @@ export class MIDIEditor {
 
             case MIDIMessageTypes.channelPressure: {
                 // Do we delete it?
-                if (channelChange?.midiParams?.pressure) {
+                if (channelChange?.midiParams?.pressure !== undefined) {
                     // Locked, remove
                     this.deleteCurrentEvent();
                 }
@@ -1050,6 +1113,7 @@ export class MIDIEditor {
             case MIDIMessageTypes.systemExclusive: {
                 const syxs = MIDIUtils.analyzeSysEx(e.data);
                 for (const syx of syxs) {
+                    if (this.currentEventDeleted) return;
                     // Clear channel sysExes too
                     if (
                         "channel" in syx &&
@@ -1059,6 +1123,13 @@ export class MIDIEditor {
                         this.deleteCurrentEvent();
                         return;
                     }
+                    // Testcase: XG_[Th07] (MU2000EX Arrangements)/th07_19.mid
+                    if (
+                        "channel" in syx &&
+                        syx.channel + portOffset >= this.channelStatuses.length
+                    )
+                        continue;
+
                     switch (syx.type) {
                         case "Map Drum Setup": {
                             // Delete map drum setups affecting modified channels
@@ -1169,7 +1240,9 @@ export class MIDIEditor {
                                 this.handleReset(syx.value, e);
                                 return;
                             }
-                            if (this.midiParams?.[syx.parameter]) {
+                            if (
+                                this.midiParams?.[syx.parameter] !== undefined
+                            ) {
                                 // Locked, remove
                                 this.deleteCurrentEvent();
                                 return;
@@ -1240,7 +1313,7 @@ export class MIDIEditor {
             channelStatus.drumMap = data.value;
         }
         const channelChange = this.channelChanges.get(channel);
-        if (!channelChange) return;
+        if (!channelChange || !channelStatus) return;
 
         if (data.parameter === "fineTune" && channelStatus.relativeFineTune) {
             channelStatus.currentFineTune = data.value;
@@ -1305,7 +1378,7 @@ export class MIDIEditor {
             // A not-RPN message voids any pending pair instead:
             // A later half belongs to a new message, not the old one.
             channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
-        } else if (channelChange?.midiParams?.[data.parameter]) {
+        } else if (channelChange?.midiParams?.[data.parameter] !== undefined) {
             // Locked, remove
             // We don't remove fineTune because we can adjust it relatively
             this.deleteCurrentEvent();
@@ -1376,6 +1449,14 @@ export class MIDIEditor {
                 return;
             }
 
+            case MIDIControllers.pan: {
+                if (channelChange?.midiParams?.randomPan !== true) {
+                    // Random pan gets disabled by regular pan, prevent that here
+                    this.deleteCurrentEvent();
+                }
+                return;
+            }
+
             case MIDIControllers.registeredParameterLSB:
             case MIDIControllers.registeredParameterMSB:
             case MIDIControllers.nonRegisteredParameterMSB:
@@ -1383,12 +1464,12 @@ export class MIDIEditor {
                 // A new selection starts a new message
                 channelStatus.pendingParam = undefined;
                 // Flag the parameter as not cleared
-                if (
-                    ccNum === MIDIControllers.nonRegisteredParameterLSB ||
-                    ccNum === MIDIControllers.registeredParameterLSB
-                )
-                    channelStatus.clearedParams.pLSB = false;
-                else channelStatus.clearedParams.pMSB = false;
+                channelStatus.clearedParams.selection[ccNum] = false;
+                // The output has the file's selection again
+                channelStatus.selectionModified[ccNum] = false;
+                channelStatus.outputRegistered =
+                    ccNum === MIDIControllers.registeredParameterMSB ||
+                    ccNum === MIDIControllers.registeredParameterLSB;
 
                 channelStatus.param.controllerChange(
                     ccNum,
@@ -1410,8 +1491,8 @@ export class MIDIEditor {
                 );
                 this.currentParameterChannel = channel;
 
-                if (!data) return;
-                switch (data.type) {
+                // Unrecognized parameters are kept as-is
+                switch (data?.type) {
                     case "Channel Drum Setup": {
                         if (
                             this.shouldClearChannelDrum(
@@ -1423,7 +1504,7 @@ export class MIDIEditor {
                             // Drum param, BEGONE!
                             this.deleteCurrentEvent();
                         }
-                        return;
+                        break;
                     }
 
                     case "Controller Change": {
@@ -1433,7 +1514,7 @@ export class MIDIEditor {
                             data.value,
                             data.channel
                         );
-                        return;
+                        break;
                     }
 
                     case "Channel MIDI Param": {
@@ -1450,12 +1531,89 @@ export class MIDIEditor {
                 // Data,
                 // And even though it violates MIDI 1.0, it works...
                 // So since we've used those, mark them as "cleaned" so future LSB-only entries won't delete them.
-                channelStatus.clearedParams.pLSB = true;
-                channelStatus.clearedParams.pMSB = true;
+                const [msbCC, lsbCC] = channelStatus.param.paramControllers;
+                channelStatus.clearedParams.selection[msbCC] = true;
+                channelStatus.clearedParams.selection[lsbCC] = true;
+
+                // This entry is kept, but the output's selection may differ from the file's.
+                // Re-insert the file's selection right before it, if so:
+                // - Deleted with an earlier cleared data entry, like:
+                //   MSB, LSB 1, Data (cleared, deletes MSB and LSB 1),
+                //   LSB 2, Data (kept, needs the MSB back)
+                // - Changed by the editor's inserted parameters, like:
+                //   NRPN MSB, LSB, Data, (inserted RPN on first note on), Data (needs the NRPN back)
+                // After that, the selection is unchanged, so following data entries don't need it again.
+                // Testcase: midi_editor_nrpn_test.ts (Case: shared NRPN MSB, cleared then kept)
+                if (this.currentEventDeleted) return;
+                const p = channelStatus.param;
+                // A mode switch restores both, as a device may not remember the other mode's selection
+                const modeSwitch =
+                    channelStatus.outputRegistered !== p.isRegistered;
+                const restore = [msbCC, lsbCC].filter(
+                    (cc) => modeSwitch || channelStatus.selectionModified[cc]
+                );
+                if (restore.length === 0) return;
+
+                const current =
+                    this.midi.tracks[this.trackNum].events[
+                        this.eventIndexes[this.trackNum]
+                    ];
+                const midiChannel = current.statusByte & 0xf;
+                for (const cc of restore) {
+                    // Point the tracker at the restored event, it's the one in use now
+                    const tracked = p.getParameterSelect(cc);
+                    tracked.track = this.trackNum;
+                    tracked.event = this.eventIndexes[this.trackNum];
+                    this.addEventsBefore(
+                        MIDIMessage.controllerChange(
+                            current.ticks,
+                            midiChannel,
+                            cc,
+                            tracked.v
+                        )
+                    );
+                }
+                // A selection resets the data MSB, so the LSB would apply to a zeroed MSB
+                if (
+                    ccNum === MIDIControllers.dataEntryLSB &&
+                    p.dataMSB.v !== 0
+                ) {
+                    this.addEventsBefore(
+                        MIDIMessage.controllerChange(
+                            current.ticks,
+                            midiChannel,
+                            MIDIControllers.dataEntryMSB,
+                            p.dataMSB.v
+                        )
+                    );
+                }
+                SpessaLog.info(
+                    `%cRestoring Non/Registered Parameter selection on %c${channelStatus.channel}%c. (Used by a kept data entry)`,
+                    ConsoleColors.info,
+                    ConsoleColors.recognized,
+                    ConsoleColors.info
+                );
                 return;
             }
 
             case MIDIControllers.resetAllControllers: {
+                // RP-15: the selection is set to null, both in the file and the output.
+                channelStatus.param.resetAllControllers();
+                channelStatus.pendingParam = undefined;
+                channelStatus.clearedParams.selection = {
+                    [MIDIControllers.registeredParameterMSB]: true,
+                    [MIDIControllers.registeredParameterLSB]: true,
+                    [MIDIControllers.nonRegisteredParameterMSB]: true,
+                    [MIDIControllers.nonRegisteredParameterLSB]: true
+                };
+                channelStatus.selectionModified = {
+                    [MIDIControllers.registeredParameterMSB]: false,
+                    [MIDIControllers.registeredParameterLSB]: false,
+                    [MIDIControllers.nonRegisteredParameterMSB]: false,
+                    [MIDIControllers.nonRegisteredParameterLSB]: false
+                };
+                channelStatus.outputRegistered =
+                    channelStatus.param.isRegistered;
                 this.handleResetAllControllers(channel);
                 return;
             }
@@ -1677,7 +1835,18 @@ export class MIDIEditor {
             }[keyof ChannelMIDIParameter][]) {
                 // Fine tune is inserted below from the calculated value above,
                 // Don't set it here
-                if (value === "clear" || param === "fineTune") continue;
+                if (
+                    value === "clear" ||
+                    param === "fineTune" ||
+                    // Random pan may not be added if pan is explicitly set
+                    (param === "randomPan" &&
+                        !value &&
+                        // Clearing the pan does not stop the random pan, so specific number.
+                        typeof channelChange?.controllers?.get(
+                            MIDIControllers.pan
+                        ) === "number")
+                )
+                    continue;
                 this.addEventsBefore(
                     ...MIDIUtils.setChannelMIDIParameter(
                         ticks,
@@ -1801,10 +1970,22 @@ export class MIDIEditor {
                     ? defaultMap
                     : MELODIC_MAP;
             ch.clearedParams = {
-                pLSB: true,
-                pMSB: true,
+                selection: {
+                    [MIDIControllers.registeredParameterMSB]: true,
+                    [MIDIControllers.registeredParameterLSB]: true,
+                    [MIDIControllers.nonRegisteredParameterMSB]: true,
+                    [MIDIControllers.nonRegisteredParameterLSB]: true
+                },
                 data: true
             };
+            // The reset sets the selection to null, both in the file and the output
+            ch.selectionModified = {
+                [MIDIControllers.registeredParameterMSB]: false,
+                [MIDIControllers.registeredParameterLSB]: false,
+                [MIDIControllers.nonRegisteredParameterMSB]: false,
+                [MIDIControllers.nonRegisteredParameterLSB]: false
+            };
+            ch.outputRegistered = true;
             // Reset means that new "first notes" are here to have the setups inserted
             ch.isFirstNoteOn = true;
         }

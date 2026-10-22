@@ -531,7 +531,7 @@ export function yamahaSystemExclusive(
 
                 // Rev. channel
                 case 0x04: {
-                    const rxChannel = data + channelOffset;
+                    const rxChannel = data === 0x7f ? -1 : data + channelOffset;
                     ch.setMIDIParameter("rxChannel", rxChannel);
                     this.customChannelNumbers ||= rxChannel !== ch.channel;
                     SpessaLog.xgInfo(`Rev. Channel on ${channel}`, rxChannel);
