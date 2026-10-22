@@ -1308,12 +1308,13 @@ export class MIDIEditor {
         isRPN = false
     ) {
         const channelStatus = this.channelStatuses[channel];
+        if (!channelStatus) return;
         // Track the drum map
         if (data.parameter === "drumMap") {
             channelStatus.drumMap = data.value;
         }
         const channelChange = this.channelChanges.get(channel);
-        if (!channelChange || !channelStatus) return;
+        if (!channelChange) return;
 
         if (data.parameter === "fineTune" && channelStatus.relativeFineTune) {
             channelStatus.currentFineTune = data.value;
@@ -1519,6 +1520,7 @@ export class MIDIEditor {
 
                     case "Channel MIDI Param": {
                         this.handleChannelMIDIParam(channel, data, true);
+                        break;
                     }
                 }
 
