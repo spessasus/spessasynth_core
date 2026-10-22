@@ -1450,7 +1450,7 @@ export class MIDIEditor {
             }
 
             case MIDIControllers.pan: {
-                if (channelChange?.midiParams?.randomPan !== true) {
+                if (channelChange?.midiParams?.randomPan === true) {
                     // Random pan gets disabled by regular pan, prevent that here
                     this.deleteCurrentEvent();
                 }
