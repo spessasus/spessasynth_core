@@ -2,8 +2,24 @@ import type { MIDIChannel } from "../midi_channel";
 import type { InterpolationType } from "../../../enums";
 
 /**
- * The system parameters of the channel.
- * These can only be changed via the API.
+ * Channel System Parameters are API-only parameters
+ * that affect a single MIDI channel.
+ *
+ * Parameters that also appear at
+ * the global level can be overridden at the channel level.
+ *
+ * They are System Parameters, meaning that they can only be changed via the API,
+ * and not via MIDI messages.
+ *
+ * {@link DEFAULT_CHANNEL_SYSTEM_PARAMETERS} is provided with the library,
+ * containing the defaults.
+ *
+ * Examples:
+ *
+ * - `presetLock`
+ * - `isMuted`
+ *
+ * @group Synthesizer.Parameters
  */
 export interface ChannelSystemParameter {
     // Channel exclusive
@@ -33,17 +49,34 @@ export interface ChannelSystemParameter {
     /**
      * The channel key shift in semitones.
      * Drum channels DO NOT ignore this value.
+     *
+     * > **Tip**
+     * >
+     * > Avoid setting this for drum channels as it may break the drum key mapping.
      */
     keyShift: number;
 
     /**
      * The channel tuning in cents.
      * Drum channels DO NOT ignore this value.
+     *
+     * > **Tip**
+     * >
+     * > While the range of this parameter is unlimited, it is recommended to keep it in the range of -100 to 100 cents.
+     * > The values above that should be applied to {@link ChannelSystemParameter.keyShift} instead.
+     * > For example, if the target value is 156, the recommended approach is:
+     * >
+     * > - `keyShift` = 1
+     * > - `fineTune` = 56
+     * >   Note that this approach shouldn't be taken for drum channels, as key shift will break them.
      */
     fineTune: number;
 
     /**
      * The interpolation type used for sample playback.
+     * Interpolation defines how sample points between the sample data are calculated.
+     * This has high cost on performance but can improve the quality.
+     *
      *
      * Overrides the global parameter if set.
      */
@@ -66,6 +99,11 @@ export interface ChannelSystemParameter {
     monophonicRetrigger: boolean | null;
 }
 
+/**
+ * Default values for {@link ChannelSystemParameter}s.
+ *
+ * @group Synthesizer.Parameters
+ */
 export const DEFAULT_CHANNEL_SYSTEM_PARAMETERS: ChannelSystemParameter = {
     // Channel exclusive
     presetLock: false,

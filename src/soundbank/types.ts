@@ -1,32 +1,26 @@
-import type { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 import { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
 import type { ModulatorControllerSource } from "./enums";
 import type { WAVFourCC } from "../utils/riff_chunk";
-import type { BasicPreset } from "./basic_soundbank/basic_preset";
-import type { DLSLoopType } from "./downloadable_sounds/enums";
+import type { MIDIPatchFull } from "./basic_soundbank/midi_patch";
 
-export interface SoundBankManagerListEntry {
-    /**
-     * The unique string identifier of the sound bank.
-     */
-    id: string;
-    /**
-     * The sound bank itself.
-     */
-    soundBank: BasicSoundBank;
-    /**
-     * The bank MSB offset for this sound bank.
-     */
-    bankOffset: number;
-}
-
+/**
+ * Represents a channel in an SF2-compatible synthesizer.
+ * Its data is used for computing  {@link Modulator}s.
+ *
+ * @group Sound Banks.Modulators
+ */
 export interface SF2Channel {
     /**
      * All MIDI controller values for modulation.
      */
     midiControllers: Int16Array;
+
+    /**
+     * Poly Pressures for all 128 notes.
+     */
+    polyPressures: Uint8Array;
 
     /**
      * Other MIDI parameters.
@@ -49,6 +43,11 @@ export interface SF2Channel {
     };
 }
 
+/**
+ * Represents an SF2 version number.
+ *
+ * @group Sound Banks.Info
+ */
 export interface SF2VersionTag {
     /**
      * The major revision number of the sound bank.
@@ -60,6 +59,11 @@ export interface SF2VersionTag {
     minor: number;
 }
 
+/**
+ * RIFF Four Character Codes found in all sound bank formats.
+ *
+ * @group Utilities.FourCC
+ */
 export type GenericBankInfoFourCC =
     | "INAM"
     | "ICRD"
@@ -69,6 +73,11 @@ export type GenericBankInfoFourCC =
     | "ICMT"
     | "ISFT";
 
+/**
+ * RIFF Four Character Codes found in SF2 INFO chunk.
+ *
+ * @group Utilities.FourCC
+ */
 export type SF2InfoFourCC =
     | GenericBankInfoFourCC
     | "ifil"
@@ -78,6 +87,11 @@ export type SF2InfoFourCC =
     | "DMOD"
     | "LIST";
 
+/**
+ * RIFF Four Character Codes found in the SF2 structure.
+ *
+ * @group Utilities.FourCC
+ */
 export type SF2ChunkFourCC =
     | "pdta"
     | "xdta"
@@ -94,8 +108,18 @@ export type SF2ChunkFourCC =
     | "igen"
     | "shdr";
 
+/**
+ * RIFF Four Character Codes found in the DLS INFO chunk.
+ *
+ * @group Utilities.FourCC
+ */
 export type DLSInfoFourCC = GenericBankInfoFourCC | "ISBJ";
 
+/**
+ * RIFF Four Character Codes found in the DLS structure.
+ *
+ * @group Utilities.FourCC
+ */
 export type DLSChunkFourCC =
     | WAVFourCC
     | "dls "
@@ -122,9 +146,14 @@ export type DLSChunkFourCC =
     // Proprietary MobileBAE instrument aliasing chunk
     | "pgal";
 
+/**
+ * Metadata object representing information associated with a {@link BasicSoundBank}.
+ *
+ * @group Sound Banks.Info
+ */
 export interface SoundBankInfoData {
     /**
-     * Name.
+     * The sound bank's name.
      */
     name: string;
     /**
@@ -132,72 +161,113 @@ export interface SoundBankInfoData {
      */
     version: SF2VersionTag;
     /**
-     * Creation date.
+     * The creation date of this sound bank.
+     *
+     * > **Note**
+     * >
+     * > If the date text is invalid, the current date will be used instead.
+     * > If you have a valid date in your sound bank, and it still fails to parse, please open an issue!
      */
     creationDate: Date;
     /**
-     * Sound engine.
+     * The target sound engine of this sound bank.
      */
     soundEngine: string;
     /**
-     * Author.
+     * The engineer (creator) of the sound bank.
      */
     engineer?: string;
     /**
-     * Product.
+     * The product information associated with the sound bank.
      */
     product?: string;
     /**
-     * Copyright.
+     * The copyright information associated with the sound bank.
      */
     copyright?: string;
     /**
-     * Comment.
+     * The comment for this sound bank, usually the description.
      */
     comment?: string;
     /**
-     * Software used to edit the file.
+     * Name of the last software used to edit the file.
      */
     software?: string;
     /**
-     * Subject.
+     * The subject of the file. This only appears in DLS files.
      */
     subject?: string;
     /**
-     * ROM information.
+     * ROM information. SF2 only and will usually not be present.
      */
     romInfo?: string;
     /**
-     * A tag that only applies to SF2 and will usually be undefined.
+     * ROM version information. SF2 only and will usually not be present.
      */
     romVersion?: SF2VersionTag;
 }
 
-export type SoundBankInfoFourCC = keyof SoundBankInfoData;
-
+/**
+ * Parameters for rendering a single voice in the SoundFont2 format.
+ *
+ * @group Sound Banks.Zones
+ */
 export interface VoiceParameters {
+    /**
+     * The summed generators.
+     */
     generators: Int16Array;
+    /**
+     * The summed modulators.
+     */
     modulators: Modulator[];
+    /**
+     * The sample used for this voice.
+     */
     sample: BasicSample;
 }
 
+/**
+ * This function is used to compress/encode a {@link BasicSample}.
+ * The function is recommended to be asynchronous.
+ *
+ *  > **Note**
+ * > Using a custom function allows for using *any* type of compression for the SF3 soundBank.
+ * > This is allowed by the [RFC describing SF3 spec](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format),
+ * > but SpessaSynth can only read Ogg Vorbis compression.
+ *
+ * @param audioData The PCM sample data.
+ * @param sampleRate The sample rate in Hertz.
+ * @returns `Uint8Array` containing the compressed audio data (a complete container).
+ *
+ * @group Sound Banks.Samples
+ */
 export type SampleEncodingFunction = (
     audioData: Float32Array,
     sampleRate: number
 ) => Promise<Uint8Array>;
 
+/**
+ * An index of the modulator source.
+ * Either an SF2 modulator source or a MIDI controller.
+ *
+ * @group Sound Banks.Modulators
+ */
 export type ModulatorSourceIndex = ModulatorControllerSource | MIDIController;
 
 /**
  * A function to track progress during writing.
+ * @param progress Estimated progress, from 0 to 1.
+ *
+ * @group Sound Banks.Writing
  */
-export type ProgressFunction = (
-    /**
-     * Estimated progress, from 0 to 1.
-     */
-    progress: number
-) => unknown;
+export type ProgressFunction = (progress: number) => unknown;
 
+/**
+ * Options for changing the {@link BasicSoundBank}'s sample format.
+ *
+ * @group Sound Banks.Samples
+ */
 export type SetSampleFormatOptions = {
     /**
      * A function to show progress for compressing. It can be undefined.
@@ -226,12 +296,18 @@ export type SetSampleFormatOptions = {
 
           /**
            * The function for compressing samples.
+           * It must be provided if `compressed` format is chosen.
            */
           compressionFunction: SampleEncodingFunction;
       }
 );
 
-interface SoundBankWriteOptions {
+/**
+ * Options for writing a sound bank file.
+ *
+ * @group Sound Banks.Writing
+ */
+export interface SoundBankWriteOptions {
     /**
      * The `ISFT` field to set when writing. If unset, `SpessaSynth` is written.
      * This field indicates the last software that was used to edit this sound bank.
@@ -239,35 +315,39 @@ interface SoundBankWriteOptions {
     software: string;
 
     /**
-     * A function for long operations. It can be undefined.
+     * A function to allow showing progress long operations. It can be undefined.
      */
     progressFunction?: ProgressFunction;
 }
 
 /**
- * Options for writing a SoundFont2 file.
+ * Options for writing a SoundFont2/3 file.
+ *
+ * @group Sound Banks.Writing
  */
 export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
     /**
      * If the DMOD chunk should be written. Recommended.
-     * Note that it will only be written if the modulators are unchanged.
+     * > **Note**
+     * >
+     * > The chunk will only be written if the modulators are unchanged.
      */
     writeDefaultModulators: boolean;
 
     /**
      * If the XDTA chunk should be written to allow virtually infinite parameters. Recommended.
-     * Note that it will only be written needed.
+     *
+     * > **Note**
+     * >
+     * > The chunk will only be written if needed.
      */
     writeExtendedLimits: boolean;
 }
 
 /**
- * Options for writing a DLS file.
- */
-export type DLSWriteOptions = SoundBankWriteOptions;
-
-/**
  * Options for writing an SFE 4 file.
+ *
+ * @group Sound Banks.Writing
  */
 export interface SFEWriteOptions extends SoundBankWriteOptions {
     /**
@@ -278,32 +358,43 @@ export interface SFEWriteOptions extends SoundBankWriteOptions {
     rf64: boolean;
 }
 
+/**
+ * A simple range interface.
+ *
+ * @group Sound Banks.Zones
+ */
 export interface GenericRange {
+    /**
+     * The minimum value.
+     */
     min: number;
-    max: number;
-}
+    /**
+     * The maximum value.
+     */
 
-export interface DLSLoop {
-    loopType: DLSLoopType;
-    /**
-     * Specifies the start point of the loop in samples as an absolute offset from the beginning of the
-     * data in the <data-ck> subchunk of the <wave-list> wave file chunk.
-     */
-    loopStart: number;
-    /**
-     * Specifies the length of the loop in samples.
-     */
-    loopLength: number;
+    max: number;
 }
 
 /**
  * - Key - the preset.
  * - Value - A Map:
  *   - Key: The MIDI note number.
- *   - Value: A set of matching velocities for this note number.
+ *   - Value: A set of all velocities this key was pressed with.
+ *
+ * @group MIDI.Protocol
  */
-export type PresetsWithKeyCombinations = Map<
-    BasicPreset,
+export type PresetsWithKeyCombinations<T extends MIDIPatchFull> = Map<
+    T,
     Map<number, Set<number>>
 >;
+/**
+ * One of the General MIDI systems.
+ *
+ * > **Tip**
+ * >
+ * > Consider reading the [MIDI Implementation](../../docs/extra/midi-implementation.md)
+ * to learn more about these systems.
+ *
+ * @group MIDI.Protocol
+ */
 export type MIDISystem = "gm" | "gm2" | "gs" | "xg";

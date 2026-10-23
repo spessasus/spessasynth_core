@@ -3,8 +3,8 @@ import type { MIDIChannel } from "./midi_channel";
 import type { GeneratorType } from "../../../soundbank/basic_soundbank/generator_types";
 import {
     MIDIControllers,
-    NonRegisteredLSB,
-    NonRegisteredMSB,
+    NonRegisteredParameterTypesLSB,
+    NonRegisteredParameterTypesMSB,
     RegisteredParameterTypes
 } from "../../../midi/enums";
 import { SpessaLog } from "../../../utils/loggin";
@@ -98,24 +98,28 @@ export function dataEntry(this: MIDIChannel) {
     }
 
     // NRPN Handling
-    const paramCoarse =
+    const parameterCoarse =
         this._midiControllers[MIDIControllers.nonRegisteredParameterMSB] >> 7;
-    const paramFine =
+    const parameterFine =
         this._midiControllers[MIDIControllers.nonRegisteredParameterLSB] >> 7;
+    if (parameterCoarse === 0x7f && parameterFine === 0x7f) {
+        // Hardcoded NRPN NULL to avoid AWE32 errors
+        return;
+    }
     const dataCoarse = dataValue >> 7;
     // Skip drums early
     if (
         this.synthCore.systemParameters.drumLock &&
-        paramCoarse >= NonRegisteredMSB.drumPitch &&
-        paramCoarse <= NonRegisteredMSB.drumDelay
+        parameterCoarse >= NonRegisteredParameterTypesMSB.drumPitch &&
+        parameterCoarse <= NonRegisteredParameterTypesMSB.drumVariation
     )
         return;
-    switch (paramCoarse) {
+    switch (parameterCoarse) {
         default: {
             SpessaLog.info(
-                `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse
+                `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${parameterCoarse
                     .toString(16)
-                    .toUpperCase()} 0x${paramFine
+                    .toUpperCase()} 0x${parameterFine
                     .toString(16)
                     .toUpperCase()})%c data value: %c${dataCoarse}`,
                 ConsoleColors.warn,
@@ -129,14 +133,14 @@ export function dataEntry(this: MIDIChannel) {
         }
 
         // Part parameters
-        case NonRegisteredMSB.partParameter: {
-            const paramLock =
+        case NonRegisteredParameterTypesMSB.partParameter: {
+            const parameterLock =
                 this._systemParameters.nrpnParamLock ??
                 this.synthCore.systemParameters.nrpnParamLock;
-            switch (paramFine) {
+            switch (parameterFine) {
                 default: {
                     SpessaLog.info(
-                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${paramCoarse.toString(16)} 0x${paramFine.toString(
+                        `%cUnrecognized NRPN for %c${this.channel}%c: %c(0x${parameterCoarse.toString(16)} 0x${parameterFine.toString(
                             16
                         )})%c data value: %c${dataCoarse}`,
                         ConsoleColors.warn,
@@ -150,35 +154,87 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Vibrato rate
-                case NonRegisteredLSB.vibratoRate: {
-                    this.controllerChange(
-                        MIDIControllers.vibratoRate,
-                        dataCoarse
-                    );
+                case NonRegisteredParameterTypesLSB.vibratoRate: {
+                    /*
+                    A note on this vibrato.
+                    This is a completely custom vibrato, with its own oscillator and parameters.
+                    It is disabled by default via a system parameter, and when enabled,
+                    it only activates when one of the NPRN messages changing it is received
+                    and stays on until the next system-reset.
+
+                    It was implemented very early in SpessaSynth's development,
+                    because I wanted support for Touhou MIDIs :-)
+                     */
+                    if (
+                        this.synthCore.systemParameters.customVibrato &&
+                        !this.dynamicModulators.active
+                    ) {
+                        if (parameterLock || dataCoarse === 64) return;
+                        this.addDefaultVibrato();
+                        this.customVibrato.rate = (dataCoarse / 64) * 8;
+                        SpessaLog.coolInfo(
+                            `Vibrato rate for ${this.channel}`,
+                            `${dataCoarse} = ${this.customVibrato.rate}`,
+                            "Hz"
+                        );
+                    } else {
+                        this.controllerChange(
+                            MIDIControllers.vibratoRate,
+                            dataCoarse
+                        );
+                    }
                     break;
                 }
 
                 // Vibrato depth
-                case NonRegisteredLSB.vibratoDepth: {
-                    this.controllerChange(
-                        MIDIControllers.vibratoDepth,
-                        dataCoarse
-                    );
+                case NonRegisteredParameterTypesLSB.vibratoDepth: {
+                    if (
+                        this.synthCore.systemParameters.customVibrato &&
+                        !this.dynamicModulators.active
+                    ) {
+                        if (parameterLock || dataCoarse === 64) return;
+                        this.addDefaultVibrato();
+                        this.customVibrato.depth = dataCoarse / 2;
+                        SpessaLog.coolInfo(
+                            `Vibrato depth for ${this.channel}`,
+                            `${dataCoarse} = ${this.customVibrato.depth}`,
+                            "cents"
+                        );
+                    } else {
+                        this.controllerChange(
+                            MIDIControllers.vibratoDepth,
+                            dataCoarse
+                        );
+                    }
                     break;
                 }
 
                 // Vibrato delay
-                case NonRegisteredLSB.vibratoDelay: {
-                    this.controllerChange(
-                        MIDIControllers.vibratoDelay,
-                        dataCoarse
-                    );
+                case NonRegisteredParameterTypesLSB.vibratoDelay: {
+                    if (
+                        this.synthCore.systemParameters.customVibrato &&
+                        !this.dynamicModulators.active
+                    ) {
+                        if (parameterLock || dataCoarse === 64) return;
+                        this.addDefaultVibrato();
+                        this.customVibrato.delay = dataCoarse / 64 / 3;
+                        SpessaLog.coolInfo(
+                            `Vibrato delay for ${this.channel}`,
+                            `${dataCoarse} = ${this.customVibrato.delay}`,
+                            "seconds"
+                        );
+                    } else {
+                        this.controllerChange(
+                            MIDIControllers.vibratoDelay,
+                            dataCoarse
+                        );
+                    }
                     break;
                 }
 
                 // Filter cutoff
-                case NonRegisteredLSB.tvfCutoffFrequency: {
-                    if (paramLock) return;
+                case NonRegisteredParameterTypesLSB.tvfCutoffFrequency: {
+                    if (parameterLock) return;
                     // Affect the "brightness" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.brightness,
@@ -192,8 +248,8 @@ export function dataEntry(this: MIDIChannel) {
                     break;
                 }
 
-                case NonRegisteredLSB.tvfResonance: {
-                    if (paramLock) return;
+                case NonRegisteredParameterTypesLSB.tvfResonance: {
+                    if (parameterLock) return;
                     // Affect the "resonance" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.filterResonance,
@@ -208,8 +264,8 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Attack time
-                case NonRegisteredLSB.envelopeAttackTime: {
-                    if (paramLock) return;
+                case NonRegisteredParameterTypesLSB.envelopeAttackTime: {
+                    if (parameterLock) return;
                     // Affect the "attack time" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.attackTime,
@@ -224,8 +280,8 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Decay time
-                case NonRegisteredLSB.envelopeDecayTime: {
-                    if (paramLock) return;
+                case NonRegisteredParameterTypesLSB.envelopeDecayTime: {
+                    if (parameterLock) return;
                     // Affect the "decay time" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.decayTime,
@@ -240,8 +296,8 @@ export function dataEntry(this: MIDIChannel) {
                 }
 
                 // Release time
-                case NonRegisteredLSB.envelopeReleaseTime: {
-                    if (paramLock) return;
+                case NonRegisteredParameterTypesLSB.envelopeReleaseTime: {
+                    if (parameterLock) return;
                     // Affect the "release time" controller as we have a default modulator that controls it
                     this.controllerChange(
                         MIDIControllers.releaseTime,
@@ -258,7 +314,7 @@ export function dataEntry(this: MIDIChannel) {
             break;
         }
 
-        case NonRegisteredMSB.drumPitch: {
+        case NonRegisteredParameterTypesMSB.drumPitch: {
             /**
              * https://github.com/spessasus/spessasynth_core/pull/58#issuecomment-3893343073
              * it's actually 50 cents! (not for XG though)
@@ -266,86 +322,86 @@ export function dataEntry(this: MIDIChannel) {
              */
             const pitch =
                 this.channelSystem === "xg" || this.patch.bankLSB === 1
-                    ? (dataCoarse - 64) * 100
-                    : (dataCoarse - 64) * 50;
-            this.drumParams[paramFine].pitch = pitch;
+                    ? dataCoarse - 64
+                    : (dataCoarse - 64) * 0.5;
+            this.drumParams[parameterFine].pitchCoarse = pitch;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} pitch for ${this.channel}`,
+                `Drum ${parameterFine} pitch for ${this.channel}`,
+                pitch,
+                "semitones"
+            );
+            break;
+        }
+
+        case NonRegisteredParameterTypesMSB.drumPitchFine: {
+            const pitch = dataCoarse - 64;
+            this.drumParams[parameterFine].pitchFine = pitch;
+            SpessaLog.coolInfo(
+                `Drum ${parameterFine} pitch fine for ${this.channel}`,
                 pitch,
                 "cents"
             );
             break;
         }
 
-        case NonRegisteredMSB.drumPitchFine: {
-            const pitch = dataCoarse - 64;
-            this.drumParams[paramFine].pitch += pitch;
+        case NonRegisteredParameterTypesMSB.drumLevel: {
+            this.drumParams[parameterFine].level = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} pitch fine for ${this.channel}`,
-                this.drumParams[paramFine].pitch,
-                "cents"
-            );
-            break;
-        }
-
-        case NonRegisteredMSB.drumLevel: {
-            this.drumParams[paramFine].gain = dataCoarse / 120;
-            SpessaLog.coolInfo(
-                `Drum ${paramFine} level for ${this.channel}`,
+                `Drum ${parameterFine} level for ${this.channel}`,
                 dataCoarse,
                 ""
             );
             break;
         }
 
-        case NonRegisteredMSB.drumPan: {
-            this.drumParams[paramFine].pan = dataCoarse;
+        case NonRegisteredParameterTypesMSB.drumPan: {
+            this.drumParams[parameterFine].pan = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} pan for ${this.channel}`,
+                `Drum ${parameterFine} Pan for ${this.channel}`,
                 dataCoarse,
                 ""
             );
             break;
         }
 
-        case NonRegisteredMSB.drumReverb: {
-            this.drumParams[paramFine].reverbGain = dataCoarse / 127;
+        case NonRegisteredParameterTypesMSB.drumReverb: {
+            this.drumParams[parameterFine].reverbSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} reverb level for ${this.channel}`,
+                `Drum ${parameterFine} Reverb Send for ${this.channel}`,
                 dataCoarse,
                 ""
             );
             break;
         }
 
-        case NonRegisteredMSB.drumChorus: {
-            this.drumParams[paramFine].chorusGain = dataCoarse / 127;
+        case NonRegisteredParameterTypesMSB.drumChorus: {
+            this.drumParams[parameterFine].chorusSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} chorus level for ${this.channel}`,
+                `Drum ${parameterFine} Chorus Send for ${this.channel}`,
                 dataCoarse,
                 ""
             );
             break;
         }
 
-        case NonRegisteredMSB.drumDelay: {
-            this.drumParams[paramFine].delayGain = dataCoarse / 127;
+        case NonRegisteredParameterTypesMSB.drumVariation: {
+            this.drumParams[parameterFine].variationSend = dataCoarse;
             SpessaLog.coolInfo(
-                `Drum ${paramFine} delay level for ${this.channel}`,
+                `Drum ${parameterFine} Variation Send for ${this.channel}`,
                 dataValue,
                 ""
             );
             break;
         }
 
-        case NonRegisteredMSB.awe32: {
-            handleAWE32NRPN.call(this, paramFine, dataValue);
+        case NonRegisteredParameterTypesMSB.awe32: {
+            handleAWE32NRPN.call(this, parameterFine, dataValue);
             break;
         }
 
         // SF2 NRPN
-        case NonRegisteredMSB.SF2: {
-            if (paramFine > 100) {
+        case NonRegisteredParameterTypesMSB.SF2: {
+            if (parameterFine > 100) {
                 // Sf spec:
                 // Note that NRPN Select LSB greater than 100 are for setup only, and should not be used on their own to select a
                 // Generator parameter.

@@ -8,6 +8,11 @@ import { StbVorbis } from "stb-vorbis";
 // Should be reasonable for most cases
 const RESAMPLE_RATE = 48_000;
 
+/**
+ * A basic sample represents a single audio sample with associated parameters.
+ *
+ * @group Sound Banks.Samples
+ */
 export class BasicSample {
     /**
      * The sample's name.
@@ -15,32 +20,43 @@ export class BasicSample {
     public name: string;
 
     /**
-     * Sample rate in Hz.
+     * The sample rate of the sample, in Hertz.
      */
     public sampleRate: number;
 
     /**
-     * Original pitch of the sample as a MIDI note number.
+     * The MIDI note number of the recorded pitch for this sample.
      */
     public originalKey: number;
 
     /**
-     * Pitch correction, in cents. Can be negative.
+     * The pitch correction to apply in cents. It can be negative.
      */
     public pitchCorrection: number;
 
     /**
-     * Linked sample, unused if mono.
+     * The other linked sample of the stereo pair. `undefined` if the sample has no link.
      */
     public linkedSample?: BasicSample;
 
     /**
-     * The type of the sample.
+     * The type of the sample, as defined per SF2 specification:
+     *
+     * > The value in sfSampleType is an enumeration with eight defined values: monoSample = 1, rightSample = 2, leftSample = 4,
+     * > linkedSample = 8, RomMonoSample = 32769, RomRightSample = 32770, RomLeftSample = 32772, and
+     * > RomLinkedSample = 32776. It can be seen that this is encoded such that bit 15 of the 16 bit value is set if the sample is in
+     * > ROM, and reset if it is included in the SoundFont compatible bank. The four LS bits of the word are then exclusively set
+     * > indicating mono, left, right, or linked.
+     *
+     * > **Warning**
+     * >
+     * > Do not change this value directly. use {@link BasicSample.setSampleType},
+     * > {@link BasicSample.setLinkedSample} or {@link BasicSample.unlinkSample} instead.
      */
     public sampleType: SampleType;
 
     /**
-     * The sample's loop start index, inclusive.
+     * The sample's loop start index, _inclusive_.
      * In sample data points, relative to the start of the sample.
      *
      * Minimum allowed value is 0.
@@ -48,15 +64,18 @@ export class BasicSample {
     public loopStart: number;
 
     /**
-     * The sample's loop end index, exclusive.
+     * The sample's loop end index, _exclusive_.
      * In sample data points, relative to the start of the sample.
      *
      * Maximum allowed value is the sample data length.
      */
     public loopEnd: number;
     /**
-     * Sample's linked instruments (the instruments that use it)
-     * note that duplicates are allowed since one instrument can use the same sample multiple times.
+     * Sample's linked instruments (the instruments that use it).
+     *
+     * > **Note**
+     * >
+     * > Duplicate entries are allowed since one instrument can use the same sample multiple times.
      */
     public linkedTo: BasicInstrument[] = [];
     /**
@@ -73,14 +92,19 @@ export class BasicSample {
     protected audioData?: Float32Array;
 
     /**
-     * The basic representation of a sample.
+     * Creates a new `BasicSample`.
+     *
+     * > **Tip**
+     * >
+     * > For an easier to use constructor, consider using {@link EmptySample} instead.
+     *
      * @param sampleName The sample's name.
      * @param sampleRate The sample's rate in Hz.
      * @param originalKey The sample's pitch as a MIDI note number.
      * @param pitchCorrection The sample's pitch correction in cents.
-     * @param sampleType The sample's type, an enum that can indicate SF3.
+     * @param sampleType The sample's type, an enum that defines the sample type/compression.
      * @param loopStart The sample's loop start relative to the sample start in sample points.
-     * @param loopEnd The sample's loop end relative to the sample start in sample points. Inclusive.
+     * @param loopEnd The sample's loop end relative to the sample start in sample points. Exclusive.
      */
     public constructor(
         sampleName: string,
@@ -101,7 +125,7 @@ export class BasicSample {
     }
 
     /**
-     * Indicates if the sample is compressed using vorbis SF3.
+     * Indicates if the sample contains compressed audio.
      */
     public get isCompressed(): boolean {
         return this.compressedData !== undefined;
@@ -119,7 +143,7 @@ export class BasicSample {
     }
 
     /**
-     * The sample's use count
+     * How many instruments is this sample used by.
      */
     public get useCount() {
         return this.linkedTo.length;
@@ -129,6 +153,7 @@ export class BasicSample {
      * Get raw data for writing the file, either a compressed bit stream or signed 16-bit little endian PCM data.
      * @param allowVorbis if vorbis file data is allowed.
      * @return either s16le or vorbis data.
+     * @internal
      */
     public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.compressedData && allowVorbis && !this.dataOverridden) {
@@ -138,7 +163,8 @@ export class BasicSample {
     }
 
     /**
-     * Resamples the audio data to a given sample rate.
+     * Resamples the audio data _in-place_ to a given sample rate.
+     * @param newSampleRate The new sample rate, in hertz.
      */
     public resampleData(newSampleRate: number) {
         let audioData = this.getAudioData();
@@ -159,7 +185,8 @@ export class BasicSample {
 
     /**
      * Compresses the audio data
-     * @param encodeVorbis the compression function to use when compressing
+     * @param encodeVorbis the compression function to use when compressing.
+     * @internal
      */
     public async compressSample(encodeVorbis: SampleEncodingFunction) {
         // No need to compress
@@ -216,14 +243,14 @@ export class BasicSample {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Links a stereo sample.
-     * @param sample the sample to link to.
-     * @param type either left, right or linked.
+     * @param sample The sample to link to.
+     * @param type Either left, right or linked. The linked sample will be set appropriately as well.
      */
     public setLinkedSample(sample: BasicSample, type: SampleType) {
         // Sanity check
         if (sample.linkedSample) {
             throw new Error(
-                `${sample.name} is linked tp ${sample.linkedSample.name}. Unlink it first.`
+                `${sample.name} is linked to ${sample.linkedSample.name}. Unlink it first.`
             );
         }
         // Testcase: pc98_ym2608.sf2
@@ -260,6 +287,7 @@ export class BasicSample {
     /**
      * Links the sample to a given instrument
      * @param instrument the instrument to link to
+     * @internal
      */
     public linkTo(instrument: BasicInstrument) {
         this.linkedTo.push(instrument);
@@ -268,6 +296,7 @@ export class BasicSample {
     /**
      * Unlinks the sample from a given instrument
      * @param instrument the instrument to unlink from
+     * @internal
      */
     public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);
@@ -281,10 +310,9 @@ export class BasicSample {
     }
 
     /**
-     * Get the float32 audio data.
-     * Note that this either decodes the compressed data or passes the ready sampleData.
-     * If neither are set then it will throw an error!
-     * @returns the audio data
+     * Get the PCM Float32 audio data of this sample.
+     * This either decodes the compressed data or passes the ready sampleData.
+     * @returns The raw audio data.
      */
     public getAudioData(): Float32Array {
         if (this.audioData) {
@@ -313,8 +341,8 @@ export class BasicSample {
     }
 
     /**
-     * Replaces the audio with a compressed data sample and flags the sample as compressed
-     * @param data the new compressed data
+     * Replaces the audio with a compressed data sample and flags the sample as compressed.
+     * @param data The new compressed data.
      */
     public setCompressedData(data: Uint8Array) {
         this.audioData = undefined;
@@ -394,10 +422,12 @@ export class BasicSample {
     }
 }
 
+/**
+ * A simplified class for creating {@link BasicSample}.
+ *
+ * @group Sound Banks.Samples
+ */
 export class EmptySample extends BasicSample {
-    /**
-     * A simplified class for creating samples.
-     */
     public constructor() {
         super("", 44_100, 60, 0, SampleTypes.monoSample, 0, 0);
     }

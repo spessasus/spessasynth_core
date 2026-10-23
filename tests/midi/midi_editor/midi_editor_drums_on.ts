@@ -3,7 +3,7 @@ import { BasicMIDI, SpessaLog } from "../../../src";
 import type {
     ChannelModification,
     ClearableParameter
-} from "../../../src/midi/midi_tools/modify_midi";
+} from "../../../src/midi/midi_tools/midi_editor";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {

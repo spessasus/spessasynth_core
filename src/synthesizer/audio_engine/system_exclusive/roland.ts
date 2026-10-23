@@ -2,10 +2,127 @@ import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
-import type { SynthesizerCore } from "../synthesizer_core";
+import { SpessaSynthProcessor } from "../../processor";
 import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
+import { ConsoleColors } from "../../../utils/other";
+import {
+    DEFAULT_GS_DRUM_MAP,
+    MELODIC_MAP
+} from "../../../midi/midi_tools/sysex_data";
+
+function handleUserDrum(
+    this: SpessaSynthProcessor,
+    a2: number,
+    a3: number,
+    data: number,
+    syx: SysExAcceptedArray
+) {
+    if (this.systemParameters.userDrumLock) return;
+    const drumSet = a2 >> 4;
+    const midiNote = a3;
+    const command = a2 & 0xf;
+    switch (command) {
+        default: {
+            SpessaLog.gsFail("User Drum set", syx);
+            return;
+        }
+
+        // User drum set name
+        case 0: {
+            const newName = readBinaryString(syx, 12, 7).trim();
+            SpessaLog.gsInfo(`User Drum Set ${drumSet} Name`, newName);
+            this.callEvent("displayMessage", [...syx]);
+            return;
+        }
+
+        case 0x1: {
+            // Here it's relative to 60, not 64 like NRPN. For some reason...
+            const pitch = data - 60;
+
+            // Use the full 100 cents here as we choose the correct pitch (50 or 100 cents) when committing changes
+            this.setUserDrumSetParam(drumSet, midiNote, "pitchCoarse", pitch);
+            return;
+        }
+
+        case 0x2: {
+            // Drum Level
+            this.setUserDrumSetParam(drumSet, midiNote, "level", data);
+            return;
+        }
+
+        case 0x3: {
+            // Drum Assign Group (exclusive class)
+            this.setUserDrumSetParam(drumSet, midiNote, "assignGroup", data);
+            return;
+        }
+
+        case 0x4: {
+            // Pan
+            this.setUserDrumSetParam(drumSet, midiNote, "pan", data);
+            return;
+        }
+
+        case 0x5: {
+            // Reverb
+            this.setUserDrumSetParam(drumSet, midiNote, "reverbSend", data);
+            return;
+        }
+
+        case 0x6: {
+            // Chorus
+            this.setUserDrumSetParam(drumSet, midiNote, "chorusSend", data);
+            return;
+        }
+
+        case 0x7: {
+            // Receive Note Off
+            this.setUserDrumSetParam(
+                drumSet,
+                midiNote,
+                "rxNoteOff",
+                data === 1
+            );
+            return;
+        }
+
+        case 0x8: {
+            // Receive Note On
+            this.setUserDrumSetParam(drumSet, midiNote, "rxNoteOn", data === 1);
+            return;
+        }
+
+        case 0x9: {
+            // Delay
+            this.setUserDrumSetParam(drumSet, midiNote, "variationSend", data);
+            return;
+        }
+
+        // Source drum set
+        case 0xa: {
+            this.setUserDrumSetParam(drumSet, midiNote, "sourceDrumSet", data);
+            return;
+        }
+
+        // Program number
+        case 0xb: {
+            this.setUserDrumSetParam(drumSet, midiNote, "program", data);
+            return;
+        }
+
+        // Source note number
+        case 0xc: {
+            this.setUserDrumSetParam(
+                drumSet,
+                midiNote,
+                "sourceNoteNumber",
+                data
+            );
+            return;
+        }
+    }
+}
 
 /**
  * Handles a Roland GS system exclusive
@@ -15,7 +132,7 @@ import type { SysExAcceptedArray } from "../../../midi/types";
  * @param channelOffset
  */
 export function rolandSystemExclusive(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
@@ -43,7 +160,7 @@ export function rolandSystemExclusive(
                         // Double module mode, ensure at least 32 channels
                         SpessaLog.gsInfo("Mode", "Double Module");
                         while (this.midiChannels.length < 32) {
-                            this.createMIDIChannel(true);
+                            this.createMIDIChannel();
                         }
                     }
                     // This is a GS reset
@@ -139,11 +256,12 @@ export function rolandSystemExclusive(
                         const isChorus = a3 >= 0x38 && a3 <= 0x40;
                         const isDelay = a3 >= 0x50 && a3 <= 0x5a;
                         // Disable effect editing if locked
-                        if (isReverb && this.systemParameters.reverbLock)
+                        if (isReverb && this.systemParameters.gsReverbLock)
                             return;
-                        if (isChorus && this.systemParameters.chorusLock)
+                        if (isChorus && this.systemParameters.gsChorusLock)
                             return;
-                        if (isDelay && this.systemParameters.delayLock) return;
+                        if (isDelay && this.systemParameters.gsDelayLock)
+                            return;
 
                         switch (a3) {
                             default: {
@@ -170,10 +288,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x31: {
                                 // Reverb character
-                                this.reverbProcessor.character = data;
+                                this.gsReverbProcessor.character = data;
                                 SpessaLog.gsInfo("Reverb Character", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "character",
                                     value: data
                                 });
@@ -181,10 +299,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x32: {
                                 // Reverb pre-PLF
-                                this.reverbProcessor.preLowpass = data;
+                                this.gsReverbProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Reverb Pre-LPF", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "preLowpass",
                                     value: data
                                 });
@@ -192,10 +310,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x33: {
                                 // Reverb level
-                                this.reverbProcessor.level = data;
+                                this.gsReverbProcessor.level = data;
                                 SpessaLog.gsInfo("Reverb Level", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "level",
                                     value: data
                                 });
@@ -203,10 +321,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x34: {
                                 // Reverb time
-                                this.reverbProcessor.time = data;
+                                this.gsReverbProcessor.time = data;
                                 SpessaLog.gsInfo("Reverb Time", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "time",
                                     value: data
                                 });
@@ -214,10 +332,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x35: {
                                 // Reverb delay feedback
-                                this.reverbProcessor.delayFeedback = data;
+                                this.gsReverbProcessor.delayFeedback = data;
                                 SpessaLog.gsInfo("Reverb Delay Feedback", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "delayFeedback",
                                     value: data
                                 });
@@ -231,10 +349,10 @@ export function rolandSystemExclusive(
 
                             case 0x37: {
                                 // Reverb predelay time
-                                this.reverbProcessor.preDelayTime = data;
+                                this.gsReverbProcessor.preDelayTime = data;
                                 SpessaLog.gsInfo("Reverb Predelay Time", data);
                                 this.callEvent("effectChange", {
-                                    effect: "reverb",
+                                    effect: "gsReverb",
                                     parameter: "preDelayTime",
                                     value: data
                                 });
@@ -251,10 +369,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x39: {
                                 // Chorus pre-LPF
-                                this.chorusProcessor.preLowpass = data;
+                                this.gsChorusProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Chorus Pre-LPF", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "preLowpass",
                                     value: data
                                 });
@@ -262,10 +380,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x3a: {
                                 // Chorus level
-                                this.chorusProcessor.level = data;
+                                this.gsChorusProcessor.level = data;
                                 SpessaLog.gsInfo("Chorus Level", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "level",
                                     value: data
                                 });
@@ -273,10 +391,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x3b: {
                                 // Chorus feedback
-                                this.chorusProcessor.feedback = data;
+                                this.gsChorusProcessor.feedback = data;
                                 SpessaLog.gsInfo("Chorus Feedback", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "feedback",
                                     value: data
                                 });
@@ -284,10 +402,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x3c: {
                                 // Chorus delay
-                                this.chorusProcessor.delay = data;
+                                this.gsChorusProcessor.delay = data;
                                 SpessaLog.gsInfo("Chorus Delay", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "delay",
                                     value: data
                                 });
@@ -295,10 +413,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x3d: {
                                 // Chorus rate
-                                this.chorusProcessor.rate = data;
+                                this.gsChorusProcessor.rate = data;
                                 SpessaLog.gsInfo("Chorus Rate", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "rate",
                                     value: data
                                 });
@@ -306,10 +424,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x3e: {
                                 // Chorus depth
-                                this.chorusProcessor.depth = data;
+                                this.gsChorusProcessor.depth = data;
                                 SpessaLog.gsInfo("Chorus Depth", data);
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "depth",
                                     value: data
                                 });
@@ -317,13 +435,13 @@ export function rolandSystemExclusive(
                             }
                             case 0x3f: {
                                 // Chorus send level to reverb
-                                this.chorusProcessor.sendLevelToReverb = data;
+                                this.gsChorusProcessor.sendLevelToReverb = data;
                                 SpessaLog.gsInfo(
                                     "Chorus Send Level To Reverb",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "sendLevelToReverb",
                                     value: data
                                 });
@@ -331,14 +449,14 @@ export function rolandSystemExclusive(
                             }
                             case 0x40: {
                                 // Chorus send level to delay
-                                this.chorusProcessor.sendLevelToDelay = data;
-                                this.updateActiveEffects();
+                                this.gsChorusProcessor.sendLevelToDelay = data;
+                                this.updateActiveGSEffects();
                                 SpessaLog.gsInfo(
                                     "Chorus Send Level To Delay",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "chorus",
+                                    effect: "gsChorus",
                                     parameter: "sendLevelToDelay",
                                     value: data
                                 });
@@ -355,10 +473,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x51: {
                                 // Delay pre-PLF
-                                this.delayProcessor.preLowpass = data;
+                                this.gsDelayProcessor.preLowpass = data;
                                 SpessaLog.gsInfo("Delay Pre-LPF", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "preLowpass",
                                     value: data
                                 });
@@ -366,10 +484,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x52: {
                                 // Delay time center
-                                this.delayProcessor.timeCenter = data;
+                                this.gsDelayProcessor.timeCenter = data;
                                 SpessaLog.gsInfo("Delay Time Center", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "timeCenter",
                                     value: data
                                 });
@@ -377,10 +495,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x53: {
                                 // Delay time ratio left
-                                this.delayProcessor.timeRatioLeft = data;
+                                this.gsDelayProcessor.timeRatioLeft = data;
                                 SpessaLog.gsInfo("Delay Time Ratio Left", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "timeRatioLeft",
                                     value: data
                                 });
@@ -388,13 +506,13 @@ export function rolandSystemExclusive(
                             }
                             case 0x54: {
                                 // Delay time ratio right
-                                this.delayProcessor.timeRatioRight = data;
+                                this.gsDelayProcessor.timeRatioRight = data;
                                 SpessaLog.gsInfo(
                                     "Delay Time Ratio Right",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "timeRatioRight",
                                     value: data
                                 });
@@ -402,10 +520,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x55: {
                                 // Delay level center
-                                this.delayProcessor.levelCenter = data;
+                                this.gsDelayProcessor.levelCenter = data;
                                 SpessaLog.gsInfo("Delay Level Center", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "levelCenter",
                                     value: data
                                 });
@@ -413,10 +531,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x56: {
                                 // Delay level left
-                                this.delayProcessor.levelLeft = data;
+                                this.gsDelayProcessor.levelLeft = data;
                                 SpessaLog.gsInfo("Delay Level Left", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "levelLeft",
                                     value: data
                                 });
@@ -424,10 +542,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x57: {
                                 // Delay level right
-                                this.delayProcessor.levelRight = data;
+                                this.gsDelayProcessor.levelRight = data;
                                 SpessaLog.gsInfo("Delay Level Right", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "levelRight",
                                     value: data
                                 });
@@ -435,10 +553,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x58: {
                                 // Delay level
-                                this.delayProcessor.level = data;
+                                this.gsDelayProcessor.level = data;
                                 SpessaLog.gsInfo("Delay Level", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "level",
                                     value: data
                                 });
@@ -446,10 +564,10 @@ export function rolandSystemExclusive(
                             }
                             case 0x59: {
                                 // Delay feedback
-                                this.delayProcessor.feedback = data;
+                                this.gsDelayProcessor.feedback = data;
                                 SpessaLog.gsInfo("Delay Feedback", data);
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "feedback",
                                     value: data
                                 });
@@ -457,13 +575,13 @@ export function rolandSystemExclusive(
                             }
                             case 0x5a: {
                                 // Delay send level to reverb
-                                this.delayProcessor.sendLevelToReverb = data;
+                                this.gsDelayProcessor.sendLevelToReverb = data;
                                 SpessaLog.gsInfo(
                                     "Delay Send Level To Reverb",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "delay",
+                                    effect: "gsDelay",
                                     parameter: "sendLevelToReverb",
                                     value: data
                                 });
@@ -475,17 +593,17 @@ export function rolandSystemExclusive(
 
                     // EFX Parameter
                     if (a2 === 0x03) {
-                        if (this.systemParameters.insertionEffectLock) return;
+                        if (this.systemParameters.gsInsertionLock) return;
 
                         // Write parameters
                         if (a3 >= 0x03 && a3 <= 0x19)
-                            this.insertionParams[a3 - 3] = data;
+                            this.gsInsertionParams[a3 - 3] = data;
 
                         if (a3 >= 0x03 && a3 <= 0x16) {
-                            this.insertionProcessor.setParameter(a3, data);
+                            this.gsInsertionProcessor.setParameter(a3, data);
                             SpessaLog.gsInfo(`EFX Parameter ${a3 - 2}`, data);
                             this.callEvent("effectChange", {
-                                effect: "insertion",
+                                effect: "gsInsertion",
                                 parameter: a3,
                                 value: data
                             });
@@ -506,21 +624,21 @@ export function rolandSystemExclusive(
                                         "EFX Type",
                                         type.toString(16)
                                     );
-                                    this.insertionProcessor = proc;
+                                    this.gsInsertionProcessor = proc;
                                 } else {
-                                    this.insertionProcessor =
-                                        this.insertionFallback;
+                                    this.gsInsertionProcessor =
+                                        this.gsInsertionFallback;
                                     SpessaLog.gsFail(
                                         "EFX Processor",
                                         [type],
                                         "Using Thru."
                                     );
                                 }
-                                this.resetInsertionParams();
-                                this.insertionProcessor.reset();
+                                this.resetGSInsertionParams();
+                                this.gsInsertionProcessor.reset();
                                 // Special case: 16-bit value
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: 0,
                                     value: type
                                 });
@@ -530,14 +648,14 @@ export function rolandSystemExclusive(
                             case 0x17: {
                                 // To reverb
                                 // Divide, insertions use 0-1
-                                this.insertionProcessor.sendLevelToReverb =
+                                this.gsInsertionProcessor.sendLevelToReverb =
                                     (data / 127) * EFX_SENDS_GAIN_CORRECTION;
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Reverb",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: a3,
                                     value: data
                                 });
@@ -547,14 +665,14 @@ export function rolandSystemExclusive(
                             case 0x18: {
                                 // To chorus
                                 // Divide, insertions use 0-1
-                                this.insertionProcessor.sendLevelToChorus =
+                                this.gsInsertionProcessor.sendLevelToChorus =
                                     (data / 127) * EFX_SENDS_GAIN_CORRECTION;
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Chorus",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: a3,
                                     value: data
                                 });
@@ -564,15 +682,15 @@ export function rolandSystemExclusive(
                             case 0x19: {
                                 // To delay
                                 // Divide, insertions use 0-1
-                                this.insertionProcessor.sendLevelToDelay =
+                                this.gsInsertionProcessor.sendLevelToDelay =
                                     (data / 127) * EFX_SENDS_GAIN_CORRECTION;
-                                this.updateActiveEffects();
+                                this.updateActiveGSEffects();
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Delay",
                                     data
                                 );
                                 this.callEvent("effectChange", {
-                                    effect: "insertion",
+                                    effect: "gsInsertion",
                                     parameter: a3,
                                     value: data
                                 });
@@ -588,7 +706,8 @@ export function rolandSystemExclusive(
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
                         const channel =
-                            MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
+                            channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
@@ -654,10 +773,25 @@ export function rolandSystemExclusive(
                             }
 
                             case 0x15: {
-                                // This is the Use for Drum Part sysex (multiple drums)
+                                // This is the Use for Rhythm Part sysex (multiple drums)
+                                const prevMap = ch.midiParameters.drumMap;
                                 ch.setMIDIParameter("drumMap", data);
-                                const isDrums = data > 0; // If set to other than 0, is a drum channel
-                                ch.setGSDrums(isDrums);
+                                const newMap = ch.midiParameters.drumMap;
+                                // Non-melodic means a drum channel
+                                const isDrums = data > MELODIC_MAP;
+                                // Testcase: gs_drum_change_test
+                                // GS resets to the default kit not only when toggling drums,
+                                // But on any map change too.
+                                if (
+                                    !ch.systemParameters.presetLock &&
+                                    (isDrums !== ch.patch.isGMGSDrum ||
+                                        newMap !== prevMap)
+                                ) {
+                                    ch.patch.bankMSB = 0;
+                                    ch.patch.bankLSB = 0;
+                                    ch.patch.isGMGSDrum = isDrums;
+                                    ch.programChange(0);
+                                }
                                 SpessaLog.gsInfo(
                                     `Drums on ${channel}`,
                                     isDrums.toString()
@@ -897,7 +1031,8 @@ export function rolandSystemExclusive(
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
                         const channel =
-                            MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
+                            channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
                         switch (a3 & 0xf0) {
@@ -929,7 +1064,7 @@ export function rolandSystemExclusive(
                                     );
                                     break;
                                 }
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     MIDIControllers.modulationWheel,
@@ -959,7 +1094,7 @@ export function rolandSystemExclusive(
                                     );
                                     break;
                                 }
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ModulatorControllerSources.pitchWheel,
@@ -972,7 +1107,7 @@ export function rolandSystemExclusive(
 
                             case 0x20: {
                                 // Channel pressure
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ModulatorControllerSources.channelPressure,
@@ -984,7 +1119,7 @@ export function rolandSystemExclusive(
 
                             case 0x30: {
                                 // Poly pressure
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ModulatorControllerSources.polyPressure,
@@ -996,7 +1131,7 @@ export function rolandSystemExclusive(
 
                             case 0x40: {
                                 // CC1
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ch.midiParameters.cc1,
@@ -1008,7 +1143,7 @@ export function rolandSystemExclusive(
 
                             case 0x50: {
                                 // CC2
-                                ch.dynamicModulators.setupReceiver(
+                                ch.dynamicModulators.setupReceiverGS(
                                     a3,
                                     data,
                                     ch.midiParameters.cc2,
@@ -1027,7 +1162,8 @@ export function rolandSystemExclusive(
                         // Note that: 0 means channel 9 (drums), and only then 1 means channel 0, 2 channel 1, etc.
                         // SC-8850 manual, page 237
                         const channel =
-                            MIDIUtils.syxToChannel(a2 & 0x0f) + channelOffset;
+                            MIDIUtils.gsPartToChannel(a2 & 0x0f) +
+                            channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
 
@@ -1056,7 +1192,7 @@ export function rolandSystemExclusive(
                                     `EFX assign for ${channel}`,
                                     efx ? "EFX" : "BYPASS"
                                 );
-                                this.updateActiveEffects();
+                                this.updateActiveGSEffects();
                             }
                         }
                         return;
@@ -1064,12 +1200,14 @@ export function rolandSystemExclusive(
                     SpessaLog.gsFail("Patch Parameter", syx);
                     return;
                 }
-                // Drum setup
+                // Drum Setup
                 if (a1 === 0x41 || a1 === 0x51) {
                     // 51 means BLOCK B (+16 channels)
                     // Testcase: 95043-2.KYC.mid
                     if (this.systemParameters.drumLock) return;
-                    const map = (a2 >> 4) + 1;
+                    // In gs, the map is offset by the default (e.g. 1)
+                    // So 0 means drum map 1, 1 means drum map 1, etc.
+                    const map = (a2 >> 4) + DEFAULT_GS_DRUM_MAP;
                     const drumKey = a3;
                     const param = a2 & 0xf;
                     switch (param) {
@@ -1096,8 +1234,8 @@ export function rolandSystemExclusive(
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
                                 // Apply same thing: SC-55 uses 100 cents, SC-88 and above is 50
-                                ch.drumParams[drumKey].pitch =
-                                    pitch * (ch.patch.bankLSB === 1 ? 100 : 50);
+                                ch.drumParams[drumKey].pitchCoarse =
+                                    pitch * (ch.patch.bankLSB === 1 ? 1 : 0.5);
                             }
                             SpessaLog.gsInfo(
                                 `Drum Pitch for MAP${map}, key ${drumKey}`,
@@ -1110,7 +1248,7 @@ export function rolandSystemExclusive(
                             // Drum Level
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].gain = data / 120;
+                                ch.drumParams[drumKey].level = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Level for MAP${map}, key ${drumKey}`,
@@ -1123,7 +1261,7 @@ export function rolandSystemExclusive(
                             // Drum Assign Group (exclusive class)
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].exclusiveClass = data;
+                                ch.drumParams[drumKey].assignGroup = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Assign Group for MAP${map}, key ${drumKey}`,
@@ -1149,7 +1287,7 @@ export function rolandSystemExclusive(
                             // Reverb
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].reverbGain = data / 127;
+                                ch.drumParams[drumKey].reverbSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Reverb for MAP${map}, key ${drumKey}`,
@@ -1162,7 +1300,7 @@ export function rolandSystemExclusive(
                             // Chorus
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].chorusGain = data / 127;
+                                ch.drumParams[drumKey].chorusSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Chorus for MAP${map}, key ${drumKey}`,
@@ -1201,7 +1339,7 @@ export function rolandSystemExclusive(
                             // Delay
                             for (const ch of this.midiChannels) {
                                 if (ch.midiParameters.drumMap !== map) continue;
-                                ch.drumParams[drumKey].delayGain = data / 127;
+                                ch.drumParams[drumKey].variationSend = data;
                             }
                             SpessaLog.gsInfo(
                                 `Drum Delay for MAP${map}, key ${drumKey}`,
@@ -1212,6 +1350,145 @@ export function rolandSystemExclusive(
                     }
                     return;
                 }
+                // User Drum Set
+                if (a1 === 0x21) {
+                    handleUserDrum.call(this, a2, a3, data, syx);
+                    return;
+                }
+
+                // User Drum Set Bulk Dump
+                if (a1 === 0x29) {
+                    const dataLength = syx.length - 9;
+                    SpessaLog.info(
+                        `%cUser Drum Set Bulk Dump detected! Keys: %c${dataLength}`,
+                        ConsoleColors.recognized,
+                        ConsoleColors.value
+                    );
+
+                    // Top half of a2 stays the same (indicates which user drum)
+                    // While the bottom param is something else
+                    // Guessed by analyzing 95043-2.KYC.mid
+
+                    let actualDrumParam: number;
+                    switch (a2 & 0x0f) {
+                        default: {
+                            SpessaLog.gsFail(
+                                "User Drum Bulk Dump System Exclusive",
+                                syx
+                            );
+                            return;
+                        }
+
+                        case 0x0: {
+                            // Most at 60 = play note?
+                            actualDrumParam = 1;
+                            break;
+                        }
+
+                        case 0x1: {
+                            // Level?
+                            actualDrumParam = 2;
+                            break;
+                        }
+
+                        case 0x2: {
+                            // Matches gm.dls exclusive class pretty well, assign group?
+                            actualDrumParam = 3;
+                            break;
+                        }
+
+                        case 0x3: {
+                            // Most at 64, so pan?
+                            actualDrumParam = 4;
+                            break;
+                        }
+
+                        case 0x4: {
+                            // 0 on bass, so reverb?
+                            actualDrumParam = 5;
+                            break;
+                        }
+
+                        case 0x5: {
+                            // 0 on all, so chorus?
+                            actualDrumParam = 6;
+                            break;
+                        }
+
+                        case 0x6: {
+                            // 16 on all
+                            // In the order, rx notes should be here, it's 0x10, so maybe
+                            // It's both? on << 4 | off?
+                            // Special handling is needed
+                            const address2Off = (a2 & 0xf0) | 7;
+                            const address2On = (a2 & 0xf0) | 8;
+                            for (
+                                let midiNote = 0;
+                                midiNote < dataLength;
+                                midiNote++
+                            ) {
+                                handleUserDrum.call(
+                                    this,
+                                    address2Off,
+                                    midiNote,
+                                    syx[midiNote + 7] & 0xf,
+                                    syx
+                                );
+                                handleUserDrum.call(
+                                    this,
+                                    address2On,
+                                    midiNote,
+                                    syx[midiNote + 7] >> 4,
+                                    syx
+                                );
+                            }
+                            return;
+                        }
+
+                        case 0x7: {
+                            // All 0, so delay
+                            actualDrumParam = 9;
+                            break;
+                        }
+
+                        case 0x8: {
+                            // All 2 and this is a 88pro midi, so the map is 2
+                            actualDrumParam = 0xa;
+                            break;
+                        }
+
+                        case 0x9: {
+                            // 0xA matches note number so the only one left is the program
+                            actualDrumParam = 0xb;
+                            break;
+                        }
+
+                        case 0xa: {
+                            // Drum numbers increase so source note
+                            actualDrumParam = 0xc;
+                            break;
+                        }
+
+                        case 0xb: {
+                            // 16 chars, seems to be a name (spec is wrong? says 12)
+                            actualDrumParam = 0;
+                            break;
+                        }
+                    }
+
+                    const address2 = (a2 & 0xf0) | actualDrumParam;
+                    for (let midiNote = 0; midiNote < dataLength; midiNote++) {
+                        handleUserDrum.call(
+                            this,
+                            address2,
+                            midiNote,
+                            syx[midiNote + 7],
+                            syx
+                        );
+                    }
+                    return;
+                }
+
                 // This is some other GS sysex...
                 SpessaLog.gsFail("System Exclusive", syx);
                 return;
@@ -1224,6 +1501,11 @@ export function rolandSystemExclusive(
                 // (Roland SC display sysex) http://www.bandtrax.com.au/sysex.htm
                 // Sound Canvas Display
                 if (syx[4] === 0x10) {
+                    this.callEvent("displayMessage", [...syx]);
+                }
+                // 0x20: SC-8850 160x64 display
+                // Thanks to midi-movie-player for details on this message
+                else if (syx[4] === 0x20) {
                     this.callEvent("displayMessage", [...syx]);
                 }
                 return;

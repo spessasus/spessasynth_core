@@ -2,11 +2,21 @@ import type { SysExAcceptedArray } from "../midi/types";
 import { arrayToHexString, ConsoleColors } from "./other";
 
 /**
- * Manage the log level of `spessasynth_core`.
+ * SpessaSynth can print out additional info to the console or print nothing at all.
+ *
+ * This class manages the log level of `spessasynth_core`.
+ *
+ * > **Tip**
+ * >
+ * > You can log information as `spessasynth_core` by calling the console-like methods,
+ * > such as `.info`, `.warn`, `.group`, etc.
+ *
+ * @group Utilities
  */
 export class SpessaLog {
     /**
      * The most verbose log level, prints out a lot of small details.
+     * Disabled by default.
      */
     public static infoEnabled = false;
 
@@ -35,10 +45,11 @@ export class SpessaLog {
     };
 
     /**
-     * Enables or disables logging.
-     * @param enableInfo enables info.
-     * @param enableWarn enables warning.
-     * @param enableGroup enables groups.
+     * Enables or disables logging at various levels.
+     * All the input variables are booleans corresponding to the things SpessaSynth logs.
+     * @param enableInfo enables info: all general info such as parsing sound banks, MIDI files, RPN changes, etc.
+     * @param enableWarn enables warning: all messages unrecognized by the synthesizer, other warnings.
+     * @param enableGroup enables groups: the groups for parsing the sound banks and MIDI files.
      */
     public static setLogLevel(
         enableInfo: boolean,
@@ -50,22 +61,41 @@ export class SpessaLog {
         this.groupEnabled = enableGroup;
     }
 
+    /**
+     * Equivalent to `console.info` when `infoEnabled`. Disabled by default
+     * @param message
+     */
     public static info(...message: unknown[]) {
         if (this.infoEnabled) this.logFunctions.info(...message);
     }
 
+    /**
+     * Equivalent to `console.warn` when `warnEnabled`.
+     * @param message
+     */
     public static warn(...message: unknown[]) {
         if (this.warnEnabled) this.logFunctions.warn(...message);
     }
 
+    /**
+     * Equivalent to `console.group` when `groupEnabled`.
+     * @param message
+     */
     public static group(...message: unknown[]) {
         if (this.groupEnabled) this.logFunctions.group(...message);
     }
 
+    /**
+     * Equivalent to `console.groupCollapsed` when `groupEnabled`.
+     * @param message
+     */
     public static groupCollapsed(...message: unknown[]) {
         if (this.groupEnabled) this.logFunctions.groupCollapsed(...message);
     }
 
+    /**
+     * Equivalent to `console.groupEnd` when `groupEnabled`.
+     */
     public static groupEnd() {
         if (this.groupEnabled) this.logFunctions.groupEnd();
     }
@@ -144,7 +174,7 @@ export class SpessaLog {
     ) {
         if (!this.infoEnabled) return;
         if (unit)
-            SpessaLog.info(
+            this.info(
                 `%c${what}%c is now set to %c${value}%c ${unit}.`,
                 ConsoleColors.recognized,
                 ConsoleColors.info,
@@ -152,7 +182,7 @@ export class SpessaLog {
                 ConsoleColors.info
             );
         else
-            SpessaLog.info(
+            this.info(
                 `%c${what}%c is now set to %c${value}%c.`,
                 ConsoleColors.recognized,
                 ConsoleColors.info,

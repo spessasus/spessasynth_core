@@ -8,6 +8,11 @@ import { writeWord } from "../../utils/byte_functions/little_endian";
 
 export const GEN_BYTE_SIZE = 4;
 
+/**
+ * Generator represents a single sound bank parameter.
+ *
+ * @group Sound Banks.Generators
+ */
 export class Generator {
     /**
      * The generator's SF2 type.
@@ -37,6 +42,9 @@ export class Generator {
         }
     }
 
+    /**
+     * @internal
+     */
     public write(genData: IndexedByteArray) {
         // Name is deceptive, it works on negatives
         writeWord(genData, this.type);

@@ -3,9 +3,16 @@ import type { Voice } from "../voice/voice";
 import type { MIDIChannel } from "./midi_channel";
 import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { MIDIControllers } from "../../../midi/enums";
-import { LowpassFilter } from "../voice/lowpass_filter";
+
+const TWO_PI = Math.PI * 2;
 
 const HALF_PI = Math.PI / 2;
+
+/**
+ * The maximum number of voice send buffers per channel.
+ * Voices that don't fit are mixed directly in renderVoice() with the shared processor buffer.
+ */
+const MAX_VOICE_SEND_BUFFERS = 16;
 
 const MIN_PAN = -500;
 const MAX_PAN = 500;
@@ -26,18 +33,12 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * Renders a voice to the stereo output buffer
  * @param voice the voice to render
  * @param timeNow current time in seconds
- * @param outputL the left output buffer
- * @param outputR the right output buffer
- * @param startIndex
- * @param sampleCount
+ * @param sampleCount the only thing needed as it's 0-based
  */
 export function renderVoice(
     this: MIDIChannel,
     voice: Voice,
     timeNow: number,
-    outputL: Float32Array,
-    outputR: Float32Array,
-    startIndex: number,
     sampleCount: number
 ) {
     // Check if release
@@ -113,11 +114,13 @@ export function renderVoice(
     // Vibrato LFO
     if (timeNow >= voice.vibLfoStartTime) {
         const vibPitchDepth = modulated[GeneratorTypes.vibLfoToPitch];
+        const vibVolDepth = modulated[GeneratorTypes.vibLfoToVolume];
         const vibFilterDepth = modulated[GeneratorTypes.vibLfoToFilterFc];
         const vibAmplitudeDepth =
             modulated[GeneratorTypes.vibLfoAmplitudeDepth];
         if (
             vibPitchDepth !== 0 ||
+            vibVolDepth !== 0 ||
             vibFilterDepth !== 0 ||
             vibAmplitudeDepth !== 0
         ) {
@@ -133,9 +136,13 @@ export function renderVoice(
             // Low pass frequency
             lowpassExcursion += vibLfoValue * vibFilterDepth;
 
+            // Vol env volume offset
+            // Negate the lfo value because audigy starts with increase rather than decrease
+            volumeExcursionCentibels += -vibLfoValue * vibVolDepth;
+
             // Amplitude depth
-            voiceGain *=
-                1 - ((vibLfoValue + 1) / 2) * (vibAmplitudeDepth / 1000);
+            // Like SCVA: double gain at peak, 0 at lowest (times depth)
+            voiceGain *= 1 + vibLfoValue * (vibAmplitudeDepth / 1000);
         }
     }
 
@@ -169,12 +176,31 @@ export function renderVoice(
             lowpassExcursion += modLfoValue * modFilterDepth;
 
             // Amplitude depth
-            voiceGain *=
-                1 - ((modLfoValue + 1) / 2) * (modAmplitudeDepth / 1000);
+            // Like SCVA: double gain at peak, 0 at lowest (times depth)
+            voiceGain *= 1 + modLfoValue * (modAmplitudeDepth / 1000);
         }
     }
 
-    // TODO: Implement proper GS vibrato. Custom vibrato used to be here.
+    const { systemParameters } = core;
+
+    // Channel vibrato (custom vibrato)
+    // TODO: Replace this with proper GS vibrato someday
+    if (
+        systemParameters.customVibrato &&
+        this._midiControllers[MIDIControllers.modulationWheel] === 0 &&
+        this.customVibrato.depth > 0
+    ) {
+        // Inlined LFO from 4.2.0
+        const vibStart = voice.startTime + this.customVibrato.delay;
+        if (timeNow >= vibStart) {
+            const elapsed = timeNow - vibStart;
+
+            // 2pif t gives a full sine cycle at the specified frequency
+            cents +=
+                Math.sin(TWO_PI * this.customVibrato.rate * elapsed) *
+                this.customVibrato.depth;
+        }
+    }
 
     // Mod env
     const modEnvPitchDepth = modulated[GeneratorTypes.modEnvToPitch];
@@ -225,10 +251,119 @@ export function renderVoice(
     let gain = voice.volEnv.outputGain;
     // Compute the new value
     const envActive = voice.volEnv.process(sampleCount, gainTarget);
-    // Calculate increase
-    const gainInc = (voice.volEnv.outputGain - gain) / sampleCount;
 
-    // Low pass filter (inlined for performance, confirmed with node.js)
+    // Note, we do not use &&= as it short-circuits!
+    // And we don't do = either as wavetable might've marked it as inactive (end of sample)
+    voice.isActive = voice.isActive && envActive;
+
+    // Pan
+    let pan: number;
+    if (voice.overridePan) {
+        pan = voice.overridePan;
+    } else {
+        // Smooth out pan to prevent clicking
+        voice.currentPan +=
+            (modulated[GeneratorTypes.pan] - voice.currentPan) *
+            core.panSmoothingFactor;
+        pan = voice.currentPan;
+    }
+
+    const outputGain = this.currentGain * voiceGain;
+    const panIndex =
+        (Math.min(Math.max(-500, pan + this.currentPan), 500) + 500) | 0;
+
+    /**
+     * Do not send to effects if:
+     * - Either effects are disabled
+     * - Or insertion is active on this channel (Insertion takes over the voice data)
+     * - Or the channel is assigned to an XG insertion effect.
+     * XG ignores per-drum sends when insertion is enabled, and only the post-insertion (global) audio is sent (so whole drum audio, even if send is 0 for a specific drum)
+     */
+    // Send levels, relative to the voice's output gain (0-1)
+    let reverbLevel = 0;
+    let chorusLevel = 0;
+    let variationLevel = 0;
+    if (
+        systemParameters.effectsEnabled &&
+        !(this._midiParameters.efxAssign && core.gsInsertionActive) &&
+        !this.xgInsertionAssigned
+    ) {
+        const reverbSend =
+            modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbGain;
+        const chorusSend =
+            modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusGain;
+        if (reverbSend > 0)
+            reverbLevel = systemParameters.reverbGain * (reverbSend / 1000);
+        if (chorusSend > 0)
+            chorusLevel = systemParameters.chorusGain * (chorusSend / 1000);
+
+        // XG variation send is system-only, in insertion mode CC94 does nothing.
+        // GS delay is only sent to when it's active.
+        const isXG = core.midiParameters.system === "xg";
+        if (isXG ? !core.xgVariationBlock.insertionMode : core.gsDelayActive) {
+            const variationSend =
+                this._midiControllers[MIDIControllers.variationDepth] *
+                voice.variationGain;
+            if (variationSend > 0)
+                variationLevel =
+                    ((variationSend >> 7) / 127) *
+                    (isXG
+                        ? systemParameters.xgVariationGain
+                        : systemParameters.gsDelayGain);
+        }
+    }
+
+    /*
+     * Voices sharing the pan and the send levels are summed into one mono buffer,
+     * which is mixed into the channel output
+     * and the effect sends once per block.
+     * This way, each voice only performs a single mixing loop, which is faster.
+     * Then output gain is applied together with the volume envelope.
+     */
+
+    // Find a free voice send buffer
+    let voiceSendBuffer: VoiceSendBuffer | undefined = undefined;
+    const sendBuffers = this.voiceSendBuffers;
+    const count = this.voiceSendBufferCount;
+    for (let i = 0; i < count; i++) {
+        const sendBuffer = sendBuffers[i];
+        if (
+            sendBuffer.panIndex === panIndex &&
+            sendBuffer.reverb === reverbLevel &&
+            sendBuffer.chorus === chorusLevel &&
+            sendBuffer.variation === variationLevel
+        ) {
+            // Found a match
+            voiceSendBuffer = sendBuffer;
+            break;
+        }
+    }
+    if (!voiceSendBuffer) {
+        if (count < sendBuffers.length) {
+            // Use the free one
+            voiceSendBuffer = sendBuffers[count];
+            this.voiceSendBufferCount++;
+        } else if (count < MAX_VOICE_SEND_BUFFERS) {
+            // Create a new one
+            voiceSendBuffer = new VoiceSendBuffer(this.synthCore.maxBufferSize);
+            sendBuffers.push(voiceSendBuffer);
+            this.voiceSendBufferCount++;
+        } else {
+            // Nothing found, use synth's temporary buffer
+            voiceSendBuffer = this.synthCore.sharedVoiceSendBuffer;
+        }
+        voiceSendBuffer.panIndex = panIndex;
+        voiceSendBuffer.reverb = reverbLevel;
+        voiceSendBuffer.chorus = chorusLevel;
+        voiceSendBuffer.variation = variationLevel;
+    }
+
+    const out = voiceSendBuffer.buffer;
+    gain *= outputGain;
+    // Calculate increase
+    const gainInc = (voice.volEnv.outputGain * outputGain - gain) / sampleCount;
+
+    // Low pass filter and gain (inlined for performance, confirmed with node.js)
     {
         const f = voice.filter;
         const initialFc = modulated[GeneratorTypes.initialFilterFc];
@@ -239,8 +374,7 @@ export function renderVoice(
              * the modulation envelope and LFO excursions are not smoothed.
              */
             f.currentInitialFc +=
-                (initialFc - f.currentInitialFc) *
-                LowpassFilter.smoothingConstant;
+                (initialFc - f.currentInitialFc) * f.smoothingConstant;
         } else {
             // Filter initialization, set the current fc to target
             f.initialized = true;
@@ -264,7 +398,7 @@ export function renderVoice(
             f.currentInitialFc = 13_500;
             // Filter is open, apply gain
             for (let i = 0; i < sampleCount; i++) {
-                buffer[i] *= gain;
+                out[i] += buffer[i] * gain;
                 gain += gainInc;
             }
         } else {
@@ -282,22 +416,43 @@ export function renderVoice(
             // Initial filtering code was ported from meltysynth created by sinshu.
             const { a0, a1, a2, a3, a4 } = f;
             let { x1, x2, y1, y2 } = f;
-            for (let i = 0; i < sampleCount; i++) {
-                const input = buffer[i];
-                const filtered =
-                    a0 * input + a1 * x1 + a2 * x2 - a3 * y1 - y2 * a4;
-
-                // Set buffer
-                x2 = x1;
-                x1 = input;
-                y2 = y1;
-                y1 = filtered;
+            /*
+             * Two samples per iteration, the second one directly from y1:
+             * f0 = p0 - a3 * y1, where p0 = a0 * in0 + a1 * x1 + a2 * x2 - a4 * y2
+             * f1 = q1 - a3 * f0 - a4 * y1 = q1 - a3 * p0 + (a3 * a3 - a4) * y1
+             */
+            const b3 = a3 * a3 - a4;
+            let i = 0;
+            for (; i + 1 < sampleCount; i += 2) {
+                const in0 = buffer[i];
+                const in1 = buffer[i + 1];
+                const p0 = a0 * in0 + a1 * x1 + a2 * x2 - a4 * y2;
+                const q1 = a0 * in1 + a1 * in0 + a2 * x1;
+                const f0 = p0 - a3 * y1;
+                const f1 = q1 - a3 * p0 + b3 * y1;
+                x2 = in0;
+                x1 = in1;
+                y2 = f0;
+                y1 = f1;
 
                 // Apply filter and THEN gain
                 // Per SF2 spec apply order, also see
                 // https://github.com/FluidSynth/fluidsynth/issues/1427
-                buffer[i] = filtered * gain;
+                out[i] += f0 * gain;
                 gain += gainInc;
+                out[i + 1] += f1 * gain;
+                gain += gainInc;
+            }
+            // Odd sample count, process the last sample
+            if (i < sampleCount) {
+                const input = buffer[i];
+                const filtered =
+                    a0 * input + a1 * x1 + a2 * x2 - a4 * y2 - a3 * y1;
+                x2 = x1;
+                x1 = input;
+                y2 = y1;
+                y1 = filtered;
+                out[i] += filtered * gain;
             }
             f.x1 = x1;
             f.x2 = x2;
@@ -306,95 +461,145 @@ export function renderVoice(
         }
     }
 
-    // Note, we do not use &&= as it short-circuits!
-    // And we don't do = either as wavetable might've marked it as inactive (end of sample)
-    voice.isActive = voice.isActive && envActive;
+    // No buffer available.
+    if (voiceSendBuffer === core.sharedVoiceSendBuffer)
+        mixVoiceSendBuffer(this, voiceSendBuffer, sampleCount);
+}
 
-    // Pan and mix down the data
-    let pan: number;
-    if (voice.overridePan) {
-        pan = voice.overridePan;
-    } else {
-        // Smooth out pan to prevent clicking
-        voice.currentPan +=
-            (modulated[GeneratorTypes.pan] - voice.currentPan) *
-            core.panSmoothingFactor;
-        pan = voice.currentPan;
+/**
+ * A mono sum of the voices of a channel that share the pan and the effect send levels.
+ * This allows to group voices and have them mixed only once, where the group is then mixed with sends, which is faster.
+ * @internal
+ */
+export class VoiceSendBuffer {
+    /**
+     * The summed voice audio, with the output gain applied.
+     */
+    public readonly buffer: Float64Array;
+    /**
+     * The pan table index.
+     */
+    public panIndex = 0;
+    /**
+     * The reverb send level. (0-1)
+     */
+    public reverb = 0;
+    /**
+     * The chorus send level. (0-1)
+     */
+    public chorus = 0;
+    /**
+     * The GS delay or XG variation send level. (0-1)
+     */
+    public variation = 0;
+
+    public constructor(bufferSize: number) {
+        this.buffer = new Float64Array(bufferSize);
     }
+}
 
-    const { systemParameters } = core;
-
-    const outputGain = this.currentGain * voiceGain;
-    const index =
-        (Math.min(Math.max(-500, pan + this.currentPan), 500) + 500) | 0;
-    // Get voice's gain levels for each channel
-    const gainLeft = panTableLeft[index] * outputGain;
-    const gainRight = panTableRight[index] * outputGain;
-
-    // Straight into the insertion EFX, but only if it is active
-    if (
-        this._midiParameters.efxAssign &&
-        systemParameters.effectsEnabled &&
-        core.insertionActive
-    ) {
-        const insertionL = core.insertionInputL;
-        const insertionR = core.insertionInputR;
-        for (let i = 0; i < sampleCount; i++) {
-            const s = buffer[i];
-            insertionL[i] += gainLeft * s;
-            insertionR[i] += gainRight * s;
-        }
-        return;
-    }
-
-    // Mix down the audio data
+/**
+ * Mixes a voice send buffer into the channel output and the effect sends, then clears it.
+ * @param channel
+ * @param buffer
+ * @param sampleCount
+ */
+export function mixVoiceSendBuffer(
+    channel: MIDIChannel,
+    buffer: VoiceSendBuffer,
+    sampleCount: number
+) {
+    const core = channel.synthCore;
+    const input = buffer.buffer;
+    const panLeft = panTableLeft[buffer.panIndex];
+    const panRight = panTableRight[buffer.panIndex];
+    const { outputLeft, outputRight } = channel;
     for (let i = 0; i < sampleCount; i++) {
-        const s = buffer[i];
-        const idx = i + startIndex;
-        outputL[idx] += gainLeft * s;
-        outputR[idx] += gainRight * s;
-    }
-    if (!systemParameters.effectsEnabled) {
-        return;
+        const s = input[i];
+        outputLeft[i] += panLeft * s;
+        outputRight[i] += panRight * s;
     }
 
-    // Disable reverb and chorus if necessary
-    const reverbSend =
-        modulated[GeneratorTypes.reverbEffectsSend] * voice.reverbSend;
-    if (reverbSend > 0) {
-        const reverbGain =
-            systemParameters.reverbGain * outputGain * (reverbSend / 1000);
-
-        const reverb = core.reverbInput;
-        for (let i = 0; i < sampleCount; i++) {
-            reverb[i] += reverbGain * buffer[i];
-        }
+    const { reverb, chorus, variation } = buffer;
+    if (core.midiParameters.system === "xg") {
+        // XG effects have stereo inputs
+        if (reverb > 0)
+            sendToStereo(
+                input,
+                core.xgReverbSendL,
+                core.xgReverbSendR,
+                reverb * panLeft,
+                reverb * panRight,
+                sampleCount
+            );
+        if (chorus > 0)
+            sendToStereo(
+                input,
+                core.xgChorusSendL,
+                core.xgChorusSendR,
+                chorus * panLeft,
+                chorus * panRight,
+                sampleCount
+            );
+        if (variation > 0)
+            sendToStereo(
+                input,
+                core.xgVariationSendL,
+                core.xgVariationSendR,
+                variation * panLeft,
+                variation * panRight,
+                sampleCount
+            );
+    } else {
+        // GS effects are mono
+        if (reverb > 0)
+            sendToMono(input, core.gsReverbSend, reverb, sampleCount);
+        if (chorus > 0)
+            sendToMono(input, core.gsChorusSend, chorus, sampleCount);
+        if (variation > 0)
+            sendToMono(input, core.gsDelaySend, variation, sampleCount);
     }
+    input.fill(0, 0, sampleCount);
+}
 
-    const chorusSend =
-        modulated[GeneratorTypes.chorusEffectsSend] * voice.chorusSend;
-    if (chorusSend > 0) {
-        const chorusGain =
-            systemParameters.chorusGain * (chorusSend / 1000) * outputGain;
-        const chorus = core.chorusInput;
-        for (let i = 0; i < sampleCount; i++) {
-            chorus[i] += chorusGain * buffer[i];
-        }
+/**
+ * Adds the voice audio to a mono effect send.
+ * @param input The voice audio.
+ * @param output The send to add to.
+ * @param gain The send gain.
+ * @param sampleCount The number of samples.
+ */
+function sendToMono(
+    input: Float64Array,
+    output: Float64Array,
+    gain: number,
+    sampleCount: number
+) {
+    for (let i = 0; i < sampleCount; i++) {
+        output[i] += gain * input[i];
     }
+}
 
-    if (core.delayActive) {
-        const delaySend =
-            this._midiControllers[MIDIControllers.variationDepth] *
-            voice.delaySend;
-        if (delaySend > 0) {
-            const delayGain =
-                outputGain *
-                systemParameters.delayGain *
-                ((delaySend >> 7) / 127);
-            const delay = core.delayInput;
-            for (let i = 0; i < sampleCount; i++) {
-                delay[i] += delayGain * buffer[i];
-            }
-        }
+/**
+ * Adds the voice audio to a stereo effect send.
+ * @param input The voice audio.
+ * @param outputLeft The left send to add to.
+ * @param outputRight The right send to add to.
+ * @param gainLeft The left send gain.
+ * @param gainRight The right send gain.
+ * @param sampleCount The number of samples.
+ */
+function sendToStereo(
+    input: Float64Array,
+    outputLeft: Float64Array,
+    outputRight: Float64Array,
+    gainLeft: number,
+    gainRight: number,
+    sampleCount: number
+) {
+    for (let i = 0; i < sampleCount; i++) {
+        const s = input[i];
+        outputLeft[i] += s * gainLeft;
+        outputRight[i] += s * gainRight;
     }
 }

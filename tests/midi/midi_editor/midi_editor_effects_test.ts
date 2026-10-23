@@ -17,7 +17,7 @@ SpessaLog.setLogLevel(true, true, true);
  * Test that effects don't get inserted before GS!
  */
 midi.modify({
-    reverbParams: {
+    gsReverbParams: {
         time: 80,
         character: 4,
         level: 67,

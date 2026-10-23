@@ -4,11 +4,16 @@ import { readBinaryStringIndexed } from "../utils/byte_functions/string";
 import { SoundFont2 } from "./soundfont/read/soundfont";
 import { DownloadableSounds } from "./downloadable_sounds/downloadable_sounds";
 
+/**
+ * A helper class for loading sound bank files as {@link BasicSoundBank} instances.
+ *
+ * @group Sound Banks
+ */
 export class SoundBankLoader {
     /**
      * Loads a sound bank from a file buffer.
      * @param buffer The binary file buffer to load.
-     * @returns The loaded sound bank, a BasicSoundBank instance.
+     * @returns The loaded sound bank.
      */
     public static fromArrayBuffer(buffer: ArrayBuffer): BasicSoundBank {
         const riffCheck = buffer.slice(0, 4);

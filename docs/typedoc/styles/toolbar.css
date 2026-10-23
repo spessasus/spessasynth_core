@@ -1,0 +1,34 @@
+.tsd-toolbar-contents > .title {
+    font-size: 1.3rem;
+}
+
+#tsd-toolbar-links a {
+    font-size: 1.05rem;
+    padding: 0.5rem 0.25rem;
+}
+
+.tsd-toolbar-contents > .tsd-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+}
+
+.tsd-toolbar-contents > .tsd-theme-toggle .settings-label,
+.tsd-toolbar-contents > .tsd-theme-toggle select {
+    display: none;
+}
+
+#tsd-theme-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 769px) {
+    :root {
+        --dim-toolbar-contents-height: 3.25rem;
+    }
+
+    .tsd-toolbar-contents > .title {
+        font-size: 1.1rem;
+    }
+}

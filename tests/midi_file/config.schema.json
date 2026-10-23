@@ -1,0 +1,187 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "./config.schema.json",
+    "title": "SpessaSynth MIDI render test configuration",
+    "description": "Configuration for the spessasynth_core MIDI render tests. All paths may be absolute or relative to this file's directory.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["trimThreshold", "paths", "spessasynth"],
+    "properties": {
+        "trimThreshold": {
+            "type": "number",
+            "description": "Amplitude threshold below which leading audio samples are considered silence and trimmed.",
+            "default": 0.0005,
+            "exclusiveMinimum": 0
+        },
+        "paths": {
+            "type": "object",
+            "description": "Filesystem paths used during MIDI generation and rendering. Relative paths are resolved against this file's directory.",
+            "additionalProperties": false,
+            "required": [
+                "rootDir",
+                "midiDir",
+                "renderedDir",
+                "checksumsDir",
+                "rendererDir",
+                "soundFont"
+            ],
+            "properties": {
+                "rootDir": {
+                    "type": "string",
+                    "description": "Repository root directory.",
+                    "default": "../.."
+                },
+                "midiDir": {
+                    "type": "string",
+                    "description": "Directory where generated MIDI test files are stored.",
+                    "default": "output/midi"
+                },
+                "renderedDir": {
+                    "type": "string",
+                    "description": "Directory where rendered WAV and log outputs are saved.",
+                    "default": "output/wav"
+                },
+                "checksumsDir": {
+                    "type": "string",
+                    "description": "Directory where per-target checksum JSON files are stored to skip already rendered files.",
+                    "default": "output/checksums"
+                },
+                "rendererDir": {
+                    "type": "string",
+                    "description": "Directory containing native renderer binaries.",
+                    "default": "renderer/bin"
+                },
+                "soundFont": {
+                    "type": "string",
+                    "description": "Path to the SoundFont file used by SpessaSynth.",
+                    "default": "../files/sound_bank/midi_render.sf2"
+                }
+            }
+        },
+        "spessasynth": {
+            "type": "object",
+            "description": "Options and parameters for SpessaSynth rendering.",
+            "additionalProperties": false,
+            "required": [
+                "sampleRate",
+                "tailSeconds",
+                "bufferSize",
+                "logFileName",
+                "outputFileName"
+            ],
+            "properties": {
+                "sampleRate": {
+                    "type": "number",
+                    "description": "Sample rate in Hz.",
+                    "default": 48000,
+                    "minimum": 1
+                },
+                "tailSeconds": {
+                    "type": "number",
+                    "description": "Extra audio tail length in seconds to render after the MIDI duration ends.",
+                    "default": 2,
+                    "minimum": 0
+                },
+                "bufferSize": {
+                    "type": "number",
+                    "description": "Audio buffer size in frames per process tick.",
+                    "default": 128,
+                    "minimum": 1
+                },
+                "logFileName": {
+                    "type": "string",
+                    "description": "Output file name for SpessaSynth execution logs.",
+                    "default": "spessa.log"
+                },
+                "outputFileName": {
+                    "type": "string",
+                    "description": "Output file name for the rendered SpessaSynth WAV audio.",
+                    "default": "spessa.wav"
+                }
+            }
+        },
+        "renderTargets": {
+            "type": "object",
+            "description": "Map of render target identifiers to native target configurations (VST plugins or executables).",
+            "additionalProperties": {
+                "$ref": "#/definitions/renderTarget"
+            }
+        }
+    },
+    "definitions": {
+        "renderTarget": {
+            "oneOf": [
+                { "$ref": "#/definitions/vstX64Target" },
+                { "$ref": "#/definitions/vstX86Target" },
+                { "$ref": "#/definitions/executableTarget" }
+            ]
+        },
+        "vstX64Target": {
+            "type": "object",
+            "title": "Windows VST2 plugin (x64)",
+            "additionalProperties": false,
+            "required": ["type", "path"],
+            "properties": {
+                "type": {
+                    "const": "vst x64",
+                    "description": "x64 Windows VST2 plugin target."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path to the VST file. Absolute, or relative to this file's directory."
+                },
+                "multithreaded": {
+                    "type": "boolean",
+                    "description": "Whether this render target supports safe multithreaded rendering. Set to false if unsure."
+                }
+            }
+        },
+        "vstX86Target": {
+            "type": "object",
+            "title": "Windows VST2 plugin (x86)",
+            "additionalProperties": false,
+            "required": ["type", "path"],
+            "properties": {
+                "type": {
+                    "const": "vst x86",
+                    "description": "x86 Windows VST2 plugin target."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path to the VST file. Absolute, or relative to this file's directory."
+                },
+                "multithreaded": {
+                    "type": "boolean",
+                    "description": "Whether this render target supports safe multithreaded rendering. Set to false if unsure."
+                }
+            }
+        },
+        "executableTarget": {
+            "type": "object",
+            "title": "Native executable",
+            "additionalProperties": false,
+            "required": ["type", "path", "cli"],
+            "properties": {
+                "type": {
+                    "const": "executable",
+                    "description": "A native executable render target."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path to the executable. Absolute, or relative to this file's directory."
+                },
+                "cli": {
+                    "type": "array",
+                    "description": "The parameters to pass. The value `input` is replaced with the MIDI file path and `output` with the target wav path.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "multithreaded": {
+                    "type": "boolean",
+                    "description": "Whether this render target supports safe multithreaded rendering. Recommended to keep false unless the executable supports concurrent invocations."
+                }
+            }
+        }
+    }
+}

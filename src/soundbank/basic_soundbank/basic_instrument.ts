@@ -45,37 +45,48 @@ type notGlobalizedTypes =
 
 // noinspection JSUnusedGlobalSymbols
 /**
- * Represents a single instrument
+ * This class represents a single instrument, a layer below the BasicPreset.
+ *
+ * > **Note**
+ * >
+ * > Despite the name, this isn't what the MIDI selects. BasicPreset is the actual "instrument".
+ *
+ * @group Sound Banks
  */
 export class BasicInstrument {
     /**
-     * The instrument's name
+     * The name of this instrument.
      */
     public name = "";
     /**
-     * The instrument's zones
+     * The instrument's local zones.
+     * These are limited to specific key/velocity ranges and contain associated samples.
      */
     public zones: BasicInstrumentZone[] = [];
     /**
-     * Instrument's global zone
+     * Instrument's global zone.
+     * Its parameters are overridden by the local zone parameters.
      */
     public readonly globalZone = new BasicZone();
     /**
-     * Instrument's linked presets (the presets that use it)
-     * note that duplicates are allowed since one preset can use the same instrument multiple times.
+     * Instrument's linked presets (the presets that use it).
+     *
+     * > **Note**
+     * >
+     * > Duplicate entries are allowed since one preset can use the same instrument multiple times.
      */
     public readonly linkedTo: BasicPreset[] = [];
 
     /**
-     * How many presets is this instrument used by
+     * How many presets is this instrument used by.
      */
     public get useCount(): number {
         return this.linkedTo.length;
     }
 
     /**
-     * Creates a new instrument zone and returns it.
-     * @param sample The sample to use in the zone.
+     * Creates a new instrument zone, adds it to this instrument and returns it.
+     * @param sample The sample to associate with the zone.
      */
     public createZone(sample: BasicSample): BasicInstrumentZone {
         const zone = new BasicInstrumentZone(this, sample);
@@ -84,8 +95,9 @@ export class BasicInstrument {
     }
 
     /**
-     * Links the instrument ta a given preset
-     * @param preset the preset to link to
+     * Links the instrument ta a given preset.
+     * @param preset The preset to link to.
+     * @internal
      */
     public linkTo(preset: BasicPreset) {
         this.linkedTo.push(preset);
@@ -93,8 +105,9 @@ export class BasicInstrument {
     }
 
     /**
-     * Unlinks the instrument from a given preset
-     * @param preset the preset to unlink from
+     * Unlinks the instrument from a given preset.
+     * @param preset The preset to unlink from.
+     * @internal
      */
     public unlinkFrom(preset: BasicPreset) {
         const index = this.linkedTo.indexOf(preset);
@@ -108,7 +121,10 @@ export class BasicInstrument {
         for (const z of this.zones) z.useCount--;
     }
 
-    // Deletes unused zones of the instrument
+    /**
+     * Deletes unused zones of the instrument.
+     * @internal
+     */
     public deleteUnusedZones() {
         this.zones = this.zones.filter((z) => {
             const stays = z.useCount > 0;
@@ -119,7 +135,10 @@ export class BasicInstrument {
         });
     }
 
-    // Unlinks everything from this instrument
+    /**
+     * Unlinks everything from this instrument.
+     * @internal
+     */
     public delete() {
         if (this.useCount > 0) {
             throw new Error(
@@ -130,10 +149,10 @@ export class BasicInstrument {
     }
 
     /**
-     * Deletes a given instrument zone if it has no uses
-     * @param index the index of the zone to delete
-     * @param force ignores the use count and deletes forcibly
-     * @returns if the zone has been deleted
+     * Deletes a given instrument zone if it has no uses.
+     * @param index The index of the zone to delete.
+     * @param force Force deletes the zone instead of the safe deletion.
+     * @returns True if the zone has been deleted, false otherwise.
      */
     public deleteZone(index: number, force = false): boolean {
         const zone = this.zones[index];
@@ -150,6 +169,8 @@ export class BasicInstrument {
      * Globalizes the instrument *in-place.*
      * This means trying to move as many generators and modulators
      * to the global zone as possible to reduce clutter and the count of parameters.
+     *
+     * If fully successful, this should have no effect on the audio produced.
      */
     public globalize() {
         const globalZone = this.globalZone;

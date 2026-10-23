@@ -1,0 +1,10 @@
+:root {
+    --dark-color-background: rgb(11, 12, 15) !important;
+    --dark-color-text: rgba(226, 228, 233, 0.82);
+    --color-accent: hsla(225deg, 20%, 10%, 1);
+    --dark-color-text-header: #fff;
+    --light-color-text-header: #000;
+    --radius: 0.4rem;
+    --dim-toolbar-contents-height: 3.75rem;
+    --dark-color-background-active: hsla(225deg, 20%, 20%, 1);
+}
