@@ -165,7 +165,6 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.reset: {
-            this.synth.stopAll();
             this.synth.reset();
             break;
         }

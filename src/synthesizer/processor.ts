@@ -1149,13 +1149,14 @@ export class SpessaSynthProcessor {
 
     /**
      * Executes a full system reset of the synthesizer.
-     * This will reset all controllers to their default values,
+     * This will stop all notes and reset all controllers to their default values,
      * except for the locked controllers.
      * @param system The MIDI system to reset the synthesizer to. Defaults to `gs`.
      */
     public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
         // Call here because there are returns in this function.
         this.callEvent("reset", system);
+        this.stopAll();
         // Reset MIDI parameters
         this.setMIDIParameter("system", system);
         this.setMIDIParameter("volume", DEFAULT_GLOBAL_MIDI_PARAMETERS.volume);
@@ -2322,8 +2323,6 @@ export class SpessaSynthProcessor {
             }
 
             case MIDIMessageTypes.reset: {
-                // Do not **force** stop channels (breaks seamless loops, for example th06)
-                this.stopAll(false);
                 this.reset();
                 break;
             }

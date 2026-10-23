@@ -354,6 +354,12 @@ interface ChannelStatus {
     // Same case as with above, since total tune may exceed the RPN range.
     currentKeyShift: number;
 
+    // The key shift applied to each held note, indexed by the file's key number.
+    // The current shift may change while a note is held (like relative fine tune crossing 100 cents),
+    // So note offs and poly pressure must use the shift that their corresponding note on had.
+    // Testcase: midi_editor_rpn_fine_tuning.ts (Tuning change while a note is held)
+    readonly noteShifts: Int16Array;
+
     // Pending N/RPN replacement, awaiting a possible second data entry.
     //
     // Parameter data arrives as two separate data entries (MSB and LSB, in any order).
@@ -592,6 +598,7 @@ export class MIDIEditor {
                 relativeFineTune: this.channelChanges.get(i)?.fineTune ?? 0,
                 currentFineTune: 0,
                 currentKeyShift: 0,
+                noteShifts: new Int16Array(128),
                 pendingParam: undefined
             });
         }
@@ -1017,9 +1024,7 @@ export class MIDIEditor {
                         0,
                         Math.min(
                             127,
-                            e.data[0] +
-                                channelStatus.relativeKeyShift +
-                                channelStatus.currentKeyShift
+                            e.data[0] + channelStatus.noteShifts[e.data[0]]
                         )
                     );
                     break;
@@ -1045,15 +1050,12 @@ export class MIDIEditor {
                 channelStatus.pendingParam = undefined;
                 // Transpose key and clamp if needed
                 // For 0 it will stay as is
-                e.data[0] = Math.max(
-                    0,
-                    Math.min(
-                        127,
-                        e.data[0] +
-                            channelStatus.relativeKeyShift +
-                            channelStatus.currentKeyShift
-                    )
-                );
+                const shift =
+                    channelStatus.relativeKeyShift +
+                    channelStatus.currentKeyShift;
+                // Remember it for this note's note off
+                channelStatus.noteShifts[e.data[0]] = shift;
+                e.data[0] = Math.max(0, Math.min(127, e.data[0] + shift));
                 break;
             }
 
@@ -1061,13 +1063,12 @@ export class MIDIEditor {
             // Poly pressure is also transposed
             case MIDIMessageTypes.polyPressure: {
                 if (!channelChange) break;
+                // Use the shift of the held note, not the current one
                 e.data[0] = Math.max(
                     0,
                     Math.min(
                         127,
-                        e.data[0] +
-                            channelStatus.relativeKeyShift +
-                            channelStatus.currentKeyShift
+                        e.data[0] + channelStatus.noteShifts[e.data[0]]
                     )
                 );
                 break;
@@ -1316,6 +1317,14 @@ export class MIDIEditor {
         const channelChange = this.channelChanges.get(channel);
         if (!channelChange) return;
 
+        // Locked, remove
+        // The first note on inserts the locked value with the relative tune added, so we delete it here
+        if (channelChange.midiParams?.[data.parameter] !== undefined) {
+            this.deleteCurrentEvent();
+            return;
+        }
+
+        // Adjust relative tune
         if (data.parameter === "fineTune" && channelStatus.relativeFineTune) {
             channelStatus.currentFineTune = data.value;
             // Add the relative fine tune to the existing one
@@ -1379,10 +1388,6 @@ export class MIDIEditor {
             // A not-RPN message voids any pending pair instead:
             // A later half belongs to a new message, not the old one.
             channelStatus.pendingParam = isRPN ? { events: newRPN } : undefined;
-        } else if (channelChange?.midiParams?.[data.parameter] !== undefined) {
-            // Locked, remove
-            // We don't remove fineTune because we can adjust it relatively
-            this.deleteCurrentEvent();
         }
     }
 
@@ -1988,6 +1993,9 @@ export class MIDIEditor {
                 [MIDIControllers.nonRegisteredParameterLSB]: false
             };
             ch.outputRegistered = true;
+            ch.currentFineTune = 0;
+            ch.currentKeyShift = 0;
+            // Do not reset noteShifts here, as they will be overwritten by note on when needed
             // Reset means that new "first notes" are here to have the setups inserted
             ch.isFirstNoteOn = true;
         }

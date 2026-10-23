@@ -1027,30 +1027,58 @@ export class MIDIUtils {
             }
 
             case "cc1": {
-                // GS only!!! (again!)
-                return [
-                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x1f, [
-                        value as number
-                    ])
-                ];
+                return system === "xg"
+                    ? [
+                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x59, [
+                              value as number
+                          ])
+                      ]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x1f,
+                              [value as number]
+                          )
+                      ];
             }
 
             case "cc2": {
                 // The same as cc1, just different address
-                return [
-                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x20, [
-                        value as number
-                    ])
-                ];
+                return system === "xg"
+                    ? [
+                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x60, [
+                              value as number
+                          ])
+                      ]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x20,
+                              [value as number]
+                          )
+                      ];
             }
 
             case "drumMap": {
-                // GS only, it's called "USE FOR RHYTHM PART" there
-                return [
-                    MIDIUtils.gsMessage(ticks, 0x40, 0x10 | gsChannel, 0x15, [
-                        value as number
-                    ])
-                ];
+                return system === "xg"
+                    ? [
+                          MIDIUtils.xgMessage(ticks, 0x08, channel, 0x07, [
+                              value as number
+                          ])
+                      ]
+                    : [
+                          MIDIUtils.gsMessage(
+                              ticks,
+                              0x40,
+                              0x10 | gsChannel,
+                              0x15,
+                              [value as number]
+                          )
+                      ];
             }
 
             case "velocitySenseDepth": {
@@ -2473,6 +2501,54 @@ export class MIDIUtils {
                             channel,
                             parameter: "pitchWheelRange",
                             value: centeredValue
+                        }
+                    ];
+                }
+
+                case 0x59: {
+                    // AC1 controller number
+                    return [
+                        {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "cc1",
+                            value: value as MIDIController
+                        }
+                    ];
+                }
+
+                case 0x60: {
+                    // AC2 controller number
+                    return [
+                        {
+                            type: "Channel MIDI Param",
+                            channel,
+                            parameter: "cc2",
+                            value: value as MIDIController
+                        }
+                    ];
+                }
+
+                case 0x67: {
+                    // Portamento switch
+                    return [
+                        {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.portamentoOnOff,
+                            value: value === 1 ? 127 : 0
+                        }
+                    ];
+                }
+
+                case 0x68: {
+                    // Portamento time
+                    return [
+                        {
+                            type: "Controller Change",
+                            channel,
+                            controller: MIDIControllers.portamentoTime,
+                            value
                         }
                     ];
                 }

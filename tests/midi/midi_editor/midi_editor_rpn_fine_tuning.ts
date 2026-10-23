@@ -27,6 +27,24 @@ for (const splitPitch of [250, 4600, 16_383]) {
         .wait(120);
 }
 
+// -50 file cents -> -56 relative = -106 cents: the key shift changes to -1
+// While the note is held.
+// The note off must keep the note on's key, otherwise the note hangs.
+test.text("Tuning change while a note is held");
+test.rpn(1, 8192).note(60, 120, 120).wait(120);
+test.noteOn(60, 120).wait(120);
+test.rpn(1, 8192 - 4096).wait(120);
+test.noteOff(60).wait(120);
+
+// The file sets +50 cents, then a reset sets it back to 0.
+// The tune inserted after the reset must be -56 (0 - 56), not -6 (50 - 56).
+test.text("Tuning reset by a system reset");
+test.rpn(1, 8192 + 4096)
+    .note(60, 120, 120)
+    .wait(120);
+test.reset("gs");
+test.wait(120).note(60, 120, 120).wait(120);
+
 test.flush();
 
 runMIDIEditorTest(test, {
