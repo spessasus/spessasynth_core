@@ -11,11 +11,11 @@ The supported standards are:
 - General MIDI Level 1
 - General MIDI Level 2
 - Roland GS
-- Yamaha XG.
+- Yamaha XG
 
 > **Tip**
 >
-> [Here is a useful resource about the MIDI standard. It's in japanese, but all the PDFs are english.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
+> [Here is a useful resource about the MIDI standard. It's in Japanese, but all the PDFs are in English.](https://amei.or.jp/midistandardcommittee/RP&CAj.html)
 
 ## Supported MIDI Messages
 
@@ -70,7 +70,7 @@ Legend for the "Type" column:
 
 > **Note**
 >
-> For exact values of the modulators, see [default modulators](../extra/modulator-information.md#default-modulators)
+> For exact values of the modulators, see [default modulators](modulator-information.md#default-modulators)
 
 | CC#                  | Controller Name                     | Type     | Behavior                                                                                                                                                                            |
 | -------------------- | ----------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -93,8 +93,8 @@ Legend for the "Type" column:
 | 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                     |
 | 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                        |
 | 84                   | Portamento Control                  | Engine   | Controls the portamento target key. Forces portamento once, even if portamento is off. The value persists across channel reset. [More info](#portamento-implementation)             |
-| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](../extra/modulator-information.md#reverb-and-chorus-modulators)                                                  |
-| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](../extra/modulator-information.md#reverb-and-chorus-modulators)                                                       |
+| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                  |
+| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                       |
 | 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                 |
 | 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                           |
 | 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                           |
@@ -122,8 +122,8 @@ Below are all the controller values which are not zero when the controllers are 
 | 0         | Bank Select                         | 121 when the synthesizer is in GM2 mode. |
 | 7         | Main Volume                         | 100                                      |
 | 8         | Balance                             | 64                                       |
-| 11        | Expression                          | 127                                      |
 | 10        | Pan                                 | 64                                       |
+| 11        | Expression                          | 127                                      |
 | 71        | Timbre Harmonic Content             | 64                                       |
 | 72        | Release Time                        | 64                                       |
 | 73        | Attack Time                         | 64                                       |
@@ -179,9 +179,9 @@ rr: Drum MIDI note number (0 - 127)
 | 0x1C     | rr       | Drum Pan             | Controls the absolute pan position of the drum instrument. 0 is random. 64 leaves the channel pan unchanged (additive of channel) | 64 (no override)                                           |
 | 0x1D     | rr       | Drum Reverb          | Controls the reverb level of the drum instrument. (multiplicative of channel)                                                     | 0 for kick drums, otherwise 127.                           |
 | 0x1E     | rr       | Drum Chorus          | Controls the chorus level of the drum instrument. (multiplicative of channel)                                                     | 0, or on XG reset: 0 for kick drums, otherwise 127.        |
-| 0x1F     | rr       | Drum Variation       | Controls the variation level of the drum instrument.[^7] (multiplicative of channel)                                              | 0 (none), or on XG reset: 0 for kick drums, otherwise 127. |
+| 0x1F     | rr       | Drum Variation       | Controls the variation level of the drum instrument.[^2] (multiplicative of channel)                                              | 0 (none), or on XG reset: 0 for kick drums, otherwise 127. |
 
-[^7]: This controls the delay level in GS/GM mode. In XG mode, it controls the variation send level (only when variation connection is set to "system").
+[^2]: This controls the delay level in GS/GM mode. In XG mode, it controls the variation send level (only when variation connection is set to "system").
 
 ##### Custom Vibrato
 
@@ -307,18 +307,15 @@ Below are the supported Roland GS messages.
 #### Display Data
 
 All messages with address of `0x10 xx xx` are recognized.
-A {@link SynthesizerEvent.displayMessage | `displayMessage`} event will be emitted with the System Exclusive data.
+A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data.
 
 #### System Parameters
 
 These are global parameters, affecting the entire synthesizer.
-There's only one supported message in this category.
 
-##### System Mode Set (SC-88+ Reset)
-
-Resets the synthesizer and sets the `system` Global MIDI Parameter to `gs`.
-
-Note that value `01` is defined as `Double Module Mode` and makes the synthesizer ensure that it has at least 32 channels.
+| Name                           | Description |
+| ------------------------------ | ----------- |
+| SYSTEM MODE SET (SC-88+ Reset) | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`. Value `01` (`Double Module Mode`) also makes the synthesizer ensure that it has at least 32 channels. |
 
 #### Patch Common Parameters
 
@@ -332,7 +329,7 @@ These are global parameters, affecting the entire synthesizer.
 | MASTER VOLUME    | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`}.                                                                                                                       |
 | MASTER KEY-SHIFT | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.keyShift `keyShift`}.                                                                                                                   |
 | MASTER PAN       | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.pan `pan`}.                                                                                                                             |
-| MODE SET         | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.                                                                                    |
+| MODE SET         | GS Reset. Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.                                                                                    |
 | PATCH NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} will be emitted with the System Exclusive data. |
 
 ##### Reverb
@@ -403,7 +400,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | Rx. CHANNEL                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                                   |
 | MONO/POLY MODE                    | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation).           |
 | ASSIGN MODE                       | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                                 |
-| USE FOR RHYTHM PART               | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`} and turns any channel into a drum channel if the value is not `0`.[^2] |
+| USE FOR RHYTHM PART               | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`} and turns any channel into a drum channel if the value is not `0`.[^3] |
 | PITCH KEY SHIFT                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                                     |
 | PART LEVEL                        | Aliased to MIDI CC#7 (Main Volume).                                                                                                                   |
 | VELOCITY SENSE DEPTH              | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                                 |
@@ -423,13 +420,13 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | TONE MODIFY6 (TVF&TVA Env.decay)  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                   |
 | TONE MODIFY7 (TVA Env.release)    | Aliased to MIDI CC#72 (Release Time).                                                                                                                 |
 | TONE MODIFY8 (Vibrato delay)      | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                |
-| SCALE TUNING                      | Treated like MTS octave tuning, allows to tune an octave in cents. Tuning is repeated for all octaves.                                                |
+| SCALE TUNING                      | Treated like MTS octave tuning, tunes an octave in cents. Tuning is repeated for all octaves.                                                |
 | \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                       |
 | TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
 | TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
 | PART EFX ASSIGN                   | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.efxAssign `efxAssign`}.                                                                   |
 
-[^2]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have. The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}. Switching resets the bank to 0 and the program to 0 and changing the drum map number re-selects the kit the same way.
+[^3]: Unlike with Sound Canvases, there's no limit to drum channels the synthesizer can have. The Drum Map number is stored in Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}. Switching resets the bank to 0 and the program to 0 and changing the drum map number re-selects the kit the same way.
 
 #### Patch Part Parameters (Controllers)
 
@@ -445,7 +442,7 @@ There are two special cases that are directly aliased to Channel MIDI Parameters
 
 #### Drum Setup Parameters
 
-The following messages allow to tune drum instruments.
+The following messages tune individual drum instruments.
 A drum instrument is defined as a single MIDI key in the drum preset.
 These search for a matching drum channel with the correct `drumMap` Channel MIDI Parameter.
 
@@ -454,17 +451,17 @@ These search for a matching drum channel with the correct `drumMap` Channel MIDI
 | DRUM MAP NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data. |
 | PLAY NOTE NUMBER    | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                                                                 |
 | LEVEL               | The drum's loudness. Normalized against 120 as `gain = (data / 120) ^ 2`.                                                                                                                               |
-| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                                                                                               |
+| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, defining custom exclusive notes.                                                                                                               |
 | PANPOT              | Pan position of the instrument, except value `0` enables random panning for every note. Value `64` leaves the channel pan unchanged (additive of channel).                                              |
 | REVERB SEND LEVEL   | Reverb send level of the instrument. (multiplicative of channel)                                                                                                                                        |
 | CHORUS SEND LEVEL   | Chorus send level of the instrument. (multiplicative of channel)                                                                                                                                        |
 | Rx. NOTE OFF        | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                                                                           |
-| Rx. NOTE ON         | This allows to disable a specific drum instrument from receiving Note On events.                                                                                                                        |
+| Rx. NOTE ON         | Disabling this prevents the drum instrument from receiving Note On events.                                                                                                                        |
 | DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                         |
 
 #### User Drum set
 
-The following messages allow to create a custom drum instrument, by setting which key from which drum set is bound to a specific key in the user drum set.
+The following messages create a custom drum set, by setting which key from which drum set is bound to a specific key in the user drum set.
 Then the parameters above may also be applied to the key.
 Instruments are available on programs 64 and 65 in GS mode.
 
@@ -473,12 +470,12 @@ Instruments are available on programs 64 and 65 in GS mode.
 | USER DRUM MAP NAME     | Exactly the same behavior as DRUM MAP NAME.                                                                                                                | N.A.               |
 | PLAY NOTE NUMBER       | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                    | `pitchCoarse`      |
 | LEVEL                  | The drum's loudness. Normalized against 120 as `gain = (data / 120) ^ 2`.                                                                                  | `level`            |
-| ASSIGN GROUP NUMBER    | This overrides the `exclusiveClass` generator, allowing to define custom exclusive notes.                                                                  | `assignGroup`      |
+| ASSIGN GROUP NUMBER    | This overrides the `exclusiveClass` generator, defining custom exclusive notes.                                                                  | `assignGroup`      |
 | PANPOT                 | Pan position of the instrument, except value `0` enables random panning for every note. Value `64` leaves the channel pan unchanged (additive of channel). | `pan`              |
 | REVERB SEND LEVEL      | Reverb send level of the instrument. (multiplicative of channel)                                                                                           | `reverbSend`       |
 | CHORUS SEND LEVEL      | Chorus send level of the instrument. (multiplicative of channel)                                                                                           | `chorusSend`       |
 | Rx. NOTE OFF           | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                              | `rxNoteOff`        |
-| Rx. NOTE ON            | This allows to disable a specific drum instrument from receiving Note On events.                                                                           | `rxNoteOn`         |
+| Rx. NOTE ON            | Disabling this prevents the drum instrument from receiving Note On events.                                                                           | `rxNoteOn`         |
 | DELAY SEND LEVEL       | Delay send level of the instrument. (multiplicative of channel)                                                                                            | `variationSend`    |
 | SOURCE DRUM SET# (MAP) | Bank LSB number of the source drum set for this key. (GS map)                                                                                              | `sourceDrumSet`    |
 | (PG#: Program number)  | The program number of the source drum set for this key.                                                                                                    | `program`          |
@@ -486,7 +483,7 @@ Instruments are available on programs 64 and 65 in GS mode.
 
 #### Bulk Dump
 
-Bulk dump messages allow to set many parameters in one message.
+Bulk dump messages set many parameters in one message.
 
 SpessaSynth currently recognizes the bulk dump messages for User Drum Set only.
 
@@ -511,7 +508,8 @@ These are global parameters, affecting the entire synthesizer.
 #### Reverb, chorus, and variation block (EFFECT 1)
 
 All reverb, chorus, and variation parameter addresses are recognized.
-Selecting an unimplemented type falls back to "THRU" processor.
+Selecting an unimplemented reverb or chorus type silences the block (NO EFFECT),
+while an unimplemented variation type falls back to the "THRU" processor.
 See [currently implemented XG effects](#currently-implemented-xg-effects).
 
 Variation can act like a system effect (reverb, chorus), being global with sends for each channel,
@@ -523,7 +521,7 @@ or like an insertion effect, routing all audio of a single channel through it.
 | REVERB PARAMETER 1-16     | Type-specific reverb parameters.                                                                                              |
 | REVERB RETURN             | Output level of the reverb block. `0` is silence, `64` is normal, `127` is double volume.                                     |
 | REVERB PAN                | Stereo panning of the reverb block. `1` is hard left, `64` is center, `127` is hard right.                                    |
-| CHORUS TYPE               | Sets the chorus block type). Unknown types are silent (NO EFFECT).                                                            |
+| CHORUS TYPE               | Sets the chorus block type. Unknown types are silent (NO EFFECT).                                                            |
 | CHORUS PARAMETER 1-16     | Type-specific chorus parameters.                                                                                              |
 | CHORUS RETURN             | Output level of the chorus block. `0` is silence, `64` is normal, `127` is double volume.                                     |
 | CHORUS PAN                | Stereo panning of the chorus block. `1` is hard left, `64` is center, `127` is hard right.                                    |
@@ -560,7 +558,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 
 > **Warning**
 >
-> XG part (channel) number may range from 0 to 64.
+> XG part (channel) number may range from 0 to 63.
 >
 > Parts above the current channel count are discarded. To avoid this, add more channels to the synthesizer.
 
@@ -572,7 +570,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | RECEIVE CHANNEL NUMBER         | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.rxChannel `rxChannel`}.                                                                   |
 | POLY/MONO MODE                 | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.polyMode `polyMode`}. See [poly/mono implementation](#polymono-implementation).           |
 | SAME NOTE NUMBER KEY ON ASSIGN | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.assignMode `assignMode`}.                                                                 |
-| PART MODE                      | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`} and turns any channel into a drum channel if the value is not `0`.[^3] |
+| PART MODE                      | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`} and turns any channel into a drum channel if the value is not `0`.[^4] |
 | NOTE SHIFT                     | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.keyShift `keyShift`}.                                                                     |
 | VOLUME                         | Aliased to MIDI CC#7 (Main Volume).                                                                                                                   |
 | VELOCITY SENSE DEPTH           | Sets the Channel MIDI Parameter {@link ChannelMIDIParameter.velocitySenseDepth `velocitySenseDepth`}.                                                 |
@@ -594,7 +592,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | PORTAMENTO SWITCH              | Aliased to MIDI CC#65 (Portamento On/Off), as a switch. ON is 127, OFF is 0.                                                                          |
 | PORTAMENTO TIME                | Aliased to MIDI CC#5 (Portamento Time).                                                                                                               |
 
-[^3]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. Switching to drums re-initializes the kit, resetting the program to 0, while switching back to melodic keeps the program.
+[^4]: In XG, the conventional drum channel (9 within each 16-channel group) cannot be switched back to melodic mode. Switching to drums re-initializes the kit, resetting the program to 0, while switching back to melodic keeps the program.
 
 #### Patch Part Controller Depths
 
@@ -617,7 +615,7 @@ There are two special cases that are directly aliased to Channel MIDI Parameters
 
 #### Drum Setup
 
-The following messages allow to tune drum instruments.
+The following messages tune individual drum instruments.
 A drum instrument is defined as a single MIDI key in the drum preset.
 
 Edits are applied to _every drum channel_: for each note/key,
@@ -633,8 +631,8 @@ all drum channels get the same stored parameters, as there isn't a MAP system, l
 | REVERB SEND     | Reverb send level of the instrument. (multiplicative of channel)                                                                                           |
 | CHORUS SEND     | Chorus send level of the instrument. (multiplicative of channel)                                                                                           |
 | VARIATION SEND  | Variation send level of the instrument. (multiplicative of channel)                                                                                        |
-| Rev NOTE OFF    | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                              |
-| Rev NOTE ON     | This allows to disable a specific drum instrument from receiving Note On events.                                                                           |
+| Rcv NOTE OFF    | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                              |
+| Rcv NOTE ON     | Disabling this prevents the drum instrument from receiving Note On events.                                                                           |
 
 #### Display Data
 
@@ -825,7 +823,7 @@ Each effect can have a type which has its own DSP processor.
 
 ### System Effects
 
-Appies to: Reverb, Chorus, Variation in System mode.
+Applies to: Reverb, Chorus, Variation in System mode.
 
 These effects behave similarly to their GS counterparts, respecting channel send values and having them routed globally.
 
@@ -837,7 +835,7 @@ These effects behave similarly to GS insertion, but they only apply to one part 
 
 ### Variation
 
-Variation is a unique effect which can both function both as a System Effect and as an Insertion Effect.
+Variation is a unique effect which can function both as a System Effect and as an Insertion Effect.
 The behavior depends on "VARIATION CONNECTION" which defaults to "INSERTION" and can be changed to "SYSTEM".
 
 ### Currently implemented XG effects

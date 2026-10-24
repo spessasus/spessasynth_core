@@ -11,7 +11,8 @@ Below is useful information regarding the implementation of modulators in `spess
 
 ## Modulator sources
 
-Below is the table of modulator sources if the usesCC flag is set to 0.
+Below is the table of modulator sources if the CC flag is not set.
+If it is set, the index is the MIDI controller number.
 
 | Index | Name               | Description                                                                                                                                                                                                         |
 | ----- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +42,10 @@ Below is the default modulator list for SpessaSynth.
 >
 > SpessaSynth implements the [default modulators proposal](https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md).
 
-Note: cB - centibels, 1/10 of a decibel.
+Units used in the tables below:
+
+- cB - centibels, 1/10 of a decibel.
+- ‰ -  1/10 of a percent.
 
 ### SF2 Default
 
@@ -58,12 +62,12 @@ These are the default modulators, as defined by the SF2.04 specification.
 | Note On Velocity             | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
 | **CC 1** (Modulation Wheel)  | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
 | **CC 7** (Volume)            | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **CC 13** (Channel Pressure) | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
+| **Channel Pressure**         | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
 | **Pitch Wheel**              | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune            | 12700 cents      |
-| **CC 10** (Pan)              | Positive Bipolar Linear   | -                                          | Pan                  | 500 percent      |
+| **CC 10** (Pan)              | Positive Bipolar Linear   | -                                          | Pan                  | 500 ‰            |
 | **CC 11** (Expression)       | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **CC 91** (Reverb Depth)     | Negative Unipolar Linear  | -                                          | Reverb effects send  | 200 percent      |
-| **CC 93** (Chorus Depth)     | Negative Unipolar Linear  | -                                          | Chorus effects send  | 200 percent      |
+| **CC 91** (Reverb Depth)     | Positive Unipolar Linear  | -                                          | Reverb effects send  | 200 ‰            |
+| **CC 93** (Chorus Depth)     | Positive Unipolar Linear  | -                                          | Chorus effects send  | 200 ‰            |
 
 ### Custom modulators
 
@@ -71,11 +75,10 @@ SpessaSynth applies a few extra modulators for extended compatibility with vario
 
 | Source                       | Source Transform         | Secondary source | Destination              | Transform amount |
 | ---------------------------- | ------------------------ | ---------------- | ------------------------ | ---------------- |
-| **Poly Pressure**            | Positive Unipolar Linear | -                | Vibrato LFO to pitch     | 50 cents         |
 | **CC 67** (Soft Pedal)       | Switch Unipolar Positive | -                | Initial Filter Cutoff    | -1200 abs cents  |
 | **CC 71** (Filter Resonance) | Positive Bipolar Linear  | -                | Initial Filter Resonance | 250 cB           |
-| **CC 72** (Vol Env Attack)   | Positive Bipolar Convex  | -                | Volume envelope attack   | 6000 timecents   |
-| **CC 73** (Vol Env Release)  | Positive Bipolar Linear  | -                | Volume envelope release  | 3600 timecents   |
+| **CC 72** (Vol Env Release)  | Positive Bipolar Linear  | -                | Volume envelope release  | 3600 timecents   |
+| **CC 73** (Vol Env Attack)   | Positive Bipolar Convex  | -                | Volume envelope attack   | 6000 timecents   |
 | **CC 74** (Filter Cutoff)    | Positive Bipolar Linear  | -                | Initial Filter Cutoff    | 9600 abs cents   |
 | **CC 75** (Vol Env Decay)    | Positive Bipolar Linear  | -                | Volume envelope decay    | 3600 timecents   |
 
@@ -99,10 +102,10 @@ This approach allows the soundfont engineer to overwrite or delete the modulator
 SpessaSynth has custom behavior for these modulators, emulating BASSMIDI:
 
 - The modulators affected are all modulators
-  that use **Reverb depth Negative Unipolar Linear or Chorus depth Negative Unipolar Linear** as a primary source
+  that use **Reverb depth Positive Unipolar Linear or Chorus depth Positive Unipolar Linear** as a primary source
   and **No Controller** as the secondary source and either **reverbEffectsSend** or **chorusEffectsSend** as the
   destination
-- The transform amount is multiplied by **5** if the initial transform amount is below 1000
+- The transform amount is multiplied by **5** if the initial transform amount is 1000 or below
 - If the transform is multiplied, it is capped at **1000**.
 
 #### Reasoning
@@ -112,7 +115,7 @@ I agree with this,
 and also set the default to `1000` (actually it's `200` multiplied by `5` which is `1000`).
 But this poses a few problems without using the solution above:
 
-- soundfonts that assume default reverb of `200` will have almost inaudible effects.
+- Sound banks that assume default reverb of `200` will have almost inaudible effects.
   For example, a soundfont might want to slightly decrease the reverb, by setting it to `150`, for example.
   It is way less than the default `1000`,
   and the approach above will make it `150 * 5 = 750` which is still less than default,

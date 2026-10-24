@@ -6,27 +6,31 @@ title: Converting between various file formats
 
 This guide demonstrates how to convert various file formats using `spessasynth_core`.
 Whether you're working with SoundFont files (SF2, SF3),
-Downloadable Sounds (DLS), or MIDI-related formats (RMI, MIDI), these examples will help you perform conversions quickly
-and efficiently.
+Downloadable Sounds (DLS), or MIDI-related formats (RMI, MIDI), these examples will help you perform conversions.
 
 > **Important**
 >
-> The input file binary is named `input`
-> and the output binary file is named `output`
-> in the examples.
+> In the examples, the input file binary is an `ArrayBuffer` named `input`,
+> and the output file binary is named `output`.
+> All the classes used are imported from `spessasynth_core` like this:
+>
+> ```ts
+> import { BasicMIDI, SoundBankLoader } from "spessasynth_core";
+> ```
 
 ## SF2 To SF3
 
 > **Note**
 >
-> This example uses soundfont3 compression.
-> Make sure you have the {@link SampleEncodingFunction}.
+> This example uses SoundFont3 compression.
+> You need to provide your own compression function. See {@link SampleEncodingFunction} for more information.
 
 ```ts
 const sfont = SoundBankLoader.fromArrayBuffer(input);
 await sfont.setSampleFormat({
     format: "compressed",
-    compressionFunction: SampleEncodingFunction // make sure to get the function for compression
+    // Your function that encodes the samples.
+    compressionFunction: encodeVorbis
 });
 const output = sfont.writeSF2();
 ```
@@ -41,7 +45,7 @@ await sfont.setSampleFormat({
 const output = sfont.writeSF2();
 ```
 
-## DLS to SF2
+## DLS To SF2
 
 ```ts
 const sfont = SoundBankLoader.fromArrayBuffer(input);
@@ -50,7 +54,7 @@ const output = sfont.writeSF2();
 
 ## SF2 To DLS
 
-Make sure to read about [the DLS conversion problem](dls-conversion-problem.md)
+Make sure to read about [the DLS conversion problem](dls-conversion-problem.md).
 
 ```ts
 const sfont = SoundBankLoader.fromArrayBuffer(input);
@@ -68,6 +72,9 @@ const output = rmid.writeMIDI();
 
 ```ts
 const rmid = BasicMIDI.fromArrayBuffer(input);
+if (!rmid.embeddedSoundBank) {
+    throw new Error("This RMI file does not contain a sound bank!");
+}
 const sfont = SoundBankLoader.fromArrayBuffer(rmid.embeddedSoundBank);
 const output = sfont.writeSF2();
 ```
@@ -79,46 +86,43 @@ This uses two inputs, `input1` for MIDI and `input2` for the sound bank.
 ```ts
 const mid = BasicMIDI.fromArrayBuffer(input1);
 const sfont = SoundBankLoader.fromArrayBuffer(input2);
-// compress this if you want
+// Compress this if you want
 const sfontBinary = sfont.writeSF2();
-const output = mid.writeRMIDI(
-    sfontBinary,
-    sfont,
-    0, // bank offset: adjust this if necessary
-    "utf-8", // encoding: utf-8 recommended
-    {
-        // all the values below are examples, showing how to copy MIDI data to the RMI file
+const output = mid.writeRMIDI(sfontBinary, {
+    soundBank: sfont,
+    // Adjust this if necessary
+    bankOffset: 0,
+    // All the values below are examples, showing how to copy MIDI data to the RMI file
+    metadata: {
         name: mid.getName(),
-        copyright: mid.getExtraMetadata(),
+        copyright: mid.getExtraMetadata().join("\n"),
         engineer: sfont.soundBankInfo.engineer
     },
-    true // adjust program changes: recommended for self-contained files
-);
+    // Recommended for self-contained files
+    correctBankOffset: true
+});
 ```
 
 ## DLS RMI To SF2 RMI
 
 ```ts
 const dlsRMID = BasicMIDI.fromArrayBuffer(input);
+if (!dlsRMID.embeddedSoundBank) {
+    throw new Error("This RMI file does not contain a sound bank!");
+}
 const sfont = SoundBankLoader.fromArrayBuffer(dlsRMID.embeddedSoundBank);
 const sfontBinary = sfont.writeSF2();
-const output = dlsRMID.writeRMIDI(
-    sfontBinary,
-    sfont,
-    dlsRMID.bankOffset, // bank offset gets detected for DLS rmi
-    "utf-8", // encoding: utf-8 recommended
-    {
-        // here we try to extract the metadata from the file, then fall back to embedded MIDI
-        name: dlsRMID.getName(),
-        copyright: dlsRMID.rmidiInfo.copyright || dlsRMID.getExtraMetadata(),
+// The existing RMIDI metadata is kept. Only the provided fields get overwritten
+const output = dlsRMID.writeRMIDI(sfontBinary, {
+    soundBank: sfont,
+    // The bank offset gets detected for DLS RMI files
+    bankOffset: dlsRMID.bankOffset,
+    metadata: {
         engineer: sfont.soundBankInfo.engineer,
-        artist: dlsRMID.getRMIDInfo("artist"),
-        album: dlsRMID.getRMIDInfo("album"),
-        genre: dlsRMID.getRMIDInfo("genre"),
-        comment: dlsRMID.getRMIDInfo("comment"),
-        // either use the embedded one or today
+        // Either use the embedded date or today
         creationDate: dlsRMID.getRMIDInfo("creationDate") ?? new Date()
     },
-    false // adjust program changes: I recommend false for that one
-);
+    // Recommended to be disabled for this conversion
+    correctBankOffset: false
+});
 ```

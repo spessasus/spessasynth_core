@@ -40,7 +40,7 @@ export function computeModulator(
         voice
     );
 
-    // See the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
+    // See the comment for isEffectModulator (voice_modulator.ts) for explanation
     let transformAmount = modulator.transformAmount;
     if (modulator.isEffectModulator && transformAmount <= 1000) {
         transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;

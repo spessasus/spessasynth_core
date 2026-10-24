@@ -13,6 +13,8 @@ import type {
  * This class represents a single XG effect block.
  * Each block contains a specific processor and may be an insertion or system effect.
  * This class does the mixing and routing of the effect.
+ *
+ * @group Synthesizer.XG Effects
  */
 export abstract class DefaultXGEffect implements XGEffectBlock {
     /**

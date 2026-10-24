@@ -172,7 +172,7 @@ export interface RMIDIWriteOptions {
     bankOffset: number;
     /**
      * The metadata of the file. If left undefined, some basic metadata (like the song's title) will be copied from the MIDI.
-     * All properies are optional.
+     * All properties are optional.
      *
      * > **Warning**
      * >
@@ -248,7 +248,11 @@ export interface TimelineEvent {
      */
     ev: number;
 }
-/** @group MIDI.Protocol */
+/**
+ * An array-like type that can hold System Exclusive message data.
+ *
+ * @group MIDI.Protocol
+ */
 export type SysExAcceptedArray =
     | number[]
     | Uint8Array

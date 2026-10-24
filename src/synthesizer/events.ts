@@ -187,7 +187,11 @@ export type GlobalMIDIParameterChangeEvent = {
     };
 }[keyof GlobalMIDIParameter];
 
-/** @group Synthesizer.Events */
+/**
+ * The parameter names of an effect processor, or `macro` for the effect's macro.
+ *
+ * @group Synthesizer.Events
+ */
 export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
 
 /**

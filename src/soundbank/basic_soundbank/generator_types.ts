@@ -96,7 +96,19 @@ export const GeneratorTypes = Object.freeze({
 export type GeneratorType =
     (typeof GeneratorTypes)[keyof typeof GeneratorTypes];
 
+/**
+ * The highest generator type number, including the non-standard generators.
+ *
+ * @group Sound Banks.Generators
+ */
 export const MAX_GENERATOR = Math.max(...Object.values(GeneratorTypes));
+
+/**
+ * The amount of generator types, including the non-standard generators.
+ * Useful for allocating arrays indexed by {@link GeneratorType}.
+ *
+ * @group Sound Banks.Generators
+ */
 export const GENERATORS_AMOUNT = MAX_GENERATOR + 1;
 
 /**

@@ -1243,6 +1243,9 @@ export class SpessaSynthProcessor {
      * Renders Float32 PCM audio data to stereo outputs; buffer size must be equal or smaller than {@link SynthProcessorOptions.maxBufferSize `maxBufferSize`}.
      * All float arrays must have the same length.
      *
+     * The audio is added to the existing contents of the output arrays,
+     * so make sure to clear them when reusing them.
+     *
      * > **Danger**
      * >
      * > This method renders a single quantum of audio.

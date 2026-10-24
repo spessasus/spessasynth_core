@@ -8,7 +8,7 @@ I welcome new contributors that want to help develop spessasynth_core!
 
 ## Developing spessasynth_core with the SpessaSynth app
 
-I recommend developing the libraries with using the web app as the test environment as it allows testing the changes
+I recommend developing the libraries using the web app as the test environment, as it allows testing the changes
 extensively.
 It also enforces the requirement of **spessasynth_core being able to run in the AudioWorklet scope.**
 
@@ -16,7 +16,7 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 >
 > All of `spessasynth_core`'s code _must_ be able to run in the `AudioWorkletGlobalScope`,
 > otherwise the pull request will not be accepted.
-> This means that TextDecoders, etc. are _not allowed in the audio playback code._ Or a fallback function must be provided if they are used.
+> This means that `TextDecoder`, `TextEncoder`, etc. are _not allowed in the audio playback code_, unless a fallback function is provided.
 > Code that is not related to audio (e.g. decoding MIDI text metadata) is allowed to use these.
 
 > **Warning**
@@ -30,7 +30,7 @@ It also enforces the requirement of **spessasynth_core being able to run in the 
 1. If you are on Windows, [consider installing WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
 2. Create a directory where you want to develop.
 3. Clone your fork of `spessasynth_core` into the directory.
-4. Install dependencies `npm install`
+4. Install the dependencies with `npm install`.
 5. Clone `spessasynth_lib` (or your fork of it) into the directory and install dependencies.
 6. Clone `SpessaSynth` into the directory and install dependencies.
 7. You now should have the following structure:
@@ -47,11 +47,15 @@ To test your changes, run the `npm run dev` script in `SpessaSynth`. This does t
 2. It builds your copy of `spessasynth_lib`, using your copy of `core`.
 3. It builds `SpessaSynth` using your copies of both the libraries.
 
-You can keep the `npm start` script running during this. Once it's done, simply perform a hard reload in your browser (`Ctrl + Shift + R`)
+You can keep the `npm start` script (the local web server) running in another terminal during this.
+Once the build is done, perform a hard reload in your browser (`Ctrl + Shift + R`).
+
+Before opening a pull request, run `npm run build` in `spessasynth_core` and make sure that it passes,
+as it lints and type-checks the code.
 
 > **Danger**
 >
-> Source maps in audioWorklet don't seem to work on Firefox.
+> Source maps in the `AudioWorklet` don't seem to work on Firefox.
 > You must use a Chromium-based browser instead.
 
 ### Create a pull request

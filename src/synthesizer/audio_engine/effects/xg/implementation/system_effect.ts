@@ -23,6 +23,8 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
  * The default implementation for {@link XGSystemEffectBlock}.
  *
  * System effects are global and have a send level for each channel, always adding wet output into them.
+ *
+ * @group Synthesizer.XG Effects
  */
 export abstract class DefaultXGSystemEffect
     extends DefaultXGEffect

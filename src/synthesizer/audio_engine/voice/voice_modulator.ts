@@ -13,9 +13,8 @@ export class VoiceModulator extends Modulator {
      * Indicates if the given modulator is chorus or reverb effects modulator.
      * This is done to simulate BASSMIDI effects behavior:
      * - defaults to 1000 transform amount rather than 200
-     * - values can be changed, but anything above 200 is 1000
-     * (except for values above 1000, they are copied directly)
-     * - all values below are multiplied by 5 (200 * 5 = 1000)
+     * - values up to 1000 are multiplied by 5 (200 * 5 = 1000) and capped at 1000
+     * - values above 1000 are copied directly
      * - still can be disabled if the soundfont has its own modulator curve
      * - this fixes the very low amount of reverb by default and doesn't break soundfonts
      */
@@ -23,7 +22,7 @@ export class VoiceModulator extends Modulator {
 
     /**
      * The default resonant modulator does not affect the filter gain.
-     * Neither XG nor GS responded to cc #74 in that way.
+     * Neither XG nor GS responded to cc #71 in that way.
      */
     public readonly isDefaultResonantModulator;
 
