@@ -392,6 +392,7 @@ export class SpessaSynthProcessor {
     /**
      * This property can be defined as a function that listens for events.
      * All events are defined in {@link SynthesizerEvent}.
+     * It is not called while the `eventsEnabled` system parameter is false.
      *
      * @param event The event that occurred.
      */
@@ -1735,6 +1736,7 @@ export class SpessaSynthProcessor {
         type: K,
         data: SynthesizerEvent[K]
     ) {
+        if (!this.systemParameters.eventsEnabled) return;
         this.onEventCall?.({
             type,
             data
