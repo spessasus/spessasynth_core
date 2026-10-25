@@ -5,6 +5,7 @@ import type { DefaultXGEffectProcessor } from "./effect_processor";
  * Turn off the effect.
  */
 export class XGNoEffect implements DefaultXGEffectProcessor {
+    public static readonly memorySize = 0;
     public readonly type = 0x00_00;
 
     public setParameter(param: number, value: number) {

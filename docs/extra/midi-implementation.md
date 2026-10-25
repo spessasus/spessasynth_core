@@ -840,9 +840,28 @@ The behavior depends on "VARIATION CONNECTION" which defaults to "INSERTION" and
 
 ### Currently implemented XG effects
 
-- NO EFFECT (`00 00`) - silence in every block.
-- THRU (`40 00` variation) - passes dry. Also used as the fallback:
+- `NO EFFECT` - silence in the reverb, chorus and variation blocks.
+- `THRU` - passes dry. Also used as the fallback:
   unknown variation types and unknown EFFECT 2 types pass dry,
-  while unknown reverb and chorus types are silent (NO EFFECT).
+  while unknown reverb and chorus types are silent (`NO EFFECT`).
+- Reverb block: `HALL 1`/`2`, `HALL M`/`L`, `ROOM 1`/`2`/`3`,
+  `ROOM S`/`M`/`L`, `STAGE 1`/`2`, `PLATE`, `GM PLATE`,
+  `WHITE ROOM`, `TUNNEL` and `BASEMENT`.
+  Other LSB values use the type with LSB `00`.
+  All reverb parameters are recognized and clamped to their XG ranges.
+- Chorus block: `CHORUS 1`-`4`, `GM CHORUS 1`-`4`, `FB CHORUS`,
+  `CELESTE 1`-`4`, `FLANGER 1`-`3` and `GM FLANGER`.
+  Other LSB values use the type with LSB `00`.
+  All chorus parameters except Dry/Wet are recognized and clamped to their XG ranges.
+  The input mode of the flangers is fixed per type.
+- Variation block and EFFECT 2 (insertion) blocks: `HALL 1`/`2`, `ROOM 1`/`2`/`3`, `STAGE 1`/`2`, `PLATE`, `CHORUS 1`-`4`,
+  `CELESTE 1`-`4` and `FLANGER 1`-`3` (same type numbers as above, other LSB values use the type with LSB `00`),
+  `DELAY L,C,R`, `DELAY L,R`, `ECHO`, `CROSS DELAY`, `KARAOKE 1`-`3`,
+  `SYMPHONIC`, `ROTARY SPEAKER`, `TREMOLO`, `AUTO PAN`, `PHASER 1`,
+  `DISTORTION`, `OVER DRIVE`, `AMP SIMULATOR`, `3-BAND EQ`, `2-BAND EQ`
+  and `AUTO WAH`.
+  In the insertion mode, Dry/Wet (parameter 10) is used. In the system mode the output is fully wet.
+- Variation block only: `EARLY REF 1`/`2`, `GATE REVERB`, `REVERSE GATE`
+  and `PHASER 2` (EFFECT 2 uses `PHASER 1` for it).
 
 ## Notes

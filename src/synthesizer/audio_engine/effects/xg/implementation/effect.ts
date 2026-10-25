@@ -2,6 +2,7 @@ import type {
     DefaultXGEffectProcessor,
     DefaultXGEffectProcessorConstructor
 } from "./dsp/effect_processor";
+import { getMemorySize } from "./dsp/xg_dsp_program";
 import type {
     XGEffectBlock,
     XGEffectBlockSnapshot
@@ -40,20 +41,40 @@ export abstract class DefaultXGEffect implements XGEffectBlock {
      * @param sampleRate The sample rate, in Hertz.
      * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
      * Attempting to `.process()` more samples than this will result in an error.
+     * @param variation True for the variation and insertion blocks.
      */
     protected constructor(
         effectMap: Map<number, DefaultXGEffectProcessorConstructor>,
         fallbackProcessor: DefaultXGEffectProcessorConstructor,
         defaultType: number,
         sampleRate: number,
-        maxBufferSize: number
+        maxBufferSize: number,
+        variation: boolean
     ) {
+        // Only one processor runs at a time,
+        // So they all share one delay memory.
+        let memoryLength = getMemorySize(
+            sampleRate,
+            fallbackProcessor.memorySize
+        );
+        for (const constructor of effectMap.values()) {
+            memoryLength = Math.max(
+                memoryLength,
+                getMemorySize(sampleRate, constructor.memorySize)
+            );
+        }
+        const memory = new Float32Array(memoryLength);
         for (const [key, value] of effectMap) {
-            this.effectMap.set(key, new value(sampleRate, maxBufferSize));
+            this.effectMap.set(
+                key,
+                new value(sampleRate, maxBufferSize, memory, variation)
+            );
         }
         this.fallbackProcessor = new fallbackProcessor(
             sampleRate,
-            maxBufferSize
+            maxBufferSize,
+            memory,
+            variation
         );
         this.processor =
             this.effectMap.get(defaultType) ?? this.fallbackProcessor;

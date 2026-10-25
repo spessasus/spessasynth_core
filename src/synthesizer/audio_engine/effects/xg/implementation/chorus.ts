@@ -1,13 +1,47 @@
 import { XGNoEffect } from "./dsp/no_effect";
 import type { DefaultXGEffectProcessorConstructor } from "./dsp/effect_processor";
 import { DefaultXGSystemEffect } from "./system_effect";
+import { XGCeleste1 } from "./dsp/chorus/celeste1";
+import { XGCeleste2 } from "./dsp/chorus/celeste2";
+import { XGCeleste3 } from "./dsp/chorus/celeste3";
+import { XGCeleste4 } from "./dsp/chorus/celeste4";
+import { XGChorus1 } from "./dsp/chorus/chorus1";
+import { XGChorus2 } from "./dsp/chorus/chorus2";
+import { XGChorus3 } from "./dsp/chorus/chorus3";
+import { XGChorus4 } from "./dsp/chorus/chorus4";
+import { XGFBChorus } from "./dsp/chorus/fb_chorus";
+import { XGFlanger1 } from "./dsp/chorus/flanger1";
+import { XGFlanger2 } from "./dsp/chorus/flanger2";
+import { XGFlanger3 } from "./dsp/chorus/flanger3";
+import { XGGMChorus1 } from "./dsp/chorus/gm_chorus1";
+import { XGGMChorus2 } from "./dsp/chorus/gm_chorus2";
+import { XGGMChorus3 } from "./dsp/chorus/gm_chorus3";
+import { XGGMChorus4 } from "./dsp/chorus/gm_chorus4";
+import { XGGMFlanger } from "./dsp/chorus/gm_flanger";
 import type {
     XGChorusBlock,
     XGChorusBlockSnapshot
 } from "../interface/xg_chorus_block";
 
 const CHORUS_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
-    [0x00_00, XGNoEffect]
+    [0x00_00, XGNoEffect],
+    [0x41_00, XGChorus1],
+    [0x41_01, XGChorus2],
+    [0x41_02, XGChorus3],
+    [0x41_03, XGGMChorus1],
+    [0x41_04, XGGMChorus2],
+    [0x41_05, XGGMChorus3],
+    [0x41_06, XGGMChorus4],
+    [0x41_07, XGFBChorus],
+    [0x41_08, XGChorus4],
+    [0x42_00, XGCeleste1],
+    [0x42_01, XGCeleste2],
+    [0x42_02, XGCeleste3],
+    [0x42_08, XGCeleste4],
+    [0x43_00, XGFlanger1],
+    [0x43_01, XGFlanger2],
+    [0x43_07, XGGMFlanger],
+    [0x43_08, XGFlanger3]
 ]);
 
 /**
@@ -29,7 +63,14 @@ export class DefaultXGChorus
      * Attempting to `.process()` more samples than this will result in an error.
      */
     public constructor(sampleRate: number, maxBufferSize: number) {
-        super(CHORUS_MAP, XGNoEffect, 0x41_00, sampleRate, maxBufferSize);
+        super(
+            CHORUS_MAP,
+            XGNoEffect,
+            0x41_00,
+            sampleRate,
+            maxBufferSize,
+            false
+        );
     }
 
     public reset() {

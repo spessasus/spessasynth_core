@@ -45,7 +45,28 @@ export interface DefaultXGEffectProcessor {
      */
     getSnapshot(): Int16Array;
 }
-export type DefaultXGEffectProcessorConstructor = new (
-    sampleRate: number,
-    maxBufferSize: number
-) => DefaultXGEffectProcessor;
+/**
+ * Creates a processor.
+ */
+export interface DefaultXGEffectProcessorConstructor {
+    /**
+     * The delay memory length the processor needs at 44.1 kHz.
+     */
+    readonly memorySize: number;
+
+    /**
+     * Creates a processor.
+     * @param sampleRate The sample rate, in Hertz.
+     * @param maxBufferSize The maximum buffer size.
+     * @param memory The delay memory of the effect block, shared by all of its processors.
+     * It holds at least {@link memorySize} samples (scaled to the sample rate) for each processor.
+     * @param variation This flag is true in the variation and insertion blocks, which use the variation converters
+     * (dry/wet, variation output levels) where an effect is shared with the reverb or chorus block.
+     */
+    new (
+        sampleRate: number,
+        maxBufferSize: number,
+        memory: Float32Array,
+        variation: boolean
+    ): DefaultXGEffectProcessor;
+}

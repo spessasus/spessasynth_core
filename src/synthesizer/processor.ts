@@ -1183,27 +1183,85 @@ export class SpessaSynthProcessor {
 
         // Reset XG params
         if (!this.systemParameters.xgReverbLock) {
-            this.xgReverbBlock.reset();
+            const reverb = this.xgReverbBlock;
+            reverb.reset();
             this.callEvent("effectChange", {
                 effect: "xgReverb",
                 parameter: "type",
-                value: this.xgReverbBlock.getType()
+                value: reverb.getType()
+            });
+            this.callEvent("effectChange", {
+                effect: "xgReverb",
+                parameter: "return",
+                value: reverb.return
+            });
+            this.callEvent("effectChange", {
+                effect: "xgReverb",
+                parameter: "pan",
+                value: reverb.pan
             });
         }
         if (!this.systemParameters.xgChorusLock) {
-            this.xgChorusBlock.reset();
+            const chorus = this.xgChorusBlock;
+            chorus.reset();
             this.callEvent("effectChange", {
                 effect: "xgChorus",
                 parameter: "type",
-                value: this.xgChorusBlock.getType()
+                value: chorus.getType()
+            });
+            this.callEvent("effectChange", {
+                effect: "xgChorus",
+                parameter: "return",
+                value: chorus.return
+            });
+            this.callEvent("effectChange", {
+                effect: "xgChorus",
+                parameter: "pan",
+                value: chorus.pan
+            });
+            this.callEvent("effectChange", {
+                effect: "xgChorus",
+                parameter: "sendToReverb",
+                value: chorus.sendToReverb
             });
         }
         if (!this.systemParameters.xgVariationLock) {
-            this.xgVariationBlock.reset();
+            const variation = this.xgVariationBlock;
+            variation.reset();
             this.callEvent("effectChange", {
                 effect: "xgVariation",
                 parameter: "type",
-                value: this.xgVariationBlock.getType()
+                value: variation.getType()
+            });
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "return",
+                value: variation.return
+            });
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "pan",
+                value: variation.pan
+            });
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "sendToReverb",
+                value: variation.sendToReverb
+            });
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "sendToChorus",
+                value: variation.sendToChorus
+            });
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "connection",
+                value: variation.insertionMode ? "insertion" : "system"
+            });
+            this.callEvent("effectChange", {
+                effect: "xgVariation",
+                parameter: "partNumber",
+                value: variation.partNumber
             });
         }
         if (!this.systemParameters.xgInsertionLock) {
@@ -1219,6 +1277,12 @@ export class SpessaSynthProcessor {
                     insertionNumber,
                     parameter: "type",
                     value: insertion.getType()
+                });
+                this.callEvent("effectChange", {
+                    effect: "xgInsertion",
+                    insertionNumber,
+                    parameter: "partNumber",
+                    value: insertion.partNumber
                 });
             }
         }

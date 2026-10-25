@@ -5,6 +5,7 @@ import type { DefaultXGEffectProcessor } from "./effect_processor";
  * Bypass without applying an effect.
  */
 export class XGThru implements DefaultXGEffectProcessor {
+    public static readonly memorySize = 0;
     public readonly type = 0x40_00;
 
     public setParameter(param: number, value: number) {
@@ -20,14 +21,10 @@ export class XGThru implements DefaultXGEffectProcessor {
         sampleCount: number,
         isInsertion: boolean
     ) {
-        void inputLeft;
-        void inputRight;
-        void isInsertion;
-        void sampleCount;
         if (isInsertion) {
             // Thru is bypass, not disabled
-            outputLeft.set(inputLeft);
-            outputRight.set(inputRight);
+            outputLeft.set(inputLeft.subarray(0, sampleCount));
+            outputRight.set(inputRight.subarray(0, sampleCount));
         } else {
             outputLeft.fill(0, 0, sampleCount);
             outputRight.fill(0, 0, sampleCount);
