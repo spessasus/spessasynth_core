@@ -39,10 +39,11 @@ jobs:
                   echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
             - name: Generate release notes
+              env:
+                  TAG: ${{ steps.prev-tag.outputs.tag }}
+                  PREV_TAG: ${{ steps.prev-tag.outputs.prev_tag }}
+                  IS_FIRST: ${{ steps.prev-tag.outputs.is_first }}
               run: |
-                  TAG="${{ steps.prev-tag.outputs.tag }}"
-                  PREV_TAG="${{ steps.prev-tag.outputs.prev_tag }}"
-                  IS_FIRST="${{ steps.prev-tag.outputs.is_first }}"
 
                   {
                       echo "## What's Changed"
