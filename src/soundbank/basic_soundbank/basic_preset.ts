@@ -199,7 +199,6 @@ export class BasicPreset implements MIDIPatchFull {
      * @param midiNote The MIDI note number.
      * @param velocity The MIDI velocity.
      * @returns The returned sound data.
-     * @internal
      */
     public getVoiceParameters(
         midiNote: number,

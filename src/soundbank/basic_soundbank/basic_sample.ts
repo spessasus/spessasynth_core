@@ -149,11 +149,11 @@ export class BasicSample {
         return this.linkedTo.length;
     }
 
+    // Public API, spessafont consumes it
     /**
      * Get raw data for writing the file, either a compressed bit stream or signed 16-bit little endian PCM data.
      * @param allowVorbis if vorbis file data is allowed.
      * @return either s16le or vorbis data.
-     * @internal
      */
     public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.compressedData && allowVorbis && !this.dataOverridden) {
@@ -298,10 +298,10 @@ export class BasicSample {
         this.linkedTo.push(instrument);
     }
 
+    // Public API, spessafont consumes it
     /**
      * Unlinks the sample from a given instrument
      * @param instrument the instrument to unlink from
-     * @internal
      */
     public unlinkFrom(instrument: BasicInstrument) {
         const index = this.linkedTo.indexOf(instrument);

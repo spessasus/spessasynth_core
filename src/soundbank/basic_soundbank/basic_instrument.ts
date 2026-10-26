@@ -102,10 +102,10 @@ export class BasicInstrument {
         for (const z of this.zones) z.useCount++;
     }
 
+    // Public API, spessafont consumes it
     /**
      * Unlinks the instrument from a given preset.
      * @param preset The preset to unlink from.
-     * @internal
      */
     public unlinkFrom(preset: BasicPreset) {
         const index = this.linkedTo.indexOf(preset);
