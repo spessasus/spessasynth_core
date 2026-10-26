@@ -12,12 +12,13 @@ It allows you to:
 - Read and write MIDI files!
 - Read and write SF2/SF3 files!
 - Convert DLS to SF2! (and back!)
+- Play tracker modules (MOD, XM, S3M) as MIDI files!
 - [and more!](#current-features)
 
-### v4.3.0 The General Update is here!
+### v4.4.0 The XG Update is here!
 
-Featuring robust MIDI analysis and editing, broadened MIDI exclusive support,
-and reworked, more powerful API!
+Featuring full Yamaha XG effects, tracker module playback,
+a more capable MIDI editor, and a faster synthesis engine!
 
 > **Tip:**
 >
@@ -50,7 +51,7 @@ and reworked, more powerful API!
 - **Flexible:** _It's not just a MIDI player!_
 - **Easy to Use:** _Basic setup is
   just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
-- **No external dependencies:** _Only vorbis decoder for SF3 support!_
+- **Minimal dependencies:** _Only tiny `fflate` for XMF and `stb-vorbis` for SF3 support!_
 - **Full TypeScript definitions:** _Autocompletion in IDEs!_
 
 ### Powerful MIDI Synthesizer
@@ -77,11 +78,12 @@ and reworked, more powerful API!
 - **Sound bank manager:** Stack multiple sound banks!
 - **Unlimited channel count:** Your CPU is the limit!
 - **Built-in, configurable effects:**
+    - **Full Yamaha XG effects:** _Reverb, chorus, variation and insertion effects, accurately ported from S-YXG50!_
     - **Reverb:** _Multiple characters including delay and panning delay!_
     - **Chorus:** _Modulated delay lines with multiple presets!_
     - **Delay:** _Three delay lines for all of your delay needs!_
     - **Insertion Effects:** _The ultimate effects, they can give your sounds a completely different character! (limited support)_
-    - **GS Compatible:** _MIDI files can configure the effects accurately!_
+    - **GS and XG Compatible:** _MIDI files can configure the effects accurately!_
     - **Replaceable:** _Effects not to your liking? You can replace them with your own!_
 - **Excellent MIDI Standards Support:**
     - **MIDI Controller Support:** Default supported
@@ -142,10 +144,19 @@ and reworked, more powerful API!
 
 #### Read and play XMF files
 
-- **Read the eXtensible Music Format files:** With embedded DLS sound banks!
-- **MXMF support:** Mobile XMF for old phone ringtones!
-- **Compression support:** Zlib compressed files can still be read!
-- **Seamless integration:** Read like RMIDI files!
+- **Read the eXtensible Music Format files:** _With embedded DLS sound banks!_
+- **MXMF support:** _Mobile XMF for old phone ringtones!_
+- **Compression support:** _Zlib compressed files can still be read!_
+- **Seamless integration:** _Read like RMIDI files!_
+
+#### Read and play tracker modules
+
+- **MOD, XM and S3M support:** _ProTracker, FastTracker 2 and Scream Tracker 3 modules load just like MIDI files!_
+- **Converted to MIDI with an embedded sound bank:** Every sample becomes a preset, and the song can be saved as an RMIDI file!
+- **Accurate playback:** _Effects, effect memory, instrument envelopes and auto-vibrato are converted to MIDI events!_
+- **Sample offset support:** _Implemented with SoundFont modulators!_
+- **Loop detection:** _Song loops and restart positions become loop points!_
+- **Seamless integration:** _Read like any other MIDI file!_
 
 #### Read and write SoundFont2 files
 
@@ -193,7 +204,7 @@ and reworked, more powerful API!
 
 #### TODO
 
-- Improve the performance of the engine
+- Improve the performance of the engine (it's already quite good, but there's always room for improvement)
 - Potentially port the system to Emscripten
 
 ### Special Thanks
@@ -208,6 +219,7 @@ and reworked, more powerful API!
 - [foo_midi](https://github.com/stuerp/foo_midi) - for useful resources on XMF file format
 - [Falcosoft](https://falcosoft.hu) - for help with the RMIDI format
 - [Christian Collins](https://schristiancollins.com) - for various bug reports regarding the synthesizer
+- [OpenMPT](https://openmpt.org/) - for useful resources on the tracker formats
 - **And You!** - for checking out this project. I hope you like it :)
 
 **If you like this project, consider giving it a star. It really helps out!**
@@ -248,7 +260,7 @@ const synth = new SpessaSynthProcessor(sampleRate, {
     eventsEnabled: false
 });
 synth.soundBankManager.addSoundBank(soundBank, "main");
-await synth.processorInitialized;
+await synth.ready;
 // Enable verbose information during render
 SpessaLog.setLogLevel(true, true, true);
 // Enable uncapped voice count
@@ -310,6 +322,10 @@ npm run build
 ```
 
 The files will be placed in the `dist` folder.
+
+#### Test Suite
+
+This library has a comprehensive MIDI testing suite. For more information, please read the [tests `README`](tests/README.md).
 
 ## License
 

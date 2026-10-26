@@ -42,17 +42,6 @@ export class BankSelectHacks {
         return bankMSB === 120 || bankMSB === 127;
     }
 
-    /**
-     * Checks if this MSB is a valid XG MSB
-     */
-    public static isValidXGMSB(bankMSB: number) {
-        return (
-            this.isXGDrum(bankMSB) ||
-            bankMSB === XG_SFX_VOICE ||
-            bankMSB === GM2_DEFAULT_BANK
-        );
-    }
-
     public static isSystemXG(system: MIDISystem) {
         return system === "gm2" || system === "xg";
     }
@@ -62,7 +51,7 @@ export class BankSelectHacks {
         bankOffset: number,
         isXG: boolean
     ) {
-        // Do not change XG drums (120, 126 or 127)
+        // Do not change XG drums (120 or 127)
         if (this.isXGDrum(bankMSB) && isXG) return bankMSB;
 
         return Math.min(bankMSB + bankOffset, 127);
@@ -73,7 +62,7 @@ export class BankSelectHacks {
         bankOffset: number,
         isXG: boolean
     ) {
-        // Do not change XG drums (120, 126 or 127)
+        // Do not change XG drums (120 or 127)
         if (this.isXGDrum(bankMSB) && isXG) return bankMSB;
 
         return Math.max(0, bankMSB - bankOffset);

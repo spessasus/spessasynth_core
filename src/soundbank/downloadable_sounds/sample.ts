@@ -129,7 +129,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
 
         let loopStart = 0;
         let loopEnd = 0;
-        const loop = this.waveSample.loops?.[0];
+        const loop = this.waveSample.loops[0];
         if (loop) {
             loopStart = loop.loopStart;
             loopEnd = loop.loopStart + loop.loopLength;
@@ -175,8 +175,8 @@ export class DownloadableSoundsSample extends DLSVerifier {
         writeWord(fmtData, this.wFormatTag); // WFormatTag
         writeWord(fmtData, 1); // WChannels
         writeDword(fmtData, this.sampleRate);
-        writeDword(fmtData, this.sampleRate * 2); // 16-bit samples
-        writeWord(fmtData, 2); // WBlockAlign
+        writeDword(fmtData, this.sampleRate * this.bytesPerSample); // NAvgBytesPerSec
+        writeWord(fmtData, this.bytesPerSample); // WBlockAlign (mono)
         writeWord(fmtData, this.bytesPerSample * 8); // WBitsPerSample
         return RIFFChunk.write("fmt ", fmtData);
     }

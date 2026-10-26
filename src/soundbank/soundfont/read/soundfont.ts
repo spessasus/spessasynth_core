@@ -218,6 +218,7 @@ export class SoundFont2 extends BasicSoundBank {
                 );
             }
             if (vorbis.channels.length !== 1) {
+                SpessaLog.groupEnd();
                 throw new Error(
                     `The encoded sample data must be mono, received ${vorbis.channels.length} channels.`
                 );
@@ -244,7 +245,7 @@ export class SoundFont2 extends BasicSoundBank {
         SpessaLog.info("%cLoading preset data chunk...", ConsoleColors.warn);
         const presetChunk = RIFFChunk.read(mainFileArray, rf64);
         this.verifyHeader(presetChunk, "list");
-        readBinaryStringIndexed(presetChunk.data, 4);
+        this.verifyText(readBinaryStringIndexed(presetChunk.data, 4), "pdta");
 
         // Read the hydra chunks
         const phdrChunk = RIFFChunk.read(presetChunk.data, rf64);
@@ -310,24 +311,26 @@ export class SoundFont2 extends BasicSoundBank {
         const instrumentModulators = readModulators(imodChunk);
 
         // Read the instruments
-        const instruments = readInstruments(instChunk);
-        if (xdtaChunk && xChunks.inst) {
+        // Keep the terminal record (EOI) when extending, the last zone count needs its index
+        const extendInstruments = xdtaChunk !== undefined && !!xChunks.inst;
+        const instruments = readInstruments(instChunk, extendInstruments);
+        if (extendInstruments && xChunks.inst) {
             // Apply extensions to instruments
-            const xInst = readInstruments(xChunks.inst);
+            const xInst = readInstruments(xChunks.inst, true);
             if (xInst.length === instruments.length) {
                 for (const [i, inst] of instruments.entries()) {
                     inst.name += xInst[i].name;
                     inst.zoneStartIndex |= xInst[i].zoneStartIndex << 16;
                 }
                 // Adjust zone counts
-                for (const [i, inst] of instruments.entries()) {
-                    if (i < instruments.length - 1) {
-                        inst.zonesCount =
-                            instruments[i + 1].zoneStartIndex -
-                            inst.zoneStartIndex;
-                    }
+                for (let i = 0; i < instruments.length - 1; i++) {
+                    instruments[i].zonesCount =
+                        instruments[i + 1].zoneStartIndex -
+                        instruments[i].zoneStartIndex;
                 }
             }
+            // Remove EOI
+            instruments.pop();
         }
         // Trim names
         for (const i of instruments) i.name = i.name.trim();
@@ -361,24 +364,26 @@ export class SoundFont2 extends BasicSoundBank {
         const presetModulators: Modulator[] = readModulators(pmodChunk);
 
         // Read presets
-        const presets = readPresets(phdrChunk, this);
-        if (xdtaChunk && xChunks.phdr) {
+        // Keep the terminal record (EOP) when extending, the last zone count needs its index
+        const extendPresets = xdtaChunk !== undefined && !!xChunks.phdr;
+        const presets = readPresets(phdrChunk, this, extendPresets);
+        if (extendPresets && xChunks.phdr) {
             // Apply extensions to presets
-            const xPreset = readPresets(xChunks.phdr, this);
+            const xPreset = readPresets(xChunks.phdr, this, true);
             if (xPreset.length === presets.length) {
                 for (const [i, pres] of presets.entries()) {
                     pres.name += xPreset[i].name;
                     pres.zoneStartIndex |= xPreset[i].zoneStartIndex << 16;
                 }
                 // Adjust zone counts
-                for (const [i, preset] of presets.entries()) {
-                    if (i < presets.length - 1) {
-                        preset.zonesCount =
-                            presets[i + 1].zoneStartIndex -
-                            preset.zoneStartIndex;
-                    }
+                for (let i = 0; i < presets.length - 1; i++) {
+                    presets[i].zonesCount =
+                        presets[i + 1].zoneStartIndex -
+                        presets[i].zoneStartIndex;
                 }
             }
+            // Remove EOP
+            presets.pop();
         }
 
         // Trim names
@@ -435,7 +440,7 @@ export class SoundFont2 extends BasicSoundBank {
         if (text.toLowerCase() !== expected.toLowerCase()) {
             SpessaLog.groupEnd();
             this.parsingError(
-                `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"\``
+                `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"`
             );
         }
     }

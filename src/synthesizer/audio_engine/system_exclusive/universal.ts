@@ -1,6 +1,6 @@
 import { SpessaLog } from "../../../utils/loggin";
 import { readBinaryString } from "../../../utils/byte_functions/string";
-import type { SynthesizerCore } from "../synthesizer_core";
+import type { SpessaSynthProcessor } from "../../processor";
 import type { SysExAcceptedArray } from "../../../midi/types";
 
 /**
@@ -19,23 +19,28 @@ function getTuning(byte1: number, byte2: number, byte3: number): number {
         return -1;
     }
 
-    // Calculate cent tuning (divide cents by 100 so it works in semitones)
-    return midiNote + fraction * 0.000_061;
+    // The fraction is in 1/16384 semitone units (100/16384 cents)
+    return midiNote + fraction / 16_384;
 }
 
 /**
  * Handles a Universal system exclusive (realtime/non-realtime)
- * @param syx
- * @param channelOffset
+ * @param syx The SysEx data, starting with 0x7E (non-realtime) or 0x7F (realtime).
+ * @param channelOffset The channel offset of the MIDI port.
  */
 export function universalSystemExclusive(
-    this: SynthesizerCore,
+    this: SpessaSynthProcessor,
     syx: SysExAcceptedArray,
     channelOffset = 0
 ) {
+    const isRealtime = syx[0] === 0x7f;
     switch (syx[2]) {
-        // Device control
+        // Device control (realtime only, non-realtime 04 is MIDI Time Code)
         case 0x04: {
+            if (!isRealtime) {
+                SpessaLog.gmFail("Universal System Exclusive", syx);
+                break;
+            }
             switch (syx[3]) {
                 default: {
                     SpessaLog.gmFail("Device Control", syx);
@@ -122,8 +127,13 @@ export function universalSystemExclusive(
 
                                 case 0x01: {
                                     // Reverb time
-                                    this.reverbProcessor.time = value;
+                                    this.gsReverbProcessor.time = value;
                                     SpessaLog.gmInfo("Reverb Time", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsReverb",
+                                        parameter: "time",
+                                        value
+                                    });
                                 }
                             }
                             break;
@@ -153,36 +163,56 @@ export function universalSystemExclusive(
 
                                 case 0x01: {
                                     // Mod rate
-                                    this.chorusProcessor.rate = value;
+                                    this.gsChorusProcessor.rate = value;
                                     SpessaLog.gmInfo("Chorus Mod Rate", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "rate",
+                                        value
+                                    });
                                     break;
                                 }
 
                                 case 0x02: {
                                     // Mod depth
-                                    this.chorusProcessor.depth = value;
+                                    this.gsChorusProcessor.depth = value;
                                     SpessaLog.gmInfo("Chorus Mod Depth", value);
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "depth",
+                                        value
+                                    });
                                     break;
                                 }
 
                                 case 0x03: {
                                     // Mod feedback
-                                    this.chorusProcessor.feedback = value;
+                                    this.gsChorusProcessor.feedback = value;
                                     SpessaLog.gmInfo(
                                         "Chorus Mod Feedback",
                                         value
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "feedback",
+                                        value
+                                    });
                                     break;
                                 }
 
                                 case 0x04: {
                                     // Mod send to reverb
-                                    this.chorusProcessor.sendLevelToReverb =
+                                    this.gsChorusProcessor.sendLevelToReverb =
                                         value;
                                     SpessaLog.gmInfo(
                                         "Chorus Send to Reverb",
                                         value
                                     );
+                                    this.callEvent("effectChange", {
+                                        effect: "gsChorus",
+                                        parameter: "sendLevelToReverb",
+                                        value
+                                    });
                                     break;
                                 }
                             }
@@ -193,8 +223,12 @@ export function universalSystemExclusive(
             break;
         }
 
-        // General MIDI
+        // General MIDI (non-realtime)
         case 0x09: {
+            if (isRealtime) {
+                SpessaLog.gmFail("Universal System Exclusive", syx);
+                break;
+            }
             switch (syx[3]) {
                 default: {
                     SpessaLog.gmFail("System Exclusive", syx);
@@ -208,6 +242,7 @@ export function universalSystemExclusive(
                 }
 
                 case 0x02: {
+                    // GM System Off
                     SpessaLog.coolInfo("MIDI System", "Roland GS");
                     this.reset("gs");
                     break;
@@ -227,8 +262,12 @@ export function universalSystemExclusive(
         case 0x08: {
             let currentMessageIndex = 4;
             switch (syx[3]) {
-                // Bulk tuning dump: all 128 notes
+                // Bulk tuning dump: all 128 notes (non-realtime)
                 case 0x01: {
+                    if (isRealtime) {
+                        SpessaLog.gmFail("MIDI Tuning Standard", syx);
+                        break;
+                    }
                     const program = syx[currentMessageIndex++];
                     // Read the name
                     const tuningName = readBinaryString(
@@ -263,6 +302,11 @@ export function universalSystemExclusive(
                 // Single note change bank
                 case 0x02:
                 case 0x07: {
+                    if (syx[3] === 0x02 && !isRealtime) {
+                        // Non-realtime 02 is a bulk dump request
+                        SpessaLog.gmFail("MIDI Tuning Standard", syx);
+                        break;
+                    }
                     if (syx[3] === 0x07) {
                         // Skip the bank
                         currentMessageIndex++;
@@ -310,12 +354,12 @@ export function universalSystemExclusive(
                     // Apply to channels (ordered from 0)
                     // Bit 1: 14 and 15
                     if ((syx[4] & 1) === 1) {
-                        this.midiChannels[14 + channelOffset].setOctaveTuning(
+                        this.midiChannels[14 + channelOffset]?.setOctaveTuning(
                             newOctaveTuning
                         );
                     }
                     if (((syx[4] >> 1) & 1) === 1) {
-                        this.midiChannels[15 + channelOffset].setOctaveTuning(
+                        this.midiChannels[15 + channelOffset]?.setOctaveTuning(
                             newOctaveTuning
                         );
                     }
@@ -326,17 +370,17 @@ export function universalSystemExclusive(
                         if (bit === 1) {
                             this.midiChannels[
                                 7 + i + channelOffset
-                            ].setOctaveTuning(newOctaveTuning);
+                            ]?.setOctaveTuning(newOctaveTuning);
                         }
                     }
 
-                    // Bit 3: channels 0 to 16
+                    // Bit 3: channels 0 to 6
                     for (let i = 0; i < 7; i++) {
                         const bit = (syx[6] >> i) & 1;
                         if (bit === 1) {
                             this.midiChannels[
                                 i + channelOffset
-                            ].setOctaveTuning(newOctaveTuning);
+                            ]?.setOctaveTuning(newOctaveTuning);
                         }
                     }
 

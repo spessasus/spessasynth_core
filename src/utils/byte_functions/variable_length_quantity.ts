@@ -9,12 +9,13 @@ export function readVariableLengthQuantity(
     midiByteArray: IndexedByteArray
 ): number {
     let out = 0;
-    while (midiByteArray) {
+    // Stop at the end of the array even if the last byte has the continuation bit
+    while (midiByteArray.currentIndex < midiByteArray.length) {
         const byte = midiByteArray[midiByteArray.currentIndex++];
-        // Extract the first 7 bytes
+        // Extract the first 7 bits
         out = (out << 7) | (byte & 127);
 
-        // If the last byte isn't 1, stop reading
+        // If the continuation bit isn't set, stop reading
         if (byte >> 7 !== 1) {
             break;
         }

@@ -1,7 +1,7 @@
 import type { VoiceParameters } from "../../../soundbank/types";
 import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
-import type { SampleLoopingMode } from "../../types";
 import { VoiceModulator } from "./voice_modulator";
+import type { SampleLoopingMode } from "./voice";
 
 /**
  * Represents a cached voice

@@ -1,9 +1,6 @@
 import fs from "node:fs/promises";
+import type { ChannelModification, ClearableParameter } from "../../../src";
 import { BasicMIDI, SpessaLog } from "../../../src";
-import type {
-    ChannelModification,
-    ClearableParameter
-} from "../../../src/midi/midi_tools/modify_midi";
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {

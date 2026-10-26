@@ -19,11 +19,20 @@ export function processEventInternal(
     event: MIDIMessage,
     trackIndex: number
 ) {
+    const offset =
+        this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] ?? 0;
+
     if (
         this.externalMIDIPlayback && // Do not send meta events
         event.statusByte >= 0x80
     ) {
-        this.sendMIDIMessage([event.statusByte, ...event.data]);
+        this.sendMIDIMessage(
+            // SysEx escape sends its bytes as-is, synth does not parse them
+            event.statusByte === MIDIMessageTypes.systemExclusiveEscape
+                ? [...event.data]
+                : [event.statusByte, ...event.data],
+            offset
+        );
         return;
     }
     const track = this._midiData!.tracks[trackIndex];
@@ -36,8 +45,7 @@ export function processEventInternal(
     } else {
         status = event.statusByte;
     }
-    const offset =
-        this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] || 0;
+
     channel += offset;
     /*
      Process the event
@@ -145,6 +153,7 @@ export function processEventInternal(
         case MIDIMessageTypes.activeSensing:
         case MIDIMessageTypes.keySignature:
         case MIDIMessageTypes.sequenceNumber:
+        case MIDIMessageTypes.systemExclusiveEscape:
         case MIDIMessageTypes.sequenceSpecific:
         case MIDIMessageTypes.text:
         case MIDIMessageTypes.lyric:
@@ -163,24 +172,15 @@ export function processEventInternal(
         }
 
         case MIDIMessageTypes.reset: {
-            this.synth.stopAllChannels();
             this.synth.reset();
             break;
         }
 
         default: {
             SpessaLog.info(
-                `%cUnrecognized Event: %c${event.statusByte}%c status byte: %c${Object.keys(
-                    MIDIMessageTypes
-                ).find(
-                    (k) =>
-                        MIDIMessageTypes[k as keyof typeof MIDIMessageTypes] ===
-                        status
-                )}`,
+                `%cUnrecognized Event: %c${event.statusByte.toString(16)}`,
                 ConsoleColors.warn,
-                ConsoleColors.unrecognized,
-                ConsoleColors.warn,
-                ConsoleColors.value
+                ConsoleColors.unrecognized
             );
             break;
         }

@@ -4,8 +4,9 @@ import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import eslint from "@eslint/js";
 
+// noinspection JSCheckFunctionSignatures
 export default tseslint.config(
-    { ignores: ["dist", "tests/files/**/*"] },
+    { ignores: ["dist", "tests/files", "tests/midi_file/output", "site"] },
     {
         files: ["**/*.{ts,tsx}"],
         extends: [

@@ -11,7 +11,7 @@ if (args.length !== 2) {
 const sf2Path = args[0];
 const dlsPath = args[1];
 
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 console.warn("DLS conversion may lose data.");
 const sf2 = await fs.readFile(sf2Path);
 console.time("Loaded in");

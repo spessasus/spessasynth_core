@@ -6,11 +6,11 @@ import { SpessaLog } from "../../utils/loggin";
 import { ConsoleColors } from "../../utils/other";
 import { readBigEndianIndexed } from "../../utils/byte_functions/big_endian";
 import { readVariableLengthQuantity } from "../../utils/byte_functions/variable_length_quantity";
-import { inflateSync } from "../../externals/fflate/fflate_wrapper";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { BasicMIDI } from "../basic_midi";
 import type { RMIDInfoData } from "../types";
 import { parseSMFInternal } from "./midi";
+import { inflateSync } from "fflate";
 
 const metadataTypes = {
     XMFFileType: 0,
@@ -297,12 +297,10 @@ class XMFNode {
                     );
                 } catch (error: unknown) {
                     SpessaLog.groupEnd();
-                    if (error instanceof Error) {
-                        throw new Error(
-                            `Error unpacking XMF file contents: ${error.message}.`,
-                            { cause: error }
-                        );
-                    }
+                    throw new Error(
+                        `Error unpacking XMF file contents: ${error instanceof Error ? error.message : String(error)}.`,
+                        { cause: error }
+                    );
                 }
             }
             /**
@@ -359,9 +357,9 @@ class XMFNode {
 
 /**
  * Parses an XMF file
- * @param midi
- * @param binaryData
- * @param fileName
+ * @param midi The BasicMIDI instance to populate with the parsed data.
+ * @param binaryData The XMF file data.
+ * @param fileName The name of the file, used if the MIDI file does not have a name.
  */
 export function loadXMF(
     midi: BasicMIDI,
@@ -373,9 +371,8 @@ export function loadXMF(
     // https://wiki.multimedia.cx/index.php?title=Extensible_Music_Format_(XMF)
     const sanityCheck = readBinaryStringIndexed(binaryData, 4);
     if (sanityCheck !== "XMF_") {
-        SpessaLog.groupEnd();
         throw new SyntaxError(
-            `Invalid XMF Header! Expected "_XMF", got "${sanityCheck}"`
+            `Invalid XMF Header! Expected "XMF_", got "${sanityCheck}"`
         );
     }
 

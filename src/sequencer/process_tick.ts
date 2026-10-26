@@ -13,6 +13,11 @@ export function processTick(this: SpessaSynthSequencer) {
         // Find the next event and process it
         const { timeline, tracks, lastVoiceEventTick, loop } = this._midiData;
         const e = timeline[this.index++];
+        if (e === undefined) {
+            // Past the end (for example, after jumping beyond the last event)
+            this.songIsFinished();
+            return;
+        }
         const event = tracks[e.tr].events[e.ev];
         this.processEvent(event, e.tr);
 

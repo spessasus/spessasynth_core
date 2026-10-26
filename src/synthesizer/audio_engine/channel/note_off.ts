@@ -4,11 +4,14 @@ import { MIDIControllers } from "../../../midi/enums";
 /**
  * Releases a note by its MIDI note number.
  * If the note is in high performance mode and the channel is not a drum channel,
+ * or the drum channel has an rxNoteOff enabled,
  * it kills the note instead of releasing it.
  * @param midiNote The MIDI note number to release (0-127).
  */
 export function noteOff(this: MIDIChannel, midiNote: number) {
     if (midiNote > 127 || midiNote < 0) return;
+    // The key is released in both paths, so mono mode does not restore it
+    this.playingNotes[midiNote] = false;
 
     if (
         // If high performance mode, kill notes instead of stopping them
@@ -27,7 +30,6 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    this.playingNotes[midiNote] = false;
     const mono = !this._midiParameters.polyMode;
     // Mono mode overrides sustain
     const sustain =

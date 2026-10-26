@@ -5,6 +5,11 @@ import {
 import type { MIDIChannel } from "./midi_channel";
 import { SpessaLog } from "../../../utils/loggin";
 
+/**
+ * Handlers for tuning SF2 generators with NRPN.
+ *
+ * @group Synthesizer.Channel
+ */
 export interface ChannelGenerators {
     /**
      * An array of offsets generators for SF2 NRPN support.
@@ -18,7 +23,7 @@ export interface ChannelGenerators {
 
     /**
      * An array of overrides generators for AWE32 NRPN support.
-     * A value of GENERATOR_OVERRIDE_NO_CHANGE_VALUE (-32,767) means no change;
+     * A value of GENERATOR_OVERRIDE_NO_CHANGE_VALUE (32,767) means no change;
      * other values replace current generators.
      */
     overrides: Int16Array;
@@ -99,13 +104,16 @@ export function handleAWE32NRPN(
     // Though ranges reported as 0 to 127 only use LSB
     const dataLSB = dataValue & 0x7f;
     dataValue -= 8192;
-    const generator = AWE_NRPN_GENERATOR_MAPPINGS[paramLSB];
-    if (!generator) {
+    const generator = AWE_NRPN_GENERATOR_MAPPINGS[paramLSB] as
+        | GeneratorType
+        | undefined;
+    if (generator === undefined) {
         SpessaLog.unsupported(
             `AWE32 LSB for ${this.channel}`,
             [paramLSB],
             "Invalid Generator Number"
         );
+        return;
     }
     let milliseconds, hertz, centibels, cents;
     switch (generator) {
@@ -159,7 +167,11 @@ export function handleAWE32NRPN(
         case GeneratorTypes.freqModLFO: {
             hertz = 0.084 * dataLSB;
             // Convert to abs cents
-            this.setGeneratorOverride(generator, hzToCents(hertz), true);
+            this.setGeneratorOverride(
+                generator,
+                Math.max(-16_000, hzToCents(hertz)),
+                true
+            );
             break;
         }
 

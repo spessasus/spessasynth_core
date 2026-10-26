@@ -1,7 +1,3 @@
-/**
- * Instrument_zones.ts
- * purpose: reads instrument zones from soundfont and gets their respective samples and generators and modulators
- */
 import type { SoundFontInstrument } from "./instruments";
 import type { BasicSample } from "../../basic_soundbank/basic_sample";
 import type { Modulator } from "../../basic_soundbank/modulator";
@@ -35,11 +31,12 @@ export function applyInstrumentZones(
             if (gens.some((g) => g.type === GeneratorTypes.sampleID)) {
                 // Regular zone
                 instrument.createSoundFontZone(mods, gens, samples);
-            } else {
-                // global zone
+            } else if (i === 0) {
+                // Global zone, only the first zone may be global
                 instrument.globalZone.addGenerators(...gens);
                 instrument.globalZone.addModulators(...mods);
             }
+            // Other zones without a sample must be ignored (SF2 2.04 section 7.9)
         }
     }
 }

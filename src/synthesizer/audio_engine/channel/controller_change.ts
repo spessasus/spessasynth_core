@@ -2,9 +2,9 @@ import type { MIDIChannel } from "./midi_channel";
 import {
     type MIDIController,
     MIDIControllers,
-    NonRegisteredMSB
+    NonRegisteredParameterTypesMSB
 } from "../../../midi/enums";
-import { DEFAULT_PERCUSSION } from "../synth_constants";
+import { MIDI_DRUM_CHANNEL } from "../synth_constants";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
 
 /**
@@ -17,7 +17,6 @@ import { BankSelectHacks } from "../../../utils/midi_hacks";
  * midiControllers table and handling special cases like bank select,
  * data entry, and sustain pedal. It also computes modulators for all voices
  * in the channel based on the controller change.
- * to allow changes.
  */
 export function controllerChange(
     this: MIDIChannel,
@@ -32,7 +31,7 @@ export function controllerChange(
     // Excluding bank select as it's handled separately
     if (
         controller >= MIDIControllers.modulationWheelLSB &&
-        controller <= MIDIControllers.effectControl2LSB
+        controller <= MIDIControllers.undefinedCC31LSB
     ) {
         const actualCCNum = controller - 32;
         if (this.lockedControllers[actualCCNum]) return;
@@ -82,11 +81,13 @@ export function controllerChange(
             // Special case: bank select
             case MIDIControllers.bankSelect: {
                 this.setBankMSB(value);
-                // Ensure that for XG, drum channels always are 127
+                // Ensure that for XG, drum channels always are 127.
+                // This emulates the XG "DRUM PART PROTECT MODE", which is not implemented yet,
+                // So it is always on and part 10 can never be melodic!
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (
-                    this.channel % 16 === DEFAULT_PERCUSSION &&
+                    this.channel % 16 === MIDI_DRUM_CHANNEL &&
                     BankSelectHacks.isSystemXG(this.channelSystem)
                 ) {
                     this.setBankMSB(127);
@@ -100,8 +101,16 @@ export function controllerChange(
                 break;
             }
 
+            case MIDIControllers.pan: {
+                // Pan disables random pan
+                if (this._midiParameters.randomPan)
+                    this.setMIDIParameter("randomPan", false);
+                this.computeModulatorsAll(1, controller);
+                break;
+            }
+
             case MIDIControllers.variationDepth: {
-                this.synthCore.updateActiveEffects();
+                this.synthCore.updateActiveGSEffects();
                 break;
             }
 
@@ -135,7 +144,7 @@ export function controllerChange(
                         MIDIControllers.nonRegisteredParameterMSB
                     ] >>
                         7 ===
-                    NonRegisteredMSB.SF2
+                    NonRegisteredParameterTypesMSB.SF2
                 ) {
                     // If a <100 value has already been sent, reset!
                     if (this.sf2NRPNGeneratorLSB % 100 !== 0)

@@ -5,8 +5,8 @@ import { readBinaryStringIndexed } from "../../utils/byte_functions/string";
 
 export abstract class DLSVerifier {
     /**
-     * @param chunk
-     * @param expected
+     * @param chunk The chunk to verify.
+     * @param expected The accepted chunk headers.
      * @throws error if the check doesn't pass
      */
     protected static verifyHeader(chunk: RIFFChunk, ...expected: FourCC[]) {
@@ -21,8 +21,8 @@ export abstract class DLSVerifier {
     }
 
     /**
-     * @param text {string}
-     * @param expected {string}
+     * @param text The FourCC to verify.
+     * @param expected The accepted FourCCs.
      * @throws error if the check doesn't pass
      */
     protected static verifyText(text: string, ...expected: DLSChunkFourCC[]) {
@@ -37,9 +37,10 @@ export abstract class DLSVerifier {
     }
 
     /**
-     * @throws error if the check doesn't pass
+     * @param error The error description.
+     * @throws error always
      */
-    protected static parsingError(error: string) {
+    protected static parsingError(error: string): never {
         SpessaLog.groupEnd();
         throw new Error(`DLS parse error: ${error} The file may be corrupted.`);
     }

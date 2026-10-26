@@ -40,7 +40,7 @@ export function parseRMIDIInternal(
     const smfFileBinary = riff.data;
 
     let isSF2RMIDI = false;
-    let foundDBNK = false;
+    let dbnk: number | undefined;
     // Keep loading chunks until we get the "SFBK" header
     while (binaryData.currentIndex < binaryData.length) {
         const startIndex = binaryData.currentIndex;
@@ -57,7 +57,7 @@ export function parseRMIDIInternal(
                 );
                 outputMIDI.embeddedSoundBank = binaryData.slice(
                     startIndex,
-                    startIndex + currentChunk.size
+                    startIndex + currentChunk.headerSize + currentChunk.size
                 ).buffer;
             } else {
                 SpessaLog.warn(`Unknown RIFF chunk: "${type}"`);
@@ -157,11 +157,7 @@ export function parseRMIDIInternal(
                         }
 
                         case "DBNK": {
-                            outputMIDI.bankOffset = readLittleEndian(
-                                infoData,
-                                2
-                            );
-                            foundDBNK = true;
+                            dbnk = readLittleEndian(infoData, 2);
                             break;
                         }
                     }
@@ -170,18 +166,25 @@ export function parseRMIDIInternal(
         }
     }
 
-    if (isSF2RMIDI && !foundDBNK)
-        // Defaults to 1 according to the spe
+    if (outputMIDI.embeddedSoundBank === undefined) {
+        // If no embedded bank, assume 0
+        outputMIDI.bankOffset = 0;
+    } else if (dbnk !== undefined) {
+        outputMIDI.bankOffset = dbnk;
+    } else if (isSF2RMIDI) {
+        // Defaults to 1 according to the spec
         outputMIDI.bankOffset = 1;
-
-    if (outputMIDI.isDLSRMIDI)
+    } else if (outputMIDI.isDLSRMIDI) {
         // Assume bank offset of 0 by default. If we find any bank selects (in the SMF parser),
         // Then the offset is 1.
         outputMIDI.bankOffset = 0;
-
-    // If no embedded bank, assume 0
-    if (outputMIDI.embeddedSoundBank === undefined) outputMIDI.bankOffset = 0;
+    }
 
     // Send the extracted SMF to the parser
     parseSMFInternal(outputMIDI, smfFileBinary, fileName);
+
+    // The DBNK chunk overrides the bank offset detected by the SMF parser
+    if (outputMIDI.embeddedSoundBank !== undefined && dbnk !== undefined) {
+        outputMIDI.bankOffset = dbnk;
+    }
 }

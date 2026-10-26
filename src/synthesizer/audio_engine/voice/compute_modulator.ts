@@ -1,15 +1,18 @@
 import {
     GeneratorLimits,
+    GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
 import type { MIDIChannel } from "../channel/midi_channel";
 import type { Voice } from "./voice";
 
-/**
- * Compute_modulator.ts
- * purpose: contains a function for computing all modulators
- */
 const EFFECT_MODULATOR_TRANSFORM_MULTIPLIER = 1000 / 200;
+
+/**
+ * Buffer for the generators with the NRPN offsets applied,
+ * To avoid allocating on the audio thread.
+ */
+const OFFSET_GENERATORS = new Int16Array(GENERATORS_AMOUNT);
 
 /**
  * Computes a given modulator
@@ -40,7 +43,7 @@ export function computeModulator(
         voice
     );
 
-    // See the comment for isEffectModulator (modulator.ts in basic_soundbank) for explanation
+    // See the comment for isEffectModulator (voice_modulator.ts) for explanation
     let transformAmount = modulator.transformAmount;
     if (modulator.isEffectModulator && transformAmount <= 1000) {
         transformAmount *= EFFECT_MODULATOR_TRANSFORM_MULTIPLIER;
@@ -96,7 +99,8 @@ export function computeModulators(
     // Apply offsets if enabled
     if (this.generators.offsetsEnabled) {
         const g = this.generators.offsets;
-        generators = new Int16Array(generators);
+        OFFSET_GENERATORS.set(generators);
+        generators = OFFSET_GENERATORS;
         for (let i = 0; i < generators.length; i++) {
             generators[i] += g[i];
         }
@@ -164,10 +168,10 @@ export function computeModulators(
             // Apply the limits instantly to prevent -32k overflow
             // Testcase: gm.dls polysynth
             const limits = GeneratorLimits[destination];
-            modulatedGenerators[destination] = Math.max(
-                limits.min,
-                Math.min(outputValue, limits.max)
-            );
+            modulatedGenerators[destination] = limits
+                ? Math.max(limits.min, Math.min(outputValue, limits.max))
+                : // Unused generator, only prevent the overflow
+                  Math.max(-32_768, Math.min(outputValue, 32_767));
         }
     }
 }

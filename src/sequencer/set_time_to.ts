@@ -11,7 +11,7 @@ import {
 } from "../midi/enums";
 import type { SpessaSynthSequencer } from "./sequencer";
 import { readBigEndian } from "../utils/byte_functions/big_endian";
-import { MIDIUtils } from "../midi/exports";
+import { MIDIUtils } from "../midi/midi_tools/midi_utils";
 import { ParameterTracker } from "../midi/midi_tools/parameter_tracker";
 import { CONTROLLER_TABLE_SIZE } from "../synthesizer/audio_engine/synth_constants";
 
@@ -74,16 +74,15 @@ export function setTimeToInternal(
     // We save the pitch wheels, programs and controllers here
     // To only send them once after going through the events
 
-    const channelsToSave = this.synth.midiChannels.length;
-
+    const createChannelStatus = (channel: number): ChannelStatus => ({
+        pitchWheel: 8192,
+        controllers: new Int16Array(DEFAULT_MIDI_CONTROLLERS),
+        param: new ParameterTracker(channel),
+        portamentoNote: -1
+    });
     const channels: ChannelStatus[] = [];
-    for (let i = 0; i < channelsToSave; i++) {
-        channels.push({
-            pitchWheel: 8192,
-            controllers: new Int16Array(DEFAULT_MIDI_CONTROLLERS),
-            param: new ParameterTracker(i),
-            portamentoNote: -1
-        });
+    for (let i = 0; i < this.synth.midiChannels.length; i++) {
+        channels.push(createChannelStatus(i));
     }
 
     // Save tempo changes
@@ -97,20 +96,28 @@ export function setTimeToInternal(
      * RP-15 compliant reset
      * https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf
      */
-    function resetAllControllers(chan: number) {
+    const resetAllControllers = (chan: number) => {
         const ch = channels[chan];
         // Reset pitch wheel
         ch.pitchWheel = 8192;
-        ch.param.reset();
+        ch.param.resetAllControllers();
         for (const resetCC of RP_15_RESET_CC_NUMS)
             ch.controllers[resetCC] = DEFAULT_MIDI_CONTROLLERS[resetCC];
-    }
+        // Forward it, so the synth's parameter selection matches the following data entries
+        this.sendMIDICC(chan, MIDIControllers.resetAllControllers, 0);
+    };
 
     const { timeline, tracks } = this._midiData;
+    // Start with the same ports as a fresh playback, MIDI port events update them
+    this.currentMIDIPorts = tracks.map((t) => t.port);
 
     while (true) {
         // Find the next event
         const e = timeline[this.index];
+        if (e === undefined) {
+            this.stop();
+            return false;
+        }
         const trackIndex = e.tr;
         const track = tracks[trackIndex];
         const event = track.events[e.ev];
@@ -130,16 +137,13 @@ export function setTimeToInternal(
         }
 
         // Keep in mind midi ports to determine the channel!
-        const channel =
-            statusChannel + (this.midiPortChannelOffsets[track.port] || 0);
+        // Use the current port, like the playback does
+        const portOffset =
+            this.midiPortChannelOffsets[this.currentMIDIPorts[trackIndex]] ?? 0;
+        const channel = statusChannel + portOffset;
 
-        // Ensure that the channel is always there (safety precaution)
-        channels[channel] ??= {
-            pitchWheel: 8192,
-            controllers: new Int16Array(DEFAULT_MIDI_CONTROLLERS),
-            param: new ParameterTracker(channel),
-            portamentoNote: -1
-        };
+        // Ensure that the channel is always there (ports may be added during the seek)
+        channels[channel] ??= createChannelStatus(channel);
 
         const ch = channels[channel];
 
@@ -163,44 +167,53 @@ export function setTimeToInternal(
             }
 
             case MIDIMessageTypes.systemExclusive: {
-                const analyzed = MIDIUtils.analyzeSysEx(event.data);
-                // Sysex may change controllers
-                switch (analyzed.type) {
-                    default: {
-                        this.processEvent(event, trackIndex);
-                        break;
-                    }
-
-                    /*
-                    Program change cannot be skipped.
-                    Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
-                    Testcase: (GS88Pro)Th19_1S(KR.Palto47)
-                     */
-
-                    case "Controller Change": {
-                        const { controller, value, channel } = analyzed;
-                        // Channel number may be above 15
-                        if (channel >= channelsToSave) break;
-                        // Empty tracks cannot controller change
-                        if (
-                            this._midiData.isMultiPort &&
-                            track.channels.size === 0
-                        )
-                            break;
-
-                        if (
-                            controller === MIDIControllers.resetAllControllers
-                        ) {
-                            resetAllControllers(channel);
+                const analyzedMessages = MIDIUtils.analyzeSysEx(event.data);
+                // The whole message is sent at most once, even if it has many results
+                let shouldProcess = false;
+                for (const analyzed of analyzedMessages)
+                    // Sysex may change controllers
+                    switch (analyzed.type) {
+                        default: {
+                            shouldProcess = true;
                             break;
                         }
-                        if (nonSkippableCCs.has(controller))
-                            this.sendMIDICC(channel, controller, value);
-                        else
-                            channels[channel].controllers[controller] =
-                                value << 7;
+
+                        /*
+                        Program change cannot be skipped.
+                        Some MIDIs edit drums via sysEx and skipping program changes causes them to be sent after, resetting the params.
+                        Testcase: (GS88Pro)Th19_1S(KR.Palto47)
+                         */
+
+                        case "Controller Change": {
+                            const { controller, value } = analyzed;
+                            // The SysEx channel is relative to the port, like in the playback
+                            const channel = analyzed.channel + portOffset;
+                            // Channel number may be above 15
+                            if (channel >= this.synth.midiChannels.length)
+                                break;
+                            channels[channel] ??= createChannelStatus(channel);
+                            // Empty tracks cannot controller change
+                            if (
+                                this._midiData.isMultiPort &&
+                                track.channels.size === 0
+                            )
+                                break;
+
+                            if (
+                                controller ===
+                                MIDIControllers.resetAllControllers
+                            ) {
+                                resetAllControllers(channel);
+                                break;
+                            }
+                            if (nonSkippableCCs.has(controller))
+                                this.sendMIDICC(channel, controller, value);
+                            else
+                                channels[channel].controllers[controller] =
+                                    value << 7;
+                        }
                     }
-                }
+                if (shouldProcess) this.processEvent(event, trackIndex);
                 break;
             }
 
@@ -297,18 +310,22 @@ export function setTimeToInternal(
 
         // Find the next event
         const nE = timeline[++this.index];
-        const nextEvent = tracks[nE.tr].events[nE.ev];
-        if (nextEvent === undefined) {
+        if (nE === undefined) {
             this.stop();
             return false;
         }
+        const nextEvent = tracks[nE.tr].events[nE.ev];
         this.playedTime +=
             this.oneTickToSeconds * (nextEvent.ticks - event.ticks);
     }
 
-    // For all synth channels
-    for (let channel = 0; channel < channelsToSave; channel++) {
-        const ch = channels[channel];
+    // For all synth channels (including the ones added during the seek)
+    const channelsToRestore = Math.min(
+        channels.length,
+        this.synth.midiChannels.length
+    );
+    for (let channel = 0; channel < channelsToRestore; channel++) {
+        const ch = channels[channel] ?? createChannelStatus(channel);
         // Restoring pitch wheels
         this.sendMIDIPitchWheel(channel, ch.pitchWheel);
 

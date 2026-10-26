@@ -18,7 +18,7 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     let isUnsigned = false;
 
     if (bytesPerSample === 1) {
-        normalizationFactor = 255; // For 8-bit normalize from 0-255
+        normalizationFactor = 128; // 8-bit is unsigned, 128 is the center
         isUnsigned = true;
     } else {
         normalizationFactor = maxSampleValue; // For 16-bit normalize from -32,768 to 32,767
@@ -27,7 +27,12 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     const sampleData = new Float32Array(sampleLength);
     if (bytesPerSample === 2) {
         // Special optimized case for s16 (most common)
-        const s16 = new Int16Array(data.buffer);
+        // Only view this chunk's data (ignore a trailing odd byte)
+        const s16 = new Int16Array(
+            data.buffer,
+            data.byteOffset,
+            Math.floor(data.length / 2)
+        );
         const s16l = s16.length;
         for (let i = 0; i < s16l; i++) {
             sampleData[i] = s16[i] / 32_768;
@@ -39,7 +44,7 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
             // Turn into signed
             if (isUnsigned) {
                 // Normalize unsigned 8-bit sample
-                sampleData[i] = sample / normalizationFactor - 0.5;
+                sampleData[i] = (sample - 128) / normalizationFactor;
             } else {
                 // Normalize signed sample
                 if (sample >= maxSampleValue) {

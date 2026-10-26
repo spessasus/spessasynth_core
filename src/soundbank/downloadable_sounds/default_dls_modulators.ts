@@ -16,19 +16,3 @@ export const DEFAULT_DLS_CHORUS = new DecodedModulator(
     1000,
     0
 );
-
-export const DLS_1_NO_VIBRATO_MOD = new DecodedModulator(
-    0x00_81,
-    0x0,
-    GeneratorTypes.vibLfoToPitch,
-    0,
-    0
-);
-
-export const DLS_1_NO_VIBRATO_PRESSURE = new DecodedModulator(
-    0x00_0d,
-    0x0,
-    GeneratorTypes.vibLfoToPitch,
-    0,
-    0
-);

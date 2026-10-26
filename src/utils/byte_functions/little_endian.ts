@@ -1,7 +1,7 @@
 import type { IndexedByteArray } from "../indexed_array";
 
 /**
- * Reads the number as little endian from an IndexedByteArray. Uses BigInt to go above 32 bytes.
+ * Reads the number as little endian from an IndexedByteArray. Uses BigInt to go above 32 bits.
  * @param dataArray the array to read from.
  * @param bytesAmount the number of bytes to read.
  * @returns the number.
@@ -16,7 +16,7 @@ export function readLE64Indexed(
 }
 
 /**
- * Reads the number as little endian. Uses BigInt to go above 32 bytes.
+ * Reads the number as little endian. Uses BigInt to go above 32 bits.
  * @param dataArray the array to read from.
  * @param bytesAmount the number of bytes to read.
  * @param offset the offset to start reading at.
@@ -80,7 +80,7 @@ export function readLittleEndian(
  * @param dataArray the IndexedByteArray to write to.
  * @param number the number to write.
  * @param byteTarget the amount of bytes to use. Excess bytes will be set to zero.
- * @returns the Big endian representation of the number.
+ * @returns the little endian representation of the number.
  */
 export function writeLittleEndianIndexed(
     dataArray: IndexedByteArray,

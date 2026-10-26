@@ -9,4 +9,4 @@ providing an easy way to get the data out.
 
 - `soundfont` folder contains the code for reading and writing a `.sf2` file.
 
-- `dls` folder contains the code for reading and writing a `.dls` file (and converting in into a BasicSoundBank representation).
+- `downloadable_sounds` folder contains the code for reading and writing a `.dls` file (and converting in into a BasicSoundBank representation).

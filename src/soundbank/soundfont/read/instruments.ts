@@ -58,7 +58,8 @@ export class SoundFontInstrument extends BasicInstrument {
  * Reads the instruments
  */
 export function readInstruments(
-    instrumentChunk: RIFFChunk
+    instrumentChunk: RIFFChunk,
+    keepTerminal = false
 ): SoundFontInstrument[] {
     const instruments: SoundFontInstrument[] = [];
     while (instrumentChunk.data.length > instrumentChunk.data.currentIndex) {
@@ -72,6 +73,6 @@ export function readInstruments(
         instruments.push(instrument);
     }
     // Remove EOI
-    instruments.pop();
+    if (!keepTerminal) instruments.pop();
     return instruments;
 }

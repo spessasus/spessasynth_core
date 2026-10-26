@@ -4,7 +4,11 @@ import { getStringBytes } from "../../utils/byte_functions/string";
 import { MIDIMessage } from "../midi_message";
 import { ConsoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
-import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/synth_constants";
+import {
+    GS_USER_DRUM_1,
+    GS_USER_DRUM_2,
+    MIDI_DRUM_CHANNEL
+} from "../../synthesizer/audio_engine/synth_constants";
 import { BankSelectHacks } from "../../utils/midi_hacks";
 import { MIDIControllers, MIDIMessageTypes } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
@@ -58,14 +62,14 @@ function correctBankOffsetInternal(
      */
     const unwantedSystems: { tNum: number; e: MIDIMessage }[] = [];
 
-    // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
+    // Ports start at 0 here and are updated by the MIDI port events below
     const ports = new Array<number>(mid.tracks.length).fill(0);
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
     const channels: ChannelStatus[] = [];
     for (let i = 0; i < channelsAmount; i++) {
         channels.push({
             program: 0,
-            isDrum: i % 16 === DEFAULT_PERCUSSION, // Drums appear on 9 every 16 channels,
+            isDrum: i % 16 === MIDI_DRUM_CHANNEL, // Drums appear on 9 every 16 channels,
             lastBank: undefined,
             lastBankLSB: undefined,
             hasBankSelect: false,
@@ -80,7 +84,7 @@ function correctBankOffsetInternal(
             ports[trackNum] = e.data[0];
             return;
         }
-        let status = e.statusByte & 0xf0;
+        let status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
         if (
             status !== MIDIMessageTypes.controllerChange &&
             status !== MIDIMessageTypes.programChange &&
@@ -89,80 +93,98 @@ function correctBankOffsetInternal(
             return;
 
         if (status === MIDIMessageTypes.systemExclusive) {
-            const syx = MIDIUtils.analyzeSysEx(e.data);
-            switch (syx.type) {
-                default: {
-                    return;
-                }
-
-                // Check for drum sysex
-                case "Drums On": {
-                    const sysexChannel = syx.channel + portOffset;
-                    // Ensure check as syx.channel may be above 15
-                    if (!channels[sysexChannel]) return;
-                    channels[sysexChannel].isDrum = syx.isDrum;
-                    return;
-                }
-
-                case "Global MIDI Param": {
-                    if (syx.parameter === "system") {
-                        system = syx.value;
-                        if (syx.value === "gm") {
-                            // We do not want gm1
-                            unwantedSystems.push({
-                                tNum: trackNum,
-                                e: e
-                            });
-                        }
+            const syxs = MIDIUtils.analyzeSysEx(e.data);
+            // There's only one event to replace, so we might need to add more at the end.
+            let replaced = false;
+            for (const syx of syxs) {
+                switch (syx.type) {
+                    default: {
+                        break;
                     }
-                    break;
-                }
 
-                case "Controller Change": {
-                    // Replace the system exclusive with a regular controller change
-                    const t = mid.tracks[trackNum];
-                    // Channel number may be above 15
-                    if (syx.channel >= 16) return;
-                    const newEvent = MIDIMessage.controllerChange(
-                        e.ticks,
-                        syx.channel,
-                        syx.controller,
-                        syx.value
-                    );
-                    t.events[eventIndexes[trackNum]] = newEvent;
-                    e = newEvent;
-                    SpessaLog.info(
-                        "%cReplaced a system exclusive with controller change!",
-                        ConsoleColors.info
-                    );
+                    case "Channel MIDI Param": {
+                        if (syx.parameter === "drumMap") {
+                            // Check for drum sysex
+                            const sysexChannel = syx.channel + portOffset;
+                            // Ensure check as syx.channel may be above 15
+                            if (!channels[sysexChannel]) break;
+                            channels[sysexChannel].isDrum = syx.value > 0;
+                        }
+                        break;
+                    }
 
-                    break; // Do not return, keep parsing
-                }
+                    case "Global MIDI Param": {
+                        if (syx.parameter === "system") {
+                            system = syx.value;
+                            if (syx.value === "gm") {
+                                // We do not want gm1
+                                unwantedSystems.push({
+                                    tNum: trackNum,
+                                    e: e
+                                });
+                            }
+                        }
+                        break;
+                    }
 
-                case "Program Change": {
-                    // Channel number may be above 15
-                    if (syx.channel >= 16) return;
-                    // Replace the system exclusive with a regular program
-                    const t = mid.tracks[trackNum];
-                    const newEvent = MIDIMessage.programChange(
-                        e.ticks,
-                        syx.channel,
-                        syx.value
-                    );
-                    t.events[eventIndexes[trackNum]] = newEvent;
-                    e = newEvent;
-                    SpessaLog.info(
-                        "%cReplaced a system exclusive with program change!",
-                        ConsoleColors.info
-                    );
+                    case "Controller Change": {
+                        // Replace the system exclusive with a regular controller change
+                        const t = mid.tracks[trackNum];
+                        // Channel number may be above 15
+                        if (syx.channel >= 16) break;
+                        const newEvent = MIDIMessage.controllerChange(
+                            e.ticks,
+                            syx.channel,
+                            syx.controller,
+                            syx.value
+                        );
+                        if (replaced) {
+                            t.addEvents(eventIndexes[trackNum] + 1, newEvent);
+                        } else {
+                            t.events[eventIndexes[trackNum]] = newEvent;
+                            replaced = true;
+                        }
+                        e = newEvent;
+                        SpessaLog.info(
+                            "%cReplaced a system exclusive with controller change!",
+                            ConsoleColors.info
+                        );
 
-                    break; // Do not return, keep parsing
+                        break; // Do not return, keep parsing
+                    }
+
+                    case "Program Change": {
+                        // Channel number may be above 15
+                        if (syx.channel >= 16) break;
+                        // Replace the system exclusive with a regular program
+                        const t = mid.tracks[trackNum];
+                        const newEvent = MIDIMessage.programChange(
+                            e.ticks,
+                            syx.channel,
+                            syx.value
+                        );
+                        if (replaced) {
+                            t.addEvents(eventIndexes[trackNum] + 1, newEvent);
+                        } else {
+                            t.events[eventIndexes[trackNum]] = newEvent;
+                            replaced = true;
+                        }
+                        e = newEvent;
+                        SpessaLog.info(
+                            "%cReplaced a system exclusive with program change!",
+                            ConsoleColors.info
+                        );
+
+                        break; // Do not return, keep parsing
+                    }
                 }
             }
+            // A SysEx that was not replaced is not a program or bank change
+            if (!replaced) return;
         }
 
         // Event might have been replaced in sysex analysis
-        status = e.statusByte & 0xf0;
+        status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
 
         // Program change
         const chNum = (e.statusByte & 0xf) + portOffset;
@@ -180,6 +202,18 @@ function correctBankOffsetInternal(
                 ),
                 isGMGSDrum: ch.isDrum
             };
+
+            if (
+                patch.isGMGSDrum &&
+                (patch.program === GS_USER_DRUM_1 ||
+                    patch.program === GS_USER_DRUM_2)
+            ) {
+                SpessaLog.info(
+                    `%cGS User Drum Set detected on ${chNum}. Leaving as is!`,
+                    ConsoleColors.info
+                );
+                return;
+            }
             const targetPreset = soundBank.getPreset(patch, system);
             SpessaLog.info(
                 `%cInput patch: %c${MIDIPatchTools.toMIDIString(patch)}%c. Channel %c${chNum}%c. Changing patch to ${targetPreset.toString()}.`,
@@ -249,9 +283,10 @@ function correctBankOffsetInternal(
 
         // Across all tracks this channel is used in, find the index that interests us
         // Check if we tracked a program change
-        let foundTrack = ch.programChangeTrack
-            ? mid.tracks[ch.programChangeTrack]
-            : undefined;
+        let foundTrack =
+            ch.programChangeTrack === undefined
+                ? undefined
+                : mid.tracks[ch.programChangeTrack];
         let indexToAdd = ch.programChangeIndex ?? -1;
         if (!foundTrack) {
             // No program change...
@@ -334,7 +369,8 @@ function correctBankOffsetInternal(
     if (system === "gm" && !BankSelectHacks.isSystemXG(system)) {
         for (const m of unwantedSystems) {
             const track = mid.tracks[m.tNum];
-            track.deleteEvent(track.events.indexOf(m.e));
+            const index = track.events.indexOf(m.e);
+            if (index !== -1) track.deleteEvent(index);
         }
         let index = 0;
         // First event is track name for detection, don't break that
@@ -365,16 +401,17 @@ export function writeRMIDIInternal(
     soundBankBinary: ArrayBuffer,
     options: RMIDIWriteOptions
 ): ArrayBuffer {
-    const metadata = options.metadata;
+    // Copy to avoid modifying the defaults or the caller's object
+    const metadata = { ...options.metadata };
+    if (options.correctBankOffset && !options.soundBank) {
+        throw new Error(
+            "Sound bank must be provided if correcting bank offset."
+        );
+    }
     SpessaLog.group("%cWriting the RMIDI File...", ConsoleColors.info);
     SpessaLog.info("metadata", metadata);
     SpessaLog.info("Initial bank offset", mid.bankOffset);
-    if (options.correctBankOffset) {
-        if (!options.soundBank) {
-            throw new Error(
-                "Sound bank must be provided if correcting bank offset."
-            );
-        }
+    if (options.correctBankOffset && options.soundBank) {
         correctBankOffsetInternal(mid, options.bankOffset, options.soundBank);
     }
     const newMid = new IndexedByteArray(mid.writeMIDI());
@@ -385,16 +422,12 @@ export function writeRMIDIInternal(
     metadata.copyright ??= DEFAULT_COPYRIGHT;
     metadata.software ??= "SpessaSynth";
 
-    // No idea how to turn this into a for...of
-    // eslint-disable-next-line unicorn/no-array-for-each
-    Object.entries(metadata).forEach(
-        <K extends keyof RMIDInfoData>(v: unknown[]) => {
-            const val = v as [K, RMIDInfoData[K]];
-            if (val[1]) {
-                mid.setRMIDInfo(val[0], val[1]);
-            }
-        }
-    );
+    for (const [key, value] of Object.entries(metadata) as [
+        keyof RMIDInfoData,
+        RMIDInfoData[keyof RMIDInfoData]
+    ][]) {
+        if (value) mid.setRMIDInfo(key, value);
+    }
 
     // Info data for RMID
     const infoContent: Uint8Array[] = [];

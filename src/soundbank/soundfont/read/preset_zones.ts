@@ -36,11 +36,12 @@ export function applyPresetZones(
             if (gens.some((g) => g.type === GeneratorTypes.instrument)) {
                 // Regular zone
                 preset.createSoundFontZone(mods, gens, instruments);
-            } else {
-                // global zone
+            } else if (i === 0) {
+                // Global zone, only the first zone may be global
                 preset.globalZone.addGenerators(...gens);
                 preset.globalZone.addModulators(...mods);
             }
+            // Other zones without an instrument must be ignored (SF2 2.04 section 7.3)
         }
     }
 }

@@ -51,19 +51,178 @@ export class DynamicModulatorManager {
     public resetModulators() {
         this.modulatorList = INITIAL_MODULATORS.map((m) => {
             return {
-                mod: m,
-                id: this.getModulatorID(
-                    m.primarySource.toSourceEnum(),
-                    m.destination,
-                    m.primarySource.isBipolar,
-                    m.primarySource.isNegative
-                )
+                // Copy, so changing the amount does not affect other channels
+                mod: VoiceModulator.fromModulator(m),
+                id: this.getModulatorID(m.primarySource, m.destination)
             };
         });
         this.active = false;
     }
 
-    public setupReceiver(
+    public setupReceiverXG(
+        addr3: number,
+        data: number,
+        source: number,
+        isCC: boolean,
+        sourceName: string,
+        bipolar = false
+    ) {
+        this.active = true;
+        const centeredValue = data - 64;
+        const centeredNormalized = centeredValue / 64;
+        const normalizedNotCentered = data / 127;
+
+        // Value is tested in xg_controller_matrix
+        // Ensure the test matches s-yxg50 before changing
+        switch (addr3 & 0x0f) {
+            case 0x00: {
+                const v = Math.min(24, Math.max(-24, centeredValue));
+                // Pitch Control
+                this.setModulator(
+                    source as ModulatorControllerSource,
+                    isCC,
+                    GeneratorTypes.fineTune,
+                    v * 100,
+                    bipolar
+                );
+                SpessaLog.xgInfo(
+                    `Channel ${this.channel} ${sourceName} pitch control`,
+                    v,
+                    "semitones"
+                );
+                break;
+            }
+
+            case 0x01: {
+                // Cutoff
+                this.setModulator(
+                    source as ModulatorControllerSource,
+                    isCC,
+                    GeneratorTypes.initialFilterFc,
+                    centeredNormalized * 9600,
+                    bipolar
+                );
+                SpessaLog.xgInfo(
+                    `Channel ${this.channel} ${sourceName} filter control`,
+                    centeredNormalized * 9600,
+                    "cents"
+                );
+                break;
+            }
+
+            case 0x02: {
+                // Amplitude
+                // In XG it behaves like CC volume (exponential) but we can't have positive attenuation
+                if (centeredNormalized > 0) {
+                    this.setModulator(
+                        source as ModulatorControllerSource,
+                        isCC,
+                        GeneratorTypes.amplitude,
+                        centeredNormalized * 1000, // Generator is 1/10%
+                        bipolar
+                    );
+                    this.setModulator(
+                        source as ModulatorControllerSource,
+                        isCC,
+                        GeneratorTypes.initialAttenuation,
+                        0,
+                        bipolar,
+                        false,
+                        true
+                    );
+                } else {
+                    this.setModulator(
+                        source as ModulatorControllerSource,
+                        isCC,
+                        GeneratorTypes.initialAttenuation,
+                        centeredNormalized * -960,
+                        bipolar,
+                        false,
+                        true
+                    );
+                    this.setModulator(
+                        source as ModulatorControllerSource,
+                        isCC,
+                        GeneratorTypes.amplitude,
+                        0,
+                        bipolar
+                    );
+                }
+                SpessaLog.xgInfo(
+                    `Channel ${this.channel} ${sourceName} amplitude control`,
+                    centeredNormalized * 100,
+                    "%"
+                );
+                break;
+            }
+
+            case 0x03: {
+                // LFO pitch depth
+                this.setModulator(
+                    source as ModulatorControllerSource,
+                    isCC,
+                    GeneratorTypes.vibLfoToPitch,
+                    normalizedNotCentered * 600,
+                    bipolar
+                );
+                SpessaLog.xgInfo(
+                    `Channel ${this.channel} ${sourceName} LFO pitch depth control`,
+                    normalizedNotCentered * 600,
+                    "cents"
+                );
+                break;
+            }
+
+            case 0x04: {
+                // LFO filter depth
+                this.setModulator(
+                    source as ModulatorControllerSource,
+                    isCC,
+                    GeneratorTypes.vibLfoToFilterFc,
+                    normalizedNotCentered * 9600,
+                    bipolar
+                );
+                SpessaLog.xgInfo(
+                    `Channel ${this.channel} ${sourceName} LFO filter depth control`,
+                    normalizedNotCentered * 9600,
+                    "cents"
+                );
+                break;
+            }
+
+            case 0x05: {
+                // LFO amplitude depth
+                // Value is tested in xg_controller_matrix
+                this.setModulator(
+                    source as ModulatorControllerSource,
+                    isCC,
+                    GeneratorTypes.vibLfoToVolume,
+                    normalizedNotCentered * 200,
+                    bipolar,
+                    false,
+                    true
+                );
+                // In XG the LFO is only negative (only attenuates), emulate that here
+                this.setModulator(
+                    source as ModulatorControllerSource,
+                    isCC,
+                    GeneratorTypes.initialAttenuation,
+                    normalizedNotCentered * 200,
+                    bipolar,
+                    false,
+                    true
+                );
+                SpessaLog.xgInfo(
+                    `Channel ${this.channel} ${sourceName} LFO amplitude depth control`,
+                    normalizedNotCentered * 200,
+                    "dB"
+                );
+                break;
+            }
+        }
+    }
+
+    public setupReceiverGS(
         addr3: number,
         data: number,
         source: number,
@@ -86,7 +245,7 @@ export class DynamicModulatorManager {
                     v * 100,
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} pitch control`,
                     v,
                     "semitones"
@@ -103,7 +262,7 @@ export class DynamicModulatorManager {
                     centeredNormalized * 9600,
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} filter control`,
                     centeredNormalized * 9600,
                     "cents"
@@ -120,7 +279,7 @@ export class DynamicModulatorManager {
                     centeredNormalized * 1000, // Generator is 1/10%
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} amplitude control`,
                     centeredNormalized * 100,
                     "%"
@@ -137,7 +296,7 @@ export class DynamicModulatorManager {
                     centeredNormalized * 1000, // Generator is 1/100Hz
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 rate control`,
                     centeredNormalized * 10,
                     "Hz"
@@ -154,7 +313,7 @@ export class DynamicModulatorManager {
                     normalizedNotCentered * 600,
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 pitch depth control`,
                     normalizedNotCentered * 600,
                     "cents"
@@ -171,7 +330,7 @@ export class DynamicModulatorManager {
                     normalizedNotCentered * 2400,
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 filter depth control`,
                     normalizedNotCentered * 2400,
                     "cents"
@@ -188,7 +347,7 @@ export class DynamicModulatorManager {
                     normalizedNotCentered * 1000, // Generator is 1/10%
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO1 amplitude depth control`,
                     normalizedNotCentered * 100,
                     "%"
@@ -197,7 +356,7 @@ export class DynamicModulatorManager {
             }
 
             case 0x07: {
-                // LFO1 Rate
+                // LFO2 Rate
                 this.setModulator(
                     source as ModulatorControllerSource,
                     isCC,
@@ -205,7 +364,7 @@ export class DynamicModulatorManager {
                     centeredNormalized * 1000, // Generator is 1/100Hz
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 rate control`,
                     centeredNormalized * 10,
                     "Hz"
@@ -222,7 +381,7 @@ export class DynamicModulatorManager {
                     normalizedNotCentered * 600,
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 pitch depth control`,
                     normalizedNotCentered * 600,
                     "cents"
@@ -239,7 +398,7 @@ export class DynamicModulatorManager {
                     normalizedNotCentered * 2400,
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 filter depth control`,
                     normalizedNotCentered * 2400,
                     "cents"
@@ -256,7 +415,7 @@ export class DynamicModulatorManager {
                     normalizedNotCentered * 1000, // Generator is 1/10%
                     bipolar
                 );
-                SpessaLog.coolInfo(
+                SpessaLog.gsInfo(
                     `Channel ${this.channel} ${sourceName} LFO2 amplitude depth control`,
                     normalizedNotCentered * 100,
                     "%"
@@ -273,6 +432,7 @@ export class DynamicModulatorManager {
      * @param amount The amount of modulation to apply.
      * @param isBipolar If true, the modulation is bipolar (ranges from -1 to 1 instead of from 0 to 1).
      * @param isNegative If true, the modulation is negative (goes from 1 to 0 instead of from 0 to 1).
+     * @param isConcave If true, the modulation is concave (exponential).
      */
     private setModulator(
         source: ModulatorControllerSource,
@@ -280,27 +440,30 @@ export class DynamicModulatorManager {
         destination: GeneratorType,
         amount: number,
         isBipolar = false,
-        isNegative = false
+        isNegative = false,
+        isConcave = false
     ) {
-        const id = this.getModulatorID(
+        const primarySource = new ModulatorSource(
             source,
-            destination,
+            isConcave
+                ? ModulatorCurveTypes.concave
+                : ModulatorCurveTypes.linear,
+            isCC,
             isBipolar,
             isNegative
         );
-        if (amount === 0) this.deleteModulator(id);
+        const id = this.getModulatorID(primarySource, destination);
+        if (amount === 0) {
+            this.deleteModulator(id);
+            return;
+        }
 
         const mod = this.modulatorList.find((m) => m.id === id);
         if (mod) {
             mod.mod.transformAmount = amount;
         } else {
             const modulator = VoiceModulator.fromData(
-                new ModulatorSource(
-                    source,
-                    ModulatorCurveTypes.linear,
-                    isCC,
-                    isBipolar
-                ),
+                primarySource,
                 new ModulatorSource(),
                 destination,
                 amount,
@@ -314,12 +477,11 @@ export class DynamicModulatorManager {
     }
 
     private getModulatorID(
-        source: number,
-        destination: GeneratorType,
-        isBipolar: boolean,
-        isNegative: boolean
+        source: ModulatorSource,
+        destination: GeneratorType
     ) {
-        return `${source}-${destination}-${isBipolar}-${isNegative}`;
+        // The source enum includes the CC flag, the curve and the polarity
+        return `${source.toSourceEnum()}-${destination}`;
     }
 
     private deleteModulator(id: string) {

@@ -16,7 +16,7 @@ if (args.length !== 2) {
 const sf2In = args[0];
 const sf2Out = args[1];
 
-await BasicSoundBank.isSF3DecoderReady;
+await BasicSoundBank.ready;
 
 const sf2 = await fs.readFile(sf2In);
 const bank = SoundBankLoader.fromArrayBuffer(sf2.buffer);

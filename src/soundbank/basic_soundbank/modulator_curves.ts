@@ -27,9 +27,13 @@ concave[concave.length - 1] = 1;
 
 convex[0] = 0;
 convex[convex.length - 1] = 1;
-for (let i = 1; i < MODULATOR_RESOLUTION - 1; i++) {
-    const x =
-        (((-200 * 2) / 960) * Math.log(i / (concave.length - 1))) / Math.LN10;
+for (let i = 1; i < MODULATOR_RESOLUTION; i++) {
+    // The formula was made for a 128-entry table.
+    // At this resolution it goes above 1 near the ends, so clamp it.
+    const x = Math.min(
+        1,
+        (((-200 * 2) / 960) * Math.log(i / (concave.length - 1))) / Math.LN10
+    );
     convex[i] = 1 - x;
     concave[concave.length - 1 - i] = x;
 }

@@ -16,6 +16,7 @@ import {
 } from "../../basic_soundbank/modulator";
 import { fillWithDefaults } from "../../../utils/fill_with_defaults";
 import type {
+    ProgressFunction,
     SF2InfoFourCC,
     SFEWriteOptions,
     SoundFont2WriteOptions
@@ -56,7 +57,8 @@ export function writeSF2Internal(
         options.writeDefaultModulators,
         options.writeExtendedLimits,
         false,
-        false
+        false,
+        options.progressFunction
     );
 }
 
@@ -71,7 +73,15 @@ export function writeSFEInternal(
     writeOptions: Partial<SFEWriteOptions>
 ) {
     const options = fillWithDefaults(writeOptions, DEFAULT_SFE_WRITE_OPTIONS);
-    return writeSF(bank, options.software, true, true, true, true);
+    return writeSF(
+        bank,
+        options.software,
+        true,
+        true,
+        true,
+        options.rf64,
+        options.progressFunction
+    );
 }
 
 /**
@@ -82,6 +92,7 @@ export function writeSFEInternal(
  * @param writeExtendedLimits SFE + SF2 compatible
  * @param writeBankLSB SFE Only
  * @param rf64 SFE Only
+ * @param progressFunction called after each written sample
  * @internal
  */
 function writeSF(
@@ -90,7 +101,8 @@ function writeSF(
     writeDefaultModulators: boolean,
     writeExtendedLimits: boolean,
     writeBankLSB: boolean,
-    rf64: boolean
+    rf64: boolean,
+    progressFunction?: ProgressFunction
 ) {
     SpessaLog.groupCollapsed("%cSaving soundbank...", ConsoleColors.info);
     SpessaLog.group("%cWriting INFO...", ConsoleColors.info);
@@ -136,21 +148,25 @@ function writeSF(
     writeSF2Info("IPRD", info.product);
     writeSF2Info("ICOP", info.copyright);
     // Special comment case: merge subject and comment
-    const commentText = info?.subject
-        ? (info?.comment ? info.comment + "\n" : "") + info.subject
-        : info?.comment;
+    const commentText = info.subject
+        ? (info.comment ? info.comment + "\n" : "") + info.subject
+        : info.comment;
     writeSF2Info("ICMT", commentText);
     writeSF2Info("ISFT", software);
 
-    // Do not write unchanged default modulators
-    const unchangedDefaultModulators = bank.defaultModulators.some(
-        (mod) =>
-            !SPESSASYNTH_DEFAULT_MODULATORS.some((m) =>
-                Modulator.isIdentical(m, mod, true)
-            )
-    );
+    // Do not write unchanged default modulators.
+    // Removing a default modulator is a change too, so compare the lengths.
+    const defaultModulatorsChanged =
+        bank.defaultModulators.length !==
+            SPESSASYNTH_DEFAULT_MODULATORS.length ||
+        bank.defaultModulators.some(
+            (mod) =>
+                !SPESSASYNTH_DEFAULT_MODULATORS.some((m) =>
+                    Modulator.isIdentical(m, mod, true)
+                )
+        );
 
-    if (unchangedDefaultModulators && writeDefaultModulators) {
+    if (defaultModulatorsChanged && writeDefaultModulators) {
         const mods = bank.defaultModulators;
         SpessaLog.info(
             `%cWriting %c${mods.length}%c default modulators...`,
@@ -175,12 +191,16 @@ function writeSF(
     // Write sdta
     const smplStartOffsets: number[] = [];
     const smplEndOffsets: number[] = [];
-    const sdtaChunk = getSDTA(bank, smplStartOffsets, smplEndOffsets, rf64);
+    const sdtaChunk = getSDTA(
+        bank,
+        smplStartOffsets,
+        smplEndOffsets,
+        rf64,
+        progressFunction
+    );
 
     SpessaLog.info("%cWriting PDTA...", ConsoleColors.info);
     // Write pdta
-    // Go in reverse so the indexes are correct
-    // Instruments
     SpessaLog.info("%cWriting SHDR...", ConsoleColors.info);
     const shdrChunk = getSHDR(bank, smplStartOffsets, smplEndOffsets, rf64);
 
@@ -225,8 +245,7 @@ function writeSF(
     if (writeXdta) {
         SpessaLog.info(
             `%cWriting the xdta chunk as writeExtendedLimits is enabled and at least one condition was met.`,
-            ConsoleColors.info,
-            ConsoleColors.value
+            ConsoleColors.info
         );
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
         infoArrays.push(

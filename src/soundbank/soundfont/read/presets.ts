@@ -70,7 +70,8 @@ export class SoundFontPreset extends BasicPreset {
  */
 export function readPresets(
     presetChunk: RIFFChunk,
-    parent: BasicSoundBank
+    parent: BasicSoundBank,
+    keepTerminal = false
 ): SoundFontPreset[] {
     const presets: SoundFontPreset[] = [];
     while (presetChunk.data.length > presetChunk.data.currentIndex) {
@@ -83,6 +84,6 @@ export function readPresets(
         presets.push(preset);
     }
     // Remove EOP
-    presets.pop();
+    if (!keepTerminal) presets.pop();
     return presets;
 }
