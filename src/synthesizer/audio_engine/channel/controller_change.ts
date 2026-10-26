@@ -103,6 +103,7 @@ export function controllerChange(
                 // Pan disables random pan
                 if (this._midiParameters.randomPan)
                     this.setMIDIParameter("randomPan", false);
+                this.computeModulatorsAll(1, controller);
                 break;
             }
 

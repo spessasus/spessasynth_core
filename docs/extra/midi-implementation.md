@@ -489,7 +489,7 @@ SpessaSynth currently recognizes the bulk dump messages for User Drum Set only.
 
 ### Yamaha XG
 
-SpessaSynth has decent support for the XG standard, including effect routing.
+SpessaSynth has great support for the XG standard, including effect routing.
 Below are the supported Yamaha XG System Exclusive messages.
 
 #### System parameters
@@ -643,7 +643,7 @@ all drum channels get the same stored parameters, as there isn't a MAP system, l
 
 ### Universal MIDI System Exclusive
 
-SpessaSynth has decent support for the Universal MIDI System Exclusives, including General MIDI 2 and Device Control messages.
+SpessaSynth has good support for the Universal MIDI System Exclusives, including General MIDI 2 and Device Control messages.
 Below are the supported Universal System Exclusive messages.
 
 #### Device Control

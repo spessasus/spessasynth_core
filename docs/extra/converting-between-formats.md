@@ -103,6 +103,18 @@ const output = mid.writeRMIDI(sfontBinary, {
 });
 ```
 
+## Tracker module (MOD/XM/S3M) To RMI
+
+Tracker modules are loaded as MIDI files with an embedded sound bank.
+
+```ts
+const mid = BasicMIDI.fromArrayBuffer(input);
+const output = mid.writeRMIDI(mid.embeddedSoundBank!, {
+    // The presets of the converted sound bank are already in the right banks
+    correctBankOffset: false
+});
+```
+
 ## DLS RMI To SF2 RMI
 
 ```ts

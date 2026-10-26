@@ -25,6 +25,7 @@ import { MIDITrack } from "./midi_track";
 import { parseSMFInternal } from "./read/midi";
 import { parseRMIDIInternal } from "./read/rmidi";
 import { loadXMF } from "./read/xmf";
+import { loadTrackerModule } from "./read/tracker/load_tracker_module";
 import type {
     CallableSoundBank,
     MIDIFormat,
@@ -259,7 +260,7 @@ export class BasicMIDI {
     }
 
     /**
-     * Loads a MIDI file (SMF, RMIDI, XMF) from a given ArrayBuffer.
+     * Loads a MIDI file (SMF, RMIDI, XMF, MOD, XM, S3M) from a given ArrayBuffer.
      * @param arrayBuffer The ArrayBuffer containing the binary file data.
      * @param fileName The _optional_ name of the file, will be used if the MIDI file does not have a name.
      *
@@ -268,6 +269,8 @@ export class BasicMIDI {
      * and populates the BasicMIDI instance with the parsed data.
      * It supports Standard MIDI Files (SMF), RIFF MIDI (RMIDI), and Extensible Music Format (XMF).
      * It also handles embedded soundbanks in RMIDI files.
+     * Tracker modules (ProTracker MOD, Fast Tracker 2 XM, Scream Tracker 3 S3M) are converted
+     * into MIDI with an embedded sound bank.
      */
     public static fromArrayBuffer(
         arrayBuffer: ArrayBuffer,
@@ -290,6 +293,12 @@ export class BasicMIDI {
             }
 
             default: {
+                if (
+                    initialString !== "MThd" &&
+                    loadTrackerModule(mid, binaryData, fileName)
+                ) {
+                    break;
+                }
                 // Assume Standard MIDI File
                 parseSMFInternal(mid, binaryData, fileName);
                 break;
@@ -299,7 +308,7 @@ export class BasicMIDI {
     }
 
     /**
-     * Loads a MIDI file (SMF, RMIDI, XMF) from a given file.
+     * Loads a MIDI file (SMF, RMIDI, XMF, MOD, XM, S3M) from a given file.
      * @param file The file to load.
      */
     public static async fromFile(file: File) {
