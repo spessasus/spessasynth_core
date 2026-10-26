@@ -1,12 +1,14 @@
 import {
     type GeneratorType,
-    GeneratorTypes,
-    Modulator,
-    ModulatorSource,
-    type ModulatorTransformType
-} from "../../../soundbank/exports";
+    GeneratorTypes
+} from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    DEFAULT_RESONANT_MOD_SOURCE,
+    Modulator
+} from "../../../soundbank/basic_soundbank/modulator";
+import type { ModulatorSource } from "../../../soundbank/basic_soundbank/modulator_source";
+import type { ModulatorTransformType } from "../../../soundbank/enums";
 import { MIDIControllers } from "../../../midi/enums";
-import { DEFAULT_RESONANT_MOD_SOURCE } from "../../../soundbank/basic_soundbank/modulator";
 
 export class VoiceModulator extends Modulator {
     /**

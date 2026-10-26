@@ -10,13 +10,6 @@ import { BasicMIDI } from "../basic_midi";
 import type { MIDIFormat } from "../types";
 import { MIDITrack } from "../midi_track";
 
-/**
- * Midi_loader.ts
- * purpose:
- * parses a midi file for the sequencer,
- * including things like marker or CC 2/4 loop detection, copyright detection, etc.
- */
-
 interface MIDIChunk {
     type: string;
     size: number;
@@ -107,10 +100,8 @@ export function parseSMFInternal(
         let totalTicks = 0;
         // Format 2 plays sequentially
         if (outputMIDI.format === 2 && i > 0) {
-            totalTicks +=
-                outputMIDI.tracks[i - 1].events[
-                    outputMIDI.tracks[i - 1].events.length - 1
-                ].ticks;
+            const previousEvents = outputMIDI.tracks[i - 1].events;
+            totalTicks += previousEvents[previousEvents.length - 1]?.ticks ?? 0;
         }
         const trackData = trackChunk.data;
         // Loop until we reach the end of track
@@ -155,8 +146,11 @@ export function parseSMFInternal(
                     ];
                 // Save the status byte
                 runningByte = statusByte;
-            } else if (statusByte === MIDIMessageTypes.systemExclusive) {
-                // Sysex
+            } else if (
+                statusByte === MIDIMessageTypes.systemExclusive ||
+                statusByte === MIDIMessageTypes.systemExclusiveEscape
+            ) {
+                // Sysex or sysex escape/continuation, both have a length
                 dataSize = readVariableLengthQuantity(trackData);
             } else if (statusByte === 0xff) {
                 // Meta message (the next is the actual status byte)
@@ -187,7 +181,7 @@ export function parseSMFInternal(
         outputMIDI.tracks.push(track);
 
         SpessaLog.info(
-            `%cParsed %c${outputMIDI.tracks.length}%c / %c${outputMIDI.tracks.length}`,
+            `%cParsed %c${outputMIDI.tracks.length}%c / %c${trackCount}`,
             ConsoleColors.info,
             ConsoleColors.value,
             ConsoleColors.info,

@@ -458,7 +458,7 @@ export class SpessaSynthProcessor {
      * Used when {@link GlobalMIDIParameter.system} is `xg`.
      * @internal
      */
-    protected readonly xgInsertionBlocks = new Array<XGInsertionBlock>();
+    protected readonly xgInsertionBlocks: XGInsertionBlock[];
 
     /**
      * A sysEx may set a "Part" (channel) to receive on a different channel number.
@@ -551,7 +551,7 @@ export class SpessaSynthProcessor {
         }
         this.sampleRate = sampleRate;
         this.sampleTime = 1 / sampleRate;
-        this.currentTime = options.initialTime ?? 0;
+        this.currentTime = options.initialTime;
         // Replace the stubs with bound functions for less overhead
         this.lockMIDIParameter = lockMIDIParameterInternal.bind(this);
         this.setSystemParameter = setSystemParameterInternal.bind(this);
@@ -719,8 +719,9 @@ export class SpessaSynthProcessor {
     ) {
         channelOffset += this.portSelectChannelOffset;
         const manufacturer = syx[0];
-        // Ensure that the device ID matches
+        // Ensure that the device ID matches (F5 has the port number there instead)
         if (
+            manufacturer !== 0xf5 &&
             // The device ID can be set to "all" which it is by default
             this.systemParameters.deviceID !== -1 &&
             syx[1] !== 0x7f && // 0x7f means broadcast, i.e. all MIDI devices
@@ -764,7 +765,8 @@ export class SpessaSynthProcessor {
             // https://www.vogons.org/viewtopic.php?p=1404746#p1404746
             case 0xf5: {
                 if (syx.length < 2) return;
-                this.portSelectChannelOffset = (syx[1] - 1) * 16;
+                // Ports are 1-based, treat 0 as the first port
+                this.portSelectChannelOffset = Math.max(0, syx[1] - 1) * 16;
                 // Create new port if needed
                 while (
                     this.midiChannels.length <= this.portSelectChannelOffset
@@ -1109,8 +1111,9 @@ export class SpessaSynthProcessor {
             offset
         );
         // Rearrange so the embedded is first (most important as it overrides all others)
-        const order = this.soundBankManager.priorityOrder;
-        order.pop();
+        const order = this.soundBankManager.priorityOrder.filter(
+            (id) => id !== EMBEDDED_SOUND_BANK_ID
+        );
         order.unshift(EMBEDDED_SOUND_BANK_ID);
         this.soundBankManager.priorityOrder = order;
 
@@ -1288,9 +1291,6 @@ export class SpessaSynthProcessor {
             }
         }
 
-        // Avoid crashing
-        if (!this.drumPreset || !this.defaultPreset) return;
-
         // Reset GS user drums
         if (!this.systemParameters.userDrumLock)
             for (const userDrum of this.soundBankManager.userDrumSets)
@@ -1311,7 +1311,7 @@ export class SpessaSynthProcessor {
      * The audio is added to the existing contents of the output arrays,
      * so make sure to clear them when reusing them.
      *
-     * > **Danger**
+     * > **Warning**
      * >
      * > This method renders a single quantum of audio.
      * > The LFOs and envelopes are only processed at the beginning.
@@ -1702,8 +1702,13 @@ export class SpessaSynthProcessor {
             velocity
         )) {
             const sample = voiceParams.sample;
-            if (voiceParams.sample.getAudioData() === undefined) {
-                SpessaLog.warn(`Discarding invalid sample: ${sample.name}`);
+            try {
+                // Decodes the sample if needed, which throws for invalid data
+                sample.getAudioData();
+            } catch (error) {
+                SpessaLog.warn(
+                    `Discarding invalid sample: ${sample.name} (${error as string})`
+                );
                 continue;
             }
             voices.push(
@@ -1766,17 +1771,15 @@ export class SpessaSynthProcessor {
                       );
     }
 
-    // Bad code... make sure to call only when necessary!!!
     /**
+     * Removes every cached voice of the given patch.
      * @internal
      */
     public purgeCachedPatch(patch: MIDIPatch) {
-        for (let midiNote = 0; midiNote < 128; midiNote++) {
-            for (let velocity = 0; velocity < 128; velocity++) {
-                this.cachedVoices.delete(
-                    this.getCachedVoiceIndex(patch, midiNote, velocity)
-                );
-            }
+        // The patch occupies the lowest digits of the cache key (below 129 * 128 * 128)
+        const patchKey = this.getCachedVoiceIndex(patch, 0, 0);
+        for (const key of this.cachedVoices.keys()) {
+            if (key % 2_113_536 === patchKey) this.cachedVoices.delete(key);
         }
     }
 
@@ -2055,7 +2058,7 @@ export class SpessaSynthProcessor {
             case 6: {
                 // SDelay
                 chr.feedback = 0;
-                chr.depth = 127;
+                chr.delay = 127;
                 chr.rate = 0;
                 chr.depth = 127;
                 break;
@@ -2064,7 +2067,7 @@ export class SpessaSynthProcessor {
             case 7: {
                 // SDelayFb
                 chr.feedback = 80;
-                chr.depth = 127;
+                chr.delay = 127;
                 chr.rate = 0;
                 chr.depth = 127;
                 break;
@@ -2312,6 +2315,8 @@ export class SpessaSynthProcessor {
             this.midiChannels.length
         );
         this.midiChannels.push(channel);
+        // New channels need the default controllers, otherwise they are silent (CC7 = 0)
+        channel.reset(false);
         if (sendEvent) this.callEvent("channelAdded", undefined);
     }
 
@@ -2430,9 +2435,6 @@ export class SpessaSynthProcessor {
             voice.priority += voice.velocity / 25; // Map to 0-5
             // The newer, more important
             voice.priority -= voice.volEnv.state;
-            if (voice.isInRelease) {
-                voice.priority -= 5;
-            }
             voice.priority -= voice.volEnv.attenuationCb / 200;
         }
     }
@@ -2485,16 +2487,17 @@ export class SpessaSynthProcessor {
         let bankLSB = patch.bankLSB;
         const { isGMGSDrum, program } = patch;
         if (isGMGSDrum) {
+            // Bank MSB is 0-127, so 128 is a separate drum digit
             bankMSB = 128;
             bankLSB = 0;
         }
-        // 128x128x128x128x128 array!
+        // 129x128x128x128x128 array!
         return (
-            bankMSB + // 128 ^ 0
-            bankLSB * 128 + // 128 ^ 1
-            program * 16_384 + // 128 ^ 2
-            2_097_152 * midiNote + // 128 ^ 3
-            268_435_456 * velocity
-        ); // 128 ^ 4
+            bankMSB + // 129 * 128 ^ 0
+            bankLSB * 129 + // 129 * 128 ^ 0
+            program * 16_512 + // 129 * 128 ^ 1
+            2_113_536 * midiNote + // 129 * 128 ^ 2
+            270_532_608 * velocity // 129 * 128 ^ 3
+        );
     }
 }

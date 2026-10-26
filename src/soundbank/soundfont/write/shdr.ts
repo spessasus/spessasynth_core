@@ -5,7 +5,7 @@ import {
     writeWord
 } from "../../../utils/byte_functions/little_endian";
 import { RIFFChunk } from "../../../utils/riff_chunk";
-import { SF3_BIT_FLIT } from "../read/samples";
+import { SF3_BIT_FLAG } from "../read/samples";
 import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 
 import type { ExtendedSF2Chunks } from "./types";
@@ -17,11 +17,10 @@ export function getSHDR(
     rf64: boolean
 ): ExtendedSF2Chunks {
     const sampleLength = 46;
-    const shdrSize = sampleLength * (bank.samples.length + 1); // +1 because EOP
+    const shdrSize = sampleLength * (bank.samples.length + 1); // +1 because EOS
     const shdrData = new IndexedByteArray(shdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
-    let maxSampleLink = 0;
     for (const [index, sample] of bank.samples.entries()) {
         // Sample name
         writeBinaryStringIndexed(shdrData, sample.name.slice(0, 20), 20);
@@ -57,11 +56,10 @@ export function getSHDR(
             : 0;
         writeWord(shdrData, Math.max(0, sampleLinkIndex) & 0xff_ff);
         writeWord(xshdrData, Math.max(0, sampleLinkIndex) >> 16);
-        maxSampleLink = Math.max(maxSampleLink, sampleLinkIndex);
         // Sample type: add byte if compressed
         let type = sample.sampleType;
         if (sample.isCompressed) {
-            type |= SF3_BIT_FLIT;
+            type |= SF3_BIT_FLAG;
         }
         writeWord(shdrData, type);
         xshdrData.currentIndex += 2;

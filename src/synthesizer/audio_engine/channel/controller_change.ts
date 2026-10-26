@@ -81,7 +81,9 @@ export function controllerChange(
             // Special case: bank select
             case MIDIControllers.bankSelect: {
                 this.setBankMSB(value);
-                // Ensure that for XG, drum channels always are 127
+                // Ensure that for XG, drum channels always are 127.
+                // This emulates the XG "DRUM PART PROTECT MODE", which is not implemented yet,
+                // So it is always on and part 10 can never be melodic!
                 // Testcase
                 // Dave-Rodgers-D-j-Vu-Anonymous-20200419154845-nonstop2k.com.mid
                 if (

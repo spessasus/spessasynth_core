@@ -167,7 +167,7 @@ export class BasicSample {
      * @param newSampleRate The new sample rate, in hertz.
      */
     public resampleData(newSampleRate: number) {
-        let audioData = this.getAudioData();
+        const audioData = this.getAudioData();
         const ratio = newSampleRate / this.sampleRate;
         const resampled = new Float32Array(
             Math.floor(audioData.length * ratio)
@@ -175,12 +175,11 @@ export class BasicSample {
         for (let i = 0; i < resampled.length; i++) {
             resampled[i] = audioData[Math.floor(i * (1 / ratio))];
         }
-        audioData = resampled;
-        this.sampleRate = newSampleRate;
         // Adjust loop points
         this.loopStart = Math.floor(this.loopStart * ratio);
         this.loopEnd = Math.floor(this.loopEnd * ratio);
-        this.audioData = audioData;
+        // Mark the data as overridden so the resampled data is written
+        this.setAudioData(resampled, newSampleRate);
     }
 
     /**
@@ -217,6 +216,10 @@ export class BasicSample {
      * @param type The type to set it to.
      */
     public setSampleType(type: SampleType) {
+        // Validate before changing anything
+        if ((type & 0x80_00) > 0) {
+            throw new Error("ROM samples are not supported.");
+        }
         this.sampleType = type;
         if (!this.isLinked) {
             // Unlink the other sample
@@ -226,9 +229,6 @@ export class BasicSample {
             }
 
             this.linkedSample = undefined;
-        }
-        if ((type & 0x80_00) > 0) {
-            throw new Error("ROM samples are not supported.");
         }
     }
 
@@ -256,6 +256,13 @@ export class BasicSample {
         // Testcase: pc98_ym2608.sf2
         if (this === sample)
             throw new Error(`${sample.name} cannot be linked to itself.`);
+        // Validate before linking so an error does not leave the samples half-linked
+        if (
+            type !== SampleTypes.leftSample &&
+            type !== SampleTypes.rightSample &&
+            type !== SampleTypes.linkedSample
+        )
+            throw new Error("Invalid sample type: " + type);
 
         this.linkedSample = sample;
         sample.linkedSample = this;
@@ -278,9 +285,7 @@ export class BasicSample {
 
                 break;
             }
-            default: {
-                throw new Error("Invalid sample type: " + type);
-            }
+            // Other types were rejected above
         }
     }
 

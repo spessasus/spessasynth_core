@@ -1,6 +1,7 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
 import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
-import { SpessaSynthProcessor } from "../processor";
+import type { SpessaSynthProcessor } from "../processor";
+import { rolandSystemExclusive } from "./system_exclusive/roland";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
@@ -97,6 +98,10 @@ export function applySnapshot(
     // Restore channels
     for (let i = 0; i < snapshot.midiChannels.length; i++)
         this.midiChannels[i].applySnapshot(snapshot.midiChannels[i]);
+    // Activate the restored receive channel routing
+    this.customChannelNumbers = this.midiChannels.some(
+        (c) => c.midiParameters.rxChannel !== c.channel
+    );
 
     // Restore effect processors
     for (const [key, value] of Object.entries(snapshot.gsReverbProcessor))
@@ -109,15 +114,20 @@ export function applySnapshot(
         this.gsDelayProcessor[key as keyof GSDelayParameter] = value as number;
 
     // Restore insertion
+    // Call the handler directly so the device ID filter and the port offset do not apply
     const is = snapshot.gsInsertionProcessor;
-    this.systemExclusive(
-        MIDIUtils.gs(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f])
+    rolandSystemExclusive.call(
+        this,
+        MIDIUtils.gs(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f]),
+        0
     );
 
     for (let i = 0; i < is.params.length; i++) {
         if (is.params[i] !== 255)
-            this.systemExclusive(
-                MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]])
+            rolandSystemExclusive.call(
+                this,
+                MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]]),
+                0
             );
     }
 

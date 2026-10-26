@@ -23,8 +23,10 @@ export class XGThru implements DefaultXGEffectProcessor {
     ) {
         if (isInsertion) {
             // Thru is bypass, not disabled
-            outputLeft.set(inputLeft.subarray(0, sampleCount));
-            outputRight.set(inputRight.subarray(0, sampleCount));
+            for (let i = 0; i < sampleCount; i++) {
+                outputLeft[i] = inputLeft[i];
+                outputRight[i] = inputRight[i];
+            }
         } else {
             outputLeft.fill(0, 0, sampleCount);
             outputRight.fill(0, 0, sampleCount);

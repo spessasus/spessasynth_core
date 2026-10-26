@@ -17,14 +17,14 @@ import type { DownloadableSoundsSample } from "./sample";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { BasicPreset } from "../basic_soundbank/basic_preset";
 import { BasicInstrument } from "../basic_soundbank/basic_instrument";
+import type { BasicSample } from "../basic_soundbank/basic_sample";
+import type { BasicSoundBank } from "../basic_soundbank/basic_soundbank";
 import {
-    BasicSample,
-    BasicSoundBank,
     GeneratorLimits,
-    GeneratorTypes,
-    type MIDIPatch,
-    Modulator
-} from "../exports";
+    GeneratorTypes
+} from "../basic_soundbank/generator_types";
+import type { MIDIPatch } from "../basic_soundbank/midi_patch";
+import { Modulator } from "../basic_soundbank/modulator";
 import {
     DEFAULT_DLS_CHORUS,
     DEFAULT_DLS_REVERB
@@ -75,14 +75,17 @@ export class DownloadableSoundsInstrument
         let instrumentName = ``;
         const infoChunk = RIFFChunk.findListType(chunks, "INFO");
         if (infoChunk) {
-            let info = RIFFChunk.read(infoChunk.data);
-            while (info.header !== "INAM") {
-                info = RIFFChunk.read(infoChunk.data);
+            // Stop at the end of the list, INAM may be missing
+            while (infoChunk.data.currentIndex < infoChunk.data.length) {
+                const info = RIFFChunk.read(infoChunk.data);
+                if (info.header === "INAM") {
+                    instrumentName = readBinaryStringIndexed(
+                        info.data,
+                        info.data.length
+                    ).trim();
+                    break;
+                }
             }
-            instrumentName = readBinaryStringIndexed(
-                info.data,
-                info.data.length
-            ).trim();
         }
         if (instrumentName.length === 0) {
             instrumentName = `Unnamed Instrument`;
@@ -218,11 +221,10 @@ export class DownloadableSoundsInstrument
         instrument.name = this.name;
         preset.createZone(instrument);
 
-        // Global articulation
-        this.articulation.toSFZone(instrument.globalZone);
-
+        // Each zone gets its effective articulation (DLS region articulation replaces the instrument one),
+        // Then globalize moves the common values to the global zone
         for (const region of this.regions)
-            region.toSFZone(instrument, soundBank.samples);
+            region.toSFZone(instrument, soundBank.samples, this.articulation);
 
         // Globalize!
         instrument.globalize();
@@ -265,7 +267,7 @@ export class DownloadableSoundsInstrument
         writeDword(inshData, this.regions.length); // CRegions
         // Bank MSB is in bits 8-14
         let ulBank = ((this.bankMSB & 127) << 8) | (this.bankLSB & 127);
-        // Bit 32 means drums
+        // Bit 31 means drums
         if (this.isGMGSDrum) {
             ulBank |= 1 << 31;
         }

@@ -209,5 +209,5 @@ export function resetRP15(this: MIDIChannel) {
     }
     // Reset polyphonic pressure for all notes to 0
     this.polyPressures.fill(0);
-    this.computeModulatorsAll(-1, ModulatorControllerSources.polyPressure);
+    this.computeModulatorsAll(0, ModulatorControllerSources.polyPressure);
 }

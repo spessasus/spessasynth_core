@@ -75,6 +75,8 @@ const INSERTION_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
     [0x45_00, XGRotarySpeaker],
     [0x46_00, XGTremolo],
     [0x47_00, XGAutoPan],
+    // The XG spec's EFFECT 2 list only has PHASER 1.
+    // PHASER 2 (48 08) is variation only and falls back to PHASER 1 here.
     [0x48_00, XGPhaser1],
     [0x49_00, XGDistortion],
     [0x4a_00, XGOverdrive],
@@ -123,8 +125,12 @@ export class DefaultXGInsertion
             sampleCount,
             true
         );
-        inputLeft.set(this.outputLeft.subarray(0, sampleCount));
-        inputRight.set(this.outputRight.subarray(0, sampleCount));
+        // Copy without creating subarray views on the audio thread
+        const { outputLeft, outputRight } = this;
+        for (let i = 0; i < sampleCount; i++) {
+            inputLeft[i] = outputLeft[i];
+            inputRight[i] = outputRight[i];
+        }
     }
 
     public getSnapshot() {

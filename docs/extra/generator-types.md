@@ -77,7 +77,7 @@ The limits and default values are accessible through {@link GeneratorLimits}.
 | 51           | Coarse Tune                             | -120          | 120           | 0             | Tune - Pitch offset in semitones                                                          |
 | 52           | Fine Tune                               | -12700        | 12700         | 0             | Tune - Pitch offset in cents                                                              |
 | 53           | Sample ID                               | -             | -             | -             | Sample - Instrument zone only: Which sample to use                                        |
-| 54           | Sample Modes                            | 0             | 3             | 0             | Sample - 0 = no loop, 1 = loop, 2 = reserved, 3 = loop and play till end in release phase |
+| 54           | Sample Modes                            | 0             | 3             | 0             | Sample - 0 = no loop, 1 = loop, 2 = start on release (Polyphone extension, see below), 3 = loop and play till end in release phase |
 | 55           | Reserved 3                              | -             | -             | -             | Reserved                                                                                  |
 | 56           | Scale Tuning                            | 0             | 1200          | 100           | Sample - The degree to which MIDI key number influences pitch, 100 = default              |
 | 57           | Exclusive Class                         | 0             | 99999         | 0             | Sample - Cut = choke group                                                                |
@@ -101,3 +101,9 @@ and are never written to files.
 | 65           | Vibrato LFO to Volume        | -960          | 960           | 0             | Like Modulation LFO to Volume, but for vibrato LFO          |
 | 66           | Modulation LFO Rate          | -1000         | 1000          | 0             | Modulation LFO frequency change in 0.01 Hz units            |
 | 67           | Modulation LFO Amplitude Depth | 0           | 1000          | 0             | Modulation LFO linear amplitude modulation in 0.1% units    |
+
+## Sample Modes 2
+
+The SF2 specification marks `sampleModes` 2 as unused and says to treat it as "no loop".
+SpessaSynth follows the Polyphone 2.4 extension instead: the sample starts playing on release (note off),
+so it stays silent while the key is held. Files that write 2 for a different reason will be silent until note off.

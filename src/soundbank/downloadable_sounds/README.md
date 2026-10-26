@@ -4,7 +4,7 @@ The DLS parser works like this:
 
 1. The DLS file gets read into the `DownloadableSounds` class, which is the representation of the entire DLS file structure.
 2. The structure contains the code to convert itself into a BasicSoundBank.
-3. The sound bank can now be synthesizer and saved like an SF2 file.
+3. The sound bank can now be synthesized and saved like an SF2 file.
 
 The writing works similarly:
 

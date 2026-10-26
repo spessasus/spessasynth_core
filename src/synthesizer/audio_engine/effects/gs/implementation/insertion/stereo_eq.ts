@@ -1,3 +1,4 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import { InsertionValueConverter } from "./convert";
 import {
     type BiquadCoeffs,
@@ -15,7 +16,7 @@ import type { GSInsertionProcessor } from "../../interface/gs_insertion_processo
  */
 export class StereoEQFX implements GSInsertionProcessor {
     public readonly type = 0x01_00;
-    public sendLevelToReverb = 0;
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
 
@@ -248,7 +249,7 @@ export class StereoEQFX implements GSInsertionProcessor {
             outputLeft[idx] += sL * level;
             outputRight[idx] += sR * level;
             // Sends (index 0)
-            const mono = 0.5 * (sL + sR);
+            const mono = 0.5 * (sL + sR) * level;
             outputReverb[i] += mono * sendLevelToReverb;
             outputChorus[i] += mono * sendLevelToChorus;
             outputDelay[i] += mono * sendLevelToDelay;

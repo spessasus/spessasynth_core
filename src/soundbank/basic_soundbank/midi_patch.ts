@@ -105,10 +105,12 @@ export class MIDIPatchTools {
      */
     public static fromMIDIString(string: string): MIDIPatch {
         const parts = string.split(":");
-        if (parts.length > 3 || parts.length < 2) {
+        const isDrum = string.startsWith("DRUM");
+        // DRUM:program or LSB:MSB:program
+        if (parts.length !== (isDrum ? 2 : 3)) {
             throw new Error(`Invalid MIDI string: ${string}`);
         }
-        return string.startsWith("DRUM")
+        return isDrum
             ? {
                   bankMSB: 0,
                   bankLSB: 0,
@@ -144,7 +146,7 @@ export class MIDIPatchTools {
         if (firstSpace === -1 || secondSpace === -1)
             throw new Error(`Invalid named MIDI string: ${string}`);
 
-        const midiPart = string.slice(0, Math.max(0, firstSpace));
+        const midiPart = string.slice(0, firstSpace);
         const drumMode = string.slice(firstSpace + 1, secondSpace);
         const name = string.slice(Math.max(0, secondSpace + 1));
         const patch = MIDIPatchTools.fromMIDIString(midiPart);

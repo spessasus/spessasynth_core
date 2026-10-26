@@ -1,3 +1,4 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -20,7 +21,7 @@ effect to the sound.
 Type: Stereo
  */
 export class TremoloFX implements GSInsertionProcessor {
-    public sendLevelToReverb = 40 / 127;
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
     public readonly type = 0x01_25;

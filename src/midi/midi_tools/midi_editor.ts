@@ -1762,6 +1762,27 @@ export class MIDIEditor {
                         1
                     )
                 );
+            } else if (
+                !patch.isGMGSDrum &&
+                !BankSelectHacks.isSystemXG(this.system) &&
+                channelStatus.drumMap !== MELODIC_MAP
+            ) {
+                // A melodic patch on a drum channel, turn the drums off
+                SpessaLog.info(
+                    `%cAdding GS melodic change on track %c${this.trackNum}`,
+                    ConsoleColors.recognized,
+                    ConsoleColors.value
+                );
+                this.addEventsBefore(
+                    ...MIDIUtils.setChannelMIDIParameter(
+                        ticks,
+                        midiChannel,
+                        "gs",
+                        "drumMap",
+                        MELODIC_MAP
+                    )
+                );
+                channelStatus.drumMap = MELODIC_MAP;
             }
 
             if (BankSelectHacks.isSystemXG(this.system) && patch.isGMGSDrum) {
@@ -1881,6 +1902,15 @@ export class MIDIEditor {
 
         // Add drum setup parameters
         if (channelChange.drumParams && channelChange.drumParams !== "clear") {
+            // Match the synthesizer's drum pitch resolution:
+            // XG and the SC-55 map (bank LSB 1) use 100 cents, otherwise 50 cents
+            const drumPitchStep =
+                this.system === "xg" ||
+                (patch !== undefined &&
+                    patch !== "clear" &&
+                    patch.bankLSB === 1)
+                    ? 1
+                    : 0.5;
             for (const [key, noteParams] of channelChange.drumParams) {
                 // Note cleared
                 if (noteParams === "clear") continue;
@@ -1898,7 +1928,8 @@ export class MIDIEditor {
                             midiChannel,
                             key,
                             param,
-                            value
+                            value,
+                            drumPitchStep
                         )
                     );
                 }
@@ -2356,8 +2387,12 @@ export class MIDIEditor {
                                 ClearableParameter<UserDrumSetParameter[K]>
                             ];
                         }[keyof UserDrumSetParameter][]) {
-                            // Parameter cleared
-                            if (value === "clear" || value === undefined)
+                            // Parameter cleared, or not a thing in GS
+                            if (
+                                value === "clear" ||
+                                value === undefined ||
+                                param === "pitchFine"
+                            )
                                 continue;
                             output.push(
                                 MIDIUtils.setUserDrumParameter(

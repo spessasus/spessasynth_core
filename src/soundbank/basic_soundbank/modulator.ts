@@ -61,7 +61,7 @@ export class Modulator {
      * The destination generator for this modulator.
      * This is the target parameter that will be changed.
      */
-    public destination: GeneratorType = GeneratorTypes.initialAttenuation;
+    public destination: GeneratorType;
 
     /**
      * The transform amount for this modulator.
@@ -304,7 +304,7 @@ const defaultSpessaSynthModulators = [
             false,
             true,
             MIDIControllers.attackTime
-        ), // Linear forward bipolar cc 72
+        ), // Convex forward bipolar cc 73
         0x0, // No controller
         GeneratorTypes.attackVolEnv,
         6000,

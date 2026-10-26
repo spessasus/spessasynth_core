@@ -144,7 +144,9 @@ export class BasicSoundBank {
      *
      * > **Note**
      * >
-     * > The `soundBankInfo` is taken from the first sound bank.
+     * > The `soundBankInfo` and the default modulators are taken from the first sound bank.
+     * > The input sound banks are not modified, but the merged bank shares
+     * > the preset, instrument and sample objects with them.
      *
      * @param soundBanks The sound banks to merge. The first is used as a base, and the rest are
      * added on top.
@@ -152,29 +154,31 @@ export class BasicSoundBank {
     public static mergeSoundBanks(
         ...soundBanks: BasicSoundBank[]
     ): BasicSoundBank {
-        const mainSf = soundBanks.shift();
+        const mainSf = soundBanks[0];
         if (!mainSf) {
             throw new Error("No sound banks provided!");
         }
-        const presets = mainSf.presets;
-        while (soundBanks.length > 0) {
-            const newPresets = soundBanks?.shift()?.presets;
-            if (newPresets) {
-                for (const newPreset of newPresets) {
-                    if (
-                        !presets.some((existingPreset) =>
-                            newPreset.matches(existingPreset)
-                        )
-                    ) {
-                        presets.push(newPreset);
-                    }
+        const presets = [...mainSf.presets];
+        for (const bank of soundBanks.slice(1)) {
+            for (const newPreset of bank.presets) {
+                if (
+                    !presets.some((existingPreset) =>
+                        newPreset.matches(existingPreset)
+                    )
+                ) {
+                    presets.push(newPreset);
                 }
             }
         }
 
-        const b = new BasicSoundBank();
+        const b = new BasicSoundBank(mainSf.type);
         b.addCompletePresets(presets);
         b.soundBankInfo = { ...mainSf.soundBankInfo };
+        b.defaultModulators = mainSf.defaultModulators.map((m) =>
+            Modulator.copyFrom(m)
+        );
+        b.customDefaultModulators = mainSf.customDefaultModulators;
+        b.flush();
         return b;
     }
 
@@ -226,9 +230,14 @@ export class BasicSoundBank {
      * @param bank The sound bank to copy.
      */
     public static copyFrom(bank: BasicSoundBank) {
-        const copied = new BasicSoundBank();
+        const copied = new BasicSoundBank(bank.type);
         for (const p of bank.presets) copied.clonePreset(p);
         copied.soundBankInfo = { ...bank.soundBankInfo };
+        copied.defaultModulators = bank.defaultModulators.map((m) =>
+            Modulator.copyFrom(m)
+        );
+        copied.customDefaultModulators = bank.customDefaultModulators;
+        copied.flush();
         return copied;
     }
 
@@ -731,8 +740,14 @@ export class BasicSoundBank {
      * @param instrument The instrument to delete.
      */
     public deleteInstrument(instrument: BasicInstrument) {
+        const index = this.instruments.indexOf(instrument);
+        if (index === -1) {
+            throw new Error(
+                `The instrument "${instrument.name}" does not belong to this sound bank.`
+            );
+        }
         instrument.delete();
-        this.instruments.splice(this.instruments.indexOf(instrument), 1);
+        this.instruments.splice(index, 1);
     }
 
     /**
@@ -740,8 +755,14 @@ export class BasicSoundBank {
      * @param preset The preset to delete.
      */
     public deletePreset(preset: BasicPreset) {
+        const index = this.presets.indexOf(preset);
+        if (index === -1) {
+            throw new Error(
+                `The preset "${preset.name}" does not belong to this sound bank.`
+            );
+        }
         preset.delete();
-        this.presets.splice(this.presets.indexOf(preset), 1);
+        this.presets.splice(index, 1);
     }
 
     /**
@@ -749,8 +770,14 @@ export class BasicSoundBank {
      * @param sample The sample to delete.
      */
     public deleteSample(sample: BasicSample) {
+        const index = this.samples.indexOf(sample);
+        if (index === -1) {
+            throw new Error(
+                `The sample "${sample.name}" does not belong to this sound bank.`
+            );
+        }
         sample.unlinkSample();
-        this.samples.splice(this.samples.indexOf(sample), 1);
+        this.samples.splice(index, 1);
     }
 
     /**
@@ -773,7 +800,7 @@ export class BasicSoundBank {
         this.samples.length = 0;
     }
 
-    protected parsingError(error: string) {
+    protected parsingError(error: string): never {
         throw new Error(
             `SF parsing error: ${error} The file may be corrupted.`
         );
@@ -786,7 +813,7 @@ export class BasicSoundBank {
     protected parseInternal() {
         this._isXGBank = false;
         // Definitions for XG:
-        // At least one preset with bank 127, 126 or 120
+        // At least one preset with bank 127 or 120 (see isXGDrum)
         // MUST be a valid XG bank.
         // Allowed banks: (see XG specification)
         // Note: XG spec numbers the programs from 1...

@@ -1,32 +1,8 @@
 export * from "./types";
 export * from "./enums";
-export {
-    type GSChorusParameter,
-    type GSChorusProcessor,
-    type GSDelayParameter,
-    type GSDelayProcessor,
-    type GSReverbParameter,
-    type GSReverbProcessor,
-    type GSInsertionProcessorSnapshot
-} from "./audio_engine/effects/types";
 export { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
 export { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
 export { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
-export type {
-    XGReverbBlock,
-    XGChorusBlock,
-    XGVariationBlock,
-    XGInsertionBlock,
-    XGSystemEffectParameter,
-    XGChorusParameter,
-    XGVariationParameter,
-    XGInsertionParameter,
-    XGEffectBlockSnapshot,
-    XGSystemEffectBlockSnapshot,
-    XGChorusBlockSnapshot,
-    XGVariationBlockSnapshot,
-    XGInsertionBlockSnapshot
-} from "./audio_engine/effects/types";
 export { DefaultXGReverb } from "./audio_engine/effects/xg/implementation/reverb";
 export { DefaultXGChorus } from "./audio_engine/effects/xg/implementation/chorus";
 export { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/variation";

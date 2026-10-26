@@ -1,5 +1,5 @@
 import type { DrumParameter, UserDrumSetParameter } from "./types";
-import { DEFAULT_DRUM_REVERB } from "../synthesizer/exports";
+import { DEFAULT_DRUM_REVERB } from "../synthesizer/audio_engine/channel/reset";
 
 /**
  * This class contains various utilities for manipulating {@link DrumParameter}s.

@@ -184,7 +184,6 @@ export interface RMIDIWriteOptions {
     /**
      * If the function should correct all program-selects and bank-selects in the MIDI file to reflect the embedded sound bank (i.e., make it [self-contained](https://github.com/spessasus/sf2-rmidi-specification#self-contained-file)).
      * Recommended unless a specific use-case is required. Defaults to `true`.
-     * If the MIDI file should internally be corrected to work with the set bank offset.
      */
     correctBankOffset: boolean;
 
@@ -345,6 +344,12 @@ export interface DrumParameter {
  * @group Synthesizer.Drum Sets
  */
 export interface UserDrumSetParameter extends DrumParameter {
+    /**
+     * Pitch offset in GS steps (the PLAY NOTE NUMBER relative to 60). Relative value.
+     * A step is 50 cents, or 100 cents when `sourceDrumSet` is 1 (SC-55 map).
+     * The conversion to semitones happens when the drum set is selected.
+     */
+    pitchCoarse: number;
     /**
      * The source drum set bank LSB number.
      */

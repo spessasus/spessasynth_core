@@ -206,7 +206,8 @@ export class ConnectionBlock {
         }
         const dlsDestination = ConnectionBlock.fromSFDestination(
             m.destination,
-            m.transformAmount
+            m.transformAmount,
+            true
         );
         if (dlsDestination === undefined) {
             failed("Invalid destination");
@@ -314,9 +315,16 @@ export class ConnectionBlock {
         );
     }
 
+    /**
+     * Converts an SF2 generator type into a DLS destination, with the converted amount if needed.
+     * @param dest The SF2 generator type.
+     * @param amount The generator value or the modulator amount.
+     * @param isModulator If the amount is a relative modulator amount rather than an absolute generator value.
+     */
     private static fromSFDestination(
         dest: GeneratorType,
-        amount: number
+        amount: number,
+        isModulator = false
     ):
         | DLSDestination
         | {
@@ -387,7 +395,8 @@ export class ConnectionBlock {
             case GeneratorTypes.sustainVolEnv: {
                 return {
                     destination: DLSDestinations.volEnvSustain,
-                    amount: 1000 - amount,
+                    // Sustain is attenuation in SF2 and level in DLS. Modulators are relative.
+                    amount: isModulator ? -amount : 1000 - amount,
                     isBipolar: false,
                     source: DLSSources.none
                 };
@@ -411,7 +420,8 @@ export class ConnectionBlock {
             case GeneratorTypes.sustainModEnv: {
                 return {
                     destination: DLSDestinations.modEnvSustain,
-                    amount: 1000 - amount,
+                    // Sustain is attenuation in SF2 and level in DLS. Modulators are relative.
+                    amount: isModulator ? -amount : 1000 - amount,
                     isBipolar: false,
                     source: DLSSources.none
                 };
@@ -768,8 +778,9 @@ export class ConnectionBlock {
             // A corrupted rendition of gm.dls was found under
             // https://sembiance.com/fileFormatSamples/audio/downloadableSoundBank/
             // Name: (GM.dls)
-            // Which specifies a whopping 32,768 centibels of attenuation
-            amount = Math.min(960, Math.max(0, amount));
+            // Which specifies a whopping 32,768 centibels of attenuation.
+            // The amount is relative, so gain-increasing (negative) connections are kept.
+            amount = Math.min(960, Math.max(-960, amount));
         }
 
         // Get the modulator!
@@ -887,7 +898,8 @@ export class ConnectionBlock {
             case DLSDestinations.volEnvSustain: {
                 return {
                     gen: GeneratorTypes.sustainVolEnv,
-                    newAmount: 1000 - amount
+                    // Modulator amounts are relative, so only the sign changes (level to attenuation)
+                    newAmount: -amount
                 };
             }
             case DLSDestinations.volEnvRelease: {
@@ -910,7 +922,8 @@ export class ConnectionBlock {
             case DLSDestinations.modEnvSustain: {
                 return {
                     gen: GeneratorTypes.sustainModEnv,
-                    newAmount: 1000 - amount
+                    // Modulator amounts are relative, so only the sign changes (level to attenuation)
+                    newAmount: -amount
                 };
             }
             case DLSDestinations.modEnvRelease: {

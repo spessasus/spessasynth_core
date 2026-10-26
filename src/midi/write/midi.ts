@@ -14,9 +14,6 @@ const writeText = (text: string, arr: number[]) => {
  * @param midi the MIDI to write
  */
 export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
-    if (!midi.tracks) {
-        throw new Error("MIDI has no tracks!");
-    }
     const binaryTrackData: number[][] = [];
     for (const track of midi.tracks) {
         const binaryTrack = [];
@@ -44,11 +41,14 @@ export function writeMIDIInternal(midi: BasicMIDI): ArrayBuffer {
                 // RP-001:
                 // Sysex events and meta-events cancel any running status which was in effect.
                 runningByte = undefined;
-            } else if (event.statusByte === MIDIMessageTypes.systemExclusive) {
-                // This is a system exclusive message
-                // Syntax is F0<length><data>
+            } else if (
+                event.statusByte === MIDIMessageTypes.systemExclusive ||
+                event.statusByte === MIDIMessageTypes.systemExclusiveEscape
+            ) {
+                // This is a system exclusive message (or an escape)
+                // Syntax is F0<length><data> or F7<length><data>
                 messageData = [
-                    0xf0,
+                    event.statusByte,
                     ...writeVariableLengthQuantity(event.data.length),
                     ...event.data
                 ];

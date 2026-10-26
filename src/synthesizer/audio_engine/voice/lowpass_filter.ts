@@ -1,9 +1,8 @@
 import { absCentsToHz, cbAttenuationToGain } from "./unit_converter";
 
 /**
- * Lowpass_filter.ts
- * purpose: applies a low pass filter to a voice
- * note to self: a lot of tricks and come from fluidsynth.
+ * Applies a lowpass filter to a voice.
+ * A lot of the tricks here come from FluidSynth.
  * They are the real smart guys.
  * Shoutout to them!
  * Give their repo a star over at:

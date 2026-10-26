@@ -18,12 +18,12 @@ const PARAMETER_RANGES: XGParameterRanges = {
 };
 
 /**
- * A filter of an amp type: shape, frequency index and gain index (and the width for the mid filter).
+ * A filter of an amp type: shape, frequency index and gain index (and the width for the mid-filter).
  */
 type AmpFilter<S> = readonly [S, number, number, number?];
 
 /**
- * The filters of each amp type: two input filters, the cabinet shelf and the cabinet mid filter.
+ * The filters of each amp type: two input filters, the cabinet shelf and the cabinet mid-filter.
  */
 const AMP_TYPES: readonly (readonly [
     AmpFilter<XGFilterShape>,

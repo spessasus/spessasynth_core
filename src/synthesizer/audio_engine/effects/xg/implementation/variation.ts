@@ -190,10 +190,14 @@ export class DefaultXGVariation
             sampleCount,
             true
         );
-        // Variation in system mode ignores sends
+        // In insertion mode, the effect output replaces the part's signal (no sends)
         // See MU128 manual page 154
-        inputLeft.set(this.outputLeft.subarray(0, sampleCount));
-        inputRight.set(this.outputRight.subarray(0, sampleCount));
+        // Copy without creating subarray views on the audio thread
+        const { outputLeft, outputRight } = this;
+        for (let i = 0; i < sampleCount; i++) {
+            inputLeft[i] = outputLeft[i];
+            inputRight[i] = outputRight[i];
+        }
     }
 
     public getSnapshot() {

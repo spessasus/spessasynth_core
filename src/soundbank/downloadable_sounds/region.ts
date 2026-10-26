@@ -186,9 +186,18 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         return RIFFChunk.getParts("rgn2", chunks, false, true);
     }
 
+    /**
+     * Converts this region into an SF2 instrument zone.
+     * @param instrument The instrument to add the zone to.
+     * @param samples The converted samples.
+     * @param instrumentArticulation The instrument-level articulation, if any.
+     * It is used when the region has no articulation of its own,
+     * since in DLS a region articulation replaces the instrument one instead of adding to it.
+     */
     public toSFZone(
         instrument: BasicInstrument,
-        samples: BasicSample[]
+        samples: BasicSample[],
+        instrumentArticulation?: DownloadableSoundsArticulation
     ): BasicInstrumentZone {
         const sample = samples[this.waveLink.tableIndex];
         if (!sample) {
@@ -197,8 +206,9 @@ export class DownloadableSoundsRegion extends DLSVerifier {
             );
         }
         const zone = instrument.createZone(sample);
-        zone.keyRange = this.keyRange;
-        zone.velRange = this.velRange;
+        // Copy, so editing the zone does not change the DLS region
+        zone.keyRange = { ...this.keyRange };
+        zone.velRange = { ...this.velRange };
         // If the zones are default (0-127), set to -1 as "not set"
         if (this.keyRange.max === 127 && this.keyRange.min === 0) {
             zone.keyRange.min = -1;
@@ -213,7 +223,11 @@ export class DownloadableSoundsRegion extends DLSVerifier {
         }
 
         this.waveSample.toSFZone(zone, sample);
-        this.articulation.toSFZone(zone);
+        const articulation =
+            this.articulation.length > 0 || !instrumentArticulation
+                ? this.articulation
+                : instrumentArticulation;
+        articulation.toSFZone(zone);
         // Remove generators with default values
         zone.generators = zone.generators.filter(
             (g) => g.value !== GeneratorLimits[g.type].def

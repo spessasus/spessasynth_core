@@ -7,7 +7,7 @@ import {
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { DLSVerifier } from "./dls_verifier";
 import { BasicZone } from "../basic_soundbank/basic_zone";
-import { BasicInstrumentZone } from "../exports";
+import type { BasicInstrumentZone } from "../basic_soundbank/basic_instrument_zone";
 import { ConnectionBlock } from "./connection_block";
 import { type DLSDestination, DLSDestinations, DLSSources } from "./enums";
 import { SpessaLog } from "../../utils/loggin";
@@ -263,7 +263,10 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
             }
             const generatorAmount = connection.shortScale;
             switch (connection.destination) {
-                default:
+                default: {
+                    // Other key number connections are not envelope corrections
+                    break;
+                }
 
                 case DLSDestinations.volEnvHold: {
                     // Key to vol env hold

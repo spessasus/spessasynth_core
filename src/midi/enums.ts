@@ -20,6 +20,12 @@ export const MIDIMessageTypes = {
     songPosition: 0xf2,
     songSelect: 0xf3,
     tuneRequest: 0xf6,
+    /**
+     * SMF SysEx escape or continuation event.
+     * The data holds the raw bytes that follow the length.
+     * https://foldoc.org/pub/misc/midi_file_spec
+     */
+    systemExclusiveEscape: 0xf7,
     clock: 0xf8,
     start: 0xfa,
     continue: 0xfb,

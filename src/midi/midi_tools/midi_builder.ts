@@ -57,7 +57,7 @@ const DEFAULT_MIDI_BUILDER_OPTIONS: MIDIBuilderOptions = {
  * This class inherits from {@link BasicMIDI} which means it can simply be used with {@link BasicMIDI.writeMIDI}
  * or passed to {@link SpessaSynthSequencer} for playback.
  *
- * > **Danger**
+ * > **Warning**
  * >
  * > Remember to call {@link BasicMIDI.flush} after you're done building the file!
  *
@@ -157,7 +157,9 @@ export class MIDIBuilder extends BasicMIDI {
             );
         }
         if (
-            statusByte >= MIDIMessageTypes.noteOff && // Voice event
+            // Voice event
+            statusByte >= MIDIMessageTypes.noteOff &&
+            statusByte < MIDIMessageTypes.systemExclusive &&
             this.format === 1 &&
             track === 0
         ) {

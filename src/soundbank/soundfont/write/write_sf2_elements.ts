@@ -132,7 +132,7 @@ export function writeSF2Elements(
             pdta: RIFFChunk.write(genHeader, genData, rf64),
             // Same as pmod, this chunk includes only the terminal generator record to allow reuse of the pdta parser.
             xdta: RIFFChunk.write(
-                modHeader,
+                genHeader,
                 new IndexedByteArray(GEN_BYTE_SIZE),
                 rf64
             )

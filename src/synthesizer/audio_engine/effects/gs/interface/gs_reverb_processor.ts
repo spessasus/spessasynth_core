@@ -14,7 +14,7 @@ export interface GSReverbParameter extends GSSystemEffectParameter {
      * This parameter selects the type of reverb. 0–5 are reverb effects, and 6 and 7 are delay
      * effects.
      *
-     * > **NOTE**
+     * > **Note**
      * >
      * > If character is not available, it should default to the first one.
      */

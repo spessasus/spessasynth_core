@@ -21,8 +21,9 @@ export class DelayLine {
     }
 
     public set time(value: number) {
-        this._time = Math.min(this.bufferLength, value) | 0;
-        this.clear();
+        // Changing the time only moves the read position, so the delayed signal is kept.
+        // A delay of 0 would read the slot before it is written, so 1 is the minimum.
+        this._time = Math.max(1, Math.min(this.bufferLength - 1, value)) | 0;
     }
 
     public clear() {
@@ -31,9 +32,9 @@ export class DelayLine {
 
     /**
      * OVERWRITES the output
-     * @param input
-     * @param output
-     * @param sampleCount
+     * @param input The input samples.
+     * @param output The output buffer to overwrite.
+     * @param sampleCount The number of samples to process.
      */
     public process(
         input: Float32Array,

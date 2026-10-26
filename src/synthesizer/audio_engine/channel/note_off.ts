@@ -10,6 +10,8 @@ import { MIDIControllers } from "../../../midi/enums";
  */
 export function noteOff(this: MIDIChannel, midiNote: number) {
     if (midiNote > 127 || midiNote < 0) return;
+    // The key is released in both paths, so mono mode does not restore it
+    this.playingNotes[midiNote] = false;
 
     if (
         // If high performance mode, kill notes instead of stopping them
@@ -28,7 +30,6 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
         return;
     }
 
-    this.playingNotes[midiNote] = false;
     const mono = !this._midiParameters.polyMode;
     // Mono mode overrides sustain
     const sustain =

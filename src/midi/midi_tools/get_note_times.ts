@@ -1,20 +1,8 @@
-import { IndexedByteArray } from "../../utils/indexed_array";
 import { readBigEndian } from "../../utils/byte_functions/big_endian";
 import { MIDI_DRUM_CHANNEL } from "../../synthesizer/audio_engine/synth_constants";
 import type { BasicMIDI } from "../basic_midi";
-import type { MIDIMessage } from "../midi_message";
+import { MIDIMessageTypes } from "../enums";
 import type { NoteTime } from "../types";
-
-/**
- * Gets tempo from the midi message
- * @param event the midi event
- * @return the tempo in bpm
- */
-const getTempo = (event: MIDIMessage): number => {
-    // Simulate IndexedByteArray
-    event.data = new IndexedByteArray(event.data.buffer);
-    return 60_000_000 / readBigEndian(event.data, 3);
-};
 
 /**
  * Calculates all note times in seconds.
@@ -95,8 +83,10 @@ export function getNoteTimesInternal(
             }
         }
         // Set tempo
-        else if (event.statusByte === 0x51)
-            oneTickToSeconds = 60 / (getTempo(event) * midi.timeDivision);
+        else if (event.statusByte === MIDIMessageTypes.setTempo) {
+            const tempo = 60_000_000 / readBigEndian(event.data, 3);
+            oneTickToSeconds = 60 / (tempo * midi.timeDivision);
+        }
 
         if (++i >= timeline.length) break;
 

@@ -79,7 +79,7 @@ export class WaveLink {
             case SampleTypes.leftSample:
             case SampleTypes.monoSample: {
                 // Left (or mono)
-                waveLink.channel = Math.trunc(1);
+                waveLink.channel = 1;
                 break;
             }
 

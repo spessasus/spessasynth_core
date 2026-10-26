@@ -1,5 +1,5 @@
 import { DEFAULT_SYNTH_MODE } from "../synth_constants";
-import { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../processor";
 import type { MIDISystem } from "../../../soundbank/types";
 import type { GlobalMIDIParameterChangeEvent } from "../../events";
 

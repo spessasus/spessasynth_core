@@ -1,4 +1,4 @@
-import { Modulator } from "./basic_soundbank/modulator";
+import type { Modulator } from "./basic_soundbank/modulator";
 import type { BasicSample } from "./basic_soundbank/basic_sample";
 import type { MIDIController } from "../midi/enums";
 import type { ModulatorControllerSource } from "./enums";
@@ -330,7 +330,7 @@ export interface SoundFont2WriteOptions extends SoundBankWriteOptions {
      * If the DMOD chunk should be written. Recommended.
      * > **Note**
      * >
-     * > The chunk will only be written if the modulators are unchanged.
+     * > The chunk will only be written if the modulators differ from the SpessaSynth defaults.
      */
     writeDefaultModulators: boolean;
 

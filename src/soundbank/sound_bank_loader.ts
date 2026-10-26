@@ -35,13 +35,9 @@ export class SoundBankLoader {
             4
         ).toLowerCase();
         if (id === "dls ") {
-            return this.loadDLS(buffer);
+            // The magic happens here!
+            return DownloadableSounds.read(buffer).toSF();
         }
         return new SoundFont2(buffer, id === "sfen");
-    }
-
-    private static loadDLS(buffer: ArrayBuffer) {
-        const dls = DownloadableSounds.read(buffer);
-        return dls.toSF();
     }
 }

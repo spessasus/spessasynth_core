@@ -1,6 +1,5 @@
-/**
- * Unit_converter.ts
- * purpose: converts soundfont units into more usable values with the use of lookup tables to improve performance
+/*
+ * Converts sound bank units into more usable values, using lookup tables to improve performance.
  */
 
 // Timecent lookup table
@@ -21,7 +20,11 @@ export function timecentsToSeconds(timecents: number): number {
     if (timecents <= -32_767) {
         return 0;
     }
-    return timecentLookupTable[timecents - MIN_TIMECENT];
+    if (timecents < MIN_TIMECENT || timecents > MAX_TIMECENT) {
+        // Key scaling can push the value outside the table
+        return Math.pow(2, timecents / 1200);
+    }
+    return timecentLookupTable[(timecents - MIN_TIMECENT) | 0];
 }
 
 // Abs cent lookup table
@@ -68,5 +71,9 @@ for (let i = 0; i < CENTIBEL_LOOKUP_TABLE.length; i++) {
  * @return The gain value.
  */
 export function cbAttenuationToGain(centibels: number): number {
-    return CENTIBEL_LOOKUP_TABLE[(centibels - MIN_CENTIBELS) | 0];
+    if (centibels >= MIN_CENTIBELS && centibels <= MAX_CENTIBELS) {
+        return CENTIBEL_LOOKUP_TABLE[(centibels - MIN_CENTIBELS) | 0];
+    }
+    // Clamp to the table, NaN is treated as silence
+    return centibels < MIN_CENTIBELS ? CENTIBEL_LOOKUP_TABLE[0] : 0;
 }

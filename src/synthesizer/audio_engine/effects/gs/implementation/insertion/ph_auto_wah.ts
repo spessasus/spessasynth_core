@@ -1,3 +1,4 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
 import { PAN_TABLE_LEFT, PAN_TABLE_RIGHT } from "./utils";
@@ -12,11 +13,11 @@ Type: mono processors, stereo mix
 
 const DEFAULT_LEVEL = 127;
 
-export class PhAutoWahFx implements GSInsertionProcessor {
-    public sendLevelToReverb = 40 / 127;
+export class PhAutoWahFX implements GSInsertionProcessor {
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
-    public readonly type = 0x11_08; // CHANGE THIS
+    public readonly type = 0x11_08;
 
     /**
      * Sets the stereo location of the phaser sound. L63 is far left, 0

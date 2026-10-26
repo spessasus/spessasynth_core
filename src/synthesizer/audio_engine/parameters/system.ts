@@ -1,6 +1,6 @@
 import { VOICE_CAP } from "../synth_constants";
 import { type InterpolationType, InterpolationTypes } from "../../enums";
-import { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../processor";
 import { SpessaLog } from "../../../utils/loggin";
 
 /**

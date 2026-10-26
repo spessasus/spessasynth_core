@@ -50,12 +50,11 @@ export abstract class XGMonoVariationProgram extends XGVariationProgram {
         this.dryRight = new Float32Array(maxBufferSize);
     }
 
-    public override reset() {
+    protected override resetState() {
         this.monoX = this.monoY = this.monoShelfY = 0;
         this.postX = this.postY = 0;
         this.peakX2 = this.peakY = this.peakY2 = 0;
         this.postShelfY = 0;
-        super.reset();
     }
 
     protected override pushCoefficients(
@@ -148,6 +147,7 @@ export abstract class XGMonoVariationProgram extends XGVariationProgram {
                 mb2 * peakX2 +
                 mb1 * postY +
                 mb0 * first;
+            // noinspection JSSuspiciousNameCombination
             peakX2 = postY;
             postY = first;
             postShelfY = sb1 * peakY + peak * sb0 + sa1 * postShelfY;

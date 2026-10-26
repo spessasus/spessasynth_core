@@ -112,6 +112,27 @@ export const MAX_GENERATOR = Math.max(...Object.values(GeneratorTypes));
 export const GENERATORS_AMOUNT = MAX_GENERATOR + 1;
 
 /**
+ * Generators that are only valid at the instrument level.
+ * SF2 2.04 section 8.1.2 says that they must be ignored in preset zones.
+ * @internal
+ */
+export const INSTRUMENT_ONLY_GENERATORS: ReadonlySet<GeneratorType> = new Set([
+    GeneratorTypes.startAddrsOffset,
+    GeneratorTypes.endAddrOffset,
+    GeneratorTypes.startloopAddrsOffset,
+    GeneratorTypes.endloopAddrsOffset,
+    GeneratorTypes.startAddrsCoarseOffset,
+    GeneratorTypes.endAddrsCoarseOffset,
+    GeneratorTypes.startloopAddrsCoarseOffset,
+    GeneratorTypes.endloopAddrsCoarseOffset,
+    GeneratorTypes.keyNum,
+    GeneratorTypes.velocity,
+    GeneratorTypes.sampleModes,
+    GeneratorTypes.exclusiveClass,
+    GeneratorTypes.overridingRootKey
+]);
+
+/**
  * Represents a single generator's range and default value.
  *
  * @group Sound Banks.Generators

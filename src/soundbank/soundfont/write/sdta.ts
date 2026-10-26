@@ -27,7 +27,6 @@ export function getSDTA(
 
     for (const s of bank.samples) {
         // Raw data: either copy s16le or encoded vorbis or encode manually if overridden
-        // Use set timeout so the thread doesn't die
         const r = s.getRawData(true);
         writtenCount++;
         progressFunction?.(writtenCount / bank.samples.length);

@@ -16,7 +16,7 @@ import { BasicZone } from "./basic_zone";
 
 export const INST_BYTE_SIZE = 22;
 
-const notGlobalizedTypes = new Set([
+const notGlobalizedTypes: ReadonlySet<GeneratorType> = new Set([
     GeneratorTypes.velRange,
     GeneratorTypes.keyRange,
     GeneratorTypes.instrument,
@@ -39,9 +39,7 @@ const notGlobalizedTypes = new Set([
     GeneratorTypes.keyNumToVolEnvDecay, // Cannot be globalized as they modify their respective generators
     GeneratorTypes.keyNumToModEnvHold, // (for example, keyNumToVolEnvDecay modifies VolEnvDecay)
     GeneratorTypes.keyNumToModEnvDecay
-] as const);
-type notGlobalizedTypes =
-    typeof notGlobalizedTypes extends Set<infer T> ? T : never;
+] as GeneratorType[]);
 
 // noinspection JSUnusedGlobalSymbols
 /**
@@ -177,100 +175,92 @@ export class BasicInstrument {
 
         // Create a global zone and add repeating generators to it
         // Also modulators
-        // Iterate over every type of generator
-        for (
-            let checkedType: GeneratorType = 0;
-            checkedType < 58;
-            checkedType++
-        ) {
+        // Iterate over every type of SF2 generator
+        for (let type = 0; type <= GeneratorTypes.overridingRootKey; type++) {
+            const checkedType = type as GeneratorType;
             // Not these though
-            if (notGlobalizedTypes.has(checkedType as notGlobalizedTypes)) {
+            if (notGlobalizedTypes.has(checkedType)) {
                 continue;
             }
-            checkedType = checkedType as GeneratorType;
-            let occurrencesForValues: Record<number, number> = {};
-            const defaultForChecked = GeneratorLimits[checkedType]?.def || 0;
-            occurrencesForValues[defaultForChecked] = 0;
-            for (const zone of this.zones) {
-                const value = zone.getGenerator(checkedType, undefined);
-                if (value === undefined) {
-                    occurrencesForValues[defaultForChecked]++;
-                } else {
-                    if (occurrencesForValues[value] === undefined) {
-                        occurrencesForValues[value] = 1;
-                    } else {
-                        occurrencesForValues[value]++;
-                    }
-                }
+            const limit = GeneratorLimits[checkedType] as
+                | (typeof GeneratorLimits)[GeneratorType]
+                | undefined;
+            // Unused generator
+            if (!limit) continue;
+            const defaultForChecked = limit.def;
 
-                // If the checked type has the keyNumTo something generator set, it cannot be globalized.
-                let relativeCounterpart;
-                switch (checkedType) {
-                    default: {
-                        continue;
-                    }
-
-                    case GeneratorTypes.decayVolEnv: {
-                        relativeCounterpart =
-                            GeneratorTypes.keyNumToVolEnvDecay;
-                        break;
-                    }
-                    case GeneratorTypes.holdVolEnv: {
-                        relativeCounterpart = GeneratorTypes.keyNumToVolEnvHold;
-                        break;
-                    }
-                    case GeneratorTypes.decayModEnv: {
-                        relativeCounterpart =
-                            GeneratorTypes.keyNumToModEnvDecay;
-                        break;
-                    }
-                    case GeneratorTypes.holdModEnv: {
-                        relativeCounterpart = GeneratorTypes.keyNumToModEnvHold;
-                    }
-                }
-                const relative = zone.getGenerator(
-                    relativeCounterpart,
-                    undefined
-                );
-                if (relative !== undefined) {
-                    occurrencesForValues = {};
+            // If the checked type has the keyNumTo something generator set, it cannot be globalized.
+            let relativeCounterpart: GeneratorType | undefined;
+            switch (checkedType) {
+                default: {
                     break;
                 }
+
+                case GeneratorTypes.decayVolEnv: {
+                    relativeCounterpart = GeneratorTypes.keyNumToVolEnvDecay;
+                    break;
+                }
+                case GeneratorTypes.holdVolEnv: {
+                    relativeCounterpart = GeneratorTypes.keyNumToVolEnvHold;
+                    break;
+                }
+                case GeneratorTypes.decayModEnv: {
+                    relativeCounterpart = GeneratorTypes.keyNumToModEnvDecay;
+                    break;
+                }
+                case GeneratorTypes.holdModEnv: {
+                    relativeCounterpart = GeneratorTypes.keyNumToModEnvHold;
+                }
             }
-            // If at least one occurrence, find the most used one and add it to global
-            if (Object.keys(occurrencesForValues).length > 0) {
-                // [value, occurrences]
-                let valueToGlobalize: [string, number] = ["0", 0];
+            if (
+                relativeCounterpart !== undefined &&
+                [globalZone, ...this.zones].some(
+                    (z) =>
+                        z.getGenerator(relativeCounterpart, undefined) !==
+                        undefined
+                )
+            ) {
+                continue;
+            }
 
-                for (const [value, count] of Object.entries(
-                    occurrencesForValues
-                )) {
-                    if (count > valueToGlobalize[1]) {
-                        valueToGlobalize = [value, count];
-                    }
-                }
-                const targetValue = Number.parseInt(valueToGlobalize[0]);
+            // The effective value of each zone: local,
+            // Then the existing global one, then the default
+            const globalValue = globalZone.getGenerator(
+                checkedType,
+                defaultForChecked
+            );
+            const effectiveValues = this.zones.map((z) =>
+                z.getGenerator(checkedType, globalValue)
+            );
+            if (effectiveValues.length === 0) continue;
 
-                // If the global value is the default value just remove it, no need to add it
-                if (targetValue !== defaultForChecked) {
-                    globalZone.setGenerator(checkedType, targetValue, false);
+            // Find the most used value and make it global
+            const occurrencesForValues = new Map<number, number>();
+            let targetValue = effectiveValues[0];
+            let targetCount = 0;
+            for (const value of effectiveValues) {
+                const count = (occurrencesForValues.get(value) ?? 0) + 1;
+                occurrencesForValues.set(value, count);
+                if (count > targetCount) {
+                    targetValue = value;
+                    targetCount = count;
                 }
-                // Remove from the zones
-                for (const z of this.zones) {
-                    const genValue = z.getGenerator(checkedType, undefined);
-                    if (genValue === undefined) {
-                        // That type does not exist at all here.
-                        // Since we're globalizing, we need to add the default here.
-                        if (targetValue !== defaultForChecked) {
-                            z.setGenerator(checkedType, defaultForChecked);
-                        }
-                    } else {
-                        if (genValue === targetValue) {
-                            // That exact value exists. Since it's global now, remove it
-                            z.setGenerator(checkedType, null);
-                        }
-                    }
-                }
+            }
+
+            // If the global value is the default value just remove it, no need to add it
+            globalZone.setGenerator(
+                checkedType,
+                targetValue === defaultForChecked ? null : targetValue,
+                false
+            );
+            // Zones with the global value do not need it, others keep their effective value
+            for (let i = 0; i < this.zones.length; i++) {
+                const value = effectiveValues[i];
+                this.zones[i].setGenerator(
+                    checkedType,
+                    value === targetValue ? null : value,
+                    false
+                );
             }
         }
 
@@ -296,7 +286,17 @@ export class BasicInstrument {
                 // Exists.
             }
             if (existsForAllZones) {
-                globalZone.addModulators(Modulator.copyFrom(checkedModulator));
+                // Every zone overrides the global one, so the existing global amount does not matter
+                const existingGlobal = globalZone.modulators.find((m) =>
+                    Modulator.isIdentical(m, checkedModulator)
+                );
+                if (existingGlobal)
+                    existingGlobal.transformAmount =
+                        checkedModulator.transformAmount;
+                else
+                    globalZone.addModulators(
+                        Modulator.copyFrom(checkedModulator)
+                    );
                 // Delete it from local zones.
                 for (const zone of this.zones) {
                     const modulator = zone.modulators.find((m) =>

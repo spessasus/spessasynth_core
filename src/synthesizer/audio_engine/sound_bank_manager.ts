@@ -104,9 +104,12 @@ export class SoundBankManager {
      * @param newList The new order of sound bank IDs.
      */
     public set priorityOrder(newList: string[]) {
-        this.soundBankList.sort(
-            (a, b) => newList.indexOf(a.id) - newList.indexOf(b.id)
-        );
+        // Banks missing from the list keep their relative order at the end
+        const rank = (id: string) => {
+            const index = newList.indexOf(id);
+            return index === -1 ? newList.length : index;
+        };
+        this.soundBankList.sort((a, b) => rank(a.id) - rank(b.id));
         this.generatePresetList();
     }
 

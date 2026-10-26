@@ -43,18 +43,6 @@ export function loadNewSequenceInternal(
     this: SpessaSynthSequencer,
     parsedMIDI: BasicMIDI
 ) {
-    if (!parsedMIDI.tracks) {
-        throw new Error("This MIDI has no tracks!");
-    }
-
-    if (parsedMIDI.duration === 0) {
-        // https://github.com/spessasus/SpessaSynth/issues/106
-        SpessaLog.warn("This MIDI file has a duration of exactly 0 seconds.");
-        this.pausedTime = 0;
-        this.isFinished = true;
-        return;
-    }
-
     this.oneTickToSeconds = 60 / (120 * parsedMIDI.timeDivision);
     this._midiData = parsedMIDI;
     this.isFinished = false;
@@ -97,6 +85,15 @@ export function loadNewSequenceInternal(
         ConsoleColors.recognized
     );
     this.callEvent("songChange", { songIndex: this._songIndex });
+
+    if (this._midiData.duration === 0) {
+        // The song is loaded, but there is nothing to play
+        // https://github.com/spessasus/SpessaSynth/issues/106
+        SpessaLog.warn("This MIDI file has a duration of exactly 0 seconds.");
+        this.pausedTime = 0;
+        this.isFinished = true;
+        return;
+    }
 
     if (this._midiData.duration <= 0.2) {
         SpessaLog.warn(

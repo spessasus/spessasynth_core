@@ -57,7 +57,8 @@ export interface GSInsertionProcessor {
      * @param outputChorus The mono input for chorus. It always starts at index 0.
      * @param outputDelay The mono input for delay. It always starts at index 0.
      * @param startIndex The index to start mixing at into the output buffers.
-     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance. */
+     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance.
+     */
     process(
         inputLeft: Float32Array,
         inputRight: Float32Array,

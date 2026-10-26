@@ -1,7 +1,8 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
 
 export class ThruFX implements GSInsertionProcessor {
-    public sendLevelToReverb = 40 / 127;
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
     public readonly type = 0x00_00;

@@ -30,14 +30,18 @@ export interface ChannelEvent {
  *
  * > **Note**
  * >
- * > The note events report the direct MIDI note number requested. For the internal note, you can apply the key shift:
+ * > The note events report the direct MIDI note number requested. For the internal note, you can apply the key shift
+ * > (drum channels only use the channel system key shift):
  * > ```ts
+ * > const channel = synth.midiChannels[event.channel];
  * > const actualNote =
  * >     event.midiNote +
- * >     Math.trunc(this.synth.systemParameters.pitchOffset) +
- * >     this.synth.midiParameters.masterKeyShift +
- * >     this.synth.midiChannels[event.channel].systemParameters.pitchOffset +
- * >     this.synth.midiChannels[event.channel].midiParameters.keyShift;
+ * >     Math.trunc(
+ * >         synth.systemParameters.keyShift +
+ * >             synth.midiParameters.keyShift +
+ * >             channel.systemParameters.keyShift +
+ * >             channel.midiParameters.keyShift
+ * >     );
  * > ```
  *
  * @group Synthesizer.Events
@@ -83,10 +87,10 @@ export interface NoteOffEvent extends ChannelEvent {
 export interface ProgramChangeEvent extends MIDIPatchFull, ChannelEvent {}
 
 /**
- * This event is triggered when a controller is changed on any channel (usually MIDI program change),
+ * This event is triggered when a controller is changed on any channel (usually MIDI controller change),
  * though [some system exclusives can change it too.](../../docs/extra/midi-implementation.md)
  *
- * > **NOTE**
+ * > **Note**
  * >
  * > This event is also called after `reset` if there were any locked controllers.
  * > For example, if CC#1 was locked to 64,
@@ -450,7 +454,7 @@ export interface SynthesizerEvent {
     noteOff: NoteOffEvent;
 
     /**
-     * This event is triggered when a controller is changed on any channel (usually MIDI program change),
+     * This event is triggered when a controller is changed on any channel (usually MIDI controller change),
      * though  [some system exclusives can change it too.](../../docs/extra/midi-implementation.md)
      *
      * > **Note**

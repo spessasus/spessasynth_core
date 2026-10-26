@@ -51,13 +51,9 @@ export class DynamicModulatorManager {
     public resetModulators() {
         this.modulatorList = INITIAL_MODULATORS.map((m) => {
             return {
-                mod: m,
-                id: this.getModulatorID(
-                    m.primarySource.toSourceEnum(),
-                    m.destination,
-                    m.primarySource.isBipolar,
-                    m.primarySource.isNegative
-                )
+                // Copy, so changing the amount does not affect other channels
+                mod: VoiceModulator.fromModulator(m),
+                id: this.getModulatorID(m.primarySource, m.destination)
             };
         });
         this.active = false;
@@ -447,27 +443,27 @@ export class DynamicModulatorManager {
         isNegative = false,
         isConcave = false
     ) {
-        const id = this.getModulatorID(
+        const primarySource = new ModulatorSource(
             source,
-            destination,
+            isConcave
+                ? ModulatorCurveTypes.concave
+                : ModulatorCurveTypes.linear,
+            isCC,
             isBipolar,
             isNegative
         );
-        if (amount === 0) this.deleteModulator(id);
+        const id = this.getModulatorID(primarySource, destination);
+        if (amount === 0) {
+            this.deleteModulator(id);
+            return;
+        }
 
         const mod = this.modulatorList.find((m) => m.id === id);
         if (mod) {
             mod.mod.transformAmount = amount;
         } else {
             const modulator = VoiceModulator.fromData(
-                new ModulatorSource(
-                    source,
-                    isConcave
-                        ? ModulatorCurveTypes.concave
-                        : ModulatorCurveTypes.linear,
-                    isCC,
-                    isBipolar
-                ),
+                primarySource,
                 new ModulatorSource(),
                 destination,
                 amount,
@@ -481,12 +477,11 @@ export class DynamicModulatorManager {
     }
 
     private getModulatorID(
-        source: number,
-        destination: GeneratorType,
-        isBipolar: boolean,
-        isNegative: boolean
+        source: ModulatorSource,
+        destination: GeneratorType
     ) {
-        return `${source}-${destination}-${isBipolar}-${isNegative}`;
+        // The source enum includes the CC flag, the curve and the polarity
+        return `${source.toSourceEnum()}-${destination}`;
     }
 
     private deleteModulator(id: string) {

@@ -78,6 +78,7 @@ export class DefaultGSDelay implements GSDelayProcessor {
         this.delayCenter = Math.floor(0.34 * sampleRate);
         this.delayLeft = Math.floor(this.delayCenter * 0.04);
         this.delayRight = Math.floor(this.delayCenter * 0.04);
+        this.gain = (this._level / 127) * DELAY_GAIN;
     }
 
     private _sendLevelToReverb = 0;
@@ -177,6 +178,7 @@ export class DefaultGSDelay implements GSDelayProcessor {
         // The resolution is 100/24(%).
         // Turn that into multiplier
         this.delayRightMultiplier = value * (100 / 2400);
+        this.updateDelayTimes();
     }
 
     private _timeRatioLeft = 0;
@@ -191,6 +193,7 @@ export class DefaultGSDelay implements GSDelayProcessor {
         // The resolution is 100/24(%).
         // Turn that into multiplier
         this.delayLeftMultiplier = value * (100 / 2400);
+        this.updateDelayTimes();
     }
 
     private _timeCenter = 12;
@@ -212,14 +215,12 @@ export class DefaultGSDelay implements GSDelayProcessor {
             }
         }
         this.delayCenter = Math.floor(
-            Math.max(2, this.sampleRate * (delayMs / 1000))
+            Math.min(
+                this.buffer.length - 1,
+                Math.max(2, this.sampleRate * (delayMs / 1000))
+            )
         );
-        this.delayLeft = Math.floor(
-            this.delayCenter * this.delayLeftMultiplier
-        );
-        this.delayRight = Math.floor(
-            this.delayCenter * this.delayRightMultiplier
-        );
+        this.updateDelayTimes();
         this.buffer.fill(0);
     }
 
@@ -303,7 +304,7 @@ export class DefaultGSDelay implements GSDelayProcessor {
             const c = delayed * centerGain;
             outputLeft[o] += c;
             outputRight[o] += c;
-            outputReverb[o] += c * reverbGain;
+            outputReverb[i] += c * reverbGain;
 
             // Center feedback, do it first so left and right delay of 0 work fine
             // Testcase: gs_effect_send_level_test
@@ -312,12 +313,12 @@ export class DefaultGSDelay implements GSDelayProcessor {
             // Write left
             const l = buffer[leftReadIndex] * leftGain;
             outputLeft[o] += l;
-            outputReverb[o] += l * reverbGain;
+            outputReverb[i] += l * reverbGain;
 
             // Write right
             const r = buffer[rightReadIndex] * rightGain;
             outputRight[o] += r;
-            outputReverb[o] += r * reverbGain;
+            outputReverb[i] += r * reverbGain;
 
             // Advance and wrap
             if (++writeIndex >= bufferLength) writeIndex = 0;
@@ -338,6 +339,19 @@ export class DefaultGSDelay implements GSDelayProcessor {
             feedback: this._feedback,
             sendLevelToReverb: this._sendLevelToReverb
         };
+    }
+
+    private updateDelayTimes() {
+        // Recompute times
+        const maxDelay = this.buffer.length - 1;
+        this.delayLeft = Math.min(
+            maxDelay,
+            Math.floor(this.delayCenter * this.delayLeftMultiplier)
+        );
+        this.delayRight = Math.min(
+            maxDelay,
+            Math.floor(this.delayCenter * this.delayRightMultiplier)
+        );
     }
 
     private updateGain() {

@@ -120,7 +120,8 @@ export class MIDIUtils {
                     type: "Channel MIDI Param",
                     channel,
                     parameter: "pitchWheelRange",
-                    value: value / 128
+                    // MSB is semitones, LSB is cents
+                    value: (value >> 7) + (value & 0x7f) / 100
                 };
             }
 
@@ -160,12 +161,15 @@ export class MIDIUtils {
      * @param channel The MIDI channel number.
      * @param nrpn The 14-bit NRPN number.
      * @param value The 14-bit value for that number.
+     * @param drumPitchStep The drum pitch coarse resolution in semitones.
+     * 0.5 for GS (SC-88 and above), 1 for XG and the SC-55 drum map (bank LSB 1).
      * @returns The analysis result(s) of the message.
      */
     public static analyzeNRPN(
         channel: number,
         nrpn: number,
-        value: number
+        value: number,
+        drumPitchStep = 0.5
     ): AnalyzedParameter {
         const msb = nrpn >> 7;
         const lsb = nrpn & 0x7f;
@@ -261,7 +265,7 @@ export class MIDIUtils {
                     channel,
                     key: lsb,
                     parameter: "pitchCoarse",
-                    value: (value >> 7) - 64
+                    value: ((value >> 7) - 64) * drumPitchStep
                 };
             }
             case NonRegisteredParameterTypesMSB.drumPitchFine: {
@@ -745,8 +749,9 @@ export class MIDIUtils {
                 switch (system) {
                     default: {
                         // GM tunes in 14-bit numbers, how nice!
-                        const tuneValue = Math.floor(
-                            (value as number) * 81.92 + 8192
+                        const tuneValue = Math.min(
+                            16_383,
+                            Math.floor((value as number) * 81.92 + 8192)
                         );
                         return [
                             MIDIUtils.deviceControlMessage(ticks, 0x03, [
@@ -831,8 +836,10 @@ export class MIDIUtils {
                 switch (system) {
                     default: {
                         // Master Balance message
-                        const balance =
-                            Math.floor((value as number) * 8192) + 8192;
+                        const balance = Math.min(
+                            16_383,
+                            Math.floor((value as number) * 8192) + 8192
+                        );
 
                         return [
                             MIDIUtils.deviceControlMessage(ticks, 0x02, [
@@ -889,11 +896,17 @@ export class MIDIUtils {
             }
 
             case "pitchWheelRange": {
+                // MSB is semitones, LSB is cents
+                const semitones = Math.floor(value as number);
+                const cents = Math.min(
+                    99,
+                    Math.round(((value as number) - semitones) * 100)
+                );
                 return MIDIMessage.registeredParameter(
                     ticks,
                     channel,
                     RegisteredParameterTypes.pitchWheelRange,
-                    Math.floor((value as number) * 128)
+                    (semitones << 7) | cents
                 );
             }
 
@@ -962,7 +975,10 @@ export class MIDIUtils {
                     channel,
                     RegisteredParameterTypes.fineTuning,
                     // Resolution is 100/8192 cents
-                    Math.floor((value as number) * 81.92 + 8192)
+                    Math.min(
+                        16_383,
+                        Math.floor((value as number) * 81.92 + 8192)
+                    )
                 );
             }
 
@@ -1139,6 +1155,8 @@ export class MIDIUtils {
      * @param key The MIDI drum key/note number to modify.
      * @param parameter The parameter to set.
      * @param value The value to set it to.
+     * @param gsDrumPitchStep The GS drum pitch coarse resolution in semitones.
+     * 0.5 for SC-88 and above, 1 for the SC-55 drum map (bank LSB 1). XG always uses 1.
      * @returns The {@link MIDIMessage} needed to set this drum map parameter.
      */
     public static setDrumMapParameter<P extends keyof DrumParameter>(
@@ -1147,7 +1165,8 @@ export class MIDIUtils {
         system: MIDISystem,
         key: number,
         parameter: P,
-        value: DrumParameter[P]
+        value: DrumParameter[P],
+        gsDrumPitchStep = 0.5
     ): MIDIMessage {
         if (system === "xg") {
             const a3Param = XGDrumParamMap[parameter];
@@ -1165,7 +1184,7 @@ export class MIDIUtils {
 
                 case "pitchFine":
                 case "pitchCoarse": {
-                    midiValue = (value as number) + 64;
+                    midiValue = Math.round(value as number) + 64;
                     break;
                 }
 
@@ -1174,7 +1193,11 @@ export class MIDIUtils {
                 }
             }
 
-            const a1 = 0x30 | (map - DEFAULT_XG_DRUM_MAP);
+            const setupIndex = map - DEFAULT_XG_DRUM_MAP;
+            if (setupIndex < 0 || setupIndex > 0xf) {
+                throw new Error(`Invalid XG drum setup ${map}`);
+            }
+            const a1 = 0x30 | setupIndex;
             return this.xgMessage(ticks, a1, key, a3Param, [midiValue]);
         }
 
@@ -1183,10 +1206,10 @@ export class MIDIUtils {
             throw new Error(`Invalid GS drum parameter ${parameter}`);
         }
 
-        // PLAY NOTE is relative to 60, while pitchCoarse is relative to 0
+        // PLAY NOTE is relative to 60, while pitchCoarse is relative to 0 and in semitones
         const midiValue =
             parameter === "pitchCoarse"
-                ? 60 + (value as number)
+                ? 60 + Math.round((value as number) / gsDrumPitchStep)
                 : typeof value === "number"
                   ? value
                   : value
@@ -1194,7 +1217,11 @@ export class MIDIUtils {
                     : 0;
 
         // 0 = MAP1
-        const a2 = ((map - DEFAULT_GS_DRUM_MAP) << 4) | a2Param;
+        const mapIndex = map - DEFAULT_GS_DRUM_MAP;
+        if (mapIndex < 0 || mapIndex > 0xf) {
+            throw new Error(`Invalid GS drum map ${map}`);
+        }
+        const a2 = (mapIndex << 4) | a2Param;
         return this.gsMessage(ticks, 0x41, a2, key, [midiValue]);
     }
 
@@ -1205,6 +1232,8 @@ export class MIDIUtils {
      * @param key The MIDI drum key/note number to modify.
      * @param parameter The parameter to set.
      * @param value The value to set it to.
+     * @param drumPitchStep The drum pitch coarse resolution in semitones.
+     * 0.5 for GS (SC-88 and above), 1 for XG and the SC-55 drum map (bank LSB 1).
      * @returns The list of {@link MIDIMessage}s needed to set this channel drum parameter.
      */
     public static setDrumChannelParameter<P extends keyof DrumParameter>(
@@ -1212,7 +1241,8 @@ export class MIDIUtils {
         channel: number,
         key: number,
         parameter: P,
-        value: DrumParameter[P]
+        value: DrumParameter[P],
+        drumPitchStep = 0.5
     ): MIDIMessage[] {
         if (key > 127 || key < 0) {
             throw new Error("Key must be between 0 and 127.");
@@ -1222,7 +1252,7 @@ export class MIDIUtils {
         switch (parameter) {
             case "pitchCoarse": {
                 msb = NonRegisteredParameterTypesMSB.drumPitch;
-                coarse = (value as number) + 64;
+                coarse = Math.round((value as number) / drumPitchStep) + 64;
                 break;
             }
 
@@ -1292,8 +1322,8 @@ export class MIDIUtils {
     ): MIDIMessage {
         drumSet %= 2;
         const a2Param = GSUserDrumParamMap[parameter];
-        if (a2Param === undefined) {
-            throw new Error(`Invalid parameter ${parameter}`);
+        if (a2Param === undefined || parameter === "pitchFine") {
+            throw new Error(`Invalid GS user drum parameter ${parameter}`);
         }
 
         // PLAY NOTE is relative to 60 and not 0, but pitchCoarse is relative to 0
@@ -1489,7 +1519,7 @@ export class MIDIUtils {
                     0x00, // System parameter - Address
                     0x00, // Global mode parameter -  Address
                     0x7e, // XG On
-                    [0x00] // 00 = GS Reset - Data
+                    [0x00] // 00 = XG System On - Data
                 );
             }
 
@@ -1517,9 +1547,11 @@ export class MIDIUtils {
 
     private static analyzeGM(syx: SysExAcceptedArray): AnalyzedSysExMessage[] {
         if (syx.length < 4) return [OTHER];
+        const isRealtime = syx[0] === 0x7f;
 
         if (
-            // Device control
+            // Device control (realtime)
+            isRealtime &&
             syx[2] === 0x04
         )
             switch (syx[3]) {
@@ -1698,7 +1730,8 @@ export class MIDIUtils {
                 }
             }
 
-        if (syx[2] !== 0x09) return [OTHER];
+        // General MIDI (non-realtime)
+        if (isRealtime || syx[2] !== 0x09) return [OTHER];
         switch (syx[3]) {
             default: {
                 return [OTHER];
@@ -1715,11 +1748,12 @@ export class MIDIUtils {
             }
 
             case 0x02: {
+                // GM System Off
                 return [
                     {
                         type: "Global MIDI Param",
                         parameter: "system",
-                        value: "gm"
+                        value: "gs"
                     }
                 ];
             }
@@ -2481,7 +2515,7 @@ export class MIDIUtils {
 
                 case 0x20: {
                     // MW LFO PMOD Depth (alias to modulation wheel range)
-                    const cents = ((value - 63) / 127) * 600;
+                    const cents = (value / 127) * 600;
                     return [
                         {
                             type: "Channel MIDI Param",
@@ -2850,7 +2884,8 @@ export class MIDIUtils {
                             drumMap,
                             key: a3,
                             parameter: "pitchCoarse",
-                            value: value - 60
+                            // Semitones, assuming the SC-88 resolution (50 cents per step)
+                            value: (value - 60) * 0.5
                         }
                     ];
                 }

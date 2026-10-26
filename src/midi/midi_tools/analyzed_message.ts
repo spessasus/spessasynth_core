@@ -527,6 +527,7 @@ export type MapDrumSetupMessage = {
         parameter: K;
         /**
          * The value for the drum parameter.
+         * GS `pitchCoarse` is converted to semitones assuming the SC-88 resolution (50 cents per step).
          */
         value: DrumParameter[K];
     };
@@ -626,6 +627,7 @@ export type AnalyzedMIDIMessage =
               parameter: K;
               /**
                * The value for the user drum set parameter.
+               * `pitchCoarse` is in GS steps, see {@link UserDrumSetParameter.pitchCoarse}.
                */
               value: UserDrumSetParameter[K];
           };

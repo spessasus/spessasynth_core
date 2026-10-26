@@ -2,7 +2,7 @@ import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
-import { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../processor";
 import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
 import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
@@ -1035,6 +1035,14 @@ export function rolandSystemExclusive(
                             channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
+                        if (!ch) {
+                            SpessaLog.gsFail(
+                                `Patch Parameter Controller for ${channel}`,
+                                syx,
+                                "Invalid part number."
+                            );
+                            return;
+                        }
                         switch (a3 & 0xf0) {
                             default: {
                                 // This is some other GS sysex...
@@ -1166,6 +1174,14 @@ export function rolandSystemExclusive(
                             channelOffset;
                         // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
                         const ch = this.midiChannels[channel];
+                        if (!ch) {
+                            SpessaLog.gsFail(
+                                `Patch Parameter Tone Map for ${channel}`,
+                                syx,
+                                "Invalid part number."
+                            );
+                            return;
+                        }
 
                         switch (a3) {
                             default: {

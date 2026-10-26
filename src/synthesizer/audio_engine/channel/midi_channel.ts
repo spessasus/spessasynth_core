@@ -21,7 +21,7 @@ import {
     GENERATORS_AMOUNT,
     type GeneratorType
 } from "../../../soundbank/basic_soundbank/generator_types";
-import { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../processor";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import type { MIDIPatch } from "../../../soundbank/basic_soundbank/midi_patch";
 import { BankSelectHacks } from "../../../utils/midi_hacks";
@@ -801,7 +801,7 @@ export class MIDIChannel {
      * @internal
      */
     public polyPressure(midiNote: number, pressure: number) {
-        // Note to self: don't use computeModulatorsAll here as we're setting the pressure!
+        // Note to self: Store the pressure first, the modulators read it
         this.polyPressures[midiNote] = pressure;
         this.computeModulatorsAll(0, ModulatorControllerSources.polyPressure);
         this.synthCore.callEvent("polyPressure", {

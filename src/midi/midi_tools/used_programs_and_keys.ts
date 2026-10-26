@@ -42,7 +42,7 @@ interface UserDrumSetState {
 
 /**
  * Gets the used programs and keys for this MIDI file with a given sound bank.
- * @param mid
+ * @param mid The MIDI file to analyze.
  * @param soundBank the sound bank/sound bank manager. Anything that implements the `getPreset` method of `BasicSoundBank`.
  * @returns  Map<patch, Map<midiNote, Set<velocity>>>
  */
@@ -143,7 +143,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             ports[trackNum] = port;
             continue;
         }
-        const status = e.statusByte & 0xf0;
+        const status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
         if (
             status !== MIDIMessageTypes.noteOn &&
             status !== MIDIMessageTypes.controllerChange &&
@@ -153,7 +153,7 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
             continue;
         }
 
-        const channelOffset = offsetMap[ports[trackNum]] || 0;
+        const channelOffset = offsetMap[ports[trackNum]] ?? 0;
         switch (status) {
             case MIDIMessageTypes.programChange: {
                 const channel = (e.statusByte & 0xf) + channelOffset;
@@ -329,7 +329,8 @@ export function getUsedProgramsAndKeys<T extends MIDIPatchFull>(
 
                         case "Channel MIDI Param": {
                             if (syx.parameter === "keyShift") {
-                                const ch = channels[syx.channel];
+                                const ch =
+                                    channels[syx.channel + channelOffset];
                                 // Channel may be above 15
                                 if (!ch) break;
                                 // Drum channels ignore key shift

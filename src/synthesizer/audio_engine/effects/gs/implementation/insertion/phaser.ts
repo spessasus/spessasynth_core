@@ -1,3 +1,4 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import { InsertionValueConverter } from "./convert";
 import {
     applyShelves,
@@ -30,7 +31,7 @@ const PHASE_START = 0.35;
  * Note: seems to use a triangle LFO for modulation
  */
 export class PhaserFX implements GSInsertionProcessor {
-    public sendLevelToReverb = 40 / 127;
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
     public readonly type = 0x01_20;

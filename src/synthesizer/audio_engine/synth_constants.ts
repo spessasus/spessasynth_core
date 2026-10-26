@@ -45,7 +45,7 @@ export const MIN_NOTE_LENGTH = 0.03;
 export const MIN_EXCLUSIVE_LENGTH = 0.07;
 
 /**
- * This panning factor ensures that spessasynth doesn't stay too loud.
+ * This gain factor ensures that spessasynth doesn't stay too loud.
  * You can set the `gain` system parameter to an inverse of it to negate the effect.
  *
  * @group Synthesizer.Constants

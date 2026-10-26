@@ -62,7 +62,7 @@ function correctBankOffsetInternal(
      */
     const unwantedSystems: { tNum: number; e: MIDIMessage }[] = [];
 
-    // It copies midiPorts everywhere else, but here 0 works so DO NOT CHANGE!
+    // Ports start at 0 here and are updated by the MIDI port events below
     const ports = new Array<number>(mid.tracks.length).fill(0);
     const channelsAmount = 16 + Math.max(...mid.portChannelOffsetMap);
     const channels: ChannelStatus[] = [];
@@ -84,7 +84,7 @@ function correctBankOffsetInternal(
             ports[trackNum] = e.data[0];
             return;
         }
-        let status = e.statusByte & 0xf0;
+        let status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
         if (
             status !== MIDIMessageTypes.controllerChange &&
             status !== MIDIMessageTypes.programChange &&
@@ -179,10 +179,12 @@ function correctBankOffsetInternal(
                     }
                 }
             }
+            // A SysEx that was not replaced is not a program or bank change
+            if (!replaced) return;
         }
 
         // Event might have been replaced in sysex analysis
-        status = e.statusByte & 0xf0;
+        status = e.statusByte < 0xf0 ? e.statusByte & 0xf0 : e.statusByte;
 
         // Program change
         const chNum = (e.statusByte & 0xf) + portOffset;
@@ -281,9 +283,10 @@ function correctBankOffsetInternal(
 
         // Across all tracks this channel is used in, find the index that interests us
         // Check if we tracked a program change
-        let foundTrack = ch.programChangeTrack
-            ? mid.tracks[ch.programChangeTrack]
-            : undefined;
+        let foundTrack =
+            ch.programChangeTrack === undefined
+                ? undefined
+                : mid.tracks[ch.programChangeTrack];
         let indexToAdd = ch.programChangeIndex ?? -1;
         if (!foundTrack) {
             // No program change...
@@ -366,7 +369,8 @@ function correctBankOffsetInternal(
     if (system === "gm" && !BankSelectHacks.isSystemXG(system)) {
         for (const m of unwantedSystems) {
             const track = mid.tracks[m.tNum];
-            track.deleteEvent(track.events.indexOf(m.e));
+            const index = track.events.indexOf(m.e);
+            if (index !== -1) track.deleteEvent(index);
         }
         let index = 0;
         // First event is track name for detection, don't break that
@@ -397,16 +401,17 @@ export function writeRMIDIInternal(
     soundBankBinary: ArrayBuffer,
     options: RMIDIWriteOptions
 ): ArrayBuffer {
-    const metadata = options.metadata;
+    // Copy to avoid modifying the defaults or the caller's object
+    const metadata = { ...options.metadata };
+    if (options.correctBankOffset && !options.soundBank) {
+        throw new Error(
+            "Sound bank must be provided if correcting bank offset."
+        );
+    }
     SpessaLog.group("%cWriting the RMIDI File...", ConsoleColors.info);
     SpessaLog.info("metadata", metadata);
     SpessaLog.info("Initial bank offset", mid.bankOffset);
-    if (options.correctBankOffset) {
-        if (!options.soundBank) {
-            throw new Error(
-                "Sound bank must be provided if correcting bank offset."
-            );
-        }
+    if (options.correctBankOffset && options.soundBank) {
         correctBankOffsetInternal(mid, options.bankOffset, options.soundBank);
     }
     const newMid = new IndexedByteArray(mid.writeMIDI());
@@ -417,16 +422,12 @@ export function writeRMIDIInternal(
     metadata.copyright ??= DEFAULT_COPYRIGHT;
     metadata.software ??= "SpessaSynth";
 
-    // No idea how to turn this into a for...of
-    // eslint-disable-next-line unicorn/no-array-for-each
-    Object.entries(metadata).forEach(
-        <K extends keyof RMIDInfoData>(v: unknown[]) => {
-            const val = v as [K, RMIDInfoData[K]];
-            if (val[1]) {
-                mid.setRMIDInfo(val[0], val[1]);
-            }
-        }
-    );
+    for (const [key, value] of Object.entries(metadata) as [
+        keyof RMIDInfoData,
+        RMIDInfoData[keyof RMIDInfoData]
+    ][]) {
+        if (value) mid.setRMIDInfo(key, value);
+    }
 
     // Info data for RMID
     const infoContent: Uint8Array[] = [];

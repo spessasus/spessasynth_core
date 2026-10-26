@@ -15,7 +15,8 @@ import {
     GeneratorLimits,
     GENERATORS_AMOUNT,
     type GeneratorType,
-    GeneratorTypes
+    GeneratorTypes,
+    INSTRUMENT_ONLY_GENERATORS
 } from "./generator_types";
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { SpessaLog } from "../../utils/loggin";
@@ -233,12 +234,14 @@ export class BasicPreset implements MIDIPatchFull {
 
             // Preset generator list (offsets)
             const presetGenerators = new Int16Array(GENERATORS_AMOUNT);
-            // Firstly set global generators
+            // Firstly set global generators, then local, which will override them!
+            // Instrument-only generators are ignored at the preset level
             for (const generator of this.globalZone.generators) {
+                if (INSTRUMENT_ONLY_GENERATORS.has(generator.type)) continue;
                 presetGenerators[generator.type] = generator.value;
             }
-            // Then local, which will override them!
             for (const generator of presetZone.generators) {
+                if (INSTRUMENT_ONLY_GENERATORS.has(generator.type)) continue;
                 presetGenerators[generator.type] = generator.value;
             }
 
@@ -489,7 +492,7 @@ export class BasicPreset implements MIDIPatchFull {
                         gen.type === GeneratorTypes.keyRange ||
                         gen.type === GeneratorTypes.instrument ||
                         gen.type === GeneratorTypes.endOper ||
-                        gen.type === GeneratorTypes.sampleModes
+                        INSTRUMENT_ONLY_GENERATORS.has(gen.type)
                     ) {
                         continue;
                     }

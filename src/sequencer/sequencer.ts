@@ -16,7 +16,7 @@ import type { SequencerEvent, SequencerEventCallback } from "./types";
 import { arrayToHexString, ConsoleColors } from "../utils/other";
 import { SpessaLog } from "../utils/loggin";
 import type { SysExAcceptedArray } from "../midi/types";
-import { MIDIUtils } from "../midi/exports";
+import { MIDIUtils } from "../midi/midi_tools/midi_utils";
 
 /**
  * This module is responsible for playing back {@link BasicMIDI} sequences to {@link SpessaSynthProcessor}.
@@ -210,7 +210,8 @@ export class SpessaSynthSequencer {
      * This field can be set to trigger a change.
      */
     public set songIndex(value: number) {
-        this._songIndex = value;
+        // No songs to select
+        if (this.songs.length === 0) return;
         this._songIndex = Math.max(0, value % this.songs.length);
         this.loadCurrentSong();
     }
@@ -426,7 +427,7 @@ export class SpessaSynthSequencer {
         type: K,
         data: SequencerEvent[K]
     ) {
-        this?.onEventCall?.({
+        this.onEventCall?.({
             type,
             data
         } as SequencerEventCallback);
@@ -492,8 +493,9 @@ export class SpessaSynthSequencer {
 
     /** @internal */
     protected sendMIDIAllOff() {
-        // Disable sustain
-        for (let i = 0; i < 16; i++) {
+        // Disable sustain on every port
+        const channelCount = this.synth.midiChannels.length;
+        for (let i = 0; i < channelCount; i++) {
             this.sendMIDICC(i, MIDIControllers.sustainPedal, 0);
         }
         if (!this.externalMIDIPlayback) {
@@ -509,7 +511,7 @@ export class SpessaSynthSequencer {
         }
 
         // Send off controllers
-        for (let c = 0; c < 16; c++) {
+        for (let c = 0; c < channelCount; c++) {
             this.sendMIDICC(c, MIDIControllers.allNotesOff, 0);
         }
     }
@@ -563,11 +565,8 @@ export class SpessaSynthSequencer {
         for (const ch of this.playingNotes) ch.clear();
         const seconds = this._midiData.midiTicksToSeconds(ticks);
         this.callEvent("timeChange", { newTime: seconds });
-        const isNotFinished = this.setTimeTo(0, ticks);
+        this.setTimeTo(0, ticks);
         this.recalculateStartTime(this.playedTime);
-        if (!isNotFinished) {
-            return;
-        }
     }
 
     /**

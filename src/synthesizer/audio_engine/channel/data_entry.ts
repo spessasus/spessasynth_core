@@ -39,11 +39,9 @@ export function dataEntry(this: MIDIChannel) {
 
             // Pitch wheel range
             case RegisteredParameterTypes.pitchWheelRange: {
+                // MSB is semitones, LSB is cents (MIDI 1.0 and GM2)
                 // Pitch wheel range may be a floating point number!
-                // Therefore, something like "64" won't work,
-                // So we divide it by 128 which is essentially the same here
-                // But it allows for fractional pitch wheel range!
-                const range = dataValue / 128;
+                const range = (dataValue >> 7) + (dataValue & 0x7f) / 100;
                 this.setMIDIParameter("pitchWheelRange", range);
                 SpessaLog.coolInfo(
                     `Pitch Wheel Range for ${this.channel}`,

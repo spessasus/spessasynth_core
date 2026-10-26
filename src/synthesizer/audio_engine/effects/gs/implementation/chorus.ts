@@ -208,7 +208,7 @@ export class DefaultGSChorus implements GSChorusProcessor {
             // Write input sample
             bufferL[write] = inputSample + outL * feedback;
 
-            // Same for the right line (shared buffer for now for testing)
+            // Same for the right line
             const dR = Math.max(
                 1,
                 Math.min(delay + (1 - lfo) * depth, bufferLen)

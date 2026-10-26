@@ -1,3 +1,4 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
     applyShelves,
@@ -22,7 +23,7 @@ It already has EQ and level implemented.
 //@ts-expect-error Boilerplate class
 // noinspection JSUnusedLocalSymbols
 class BoilerplateFX implements GSInsertionProcessor {
-    public sendLevelToReverb = 40 / 127;
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
     public readonly type = 0x00_01; // CHANGE THIS

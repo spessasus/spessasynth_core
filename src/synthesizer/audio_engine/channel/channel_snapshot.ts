@@ -216,4 +216,7 @@ export function applySnapshot(this: MIDIChannel, snapshot: ChannelSnapshot) {
     ) as SystemParameterPair<keyof ChannelSystemParameter>[]) {
         this.setSystemParameter(parameter, value);
     }
+
+    // The controllers were written directly, update the playing voices
+    this.computeModulatorsAll(-1, 0);
 }

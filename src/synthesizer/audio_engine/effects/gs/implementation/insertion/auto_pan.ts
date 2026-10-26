@@ -1,3 +1,4 @@
+import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -22,7 +23,7 @@ const PAN_SMOOTHING = 0.01;
 
 const DEFAULT_LEVEL = 127;
 export class AutoPanFX implements GSInsertionProcessor {
-    public sendLevelToReverb = 40 / 127;
+    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;
     public readonly type = 0x01_26;

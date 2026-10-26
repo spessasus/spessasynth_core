@@ -23,7 +23,7 @@ const PARAMETER_RANGES: XGParameterRanges = {
 const INPUT_FILTERS = 16;
 
 /**
- * DISTORTION (`49 00`): hard clipping with a low shelf, low pass and mid EQ.
+ * DISTORTION (`49 00`): hard clipping with a low shelf, low pass and mid-EQ.
  */
 export class XGDistortion extends XGDistortionBase {
     public readonly type: number = 0x49_00;

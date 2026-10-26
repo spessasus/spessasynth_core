@@ -1,3 +1,4 @@
+// noinspection JSUnresolvedReference
 (() => {
     let lastSectionQuery = null;
     let sectionIdCounter = 0;

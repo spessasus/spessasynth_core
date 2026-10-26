@@ -54,10 +54,13 @@ export function noteOn(
         127
     );
 
-    // Note which we should grab presets from (strictly internal)
-    let soundBankNote = midiNote + this.currentKeyShift;
     // Sanity check
     if (midiNote > 127 || midiNote < 0) return;
+    // Drum keys may not receive note on
+    if (this._drumChannel && !this.drumParams[midiNote].rxNoteOn) return;
+
+    // Note which we should grab presets from (strictly internal)
+    let soundBankNote = midiNote + this.currentKeyShift;
 
     // MIDI Tuning Standard
     const program = this.preset.program;
@@ -65,6 +68,9 @@ export function noteOn(
     if (tune >= 0)
         // Overwrite the note with MIDI tuning standard!
         soundBankNote = Math.trunc(tune);
+
+    // The key shift may push the note out of range
+    if (soundBankNote > 127 || soundBankNote < 0) return;
 
     // Monophonic retrigger
     if (
@@ -143,9 +149,6 @@ export function noteOn(
     // Drum parameters
     if (this._drumChannel) {
         const p = this.drumParams[midiNote];
-        if (!p.rxNoteOn) {
-            return;
-        }
         const drumPan = p.pan - 64;
         // If pan is different from default then it's overridden
         if (drumPan !== 0) {

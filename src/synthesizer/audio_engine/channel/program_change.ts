@@ -53,11 +53,12 @@ export function programChange(this: MIDIChannel, program: number) {
         // Copy drum param data
         if (preset instanceof UserDrumSet) {
             for (let i = 0; i < preset.keyParams.length; i++) {
-                // SC-55 uses 100 cents, SC-88 and above is 50
-                // Refer to source binding and do it here
                 const binding = preset.keyParams[i];
-                binding.pitchCoarse *= binding.sourceDrumSet === 1 ? 1 : 0.5;
                 DrumParameterUtils.copyInto(binding, this.drumParams[i]);
+                // SC-55 uses 100 cents, SC-88 and above is 50
+                // Refer to source binding and convert the copy to semitones
+                this.drumParams[i].pitchCoarse *=
+                    binding.sourceDrumSet === 1 ? 1 : 0.5;
             }
         } else {
             SpessaLog.warn(

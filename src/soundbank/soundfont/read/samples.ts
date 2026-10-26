@@ -15,7 +15,7 @@ import type { RIFFChunk } from "../../../utils/riff_chunk";
  * purpose: parses soundfont samples
  */
 
-export const SF3_BIT_FLIT = 0x10;
+export const SF3_BIT_FLAG = 0x10;
 
 export class SoundFontSample extends BasicSample {
     /**
@@ -47,7 +47,7 @@ export class SoundFontSample extends BasicSample {
      * @param linkedSampleIndex
      * @param sampleType
      * @param sampleDataArray
-     * @param sampleIndex initial sample index when loading the sfont
+     * @param sampleIndex initial sample index when loading the soundfont
      * Used for SF2Pack support
      */
     public constructor(
@@ -66,9 +66,9 @@ export class SoundFontSample extends BasicSample {
     ) {
         // Read sf3
         // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
-        const compressed = (sampleType & SF3_BIT_FLIT) > 0;
+        const compressed = (sampleType & SF3_BIT_FLAG) > 0;
         // Remove the compression flag
-        sampleType &= ~SF3_BIT_FLIT;
+        sampleType &= ~SF3_BIT_FLAG;
         super(
             sampleName,
             sampleRate,
@@ -79,7 +79,6 @@ export class SoundFontSample extends BasicSample {
             sampleLoopEndIndex - sampleStartIndex / 2
         );
         this.dataOverridden = false;
-        this.name = sampleName;
         // In bytes
         this.startByteOffset = sampleStartIndex;
         this.endByteOffset = sampleEndIndex;
@@ -173,8 +172,7 @@ export class SoundFontSample extends BasicSample {
             return super.getAudioData();
         }
         if (!this.s16leData) {
-            console.error(this);
-            throw new Error("Unexpected lack of audio data.");
+            throw new Error(`Unexpected lack of audio data in ${this.name}.`);
         }
 
         // Start loading data if it is not loaded

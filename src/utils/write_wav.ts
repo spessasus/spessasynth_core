@@ -1,6 +1,6 @@
 import { writeLittleEndianIndexed } from "./byte_functions/little_endian";
 import { writeBinaryStringIndexed } from "./byte_functions/string";
-import { type WaveWriteOptions } from "./exports";
+import type { WaveWriteOptions } from "./types";
 import { fillWithDefaults } from "./fill_with_defaults";
 import { IndexedByteArray } from "./indexed_array";
 import { RIFFChunk } from "./riff_chunk";
@@ -19,6 +19,10 @@ export const DEFAULT_WAV_WRITE_OPTIONS: WaveWriteOptions = {
  * > **Note**
  * >
  * > The audio is saved as PCM S16LE (signed 16-bit little-endian integers)
+ *
+ * > **Warning**
+ * >
+ * > Do not call in audioWorkletGlobalScope as it uses TextEncoder for the metadata.
  *
  * @example
  * Refer to `examples/midi_to_wav_node.ts` for an example of rendering audio data to a wav file.
@@ -100,7 +104,7 @@ export function audioToWav(
         const cueStart = new IndexedByteArray(24);
         writeLittleEndianIndexed(cueStart, 0, 4); // DwIdentifier
         writeLittleEndianIndexed(cueStart, 0, 4); // DwPosition
-        writeBinaryStringIndexed(cueStart, "data"); // Cue point ID
+        writeBinaryStringIndexed(cueStart, "data"); // FccChunk
         writeLittleEndianIndexed(cueStart, 0, 4); // ChunkStart, always 0
         writeLittleEndianIndexed(cueStart, 0, 4); // BlockStart, always 0
         writeLittleEndianIndexed(cueStart, loopStartSamples, 4); // SampleOffset
@@ -108,7 +112,7 @@ export function audioToWav(
         const cueEnd = new IndexedByteArray(24);
         writeLittleEndianIndexed(cueEnd, 1, 4); // DwIdentifier
         writeLittleEndianIndexed(cueEnd, 0, 4); // DwPosition
-        writeBinaryStringIndexed(cueEnd, "data"); // Cue point ID
+        writeBinaryStringIndexed(cueEnd, "data"); // FccChunk
         writeLittleEndianIndexed(cueEnd, 0, 4); // ChunkStart, always 0
         writeLittleEndianIndexed(cueEnd, 0, 4); // BlockStart, always 0
         writeLittleEndianIndexed(cueEnd, loopEndSamples, 4); // SampleOffset
@@ -147,7 +151,7 @@ export function audioToWav(
     header.set([16, 0, 0, 0], 16); // 16 for PCM
     // Audio format (PCM)
     header.set([1, 0], 20);
-    // Number of channels (2)
+    // Number of channels
     header.set([numChannels & 255, numChannels >> 8], 22);
     // Sample rate
     header.set(

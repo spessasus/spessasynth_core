@@ -28,7 +28,9 @@ export abstract class WavetableOscillator {
     public loopEnd = 0;
     /**
      * Length of the loop.
-     * @private
+     * The oscillators wrap with `while (cursor >= loopEnd) cursor -= loopLength`,
+     * so a looping voice must have a length of at least 1 sample.
+     * `note_on.ts` disables the loop for shorter loops.
      */
     public loopLength = 0;
     /**

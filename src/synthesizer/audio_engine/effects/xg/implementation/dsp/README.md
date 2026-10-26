@@ -184,7 +184,7 @@ Files: `equalizer/three_band_eq.ts`. Types: 3BAND EQ.
 
 Like the original, this EQ works on a mono sum of the input.
 The low and high shelves are each split into two cascaded sections of half the gain,
-and a peaking filter in between handles the mid band.
+and a peaking filter in between handles the mid-band.
 
 #### Distortion, Overdrive and Amp Simulator
 
@@ -197,7 +197,7 @@ The input level is normalized to the stage response and the output level compens
 A low pass, a mid peaking EQ and a low shelf follow.
 
 - OVER DRIVE: the same routine with softer defaults and a narrower input band.
-- AMP SIMULATOR: the amp type parameter picks the input filters, the cabinet shelf and the cabinet mid filter.
+- AMP SIMULATOR: the amp type parameter picks the input filters, the cabinet shelf and the cabinet mid-filter.
 
 #### Early Reflections, Gate Reverb and Reverse Gate
 

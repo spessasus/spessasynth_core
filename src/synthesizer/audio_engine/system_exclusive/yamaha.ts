@@ -1,6 +1,6 @@
 import { SpessaLog } from "../../../utils/loggin";
 import { type MIDIController, MIDIControllers } from "../../../midi/enums";
-import { SpessaSynthProcessor } from "../../processor";
+import type { SpessaSynthProcessor } from "../../processor";
 import type { SysExAcceptedArray } from "../../../midi/types";
 import { ModulatorControllerSources } from "../../../soundbank/enums";
 import {
@@ -490,6 +490,7 @@ export function yamahaSystemExclusive(
                     return;
                 }
             }
+            return;
         }
 
         if (a1 === 0x08 /* A2 is the channel number*/) {
@@ -702,11 +703,11 @@ export function yamahaSystemExclusive(
 
                 // MW LFO PMOD Depth (alias to modulation wheel range)
                 case 0x20: {
-                    const centeredValue = data - 64;
-                    ch.setMIDIParameter("modulationDepth", (data / 127) * 600);
+                    const cents = (data / 127) * 600;
+                    ch.setMIDIParameter("modulationDepth", cents);
                     SpessaLog.xgInfo(
                         `Modulation Wheel Range for ${channel}`,
-                        centeredValue,
+                        cents,
                         "cents"
                     );
                     break;

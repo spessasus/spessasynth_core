@@ -132,7 +132,6 @@ export class DownloadableSounds extends DLSVerifier {
         const colhChunk = chunks.find((c) => c.header === "colh");
         if (!colhChunk) {
             this.parsingError("No colh chunk!");
-            return 5 as never;
         }
         const instrumentAmount = readLittleEndianIndexed(colhChunk.data, 4);
         SpessaLog.info(
@@ -145,7 +144,6 @@ export class DownloadableSounds extends DLSVerifier {
         const waveListChunk = RIFFChunk.findListType(chunks, "wvpl");
         if (!waveListChunk) {
             this.parsingError("No wvpl chunk!");
-            return 5 as never;
         }
         const waveList = this.verifyAndReadList(waveListChunk, "wvpl");
         for (const wave of waveList) {
@@ -156,7 +154,6 @@ export class DownloadableSounds extends DLSVerifier {
         const instrumentListChunk = RIFFChunk.findListType(chunks, "lins");
         if (!instrumentListChunk) {
             this.parsingError("No lins chunk!");
-            return 5 as never;
         }
         const instruments = this.verifyAndReadList(instrumentListChunk, "lins");
         SpessaLog.groupCollapsed(
@@ -425,7 +422,6 @@ export class DownloadableSounds extends DLSVerifier {
             writeDword(ptblData, offset);
         }
         const ptbl = RIFFChunk.write("ptbl", ptblData);
-        this.soundBankInfo.software = options.software;
 
         // Write INFO
         const infos: Uint8Array[] = [];
@@ -446,7 +442,7 @@ export class DownloadableSounds extends DLSVerifier {
         writeDLSInfo("ISFT", options.software);
         writeDLSInfo("ISBJ", info.subject);
 
-        SpessaLog.info("%cCombining everything...");
+        SpessaLog.info("%cCombining everything...", ConsoleColors.info);
         const out = RIFFChunk.writeParts("RIFF", [
             getStringBytes("DLS "),
             colh,
@@ -468,9 +464,11 @@ export class DownloadableSounds extends DLSVerifier {
         SpessaLog.group("%cConverting DLS to SF2...", ConsoleColors.info);
         const soundBank = new BasicSoundBank("dls");
 
-        soundBank.soundBankInfo.version.minor = 4;
-        soundBank.soundBankInfo.version.major = 2;
-        soundBank.soundBankInfo = { ...this.soundBankInfo };
+        // Copy the version too, so the two banks do not share it
+        soundBank.soundBankInfo = {
+            ...this.soundBankInfo,
+            version: { major: 2, minor: 4 }
+        };
 
         for (const sample of this.samples) {
             sample.toSFSample(soundBank);
