@@ -21,93 +21,35 @@ CC 5 value  Portamento time
    124         80.000 s
    127        480.000 s
 
-   This table used to be linearly interpolated, but it has been replaced by a PCHIP function created by Benjamin Rosseaux,
+   This table used to be linearly interpolated, then replaced by a PCHIP function created by Benjamin Rosseaux,
    the developer behind the Sobanth SF2 synthesizer.
    More info in this comment:
    https://github.com/FluidSynth/fluidsynth/issues/1722#issuecomment-3706599241
+
+   It has since been replaced by rates measured on the original Sound Canvas once more. The emulated SC-55 the measurements above within about 3%
+   (except CC 5 = 127, which takes 320 s), and the SC-88Pro matches the SC-55 within 0.5%.
+   The pitch moves linearly towards the target at a constant rate, so the time scales linearly with the distance.
 */
 
-const PORTA_DIVISION_CONSTANT = 40;
-
-// PCHIP cubic spline tables in log-log space
-// Segments: [1..2],[2..4],[4..8],[8..16],[16..32],[32..64],[64..80],[80..96],[96..112],[112..120],[120..124],[124..127]
-const SEGMENT_START = [1, 2, 4, 8, 16, 32, 64, 80, 96, 112, 120, 124];
-const SEGMENT_INVERSE_LENGTH = [
-    1,
-    0.5,
-    0.25,
-    0.125,
-    0.0625,
-    0.031_25,
-    0.0625,
-    0.0625,
-    0.0625,
-    0.125,
-    0.25,
-    1 / 3
-];
-const COEFF_A = [
-    -0.166_531_273_825_012_15, 0.118_638_752_182_994_08,
-    0.029_479_047_361_245_264, -0.005_442_312_089_231_738,
-    0.145_152_087_597_303_7, -0.005_056_281_449_558_275,
-    -0.005_095_486_882_876_532, 0.033_340_095_511_115_44,
-    -0.093_613_686_780_204_32, 0.141_325_697_024_518_22,
-    -0.158_055_653_010_113_82, -0.099_188_569_558_819_27
-];
-const COEFF_B = [
-    0.028_212_773_333_433_472, -0.338_850_206_499_284_7,
-    -0.158_395_298_909_297_13, -0.123_981_317_667_754_83,
-    -0.287_484_855_268_511_1, 0.012_254_866_302_537_692,
-    0.005_957_797_193_345_771, -0.037_458_993_303_473_74,
-    0.129_117_818_698_101_96, -0.158_671_932_241_625_68, 0.504_406_322_732_748,
-    0.378_684_513_187_545_8
-];
-const COEFF_C = [
-    0.721_895_086_125_528_3, 0.557_453_622_634_716_8, 0.471_338_932_370_258_26,
-    0.485_970_953_270_799_14, 0.443_362_763_335_188_54, 0.607_698_631_180_155_1,
-    0.308_519_759_718_277_94, 0.305_148_893_456_339_55, 0.330_251_193_382_738_4,
-    0.153_822_885_219_165, 0.130_228_055_904_733_7, 0.498_655_306_754_916_87
-];
-const COEFF_D = [
-    -2.221_848_749_616_356_6, -1.638_272_163_982_407_2,
-    -1.301_029_995_663_981_3, -0.958_607_314_841_775, -0.602_059_991_327_962_4,
-    -0.301_029_995_663_981_2, 0.313_867_220_369_153_43, 0.623_249_290_397_900_4,
-    0.924_279_286_061_881_7, 1.290_034_611_362_518, 1.426_511_261_364_575_2,
-    1.903_089_986_991_943_5
-];
-// JavaScript has no bitscan operations, so the segment is found with a series of comparisons.
-const SEGMENT_THRESHOLDS = [2, 4, 8, 16, 32, 64, 80, 96, 112, 120, 124];
-
 /**
- * @param cc the CC#5 value (should not be decimal)
- * (PCHIP cubic spline - smooth & exact), optimized with fewer operations than full binary search and interpolation.
- * Created by Benjamin Rosseaux.
+ * The Sound Canvas portamento rate table, indexed by CC 5.
+ * The rate is in 1/16 semitones per second.
+ * Measured on the SC-88Pro from CC 5 = 16 up. Below that, the glides are too short to measure precisely,
+ * so the values are the SC-VA steps scaled to the hardware (0.8 times, which holds from CC 5 = 5 to 100).
+ *
+ * Thanks to the Tabula Sonora project for SC-VA research.
  */
-function portaTimeToRate(cc: number): number {
-    if (cc < 1) {
-        // Original code has smoothing here but since CC#5 is an integer, it is not needed.
-        return 0;
-    } else {
-        // Find the segment: the last threshold below the value
-        let s = -1;
-        for (let i = SEGMENT_THRESHOLDS.length - 1; i >= 0; i--) {
-            if (SEGMENT_THRESHOLDS[i] < cc) {
-                s = i;
-                break;
-            }
-        }
-        s += 1;
-
-        const t = (cc - SEGMENT_START[s]) * SEGMENT_INVERSE_LENGTH[s];
-        return (
-            Math.exp(
-                2.302_585_092_994_046 *
-                    (((COEFF_A[s] * t + COEFF_B[s]) * t + COEFF_C[s]) * t +
-                        COEFF_D[s])
-            ) / PORTA_DIVISION_CONSTANT
-        );
-    }
-}
+const PORTAMENTO_RATES = new Uint16Array([
+    0, 44_640, 19_840, 12_753, 9920, 7761, 6376, 5578, 4823, 4250, 3880, 3498,
+    3187, 2976, 2746, 2548, 2383, 2263, 2127, 2008, 1922, 1824, 1734, 1670,
+    1596, 1528, 1476, 1418, 1364, 1323, 1276, 1232, 1191, 1123, 1063, 1003, 955,
+    911, 867, 831, 793, 763, 735, 705, 681, 659, 635, 615, 595, 561, 529, 501,
+    477, 455, 433, 414, 396, 380, 366, 352, 340, 328, 316, 306, 296, 280, 264,
+    250, 238, 226, 216, 206, 198, 190, 182, 176, 170, 164, 158, 152, 148, 140,
+    132, 124, 118, 112, 108, 102, 98, 94, 90, 88, 84, 82, 78, 76, 74, 70, 66,
+    62, 58, 56, 54, 50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22,
+    20, 18, 16, 14, 12, 10, 8, 6, 4, 2
+]);
 
 /**
  * Converts portamento time to seconds.
@@ -120,8 +62,7 @@ export function portamentoTimeToSeconds(
     distance: number
 ): number {
     // This seems to work fine for the MIDIs I have.
-    // Note: Some tests about portamento were compared to SC-VA and S-YXG50
-    // PortaTimeToRate is the constant rate of the portamento, as that's how the synths work
-    // We multiply it by the distance
-    return portaTimeToRate(time) * distance;
+    // PortaTimeToRate is the constant rate of the portamento, as that's how the synths work.
+    if (time < 1) return 0;
+    return (distance * 16) / PORTAMENTO_RATES[time];
 }

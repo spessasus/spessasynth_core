@@ -740,11 +740,10 @@ That is:
 - Portamento is applied only when the channel is not a drum channel, the previous note is valid (`>= 0`), differs from the new note, and the portamento time is non-zero.
 - Portamento Time depends on the distance of the keys. The rate is constant so the time scales linearly with distance.
   The final calculation is `portamentoSeconds = portamentoTimeToSeconds(cc5, keyDistance)`.
-- The details of the `portamentoTimeToSeconds` / `portaTimeToRate` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/channel/portamento_time.ts)
-
-> **Tip**
->
-> If you know a more accurate algorithm, please let me know!
+- The rate comes from a table measured on the original Sound Canvas firmware,
+  with one rate for every CC#5 value. All systems use it. For example, gliding over 40 semitones takes
+  0.54 s at CC#5 = 32, 2.16 s at 64, 8.64 s at 96 and 40 s at 120.
+- The details of the `portamentoTimeToSeconds` function [can be found here.](https://github.com/spessasus/spessasynth_core/blob/master/src/synthesizer/audio_engine/channel/portamento_time.ts)
 
 ### Drum Pitch Coarse Implementation
 
