@@ -88,10 +88,13 @@ export abstract class XGDelayBase extends XGStereoVariationProgram {
             dampB = b;
             const l = inL[i];
             const r = inR[i];
-            memory[(tWriteA + pointer) & mask] =
-                rightToA * r + dampedA * aToA + dampedB * bToA + l;
+            // The right line is written first, so the left line wins if both inputs share an address.
+            // Below 44.1 kHz the input addresses 1 and 0 both scale to 0, which would silence the left line.
+            // At 44.1 kHz the left line overwrites the same sample one step later, so this matches it.
             memory[(tWriteB + pointer) & mask] =
                 rightToB * r + dampedA * aToB + dampedB * bToB;
+            memory[(tWriteA + pointer) & mask] =
+                rightToA * r + dampedA * aToA + dampedB * bToA + l;
             outputLeft[i] =
                 rightToL * r +
                 a * aToL +

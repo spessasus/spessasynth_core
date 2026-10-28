@@ -129,8 +129,11 @@ export abstract class XGTremoloBase extends XGStereoVariationProgram {
             const tapR =
                 (memory[(k + 1) & mask] - memory[k]) * fracRight + memory[k];
             const r = inR[i];
-            memory[(tWriteL + pointer) & mask] = rightToL * r + inL[i];
+            // The right line is written first, so the left line wins if both inputs share an address.
+            // Below 44.1 kHz the input addresses 1 and 0 both scale to 0, which would silence the left line.
+            // At 44.1 kHz the left line overwrites the same sample one step later, so this matches it.
             memory[(tWriteR + pointer) & mask] = rightToR * r;
+            memory[(tWriteL + pointer) & mask] = rightToL * r + inL[i];
             outputLeft[i] = tapL * ampLeft * outL;
             outputRight[i] = tapR * ampRight * outR;
             pointer = (pointer - 1) & mask;

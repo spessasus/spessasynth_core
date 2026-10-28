@@ -191,8 +191,11 @@ export class XGRotarySpeaker extends XGStereoVariationProgram {
             const d = (memory[(k + 1) & mask] - memory[k]) * fracD + memory[k];
             const l = inL[i];
             const r = inR[i];
-            memory[(writeL + pointer) & mask] = rightToL * r + l;
+            // The right line is written first, so the left line wins if both inputs share an address.
+            // Below 44.1 kHz the input addresses 1 and 0 both scale to 0, which would silence the left line.
+            // At 44.1 kHz the left line overwrites the same sample one step later, so this matches it.
             memory[(writeR + pointer) & mask] = rightToR * r;
+            memory[(writeL + pointer) & mask] = rightToL * r + l;
             outputLeft[i] = dryL * l + a * wetAL + s * wetCL + d * wetDL;
             outputRight[i] = dryR * r + b * wetBR + s * wetCR + d * wetDR;
             pointer = (pointer - 1) & mask;
