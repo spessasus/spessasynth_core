@@ -174,6 +174,16 @@ export interface GlobalSystemParameter {
      */
     deviceID: number;
 
+    /**
+     * Some MIDI synths (most notably Microsoft GS Wavetable Synth) incorrectly treat the "coarse tune" RPN
+     * as semitone pitch change instead of true key shift.
+     *
+     * When this parameter is enabled,
+     * {@link GlobalMIDIParameter.keyShift} and {@link ChannelMIDIParameter.keyShift}
+     * are treated as semitone pitch changes.
+     */
+    pitchBasedKeyShift: boolean;
+
     // Shared with channel
     /**
      * The master gain.
@@ -275,6 +285,7 @@ export const DEFAULT_GLOBAL_SYSTEM_PARAMETERS: GlobalSystemParameter = {
 
     blackMIDIMode: false,
     deviceID: -1,
+    pitchBasedKeyShift: false,
 
     // Shared with channel
     gain: 1,
@@ -327,6 +338,12 @@ export function setSystemParameterInternal<
 
         case "keyShift": {
             if ((prev as number) !== (value as number)) this.stopAll(true);
+            break;
+        }
+
+        case "pitchBasedKeyShift": {
+            // Held notes would be released with a different key shift
+            this.stopAll(true);
         }
     }
 }

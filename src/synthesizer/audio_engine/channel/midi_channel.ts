@@ -823,6 +823,10 @@ export class MIDIChannel {
         // - System -> System Parameter
         // - MIDI -> MIDI Parameter
 
+        // Global MIDI + Channel MIDI
+        const midiKeyShift = globalMIDI.keyShift + channelMIDI.keyShift;
+        const pitchBased = globalSystem.pitchBasedKeyShift;
+
         // Only Channel System is processed for drum channels.
         // Drum channels ignore key shift
         // Testcase: th07_19_user_gm.mid
@@ -830,12 +834,10 @@ export class MIDIChannel {
             ? channelSystem.keyShift
             : // Global System
               globalSystem.keyShift +
-              // Global MIDI
-              globalMIDI.keyShift +
+              // Global MIDI + Channel MIDI (unless pitch based)
+              (pitchBased ? 0 : midiKeyShift) +
               // Channel System
-              channelSystem.keyShift +
-              // Channel MIDI
-              channelMIDI.keyShift;
+              channelSystem.keyShift;
         // Ensure integer
         this.currentKeyShift = Math.trunc(currentKeyShift);
 
@@ -849,7 +851,9 @@ export class MIDIChannel {
               // Channel System
               channelSystem.fineTune +
               // Channel MIDI
-              channelMIDI.fineTune;
+              channelMIDI.fineTune +
+              // MIDI key shift as semitone pitch change
+              (pitchBased ? midiKeyShift * 100 : 0);
 
         // [-1;1] normalized
         const currentPanNormalized =
