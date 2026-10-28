@@ -82,6 +82,19 @@ export default tseslint.config(
         }
     },
     {
+        files: ["src/**/*.ts"],
+        rules: {
+            "no-restricted-globals": [
+                "error",
+                {
+                    name: "console",
+                    message:
+                        "Do not use console directly in src. Use SpessaLog from src/utils/loggin.ts instead."
+                }
+            ]
+        }
+    },
+    {
         files: ["examples/**/*.ts", "tests/**/*.ts"],
         languageOptions: {
             ecmaVersion: 2022,

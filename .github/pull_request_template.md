@@ -11,6 +11,7 @@ _Describe the proposed changes and explain why you made them here._
 
 ### Confirmations
 
+- [ ] I read [Contributing to `spessasynth_core`](https://spessasus.github.io/spessasynth_core/extra/developer-docs/).
 - [ ] I agree that the submitted changes become part of spessasynth_core under its current or any future license.
 - [ ] Changes are fully implemented.
 - [ ] I confirm that I implemented the changes without any AI agents signing off any commits.

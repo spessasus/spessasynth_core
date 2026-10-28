@@ -30,3 +30,6 @@ jobs:
 
             - name: Test types and build
               run: npm run build
+
+            - name: Build docs
+              run: npm run docs

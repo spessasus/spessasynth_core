@@ -37,11 +37,13 @@ export class SpessaLog {
      * This may be overridden to capture the spessasynth log data.
      */
     public static logFunctions = {
+        /* eslint-disable no-restricted-globals */
         info: console.info.bind(console),
         warn: console.warn.bind(console),
         group: console.group.bind(console),
         groupEnd: console.groupEnd.bind(console),
         groupCollapsed: console.groupCollapsed.bind(console)
+        /* eslint-enable no-restricted-globals */
     };
 
     /**
