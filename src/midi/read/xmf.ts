@@ -196,7 +196,7 @@ class XMFNode {
         headerData.currentIndex = unpackersStart + unpackersLength;
         if (unpackersLength > 0) {
             this.packedContent = true;
-            while (unpackersData.currentIndex < unpackersLength) {
+            while (unpackersData.currentIndex < unpackersData.length) {
                 const unpacker: InternalUnpackerType = {
                     id: readVariableLengthQuantity(unpackersData) as unpackerIDs
                 };
