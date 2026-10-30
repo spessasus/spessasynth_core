@@ -194,6 +194,9 @@ export type GlobalMIDIParameterChangeEvent = {
 /**
  * The parameter names of an effect processor, or `macro` for the effect's macro.
  *
+ * When a macro is applied, an event is first emitted for every parameter it sets,
+ * then the `macro` event.
+ *
  * @group Synthesizer.Events
  */
 export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
@@ -222,7 +225,7 @@ export type EffectChangeEvent =
            */
           effect: "gsReverb";
           /**
-           * The parameter, see {@link GSReverbProcessor}, or `macro`.
+           * The parameter, see {@link GSReverbProcessor}, or `macro` (see {@link FXType}).
            */
           parameter: FXType<GSReverbProcessor>;
           /**
@@ -236,7 +239,7 @@ export type EffectChangeEvent =
            */
           effect: "gsChorus";
           /**
-           * The parameter, see {@link GSChorusProcessor}, or `macro`.
+           * The parameter, see {@link GSChorusProcessor}, or `macro` (see {@link FXType}).
            */
           parameter: FXType<GSChorusProcessor>;
           /**
@@ -250,7 +253,7 @@ export type EffectChangeEvent =
            */
           effect: "gsDelay";
           /**
-           * The parameter, see {@link GSDelayProcessor}, or `macro`.
+           * The parameter, see {@link GSDelayProcessor}, or `macro` (see {@link FXType}).
            */
           parameter: FXType<GSDelayProcessor>;
           /**

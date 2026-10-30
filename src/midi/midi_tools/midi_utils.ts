@@ -18,7 +18,10 @@ import type { MIDISystem } from "../../soundbank/types";
 import type {
     AnalyzedParameter,
     AnalyzedSysExMessage,
+    GSChorusParameterMessage,
+    GSDelayParameterMessage,
     GSInsertionParameterMessage,
+    GSReverbParameterMessage,
     XGChorusParameterMessage,
     XGInsertionParameterMessage,
     XGReverbParameterMessage,
@@ -36,11 +39,6 @@ import {
     XGDrumParamMap
 } from "./sysex_data";
 import { SpessaLog } from "../../utils/loggin";
-import type {
-    GSChorusParameter,
-    GSDelayParameter,
-    GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/gs/types";
 
 const OTHER = Object.freeze({ type: "Other" as const }) as {
     type: "Other";
@@ -329,14 +327,16 @@ export class MIDIUtils {
     /**
      * Returns a MIDI event needed to set the given GS Reverb Parameter.
      * @param ticks The MIDI tick time for the output event.
-     * @param parameter The parameter to set.
+     * @param parameter The parameter to set, or `"macro"` to select a reverb macro.
      * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this GS Reverb Parameter.
      */
-    public static setGSReverbParameter<P extends keyof GSReverbParameter>(
+    public static setGSReverbParameter<
+        P extends GSReverbParameterMessage["parameter"]
+    >(
         ticks: number,
         parameter: P,
-        value: GSReverbParameter[P]
+        value: Extract<GSReverbParameterMessage, { parameter: P }>["value"]
     ) {
         const a3 = GSReverbAddressMap[parameter];
         if (a3 === undefined) {
@@ -348,14 +348,16 @@ export class MIDIUtils {
     /**
      * Returns a MIDI event needed to set the given GS Chorus Parameter.
      * @param ticks The MIDI tick time for the output event.
-     * @param parameter The parameter to set.
+     * @param parameter The parameter to set, or `"macro"` to select a chorus macro.
      * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this GS Chorus Parameter.
      */
-    public static setGSChorusParameter<P extends keyof GSChorusParameter>(
+    public static setGSChorusParameter<
+        P extends GSChorusParameterMessage["parameter"]
+    >(
         ticks: number,
         parameter: P,
-        value: GSChorusParameter[P]
+        value: Extract<GSChorusParameterMessage, { parameter: P }>["value"]
     ) {
         const a3 = GSChorusAddressMap[parameter];
         if (a3 === undefined) {
@@ -367,14 +369,16 @@ export class MIDIUtils {
     /**
      * Returns a MIDI event needed to set the given GS Delay Parameter.
      * @param ticks The MIDI tick time for the output event.
-     * @param parameter The parameter to set.
+     * @param parameter The parameter to set, or `"macro"` to select a delay macro.
      * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this GS Delay Parameter.
      */
-    public static setGSDelayParameter<P extends keyof GSDelayParameter>(
+    public static setGSDelayParameter<
+        P extends GSDelayParameterMessage["parameter"]
+    >(
         ticks: number,
         parameter: P,
-        value: GSDelayParameter[P]
+        value: Extract<GSDelayParameterMessage, { parameter: P }>["value"]
     ) {
         const a3 = GSDelayAddressMap[parameter];
         if (a3 === undefined) {

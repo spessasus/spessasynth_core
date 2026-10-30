@@ -69,9 +69,12 @@ import {
     type SynthesizerSnapshot
 } from "./audio_engine/synthesizer_snapshot";
 import type {
+    GSChorusParameter,
+    GSDelayParameter,
     GSInsertionProcessor,
     GSInsertionProcessorConstructor,
     GSInsertionProcessorSnapshot,
+    GSReverbParameter,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
 import type { XGVariationBlock } from "./audio_engine/effects/xg/interface/xg_variation_block";
@@ -101,6 +104,48 @@ type CachedVoiceList = CachedVoice[];
  * MU2000 has 4 insertion effects. We can do more but leave it at 4 for now
  */
 const XG_INSERTION_COUNT = 4;
+
+/**
+ * The GS reverb parameters set by the reverb macro.
+ */
+const GS_REVERB_MACRO_PARAMETERS: (keyof GSReverbParameter)[] = [
+    "character",
+    "preLowpass",
+    "level",
+    "time",
+    "delayFeedback",
+    "preDelayTime"
+];
+
+/**
+ * The GS chorus parameters set by the chorus macro.
+ */
+const GS_CHORUS_MACRO_PARAMETERS: (keyof GSChorusParameter)[] = [
+    "preLowpass",
+    "level",
+    "feedback",
+    "delay",
+    "rate",
+    "depth",
+    "sendLevelToReverb",
+    "sendLevelToDelay"
+];
+
+/**
+ * The GS delay parameters set by the delay macro.
+ */
+const GS_DELAY_MACRO_PARAMETERS: (keyof GSDelayParameter)[] = [
+    "preLowpass",
+    "timeCenter",
+    "timeRatioLeft",
+    "timeRatioRight",
+    "levelCenter",
+    "levelLeft",
+    "levelRight",
+    "level",
+    "feedback",
+    "sendLevelToReverb"
+];
 
 /**
  * Moves the voice sends into an effect input buffer, clearing the sends for the next quantum.
@@ -1867,11 +1912,16 @@ export class SpessaSynthProcessor {
      */
     protected setReverbMacro(macro: number) {
         if (this.systemParameters.gsReverbLock) return;
+        if (macro > 7) {
+            // Invalid macros are ignored
+            // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+            SpessaLog.warn(`Invalid reverb macro: ${macro}`);
+            return;
+        }
         // SC-8850 manual page 81
         const rev = this.gsReverbProcessor;
         rev.level = 64;
         rev.preDelayTime = 0;
-        rev.character = macro;
         switch (macro) {
             /**
              * REVERB MACRO is a macro parameter that allows global setting of reverb parameters.
@@ -1904,6 +1954,7 @@ export class SpessaSynthProcessor {
 
             case 1: {
                 // Room2
+                rev.character = 1;
                 rev.preLowpass = 4;
                 rev.time = 56;
                 rev.delayFeedback = 0;
@@ -1912,6 +1963,7 @@ export class SpessaSynthProcessor {
 
             case 2: {
                 // Room3
+                rev.character = 2;
                 rev.preLowpass = 0;
                 rev.time = 72;
                 rev.delayFeedback = 0;
@@ -1920,6 +1972,7 @@ export class SpessaSynthProcessor {
 
             case 3: {
                 // Hall1
+                rev.character = 3;
                 rev.preLowpass = 4;
                 rev.time = 72;
                 rev.delayFeedback = 0;
@@ -1928,6 +1981,7 @@ export class SpessaSynthProcessor {
 
             case 4: {
                 // Hall2
+                rev.character = 4;
                 rev.preLowpass = 0;
                 rev.time = 64;
                 rev.delayFeedback = 0;
@@ -1936,6 +1990,7 @@ export class SpessaSynthProcessor {
 
             case 5: {
                 // Plate
+                rev.character = 5;
                 rev.preLowpass = 0;
                 rev.time = 88;
                 rev.delayFeedback = 0;
@@ -1944,6 +1999,7 @@ export class SpessaSynthProcessor {
 
             case 6: {
                 // Delay
+                rev.character = 6;
                 rev.preLowpass = 0;
                 rev.time = 32;
                 rev.delayFeedback = 40;
@@ -1952,19 +2008,21 @@ export class SpessaSynthProcessor {
 
             case 7: {
                 // Panning delay
+                rev.character = 7;
                 rev.preLowpass = 0;
                 rev.time = 64;
                 rev.delayFeedback = 32;
                 break;
             }
-
-            default: {
-                // Check for invalid macros
-                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
-                SpessaLog.warn(`Invalid reverb macro: ${macro}`);
-                return;
-            }
         }
+        for (const parameter of GS_REVERB_MACRO_PARAMETERS) {
+            this.callEvent("effectChange", {
+                effect: "gsReverb",
+                parameter,
+                value: rev[parameter]
+            });
+        }
+        // The macro is reported last, after its parameters
         this.callEvent("effectChange", {
             effect: "gsReverb",
             parameter: "macro",
@@ -1976,6 +2034,12 @@ export class SpessaSynthProcessor {
      */
     protected setChorusMacro(macro: number) {
         if (this.systemParameters.gsChorusLock) return;
+        if (macro > 7) {
+            // Invalid macros are ignored
+            // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+            SpessaLog.warn(`Invalid chorus macro: ${macro}`);
+            return;
+        }
         // SC-8850 manual page 83
         const chr = this.gsChorusProcessor;
         chr.level = 64;
@@ -1983,6 +2047,8 @@ export class SpessaSynthProcessor {
         chr.delay = 127;
         chr.sendLevelToDelay = 0;
         chr.sendLevelToReverb = 0;
+        // The send to delay changed, so the delay may no longer be needed
+        this.updateActiveGSEffects();
         switch (macro) {
             /**
              * CHORUS MACRO is a macro parameter that allows global setting of chorus parameters.
@@ -2072,14 +2138,15 @@ export class SpessaSynthProcessor {
                 chr.depth = 127;
                 break;
             }
-
-            default: {
-                // Check for invalid macros
-                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
-                SpessaLog.warn(`Invalid chorus macro: ${macro}`);
-                return;
-            }
         }
+        for (const parameter of GS_CHORUS_MACRO_PARAMETERS) {
+            this.callEvent("effectChange", {
+                effect: "gsChorus",
+                parameter,
+                value: chr[parameter]
+            });
+        }
+        // The macro is reported last
         this.callEvent("effectChange", {
             effect: "gsChorus",
             parameter: "macro",
@@ -2091,6 +2158,12 @@ export class SpessaSynthProcessor {
      */
     protected setDelayMacro(macro: number) {
         if (this.systemParameters.gsDelayLock) return;
+        if (macro > 9) {
+            // Invalid macros are ignored
+            // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
+            SpessaLog.warn(`Invalid delay macro: ${macro}`);
+            return;
+        }
         // SC-8850 manual page 85
         const dly = this.gsDelayProcessor;
         dly.level = 64;
@@ -2226,14 +2299,15 @@ export class SpessaSynthProcessor {
                 dly.feedback = 40;
                 break;
             }
-
-            default: {
-                // Check for invalid macros
-                // Testcase: 18 - Dichromatic Lotus Butterfly ~ Ancients (ZUN).mid
-                SpessaLog.warn(`Invalid delay macro: ${macro}`);
-                return;
-            }
         }
+        for (const parameter of GS_DELAY_MACRO_PARAMETERS) {
+            this.callEvent("effectChange", {
+                effect: "gsDelay",
+                parameter,
+                value: dly[parameter]
+            });
+        }
+        // The macro is reported last, after its parameters
         this.callEvent("effectChange", {
             effect: "gsDelay",
             parameter: "macro",

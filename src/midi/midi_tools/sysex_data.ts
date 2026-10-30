@@ -1,9 +1,9 @@
 import type { DrumParameter, UserDrumSetParameter } from "../types";
 import type {
-    GSChorusParameter,
-    GSDelayParameter,
-    GSReverbParameter
-} from "../../synthesizer/audio_engine/effects/gs/types";
+    GSChorusParameterMessage,
+    GSDelayParameterMessage,
+    GSReverbParameterMessage
+} from "./analyzed_message";
 
 export const GSUserDrumParamMap: Record<keyof UserDrumSetParameter, number> = {
     pitchCoarse: 1,
@@ -49,7 +49,11 @@ export const XGDrumParamMap: Record<keyof DrumParameter, number> = {
     rxNoteOn: 0xa
 };
 
-export const GSReverbAddressMap: GSReverbParameter = {
+export const GSReverbAddressMap: Record<
+    GSReverbParameterMessage["parameter"],
+    number
+> = {
+    macro: 0x30,
     character: 0x31,
     preLowpass: 0x32,
     level: 0x33,
@@ -57,7 +61,11 @@ export const GSReverbAddressMap: GSReverbParameter = {
     delayFeedback: 0x35,
     preDelayTime: 0x37
 };
-export const GSChorusAddressMap: GSChorusParameter = {
+export const GSChorusAddressMap: Record<
+    GSChorusParameterMessage["parameter"],
+    number
+> = {
+    macro: 0x38,
     preLowpass: 0x39,
     level: 0x3a,
     feedback: 0x3b,
@@ -67,7 +75,11 @@ export const GSChorusAddressMap: GSChorusParameter = {
     sendLevelToReverb: 0x3f,
     sendLevelToDelay: 0x40
 };
-export const GSDelayAddressMap: GSDelayParameter = {
+export const GSDelayAddressMap: Record<
+    GSDelayParameterMessage["parameter"],
+    number
+> = {
+    macro: 0x50,
     preLowpass: 0x51,
     timeCenter: 0x52,
     timeRatioLeft: 0x53,
