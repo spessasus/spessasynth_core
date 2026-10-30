@@ -29,7 +29,7 @@ import {
 import type {
     GSChorusParameter,
     GSDelayParameter,
-    GSInsertionProcessorSnapshot,
+    GSInsertionBlockSnapshot,
     GSReverbParameter
 } from "../../synthesizer/audio_engine/effects/gs/types";
 import type { XGSystemEffectBlockSnapshot } from "../../synthesizer/audio_engine/effects/xg/interface/xg_system_effect_block";
@@ -250,9 +250,9 @@ export interface ModifyMIDIOptions {
     /**
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
-     * - {@link GSInsertionProcessorSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     * - {@link GSInsertionBlockSnapshot} - clear + the new parameters are set via System Exclusive messages.
      */
-    gsInsertionParams?: ClearableParameter<GSInsertionProcessorSnapshot>;
+    gsInsertionParams?: ClearableParameter<GSInsertionBlockSnapshot>;
 
     /**
      * The desired XG reverb parameters.
@@ -2327,47 +2327,42 @@ export class MIDIEditor {
             }
             if (this.gsInsertionParams && this.gsInsertionParams !== "clear") {
                 const p = this.gsInsertionParams;
-                // Params and sends are stored in one table (0-19: params, 20-22: sends)
-                const sendNames = [
-                    "sendLevelToReverb",
-                    "sendLevelToChorus",
-                    "sendLevelToDelay"
-                ] as const;
-                const evs = new Array<MIDIMessage>();
-                for (let param = 0; param < p.params.length; param++) {
-                    const value = p.params[param];
-                    if (value === 255) continue;
-                    if (param < 20) {
-                        evs.push(
-                            MIDIUtils.setGSInsertionParameter(
-                                targetTicks,
-                                param,
-                                value
-                            )
-                        );
-                    } else {
-                        evs.push(
-                            MIDIUtils.setGSInsertionParameter(
-                                targetTicks,
-                                sendNames[param - 20],
-                                value
-                            )
-                        );
-                    }
-                }
-
                 // This adds them in order
                 // The order is:
-                // Type
-                // Params and sends
+                // Type (resets the params and sends)
+                // Changed params (255 is the type default)
+                // Sends
                 output.push(
                     MIDIUtils.setGSInsertionParameter(
                         targetTicks,
                         "type",
                         p.type
-                    ),
-                    ...evs
+                    )
                 );
+                for (let param = 0; param < p.params.length; param++) {
+                    const value = p.params[param];
+                    if (value === 255) continue;
+                    output.push(
+                        MIDIUtils.setGSInsertionParameter(
+                            targetTicks,
+                            param,
+                            value
+                        )
+                    );
+                }
+                for (const send of [
+                    "sendLevelToReverb",
+                    "sendLevelToChorus",
+                    "sendLevelToDelay"
+                ] as const) {
+                    output.push(
+                        MIDIUtils.setGSInsertionParameter(
+                            targetTicks,
+                            send,
+                            p[send]
+                        )
+                    );
+                }
             }
         }
 

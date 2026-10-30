@@ -1,7 +1,5 @@
 import type { ChannelSnapshot } from "./channel/channel_snapshot";
-import { MIDIUtils } from "../../midi/midi_tools/midi_utils";
 import type { SpessaSynthProcessor } from "../processor";
-import { rolandSystemExclusive } from "./system_exclusive/roland";
 import type { GlobalMIDIParameter } from "./parameters/midi";
 import type { GlobalSystemParameter } from "./parameters/system";
 
@@ -10,7 +8,7 @@ import type { UserDrumSetParameter } from "../../midi/types";
 import type {
     GSChorusParameter,
     GSDelayParameter,
-    GSInsertionProcessorSnapshot,
+    GSInsertionBlockSnapshot,
     GSReverbParameter
 } from "./effects/gs/types";
 import type { XGSystemEffectBlockSnapshot } from "./effects/xg/interface/xg_system_effect_block";
@@ -60,9 +58,9 @@ export interface SynthesizerSnapshot {
      */
     gsDelayProcessor: GSDelayParameter;
     /**
-     * A snapshot of the insertion effect processor.
+     * A snapshot of the GS insertion block.
      */
-    gsInsertionProcessor: GSInsertionProcessorSnapshot;
+    gsInsertionBlock: GSInsertionBlockSnapshot;
 
     /**
      * A snapshot of the XG reverb block.
@@ -104,32 +102,10 @@ export function applySnapshot(
     );
 
     // Restore effect processors
-    for (const [key, value] of Object.entries(snapshot.gsReverbProcessor))
-        this.gsReverbProcessor[key as keyof GSReverbParameter] =
-            value as number;
-    for (const [key, value] of Object.entries(snapshot.gsChorusProcessor))
-        this.gsChorusProcessor[key as keyof GSChorusParameter] =
-            value as number;
-    for (const [key, value] of Object.entries(snapshot.gsDelayProcessor))
-        this.gsDelayProcessor[key as keyof GSDelayParameter] = value as number;
-
-    // Restore insertion
-    // Call the handler directly so the device ID filter and the port offset do not apply
-    const is = snapshot.gsInsertionProcessor;
-    rolandSystemExclusive.call(
-        this,
-        MIDIUtils.gs(0x40, 0x03, 0x00, [is.type >> 8, is.type & 0x7f]),
-        0
-    );
-
-    for (let i = 0; i < is.params.length; i++) {
-        if (is.params[i] !== 255)
-            rolandSystemExclusive.call(
-                this,
-                MIDIUtils.gs(0x40, 0x03, 3 + i, [is.params[i]]),
-                0
-            );
-    }
+    this.gsReverbProcessor.applySnapshot(snapshot.gsReverbProcessor);
+    this.gsChorusProcessor.applySnapshot(snapshot.gsChorusProcessor);
+    this.gsDelayProcessor.applySnapshot(snapshot.gsDelayProcessor);
+    this.gsInsertionBlock.applySnapshot(snapshot.gsInsertionBlock);
 
     // Restore XG effects
     this.xgReverbBlock.applySnapshot(snapshot.xgReverbBlock);
@@ -204,7 +180,7 @@ export function getSynthesizerSnapshot(
         gsReverbProcessor: this.gsReverbProcessor.getSnapshot(),
         gsChorusProcessor: this.gsChorusProcessor.getSnapshot(),
         gsDelayProcessor: this.gsDelayProcessor.getSnapshot(),
-        gsInsertionProcessor: this.getGSInsertionSnapshot(),
+        gsInsertionBlock: this.gsInsertionBlock.getSnapshot(),
         xgReverbBlock: this.xgReverbBlock.getSnapshot(),
         xgChorusBlock: this.xgChorusBlock.getSnapshot(),
         xgVariationBlock: this.xgVariationBlock.getSnapshot(),

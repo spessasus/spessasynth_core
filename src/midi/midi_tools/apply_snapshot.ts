@@ -137,7 +137,7 @@ export function applySnapshotInternal(
             ? snapshot.gsDelayProcessor
             : undefined,
         gsInsertionParams: snapshot.systemParameters.gsInsertionLock
-            ? snapshot.gsInsertionProcessor
+            ? snapshot.gsInsertionBlock
             : undefined,
         // XG blocks have dedicated locks mirroring the GS ones.
         xgReverbParams: snapshot.systemParameters.xgReverbLock

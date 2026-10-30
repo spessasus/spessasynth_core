@@ -341,6 +341,19 @@ export class DefaultGSDelay implements GSDelayProcessor {
         };
     }
 
+    public applySnapshot(snapshot: GSDelayParameter) {
+        this.level = snapshot.level;
+        this.preLowpass = snapshot.preLowpass;
+        this.timeCenter = snapshot.timeCenter;
+        this.timeRatioLeft = snapshot.timeRatioLeft;
+        this.timeRatioRight = snapshot.timeRatioRight;
+        this.levelCenter = snapshot.levelCenter;
+        this.levelLeft = snapshot.levelLeft;
+        this.levelRight = snapshot.levelRight;
+        this.feedback = snapshot.feedback;
+        this.sendLevelToReverb = snapshot.sendLevelToReverb;
+    }
+
     private updateDelayTimes() {
         // Recompute times
         const maxDelay = this.buffer.length - 1;

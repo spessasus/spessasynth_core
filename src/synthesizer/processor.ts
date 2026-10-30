@@ -35,7 +35,6 @@ import { SoundBankManager } from "./audio_engine/sound_bank_manager";
 import {
     DEFAULT_SYNTH_METHOD_OPTIONS,
     DEFAULT_SYNTH_MODE,
-    EFX_SENDS_GAIN_CORRECTION,
     EMBEDDED_SOUND_BANK_ID
 } from "./audio_engine/synth_constants";
 import { Voice } from "./audio_engine/voice/voice";
@@ -46,8 +45,7 @@ import type { SysExAcceptedArray, UserDrumSetParameter } from "../midi/types";
 import type { MIDISystem } from "../soundbank/types";
 import { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
 import { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
-import { ThruFX } from "./audio_engine/effects/gs/implementation/insertion/thru";
-import { GS_INSERTION_EFFECT_LIST } from "./audio_engine/effects/gs/implementation/insertion_list";
+import { DefaultGSInsertion } from "./audio_engine/effects/gs/implementation/insertion";
 import { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
 import {
     DEFAULT_GLOBAL_MIDI_PARAMETERS,
@@ -71,9 +69,7 @@ import {
 import type {
     GSChorusParameter,
     GSDelayParameter,
-    GSInsertionProcessor,
-    GSInsertionProcessorConstructor,
-    GSInsertionProcessorSnapshot,
+    GSInsertionBlock,
     GSReverbParameter,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
@@ -181,6 +177,7 @@ function moveSends(
  * - {@link GSReverbProcessor} - How to implement your own GS reverb processor.
  * - {@link GSChorusProcessor} - How to implement your own GS chorus processor.
  * - {@link GSDelayProcessor} - How to implement your own GS delay processor.
+ * - {@link GSInsertionBlock} - How to implement your own GS insertion processor.
  *
  * #### XG
  *
@@ -484,6 +481,13 @@ export class SpessaSynthProcessor {
      */
     protected readonly gsDelayProcessor: GSDelayProcessor;
     /**
+     * The synthesizer's GS insertion block.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     * @internal
+     */
+    protected readonly gsInsertionBlock: GSInsertionBlock;
+    /**
      * The synthesizer's XG reverb block.
      *
      * Used when {@link GlobalMIDIParameter.system} is `xg`.
@@ -512,38 +516,10 @@ export class SpessaSynthProcessor {
      */
     protected customChannelNumbers = false;
     /**
-     * The fallback GS processor when the requested insertion is not available.
-     * @internal
-     */
-    protected readonly gsInsertionFallback = new ThruFX();
-    /**
-     * The GS current insertion processor.
-     * @internal
-     */
-    protected gsInsertionProcessor: GSInsertionProcessor =
-        this.gsInsertionFallback;
-    /**
-     * All the insertion effects available to the processor.
-     * The key is the EFX type stored as MSB << 8 | LSB
-     * @internal
-     */
-    protected readonly insertionEffects = new Map<
-        number,
-        GSInsertionProcessor
-    >();
-    /**
      * For F5 system exclusive.
      * @internal
      */
     protected portSelectChannelOffset = 0;
-    /**
-     * For GS insertion snapshot tracking
-     * 20 parameters (0-19) + 3 sends
-     * Index to gs is Addr3 - 3 (for example EFX PARAMETER 1 is 0x03 and here it's 0)
-     * note: 255 means "no change"
-     * @internal
-     */
-    protected gsInsertionParams = new Uint8Array(23).fill(255);
     /**
      * Left float32 buffer for processing XG insertion effects in-place.
      * (channel outputs are double precision)
@@ -625,6 +601,9 @@ export class SpessaSynthProcessor {
             new DefaultGSChorus(sampleRate, bufSize);
         this.gsDelayProcessor =
             options.gsDelayProcessor ?? new DefaultGSDelay(sampleRate, bufSize);
+        this.gsInsertionBlock =
+            options.gsInsertionBlock ??
+            new DefaultGSInsertion(sampleRate, bufSize);
 
         this.xgReverbBlock =
             options.xgReverbBlock ?? new DefaultXGReverb(sampleRate, bufSize);
@@ -665,11 +644,6 @@ export class SpessaSynthProcessor {
         this.xgVariationSendR = new Float64Array(bufSize);
         this.xgInsertionBufferL = new Float32Array(bufSize);
         this.xgInsertionBufferR = new Float32Array(bufSize);
-
-        // Register insertion
-        for (const insertion of GS_INSERTION_EFFECT_LIST)
-            this.registerInsertionProcessor(insertion);
-        this.resetGSInsertionParams(); // Initial setup
 
         // Initialize voices
         this.allocateNewVoices(this.systemParameters.voiceCap);
@@ -1228,7 +1202,14 @@ export class SpessaSynthProcessor {
         this.setChorusMacro(2);
         // Delay1 default
         this.setDelayMacro(0);
-        this.resetGSInsertion();
+        if (!this.systemParameters.gsInsertionLock) {
+            this.gsInsertionBlock.reset();
+            this.callEvent("effectChange", {
+                effect: "gsInsertion",
+                parameter: 0,
+                value: this.gsInsertionBlock.getType()
+            });
+        }
 
         // Reset XG params
         if (!this.systemParameters.xgReverbLock) {
@@ -1671,7 +1652,7 @@ export class SpessaSynthProcessor {
             } else {
                 // Insertion first
                 if (this.gsInsertionActive) {
-                    this.gsInsertionProcessor.process(
+                    this.gsInsertionBlock.process(
                         insertionInputL,
                         insertionInputR,
                         left,
@@ -1807,7 +1788,7 @@ export class SpessaSynthProcessor {
                 this.midiParameters.system === "xg"
                     ? false
                     : this.gsChorusProcessor.sendLevelToDelay > 0 ||
-                      this.gsInsertionProcessor.sendLevelToDelay > 0 ||
+                      this.gsInsertionBlock.sendLevelToDelay > 0 ||
                       this.midiChannels.some(
                           (c) =>
                               c.midiControllers[
@@ -1870,43 +1851,7 @@ export class SpessaSynthProcessor {
             value.toString()
         );
     }
-    /**
-     * @internal
-     */
-    protected getGSInsertionSnapshot(): GSInsertionProcessorSnapshot {
-        return {
-            type: this.gsInsertionProcessor.type,
-            params: this.gsInsertionParams.slice()
-        };
-    }
-    /**
-     * @internal
-     */
-    protected resetGSInsertionParams() {
-        // No change
-        this.gsInsertionParams.fill(255);
-        this.gsInsertionParams[20] = 40; // Reverb
-        this.gsInsertionParams[21] = 0; // Chorus
-        this.gsInsertionParams[22] = 0; // Delay
-    }
-    /**
-     * @internal
-     */
-    protected resetGSInsertion() {
-        if (this.systemParameters.gsInsertionLock) return;
-        this.gsInsertionProcessor = this.gsInsertionFallback;
-        this.gsInsertionProcessor.reset();
-        this.resetGSInsertionParams();
-        this.gsInsertionProcessor.sendLevelToReverb =
-            (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
-        this.gsInsertionProcessor.sendLevelToChorus = 0;
-        this.gsInsertionProcessor.sendLevelToDelay = 0;
-        this.callEvent("effectChange", {
-            effect: "gsInsertion",
-            parameter: 0,
-            value: this.gsInsertionProcessor.type
-        });
-    }
+
     /**
      * @internal
      */
@@ -2392,11 +2337,6 @@ export class SpessaSynthProcessor {
         // New channels need the default controllers, otherwise they are silent (CC7 = 0)
         channel.reset(false);
         if (sendEvent) this.callEvent("channelAdded", undefined);
-    }
-
-    private registerInsertionProcessor(proc: GSInsertionProcessorConstructor) {
-        const p = new proc(this.sampleRate, this.maxBufferSize);
-        this.insertionEffects.set(p.type, p);
     }
 
     private processMessageInternal(

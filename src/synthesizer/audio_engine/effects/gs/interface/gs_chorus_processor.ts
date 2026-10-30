@@ -99,4 +99,10 @@ export interface GSChorusProcessor extends GSChorusParameter {
      * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): GSChorusParameter;
+
+    /**
+     * Restores this effect processor instance from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
+    applySnapshot(snapshot: GSChorusParameter): void;
 }

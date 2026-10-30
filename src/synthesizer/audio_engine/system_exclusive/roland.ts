@@ -4,7 +4,6 @@ import { ModulatorControllerSources } from "../../../soundbank/enums";
 import { readBinaryString } from "../../../utils/byte_functions/string";
 import type { SpessaSynthProcessor } from "../../processor";
 import { MIDIUtils } from "../../../midi/midi_tools/midi_utils";
-import { EFX_SENDS_GAIN_CORRECTION } from "../synth_constants";
 import type { SysExAcceptedArray } from "../../../midi/types";
 import { ConsoleColors } from "../../../utils/other";
 import {
@@ -594,13 +593,10 @@ export function rolandSystemExclusive(
                     // EFX Parameter
                     if (a2 === 0x03) {
                         if (this.systemParameters.gsInsertionLock) return;
-
-                        // Write parameters
-                        if (a3 >= 0x03 && a3 <= 0x19)
-                            this.gsInsertionParams[a3 - 3] = data;
+                        const insertion = this.gsInsertionBlock;
 
                         if (a3 >= 0x03 && a3 <= 0x16) {
-                            this.gsInsertionProcessor.setParameter(a3, data);
+                            insertion.setParameter(a3 - 0x03, data);
                             SpessaLog.gsInfo(`EFX Parameter ${a3 - 2}`, data);
                             this.callEvent("effectChange", {
                                 effect: "gsInsertion",
@@ -618,24 +614,10 @@ export function rolandSystemExclusive(
                             case 0x00: {
                                 // EFX Type
                                 const type = (data << 8) | syx[8];
-                                const proc = this.insertionEffects.get(type);
-                                if (proc) {
-                                    SpessaLog.gsInfo(
-                                        "EFX Type",
-                                        type.toString(16)
-                                    );
-                                    this.gsInsertionProcessor = proc;
-                                } else {
-                                    this.gsInsertionProcessor =
-                                        this.gsInsertionFallback;
-                                    SpessaLog.gsFail(
-                                        "EFX Processor",
-                                        [type],
-                                        "Using Thru."
-                                    );
-                                }
-                                this.resetGSInsertionParams();
-                                this.gsInsertionProcessor.reset();
+                                SpessaLog.gsInfo("EFX Type", type.toString(16));
+                                insertion.setType(type);
+                                // The type change resets the send to delay
+                                this.updateActiveGSEffects();
                                 // Special case: 16-bit value
                                 this.callEvent("effectChange", {
                                     effect: "gsInsertion",
@@ -647,9 +629,7 @@ export function rolandSystemExclusive(
 
                             case 0x17: {
                                 // To reverb
-                                // Divide, insertions use 0-1
-                                this.gsInsertionProcessor.sendLevelToReverb =
-                                    (data / 127) * EFX_SENDS_GAIN_CORRECTION;
+                                insertion.sendLevelToReverb = data;
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Reverb",
                                     data
@@ -664,9 +644,7 @@ export function rolandSystemExclusive(
 
                             case 0x18: {
                                 // To chorus
-                                // Divide, insertions use 0-1
-                                this.gsInsertionProcessor.sendLevelToChorus =
-                                    (data / 127) * EFX_SENDS_GAIN_CORRECTION;
+                                insertion.sendLevelToChorus = data;
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Chorus",
                                     data
@@ -681,9 +659,7 @@ export function rolandSystemExclusive(
 
                             case 0x19: {
                                 // To delay
-                                // Divide, insertions use 0-1
-                                this.gsInsertionProcessor.sendLevelToDelay =
-                                    (data / 127) * EFX_SENDS_GAIN_CORRECTION;
+                                insertion.sendLevelToDelay = data;
                                 this.updateActiveGSEffects();
                                 SpessaLog.gsInfo(
                                     "EFX Send Level to Delay",

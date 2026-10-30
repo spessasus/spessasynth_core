@@ -255,4 +255,15 @@ export class DefaultGSChorus implements GSChorusProcessor {
             level: this._level
         };
     }
+
+    public applySnapshot(snapshot: GSChorusParameter) {
+        this.level = snapshot.level;
+        this.preLowpass = snapshot.preLowpass;
+        this.feedback = snapshot.feedback;
+        this.delay = snapshot.delay;
+        this.rate = snapshot.rate;
+        this.depth = snapshot.depth;
+        this.sendLevelToReverb = snapshot.sendLevelToReverb;
+        this.sendLevelToDelay = snapshot.sendLevelToDelay;
+    }
 }

@@ -2,7 +2,7 @@ import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import { PhaserFX } from "./phaser";
 import { AutoWahFX } from "./auto_wah";
 import { PAN_TABLE_LEFT, PAN_TABLE_RIGHT } from "./utils";
-import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
+import type { DefaultGSInsertionProcessor } from "./insertion_processor";
 
 /*
 This connects a Phaser effect and an Auto-wah effect in
@@ -13,7 +13,7 @@ Type: mono processors, stereo mix
 
 const DEFAULT_LEVEL = 127;
 
-export class PhAutoWahFX implements GSInsertionProcessor {
+export class PhAutoWahFX implements DefaultGSInsertionProcessor {
     public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

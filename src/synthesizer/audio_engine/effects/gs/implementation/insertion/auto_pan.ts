@@ -9,7 +9,7 @@ import {
     ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
-import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
+import type { DefaultGSInsertionProcessor } from "./insertion_processor";
 
 const PI_2 = Math.PI * 2;
 
@@ -22,7 +22,7 @@ const LEVEL_EXP = 2;
 const PAN_SMOOTHING = 0.01;
 
 const DEFAULT_LEVEL = 127;
-export class AutoPanFX implements GSInsertionProcessor {
+export class AutoPanFX implements DefaultGSInsertionProcessor {
     public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

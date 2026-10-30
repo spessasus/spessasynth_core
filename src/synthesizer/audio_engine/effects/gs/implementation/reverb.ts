@@ -394,6 +394,15 @@ export class DefaultGSReverb implements GSReverbProcessor {
         };
     }
 
+    public applySnapshot(snapshot: GSReverbParameter) {
+        this.level = snapshot.level;
+        this.preLowpass = snapshot.preLowpass;
+        this.character = snapshot.character;
+        this.time = snapshot.time;
+        this.delayFeedback = snapshot.delayFeedback;
+        this.preDelayTime = snapshot.preDelayTime;
+    }
+
     private updateFeedback() {
         // Logarithmic time it seems
         // It gets way higher the closer you get to 127

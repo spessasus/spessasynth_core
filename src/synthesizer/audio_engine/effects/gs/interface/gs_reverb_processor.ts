@@ -85,4 +85,10 @@ export interface GSReverbProcessor extends GSReverbParameter {
      * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): GSReverbParameter;
+
+    /**
+     * Restores this effect processor instance from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
+    applySnapshot(snapshot: GSReverbParameter): void;
 }

@@ -8,7 +8,7 @@ import {
     ZERO_COEFFS,
     zeroState
 } from "./utils";
-import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
+import type { DefaultGSInsertionProcessor } from "./insertion_processor";
 
 /*
 After lots of testing, this was the closest I've been able to get.
@@ -30,7 +30,7 @@ const PHASE_START = 0.35;
  *
  * Note: seems to use a triangle LFO for modulation
  */
-export class PhaserFX implements GSInsertionProcessor {
+export class PhaserFX implements DefaultGSInsertionProcessor {
     public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

@@ -123,4 +123,10 @@ export interface GSDelayProcessor extends GSDelayParameter {
      * Gets a snapshot of this effect processor instance.
      */
     getSnapshot(): GSDelayParameter;
+
+    /**
+     * Restores this effect processor instance from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
+    applySnapshot(snapshot: GSDelayParameter): void;
 }

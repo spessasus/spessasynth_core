@@ -209,7 +209,7 @@ export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
  * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
  * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
  * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
- * - GS insertion (`effect: "gsInsertion"`). It has special treatment.
+ * - {@link GSInsertionBlock} (`effect: "gsInsertion"`). It has special treatment.
  * - {@link XGReverbBlock} (`effect: "xgReverb"`)
  * - {@link XGChorusBlock} (`effect: "xgChorus"`)
  * - {@link XGVariationBlock} (`effect: "xgVariation"`)
@@ -556,7 +556,7 @@ export interface SynthesizerEvent {
      * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
      * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
      * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
-     * - GS insertion (`effect: "gsInsertion"`). It has special treatment.
+     * - {@link GSInsertionBlock} (`effect: "gsInsertion"`). It has special treatment.
      * - {@link XGReverbBlock} (`effect: "xgReverb"`)
      * - {@link XGChorusBlock} (`effect: "xgChorus"`)
      * - {@link XGVariationBlock} (`effect: "xgVariation"`)

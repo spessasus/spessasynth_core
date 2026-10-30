@@ -1,9 +1,9 @@
 /**
- * Represents a GS-compatible Insertion EFX processor.
+ * The raw processor for a single Roland GS insertion (EFX) type.
  *
- * @group Synthesizer.GS Effects
+ * Used only in the default implementation, {@link DefaultGSInsertion}.
  */
-export interface GSInsertionProcessor {
+export interface DefaultGSInsertionProcessor {
     /**
      * The EFX type of this processor, stored as `MSB << 8 | LSB`.
      * For example `0x30`, `0x10` is `0x3010`.
@@ -11,26 +11,23 @@ export interface GSInsertionProcessor {
     readonly type: number;
 
     /**
-     * `0-1` (floating point)
+     * `0-1` (floating point, gain correction applied)
      *
-     * This parameter sets the amount of insertion sound that will be sent to the reverb.
-     * Higher values result in more sound being sent.
+     * The amount of insertion sound sent to the reverb. Set by the insertion block.
      */
     sendLevelToReverb: number;
 
     /**
-     * `0-1` (floating point)
+     * `0-1` (floating point, gain correction applied)
      *
-     * This parameter sets the amount of insertion sound that will be sent to the chorus.
-     * Higher values result in more sound being sent.
+     * The amount of insertion sound sent to the chorus. Set by the insertion block.
      */
     sendLevelToChorus: number;
 
     /**
-     * `0-1` (floating point)
+     * `0-1` (floating point, gain correction applied)
      *
-     * This parameter sets the amount of insertion sound that will be sent to the delay.
-     * Higher values result in more sound being sent.
+     * The amount of insertion sound sent to the delay. Set by the insertion block.
      */
     sendLevelToDelay: number;
 
@@ -57,7 +54,7 @@ export interface GSInsertionProcessor {
      * @param outputChorus The mono input for chorus. It always starts at index 0.
      * @param outputDelay The mono input for delay. It always starts at index 0.
      * @param startIndex The index to start mixing at into the output buffers.
-     * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance.
+     * @param sampleCount The amount of samples to mix.
      */
     process(
         inputLeft: Float32Array,
@@ -73,36 +70,9 @@ export interface GSInsertionProcessor {
 }
 
 /**
- * Represents stored GS-compatible insertion processor data.
- *
- * @group Synthesizer.GS Effects
- */
-export interface GSInsertionProcessorSnapshot {
-    /**
-     * The EFX type of this processor, stored as `MSB << 8 | LSB`.
-     * For example `0x30`, `0x10` is `0x3010`.
-     *
-     * > **Tip**
-     * >
-     * > Refer to [SC-8850 Owner's Manual](https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf) (p.88, 237) for more information.
-     */
-    type: number;
-    /**
-     * 20 parameters for the effect. These depend on effect type.
-     * After that 3 effect sends follow (index 20, 21, 22),
-     * the length totaling to 23.
-     *
-     * Value `255` means "no change" for that parameter.
-     *
-     */
-    params: Uint8Array;
-}
-
-/**
  * Constructor for a GS insertion processor.
- * @internal
  */
-export type GSInsertionProcessorConstructor = new (
+export type DefaultGSInsertionProcessorConstructor = new (
     sampleRate: number,
     maxBufferSize: number
-) => GSInsertionProcessor;
+) => DefaultGSInsertionProcessor;

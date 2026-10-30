@@ -3,6 +3,7 @@ export * from "./enums";
 export { DefaultGSReverb } from "./audio_engine/effects/gs/implementation/reverb";
 export { DefaultGSChorus } from "./audio_engine/effects/gs/implementation/chorus";
 export { DefaultGSDelay } from "./audio_engine/effects/gs/implementation/delay";
+export { DefaultGSInsertion } from "./audio_engine/effects/gs/implementation/insertion";
 export { DefaultXGReverb } from "./audio_engine/effects/xg/implementation/reverb";
 export { DefaultXGChorus } from "./audio_engine/effects/xg/implementation/chorus";
 export { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/variation";

@@ -12,7 +12,7 @@ import {
     ZeroStateC
 } from "./utils";
 import { InsertionValueConverter } from "./convert";
-import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
+import type { DefaultGSInsertionProcessor } from "./insertion_processor";
 
 const DEFAULT_LEVEL = 96;
 
@@ -36,7 +36,7 @@ const FC_SMOOTH = 0.005;
 const DEPTH_MUL = 5;
 const LFO_SMOOTH_FRAC = DEPTH_MUL * 0.5;
 
-export class AutoWahFX implements GSInsertionProcessor {
+export class AutoWahFX implements DefaultGSInsertionProcessor {
     public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

@@ -9,7 +9,7 @@ import {
     zeroState,
     ZeroStateC
 } from "./utils";
-import type { GSInsertionProcessor } from "../../interface/gs_insertion_processor";
+import type { DefaultGSInsertionProcessor } from "./insertion_processor";
 
 const DEFAULT_LEVEL = 127; // CHANGE THIS
 
@@ -22,7 +22,7 @@ It already has EQ and level implemented.
 
 //@ts-expect-error Boilerplate class
 // noinspection JSUnusedLocalSymbols
-class BoilerplateFX implements GSInsertionProcessor {
+class BoilerplateFX implements DefaultGSInsertionProcessor {
     public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
     public sendLevelToChorus = 0;
     public sendLevelToDelay = 0;

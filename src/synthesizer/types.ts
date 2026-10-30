@@ -5,6 +5,7 @@ import type { VoiceParameters } from "../soundbank/types";
 import type {
     GSChorusProcessor,
     GSDelayProcessor,
+    GSInsertionBlock,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
 import type { XGReverbBlock } from "./audio_engine/effects/xg/interface/xg_reverb_block";
@@ -95,6 +96,11 @@ export interface SynthProcessorOptions {
      * Optional custom GS delay processor for the synthesizer. Leave undefined to use {@link DefaultGSDelay}.
      */
     gsDelayProcessor?: GSDelayProcessor;
+
+    /**
+     * Optional custom GS insertion block for the synthesizer. Leave undefined to use {@link DefaultGSInsertion}.
+     */
+    gsInsertionBlock?: GSInsertionBlock;
 
     /**
      * Optional custom XG reverb block for the synthesizer. Leave undefined to use {@link DefaultXGReverb}.
