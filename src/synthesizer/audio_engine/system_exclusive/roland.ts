@@ -600,7 +600,7 @@ export function rolandSystemExclusive(
                             SpessaLog.gsInfo(`EFX Parameter ${a3 - 2}`, data);
                             this.callEvent("effectChange", {
                                 effect: "gsInsertion",
-                                parameter: a3,
+                                parameter: a3 - 0x03,
                                 value: data
                             });
                             return;
@@ -621,7 +621,7 @@ export function rolandSystemExclusive(
                                 // Special case: 16-bit value
                                 this.callEvent("effectChange", {
                                     effect: "gsInsertion",
-                                    parameter: 0,
+                                    parameter: "type",
                                     value: type
                                 });
                                 return;
@@ -636,7 +636,7 @@ export function rolandSystemExclusive(
                                 );
                                 this.callEvent("effectChange", {
                                     effect: "gsInsertion",
-                                    parameter: a3,
+                                    parameter: "sendLevelToReverb",
                                     value: data
                                 });
                                 return;
@@ -651,7 +651,7 @@ export function rolandSystemExclusive(
                                 );
                                 this.callEvent("effectChange", {
                                     effect: "gsInsertion",
-                                    parameter: a3,
+                                    parameter: "sendLevelToChorus",
                                     value: data
                                 });
                                 return;
@@ -667,7 +667,7 @@ export function rolandSystemExclusive(
                                 );
                                 this.callEvent("effectChange", {
                                     effect: "gsInsertion",
-                                    parameter: a3,
+                                    parameter: "sendLevelToDelay",
                                     value: data
                                 });
                                 return;

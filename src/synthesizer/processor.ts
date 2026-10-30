@@ -1206,7 +1206,7 @@ export class SpessaSynthProcessor {
             this.gsInsertionBlock.reset();
             this.callEvent("effectChange", {
                 effect: "gsInsertion",
-                parameter: 0,
+                parameter: "type",
                 value: this.gsInsertionBlock.getType()
             });
         }

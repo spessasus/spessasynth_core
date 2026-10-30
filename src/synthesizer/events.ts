@@ -7,6 +7,7 @@ import type { GlobalMIDIParameter } from "./audio_engine/parameters/midi";
 import type {
     GSChorusProcessor,
     GSDelayProcessor,
+    GSInsertionParameter,
     GSReverbProcessor
 } from "./audio_engine/effects/gs/types";
 import type { XGVariationConnection } from "../midi/midi_tools/analyzed_message";
@@ -199,7 +200,9 @@ export type GlobalMIDIParameterChangeEvent = {
  *
  * @group Synthesizer.Events
  */
-export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
+export type FXType<K> =
+    | Exclude<keyof K, "process" | "getSnapshot" | "applySnapshot">
+    | "macro";
 
 /**
  * This event is triggered when an effect processor has one of its parameters changed.
@@ -209,7 +212,7 @@ export type FXType<K> = Exclude<keyof K, "process" | "getSnapshot"> | "macro";
  * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
  * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
  * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
- * - {@link GSInsertionBlock} (`effect: "gsInsertion"`). It has special treatment.
+ * - {@link GSInsertionBlock} (`effect: "gsInsertion"`)
  * - {@link XGReverbBlock} (`effect: "xgReverb"`)
  * - {@link XGChorusBlock} (`effect: "xgChorus"`)
  * - {@link XGVariationBlock} (`effect: "xgVariation"`)
@@ -268,15 +271,12 @@ export type EffectChangeEvent =
           effect: "gsInsertion";
 
           /**
-           * The parameter that was changed. This maps to GS address map at addr2 = `0x03`.
-           * See SC-8850 Manual p.237,
-           * for example:
-           * - `0x0` - EFX type, the value is 16 bit in this special case. Note that this resets the parameters!
-           * - `0x3` - EFX param 1
-           * - `0x16` - EFX param 20 (usually level)
-           * - `0x17` - EFX send to reverb
+           * The parameter that was changed:
+           * - `"type"` - 16-bit effect type (`MSB << 8 | LSB`). Note that this resets the parameters and the send levels!
+           * - `"sendLevelToReverb" | "sendLevelToChorus" | "sendLevelToDelay"` - send levels (7-bit), see {@link GSInsertionParameter}.
+           * - `number` - 0-based type-specific EFX parameter index (0-19). EFX parameter 1 is 0. Value is 7-bit.
            */
-          parameter: number;
+          parameter: "type" | keyof GSInsertionParameter | number;
 
           /**
            * The new value for the parameter.
@@ -556,7 +556,7 @@ export interface SynthesizerEvent {
      * - {@link GSReverbProcessor} (`effect: "gsReverb"`)
      * - {@link GSChorusProcessor} (`effect: "gsChorus"`)
      * - {@link GSDelayProcessor} (`effect: "gsDelay"`)
-     * - {@link GSInsertionBlock} (`effect: "gsInsertion"`). It has special treatment.
+     * - {@link GSInsertionBlock} (`effect: "gsInsertion"`)
      * - {@link XGReverbBlock} (`effect: "xgReverb"`)
      * - {@link XGChorusBlock} (`effect: "xgChorus"`)
      * - {@link XGVariationBlock} (`effect: "xgVariation"`)
