@@ -45,7 +45,7 @@ It seems to work with various multi-port files and might be helpful for others i
 
 1. During MIDI file parsing, assign the detected MIDI port to each track. Tracks without any channel messages are skipped.
 2. If no port events are found, attempt to detect the ports from the track names:
-   `A<num>` or `PartA` is port `0`, `B<num>` or `PartB` is port `1`, and so on up to `D`. 
+   `A<num>` or `PartA` is port `0`, `B<num>` or `PartB` is port `1`, and so on up to `D`.
    **This is a different method of achieving multiple ports and MIDI files that use it do not use the meta message.**
 3. Tracks without a port use the lowest port found in the file. If no ports are found at all, default to port `0`.
 4. Assign each port a unique channel offset, incremented by 16 for each port, in the order the ports are first encountered.

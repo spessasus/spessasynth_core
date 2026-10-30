@@ -45,7 +45,7 @@ Below is the default modulator list for SpessaSynth.
 Units used in the tables below:
 
 - cB - centibels, 1/10 of a decibel.
-- ‰ -  1/10 of a percent.
+- ‰ - 1/10 of a percent.
 
 ### SF2 Default
 
@@ -57,17 +57,17 @@ These are the default modulators, as defined by the SF2.04 specification.
 >
 > The [velocity to filter modulator is intentionally disabled](https://www.fluidsynth.org/wiki/SoundFont/#fluidsynths-implementation-details-of-the-soundfont-2-spec).
 
-| Source                       | Source Transform          | Secondary source                           | Destination          | Transform amount |
-| ---------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |
-| Note On Velocity             | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **CC 1** (Modulation Wheel)  | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
-| **CC 7** (Volume)            | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **Channel Pressure**         | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
-| **Pitch Wheel**              | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune            | 12700 cents      |
-| **CC 10** (Pan)              | Positive Bipolar Linear   | -                                          | Pan                  | 500 ‰            |
-| **CC 11** (Expression)       | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
-| **CC 91** (Reverb Depth)     | Positive Unipolar Linear  | -                                          | Reverb effects send  | 200 ‰            |
-| **CC 93** (Chorus Depth)     | Positive Unipolar Linear  | -                                          | Chorus effects send  | 200 ‰            |
+| Source                      | Source Transform          | Secondary source                           | Destination          | Transform amount |
+| --------------------------- | ------------------------- | ------------------------------------------ | -------------------- | ---------------- |
+| Note On Velocity            | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
+| **CC 1** (Modulation Wheel) | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
+| **CC 7** (Volume)           | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
+| **Channel Pressure**        | Positive Unipolar Linear  | -                                          | Vibrato LFO to pitch | 50 cents         |
+| **Pitch Wheel**             | Positive Bipolar Linear   | Pitch wheel range Positive Unipolar Linear | Fine tune            | 12700 cents      |
+| **CC 10** (Pan)             | Positive Bipolar Linear   | -                                          | Pan                  | 500 ‰            |
+| **CC 11** (Expression)      | Negative Unipolar Concave | -                                          | Initial attenuation  | 960 cB           |
+| **CC 91** (Reverb Depth)    | Positive Unipolar Linear  | -                                          | Reverb effects send  | 200 ‰            |
+| **CC 93** (Chorus Depth)    | Positive Unipolar Linear  | -                                          | Chorus effects send  | 200 ‰            |
 
 ### Custom modulators
 

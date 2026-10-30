@@ -93,8 +93,8 @@ Legend for the "Type" column:
 | 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                     |
 | 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                        |
 | 84                   | Portamento Control                  | Engine   | Controls the portamento target key. Forces portamento once, even if portamento is off. The value persists across channel reset. [More info](#portamento-implementation)             |
-| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                  |
-| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                       |
+| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                           |
+| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                |
 | 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                 |
 | 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                           |
 | 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                           |
@@ -313,8 +313,8 @@ A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted
 
 These are global parameters, affecting the entire synthesizer.
 
-| Name                           | Description |
-| ------------------------------ | ----------- |
+| Name                           | Description                                                                                                                                                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | SYSTEM MODE SET (SC-88+ Reset) | Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`. Value `01` (`Double Module Mode`) also makes the synthesizer ensure that it has at least 32 channels. |
 
 #### Patch Common Parameters
@@ -329,7 +329,7 @@ These are global parameters, affecting the entire synthesizer.
 | MASTER VOLUME    | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`}.                                                                                                                       |
 | MASTER KEY-SHIFT | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.keyShift `keyShift`}.                                                                                                                   |
 | MASTER PAN       | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.pan `pan`}.                                                                                                                             |
-| MODE SET         | GS Reset. Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.                                                                                    |
+| MODE SET         | GS Reset. Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.                                                                          |
 | PATCH NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} will be emitted with the System Exclusive data. |
 
 ##### Reverb
@@ -420,7 +420,7 @@ Part (channel) parameters set a specific parameter for a specific channel.
 | TONE MODIFY6 (TVF&TVA Env.decay)  | Aliased to MIDI CC#75 (Decay Time).                                                                                                                   |
 | TONE MODIFY7 (TVA Env.release)    | Aliased to MIDI CC#72 (Release Time).                                                                                                                 |
 | TONE MODIFY8 (Vibrato delay)      | Aliased to MIDI CC#78 (Vibrato Delay).                                                                                                                |
-| SCALE TUNING                      | Treated like MTS octave tuning, tunes an octave in cents. Tuning is repeated for all octaves.                                                |
+| SCALE TUNING                      | Treated like MTS octave tuning, tunes an octave in cents. Tuning is repeated for all octaves.                                                         |
 | \* CONTROL                        | See [Patch Part Parameters (Controllers)](#patch-part-parameters-controllers) for more details.                                                       |
 | TONE MAP NUMBER                   | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
 | TONE MAP-0 NUMBER                 | Aliased to MIDI CC#32 (Bank Select LSB).                                                                                                              |
@@ -451,12 +451,12 @@ These search for a matching drum channel with the correct `drumMap` Channel MIDI
 | DRUM MAP NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data. |
 | PLAY NOTE NUMBER    | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                                                                 |
 | LEVEL               | The drum's loudness. Normalized against 120 as `gain = (data / 120) ^ 2`.                                                                                                                               |
-| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, defining custom exclusive notes.                                                                                                               |
+| ASSIGN GROUP NUMBER | This overrides the `exclusiveClass` generator, defining custom exclusive notes.                                                                                                                         |
 | PANPOT              | Pan position of the instrument, except value `0` enables random panning for every note. Value `64` leaves the channel pan unchanged (additive of channel).                                              |
 | REVERB SEND LEVEL   | Reverb send level of the instrument. (multiplicative of channel)                                                                                                                                        |
 | CHORUS SEND LEVEL   | Chorus send level of the instrument. (multiplicative of channel)                                                                                                                                        |
 | Rx. NOTE OFF        | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                                                                           |
-| Rx. NOTE ON         | Disabling this prevents the drum instrument from receiving Note On events.                                                                                                                        |
+| Rx. NOTE ON         | Disabling this prevents the drum instrument from receiving Note On events.                                                                                                                              |
 | DELAY SEND LEVEL    | Delay send level of the instrument. (multiplicative of channel)                                                                                                                                         |
 
 #### User Drum set
@@ -470,12 +470,12 @@ Instruments are available on programs 64 and 65 in GS mode.
 | USER DRUM MAP NAME     | Exactly the same behavior as DRUM MAP NAME.                                                                                                                | N.A.               |
 | PLAY NOTE NUMBER       | Relative pitch tuning of the instrument. [More info](#drum-pitch-coarse-implementation)                                                                    | `pitchCoarse`      |
 | LEVEL                  | The drum's loudness. Normalized against 120 as `gain = (data / 120) ^ 2`.                                                                                  | `level`            |
-| ASSIGN GROUP NUMBER    | This overrides the `exclusiveClass` generator, defining custom exclusive notes.                                                                  | `assignGroup`      |
+| ASSIGN GROUP NUMBER    | This overrides the `exclusiveClass` generator, defining custom exclusive notes.                                                                            | `assignGroup`      |
 | PANPOT                 | Pan position of the instrument, except value `0` enables random panning for every note. Value `64` leaves the channel pan unchanged (additive of channel). | `pan`              |
 | REVERB SEND LEVEL      | Reverb send level of the instrument. (multiplicative of channel)                                                                                           | `reverbSend`       |
 | CHORUS SEND LEVEL      | Chorus send level of the instrument. (multiplicative of channel)                                                                                           | `chorusSend`       |
 | Rx. NOTE OFF           | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                              | `rxNoteOff`        |
-| Rx. NOTE ON            | Disabling this prevents the drum instrument from receiving Note On events.                                                                           | `rxNoteOn`         |
+| Rx. NOTE ON            | Disabling this prevents the drum instrument from receiving Note On events.                                                                                 | `rxNoteOn`         |
 | DELAY SEND LEVEL       | Delay send level of the instrument. (multiplicative of channel)                                                                                            | `variationSend`    |
 | SOURCE DRUM SET# (MAP) | Bank LSB number of the source drum set for this key. (GS map)                                                                                              | `sourceDrumSet`    |
 | (PG#: Program number)  | The program number of the source drum set for this key.                                                                                                    | `program`          |
@@ -521,7 +521,7 @@ or like an insertion effect, routing all audio of a single channel through it.
 | REVERB PARAMETER 1-16     | Type-specific reverb parameters.                                                                                              |
 | REVERB RETURN             | Output level of the reverb block. `0` is silence, `64` is normal, `127` is double volume.                                     |
 | REVERB PAN                | Stereo panning of the reverb block. `1` is hard left, `64` is center, `127` is hard right.                                    |
-| CHORUS TYPE               | Sets the chorus block type. Unknown types are silent (NO EFFECT).                                                            |
+| CHORUS TYPE               | Sets the chorus block type. Unknown types are silent (NO EFFECT).                                                             |
 | CHORUS PARAMETER 1-16     | Type-specific chorus parameters.                                                                                              |
 | CHORUS RETURN             | Output level of the chorus block. `0` is silence, `64` is normal, `127` is double volume.                                     |
 | CHORUS PAN                | Stereo panning of the chorus block. `1` is hard left, `64` is center, `127` is hard right.                                    |
@@ -632,7 +632,7 @@ all drum channels get the same stored parameters, as there isn't a MAP system, l
 | CHORUS SEND     | Chorus send level of the instrument. (multiplicative of channel)                                                                                           |
 | VARIATION SEND  | Variation send level of the instrument. (multiplicative of channel)                                                                                        |
 | Rcv NOTE OFF    | Enabling this (as it is disabled by default) forces the drum instrument to immediately terminate when it receives a Note Off.                              |
-| Rcv NOTE ON     | Disabling this prevents the drum instrument from receiving Note On events.                                                                           |
+| Rcv NOTE ON     | Disabling this prevents the drum instrument from receiving Note On events.                                                                                 |
 
 #### Display Data
 
