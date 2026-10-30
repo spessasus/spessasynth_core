@@ -37,20 +37,15 @@ const PARAMETER_COUNT = 20;
 const DEFAULT_SEND_LEVEL_TO_REVERB = 40;
 
 /**
- * Converts a 7-bit send level into the gain used by the processors.
- * @param value The 7-bit send level.
- */
-function sendGain(value: number) {
-    return (value / 127) * EFX_SENDS_GAIN_CORRECTION;
-}
-
-/**
  * The default implementation for {@link GSInsertionBlock}.
  *
  * @group Synthesizer.GS Effects
  * @sealed
  */
 export class DefaultGSInsertion implements GSInsertionBlock {
+    public sendLevelToReverb = DEFAULT_SEND_LEVEL_TO_REVERB;
+    public sendLevelToChorus = 0;
+    public sendLevelToDelay = 0;
     /**
      * The list of effects available in this block.
      * Effect type: processor.
@@ -73,6 +68,14 @@ export class DefaultGSInsertion implements GSInsertionBlock {
      * 255 means the parameter uses the type default.
      */
     private readonly params = new Uint8Array(PARAMETER_COUNT).fill(255);
+    /**
+     * The left output of the processor.
+     */
+    private readonly outputLeft;
+    /**
+     * The right output of the processor.
+     */
+    private readonly outputRight;
 
     /**
      * Constructs a new default GS insertion block.
@@ -85,40 +88,9 @@ export class DefaultGSInsertion implements GSInsertionBlock {
             const processor = new constructor(sampleRate, maxBufferSize);
             this.effectMap.set(processor.type, processor);
         }
+        this.outputLeft = new Float32Array(maxBufferSize);
+        this.outputRight = new Float32Array(maxBufferSize);
         this.reset();
-    }
-
-    private _sendLevelToReverb = DEFAULT_SEND_LEVEL_TO_REVERB;
-
-    public get sendLevelToReverb() {
-        return this._sendLevelToReverb;
-    }
-
-    public set sendLevelToReverb(value: number) {
-        this._sendLevelToReverb = value;
-        this.processor.sendLevelToReverb = sendGain(value);
-    }
-
-    private _sendLevelToChorus = 0;
-
-    public get sendLevelToChorus() {
-        return this._sendLevelToChorus;
-    }
-
-    public set sendLevelToChorus(value: number) {
-        this._sendLevelToChorus = value;
-        this.processor.sendLevelToChorus = sendGain(value);
-    }
-
-    private _sendLevelToDelay = 0;
-
-    public get sendLevelToDelay() {
-        return this._sendLevelToDelay;
-    }
-
-    public set sendLevelToDelay(value: number) {
-        this._sendLevelToDelay = value;
-        this.processor.sendLevelToDelay = sendGain(value);
     }
 
     public setType(type: number) {
@@ -130,7 +102,6 @@ export class DefaultGSInsertion implements GSInsertionBlock {
         this.processor = processor ?? this.fallbackProcessor;
         this.processor.reset();
         this.params.fill(255);
-        // The setters also apply the send levels to the new processor
         this.sendLevelToReverb = DEFAULT_SEND_LEVEL_TO_REVERB;
         this.sendLevelToChorus = 0;
         this.sendLevelToDelay = 0;
@@ -146,8 +117,7 @@ export class DefaultGSInsertion implements GSInsertionBlock {
 
     public setParameter(param: number, value: number) {
         this.params[param] = value;
-        // The processors use the GS addresses, EFX parameter 1 is 0x03
-        this.processor.setParameter(param + 0x03, value);
+        this.processor.setParameter(param, value);
     }
 
     public process(
@@ -161,26 +131,43 @@ export class DefaultGSInsertion implements GSInsertionBlock {
         startIndex: number,
         sampleCount: number
     ) {
+        const processedLeft = this.outputLeft;
+        const processedRight = this.outputRight;
         this.processor.process(
             inputLeft,
             inputRight,
-            outputLeft,
-            outputRight,
-            outputReverb,
-            outputChorus,
-            outputDelay,
-            startIndex,
+            processedLeft,
+            processedRight,
             sampleCount
         );
+
+        const toReverb =
+            (this.sendLevelToReverb / 127) * EFX_SENDS_GAIN_CORRECTION;
+        const toChorus =
+            (this.sendLevelToChorus / 127) * EFX_SENDS_GAIN_CORRECTION;
+        const toDelay =
+            (this.sendLevelToDelay / 127) * EFX_SENDS_GAIN_CORRECTION;
+        for (let i = 0; i < sampleCount; i++) {
+            const l = processedLeft[i];
+            const r = processedRight[i];
+            const idx = startIndex + i;
+            outputLeft[idx] += l;
+            outputRight[idx] += r;
+            // The sends are mono
+            const mono = (l + r) * 0.5;
+            outputReverb[i] += mono * toReverb;
+            outputChorus[i] += mono * toChorus;
+            outputDelay[i] += mono * toDelay;
+        }
     }
 
     public getSnapshot(): GSInsertionBlockSnapshot {
         return {
             type: this.type,
             params: this.params.slice(),
-            sendLevelToReverb: this._sendLevelToReverb,
-            sendLevelToChorus: this._sendLevelToChorus,
-            sendLevelToDelay: this._sendLevelToDelay
+            sendLevelToReverb: this.sendLevelToReverb,
+            sendLevelToChorus: this.sendLevelToChorus,
+            sendLevelToDelay: this.sendLevelToDelay
         };
     }
 

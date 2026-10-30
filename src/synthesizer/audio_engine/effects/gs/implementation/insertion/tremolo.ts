@@ -1,4 +1,3 @@
-import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import {
     applyShelves,
     type BiquadCoeffs,
@@ -21,9 +20,6 @@ effect to the sound.
 Type: Stereo
  */
 export class TremoloFX implements DefaultGSInsertionProcessor {
-    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
-    public sendLevelToChorus = 0;
-    public sendLevelToDelay = 0;
     public readonly type = 0x01_25;
 
     /**
@@ -122,16 +118,9 @@ export class TremoloFX implements DefaultGSInsertionProcessor {
         inputRight: Float32Array,
         outputLeft: Float32Array,
         outputRight: Float32Array,
-        outputReverb: Float32Array,
-        outputChorus: Float32Array,
-        outputDelay: Float32Array,
-        startIndex: number,
         sampleCount: number
     ) {
         const {
-            sendLevelToReverb,
-            sendLevelToChorus,
-            sendLevelToDelay,
             level,
             lsCoeffs,
             lsStateL,
@@ -203,13 +192,8 @@ export class TremoloFX implements DefaultGSInsertionProcessor {
             const outR = sR * level * currentGain;
 
             // Mix
-            const idx = startIndex + i;
-            outputLeft[idx] += outL;
-            outputRight[idx] += outR;
-            const mono = (outL + outR) * 0.5;
-            outputReverb[i] += mono * sendLevelToReverb;
-            outputChorus[i] += mono * sendLevelToChorus;
-            outputDelay[i] += mono * sendLevelToDelay;
+            outputLeft[i] = outL;
+            outputRight[i] = outR;
         }
         this.phase = phase;
         this.currentGain = currentGain;
@@ -221,32 +205,32 @@ export class TremoloFX implements DefaultGSInsertionProcessor {
                 break;
             }
 
-            case 0x03: {
+            case 0: {
                 this.modWave = value;
                 break;
             }
 
-            case 0x04: {
+            case 1: {
                 this.modRate = InsertionValueConverter.rate1(value);
                 break;
             }
 
-            case 0x05: {
+            case 2: {
                 this.modDepth = value;
                 break;
             }
 
-            case 0x13: {
+            case 16: {
                 this.lowGain = value - 64;
                 break;
             }
 
-            case 0x14: {
+            case 17: {
                 this.hiGain = value - 64;
                 break;
             }
 
-            case 0x16: {
+            case 19: {
                 this.level = value / 127;
                 break;
             }

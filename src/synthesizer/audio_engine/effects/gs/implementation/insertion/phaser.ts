@@ -1,4 +1,3 @@
-import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import { InsertionValueConverter } from "./convert";
 import {
     applyShelves,
@@ -31,9 +30,6 @@ const PHASE_START = 0.35;
  * Note: seems to use a triangle LFO for modulation
  */
 export class PhaserFX implements DefaultGSInsertionProcessor {
-    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
-    public sendLevelToChorus = 0;
-    public sendLevelToDelay = 0;
     public readonly type = 0x01_20;
 
     /**
@@ -148,16 +144,9 @@ export class PhaserFX implements DefaultGSInsertionProcessor {
         inputRight: Float32Array,
         outputLeft: Float32Array,
         outputRight: Float32Array,
-        outputReverb: Float32Array,
-        outputChorus: Float32Array,
-        outputDelay: Float32Array,
-        startIndex: number,
         sampleCount: number
     ) {
         const {
-            sendLevelToReverb,
-            sendLevelToChorus,
-            sendLevelToDelay,
             level,
             manual,
             manualOffset,
@@ -230,13 +219,8 @@ export class PhaserFX implements DefaultGSInsertionProcessor {
             const outR = (sR + apR * mix) * level;
 
             // Mix
-            const idx = startIndex + i;
-            outputLeft[idx] += outL;
-            outputRight[idx] += outR;
-            const mono = (outL + outR) * 0.5;
-            outputReverb[i] += mono * sendLevelToReverb;
-            outputChorus[i] += mono * sendLevelToChorus;
-            outputDelay[i] += mono * sendLevelToDelay;
+            outputLeft[i] = outL;
+            outputRight[i] = outR;
         }
         this.phase = phase;
         this.prevL = prevL;
@@ -249,42 +233,42 @@ export class PhaserFX implements DefaultGSInsertionProcessor {
                 break;
             }
 
-            case 0x03: {
+            case 0: {
                 this.setManual(InsertionValueConverter.manual(value));
                 break;
             }
 
-            case 0x04: {
+            case 1: {
                 this.rate = InsertionValueConverter.rate1(value);
                 break;
             }
 
-            case 0x05: {
+            case 2: {
                 this.depth = value / DEPTH_DIV;
                 break;
             }
 
-            case 0x06: {
+            case 3: {
                 this.reso = value / 127;
                 break;
             }
 
-            case 0x07: {
+            case 4: {
                 this.mix = value / 127;
                 break;
             }
 
-            case 0x13: {
+            case 16: {
                 this.lowGain = value - 64;
                 break;
             }
 
-            case 0x14: {
+            case 17: {
                 this.hiGain = value - 64;
                 break;
             }
 
-            case 0x16: {
+            case 19: {
                 this.level = value / 127;
                 break;
             }

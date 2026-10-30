@@ -1,4 +1,3 @@
-import { EFX_SENDS_GAIN_CORRECTION } from "../../../../synth_constants";
 import { InsertionValueConverter } from "./convert";
 import {
     type BiquadCoeffs,
@@ -16,9 +15,6 @@ import type { DefaultGSInsertionProcessor } from "./insertion_processor";
  */
 export class StereoEQFX implements DefaultGSInsertionProcessor {
     public readonly type = 0x01_00;
-    public sendLevelToReverb = (40 / 127) * EFX_SENDS_GAIN_CORRECTION;
-    public sendLevelToChorus = 0;
-    public sendLevelToDelay = 0;
 
     private readonly sampleRate: number;
     private level = 1;
@@ -140,57 +136,57 @@ export class StereoEQFX implements DefaultGSInsertionProcessor {
                 break;
             }
 
-            case 0x03: {
+            case 0: {
                 this.lowFreq = value === 1 ? 400 : 200;
                 break;
             }
 
-            case 0x04: {
+            case 1: {
                 this.lowGain = value - 64;
                 break;
             }
 
-            case 0x05: {
+            case 2: {
                 this.hiFreq = value === 1 ? 8000 : 4000;
                 break;
             }
 
-            case 0x06: {
+            case 3: {
                 this.hiGain = value - 64;
                 break;
             }
 
-            case 0x07: {
+            case 4: {
                 this.m1Freq = InsertionValueConverter.eqFreq(value);
                 break;
             }
 
-            case 0x08: {
+            case 5: {
                 this.m1Q = [0.5, 1, 2, 4, 9][value] || 1;
                 break;
             }
 
-            case 0x09: {
+            case 6: {
                 this.m1Gain = value - 64;
                 break;
             }
 
-            case 0x0a: {
+            case 7: {
                 this.m2Freq = InsertionValueConverter.eqFreq(value);
                 break;
             }
 
-            case 0x0b: {
+            case 8: {
                 this.m2Q = [0.5, 1, 2, 4, 9][value] || 1;
                 break;
             }
 
-            case 0x0c: {
+            case 9: {
                 this.m2Gain = value - 64;
                 break;
             }
 
-            case 0x16: {
+            case 19: {
                 this.level = value / 127;
                 break;
             }
@@ -203,17 +199,10 @@ export class StereoEQFX implements DefaultGSInsertionProcessor {
         inputRight: Float32Array,
         outputLeft: Float32Array,
         outputRight: Float32Array,
-        outputReverb: Float32Array,
-        outputChorus: Float32Array,
-        outputDelay: Float32Array,
-        startIndex: number,
         sampleCount: number
     ) {
         const {
             level,
-            sendLevelToChorus,
-            sendLevelToDelay,
-            sendLevelToReverb,
             lowCoeffs,
             lowStateL,
             lowStateR,
@@ -244,15 +233,8 @@ export class StereoEQFX implements DefaultGSInsertionProcessor {
             sL = processBiquad(sL, hiCoeffs, hiStateL);
             sR = processBiquad(sR, hiCoeffs, hiStateR);
 
-            // Mix
-            const idx = startIndex + i;
-            outputLeft[idx] += sL * level;
-            outputRight[idx] += sR * level;
-            // Sends (index 0)
-            const mono = 0.5 * (sL + sR) * level;
-            outputReverb[i] += mono * sendLevelToReverb;
-            outputChorus[i] += mono * sendLevelToChorus;
-            outputDelay[i] += mono * sendLevelToDelay;
+            outputLeft[i] = sL * level;
+            outputRight[i] = sR * level;
         }
     }
 
