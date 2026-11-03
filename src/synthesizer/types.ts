@@ -56,6 +56,18 @@ export interface SynthMethodOptions {
  */
 export interface SynthProcessorOptions {
     /**
+     * The most decoded sample data the synthesizer keeps, in bytes.
+     * When over it, the least recently played samples drop their decoded data and decode again when played.
+     * Only samples that can decode again (loaded s16le or vorbis data) are dropped.
+     * Defaults to Infinity, which keeps everything.
+     *
+     * > **Tip**
+     * >
+     * > Decoded data is 4 bytes per sample point, twice the size of 16-bit data.
+     * > This helps with very large sound banks.
+     */
+    decodedSampleBudget: number;
+    /**
      * The maximum buffer size the synthesizer can render at once.
      * Attempting to `.process()` more samples than this will result in an error.
      * Defaults to 128.

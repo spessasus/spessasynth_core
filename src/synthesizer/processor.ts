@@ -82,6 +82,7 @@ import { DefaultXGReverb } from "./audio_engine/effects/xg/implementation/reverb
 import { DefaultXGChorus } from "./audio_engine/effects/xg/implementation/chorus";
 import { DefaultXGVariation } from "./audio_engine/effects/xg/implementation/variation";
 import { DefaultXGInsertion } from "./audio_engine/effects/xg/implementation/insertion";
+import { DecodedSampleCache } from "./audio_engine/decoded_sample_cache";
 
 /**
  * Gain smoothing for rapid volume changes. Must be run EVERY SAMPLE
@@ -447,6 +448,11 @@ export class SpessaSynthProcessor {
      */
     public readonly cachedVoices = new Map<number, CachedVoiceList>();
     /**
+     * Keeps the decoded sample data under the budget from the options.
+     * @internal
+     */
+    protected readonly decodedSamples: DecodedSampleCache;
+    /**
      * Insertion is not used outside SC-88Pro+ MIDIs, this is an optimization.
      * @internal
      */
@@ -583,6 +589,10 @@ export class SpessaSynthProcessor {
         this.setSystemParameter("effectsEnabled", options.effectsEnabled);
         this.setSystemParameter("eventsEnabled", options.eventsEnabled);
         this.maxBufferSize = options.maxBufferSize;
+        this.decodedSamples = new DecodedSampleCache(
+            options.decodedSampleBudget,
+            this.cachedVoices
+        );
 
         // For GS user drum set
         this.soundBankManager.systemGetter = () => this.midiParameters.system;
@@ -1734,6 +1744,15 @@ export class SpessaSynthProcessor {
         const cached = this.getCachedVoice(preset, midiNote, velocity);
         // If cached, return it!
         if (cached !== undefined) {
+            if (this.decodedSamples.enabled) {
+                const key = this.getCachedVoiceIndex(
+                    preset,
+                    midiNote,
+                    velocity
+                );
+                for (const v of cached)
+                    this.decodedSamples.touch(v.sample, key);
+            }
             return cached;
         }
         // Not cached...
@@ -1764,6 +1783,10 @@ export class SpessaSynthProcessor {
         }
         // Cache the voice
         this.setCachedVoice(preset, midiNote, velocity, voices);
+        if (this.decodedSamples.enabled) {
+            const key = this.getCachedVoiceIndex(preset, midiNote, velocity);
+            for (const v of voices) this.decodedSamples.touch(v.sample, key);
+        }
         return voices;
     }
 
@@ -1782,6 +1805,14 @@ export class SpessaSynthProcessor {
      */
     public refreshPresets() {
         this.soundBankManager.refresh();
+    }
+
+    /**
+     * The decoded sample data kept under {@link SynthProcessorOptions.decodedSampleBudget}, in bytes.
+     * It is only counted when a budget is set.
+     */
+    public get decodedSampleBytes() {
+        return this.decodedSamples.totalBytes;
     }
 
     /**

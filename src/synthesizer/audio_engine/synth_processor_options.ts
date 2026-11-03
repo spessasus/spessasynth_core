@@ -5,5 +5,6 @@ export const DEFAULT_SYNTH_OPTIONS: SynthProcessorOptions = {
     effectsEnabled: true,
     maxBufferSize: SPESSA_BUFSIZE,
     initialTime: 0,
-    eventsEnabled: true
+    eventsEnabled: true,
+    decodedSampleBudget: Infinity
 };

@@ -167,6 +167,14 @@ export class DLSSample extends BasicSample {
         super.setStoredData(stored);
     }
 
+    public releaseDecoded() {
+        if (this.rawData && this.audioData && !this.dataOverridden) {
+            this.audioData = undefined;
+            return true;
+        }
+        return super.releaseDecoded();
+    }
+
     public releaseData() {
         // Keep the length and form before the raw data is gone
         if (this.hasData) {

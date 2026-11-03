@@ -1,4 +1,5 @@
 import type { VoiceParameters } from "../../../soundbank/types";
+import type { BasicSample } from "../../../soundbank/basic_soundbank/basic_sample";
 import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 import { VoiceModulator } from "./voice_modulator";
 import type { SampleLoopingMode } from "./voice";
@@ -11,6 +12,11 @@ export class CachedVoice {
      * Sample data of this voice.
      */
     public readonly sampleData: Float32Array;
+
+    /**
+     * The sample the data comes from.
+     */
+    public readonly sample: BasicSample;
 
     /**
      * The unmodulated (copied to) generators of the voice.
@@ -96,6 +102,7 @@ export class CachedVoice {
         this.loopStart = sample.loopStart;
         this.loopEnd = sample.loopEnd;
         this.sampleData = sample.getAudioData();
+        this.sample = sample;
         this.playbackStep =
             (sample.sampleRate / sampleRate) *
             Math.pow(2, sample.pitchCorrection / 1200); // Cent tuning

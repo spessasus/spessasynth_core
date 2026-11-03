@@ -377,6 +377,23 @@ export class BasicSample {
     }
 
     /**
+     * Drops the decoded float data if the sample can decode it again from its stored s16le or vorbis data.
+     * Replaced data (set with {@link BasicSample.setAudioData}) is kept.
+     * @returns True if the decoded data was dropped.
+     */
+    public releaseDecoded() {
+        if (
+            this.audioData &&
+            !this.dataOverridden &&
+            (this.compressedData || this.s16leData)
+        ) {
+            this.audioData = undefined;
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Marks the sample as having no data, with a known length.
      * Used when loading without sample data.
      * @param length The length in sample points.
