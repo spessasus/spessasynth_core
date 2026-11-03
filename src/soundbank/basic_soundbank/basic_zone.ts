@@ -133,6 +133,7 @@ export class BasicZone {
                     break;
                 }
 
+                case GeneratorTypes.invalid:
                 case GeneratorTypes.sampleID:
                 case GeneratorTypes.instrument: {
                     // Don't add these, they already have their own properties

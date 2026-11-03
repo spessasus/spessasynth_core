@@ -4,7 +4,11 @@
  */
 import { LowpassFilter } from "./lowpass_filter";
 import { VolumeEnvelope } from "./volume_envelope";
-import { ModulationEnvelope } from "./modulation_envelope";
+import {
+    MOD_ENV_2_GENERATORS,
+    MOD_ENV_GENERATORS,
+    ModulationEnvelope
+} from "./modulation_envelope";
 import { GENERATORS_AMOUNT } from "../../../soundbank/basic_soundbank/generator_types";
 import { MIN_EXCLUSIVE_LENGTH, MIN_NOTE_LENGTH } from "../synth_constants";
 import type { WavetableOscillator } from "./wavetable_oscillator/wavetable_oscillator";
@@ -87,7 +91,12 @@ export class Voice {
     /**
      * Modulation envelope.
      */
-    public readonly modEnv: ModulationEnvelope = new ModulationEnvelope();
+    public readonly modEnv = new ModulationEnvelope(MOD_ENV_GENERATORS);
+
+    /**
+     * The second modulation envelope (SFE).
+     */
+    public readonly modEnv2 = new ModulationEnvelope(MOD_ENV_2_GENERATORS);
 
     /**
      * Volume envelope.
@@ -254,9 +263,12 @@ export class Voice {
     // Vibrato LFO data
     public vibLfoPhase = 0;
     public vibLfoStartTime = 0;
+    // Fade in time in seconds, 0 means no fade
+    public vibLfoFade = 0;
     // Mod LFO data
     public modLfoPhase = 0;
     public modLfoStartTime = 0;
+    public modLfoFade = 0;
 
     public constructor(sampleRate: number, bufferSize: number) {
         this.volEnv = new VolumeEnvelope(sampleRate, bufferSize);

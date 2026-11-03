@@ -30,6 +30,23 @@ for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
 }
 
 /**
+ * Computes the LFO value for the given phase.
+ * Both waveforms are at zero and rising at the default start phase of 0.25.
+ * @param phase the LFO phase, from 0 to 1.
+ * @param waveform 0 for triangle, 1 for sawtooth.
+ * @returns the LFO value, from -1 to 1.
+ */
+function getLfoValue(phase: number, waveform: number) {
+    if (waveform === 1) {
+        // Rising sawtooth
+        const p = phase + 0.25;
+        return 2 * (p >= 1 ? p - 1 : p) - 1;
+    }
+    // Triangle
+    return 1 - 4 * Math.abs(phase - 0.5);
+}
+
+/**
  * Renders a voice to the stereo output buffer
  * @param voice the voice to render
  * @param timeNow current time in seconds
@@ -41,6 +58,11 @@ export function renderVoice(
     timeNow: number,
     sampleCount: number
 ) {
+    // Delayed voice start (SFE): nothing runs until the voice starts
+    if (timeNow < voice.startTime) {
+        voice.hasRendered = true;
+        return;
+    }
     // Check if release
     if (
         !voice.isInRelease && // If not in release, check if the release time is
@@ -50,6 +72,7 @@ export function renderVoice(
         voice.isInRelease = true;
         voice.volEnv.startRelease(voice);
         voice.modEnv.startRelease(voice);
+        voice.modEnv2.startRelease(voice);
 
         // Looping mode 3
         if (voice.loopingMode === 3) {
@@ -130,8 +153,17 @@ export function renderVoice(
                     modulated[GeneratorTypes.vibLfoRate] / 100
             );
             const rateInc = (vibFreqHz * sampleCount) / sampleRate;
-            const vibLfoValue = 1 - 4 * Math.abs(voice.vibLfoPhase - 0.5);
+            let vibLfoValue = getLfoValue(
+                voice.vibLfoPhase,
+                modulated[GeneratorTypes.vibLfoWaveform]
+            );
             if ((voice.vibLfoPhase += rateInc) >= 1) voice.vibLfoPhase -= 1;
+            // Fade in (SFE)
+            if (voice.vibLfoFade > 0) {
+                const fade =
+                    (timeNow - voice.vibLfoStartTime) / voice.vibLfoFade;
+                if (fade < 1) vibLfoValue *= fade;
+            }
             cents += vibLfoValue * vibPitchDepth;
             // Low pass frequency
             lowpassExcursion += vibLfoValue * vibFilterDepth;
@@ -166,8 +198,17 @@ export function renderVoice(
                     modulated[GeneratorTypes.modLfoRate] / 100
             );
             const rateInc = (modFreqHz * sampleCount) / sampleRate;
-            const modLfoValue = 1 - 4 * Math.abs(voice.modLfoPhase - 0.5);
+            let modLfoValue = getLfoValue(
+                voice.modLfoPhase,
+                modulated[GeneratorTypes.modLfoWaveform]
+            );
             if ((voice.modLfoPhase += rateInc) >= 1) voice.modLfoPhase -= 1;
+            // Fade in (SFE)
+            if (voice.modLfoFade > 0) {
+                const fade =
+                    (timeNow - voice.modLfoStartTime) / voice.modLfoFade;
+                if (fade < 1) modLfoValue *= fade;
+            }
             cents += modLfoValue * modPitchDepth;
             // Vol env volume offset
             // Negate the lfo value because audigy starts with increase rather than decrease
@@ -211,6 +252,15 @@ export function renderVoice(
         // Apply values
         lowpassExcursion += modEnv * modEnvFilterDepth;
         cents += modEnv * modEnvPitchDepth;
+    }
+
+    // Second mod env (SFE)
+    const modEnv2PitchDepth = modulated[GeneratorTypes.modEnv2ToPitch];
+    const modEnv2FilterDepth = modulated[GeneratorTypes.modEnv2ToFilterFc];
+    if (modEnv2FilterDepth !== 0 || modEnv2PitchDepth !== 0) {
+        const modEnv2 = voice.modEnv2.process(voice, timeNow);
+        lowpassExcursion += modEnv2 * modEnv2FilterDepth;
+        cents += modEnv2 * modEnv2PitchDepth;
     }
 
     // Default resonant modulator: it does not affect the filter gain (neither XG nor GS did that)
@@ -382,7 +432,11 @@ export function renderVoice(
         }
 
         // The final cutoff for this calculation
-        const targetCutoff = f.currentInitialFc + lowpassExcursion;
+        let targetCutoff = f.currentInitialFc + lowpassExcursion;
+        // Cutoff ceiling (SFE), 13500 means no ceiling
+        const maxCutoff = modulated[GeneratorTypes.maxFilterFc];
+        if (maxCutoff < 13_500 && targetCutoff > maxCutoff)
+            targetCutoff = maxCutoff;
         const modulatedResonance = modulated[GeneratorTypes.initialFilterQ];
         /* Note:
          * the check for initialFC is because of the filter optimization

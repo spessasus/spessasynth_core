@@ -1,7 +1,10 @@
 import { timecentsToSeconds } from "./unit_converter";
 import { getModulatorCurveValue } from "../../../soundbank/basic_soundbank/modulator_curves";
 import { type Voice } from "./voice";
-import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
+import {
+    type GeneratorType,
+    GeneratorTypes
+} from "../../../soundbank/basic_soundbank/generator_types";
 import { ModulatorCurveTypes } from "../../../soundbank/enums";
 
 /**
@@ -21,7 +24,53 @@ for (let i = 0; i < CONVEX_ATTACK.length; i++) {
     );
 }
 
+/**
+ * The generators that control one modulation envelope.
+ */
+export interface ModulationEnvelopeGenerators {
+    delay: GeneratorType;
+    attack: GeneratorType;
+    hold: GeneratorType;
+    decay: GeneratorType;
+    sustain: GeneratorType;
+    release: GeneratorType;
+    keyNumToHold: GeneratorType;
+    keyNumToDecay: GeneratorType;
+}
+
+/**
+ * The SF2 modulation envelope.
+ */
+export const MOD_ENV_GENERATORS: ModulationEnvelopeGenerators = {
+    delay: GeneratorTypes.delayModEnv,
+    attack: GeneratorTypes.attackModEnv,
+    hold: GeneratorTypes.holdModEnv,
+    decay: GeneratorTypes.decayModEnv,
+    sustain: GeneratorTypes.sustainModEnv,
+    release: GeneratorTypes.releaseModEnv,
+    keyNumToHold: GeneratorTypes.keyNumToModEnvHold,
+    keyNumToDecay: GeneratorTypes.keyNumToModEnvDecay
+};
+
+/**
+ * The second modulation envelope (SFE).
+ */
+export const MOD_ENV_2_GENERATORS: ModulationEnvelopeGenerators = {
+    delay: GeneratorTypes.delayModEnv2,
+    attack: GeneratorTypes.attackModEnv2,
+    hold: GeneratorTypes.holdModEnv2,
+    decay: GeneratorTypes.decayModEnv2,
+    sustain: GeneratorTypes.sustainModEnv2,
+    release: GeneratorTypes.releaseModEnv2,
+    keyNumToHold: GeneratorTypes.keyNumToModEnv2Hold,
+    keyNumToDecay: GeneratorTypes.keyNumToModEnv2Decay
+};
+
 export class ModulationEnvelope {
+    /**
+     * The generators this envelope reads.
+     */
+    private readonly gens: ModulationEnvelopeGenerators;
     /**
      * The attack duration, in seconds.
      */
@@ -71,6 +120,10 @@ export class ModulationEnvelope {
      * Decay phase end time in seconds, absolute (audio context time).
      */
     private decayEnd = 0;
+
+    public constructor(gens: ModulationEnvelopeGenerators) {
+        this.gens = gens;
+    }
 
     /**
      * Calculates the current modulation envelope value for the given time and voice.
@@ -133,10 +186,7 @@ export class ModulationEnvelope {
 
         // Min is set to -7200 to prevent lowpass clicks
         const releaseTime = this.tc2Sec(
-            Math.max(
-                voice.modulatedGenerators[GeneratorTypes.releaseModEnv],
-                -7200
-            )
+            Math.max(voice.modulatedGenerators[this.gens.release], -7200)
         );
         // Release time is from the full level to 0%
         // To get the actual time, multiply by the release start level
@@ -150,18 +200,17 @@ export class ModulationEnvelope {
     public init(voice: Voice) {
         this.enteredRelease = false;
         this.sustainLevel =
-            1 - voice.modulatedGenerators[GeneratorTypes.sustainModEnv] / 1000;
+            1 - voice.modulatedGenerators[this.gens.sustain] / 1000;
 
         this.attackDuration = this.tc2Sec(
-            voice.modulatedGenerators[GeneratorTypes.attackModEnv]
+            voice.modulatedGenerators[this.gens.attack]
         );
 
         const decayKeyExcursionCents =
             (60 - voice.targetKey) *
-            voice.modulatedGenerators[GeneratorTypes.keyNumToModEnvDecay];
+            voice.modulatedGenerators[this.gens.keyNumToDecay];
         const decayTime = this.tc2Sec(
-            voice.modulatedGenerators[GeneratorTypes.decayModEnv] +
-                decayKeyExcursionCents
+            voice.modulatedGenerators[this.gens.decay] + decayKeyExcursionCents
         );
         // According to the specification, the decay time is the time it takes to reach 0% from 100%.
         // Calculate the time to reach actual sustain level,
@@ -170,15 +219,14 @@ export class ModulationEnvelope {
 
         const holdKeyExcursionCents =
             (60 - voice.targetKey) *
-            voice.modulatedGenerators[GeneratorTypes.keyNumToModEnvHold];
+            voice.modulatedGenerators[this.gens.keyNumToHold];
         this.holdDuration = this.tc2Sec(
-            holdKeyExcursionCents +
-                voice.modulatedGenerators[GeneratorTypes.holdModEnv]
+            holdKeyExcursionCents + voice.modulatedGenerators[this.gens.hold]
         );
 
         this.delayEnd =
             voice.startTime +
-            this.tc2Sec(voice.modulatedGenerators[GeneratorTypes.delayModEnv]);
+            this.tc2Sec(voice.modulatedGenerators[this.gens.delay]);
         this.attackEnd = this.delayEnd + this.attackDuration;
         this.holdEnd = this.attackEnd + this.holdDuration;
         this.decayEnd = this.holdEnd + this.decayDuration;

@@ -2,7 +2,10 @@ import { IndexedByteArray } from "../../../utils/indexed_array";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { signedInt16 } from "../../../utils/byte_functions/little_endian";
 import { Generator } from "../../basic_soundbank/generator";
-import type { GeneratorType } from "../../basic_soundbank/generator_types";
+import {
+    type GeneratorType,
+    GeneratorTypes
+} from "../../basic_soundbank/generator_types";
 
 export class ReadGenerator extends Generator {
     /**
@@ -24,11 +27,21 @@ export class ReadGenerator extends Generator {
 
 /**
  * Reads the generators
+ * @param generatorChunk pgen or igen
+ * @param allowSFEGenerators if generators above endOper are allowed (SFE banks)
  */
-export function readGenerators(generatorChunk: RIFFChunk): Generator[] {
-    const gens = [];
+export function readGenerators(
+    generatorChunk: RIFFChunk,
+    allowSFEGenerators: boolean
+) {
+    const gens = new Array<Generator>();
     while (generatorChunk.data.length > generatorChunk.data.currentIndex) {
-        gens.push(new ReadGenerator(generatorChunk.data));
+        const gen = new ReadGenerator(generatorChunk.data);
+        // SF2 2.04 section 8.1.2: unknown generators are ignored
+        // They are kept in the list as invalid since the zones index into it
+        if (!allowSFEGenerators && gen.type > GeneratorTypes.endOper)
+            gen.type = GeneratorTypes.invalid;
+        gens.push(gen);
     }
     // Remove terminal
     gens.pop();

@@ -1,5 +1,6 @@
 import type { MIDIChannel } from "./midi_channel";
 import { MIDIControllers } from "../../../midi/enums";
+import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_types";
 
 /**
  * Releases a note by its MIDI note number.
@@ -49,8 +50,12 @@ export function noteOff(this: MIDIChannel, midiNote: number) {
                 v.noteID === noteID &&
                 !v.isInRelease
             ) {
-                if (sustain) v.isHeld = true;
-                else v.releaseVoice(this.synthCore.currentTime);
+                // Voices that ignore note off play out on their own (XG drum "Rcv Note Off")
+                // They are not held either, so the sustain pedal does not release them
+                if (!v.modulatedGenerators[GeneratorTypes.ignoreNoteOff]) {
+                    if (sustain) v.isHeld = true;
+                    else v.releaseVoice(this.synthCore.currentTime);
+                }
 
                 if (++vc >= this._voiceCount) break; // We already checked all the voices
             }

@@ -25,6 +25,7 @@ import type { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import type { ExtendedSF2Chunks } from "./types";
 import { writeSF2Elements } from "./write_sf2_elements";
 import { toISODateString } from "../../../utils/date";
+import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     writeDefaultModulators: true,
@@ -90,7 +91,7 @@ export function writeSFEInternal(
  * @param software software param
  * @param writeDefaultModulators SFE + SF2 compatible
  * @param writeExtendedLimits SFE + SF2 compatible
- * @param writeBankLSB SFE Only
+ * @param writeBankLSB SFE Only, also enables the SFE generators
  * @param rf64 SFE Only
  * @param progressFunction called after each written sample
  * @internal
@@ -167,7 +168,12 @@ function writeSF(
         );
 
     if (defaultModulatorsChanged && writeDefaultModulators) {
-        const mods = bank.defaultModulators;
+        // Destinations above endOper only exist in SFE
+        const mods = writeBankLSB
+            ? bank.defaultModulators
+            : bank.defaultModulators.filter(
+                  (m) => m.destination <= GeneratorTypes.endOper
+              );
         SpessaLog.info(
             `%cWriting %c${mods.length}%c default modulators...`,
             ConsoleColors.info,
@@ -208,11 +214,17 @@ function writeSF(
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
 
     SpessaLog.group("%cWriting instruments...", ConsoleColors.info);
-    const instData = writeSF2Elements(bank, rf64, false);
+    const instData = writeSF2Elements(bank, rf64, false, false, writeBankLSB);
     SpessaLog.groupEnd();
 
     SpessaLog.group("%cWriting presets...", ConsoleColors.info);
-    const presData = writeSF2Elements(bank, rf64, true, writeBankLSB);
+    const presData = writeSF2Elements(
+        bank,
+        rf64,
+        true,
+        writeBankLSB,
+        writeBankLSB
+    );
     SpessaLog.groupEnd();
 
     const chunks: ExtendedSF2Chunks[] = [

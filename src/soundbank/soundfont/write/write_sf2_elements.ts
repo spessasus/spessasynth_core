@@ -13,13 +13,16 @@ import { PHDR_BYTE_SIZE } from "../../basic_soundbank/basic_preset";
 import { RIFFChunk } from "../../../utils/riff_chunk";
 import { writeBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { writeWord } from "../../../utils/byte_functions/little_endian";
+import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 export function writeSF2Elements(
     bank: BasicSoundBank,
     rf64: boolean,
     isPreset: boolean,
     // Preset only
-    writeBankLSB = false
+    writeBankLSB = false,
+    // Generators and modulator destinations above endOper, SFE only
+    writeSFEGenerators = false
 ): {
     gen: ExtendedSF2Chunks;
     mod: ExtendedSF2Chunks;
@@ -49,12 +52,16 @@ export function writeSF2Elements(
 
     const writeZone = (z: BasicZone) => {
         generatorIndexes.push(currentGenIndex);
-        const gens = z.getWriteGenerators(bank);
+        let gens = z.getWriteGenerators(bank);
+        let mods = z.modulators;
+        if (!writeSFEGenerators) {
+            gens = gens.filter((g) => g.type <= GeneratorTypes.endOper);
+            mods = mods.filter((m) => m.destination <= GeneratorTypes.endOper);
+        }
         currentGenIndex += gens.length;
         generators.push(...gens);
 
         modulatorIndexes.push(currentModIndex);
-        const mods = z.modulators;
         currentModIndex += mods.length;
         modulators.push(...mods);
     };

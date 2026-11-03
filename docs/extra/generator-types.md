@@ -5,7 +5,7 @@ title: Generator Types
 # Generator Types
 
 Below are all generator types defined by the SoundFont 2.04 specification,
-followed by the non-standard generators used internally by `spessasynth_core`.
+followed by the SFE generators that `spessasynth_core` adds.
 
 They are accessible through the {@link GeneratorTypes} enum.
 The limits and default values are accessible through {@link GeneratorLimits}.
@@ -85,22 +85,50 @@ The limits and default values are accessible through {@link GeneratorLimits}.
 | 59           | Unused 5                                | -             | -             | -             | Unused                                                                                                                             |
 | 60           | End Marker                              | -             | -             | -             | End marker                                                                                                                         |
 
-## Non-standard generators
+## SFE generators
 
 These generators are not part of the SoundFont specification.
-They are used internally by the synthesizer
-to implement the GS and XG controller matrix (such as `*CONTROL` and controller depth System Exclusives)
-and are never written to files.
+They are only stored in SFE banks. SF2 and SF3 files never contain them, and they are ignored when reading SF2 files.
+Every default value makes the voice play exactly as it would without the generator.
 
-| Generator ID | Generator Name                 | Minimum Value | Maximum Value | Default Value | Description                                               |
-| ------------ | ------------------------------ | ------------- | ------------- | ------------- | --------------------------------------------------------- |
-| 61           | Amplitude                      | -1000         | 1000          | 0             | Linear amplitude change in 0.1% units                     |
-| 62           | Vibrato LFO Rate               | -1000         | 1000          | 0             | Vibrato LFO frequency change in 0.01 Hz units             |
-| 63           | Vibrato LFO Amplitude Depth    | 0             | 1000          | 0             | Vibrato LFO linear amplitude modulation in 0.1% units     |
-| 64           | Vibrato LFO to Filter Cutoff   | -12000        | 12000         | 0             | Like Modulation LFO to Filter Cutoff, but for vibrato LFO |
-| 65           | Vibrato LFO to Volume          | -960          | 960           | 0             | Like Modulation LFO to Volume, but for vibrato LFO        |
-| 66           | Modulation LFO Rate            | -1000         | 1000          | 0             | Modulation LFO frequency change in 0.01 Hz units          |
-| 67           | Modulation LFO Amplitude Depth | 0             | 1000          | 0             | Modulation LFO linear amplitude modulation in 0.1% units  |
+- 61 to 67 extend the LFOs. The synthesizer also uses them at runtime for the GS and XG controller matrix
+  (such as `*CONTROL` and controller depth System Exclusives).
+- 68 to 88 extend the voice beyond the SoundFont model, for example to convert XG voices.
+
+> **Tip**
+>
+> Consider reading [The SFE Format](sfe-format.md)
+
+| Generator ID | Generator Name                     | Minimum Value | Maximum Value | Default Value | Description                                                                                   |
+| ------------ | ---------------------------------- | ------------- | ------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| 61           | Amplitude                          | -1000         | 1000          | 0             | Linear amplitude change in 0.1% units                                                         |
+| 62           | Vibrato LFO Rate                   | -1000         | 1000          | 0             | Vibrato LFO frequency change in 0.01 Hz units                                                 |
+| 63           | Vibrato LFO Amplitude Depth        | 0             | 1000          | 0             | Vibrato LFO linear amplitude modulation in 0.1% units                                         |
+| 64           | Vibrato LFO to Filter Cutoff       | -12000        | 12000         | 0             | Like Modulation LFO to Filter Cutoff, but for vibrato LFO                                     |
+| 65           | Vibrato LFO to Volume              | -960          | 960           | 0             | Like Modulation LFO to Volume, but for vibrato LFO                                            |
+| 66           | Modulation LFO Rate                | -1000         | 1000          | 0             | Modulation LFO frequency change in 0.01 Hz units                                              |
+| 67           | Modulation LFO Amplitude Depth     | 0             | 1000          | 0             | Modulation LFO linear amplitude modulation in 0.1% units                                      |
+| 68           | Ignore Note Off                    | 0             | 1             | 0             | 1 = note off and the sustain pedal do not release the voice, it plays until its envelope ends |
+| 69           | Delay Voice                        | -12000        | 5000          | -12000        | Timecents, the whole voice (sample, envelopes, LFOs) starts this late. -12000 = no delay      |
+| 70           | Fade Vibrato LFO                   | -12000        | 5000          | -12000        | Timecents, the vibrato LFO ramps in over this time after its delay. -12000 = no fade          |
+| 71           | Fade Modulation LFO                | -12000        | 5000          | -12000        | Timecents, the modulation LFO ramps in over this time after its delay. -12000 = no fade       |
+| 72           | Vibrato LFO Waveform               | 0             | 1             | 0             | 0 = triangle, 1 = rising sawtooth                                                             |
+| 73           | Modulation LFO Waveform            | 0             | 1             | 0             | 0 = triangle, 1 = rising sawtooth                                                             |
+| 74           | Vibrato LFO Start Phase            | 0             | 360           | 0             | Degrees added to the start phase (0 = zero and rising, 90 = peak)                             |
+| 75           | Modulation LFO Start Phase         | 0             | 360           | 0             | Degrees added to the start phase (0 = zero and rising, 90 = peak)                             |
+| 76           | Maximum Filter Cutoff              | 1500          | 13500         | 13500         | Absolute cents, the modulated cutoff can not go above this. 13500 = no ceiling                |
+| 77           | Decay 2 Volume Envelope            | -12000        | 8000          | -12000        | Timecents for 100 dB, the second decay segment that follows the decay                         |
+| 78           | Sustain 2 Volume Envelope          | -1440         | 1440          | 0             | Centibels relative to the sustain, where the second decay ends. 0 = no second decay           |
+| 79           | Delay Modulation Envelope 2        | -12000        | 5000          | -12000        | Like Delay Modulation Envelope, for the second modulation envelope                            |
+| 80           | Attack Modulation Envelope 2       | -12000        | 8000          | -12000        | Like Attack Modulation Envelope, for the second modulation envelope                           |
+| 81           | Hold Modulation Envelope 2         | -12000        | 5000          | -12000        | Like Hold Modulation Envelope, for the second modulation envelope                             |
+| 82           | Decay Modulation Envelope 2        | -12000        | 8000          | -12000        | Like Decay Modulation Envelope, for the second modulation envelope                            |
+| 83           | Sustain Modulation Envelope 2      | 0             | 1000          | 0             | Like Sustain Modulation Envelope, for the second modulation envelope                          |
+| 84           | Release Modulation Envelope 2      | -12000        | 8000          | -12000        | Like Release Modulation Envelope, for the second modulation envelope                          |
+| 85           | Key Number to Mod Envelope 2 Hold  | -1200         | 1200          | 0             | Like Key Number to Mod Envelope Hold, for the second modulation envelope                      |
+| 86           | Key Number to Mod Envelope 2 Decay | -1200         | 1200          | 0             | Like Key Number to Mod Envelope Decay, for the second modulation envelope                     |
+| 87           | Modulation Envelope 2 to Pitch     | -12000        | 12000         | 0             | Cents, like Modulation Envelope to Pitch                                                      |
+| 88           | Modulation Envelope 2 to Filter Fc | -12000        | 12000         | 0             | Cents, like Modulation Envelope to Filter Cutoff                                              |
 
 ## Sample Modes 2
 

@@ -56,6 +56,8 @@ export class SoundFont2 extends BasicSoundBank {
         and the only other difference is that the main chunk isn't "sfbk" but rather "sfpk"
          */
         const isSF2Pack = type === "sfpk";
+        // Generators and modulator destinations above endOper are only read from SFE banks
+        const isSFE = type === "sfen";
 
         // INFO
         const infoChunk = RIFFChunk.read(mainFileArray, rf64);
@@ -92,7 +94,7 @@ export class SoundFont2 extends BasicSoundBank {
                 // Dmod: default modulators
                 case "DMOD": {
                     // Override default modulators
-                    this.defaultModulators = readModulators(chunk);
+                    this.defaultModulators = readModulators(chunk, isSFE);
                     this.customDefaultModulators = true;
                     break;
                 }
@@ -307,8 +309,8 @@ export class SoundFont2 extends BasicSoundBank {
         this.samples.push(...samples);
 
         // Read modulators and generators
-        const instrumentGenerators = readGenerators(igenChunk);
-        const instrumentModulators = readModulators(imodChunk);
+        const instrumentGenerators = readGenerators(igenChunk, isSFE);
+        const instrumentModulators = readModulators(imodChunk, isSFE);
 
         // Read the instruments
         // Keep the terminal record (EOI) when extending, the last zone count needs its index
@@ -360,8 +362,8 @@ export class SoundFont2 extends BasicSoundBank {
         );
 
         // Read preset modulators and generators
-        const presetGenerators: Generator[] = readGenerators(pgenChunk);
-        const presetModulators: Modulator[] = readModulators(pmodChunk);
+        const presetGenerators: Generator[] = readGenerators(pgenChunk, isSFE);
+        const presetModulators: Modulator[] = readModulators(pmodChunk, isSFE);
 
         // Read presets
         // Keep the terminal record (EOP) when extending, the last zone count needs its index

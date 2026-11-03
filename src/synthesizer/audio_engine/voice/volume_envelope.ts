@@ -23,10 +23,12 @@ const PERCEIVED_CB_SILENCE = 900;
  * 1 - attack
  * 2 - hold/peak
  * 3 - decay
+ * 5 - decay 2 (SFE, runs between decay and sustain)
  * 4 - sustain
  * release indicates by isInRelease property
+ * Decay 2 is 5 so the sustain keeps its number (voice priorities use it)
  */
-type VolumeEnvelopeState = 0 | 1 | 2 | 3 | 4;
+type VolumeEnvelopeState = 0 | 1 | 2 | 3 | 4 | 5;
 
 export class VolumeEnvelope {
     /**
@@ -81,6 +83,14 @@ export class VolumeEnvelope {
      */
     private sustainCb = 0;
     /**
+     * The second decay duration in samples.
+     */
+    private decay2Duration = 0;
+    /**
+     * The level the second decay ends on in cB. Equal to sustainCb without a second decay.
+     */
+    private sustain2Cb = 0;
+    /**
      * The time in samples to the end of delay stage, relative to the start of the envelope.
      */
     private delayEnd = 0;
@@ -96,6 +106,10 @@ export class VolumeEnvelope {
      * The time in samples to the end of decay stage, relative to the start of the envelope.
      */
     private decayEnd = 0;
+    /**
+     * The time in samples to the end of the second decay stage, relative to the start of the envelope.
+     */
+    private decay2End = 0;
 
     /**
      * If the volume envelope has ever entered the release phase.
@@ -196,8 +210,18 @@ export class VolumeEnvelope {
                     break;
                 }
 
+                case 5: {
+                    this.releaseStartCb =
+                        (1 -
+                            (this.decay2End - this.releaseStartTimeSamples) /
+                                this.decay2Duration) *
+                            (this.sustain2Cb - sustainCb) +
+                        sustainCb;
+                    break;
+                }
+
                 case 4: {
-                    this.releaseStartCb = sustainCb;
+                    this.releaseStartCb = this.sustain2Cb;
                     break;
                 }
             }
@@ -237,15 +261,20 @@ export class VolumeEnvelope {
         this.releaseStartCb = CB_SILENCE;
         this.releaseStartTimeSamples = 0;
         this.releaseDuration = 0;
-        this.canEndOnSilentSustain =
-            voice.modulatedGenerators[GeneratorTypes.sustainVolEnv] >=
-            PERCEIVED_CB_SILENCE;
-
         // Calculate absolute times (they can change so we have to recalculate every time
         this.sustainCb = Math.min(
             CB_SILENCE,
             voice.modulatedGenerators[GeneratorTypes.sustainVolEnv]
         );
+        this.sustain2Cb = Math.max(
+            0,
+            Math.min(
+                CB_SILENCE,
+                this.sustainCb +
+                    voice.modulatedGenerators[GeneratorTypes.sustain2VolEnv]
+            )
+        );
+        this.canEndOnSilentSustain = this.sustain2Cb >= PERCEIVED_CB_SILENCE;
 
         // Calculate durations
         this.attackDuration = this.timecentsToSamples(
@@ -283,6 +312,15 @@ export class VolumeEnvelope {
 
         this.decayEnd = this.decayDuration + this.holdEnd;
 
+        // Decay 2 uses the same rate convention (time for 100dB) and key scaling as decay
+        this.decay2Duration =
+            this.timecentsToSamples(
+                voice.modulatedGenerators[GeneratorTypes.decay2VolEnv] +
+                    keyNumAddition
+            ) *
+            (Math.abs(this.sustain2Cb - this.sustainCb) / CB_SILENCE);
+        this.decay2End = this.decay2Duration + this.decayEnd;
+
         // If the voice has no attack or delay time, set current db to peak
         if (this.attackEnd <= this.updateInterval) {
             // This.attenuationCb = this.attenuationTarget;
@@ -308,7 +346,10 @@ export class VolumeEnvelope {
             holdEnd,
             decayEnd,
             decayDuration,
-            sustainCb
+            sustainCb,
+            decay2End,
+            decay2Duration,
+            sustain2Cb
         } = this;
         // Advance time by the entire block to calculate the last sample's gain
         const sampleTime = (this.sampleTime += sampleCount);
@@ -379,13 +420,30 @@ export class VolumeEnvelope {
                         ];
                     return true;
                 }
-                this.state++;
+                this.state = 5;
+            }
+            // Fallthrough
+            case 5: {
+                if (sampleTime < decay2End) {
+                    // Linear centibel ramp from sustain to sustain 2
+                    this.attenuationCb =
+                        (1 - (decay2End - sampleTime) / decay2Duration) *
+                            (sustain2Cb - sustainCb) +
+                        sustainCb;
+                    this.outputGain =
+                        gainTarget *
+                        CENTIBEL_LOOKUP_TABLE[
+                            (this.attenuationCb - MIN_CENTIBELS) | 0
+                        ];
+                    return true;
+                }
+                this.state = 4;
             }
             // Fallthrough
             case 4: {
                 if (
                     this.canEndOnSilentSustain &&
-                    sustainCb >= PERCEIVED_CB_SILENCE
+                    sustain2Cb >= PERCEIVED_CB_SILENCE
                 ) {
                     // Make sure to fill with silence
                     // https://github.com/spessasus/spessasynth_core/issues/57
@@ -395,10 +453,10 @@ export class VolumeEnvelope {
                 }
 
                 // Sustain phase: stay at sustain
-                this.attenuationCb = sustainCb;
+                this.attenuationCb = sustain2Cb;
                 this.outputGain =
                     gainTarget *
-                    CENTIBEL_LOOKUP_TABLE[(sustainCb - MIN_CENTIBELS) | 0];
+                    CENTIBEL_LOOKUP_TABLE[(sustain2Cb - MIN_CENTIBELS) | 0];
                 return true;
             }
         }

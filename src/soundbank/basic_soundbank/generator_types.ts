@@ -70,7 +70,7 @@ export const GeneratorTypes = Object.freeze({
     // Unused5
     endOper: 60, // End marker
 
-    // Additional generators that are used in system exclusives and will not be saved (controller matrix)
+    // Additional generators that are used in system exclusives (controller matrix), only saved in SFE banks
 
     // [-1000;1000] -> 1/10%
     amplitude: 61,
@@ -85,7 +85,43 @@ export const GeneratorTypes = Object.freeze({
     // [-1000;1000] -> Hz/100
     modLfoRate: 66,
     // [0;1000] -> 1/10%
-    modLfoAmplitudeDepth: 67
+    modLfoAmplitudeDepth: 67,
+
+    // SFE generators, only read from and written to SFE banks
+
+    // 0 = release on note off, 1 = ignore note off (the voice plays until its envelope or sample ends)
+    ignoreNoteOff: 68,
+    // Timecents, the voice starts this late (sample, envelopes and LFOs). -12000 and below = no delay
+    delayVoice: 69,
+    // Timecents, vibrato LFO depth ramps in after its delay. -12000 and below = no fade
+    fadeVibLFO: 70,
+    // Timecents, mod LFO depth ramps in after its delay. -12000 and below = no fade
+    fadeModLFO: 71,
+    // 0 = triangle, 1 = sawtooth
+    vibLfoWaveform: 72,
+    // 0 = triangle, 1 = sawtooth
+    modLfoWaveform: 73,
+    // Degrees, added to the start phase of the vibrato LFO
+    vibLfoStartPhase: 74,
+    // Degrees, added to the start phase of the mod LFO
+    modLfoStartPhase: 75,
+    // Absolute cents, the cutoff can not go above this. 13500 = no ceiling
+    maxFilterFc: 76,
+    // Timecents for 100dB, the second decay segment from sustain to sustain + sustain2VolEnv
+    decay2VolEnv: 77,
+    // Centibels, relative to sustainVolEnv. 0 = no second decay segment
+    sustain2VolEnv: 78,
+    // Second modulation envelope, like the first one
+    delayModEnv2: 79,
+    attackModEnv2: 80,
+    holdModEnv2: 81,
+    decayModEnv2: 82,
+    sustainModEnv2: 83,
+    releaseModEnv2: 84,
+    keyNumToModEnv2Hold: 85,
+    keyNumToModEnv2Decay: 86,
+    modEnv2ToPitch: 87,
+    modEnv2ToFilterFc: 88
 } as const);
 
 /**
@@ -129,7 +165,10 @@ export const INSTRUMENT_ONLY_GENERATORS: ReadonlySet<GeneratorType> = new Set([
     GeneratorTypes.velocity,
     GeneratorTypes.sampleModes,
     GeneratorTypes.exclusiveClass,
-    GeneratorTypes.overridingRootKey
+    GeneratorTypes.overridingRootKey,
+    GeneratorTypes.ignoreNoteOff,
+    GeneratorTypes.vibLfoWaveform,
+    GeneratorTypes.modLfoWaveform
 ]);
 
 /**
@@ -461,5 +500,103 @@ export const GeneratorLimits: Readonly<Record<GeneratorType, GeneratorLimit>> =
             max: 1000,
             def: 0,
             nrpn: 1
+        },
+
+        // SFE
+        [GeneratorTypes.ignoreNoteOff]: { min: 0, max: 1, def: 0, nrpn: 0 },
+        [GeneratorTypes.delayVoice]: {
+            min: -12_000,
+            max: 5000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.fadeVibLFO]: {
+            min: -12_000,
+            max: 5000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.fadeModLFO]: {
+            min: -12_000,
+            max: 5000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.vibLfoWaveform]: { min: 0, max: 1, def: 0, nrpn: 0 },
+        [GeneratorTypes.modLfoWaveform]: { min: 0, max: 1, def: 0, nrpn: 0 },
+        [GeneratorTypes.vibLfoStartPhase]: { min: 0, max: 360, def: 0, nrpn: 1 },
+        [GeneratorTypes.modLfoStartPhase]: { min: 0, max: 360, def: 0, nrpn: 1 },
+        [GeneratorTypes.maxFilterFc]: {
+            min: 1500,
+            max: 13_500,
+            def: 13_500,
+            nrpn: 2
+        },
+        [GeneratorTypes.decay2VolEnv]: {
+            min: -12_000,
+            max: 8000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.sustain2VolEnv]: {
+            min: -1440,
+            max: 1440,
+            def: 0,
+            nrpn: 1
+        },
+        [GeneratorTypes.delayModEnv2]: {
+            min: -12_000,
+            max: 5000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.attackModEnv2]: {
+            min: -12_000,
+            max: 8000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.holdModEnv2]: {
+            min: -12_000,
+            max: 5000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.decayModEnv2]: {
+            min: -12_000,
+            max: 8000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.sustainModEnv2]: { min: 0, max: 1000, def: 0, nrpn: 1 },
+        [GeneratorTypes.releaseModEnv2]: {
+            min: -12_000,
+            max: 8000,
+            def: -12_000,
+            nrpn: 2
+        },
+        [GeneratorTypes.keyNumToModEnv2Hold]: {
+            min: -1200,
+            max: 1200,
+            def: 0,
+            nrpn: 1
+        },
+        [GeneratorTypes.keyNumToModEnv2Decay]: {
+            min: -1200,
+            max: 1200,
+            def: 0,
+            nrpn: 1
+        },
+        [GeneratorTypes.modEnv2ToPitch]: {
+            min: -12_000,
+            max: 12_000,
+            def: 0,
+            nrpn: 2
+        },
+        [GeneratorTypes.modEnv2ToFilterFc]: {
+            min: -12_000,
+            max: 12_000,
+            def: 0,
+            nrpn: 2
         }
     });

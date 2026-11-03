@@ -263,26 +263,39 @@ export function noteOn(
         }
         // Compute all modulators
         this.computeModulators(voice);
+        const modulated = voice.modulatedGenerators;
+
+        // Delayed voice start (SFE): everything below runs from the delayed start time
+        const voiceDelay = modulated[GeneratorTypes.delayVoice];
+        if (voiceDelay > -12_000)
+            voice.startTime += timecentsToSeconds(voiceDelay);
+        const start = voice.startTime;
 
         // Initialize the volume envelope (non-realtime)
         voice.volEnv.init(voice);
 
-        // Initialize the modulation envelope (non-realtime)
+        // Initialize the modulation envelopes (non-realtime)
         voice.modEnv.init(voice);
+        voice.modEnv2.init(voice);
 
         voice.filter.init();
 
         // Calculate LFO start times
         voice.vibLfoStartTime =
-            now +
-            timecentsToSeconds(
-                voice.modulatedGenerators[GeneratorTypes.delayVibLFO]
-            );
+            start + timecentsToSeconds(modulated[GeneratorTypes.delayVibLFO]);
         voice.modLfoStartTime =
-            now +
-            timecentsToSeconds(
-                voice.modulatedGenerators[GeneratorTypes.delayModLFO]
-            );
+            start + timecentsToSeconds(modulated[GeneratorTypes.delayModLFO]);
+        // LFO fade in and start phase (SFE)
+        const vibFade = modulated[GeneratorTypes.fadeVibLFO];
+        voice.vibLfoFade = vibFade > -12_000 ? timecentsToSeconds(vibFade) : 0;
+        const modFade = modulated[GeneratorTypes.fadeModLFO];
+        voice.modLfoFade = modFade > -12_000 ? timecentsToSeconds(modFade) : 0;
+        voice.vibLfoPhase +=
+            (modulated[GeneratorTypes.vibLfoStartPhase] % 360) / 360;
+        if (voice.vibLfoPhase >= 1) voice.vibLfoPhase -= 1;
+        voice.modLfoPhase +=
+            (modulated[GeneratorTypes.modLfoStartPhase] % 360) / 360;
+        if (voice.modLfoPhase >= 1) voice.modLfoPhase -= 1;
 
         // Modulate sample offsets (these are not real time)
         const cursorStartOffset =
