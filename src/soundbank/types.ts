@@ -438,3 +438,29 @@ export interface SoundBankLoadOptions {
      */
     copySampleData: boolean;
 }
+
+/**
+ * Options for cloning elements into a sound bank with {@link SoundBankCloner}.
+ *
+ * @group Sound Banks
+ */
+export interface SoundBankCloneOptions {
+    /**
+     * If the cloned element itself is reused when an element with the same name exists in the bank.
+     * When false, it is always copied, under a free name (`Name-1`, `Name-2` and so on).
+     */
+    reuseByName: boolean;
+
+    /**
+     * If the instruments and samples used by a cloned element are reused when one with the same name exists.
+     * When false, they are copied under a free name as well.
+     * A stereo partner of a copied sample is always copied with it.
+     */
+    reuseChildrenByName: boolean;
+
+    /**
+     * If the new elements are added to the bank.
+     * When false, they are only listed in {@link SoundBankCloner.created}.
+     */
+    addToBank: boolean;
+}

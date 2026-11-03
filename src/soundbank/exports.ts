@@ -17,6 +17,10 @@ export { BasicPreset } from "./basic_soundbank/basic_preset";
 export { BasicPresetZone } from "./basic_soundbank/basic_preset_zone";
 export { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
 export {
+    SoundBankCloner,
+    DEFAULT_SOUND_BANK_CLONE_OPTIONS
+} from "./basic_soundbank/sound_bank_cloner";
+export {
     SoundBankLoader,
     DEFAULT_SOUND_BANK_LOAD_OPTIONS
 } from "./sound_bank_loader";

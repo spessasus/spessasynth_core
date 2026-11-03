@@ -18,6 +18,7 @@ import type {
     SetSampleFormatOptions,
     SF2VersionTag,
     SFEWriteOptions,
+    SoundBankCloneOptions,
     SoundBankInfoData,
     SoundBankWriteOptions,
     SoundFont2WriteOptions
@@ -33,6 +34,7 @@ import {
     DownloadableSounds
 } from "../downloadable_sounds/downloadable_sounds";
 import { Generator } from "./generator";
+import { SoundBankCloner } from "./sound_bank_cloner";
 import { StbVorbis } from "stb-vorbis";
 
 /**
@@ -231,7 +233,9 @@ export class BasicSoundBank {
      */
     public static copyFrom(bank: BasicSoundBank) {
         const copied = new BasicSoundBank(bank.type);
-        for (const p of bank.presets) copied.clonePreset(p);
+        // One session, so shared instruments and samples are copied once
+        const cloner = new SoundBankCloner(copied);
+        for (const p of bank.presets) cloner.clonePreset(p);
         copied.soundBankInfo = { ...bank.soundBankInfo };
         copied.defaultModulators = bank.defaultModulators.map((m) =>
             Modulator.copyFrom(m)
@@ -443,44 +447,23 @@ export class BasicSoundBank {
     }
 
     /**
-     * Clones a sample into this bank.
+     * Clones a sample into this bank, together with its stereo partner.
      *
      * > **Important**
      * >
-     * > If a sample with the same name already exists in the sound bank,
+     * > By default, if a sample with the same name already exists in the sound bank,
      * > it is returned instead and the new sample is not copied.
+     * > Use the options or a {@link SoundBankCloner} to change that.
      *
      * @param sample The sample to copy.
+     * @param options Options for cloning.
      * @returns The copied sample.
      */
-    public cloneSample(sample: BasicSample): BasicSample {
-        const duplicate = this.samples.find((s) => s.name === sample.name);
-        if (duplicate) {
-            return duplicate;
-        }
-        const newSample = new BasicSample(
-            sample.name,
-            sample.sampleRate,
-            sample.originalKey,
-            sample.pitchCorrection,
-            sample.sampleType,
-            sample.loopStart,
-            sample.loopEnd
-        );
-        if (sample.isCompressed) {
-            newSample.setCompressedData(sample.getRawData(true));
-        } else {
-            newSample.setAudioData(sample.getAudioData(), sample.sampleRate);
-        }
-        this.addSamples(newSample);
-        if (sample.linkedSample) {
-            const clonedLinked = this.cloneSample(sample.linkedSample);
-            // Sanity check
-            if (!clonedLinked.linkedSample) {
-                newSample.setLinkedSample(clonedLinked, newSample.sampleType);
-            }
-        }
-        return newSample;
+    public cloneSample(
+        sample: BasicSample,
+        options?: Partial<SoundBankCloneOptions>
+    ): BasicSample {
+        return new SoundBankCloner(this, options).cloneSample(sample);
     }
 
     /**
@@ -488,30 +471,19 @@ export class BasicSoundBank {
      *
      * > **Important**
      * >
-     * > If an instrument with the same name already exists in the sound bank,
+     * > By default, if an instrument with the same name already exists in the sound bank,
      * > it is returned instead and the new instrument is not copied.
+     * > Use the options or a {@link SoundBankCloner} to change that.
      *
      * @param instrument The instrument to copy.
+     * @param options Options for cloning.
      * @returns The copied instrument.
      */
-    public cloneInstrument(instrument: BasicInstrument): BasicInstrument {
-        const duplicate = this.instruments.find(
-            (i) => i.name === instrument.name
-        );
-        if (duplicate) {
-            return duplicate;
-        }
-        const newInstrument = new BasicInstrument();
-        newInstrument.name = instrument.name;
-        newInstrument.globalZone.copyFrom(instrument.globalZone);
-        for (const zone of instrument.zones) {
-            const copiedZone = newInstrument.createZone(
-                this.cloneSample(zone.sample)
-            );
-            copiedZone.copyFrom(zone);
-        }
-        this.addInstruments(newInstrument);
-        return newInstrument;
+    public cloneInstrument(
+        instrument: BasicInstrument,
+        options?: Partial<SoundBankCloneOptions>
+    ): BasicInstrument {
+        return new SoundBankCloner(this, options).cloneInstrument(instrument);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -520,36 +492,19 @@ export class BasicSoundBank {
      *
      * > **Important**
      * >
-     * > If a preset with the same name already exists in the sound bank,
+     * > By default, if a preset with the same name already exists in the sound bank,
      * > it is returned instead and the new preset is not copied.
+     * > Use the options or a {@link SoundBankCloner} to change that.
      *
      * @param preset The preset to copy.
+     * @param options Options for cloning.
      * @returns The copied preset.
      */
-    public clonePreset(preset: BasicPreset): BasicPreset {
-        const duplicate = this.presets.find((p) => p.name === preset.name);
-        if (duplicate) {
-            return duplicate;
-        }
-        const newPreset = new BasicPreset(this);
-        newPreset.name = preset.name;
-        newPreset.bankMSB = preset.bankMSB;
-        newPreset.bankLSB = preset.bankLSB;
-        newPreset.isGMGSDrum = preset.isGMGSDrum;
-        newPreset.program = preset.program;
-        newPreset.library = preset.library;
-        newPreset.genre = preset.genre;
-        newPreset.morphology = preset.morphology;
-        newPreset.globalZone.copyFrom(preset.globalZone);
-        for (const zone of preset.zones) {
-            const copiedZone = newPreset.createZone(
-                this.cloneInstrument(zone.instrument)
-            );
-            copiedZone.copyFrom(zone);
-        }
-
-        this.addPresets(newPreset);
-        return newPreset;
+    public clonePreset(
+        preset: BasicPreset,
+        options?: Partial<SoundBankCloneOptions>
+    ): BasicPreset {
+        return new SoundBankCloner(this, options).clonePreset(preset);
     }
 
     /**
