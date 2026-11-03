@@ -135,10 +135,20 @@ export class BasicPreset implements MIDIPatchFull {
 
     /**
      * Unlinks everything from this preset.
-     * @internal
+     * This is what {@link BasicSoundBank.deletePreset} calls, the preset itself stays intact.
+     * Use {@link restore} to undo it.
      */
     public delete() {
-        for (const z of this.zones) z.instrument?.unlinkFrom(this);
+        for (const z of this.zones) z.unlinkChild();
+    }
+
+    /**
+     * Links the instruments back to this preset, the inverse of {@link delete}.
+     * Use it to restore a deleted preset, for example when undoing the deletion.
+     * Add the preset back to the sound bank as well.
+     */
+    public restore() {
+        for (const z of this.zones) z.linkChild();
     }
 
     /**
@@ -146,16 +156,26 @@ export class BasicPreset implements MIDIPatchFull {
      * @param index The zone's index to delete.
      */
     public deleteZone(index: number) {
-        this.zones[index]?.instrument?.unlinkFrom(this);
+        this.zones[index]?.unlinkChild();
         this.zones.splice(index, 1);
     }
 
     /**
      * Creates a new preset zone and returns it.
      * @param instrument The instrument to associate with the zone.
+     * @param link If the instrument should be linked to this preset.
+     * Pass false for helper presets that are not part of a sound bank.
+     * Such a zone never changes the instrument's use count or its `linkedTo` list.
+     *
+     * > **Warning**
+     * >
+     * > A preset with unlinked zones must not be added to a sound bank.
      */
-    public createZone(instrument: BasicInstrument): BasicPresetZone {
-        const z = new BasicPresetZone(this, instrument);
+    public createZone(
+        instrument: BasicInstrument,
+        link = true
+    ): BasicPresetZone {
+        const z = new BasicPresetZone(this, instrument, link);
         this.zones.push(z);
         return z;
     }

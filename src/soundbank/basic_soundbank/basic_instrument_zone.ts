@@ -1,7 +1,6 @@
-import { BasicZone } from "./basic_zone";
+import { BasicLinkedZone } from "./basic_linked_zone";
 import type { BasicInstrument } from "./basic_instrument";
 import type { BasicSample } from "./basic_sample";
-import { Generator } from "./generator";
 import type { BasicSoundBank } from "./basic_soundbank";
 import { GeneratorTypes } from "./generator_types";
 
@@ -10,69 +9,60 @@ import { GeneratorTypes } from "./generator_types";
  *
  * @group Sound Banks.Zones
  */
-export class BasicInstrumentZone extends BasicZone {
-    /**
-     * The instrument this zone belongs to.
-     */
-    public readonly parentInstrument: BasicInstrument;
+export class BasicInstrumentZone extends BasicLinkedZone<
+    BasicInstrument,
+    BasicSample
+> {
     /**
      * For tracking on the individual zone level, since multiple presets can refer to the same instrument.
      * @internal
      */
     public useCount: number;
 
+    protected readonly childGenerator = GeneratorTypes.sampleID;
+
     /**
      * Creates a new instrument zone.
      * @param instrument The parent instrument.
      * @param sample The sample to use in this zone.
+     * @param link If the sample should be linked to the instrument.
      * @internal
      */
-    public constructor(instrument: BasicInstrument, sample: BasicSample) {
-        super();
-        this.parentInstrument = instrument;
-        this._sample = sample;
-        sample.linkTo(this.parentInstrument);
+    public constructor(
+        instrument: BasicInstrument,
+        sample: BasicSample,
+        link = true
+    ) {
+        super(instrument, sample, link);
         this.useCount = instrument.useCount;
     }
 
+    // noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols
     /**
-     * Zone's sample.
+     * The instrument this zone belongs to.
      */
-    private _sample: BasicSample;
+    public get parentInstrument() {
+        return this.parent;
+    }
 
     /**
      * The sample associated with this zone.
      */
     public get sample() {
-        return this._sample;
+        return this.child;
     }
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Sets a sample for this zone, unliking the previous one from it.
+     * Sets a sample for this zone, unlinking the previous one from it.
      * @param sample The sample to set.
      */
     public set sample(sample: BasicSample) {
-        if (this._sample) {
-            this._sample.unlinkFrom(this.parentInstrument);
-        }
-        this._sample = sample;
-        sample.linkTo(this.parentInstrument);
+        this.setChild(sample);
     }
 
-    /**
-     * @internal
-     * @param bank
-     */
-    public getWriteGenerators(bank: BasicSoundBank): Generator[] {
-        const gens = super.getWriteGenerators(bank);
-        const sampleID = bank.samples.indexOf(this.sample);
-        if (sampleID === -1) {
-            throw new Error(
-                `${this.sample.name} does not exist in ${bank.soundBankInfo.name}! Cannot write sampleID generator.`
-            );
-        }
-        gens.push(new Generator(GeneratorTypes.sampleID, sampleID, false));
-        return gens;
+    protected getChildList(bank: BasicSoundBank) {
+        return bank.samples;
     }
 }

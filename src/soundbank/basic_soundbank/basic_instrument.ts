@@ -85,9 +85,16 @@ export class BasicInstrument {
     /**
      * Creates a new instrument zone, adds it to this instrument and returns it.
      * @param sample The sample to associate with the zone.
+     * @param link If the sample should be linked to this instrument.
+     * Pass false for helper instruments that are not part of a sound bank.
+     * Such a zone never changes the sample's use count or its `linkedTo` list.
+     *
+     * > **Warning**
+     * >
+     * > An instrument with unlinked zones must not be added to a sound bank!
      */
-    public createZone(sample: BasicSample): BasicInstrumentZone {
-        const zone = new BasicInstrumentZone(this, sample);
+    public createZone(sample: BasicSample, link = true): BasicInstrumentZone {
+        const zone = new BasicInstrumentZone(this, sample, link);
         this.zones.push(zone);
         return zone;
     }
@@ -127,7 +134,7 @@ export class BasicInstrument {
         this.zones = this.zones.filter((z) => {
             const stays = z.useCount > 0;
             if (!stays) {
-                z.sample.unlinkFrom(this);
+                z.unlinkChild();
             }
             return stays;
         });
@@ -135,7 +142,9 @@ export class BasicInstrument {
 
     /**
      * Unlinks everything from this instrument.
-     * @internal
+     * This is what {@link BasicSoundBank.deleteInstrument} calls, the instrument itself stays intact.
+     * Use {@link restore} to undo it.
+     * @throws Error if the instrument is still used by a preset.
      */
     public delete() {
         if (this.useCount > 0) {
@@ -143,7 +152,16 @@ export class BasicInstrument {
                 `Cannot delete an instrument that is used by: ${this.linkedTo.map((p) => p.name).toString()}.`
             );
         }
-        for (const z of this.zones) z.sample.unlinkFrom(this);
+        for (const z of this.zones) z.unlinkChild();
+    }
+
+    /**
+     * Links the samples back to this instrument, the inverse of {@link delete}.
+     * Use it to restore a deleted instrument, for example when undoing the deletion.
+     * Add the instrument back to the sound bank as well.
+     */
+    public restore() {
+        for (const z of this.zones) z.linkChild();
     }
 
     /**
@@ -156,7 +174,7 @@ export class BasicInstrument {
         const zone = this.zones[index];
         zone.useCount -= 1;
         if (zone.useCount < 1 || force) {
-            zone.sample.unlinkFrom(this);
+            zone.unlinkChild();
             this.zones.splice(index, 1);
             return true;
         }
@@ -183,8 +201,7 @@ export class BasicInstrument {
                 continue;
             }
             const limit = GeneratorLimits[checkedType] as
-                | (typeof GeneratorLimits)[GeneratorType]
-                | undefined;
+                (typeof GeneratorLimits)[GeneratorType] | undefined;
             // Unused generator
             if (!limit) continue;
             const defaultForChecked = limit.def;
