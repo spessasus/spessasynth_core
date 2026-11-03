@@ -18,9 +18,28 @@ export const InterpolationTypes = {
      */
     nearestNeighbor: 1,
     /**
-     * Slowest, high quality with little artifacting. (Default)
+     * Cubic Hermite interpolation. Good quality with little artifacting. (Default)
+     *
+     * Recommended for most use-cases.
      */
-    hermite: 2
+    hermite: 2,
+    /**
+     * 32-point windowed sinc interpolation.
+     *
+     * Very high quality with almost no aliasing or harmonic distortion,
+     * usable in real time at, but at a significantly higher CPU cost.
+     */
+    sinc32: 3,
+    /**
+     * 128-point windowed sinc interpolation with antialiasing.
+     *
+     * The best quality, but extremely high cpu cost.
+     *
+     * > **Warning**
+     * >
+     * > This is very slow (especially for pitched up samples) and is meant for offline rendering, not real time playback.
+     */
+    sinc128: 4
 } as const;
 
 /**
@@ -52,6 +71,7 @@ export const GSInsertionControlSources = {
     pitchBend: 0x71
 } as const;
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * @inheritDoc GSInsertionControlSources
  *

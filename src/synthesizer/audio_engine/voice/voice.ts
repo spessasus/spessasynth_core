@@ -15,6 +15,7 @@ import type { WavetableOscillator } from "./wavetable_oscillator/wavetable_oscil
 import { LinearOscillator } from "./wavetable_oscillator/linear";
 import { NearestOscillator } from "./wavetable_oscillator/nearest";
 import { HermiteOscillator } from "./wavetable_oscillator/hermite";
+import { SincOscillator } from "./wavetable_oscillator/sinc";
 import { type InterpolationType } from "../../enums";
 import { DEFAULT_GLOBAL_SYSTEM_PARAMETERS } from "../parameters/system";
 import type { VoiceModulator } from "./voice_modulator";
@@ -52,7 +53,9 @@ export class Voice {
     > = [
         new LinearOscillator(),
         new NearestOscillator(),
-        new HermiteOscillator()
+        new HermiteOscillator(),
+        new SincOscillator(false),
+        new SincOscillator(true)
     ];
 
     /**
