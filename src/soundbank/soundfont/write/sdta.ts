@@ -24,6 +24,9 @@ export function getSDTA(
     let writtenCount = 0;
     const sampleData: Uint8Array[] = [];
     const sampleSize: number[] = [];
+    // Padding bytes after each sample. PCM samples get the 46 zero points.
+    // Odd length compressed streams get one byte, so the next PCM sample starts on a whole sample point
+    const samplePad: number[] = [];
 
     for (const s of bank.samples) {
         // Raw data: either copy s16le or encoded vorbis or encode manually if overridden
@@ -46,7 +49,9 @@ export function getSDTA(
          */
         sampleData.push(r);
         sampleSize.push(r.length);
-        if (!s.isCompressed) sampleData.push(new Uint8Array(92));
+        const pad = s.isCompressed ? r.length % 2 : 92;
+        if (pad) sampleData.push(new Uint8Array(pad));
+        samplePad.push(pad);
     }
 
     const smpl = RIFFChunk.getParts("smpl", sampleData, rf64);
@@ -66,9 +71,8 @@ export function getSDTA(
             // Sf2 in sample data points
             startOffset = offset / 2; // Inclusive
             endOffset = startOffset + size / 2; // Exclusive
-            offset += 92; // 46 sample data points
         }
-        offset += size;
+        offset += size + samplePad[i];
         smplStartOffsets.push(startOffset);
 
         smplEndOffsets.push(endOffset);
