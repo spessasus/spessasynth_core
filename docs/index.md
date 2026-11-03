@@ -37,6 +37,7 @@ _If you're looking for the SpessaSynth web app, it can be found [here](https://s
   synthesizer. This describes all the features of the synthesis engine.
 - [Modulator Information](extra/modulator-information.md) - Information on `spessasynth_core`'s SF2 modulator implementation.
 - [Generator Types](extra/generator-types.md) - All SF2 generators, with their limits and default values.
+- [SFE Format](extra/sfe-format.md) - The SFE sound bank format as `spessasynth_core` implements it.
 - [Kinds Of Parameters](extra/kinds-of-parameters.md) - `spessasynth_core`'s parameters explained.
 - {@link SpessaLog Console Output} - How to control `spessasynth_core`'s console output.
 - {@link MIDIUtils MIDI Utilities} - Useful MIDI SysEx utilities.
