@@ -1,12 +1,83 @@
 import { IndexedByteArray } from "../../utils/indexed_array";
 import { type SampleType, SampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
-import type { SampleEncodingFunction } from "../types";
+import type { SampleEncodingFunction, SampleStoredData } from "../types";
 import { SpessaLog } from "../../utils/loggin";
 import { StbVorbis } from "stb-vorbis";
 
 // Should be reasonable for most cases
 const RESAMPLE_RATE = 48_000;
+
+/**
+ * Reads the sample count of an Ogg Vorbis stream from the page granule positions, without decoding all of it.
+ * The last page gives the end, and decoding the headers and the first audio page gives the start offset.
+ * This is exact for well-formed streams. Streams with gaps in the granule positions decode shorter.
+ * @param data The Ogg stream.
+ * @returns The length in sample points, or undefined if the pages could not be read.
+ * @internal
+ */
+export function getVorbisLength(data: Uint8Array): number | undefined {
+    let firstAudioEnd = -1;
+    let firstGranule = 0;
+    let lastGranule = -1;
+    let pageCount = 0;
+    let i = 0;
+    // Walk the pages, only their headers are read
+    while (i + 27 <= data.length) {
+        if (
+            data[i] !== 0x4f ||
+            data[i + 1] !== 0x67 ||
+            data[i + 2] !== 0x67 ||
+            data[i + 3] !== 0x53
+        ) {
+            return undefined;
+        }
+        const segments = data[i + 26];
+        let size = 27 + segments;
+        for (let s = 0; s < segments; s++) {
+            size += data[i + 27 + s];
+        }
+        // 64-bit granule position at offset 6, all ones means no packet ends on this page
+        const low =
+            (data[i + 6] |
+                (data[i + 7] << 8) |
+                (data[i + 8] << 16) |
+                (data[i + 9] << 24)) >>>
+            0;
+        const high =
+            (data[i + 10] |
+                (data[i + 11] << 8) |
+                (data[i + 12] << 16) |
+                (data[i + 13] << 24)) >>>
+            0;
+        if (low !== 0xff_ff_ff_ff || high !== 0xff_ff_ff_ff) {
+            const granule = high * 0x1_00_00_00_00 + low;
+            // Header pages have a granule of 0
+            if (granule > 0 && firstAudioEnd === -1) {
+                firstAudioEnd = i + size;
+                firstGranule = granule;
+                pageCount = 0;
+            }
+            lastGranule = granule;
+        }
+        pageCount++;
+        i += size;
+    }
+    if (lastGranule < 0) {
+        return undefined;
+    }
+    // A stream can start at a granule above 0, the first page then ends later than the samples it holds
+    if (firstAudioEnd !== -1 && pageCount > 1) {
+        try {
+            const firstPage = StbVorbis.decode(data.subarray(0, firstAudioEnd));
+            const produced = firstPage.channels[0]?.length ?? firstGranule;
+            return lastGranule - Math.max(0, firstGranule - produced);
+        } catch {
+            // The decoder may not be ready, the granule alone is right for most streams
+        }
+    }
+    return lastGranule;
+}
 
 /**
  * A basic sample represents a single audio sample with associated parameters.
@@ -90,6 +161,19 @@ export class BasicSample {
      * The sample's audio data.
      */
     protected audioData?: Float32Array;
+    /**
+     * The signed 16-bit little endian PCM data, as read from the file.
+     */
+    protected s16leData?: Uint8Array;
+    /**
+     * The length in sample points when it is not known from the data,
+     * either a sample without data or a vorbis stream's length that was read once.
+     */
+    protected cachedLength?: number;
+    /**
+     * The form the data had before it was released or when it was loaded without data.
+     */
+    protected releasedForm?: SampleStoredData["form"];
 
     /**
      * Creates a new `BasicSample`.
@@ -128,7 +212,66 @@ export class BasicSample {
      * Indicates if the sample contains compressed audio.
      */
     public get isCompressed(): boolean {
-        return this.compressedData !== undefined;
+        return this.storedForm === "vorbis";
+    }
+
+    /**
+     * The form the sample stores its data in, see {@link BasicSample.getStoredData}.
+     * A sample without data reports the form it had, or undefined if it never had data.
+     */
+    public get storedForm(): SampleStoredData["form"] | undefined {
+        if (this.compressedData) {
+            return "vorbis";
+        }
+        if (this.s16leData) {
+            return "s16le";
+        }
+        if (this.audioData) {
+            return "float32";
+        }
+        return this.releasedForm;
+    }
+
+    /**
+     * Indicates if the sample holds any audio data.
+     * A sample loaded with `sampleData: false` or released with {@link BasicSample.releaseData} does not.
+     */
+    public get hasData(): boolean {
+        return (
+            this.audioData !== undefined ||
+            this.compressedData !== undefined ||
+            this.s16leData !== undefined
+        );
+    }
+
+    /**
+     * The sample's length in sample points, known without decoding the data.
+     * Samples without data keep the length they had.
+     *
+     * > **Note**
+     * >
+     * > For compressed samples, it is read from the Ogg page headers, which is exact for well-formed streams.
+     * > A stream with gaps in its granule positions decodes shorter. Once it is decoded,
+     * > the length is the decoded one.
+     */
+    public get sampleLength(): number {
+        if (this.audioData) {
+            return this.audioData.length;
+        }
+        if (this.s16leData) {
+            return this.s16leData.length >> 1;
+        }
+        if (this.cachedLength !== undefined) {
+            return this.cachedLength;
+        }
+        if (this.compressedData) {
+            // Fall back to decoding if the stream has no valid page
+            this.cachedLength =
+                getVorbisLength(this.compressedData) ??
+                this.getAudioData().length;
+            return this.cachedLength;
+        }
+        return 0;
     }
 
     /**
@@ -159,7 +302,94 @@ export class BasicSample {
         if (this.compressedData && allowVorbis && !this.dataOverridden) {
             return this.compressedData;
         }
+        if (this.s16leData && !this.dataOverridden) {
+            // Copy the smpl directly
+            return this.s16leData;
+        }
         return this.encodeS16LE();
+    }
+
+    /**
+     * Gets the sample's data in the form it is stored, without decoding, encoding or copying it.
+     * Use {@link BasicSample.setStoredData} to give it to another sample, for example in another thread.
+     * @returns The stored form and its data.
+     */
+    public getStoredData(): SampleStoredData {
+        if (this.compressedData) {
+            return { form: "vorbis", data: this.compressedData };
+        }
+        if (this.s16leData) {
+            return { form: "s16le", data: this.s16leData };
+        }
+        if (this.audioData) {
+            return { form: "float32", data: this.audioData };
+        }
+        throw this.noDataError();
+    }
+
+    /**
+     * Replaces the sample's data with data in a given stored form, without decoding or encoding it.
+     * The sample rate and loop points are not changed.
+     *
+     * > **Note**
+     * >
+     * > s16le and vorbis data is written back unchanged when saving, float32 data is encoded.
+     *
+     * @param stored The stored form and its data, as returned by {@link BasicSample.getStoredData}.
+     */
+    public setStoredData(stored: SampleStoredData) {
+        this.audioData = undefined;
+        this.compressedData = undefined;
+        this.s16leData = undefined;
+        this.cachedLength = undefined;
+        switch (stored.form) {
+            case "s16le": {
+                this.s16leData = stored.data;
+                this.dataOverridden = false;
+                break;
+            }
+
+            case "vorbis": {
+                this.compressedData = stored.data;
+                this.dataOverridden = false;
+                break;
+            }
+
+            case "float32": {
+                this.audioData = stored.data;
+                this.dataOverridden = true;
+            }
+        }
+    }
+
+    /**
+     * Drops all the sample's data. The parameters and {@link BasicSample.sampleLength} stay.
+     * Reading the audio data afterward throws an error until {@link BasicSample.setStoredData} gives it new data.
+     */
+    public releaseData() {
+        if (this.hasData) {
+            this.releasedForm = this.storedForm;
+        }
+        this.cachedLength = this.sampleLength;
+        this.audioData = undefined;
+        this.compressedData = undefined;
+        this.s16leData = undefined;
+    }
+
+    /**
+     * Marks the sample as having no data, with a known length.
+     * Used when loading without sample data.
+     * @param length The length in sample points.
+     * @param form The form the data is stored in the file.
+     * @internal
+     */
+    public setLengthWithoutData(
+        length: number,
+        form: SampleStoredData["form"]
+    ) {
+        this.releaseData();
+        this.cachedLength = length;
+        this.releasedForm = form;
     }
 
     /**
@@ -323,13 +553,17 @@ export class BasicSample {
         if (this.audioData) {
             return this.audioData;
         }
-        if (this.isCompressed) {
+        if (this.compressedData) {
             // SF3
             // If compressed, decode
             this.audioData = this.decodeVorbis();
             return this.audioData;
         }
-        throw new Error("Sample data is undefined for a BasicSample instance.");
+        if (this.s16leData) {
+            this.audioData = this.decodeS16LE(this.s16leData);
+            return this.audioData;
+        }
+        throw this.noDataError();
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -343,6 +577,8 @@ export class BasicSample {
         this.sampleRate = sampleRate;
         this.dataOverridden = true;
         this.compressedData = undefined;
+        this.s16leData = undefined;
+        this.cachedLength = undefined;
     }
 
     /**
@@ -351,8 +587,48 @@ export class BasicSample {
      */
     public setCompressedData(data: Uint8Array) {
         this.audioData = undefined;
+        this.s16leData = undefined;
+        this.cachedLength = undefined;
         this.compressedData = data;
         this.dataOverridden = false;
+    }
+
+    /**
+     * The error for reading the data of a sample that has none.
+     */
+    protected noDataError() {
+        return new Error(
+            `Sample "${this.name}" has no audio data. It was loaded without sample data or its data was released.`
+        );
+    }
+
+    /**
+     * Decodes signed 16-bit little endian PCM into float.
+     * @param data The s16le data. It may be a view at any offset.
+     */
+    protected decodeS16LE(data: Uint8Array) {
+        const length = data.length >> 1;
+        if (length === 0) {
+            SpessaLog.warn(
+                `Invalid sample ${this.name}! Invalid length: ${data.length}`
+            );
+            return new Float32Array(1);
+        }
+        const audioData = new Float32Array(length);
+        if (data.byteOffset % 2 === 0) {
+            // Fast path, assumes a little endian platform like the rest of the library
+            const s16 = new Int16Array(data.buffer, data.byteOffset, length);
+            for (let i = 0; i < length; i++) {
+                audioData[i] = s16[i] / 32_768;
+            }
+        } else {
+            // An odd offset cannot be an Int16Array view
+            const view = new DataView(data.buffer, data.byteOffset, length * 2);
+            for (let i = 0; i < length; i++) {
+                audioData[i] = view.getInt16(i * 2, true) / 32_768;
+            }
+        }
+        return audioData;
     }
 
     /**

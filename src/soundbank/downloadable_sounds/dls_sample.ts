@@ -2,6 +2,7 @@ import { BasicSample } from "../basic_soundbank/basic_sample";
 import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { RIFFChunk } from "../../utils/riff_chunk";
+import type { SampleStoredData } from "../types";
 import { SampleTypes } from "../enums";
 import { SpessaLog } from "../../utils/loggin";
 
@@ -25,33 +26,20 @@ function readPCM(data: IndexedByteArray, bytesPerSample: number): Float32Array {
     }
     const sampleLength = data.length / bytesPerSample;
     const sampleData = new Float32Array(sampleLength);
-    if (bytesPerSample === 2) {
-        // Special optimized case for s16 (most common)
-        // Only view this chunk's data (ignore a trailing odd byte)
-        const s16 = new Int16Array(
-            data.buffer,
-            data.byteOffset,
-            Math.floor(data.length / 2)
-        );
-        const s16l = s16.length;
-        for (let i = 0; i < s16l; i++) {
-            sampleData[i] = s16[i] / 32_768;
-        }
-    } else {
-        for (let i = 0; i < sampleData.length; i++) {
-            // Read
-            let sample = readLittleEndianIndexed(data, bytesPerSample);
-            // Turn into signed
-            if (isUnsigned) {
-                // Normalize unsigned 8-bit sample
-                sampleData[i] = (sample - 128) / normalizationFactor;
-            } else {
-                // Normalize signed sample
-                if (sample >= maxSampleValue) {
-                    sample -= maxUnsigned;
-                }
-                sampleData[i] = sample / normalizationFactor;
+    // 16-bit PCM is decoded in BasicSample as s16le
+    for (let i = 0; i < sampleData.length; i++) {
+        // Read
+        let sample = readLittleEndianIndexed(data, bytesPerSample);
+        // Turn into signed
+        if (isUnsigned) {
+            // Normalize unsigned 8-bit sample
+            sampleData[i] = (sample - 128) / normalizationFactor;
+        } else {
+            // Normalize signed sample
+            if (sample >= maxSampleValue) {
+                sample -= maxUnsigned;
             }
+            sampleData[i] = sample / normalizationFactor;
         }
     }
     return sampleData;
@@ -100,9 +88,10 @@ export class DLSSample extends BasicSample {
     protected bytesPerSample: number;
 
     /**
-     * Sample's raw data before decoding it, for faster writing
+     * Sample's raw data before decoding it, for formats other than 16-bit PCM.
+     * 16-bit PCM is stored as s16le data in BasicSample.
      */
-    protected rawData: IndexedByteArray;
+    protected rawData?: IndexedByteArray;
 
     /**
      * @param name
@@ -136,51 +125,108 @@ export class DLSSample extends BasicSample {
             loopEnd
         );
         this.dataOverridden = false;
-        this.rawData = dataChunk.data;
         this.wFormatTag = wFormatTag;
         this.bytesPerSample = bytesPerSample;
+        if (wFormatTag === W_FORMAT_TAG.PCM && bytesPerSample === 2) {
+            // Most common, copied back unchanged when writing
+            this.s16leData = dataChunk.data;
+        } else {
+            this.rawData = dataChunk.data;
+        }
+    }
+
+    public get hasData() {
+        return super.hasData || this.rawData !== undefined;
+    }
+
+    public get sampleLength() {
+        if (this.rawData && !this.audioData) {
+            return Math.floor(this.rawData.length / this.bytesPerSample);
+        }
+        return super.sampleLength;
+    }
+
+    public get storedForm() {
+        // Other formats than s16le are given out decoded
+        if (this.rawData && !this.audioData) {
+            return "float32";
+        }
+        return super.storedForm;
+    }
+
+    public getStoredData() {
+        // Other formats than s16le have no stored form, decode them
+        if (this.rawData && !this.audioData) {
+            this.getAudioData();
+        }
+        return super.getStoredData();
+    }
+
+    public setStoredData(stored: SampleStoredData) {
+        this.rawData = undefined;
+        super.setStoredData(stored);
+    }
+
+    public releaseData() {
+        // Keep the length and form before the raw data is gone
+        if (this.hasData) {
+            this.releasedForm = this.storedForm;
+        }
+        this.cachedLength = this.sampleLength;
+        this.rawData = undefined;
+        super.releaseData();
     }
 
     public getAudioData(): Float32Array {
+        if (this.audioData) {
+            return this.audioData;
+        }
         if (!this.rawData) {
-            return new Float32Array(0);
+            // S16le, replaced or no data
+            return super.getAudioData();
         }
-        if (!this.audioData) {
-            let sampleData;
-            switch (this.wFormatTag) {
-                default: {
-                    SpessaLog.warn(
-                        `Failed to decode sample. Unknown wFormatTag: ${this.wFormatTag}`
-                    );
-                    sampleData = new Float32Array(
-                        this.rawData.length / this.bytesPerSample
-                    );
-                    break;
-                }
-
-                case W_FORMAT_TAG.PCM: {
-                    sampleData = readPCM(this.rawData, this.bytesPerSample);
-                    break;
-                }
-
-                case W_FORMAT_TAG.ALAW: {
-                    sampleData = readALAW(this.rawData, this.bytesPerSample);
-                    break;
-                }
+        let sampleData;
+        switch (this.wFormatTag) {
+            default: {
+                SpessaLog.warn(
+                    `Failed to decode sample. Unknown wFormatTag: ${this.wFormatTag}`
+                );
+                sampleData = new Float32Array(
+                    this.rawData.length / this.bytesPerSample
+                );
+                break;
             }
-            this.setAudioData(sampleData, this.sampleRate);
+
+            case W_FORMAT_TAG.PCM: {
+                sampleData = readPCM(this.rawData, this.bytesPerSample);
+                break;
+            }
+
+            case W_FORMAT_TAG.ALAW: {
+                sampleData = readALAW(this.rawData, this.bytesPerSample);
+                break;
+            }
         }
-        return this.audioData ?? new Float32Array(0);
+        // Cache only, the data is not overridden
+        this.audioData = sampleData;
+        return sampleData;
+    }
+
+    public setAudioData(audioData: Float32Array, sampleRate: number) {
+        this.rawData = undefined;
+        super.setAudioData(audioData, sampleRate);
+    }
+
+    public setCompressedData(data: Uint8Array) {
+        this.rawData = undefined;
+        super.setCompressedData(data);
     }
 
     public getRawData(allowVorbis: boolean) {
-        if (this.dataOverridden || this.isCompressed) {
-            return super.getRawData(allowVorbis);
+        if (this.rawData) {
+            // Not s16le, so it has to be encoded
+            return this.encodeS16LE();
         }
-        if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2) {
-            // Copy straight away
-            return this.rawData;
-        }
-        return this.encodeS16LE();
+        return super.getRawData(allowVorbis);
     }
 }

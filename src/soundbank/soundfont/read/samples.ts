@@ -5,10 +5,14 @@ import {
 } from "../../../utils/byte_functions/little_endian";
 import { SpessaLog } from "../../../utils/loggin";
 import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
-import { BasicSample } from "../../basic_soundbank/basic_sample";
+import {
+    BasicSample,
+    getVorbisLength
+} from "../../basic_soundbank/basic_sample";
 import { ConsoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
 import type { RIFFChunk } from "../../../utils/riff_chunk";
+import type { SoundBankLoadOptions } from "../../types";
 
 /**
  * Samples.ts
@@ -17,6 +21,10 @@ import type { RIFFChunk } from "../../../utils/riff_chunk";
 
 export const SF3_BIT_FLAG = 0x10;
 
+/**
+ * A sample read from a SoundFont file.
+ * The data is given by readSample, in the form the file stores it.
+ */
 export class SoundFontSample extends BasicSample {
     /**
      * Linked sample index for retrieving linked samples in sf2
@@ -24,104 +32,35 @@ export class SoundFontSample extends BasicSample {
     public linkedSampleIndex: number;
 
     /**
-     * The sliced sample from the smpl chunk.
-     */
-    protected s16leData?: Uint8Array;
-
-    protected startByteOffset: number;
-
-    protected endByteOffset: number;
-
-    protected sampleID: number;
-
-    /**
      * Creates a sample
      * @param sampleName
-     * @param sampleStartIndex
-     * @param sampleEndIndex
-     * @param sampleLoopStartIndex
-     * @param sampleLoopEndIndex
      * @param sampleRate
      * @param samplePitch
      * @param samplePitchCorrection
      * @param linkedSampleIndex
      * @param sampleType
-     * @param sampleDataArray
-     * @param sampleIndex initial sample index when loading the soundfont
-     * Used for SF2Pack support
+     * @param loopStart relative to the sample start, in sample points
+     * @param loopEnd relative to the sample start, in sample points
      */
     public constructor(
         sampleName: string,
-        sampleStartIndex: number,
-        sampleEndIndex: number,
-        sampleLoopStartIndex: number,
-        sampleLoopEndIndex: number,
         sampleRate: number,
         samplePitch: number,
         samplePitchCorrection: number,
         linkedSampleIndex: number,
         sampleType: SampleType,
-        sampleDataArray: IndexedByteArray | Float32Array,
-        sampleIndex: number
+        loopStart: number,
+        loopEnd: number
     ) {
-        // Read sf3
-        // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
-        const compressed = (sampleType & SF3_BIT_FLAG) > 0;
-        // Remove the compression flag
-        sampleType &= ~SF3_BIT_FLAG;
         super(
             sampleName,
             sampleRate,
             samplePitch,
             samplePitchCorrection,
-            sampleType as SampleType,
-            sampleLoopStartIndex - sampleStartIndex / 2,
-            sampleLoopEndIndex - sampleStartIndex / 2
+            sampleType,
+            loopStart,
+            loopEnd
         );
-        this.dataOverridden = false;
-        // In bytes
-        this.startByteOffset = sampleStartIndex;
-        this.endByteOffset = sampleEndIndex;
-        this.sampleID = sampleIndex;
-        const smplStart =
-            sampleDataArray instanceof IndexedByteArray
-                ? sampleDataArray.currentIndex
-                : 0;
-
-        // Three data types in:
-        // SF2 (s16le)
-        // SF3 (vorbis)
-        // SF2Pack (entire smpl vorbis)
-        if (sampleDataArray instanceof IndexedByteArray) {
-            if (compressed) {
-                // Correct loop points
-                this.loopStart += this.startByteOffset / 2;
-                this.loopEnd += this.startByteOffset / 2;
-
-                // Copy the compressed data, it can be preserved during writing
-                this.setCompressedData(
-                    sampleDataArray.slice(
-                        this.startByteOffset / 2 + smplStart,
-                        this.endByteOffset / 2 + smplStart
-                    )
-                );
-            } else {
-                // Regular sf2 s16le
-                this.s16leData = sampleDataArray.slice(
-                    smplStart + this.startByteOffset,
-                    smplStart + this.endByteOffset
-                );
-            }
-        } else {
-            // Float32 array from SF2pack, copy directly
-            this.setAudioData(
-                sampleDataArray.slice(
-                    this.startByteOffset / 2,
-                    this.endByteOffset / 2
-                ),
-                sampleRate
-            );
-        }
         this.linkedSampleIndex = linkedSampleIndex;
     }
 
@@ -157,56 +96,6 @@ export class SoundFontSample extends BasicSample {
             this.unlinkSample();
         }
     }
-
-    /**
-     * Loads the audio data and stores it for reuse
-     * @returns  The audio data
-     */
-    public getAudioData(): Float32Array {
-        if (this.audioData) {
-            return this.audioData;
-        }
-        // SF2Pack is decoded during load time
-        // SF3 is decoded in BasicSample
-        if (this.isCompressed) {
-            return super.getAudioData();
-        }
-        if (!this.s16leData) {
-            throw new Error(`Unexpected lack of audio data in ${this.name}.`);
-        }
-
-        // Start loading data if it is not loaded
-        const byteLength = this.endByteOffset - this.startByteOffset;
-        if (byteLength < 1) {
-            SpessaLog.warn(
-                `Invalid sample ${this.name}! Invalid length: ${byteLength}`
-            );
-            return new Float32Array(1);
-        }
-
-        // SF2
-        // Read the sample data
-        const audioData = new Float32Array(byteLength / 2);
-        const convertedSigned16 = new Int16Array(this.s16leData.buffer);
-
-        // Convert to float
-        const l = convertedSigned16.length;
-        for (let i = 0; i < l; i++) {
-            audioData[i] = convertedSigned16[i] / 32_768;
-        }
-
-        this.audioData = audioData;
-        return audioData;
-    }
-
-    public getRawData(allowVorbis: boolean): Uint8Array {
-        if (this.dataOverridden || this.compressedData) {
-            // Return vorbis or encode manually
-            return super.getRawData(allowVorbis);
-        }
-        // Copy the smpl directly
-        return this.s16leData ?? new Uint8Array(0);
-    }
 }
 
 /**
@@ -215,20 +104,16 @@ export class SoundFontSample extends BasicSample {
 export function readSamples(
     sampleHeadersChunk: RIFFChunk,
     smplChunkData: IndexedByteArray | Float32Array,
+    options: SoundBankLoadOptions,
     linkSamples = true
 ): SoundFontSample[] {
     const samples: SoundFontSample[] = [];
-    let index = 0;
     while (
         sampleHeadersChunk.data.length > sampleHeadersChunk.data.currentIndex
     ) {
-        const sample = readSample(
-            index,
-            sampleHeadersChunk.data,
-            smplChunkData
+        samples.push(
+            readSample(sampleHeadersChunk.data, smplChunkData, options)
         );
-        samples.push(sample);
-        index++;
     }
     // Remove EOS
     samples.pop();
@@ -245,9 +130,9 @@ export function readSamples(
  * Reads it into a sample
  */
 function readSample(
-    index: number,
     sampleHeaderData: IndexedByteArray,
-    smplArrayData: IndexedByteArray | Float32Array
+    smplArrayData: IndexedByteArray | Float32Array,
+    options: SoundBankLoadOptions
 ): SoundFontSample {
     // Read the sample name
     const sampleName = readBinaryStringIndexed(sampleHeaderData, 20);
@@ -281,23 +166,74 @@ function readSample(
 
     // Read the link to the other channel
     const sampleLink = readLittleEndianIndexed(sampleHeaderData, 2);
-    const sampleType = readLittleEndianIndexed(
-        sampleHeaderData,
-        2
-    ) as SampleType;
+    let sampleType = readLittleEndianIndexed(sampleHeaderData, 2) as SampleType;
 
-    return new SoundFontSample(
+    // Read sf3
+    // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
+    const compressed = (sampleType & SF3_BIT_FLAG) > 0;
+    // Remove the compression flag
+    sampleType = (sampleType & ~SF3_BIT_FLAG) as SampleType;
+
+    // Three data types in:
+    // SF2 (s16le)
+    // SF3 (vorbis)
+    // SF2Pack (entire smpl vorbis)
+    const isFloat = !(smplArrayData instanceof IndexedByteArray);
+    // SF3 loop points are already relative to the sample start
+    const relativeLoops = compressed && !isFloat;
+    const sample = new SoundFontSample(
         sampleName,
-        sampleStartIndex,
-        sampleEndIndex,
-        sampleLoopStartIndex,
-        sampleLoopEndIndex,
         sampleRate,
         samplePitch,
         samplePitchCorrection,
         sampleLink,
         sampleType,
-        smplArrayData,
-        index
+        relativeLoops
+            ? sampleLoopStartIndex
+            : sampleLoopStartIndex - sampleStartIndex / 2,
+        relativeLoops
+            ? sampleLoopEndIndex
+            : sampleLoopEndIndex - sampleStartIndex / 2
     );
+
+    if (isFloat) {
+        // Float32 array from SF2pack, decoded during load time
+        if (options.sampleData) {
+            const range = [sampleStartIndex / 2, sampleEndIndex / 2] as const;
+            sample.setStoredData({
+                form: "float32",
+                data: options.copySampleData
+                    ? smplArrayData.slice(...range)
+                    : smplArrayData.subarray(...range)
+            });
+        } else {
+            sample.setLengthWithoutData(
+                (sampleEndIndex - sampleStartIndex) / 2,
+                "float32"
+            );
+        }
+        return sample;
+    }
+
+    const smplStart = smplArrayData.currentIndex;
+    // Compressed offsets are in bytes, PCM in sample points
+    const start =
+        smplStart + (compressed ? sampleStartIndex / 2 : sampleStartIndex);
+    const end = smplStart + (compressed ? sampleEndIndex / 2 : sampleEndIndex);
+    // A view does not copy, it is only read here or kept when copying is off
+    const view = smplArrayData.subarray(start, end);
+    if (!options.sampleData) {
+        if (compressed) {
+            sample.setLengthWithoutData(getVorbisLength(view) ?? 0, "vorbis");
+        } else {
+            sample.setLengthWithoutData(view.length >> 1, "s16le");
+        }
+        return sample;
+    }
+    const data = options.copySampleData ? view.slice() : view;
+    // The data is written back unchanged when saving
+    sample.setStoredData(
+        compressed ? { form: "vorbis", data } : { form: "s16le", data }
+    );
+    return sample;
 }

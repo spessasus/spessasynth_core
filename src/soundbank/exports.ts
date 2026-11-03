@@ -16,4 +16,7 @@ export { BasicInstrument } from "./basic_soundbank/basic_instrument";
 export { BasicPreset } from "./basic_soundbank/basic_preset";
 export { BasicPresetZone } from "./basic_soundbank/basic_preset_zone";
 export { BasicSoundBank } from "./basic_soundbank/basic_soundbank";
-export { SoundBankLoader } from "./sound_bank_loader";
+export {
+    SoundBankLoader,
+    DEFAULT_SOUND_BANK_LOAD_OPTIONS
+} from "./sound_bank_loader";

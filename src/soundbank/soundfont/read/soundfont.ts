@@ -1,5 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { readSamples } from "./samples";
+import type { SoundBankLoadOptions } from "../../types";
 import { readLittleEndianIndexed } from "../../../utils/byte_functions/little_endian";
 import { readGenerators } from "./generators";
 import { applyPresetZones } from "./preset_zones";
@@ -33,7 +34,11 @@ export class SoundFont2 extends BasicSoundBank {
     /**
      * Initializes a new SoundFont2 Parser and parses the given data array
      */
-    public constructor(arrayBuffer: ArrayBuffer, sfe: boolean) {
+    public constructor(
+        arrayBuffer: ArrayBuffer,
+        sfe: boolean,
+        options: SoundBankLoadOptions
+    ) {
         super(sfe ? "sfe" : "sf2");
         const mainFileArray = new IndexedByteArray(arrayBuffer);
         SpessaLog.group("%cParsing a SoundFont2 file...", ConsoleColors.info);
@@ -287,14 +292,17 @@ export class SoundFont2 extends BasicSoundBank {
         const samples = readSamples(
             shdrChunk,
             sampleData,
+            options,
             xdtaChunk === undefined
         );
 
         if (xdtaChunk && xChunks.shdr) {
             // Apply extensions to samples
+            // Only the names and links are used
             const xSamples = readSamples(
                 xChunks.shdr,
                 new Float32Array(1),
+                { sampleData: false, copySampleData: false },
                 false
             );
             if (xSamples.length === samples.length) {

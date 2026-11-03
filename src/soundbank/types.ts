@@ -65,13 +65,7 @@ export interface SF2VersionTag {
  * @group Utilities.FourCC
  */
 export type GenericBankInfoFourCC =
-    | "INAM"
-    | "ICRD"
-    | "IENG"
-    | "IPRD"
-    | "ICOP"
-    | "ICMT"
-    | "ISFT";
+    "INAM" | "ICRD" | "IENG" | "IPRD" | "ICOP" | "ICMT" | "ISFT";
 
 /**
  * RIFF Four Character Codes found in SF2 INFO chunk.
@@ -79,13 +73,7 @@ export type GenericBankInfoFourCC =
  * @group Utilities.FourCC
  */
 export type SF2InfoFourCC =
-    | GenericBankInfoFourCC
-    | "ifil"
-    | "isng"
-    | "irom"
-    | "iver"
-    | "DMOD"
-    | "LIST";
+    GenericBankInfoFourCC | "ifil" | "isng" | "irom" | "iver" | "DMOD" | "LIST";
 
 /**
  * RIFF Four Character Codes found in the SF2 structure.
@@ -398,3 +386,55 @@ export type PresetsWithKeyCombinations<T extends MIDIPatchFull> = Map<
  * @group MIDI.Protocol
  */
 export type MIDISystem = "gm" | "gm2" | "gs" | "xg";
+
+/**
+ * A sample's data in the form the sample stores it, without decoding or encoding.
+ * - `s16le` - signed 16-bit little endian PCM
+ * - `vorbis` - an Ogg Vorbis stream (SF3)
+ * - `float32` - decoded or replaced float PCM
+ *
+ * @group Sound Banks.Samples
+ */
+export type SampleStoredData =
+    | {
+          form: "s16le";
+          data: Uint8Array;
+      }
+    | {
+          form: "vorbis";
+          data: Uint8Array;
+      }
+    | {
+          form: "float32";
+          data: Float32Array;
+      };
+
+/**
+ * Options for loading a sound bank with {@link SoundBankLoader.fromArrayBuffer}.
+ *
+ * @group Sound Banks
+ */
+export interface SoundBankLoadOptions {
+    /**
+     * If the sample data should be loaded.
+     * When false, the samples keep all their parameters and their length, but hold no data.
+     * Presets, instruments and samples come out in the same order as with a full load.
+     * Use {@link BasicSample.setStoredData} to give a sample its data later.
+     *
+     * > **Note**
+     * >
+     * > DLS files and SF2Pack banks are still decoded fully during loading. The data is dropped afterward.
+     */
+    sampleData: boolean;
+
+    /**
+     * If the sample data should be copied out of the file buffer.
+     * When false, the samples are views into the given buffer, which saves memory and time during loading,
+     * but keeps the whole buffer alive as long as any of the samples are.
+     *
+     * > **Note**
+     * >
+     * > DLS files always copy their data.
+     */
+    copySampleData: boolean;
+}
