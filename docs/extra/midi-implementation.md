@@ -301,7 +301,7 @@ Jump to the links:
 
 ### Roland GS
 
-SpessaSynth has good support for the GS standard, including effects.
+SpessaSynth has great support for the GS standard, including effects.
 Below are the supported Roland GS messages.
 
 #### Display Data
@@ -376,13 +376,15 @@ These are global parameters, affecting the entire synthesizer.
 
 ##### EFX
 
-| Name                     | Description                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| EFX TYPE                 | Sets the type of the insertion effect. See [supported insertion effects](#currently-implemented-insertion-effects). |
-| EFX PARAMETER 1-20       | Sets the parameters of the insertion effect.                                                                        |
-| EFX SEND LEVEL TO REVERB | Sets the amount of signal sent from the insertion effect to the reverb effect.                                      |
-| EFX SEND LEVEL TO CHORUS | Sets the amount of signal sent from the insertion effect to the chorus effect.                                      |
-| EFX SEND LEVEL TO DELAY  | Sets the amount of signal sent from the insertion effect to the delay effect.                                       |
+| Name                     | Description                                                                                                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EFX TYPE                 | Sets the type of the insertion effect. See [supported insertion effects](#currently-implemented-insertion-effects).                                                        |
+| EFX PARAMETER 1-20       | Sets the parameters of the insertion effect.                                                                                                                               |
+| EFX SEND LEVEL TO REVERB | Sets the amount of signal sent from the insertion effect to the reverb effect.                                                                                             |
+| EFX SEND LEVEL TO CHORUS | Sets the amount of signal sent from the insertion effect to the chorus effect.                                                                                             |
+| EFX SEND LEVEL TO DELAY  | Sets the amount of signal sent from the insertion effect to the delay effect.                                                                                              |
+| EFX CONTROL SOURCE 1/2   | Sets the controller that modulates the type's controlled parameters: control change 1-95, channel aftertouch or pitch bend. Only the parts with EFX assigned control them. |
+| EFX CONTROL DEPTH 1/2    | Sets how far the control sources move their parameters, -100% to +100% of the full range.                                                                                  |
 
 #### Patch Part Parameters
 
@@ -798,16 +800,28 @@ Input is fed to all three taps.
 
 ### Insertion Effects
 
-SpessaSynth has an architecture in place to support SC-88Pro+ insertion effects.
+SpessaSynth implements the SC-88Pro insertion effect set (EFX) as native effects modeled on Sound Canvas VA's
+effect programs. They were checked against those programs and, where the two differ, against the SC-88Pro.
 
 ### Currently implemented insertion effects
 
-- Stereo-EQ
-- Phaser
-- Auto Pan
-- Auto Wah (needs improvements)
-- Tremolo
-- PH + Auto Wah
+All 64 SC-88Pro types and `THRU`:
+
+- Basic: `THRU`, `STEREO-EQ`, `SPECTRUM`, `ENHANCER`, `HUMANIZER`
+- Distortion and dynamics: `OVERDRIVE`, `DISTORTION`, `COMPRESSOR`, `LIMITER`
+- Modulation: `PHASER`, `AUTO WAH`, `ROTARY`, `STEREO FLANGER`, `STEP FLANGER`, `TREMOLO`, `AUTO PAN`
+- Chorus: `HEXA CHORUS`, `TREMOLO CHORUS`, `STEREO CHORUS`, `SPACE D`, `3D CHORUS`
+- Delay and reverb: `STEREO DELAY`, `MODULATION DELAY`, `3 TAP DELAY`, `4 TAP DELAY`, `TM CTRL DELAY`, `REVERB`,
+  `GATE REVERB`, `3D DELAY`
+- Pitch: `2 PITCH SHIFTER`, `FB P.SHIFTER`
+- Other: `3D AUTO`, `3D MANUAL`, `LO-FI 1`, `LO-FI 2`
+- Series combinations: `OD→CHORUS`, `OD→FLANGER`, `OD→DELAY`, `DS→CHORUS`, `DS→FLANGER`, `DS→DELAY`,
+  `EH→CHORUS`, `EH→FLANGER`, `EH→DELAY`, `CHO→DELAY`, `FL→DELAY`, `CHO→FLANGER`
+- Parallel combinations: `CHO/DELAY`, `FL/DELAY`, `CHO/FLANGER`, `OD1/OD2`, `OD/ROTARY`,
+  `OD/PHASER`, `OD/AUTOWAH`, `PH/ROTARY`, `PH/AUTOWAH`
+- Multis: `ROTARY MULTI`, `GTR MULTI 1`-`3`, `CLEAN GT MULTI 1`/`2`, `BASS MULTI`, `RHODES MULTI`, `KEYBOARD MULTI`
+
+Unknown types pass the signal dry (`THRU`).
 
 ## XG Effects
 

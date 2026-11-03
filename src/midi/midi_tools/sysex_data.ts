@@ -5,6 +5,7 @@ import type {
     GSReverbParameterMessage
 } from "./analyzed_message";
 import type { ChannelMIDIParameter } from "../../synthesizer/audio_engine/channel/parameters/midi";
+import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
 import {
     type MIDIController,
     MIDIControllers,
@@ -68,6 +69,16 @@ export const GSReverbAddressMap: Record<
     delayFeedback: 0x35,
     preDelayTime: 0x37
 };
+export const GSInsertionAddressMap: Record<keyof GSInsertionParameter, number> =
+    {
+        sendLevelToReverb: 0x17,
+        sendLevelToChorus: 0x18,
+        sendLevelToDelay: 0x19,
+        controlSource1: 0x1b,
+        controlDepth1: 0x1c,
+        controlSource2: 0x1d,
+        controlDepth2: 0x1e
+    };
 export const GSChorusAddressMap: Record<
     GSChorusParameterMessage["parameter"],
     number

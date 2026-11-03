@@ -1,3 +1,4 @@
+import { GSInsertionControlSources } from "./enums";
 import {
     type MIDIController,
     MIDIControllers,
@@ -460,6 +461,14 @@ export class SpessaSynthProcessor {
      */
     public readonly xgVariationBlock: XGVariationBlock;
     /**
+     * The synthesizer's GS insertion block.
+     *
+     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
+     * Public so the channels can pass the EFX control sources to it.
+     * @internal
+     */
+    public readonly gsInsertionBlock: GSInsertionBlock;
+    /**
      * The synthesizer's GS reverb processor.
      *
      * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
@@ -480,13 +489,6 @@ export class SpessaSynthProcessor {
      * @internal
      */
     protected readonly gsDelayProcessor: GSDelayProcessor;
-    /**
-     * The synthesizer's GS insertion block.
-     *
-     * Used when {@link GlobalMIDIParameter.system} is `gm` `gm2` or `gs`.
-     * @internal
-     */
-    protected readonly gsInsertionBlock: GSInsertionBlock;
     /**
      * The synthesizer's XG reverb block.
      *
@@ -821,13 +823,15 @@ export class SpessaSynthProcessor {
     ) {
         if (this.customChannelNumbers) {
             for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
+                if (ch.midiParameters.rxChannel === channel) {
                     ch.controllerChange(controller, value);
+                    ch.efxControl(controller, value);
+                }
             return;
         }
-        this.midiChannels[
-            channel + this.portSelectChannelOffset
-        ].controllerChange(controller, value);
+        const ch = this.midiChannels[channel + this.portSelectChannelOffset];
+        ch.controllerChange(controller, value);
+        ch.efxControl(controller, value);
     }
 
     /**
@@ -903,15 +907,18 @@ export class SpessaSynthProcessor {
      * @param pressure The pressure value, from 0 to 127.
      */
     public channelPressure(channel: number, pressure: number) {
+        const source = GSInsertionControlSources.channelPressure;
         if (this.customChannelNumbers) {
             for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
+                if (ch.midiParameters.rxChannel === channel) {
                     ch.setMIDIParameter("pressure", pressure);
+                    ch.efxControl(source, pressure);
+                }
             return;
         }
-        this.midiChannels[
-            channel + this.portSelectChannelOffset
-        ].setMIDIParameter("pressure", pressure);
+        const ch = this.midiChannels[channel + this.portSelectChannelOffset];
+        ch.setMIDIParameter("pressure", pressure);
+        ch.efxControl(source, pressure);
     }
 
     /**
@@ -923,16 +930,22 @@ export class SpessaSynthProcessor {
      * Leave unset or set it to -1 for the regular pitch wheel.
      */
     public pitchWheel(channel: number, pitch: number, midiNote = -1) {
+        // The per-note pitch wheel is not an EFX control source
+        const source =
+            midiNote === -1
+                ? GSInsertionControlSources.pitchBend
+                : GSInsertionControlSources.off;
         if (this.customChannelNumbers) {
             for (const ch of this.midiChannels)
-                if (ch.midiParameters.rxChannel === channel)
+                if (ch.midiParameters.rxChannel === channel) {
                     ch.pitchWheel(pitch, midiNote);
+                    ch.efxControl(source, pitch);
+                }
             return;
         }
-        this.midiChannels[channel + this.portSelectChannelOffset].pitchWheel(
-            pitch,
-            midiNote
-        );
+        const ch = this.midiChannels[channel + this.portSelectChannelOffset];
+        ch.pitchWheel(pitch, midiNote);
+        ch.efxControl(source, pitch);
     }
 
     /**

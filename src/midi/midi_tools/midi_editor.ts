@@ -24,6 +24,7 @@ import type { AnalyzedMIDIMessage } from "./analyzed_message";
 import {
     DEFAULT_GS_DRUM_MAP,
     DEFAULT_XG_DRUM_MAP,
+    GSInsertionAddressMap,
     MELODIC_MAP
 } from "./sysex_data";
 import type {
@@ -251,8 +252,11 @@ export interface ModifyMIDIOptions {
      * The GS Insertion Effect parameters.
      * - `"clear"` - all existing parameter change MIDI messages are cleared.
      * - {@link GSInsertionBlockSnapshot} - clear + the new parameters are set via System Exclusive messages.
+     * The controller values of the EFX control sources are not part of it, they come from the controllers.
      */
-    gsInsertionParams?: ClearableParameter<GSInsertionBlockSnapshot>;
+    gsInsertionParams?: ClearableParameter<
+        Omit<GSInsertionBlockSnapshot, "controlValues">
+    >;
 
     /**
      * The desired XG reverb parameters.
@@ -2331,7 +2335,7 @@ export class MIDIEditor {
                 // The order is:
                 // Type (resets the params and sends)
                 // Changed params (255 is the type default)
-                // Sends
+                // Sends and EFX control
                 output.push(
                     MIDIUtils.setGSInsertionParameter(
                         targetTicks,
@@ -2350,16 +2354,14 @@ export class MIDIEditor {
                         )
                     );
                 }
-                for (const send of [
-                    "sendLevelToReverb",
-                    "sendLevelToChorus",
-                    "sendLevelToDelay"
-                ] as const) {
+                for (const name of Object.keys(
+                    GSInsertionAddressMap
+                ) as (keyof typeof GSInsertionAddressMap)[]) {
                     output.push(
                         MIDIUtils.setGSInsertionParameter(
                             targetTicks,
-                            send,
-                            p[send]
+                            name,
+                            p[name]
                         )
                     );
                 }

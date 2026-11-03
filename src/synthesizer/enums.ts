@@ -30,3 +30,32 @@ export const InterpolationTypes = {
  */
 export type InterpolationType =
     (typeof InterpolationTypes)[keyof typeof InterpolationTypes];
+
+/**
+ * The special EFX control sources of a {@link GSInsertionBlock} (EFX CONTROL SOURCE 1/2).
+ * Values `1-95` select the control change with that number, other values are off.
+ *
+ * @group Synthesizer.GS Effects
+ */
+export const GSInsertionControlSources = {
+    /**
+     * No control.
+     */
+    off: 0,
+    /**
+     * Channel aftertouch (channel pressure).
+     */
+    channelPressure: 0x70,
+    /**
+     * Pitch bend.
+     */
+    pitchBend: 0x71
+} as const;
+
+/**
+ * @inheritDoc GSInsertionControlSources
+ *
+ * @group Synthesizer.GS Effects
+ */
+export type GSInsertionControlSource =
+    (typeof GSInsertionControlSources)[keyof typeof GSInsertionControlSources];

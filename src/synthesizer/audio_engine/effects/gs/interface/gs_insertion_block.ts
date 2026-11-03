@@ -27,6 +27,39 @@ export interface GSInsertionParameter {
      * Higher values result in more sound being sent.
      */
     sendLevelToDelay: number;
+
+    /**
+     * `0-127`
+     *
+     * EFX control source 1: the controller that modulates the first controlled parameter of the type
+     * (marked with `+` in the SC-8850 manual).
+     * `1-95` selects a control change number, see {@link GSInsertionControlSources} for the others.
+     * Only the parts with EFX assigned (see {@link ChannelMIDIParameter.efxAssign}) control it.
+     */
+    controlSource1: number;
+
+    /**
+     * `0-127`
+     *
+     * EFX control depth 1: how far control source 1 moves its parameter,
+     * from `0` (-100%) through `64` (0%) to `127` (+100%) of the full parameter range.
+     */
+    controlDepth1: number;
+
+    /**
+     * `0-127`
+     *
+     * EFX control source 2: the controller that modulates the second controlled parameter of the type
+     * (marked with `#` in the SC-8850 manual). See {@link controlSource1}.
+     */
+    controlSource2: number;
+
+    /**
+     * `0-127`
+     *
+     * EFX control depth 2, see {@link controlDepth1}.
+     */
+    controlDepth2: number;
 }
 
 /**
@@ -53,6 +86,11 @@ export interface GSInsertionBlockSnapshot extends GSInsertionParameter {
      * Value `255` means the parameter has not been changed since the type was set, so it uses the type default.
      */
     params: Uint8Array;
+
+    /**
+     * The last controller values of the two EFX control sources (signed, pitch bend is centered at 0).
+     */
+    controlValues: number[];
 }
 
 /**
@@ -83,6 +121,7 @@ export interface GSInsertionBlock extends GSInsertionParameter {
      * Sets the EFX type of the block.
      *
      * Type change resets the parameters and the send levels to their defaults.
+     * The EFX control sources and depths are kept.
      * Behavior for unsupported types is up to the implementation.
      *
      * @param type The 16-bit type value to use, `MSB << 8 | LSB`.
@@ -96,7 +135,7 @@ export interface GSInsertionBlock extends GSInsertionParameter {
     getType(): number;
 
     /**
-     * Resets this block to default values, including the EFX type and the send levels.
+     * Resets this block to default values, including the EFX type, the send levels and the EFX control.
      */
     reset(): void;
 
@@ -106,6 +145,15 @@ export interface GSInsertionBlock extends GSInsertionParameter {
      * @param value The 7-bit value.
      */
     setParameter(param: number, value: number): void;
+
+    /**
+     * Passes a controller value of a part with EFX assigned (see {@link ChannelMIDIParameter.efxAssign})
+     * for the EFX control sources ({@link controlSource1}, {@link controlSource2}).
+     * @param source The controller, encoded like the control sources:
+     * `1-95` a control change number, or a value of {@link GSInsertionControlSources}.
+     * @param value The controller value: 7-bit, or 14-bit for {@link GSInsertionControlSources.pitchBend}.
+     */
+    setControllerValue(source: number, value: number): void;
 
     /**
      * Process the effect and **adds** it to the output.

@@ -1,3 +1,4 @@
+import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
 import type {
     GSChorusParameter,
     GSDelayParameter,
@@ -192,12 +193,9 @@ export type GSInsertionParameterMessage =
            */
           type: "GS Insertion Param";
           /**
-           * The parameter name that was modified in the processor.
+           * The parameter name that was modified in the processor: a send level or an EFX control setting.
            */
-          parameter:
-              | "sendLevelToReverb"
-              | "sendLevelToChorus"
-              | "sendLevelToDelay";
+          parameter: keyof GSInsertionParameter;
           /**
            * The new value of the parameter.
            */
@@ -361,11 +359,7 @@ export type XGVariationParameterMessage =
            * (0-63 parts, 127 OFF).
            */
           parameter:
-              | "return"
-              | "pan"
-              | "sendToReverb"
-              | "sendToChorus"
-              | "partNumber";
+              "return" | "pan" | "sendToReverb" | "sendToChorus" | "partNumber";
           /**
            * The new value of the parameter (0-127).
            */

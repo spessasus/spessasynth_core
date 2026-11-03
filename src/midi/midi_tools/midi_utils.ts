@@ -33,6 +33,7 @@ import {
     GSChorusAddressMap,
     GSDelayAddressMap,
     GSDrumParamMap,
+    GSInsertionAddressMap,
     GSReverbAddressMap,
     GSUserDrumParamMap,
     NRPNDrumParamByMSB,
@@ -43,6 +44,17 @@ import {
     XGDrumParamMap
 } from "./sysex_data";
 import { SpessaLog } from "../../utils/loggin";
+import type { GSInsertionParameter } from "../../synthesizer/audio_engine/effects/gs/interface/gs_insertion_block";
+
+/**
+ * The named GS insertion parameters by their address (`40 03 xx`).
+ */
+const GS_INSERTION_PARAMETER_BY_ADDRESS = new Map(
+    Object.entries(GSInsertionAddressMap).map(
+        ([name, address]) =>
+            [address, name as keyof GSInsertionParameter] as const
+    )
+);
 
 const OTHER = Object.freeze({ type: "Other" as const }) as {
     type: "Other";
@@ -271,7 +283,7 @@ export class MIDIUtils {
     /**
      * Returns a MIDI event needed to set the given GS Insertion Parameter.
      * @param ticks The MIDI tick time for the output event.
-     * @param parameter The parameter to set: `"type"`, a send level name,
+     * @param parameter The parameter to set: `"type"`, a send level or EFX control name (see {@link GSInsertionParameter}),
      * or a 0-based effect-specific parameter number (0-19).
      * @param value The value to set it to.
      * @returns The {@link MIDIMessage} needed to set this GS Insertion Parameter.
@@ -288,16 +300,16 @@ export class MIDIUtils {
                     value & 0x7f
                 ]);
             }
-            case "sendLevelToReverb": {
-                return this.gsMessage(ticks, 0x40, 0x03, 0x17, [value]);
-            }
-            case "sendLevelToChorus": {
-                return this.gsMessage(ticks, 0x40, 0x03, 0x18, [value]);
-            }
-            case "sendLevelToDelay": {
-                return this.gsMessage(ticks, 0x40, 0x03, 0x19, [value]);
-            }
             default: {
+                if (typeof parameter === "string") {
+                    return this.gsMessage(
+                        ticks,
+                        0x40,
+                        0x03,
+                        GSInsertionAddressMap[parameter],
+                        [value]
+                    );
+                }
                 if (
                     !Number.isInteger(parameter) ||
                     parameter < 0 ||
@@ -3137,36 +3149,17 @@ export class MIDIUtils {
                         }
                     ];
                 }
+            }
 
-                case 0x17: {
-                    return [
-                        {
-                            type: "GS Insertion Param",
-                            parameter: "sendLevelToReverb",
-                            value
-                        }
-                    ];
-                }
-
-                case 0x18: {
-                    return [
-                        {
-                            type: "GS Insertion Param",
-                            parameter: "sendLevelToChorus",
-                            value
-                        }
-                    ];
-                }
-
-                case 0x19: {
-                    return [
-                        {
-                            type: "GS Insertion Param",
-                            parameter: "sendLevelToDelay",
-                            value
-                        }
-                    ];
-                }
+            const named = GS_INSERTION_PARAMETER_BY_ADDRESS.get(a3);
+            if (named !== undefined) {
+                return [
+                    {
+                        type: "GS Insertion Param",
+                        parameter: named,
+                        value
+                    }
+                ];
             }
 
             if (a3 >= 0x03 && a3 <= 0x16) {

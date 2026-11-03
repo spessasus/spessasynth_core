@@ -672,6 +672,29 @@ export function rolandSystemExclusive(
                                 });
                                 return;
                             }
+
+                            case 0x1b:
+                            case 0x1c:
+                            case 0x1d:
+                            case 0x1e: {
+                                // EFX control source and depth 1, 2
+                                const parameter = (
+                                    [
+                                        "controlSource1",
+                                        "controlDepth1",
+                                        "controlSource2",
+                                        "controlDepth2"
+                                    ] as const
+                                )[a3 - 0x1b];
+                                insertion[parameter] = data;
+                                SpessaLog.gsInfo(`EFX ${parameter}`, data);
+                                this.callEvent("effectChange", {
+                                    effect: "gsInsertion",
+                                    parameter,
+                                    value: data
+                                });
+                                return;
+                            }
                         }
                     }
 

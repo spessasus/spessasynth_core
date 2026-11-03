@@ -201,8 +201,7 @@ export type GlobalMIDIParameterChangeEvent = {
  * @group Synthesizer.Events
  */
 export type FXType<K> =
-    | Exclude<keyof K, "process" | "getSnapshot" | "applySnapshot">
-    | "macro";
+    Exclude<keyof K, "process" | "getSnapshot" | "applySnapshot"> | "macro";
 
 /**
  * This event is triggered when an effect processor has one of its parameters changed.
@@ -274,6 +273,7 @@ export type EffectChangeEvent =
            * The parameter that was changed:
            * - `"type"` - 16-bit effect type (`MSB << 8 | LSB`). Note that this resets the parameters and the send levels!
            * - `"sendLevelToReverb" | "sendLevelToChorus" | "sendLevelToDelay"` - send levels (7-bit), see {@link GSInsertionParameter}.
+           * - `"controlSource1" | "controlDepth1" | "controlSource2" | "controlDepth2"` - EFX control (7-bit), see {@link GSInsertionParameter}.
            * - `number` - 0-based type-specific EFX parameter index (0-19). EFX parameter 1 is 0. Value is 7-bit.
            */
           parameter: "type" | keyof GSInsertionParameter | number;

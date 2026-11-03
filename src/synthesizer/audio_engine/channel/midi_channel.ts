@@ -1,3 +1,4 @@
+import { GSInsertionControlSources } from "../../enums";
 import { DEFAULT_DRUM_REVERB, resetChannelInternal, resetRP15 } from "./reset";
 import { renderVoice, VoiceSendBuffer } from "./render_voice";
 import { controllerChange } from "./controller_change";
@@ -765,6 +766,21 @@ export class MIDIChannel {
         }
         for (let index = 0; index < 128; index++) {
             this.octaveTuning[index] = tuning[index % 12];
+        }
+    }
+
+    /**
+     * Passes a controller to the EFX control sources of the GS insertion block if this part has EFX assigned.
+     * @param source The controller: a control change number or a {@link GSInsertionControlSources} value.
+     * @param value The controller value (14-bit for pitch bend).
+     * @internal
+     */
+    public efxControl(source: number, value: number) {
+        if (
+            source !== GSInsertionControlSources.off &&
+            this._midiParameters.efxAssign
+        ) {
+            this.synthCore.gsInsertionBlock.setControllerValue(source, value);
         }
     }
 

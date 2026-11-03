@@ -96,7 +96,11 @@ runMIDIEditorTest(midi, {
         ]),
         sendLevelToReverb: 64,
         sendLevelToChorus: 120,
-        sendLevelToDelay: 127
+        sendLevelToDelay: 127,
+        controlSource1: 16,
+        controlDepth1: 115,
+        controlSource2: 0x71,
+        controlDepth2: 20
     }
 });
 
