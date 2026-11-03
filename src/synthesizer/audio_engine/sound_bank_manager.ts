@@ -50,7 +50,7 @@ export class SoundBankManager {
      * @internal
      */
     public readonly userDrumSets: readonly [UserDrumSet, UserDrumSet];
-    private readonly presetListChangeCallback: () => unknown;
+    private readonly presetListChangeCallback: (resetSynth: boolean) => unknown;
 
     private selectablePresetList: SynthesizerPatch[] = [];
 
@@ -58,8 +58,11 @@ export class SoundBankManager {
      * @internal
      * @param presetListChangeCallback Supplied by the parent synthesizer class,
      * this is called whenever the preset list changes.
+     * The argument tells if the synthesizer should reset after updating its channels.
      */
-    public constructor(presetListChangeCallback: () => unknown) {
+    public constructor(
+        presetListChangeCallback: (resetSynth: boolean) => unknown
+    ) {
         this.presetListChangeCallback = presetListChangeCallback;
 
         // Patch resolver for GS user drum
@@ -159,6 +162,18 @@ export class SoundBankManager {
     }
 
     /**
+     * Rebuilds the preset list from the current sound banks.
+     * Call it after editing a sound bank that is already added,
+     * for example after adding, removing or renumbering presets.
+     *
+     * The synthesizer then updates its channels to the new presets without resetting,
+     * see {@link SpessaSynthProcessor.refreshPresets}.
+     */
+    public refresh() {
+        this.generatePresetList(false);
+    }
+
+    /**
      * Gets a given preset from the sound bank stack.
      * @param patch The MIDI patch to search for.
      * @param system The MIDI system to select the preset for.
@@ -197,7 +212,7 @@ export class SoundBankManager {
         this._presetList = [];
     }
 
-    private generatePresetList() {
+    private generatePresetList(resetSynth = true) {
         const presetList = new Array<SynthesizerPatch>();
 
         const addedPresets = new Set<string>();
@@ -245,6 +260,6 @@ export class SoundBankManager {
                 isDrum: p.isDrum
             };
         });
-        this.presetListChangeCallback();
+        this.presetListChangeCallback(resetSynth);
     }
 }

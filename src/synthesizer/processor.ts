@@ -702,7 +702,7 @@ export class SpessaSynthProcessor {
 
     /**
      * A handler for missing presets during program change.
-     * By default, it warns to console.
+     * By default, it warns to console, unless no sound bank has been added yet.
      * It may be useful for allowing the synthesizer to work without any sound banks.
      * @param patch The MIDI patch that was requested.
      * @param system The MIDI System for the request.
@@ -712,6 +712,9 @@ export class SpessaSynthProcessor {
         patch: MIDIPatch,
         system: MIDISystem
     ): BasicPreset | undefined => {
+        // Nothing to warn about before any sound bank is added.
+        // The channels look up their presets again once one is
+        if (this.soundBankManager.soundBankList.length === 0) return undefined;
         SpessaLog.warn(
             `No preset found for ${MIDIPatchTools.toMIDIString(patch)}! Did you forget to add a sound bank?`
         );
@@ -1765,6 +1768,23 @@ export class SpessaSynthProcessor {
     }
 
     /**
+     * Updates the synthesizer after the added sound banks were edited.
+     * It rebuilds the preset list, clears the voice cache,
+     * and points every channel at the current preset for its patch.
+     *
+     * Unlike adding a sound bank, this does not reset the synthesizer or send program changes,
+     * so playback continues. Voices that are already playing keep the old data until they end.
+     *
+     * > **Tip**
+     * >
+     * > Call it after adding, removing or renumbering presets in a sound bank that is already added.
+     * > For edits inside existing presets, {@link clearCache} is enough.
+     */
+    public refreshPresets() {
+        this.soundBankManager.refresh();
+    }
+
+    /**
      * Clears the synthesizer's voice cache.
      * This can be used to hear the changes after editing a {@link BasicSoundBank}
      */
@@ -2466,11 +2486,27 @@ export class SpessaSynthProcessor {
         }
     }
 
-    private updatePresetList() {
+    private updatePresetList(resetSynth: boolean) {
         const mainFont = this.soundBankManager.presetList;
         this.clearCache();
         this.callEvent("presetListChange", mainFont);
         this.getDefaultPresets();
+        if (!resetSynth) {
+            // Only point the channels at the new preset objects.
+            // No program change, so controllers, drum parameters and playing voices stay as they are
+            for (const c of this.midiChannels) {
+                const locked = c.systemParameters.presetLock;
+                // A locked channel keeps its patch, look up that one instead of the MIDI one
+                const patch = locked ? c.preset : c.patch;
+                if (!patch) continue;
+                const preset = this.soundBankManager.getPreset(
+                    patch,
+                    locked ? c.lockedSystem : c.channelSystem
+                );
+                if (preset) c.preset = preset;
+            }
+            return;
+        }
         // Update presets
         for (const c of this.midiChannels) {
             const lock = c.systemParameters.presetLock;
