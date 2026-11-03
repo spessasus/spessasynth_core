@@ -44,16 +44,24 @@ jobs:
                   PREV_TAG: ${{ steps.prev-tag.outputs.prev_tag }}
                   IS_FIRST: ${{ steps.prev-tag.outputs.is_first }}
               run: |
+                  notes() {
+                      for commit in $(git rev-list "$1"); do
+                          echo "- $(git log -1 --format=%B "$commit" | head -n 1) (\`$(git log -1 --format=%h "$commit")\`)"
+                      done
+                  }
 
                   {
                       echo "## What's Changed"
                       echo ""
                       if [ "$IS_FIRST" = "true" ]; then
-                          git log --pretty=format:"- %s (\`%h\`)" HEAD^ 2>/dev/null || git log --pretty=format:"- %s (\`%h\`)" HEAD
+                          if git rev-parse -q --verify HEAD^ > /dev/null; then
+                              notes HEAD^
+                          else
+                              notes HEAD
+                          fi
                       else
-                          git log --pretty=format:"- %s (\`%h\`)" "${PREV_TAG}..${TAG}^"
+                          notes "${PREV_TAG}..${TAG}^"
                       fi
-                      echo ""
                       echo ""
                       echo "---"
                       echo ""
