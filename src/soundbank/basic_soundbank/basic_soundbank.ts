@@ -283,8 +283,11 @@ export class BasicSoundBank {
      * > This method is memory and CPU intensive with large sound banks.
      *
      * @param options Options associated with setting the sample format.
+     * @returns The samples whose sample rate or loop points changed.
+     * Compressing resamples samples outside 8000 to 96000 Hz.
      */
     public async setSampleFormat(options: SetSampleFormatOptions) {
+        const changed = new Array<BasicSample>();
         let writtenCount = 0;
         const format = options.format;
         const progressFunc = options.progressFunction;
@@ -293,7 +296,10 @@ export class BasicSoundBank {
             switch (format) {
                 default:
                 case "pcm": {
-                    s.setAudioData(s.getAudioData(), s.sampleRate);
+                    // Uncompressed samples already write as s16le, decoding them would only waste memory
+                    if (s.isCompressed) {
+                        s.setAudioData(s.getAudioData(), s.sampleRate);
+                    }
                     break;
                 }
 
@@ -303,7 +309,15 @@ export class BasicSoundBank {
                         throw new Error(
                             `No compression function supplied but '${format}' was requested.`
                         );
+                    const { sampleRate, loopStart, loopEnd } = s;
                     await s.compressSample(f);
+                    if (
+                        s.sampleRate !== sampleRate ||
+                        s.loopStart !== loopStart ||
+                        s.loopEnd !== loopEnd
+                    ) {
+                        changed.push(s);
+                    }
                 }
             }
             writtenCount++;
@@ -338,6 +352,7 @@ export class BasicSoundBank {
                 this.soundBankInfo.version.minor = 0;
             }
         }
+        return changed;
     }
 
     /**
