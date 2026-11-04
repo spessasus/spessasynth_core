@@ -48,7 +48,7 @@ The code follows the manuals: a type is a small wiring of blocks, the blocks hol
 - `blocks/`: the blocks, each one rate independent. Filters (`first_order_filter.ts`, `biquad.ts`, `shelf_eq.ts`,
   `peaking_band.ts`, `state_variable_filter.ts`), delay lines and their reads (`delay_line.ts`, `delay_memory.ts`,
   `delay.ts`, `modulated_delay.ts`), modulation (`lfo.ts`, `tremolo.ts`, `ring_modulator.ts`, `phaser.ts`,
-  `rotary.ts`, `wah.ts`), drive and dynamics (`drive.ts`, `amp_simulator.ts`, `bass_amp_simulator.ts`,
+  `rotary.ts`, `wah.ts`, `formant_filter.ts`), drive and dynamics (`drive.ts`, `amp_simulator.ts`, `bass_amp_simulator.ts`,
   `oversampler.ts`, `dynamics.ts`, `enhancer.ts`), space (`reverb.ts`, `gate_reverb.ts`), 3D (`positioner_3d.ts`,
   `hrtf_pair.ts`, `output_mode_3d.ts`, `crosstalk_3d.ts`), Lo-Fi (`lofi_quantizer.ts`, `noise_generator.ts`), the
   pitch shifter and the shared stage pieces (`mono_mix.ts`, `mono_pan.ts`, `output_lag.ts`, `stereo_output.ts`,
@@ -72,7 +72,8 @@ The code follows the manuals: a type is a small wiring of blocks, the blocks hol
 - The shared stage of the hardware reads the left input one 32 kHz sample late and writes the right output one
   sample late. The types keep that timing (the mono mix of the mono types is `(1 + z^-1) / 2` at 32 kHz on a
   centered source). Fixed lags of one 32 kHz sample go through a Thiran allpass (`OutputLag`), which is flat and
-  adds no latency. Nothing in the effects adds latency.
+  adds no latency. Apart from the drive oversampler and Lo-Fi 1 (see Known limits), nothing in the effects adds
+  latency.
 - The drives run their clipper at twice the host rate below 32 kHz (`oversampler.ts`).
 - A change of a delay time, pre delay or depth crossfades over 10 ms (`crossfade.ts`). The hardware jumps there.
 - All types share one delay memory (`DelayMemory`), since only one runs at a time. Lines are handed out while the
@@ -117,6 +118,8 @@ The code follows the manuals: a type is a small wiring of blocks, the blocks hol
 - Keyboard Multi: the right mid band's 4x boost after a type select clears on the first mid band change here. The
   hardware seems to keep it.
 - Lo-Fi 1: type 7 reads 0.35 dB louder on the hardware, not explained.
+- Lo-Fi 1: at rates that are not a multiple of 32 kHz the sample and hold reads its instants band-limited, which
+  makes the whole type 8 host samples late (the dry path waits for it).
 - Bass Multi: the gain step when switching the amp is only modeled without an EFX control offset.
 - Below 32 kHz the drive oversampler adds about 15 samples of latency, and the mono mix's allpass is only first
   order (its phase is off near 8 kHz at 22.05 kHz). At 88.2 and 96 kHz the Enhancer keeps boosting above 16 kHz.

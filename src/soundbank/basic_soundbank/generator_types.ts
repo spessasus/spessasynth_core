@@ -33,7 +33,7 @@ export const GeneratorTypes = Object.freeze({
     freqModLFO: 22, // Mod lfo - frequency of mod lfo, 0 = 8.176 Hz, units: f => 1200log2(f/8.176)
     delayVibLFO: 23, // Vib lfo - delay for vibrato lfo to start from zero
     freqVibLFO: 24, // Vib lfo - frequency of vibrato lfo, 0 = 8.176Hz, unit: f => 1200log2(f/8.176)
-    delayModEnv: 25, // Mod env - 0 = 1 s decay till mod env starts
+    delayModEnv: 25, // Mod env - 0 = 1 s delay till mod env starts
     attackModEnv: 26, // Mod env - attack of mod env
     holdModEnv: 27, // Mod env - hold of mod env
     decayModEnv: 28, // Mod env - decay of mod env

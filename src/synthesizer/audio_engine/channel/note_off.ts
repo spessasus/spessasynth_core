@@ -4,7 +4,7 @@ import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_typ
 
 /**
  * Releases a note by its MIDI note number.
- * If the note is in high performance mode and the channel is not a drum channel,
+ * If the synthesizer is in high performance mode and the channel is not a drum channel,
  * or the drum channel has an rxNoteOff enabled,
  * it kills the note instead of releasing it.
  * @param midiNote The MIDI note number to release (0-127).

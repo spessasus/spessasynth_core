@@ -52,7 +52,7 @@ export function admonitionPlugin(parser: MarkdownIt) {
                 content: state
                     .getLines(startLine + 1, contentEnd, 0, true)
                     .split("\n")
-                    .map((line) => line.replace(/^>\s?/, ""))
+                    .map((line) => line.replace(/^\s*>\s?/, ""))
                     .join("\n")
             };
             // Skip separator lines so they don't render as empty blockquotes

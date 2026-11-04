@@ -47,6 +47,8 @@ const CHORUS_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
 /**
  * The default implementation for {@link XGChorusBlock}.
  *
+ * The default type is CHORUS 1. Unknown types use the type with LSB 0, or NO EFFECT (silence) if that is missing too.
+ *
  * @group Synthesizer.XG Effects
  * @sealed
  */
@@ -73,6 +75,9 @@ export class DefaultXGChorus
         );
     }
 
+    /**
+     * Resets this block to default values, including the processor type.
+     */
     public reset() {
         super.reset();
         this.sendToReverb = 0;
@@ -112,6 +117,9 @@ export class DefaultXGChorus
         }
     }
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     public getSnapshot() {
         return {
             ...super.getSnapshot(),
@@ -119,6 +127,10 @@ export class DefaultXGChorus
         };
     }
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     public applySnapshot(snapshot: XGChorusBlockSnapshot) {
         super.applySnapshot(snapshot);
         this.sendToReverb = snapshot.sendToReverb;

@@ -30,7 +30,8 @@ export interface SoundBankManagerListEntry {
     soundBank: BasicSoundBank;
     /**
      * The bank MSB offset for this sound bank.
-     * This value will be added to all {@link BasicPreset.bankMSB} fields when resolving the preset list.
+     * This value will be added to all {@link BasicPreset.bankMSB} fields when resolving the preset list,
+     * except for the XG drum banks (120 and 127). The result is capped at 127.
      */
     bankOffset: number;
 }

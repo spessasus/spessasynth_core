@@ -80,7 +80,6 @@ export function readLittleEndian(
  * @param dataArray the IndexedByteArray to write to.
  * @param number the number to write.
  * @param byteTarget the amount of bytes to use. Excess bytes will be set to zero.
- * @returns the little endian representation of the number.
  */
 export function writeLittleEndianIndexed(
     dataArray: IndexedByteArray,

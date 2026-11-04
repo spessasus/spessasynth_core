@@ -5,7 +5,7 @@ To run one of these examples, do `tsx your_example.ts`.
 Make sure to run the examples in the root directory of this repository!
 
 > [!WARNING]
-> `ffmpeg` must be installed to run the real-time playback examples.
+> `ffmpeg` must be installed to run the real-time playback examples and `compress_to_sf3.ts`.
 
 ### Note to self
 

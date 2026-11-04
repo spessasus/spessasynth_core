@@ -409,7 +409,7 @@ export abstract class XGChorusBase extends XGDSPProgram {
         a[0x13] = base + 0x41 + delay;
         a[0x14] = base + 0x42 + delay;
         if (p[14] === 1) {
-            // Stereo: the right side gets its own line in the upper half
+            // Stereo: the right side gets its own line further up in the memory
             this.coefficientWords[0x50] = 0;
             base = this.variation ? VARIATION_STEREO_BASE : STEREO_BASE;
             a[0x16] = base;

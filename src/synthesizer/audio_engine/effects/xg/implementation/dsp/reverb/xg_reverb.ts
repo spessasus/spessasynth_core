@@ -57,7 +57,7 @@ const ADDRESS_LIST = [
 const LIST_HPF = [0x2e, 0x2d, 0x2f];
 const LIST_LPF = [0x31, 0x30, 0x32];
 /**
- * Diffusion allpass addresses, 4 per line: base, density tap, write, read.
+ * Damped delay line addresses, 4 per line: write, feedback read, left output tap, right output tap.
  */
 const LIST_DIFFUSION = [
     0x1f, 0x0c, 0x00, 0x04, 0x21, 0x1c, 0x01, 0x05, 0x22, 0x1e, 0x02, 0x06,
@@ -196,7 +196,7 @@ export abstract class XGReverb extends XGDSPProgram {
             d2b = c[0x39],
             d2c = c[0x3a],
             d2d = c[0x3b];
-        // Damping lines: feedback-filter, input, read
+        // Damping lines: previous read, read and input gains
         const k0z = c[0x59],
             k0r = c[0x5a],
             k0i = c[0x5b];
@@ -464,7 +464,8 @@ export abstract class XGReverb extends XGDSPProgram {
     }
 
     /**
-     * Places the diffusion allpasses from the diffusion parameter.
+     * Places the delay line read and output taps from the diffusion parameter.
+     * The diffusion spreads the left and right output taps of each line apart.
      */
     protected diffusion() {
         const scale = DIFFUSION_SCALE[this.params[1]];
@@ -728,7 +729,7 @@ export abstract class XGRoomReverb extends XGReverb {
     }
 
     /**
-     * Places a diffusion allpass from a room dimension.
+     * Places a delay line's length and output taps from a room dimension.
      * @param step The room diffusion step index.
      * @param size The dimension size.
      * @param offset The first diffusion list index.
@@ -751,7 +752,7 @@ export abstract class XGRoomReverb extends XGReverb {
     }
 
     /**
-     * Updates one dimension's damping line and allpass, then pushes them.
+     * Updates one dimension's delay line (damping, length and taps), then pushes it.
      * @param dimension 0 width, 1 height, 2 depth.
      * @param step The room diffusion step index.
      * @param size The dimension size.

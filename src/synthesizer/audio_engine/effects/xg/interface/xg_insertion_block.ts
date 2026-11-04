@@ -9,7 +9,7 @@ export interface XGInsertionParameter {
     /**
      * The channel routed through the insertion effect, 0-based.
      *
-     * 127 or a value that's above the current channel count means OFF.
+     * 127 or any value that's not below the current channel count means OFF.
      */
     partNumber: number;
 }
@@ -62,7 +62,14 @@ export interface XGInsertionBlock extends XGInsertionParameter, XGEffectBlock {
         sampleCount: number
     ): void;
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     getSnapshot(): XGInsertionBlockSnapshot;
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     applySnapshot(snapshot: XGInsertionBlockSnapshot): void;
 }

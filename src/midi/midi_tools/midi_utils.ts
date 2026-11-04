@@ -117,7 +117,7 @@ export class MIDIUtils {
      * @param channel The MIDI channel number.
      * @param rpn The 14-bit RPN number.
      * @param value The 14-bit value for that number.
-     * @returns The analysis result(s) of the message.
+     * @returns The analysis result of the message.
      */
     public static analyzeRPN(
         channel: number,
@@ -177,7 +177,7 @@ export class MIDIUtils {
      * @param value The 14-bit value for that number.
      * @param drumPitchStep The drum pitch coarse resolution in semitones.
      * 0.5 for GS (SC-88 and above), 1 for XG and the SC-55 drum map (bank LSB 1).
-     * @returns The analysis result(s) of the message.
+     * @returns The analysis result of the message.
      */
     public static analyzeNRPN(
         channel: number,

@@ -22,7 +22,7 @@ const PAN_RESOLUTION = MAX_PAN - MIN_PAN;
 const panTableLeft = new Float32Array(PAN_RESOLUTION + 1);
 const panTableRight = new Float32Array(PAN_RESOLUTION + 1);
 for (let pan = MIN_PAN; pan <= MAX_PAN; pan++) {
-    // Clamp to 0-1
+    // Normalize to 0-1
     const realPan = (pan - MIN_PAN) / PAN_RESOLUTION;
     const tableIndex = pan - MIN_PAN;
     panTableLeft[tableIndex] = Math.cos(HALF_PI * realPan);
@@ -51,10 +51,11 @@ function getLfoValue(phase: number, waveform: number) {
 }
 
 /**
- * Renders a voice to the stereo output buffer
+ * Renders a voice into one of the channel's voice send buffers,
+ * which are later mixed into the stereo output and the effect sends.
  * @param voice the voice to render
  * @param timeNow current time in seconds
- * @param sampleCount the only thing needed as it's 0-based
+ * @param sampleCount the number of samples to render (the buffers are 0-based, so no offset is needed)
  */
 export function renderVoice(
     this: MIDIChannel,
@@ -558,9 +559,9 @@ export class VoiceSendBuffer {
 
 /**
  * Mixes a voice send buffer into the channel output and the effect sends, then clears it.
- * @param channel
- * @param buffer
- * @param sampleCount
+ * @param channel The channel that owns the buffer.
+ * @param buffer The voice send buffer to mix.
+ * @param sampleCount The number of samples to mix.
  */
 export function mixVoiceSendBuffer(
     channel: MIDIChannel,

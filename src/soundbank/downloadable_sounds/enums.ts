@@ -29,7 +29,7 @@ export const DLSSources = {
 export type DLSSource = (typeof DLSSources)[keyof typeof DLSSources];
 export const DLSDestinations = {
     none: 0x0, // No destination
-    gain: 0x1, // Linear gain
+    gain: 0x1, // Gain in 1/655360 dB units
     reserved: 0x2, // Reserved
     pitch: 0x3, // Pitch in cents
     pan: 0x4, // Pan 10ths of a percent

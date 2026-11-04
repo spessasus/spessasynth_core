@@ -91,6 +91,7 @@ export class MIDIPatchTools {
      * The format is:
      * - `DRUM:bankMSB:bankLSB:program` for `isGMGSDrum` set to `true`.
      * - `bankLSB:bankMSB:program` for `isGMGSDrum` set to `false`.
+     * @param patch The patch to convert.
      */
     public static toMIDIString(patch: MIDIPatch) {
         if (patch.isGMGSDrum) {
@@ -102,6 +103,7 @@ export class MIDIPatchTools {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Gets {@link MIDIPatch} from a given string.
+     * @param string The string in the {@link MIDIPatchTools.toMIDIString} format.
      */
     public static fromMIDIString(string: string): MIDIPatch {
         const parts = string.split(":");
@@ -137,6 +139,7 @@ export class MIDIPatchTools {
      * The format is:
      * - `<MIDIPatch string> D <name>` for `isDrum` set to `true`.
      * - `<MIDIPatch string> M <name>` for `isDrum` set to `false`.
+     * @param patch The patch to convert.
      */
     public static toFullMIDIString(patch: MIDIPatchFull) {
         return `${this.toMIDIString(patch)} ${patch.isDrum ? "D" : "M"} ${patch.name}`;
@@ -145,6 +148,7 @@ export class MIDIPatchTools {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Gets {@link MIDIPatchFull} from a given string.
+     * @param string The string in the {@link MIDIPatchTools.toFullMIDIString} format.
      */
     public static fromFullMIDIString(string: string): MIDIPatchFull {
         const firstSpace = string.indexOf(" ");
@@ -167,6 +171,8 @@ export class MIDIPatchTools {
 
     /**
      * Checks if two MIDI patches represent the same one.
+     * @param patch1 The first patch.
+     * @param patch2 The second patch.
      */
     public static matches(patch1: MIDIPatch, patch2: MIDIPatch) {
         if (patch1.isGMGSDrum || patch2.isGMGSDrum) {
@@ -188,7 +194,9 @@ export class MIDIPatchTools {
 
     /**
      * A comparison function for `.sort()` or `.toSorted()`,
-     * ordering the patches in ascending order.
+     * ordering the patches in ascending order: by program, then bank MSB, then bank LSB, with GM/GS drums last.
+     * @param a The first patch.
+     * @param b The second patch.
      */
     public static compare(a: MIDIPatch, b: MIDIPatch): number {
         // Force drum presets to be last
@@ -207,6 +215,7 @@ export class MIDIPatchTools {
 
     /**
      * Checks if the given {@link MIDIPatchFull} is an XG/GM2 drum patch.
+     * @param p The patch to check.
      */
     public static isXGDrum(p: MIDIPatchFull) {
         return p.isDrum && !p.isGMGSDrum;
@@ -219,7 +228,7 @@ export class MIDIPatchTools {
      * @param patch The {@link MIDIPatch} to select.
      * @param system The MIDI system to select for.
      * @returns The selected patch.
-     * @throws Error An error if the array is empty,
+     * @throws Error An error if the array is empty.
      */
     public static selectPatch<T extends MIDIPatchFull>(
         patches: T[],
@@ -294,7 +303,7 @@ export class MIDIPatchTools {
             return p;
         }
         if (xgDrums) {
-            // XG drums: Look for exact bank and program match
+            // XG drums: Look for an XG drum kit with the same program
             let p = patches.find(
                 (p) => p.program === program && p.isDrum && !p.isGMGSDrum
             );

@@ -84,7 +84,7 @@ function tryAWE(dateString: string) {
 }
 
 function tryYear(dateString: string) {
-    // Math exactly 4 numbers
+    // Match exactly 4 digits
     const regex = /\b\d{4}\b/;
     const match = regex.exec(dateString);
     return match ? new Date(match[0]) : undefined;

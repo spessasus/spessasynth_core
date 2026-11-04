@@ -1,6 +1,7 @@
 import { XGVariationProgram } from "./xg_variation_program";
 
-// Input low shelf push lists (b0, b1, a1), the shelf is split into two sections
+// Input section push lists (b0, b1, a1). The 3-band EQ splits its low shelf over them,
+// The distortion family and the early reflections put a high pass and a low pass there
 export const LIST_LOW_A = [0x70, 0x6f, 0x71];
 export const LIST_LOW_B = [0x73, 0x72, 0x74];
 
@@ -11,14 +12,14 @@ const UNWRITTEN_CATEGORY_2 = [0x75, 0x7a, 0x7d, 0x80, 0xae];
 
 /**
  * The base for the S-YXG50 category 2 variation programs (3-band EQ, distortion, early reflections).
- * They process a mono sum of the input through a two-section low shelf, keeping scaled copies
+ * They process a mono sum of the input through two first-order input sections, keeping scaled copies
  * of the dry input that the routines mix back in.
  * Any of 0x76, 0x7a, 0x7d and 0x80 sets 0x76 to their product.
  */
 export abstract class XGMonoVariationProgram extends XGVariationProgram {
     protected override readonly unwrittenCoefficients = UNWRITTEN_CATEGORY_2;
     /**
-     * The mono input after the low shelf.
+     * The mono input after the input sections.
      */
     protected readonly mono;
     /**
@@ -27,7 +28,7 @@ export abstract class XGMonoVariationProgram extends XGVariationProgram {
     protected readonly dryLeft;
     protected readonly dryRight;
 
-    // Low shelf states
+    // Input section states
     private monoX = 0;
     private monoY = 0;
     private monoShelfY = 0;

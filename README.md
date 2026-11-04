@@ -82,7 +82,7 @@ a more capable MIDI editor, and a faster synthesis engine!
     - **Reverb:** _Multiple characters including delay and panning delay!_
     - **Chorus:** _Modulated delay lines with multiple presets!_
     - **Delay:** _Three delay lines for all of your delay needs!_
-    - **Insertion Effects:** _The ultimate effects, they can give your sounds a completely different character! (limited support)_
+    - **Insertion Effects:** _The ultimate effects, they can give your sounds a completely different character! (all 64 SC-88Pro EFX types)_
     - **GS and XG Compatible:** _MIDI files can configure the effects accurately!_
     - **Replaceable:** _Effects not to your liking? You can replace them with your own!_
 - **Excellent MIDI Standards Support:**
@@ -98,7 +98,7 @@ a more capable MIDI editor, and a faster synthesis engine!
     - [**AWE32**
       NRPN Compatibility Layer](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#awe32-nrpn-compatibility-layer)
     - [**Roland GS** and **Yamaha XG**
-      support!](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#supported-system-exclusives)
+      support!](https://spessasus.github.io/spessasynth_core/extra/midi-implementation#system-exclusives)
 
 ### Powerful and Fast MIDI Sequencer
 
@@ -121,14 +121,14 @@ a more capable MIDI editor, and a faster synthesis engine!
 - **Used channels on track:** _Quickly determine which channels are used!_
 - **Key range detection:** _Detect the key range of the MIDI!_
 - **Easy MIDI editing:**
-  Use [helper functions](https://spessasus.github.io/spessasynth_core/writing-files/midi#modifymidi) to modify the
+  Use [helper functions](https://spessasus.github.io/spessasynth_core/classes/BasicMIDI/#modify) to modify the
   song to your needs!
 - **Loop detection:** _Automatically detects loops in MIDIs (e.g., from **Touhou Project**)_
 - **First note detection:** _Skip unnecessary silence at the start by jumping to the first note!_
 - **Lyrics support:** _Both regular MIDI and .kar files!_
-- **[Write MIDI files from scratch](https://spessasus.github.io/spessasynth_core/midi/creating-midi-files)**
+- **[Write MIDI files from scratch](https://spessasus.github.io/spessasynth_core/classes/MIDIBuilder/)**
 - **Easy saving:** _Save with
-  just [one function!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writemidi)_
+  just [one function!](https://spessasus.github.io/spessasynth_core/classes/BasicMIDI/#writemidi)_
 
 #### Read and write [RMID files with embedded sound banks](https://github.com/spessasus/sf2-rmidi-specification#readme)
 
@@ -140,7 +140,7 @@ a more capable MIDI editor, and a faster synthesis engine!
   encoding!)_
 - **Compatible with [Falcosoft MIDI Player 6!](https://falcosoft.hu/softwares.html#midiplayer)**
 - **Easy saving:**
-  _[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/writing-files/midi#writermidi)_
+  _[As simple as saving a MIDI file!](https://spessasus.github.io/spessasynth_core/classes/BasicMIDI/#writermidi)_
 
 #### Read and play XMF files
 
@@ -161,10 +161,10 @@ a more capable MIDI editor, and a faster synthesis engine!
 #### Read and write SoundFont2 files
 
 - **Easy info access:** _Just
-  an [object of strings!](https://spessasus.github.io/spessasynth_core/sound-bank#soundbankinfo)_
+  an [object of strings!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#soundbankinfo)_
 - **Smart trimming:** Trim the sound bank to only include samples used in the MIDI _(down to key and velocity!)_
 - **SF3 conversion:** _Compress SoundFont2 files to SoundFont3 with variable quality!_
-- **Easy saving:** _Also just [one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)_
+- **Easy saving:** _Also just [one function!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#writesf2)_
 
 #### Read and write SoundFont3 files
 
@@ -177,9 +177,9 @@ a more capable MIDI editor, and a faster synthesis engine!
 
 - Read DLS (DownLoadable Sounds) files like SF2 files!
 - **Native support:** _Saving it as sf2 is
-  still [just one function!](https://spessasus.github.io/spessasynth_core/sound-bank#write)_
+  still [just one function!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#writesf2)_
 - _That's right, saving as DLS is
-  also [just one function!](https://spessasus.github.io/spessasynth_core/sound-bank#writedls)_
+  also [just one function!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#writedls)_
 - Converts articulators to both **modulators** and **generators**!
 - Works with both unsigned 8-bit samples and signed 16-bit samples!
 - **A-Law encoding support:** _Sure, why not?_
@@ -195,7 +195,7 @@ a more capable MIDI editor, and a faster synthesis engine!
 - **Cue points:** _Write MIDI loop points as cue points!_
 - **Loop multiple times:** _Render two (or more) loops into the file for seamless transitions!_
 - _That's right, saving as WAV is
-  also [just one function!](https://spessasus.github.io/spessasynth_core/writing-files/wav#audiobuffertowav)_
+  also [just one function!](https://spessasus.github.io/spessasynth_core/functions/audioToWav/)_
 
 ### Limitations
 
@@ -215,7 +215,7 @@ a more capable MIDI editor, and a faster synthesis engine!
 - [Meltysynth](https://github.com/sinshu/meltysynth) - for the initial low-pass filter implementation
 - [RecordingBlogs](https://www.recordingblogs.com/) - for detailed explanations on MIDI messages
 - [fflate](https://github.com/101arrowz/fflate) - for the MIT DEFLATE implementation
-- [tsup](https://github.com/egoist/tsup) - for the TypeScript bundler
+- [tsdown](https://github.com/rolldown/tsdown) - for the TypeScript bundler
 - [foo_midi](https://github.com/stuerp/foo_midi) - for useful resources on XMF file format
 - [Falcosoft](https://falcosoft.hu) - for help with the RMIDI format
 - [Christian Collins](https://schristiancollins.com) - for various bug reports regarding the synthesizer

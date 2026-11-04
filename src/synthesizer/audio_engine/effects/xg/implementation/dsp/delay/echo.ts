@@ -30,7 +30,7 @@ const PARAMETER_RANGES: XGParameterRanges = {
  */
 export class XGEcho extends XGDelayBase {
     public readonly type = 0x07_00;
-    // The right line input sits in the upper half of the memory
+    // The right line input sits past the longest left line
     protected readonly preset: XGVariationPreset = {
         words: [
             128, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

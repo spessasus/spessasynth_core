@@ -133,7 +133,7 @@ const LINE_LENGTHS = [
 
 /**
  * How many host samples later the whole forward path runs, and how much earlier the outputs read, so that even the
- * shortest pre delay is read band-limited (the interpolator needs 7 newer samples). The outputs read 141 32 kHz
+ * shortest pre delay is read band-limited (the interpolator needs 7 newer samples). The outputs read 140 32 kHz
  * samples or more, so they have room.
  */
 const LOOKAHEAD = 8;

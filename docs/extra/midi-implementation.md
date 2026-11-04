@@ -92,7 +92,7 @@ Legend for the "Type" column:
 | 73                   | Attack Time                         | Extended | Controls the attack time for the given patch.                                                                                                                                       |
 | 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                     |
 | 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                        |
-| 84                   | Portamento Control                  | Engine   | Controls the portamento target key. Forces portamento once, even if portamento is off. The value persists across channel reset. [More info](#portamento-implementation)             |
+| 84                   | Portamento Control                  | Engine   | Sets the key the next note glides from. Forces portamento once, even if portamento is off. The value persists across channel reset. [More info](#portamento-implementation)         |
 | 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                           |
 | 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                |
 | 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                 |
@@ -306,7 +306,7 @@ Below are the supported Roland GS messages.
 
 #### Display Data
 
-All messages with address of `0x10 xx xx` are recognized.
+All messages with address of `0x10 xx xx` (Sound Canvas display) or `0x20 xx xx` (SC-8850 160x64 display) are recognized.
 A {@link SynthesizerEvent.displayMessage `displayMessage`} event will be emitted with the System Exclusive data.
 
 #### System Parameters
@@ -329,7 +329,7 @@ These are global parameters, affecting the entire synthesizer.
 | MASTER VOLUME    | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`}.                                                                                                                       |
 | MASTER KEY-SHIFT | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.keyShift `keyShift`}.                                                                                                                   |
 | MASTER PAN       | Sets the Global MIDI Parameter {@link GlobalMIDIParameter.pan `pan`}.                                                                                                                             |
-| MODE SET         | GS Reset. Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`.                                                                          |
+| MODE SET         | GS Reset. Resets the synthesizer and sets the Global MIDI Parameter {@link GlobalMIDIParameter.system `system`} to `gs`. Value `7F` (GS mode off) sets it to `gm` instead.                        |
 | PATCH NAME       | Treated as recognized, decoded name is logged to console if verbose output is enabled. A {@link SynthesizerEvent.displayMessage `displayMessage`} will be emitted with the System Exclusive data. |
 
 ##### Reverb
@@ -620,8 +620,9 @@ There are two special cases that are directly aliased to Channel MIDI Parameters
 The following messages tune individual drum instruments.
 A drum instrument is defined as a single MIDI key in the drum preset.
 
-Edits are applied to _every drum channel_: for each note/key,
-all drum channels get the same stored parameters, as there isn't a MAP system, like in GS.
+Edits are applied to every channel whose PART MODE matches the drum setup number,
+stored in the Channel MIDI Parameter {@link ChannelMIDIParameter.drumMap `drumMap`}.
+DRUM SETUP 1 edits the parts in `DRUMS1` mode (the drum channel's mode after XG reset), DRUM SETUP 2 edits `DRUMS2` parts and so on.
 
 | Name            | Description                                                                                                                                                |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -687,7 +688,7 @@ Both non-realtime and realtime are treated as realtime.
 | Bulk Tuning Dump              | Tuning dump for all 128 notes.                                |
 | Scale Octave Tuning (1 byte)  | Tunes an octave in cents. Tuning is repeated for all octaves. |
 | Scale Octave Tuning (2 bytes) | Tunes an octave in cents. Tuning is repeated for all octaves. |
-| Single Note Tuning Change     | Tunes a single note.[^5]                                      |
+| Single Note Tuning Change     | Tunes a single note. The bank variant is also supported.[^5]  |
 
 [^5]: Note that this can theoretically be used as per-note Pitch Wheel.
 
@@ -861,7 +862,7 @@ The behavior depends on "VARIATION CONNECTION" which defaults to "INSERTION" and
   `ROOM S`/`M`/`L`, `STAGE 1`/`2`, `PLATE`, `GM PLATE`,
   `WHITE ROOM`, `TUNNEL` and `BASEMENT`.
   Other LSB values use the type with LSB `00`.
-  All reverb parameters are recognized and clamped to their XG ranges.
+  All reverb parameters except Dry/Wet and Density are recognized and clamped to their XG ranges.
 - Chorus block: `CHORUS 1`-`4`, `GM CHORUS 1`-`4`, `FB CHORUS`,
   `CELESTE 1`-`4`, `FLANGER 1`-`3` and `GM FLANGER`.
   Other LSB values use the type with LSB `00`.

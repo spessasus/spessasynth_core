@@ -11,7 +11,7 @@ export const LEFT_BASE = 0x3a;
  */
 export const RIGHT_BASE = 0x3b;
 /**
- * The right line input position used by the two-line delays (in the upper half of the memory).
+ * The right line input position used by the two-line delays (past the longest left line).
  */
 export const RIGHT_LINE_START = 16_384;
 
@@ -127,7 +127,7 @@ export abstract class XGDelayBase extends XGStereoVariationProgram {
     }
 
     /**
-     * Designs a feedback damping filter (a one-pole low-pass) from the high damp parameter.
+     * Designs a feedback damping filter (a two-tap low-pass) from the high damp parameter.
      * @param damp The high damp value (1-10).
      * @param list The coefficient indices for the input and feedback coefficients.
      */

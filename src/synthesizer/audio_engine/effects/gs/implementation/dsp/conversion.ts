@@ -226,7 +226,7 @@ export function cutoff(value: number) {
 export const STEP_MS = 1 / 32;
 
 /**
- * The longest swing of `modulationDepth` (depth 127), in ms.
+ * A bound on the swing of `modulationDepth` (12.4 ms at depth 127), in ms, for sizing the lines.
  * @internal
  */
 export const SWING_MS = 12.5;

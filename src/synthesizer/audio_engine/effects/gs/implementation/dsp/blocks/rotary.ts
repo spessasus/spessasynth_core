@@ -125,7 +125,7 @@ export class Rotary {
      * @param drum The drum rotor's.
      */
     public setAcceleration(horn: number, drum: number) {
-        // The ramps' step per 32 kHz sample is 1/32000 of the time constant
+        // The ramps' step per 32 kHz sample is 1 / (32000 x the time constant)
         const perSample = 32_000 / this.sampleRate;
         this.hornRamp = 1 - (1 - 1 / (32_000 * horn)) ** perSample;
         this.drumRamp = 1 - (1 - 1 / (32_000 * drum)) ** perSample;

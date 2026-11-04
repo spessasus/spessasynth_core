@@ -235,8 +235,8 @@ export class MIDIChannel {
      */
     protected readonly resetRP15 = resetRP15.bind(this);
     /**
-     * Executes a data entry coarse (MSB) change for the current channel.
-     * @param dataValue The value to set for the data entry coarse controller (0-127).
+     * Executes a data entry (MSB or LSB) change for the current channel.
+     * The value is read from the controller table and applied to the selected RPN or NRPN.
      * @internal
      */
     protected readonly dataEntry = dataEntry.bind(this);
@@ -556,7 +556,7 @@ export class MIDIChannel {
 
     /**
      * Releases a note by its MIDI note number.
-     * If the note is in high performance mode and the channel is not a drum channel,
+     * If the synthesizer is in high performance mode and the channel is not a drum channel,
      * or the drum channel has an rxNoteOff enabled,
      * it kills the note instead of releasing it.
      * @param midiNote The MIDI note number to release (0-127).
@@ -610,6 +610,7 @@ export class MIDIChannel {
     /**
      * Reset this channel to its default state.
      * Except for the locked controllers.
+     * @param sendEvent If controller change events should be emitted for the reset controllers.
      * @internal
      */
     public reset(sendEvent = true) {
@@ -625,10 +626,11 @@ export class MIDIChannel {
 
     // Voice rendering methods
     /**
-     * Renders a voice to the stereo output buffer
+     * Renders a voice into one of the channel's voice send buffers,
+     * which are later mixed into the stereo output and the effect sends.
      * @param voice the voice to render
      * @param timeNow current time in seconds
-     * @param sampleCount the only thing needed as it's 0-based
+     * @param sampleCount the number of samples to render (the buffers are 0-based, so no offset is needed)
      * @internal
      */
     public renderVoice(voice: Voice, timeNow: number, sampleCount: number) {

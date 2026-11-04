@@ -121,7 +121,7 @@ export class BasicSample {
      *
      * > **Warning**
      * >
-     * > Do not change this value directly. use {@link BasicSample.setSampleType},
+     * > Do not change this value directly. Use {@link BasicSample.setSampleType},
      * > {@link BasicSample.setLinkedSample} or {@link BasicSample.unlinkSample} instead.
      */
     public sampleType: SampleType;
@@ -186,7 +186,7 @@ export class BasicSample {
      * @param sampleRate The sample's rate in Hz.
      * @param originalKey The sample's pitch as a MIDI note number.
      * @param pitchCorrection The sample's pitch correction in cents.
-     * @param sampleType The sample's type, an enum that defines the sample type/compression.
+     * @param sampleType The sample's type, one of the {@link SampleTypes}.
      * @param loopStart The sample's loop start relative to the sample start in sample points.
      * @param loopEnd The sample's loop end relative to the sample start in sample points. Exclusive.
      */

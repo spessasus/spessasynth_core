@@ -60,6 +60,7 @@ DEFAULT_DRUM_REVERB[36] = 0;
  * Reset all controllers for channel.
  * This will reset all controllers to their default values,
  * except for the locked controllers.
+ * @param sendCCEvents If controller change events should be emitted for the reset controllers.
  */
 export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     // Reset MIDI controllers

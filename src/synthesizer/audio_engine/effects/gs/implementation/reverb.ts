@@ -274,12 +274,12 @@ export class DefaultGSReverb implements GSReverbProcessor {
     }
 
     /**
-     *
-     * @param input 0-based
-     * @param outputLeft startIndex-based
-     * @param outputRight startIndex-based
-     * @param startIndex
-     * @param sampleCount
+     * Process the effect and **adds** it to the output.
+     * @param input The input buffer to process. It always starts at index 0.
+     * @param outputLeft The left output buffer.
+     * @param outputRight The right output buffer.
+     * @param startIndex The index to start mixing at into the output buffers.
+     * @param sampleCount The amount of samples to mix.
      */
     public process(
         input: Float32Array,

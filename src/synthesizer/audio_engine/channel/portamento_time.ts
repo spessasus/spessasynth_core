@@ -26,7 +26,7 @@ CC 5 value  Portamento time
    More info in this comment:
    https://github.com/FluidSynth/fluidsynth/issues/1722#issuecomment-3706599241
 
-   It has since been replaced by rates measured on the original Sound Canvas once more. The emulated SC-55 the measurements above within about 3%
+   It has since been replaced by rates measured on the original Sound Canvas once more. The emulated SC-55 matches the measurements above within about 3%
    (except CC 5 = 127, which takes 320 s), and the SC-88Pro matches the SC-55 within 0.5%.
    The pitch moves linearly towards the target at a constant rate, so the time scales linearly with the distance.
 */
@@ -62,7 +62,7 @@ export function portamentoTimeToSeconds(
     distance: number
 ): number {
     // This seems to work fine for the MIDIs I have.
-    // PortaTimeToRate is the constant rate of the portamento, as that's how the synths work.
+    // PORTAMENTO_RATES is the constant rate of the portamento, as that's how the synths work.
     if (time < 1) return 0;
     return (distance * 16) / PORTAMENTO_RATES[time];
 }

@@ -1,6 +1,6 @@
 /**
  * Midi_message.ts
- * purpose: contains enums for midi events and controllers and functions to parse them
+ * purpose: contains the MIDIMessage class and functions to create common messages
  */
 import {
     type MIDIController,

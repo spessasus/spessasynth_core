@@ -27,7 +27,7 @@ export function controllerChange(
     if (controller > 127 || value < 0)
         throw new Error("Invalid MIDI Controller.");
 
-    // Lsb controller values: append them as the lower nibble of the 14-bit value
+    // Lsb controller values: append them as the lower 7 bits of the 14-bit value
     // Excluding bank select as it's handled separately
     if (
         controller >= MIDIControllers.modulationWheelLSB &&
@@ -36,7 +36,7 @@ export function controllerChange(
         const actualCCNum = controller - 32;
         if (this.lockedControllers[actualCCNum]) return;
 
-        // Append the lower nibble to the main controller
+        // Append the lower 7 bits to the main controller
         this._midiControllers[actualCCNum] =
             (this._midiControllers[actualCCNum] & 0x3f_80) | (value & 0x7f);
 

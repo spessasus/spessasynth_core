@@ -70,7 +70,7 @@ export function writeSF2Elements(
         zoneIndexes.push(zoneIndex);
         writeZone(el.globalZone);
         for (const zone of el.zones) writeZone(zone);
-        zoneIndex += el.zones.length + 1; // Terminal record
+        zoneIndex += el.zones.length + 1; // Global zone
     }
     // Terminal records
     generators.push(new Generator(0, 0, false));

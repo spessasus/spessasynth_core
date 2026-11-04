@@ -60,7 +60,7 @@ export interface RMIDInfoData {
 
     /**
      * The copyright string.
-     * If not provided, `Created with SpessaSynth` is used.
+     * If not provided, `Created using SpessaSynth` is used.
      */
     copyright: string;
 
@@ -77,6 +77,7 @@ export interface RMIDInfoData {
 
     /**
      * The software used to write the file.
+     * If not provided, `SpessaSynth` is used.
      */
     software: string;
 
@@ -87,6 +88,8 @@ export interface RMIDInfoData {
 }
 
 /**
+ * A single tempo change in a MIDI sequence.
+ *
  * @group MIDI.Sequence
  */
 export interface TempoChange {
@@ -122,7 +125,7 @@ export interface MIDILoop {
      * the start of the file to ensure that synthesizer is in the correct state.
      * This is the default behavior.
      *
-     * Soft loop types are enabled for Touhou and GameMaker loop points.
+     * Soft loop types are enabled for Touhou loop points (CC 2 and CC 4).
      */
     type: "soft" | "hard";
 }
@@ -138,7 +141,9 @@ export interface MIDILoop {
 export type MIDIFormat = 0 | 1 | 2;
 
 /**
- *  @group MIDI.Sequence
+ * A single note's time and velocity, as returned by {@link BasicMIDI.getNoteTimes}.
+ *
+ * @group MIDI.Sequence
  */
 export interface NoteTime {
     /**
@@ -176,7 +181,8 @@ export interface RMIDIWriteOptions {
      *
      * > **Warning**
      * >
-     * > Providing *any* of the metadata fields overrides the info encoding with `utf-8`.
+     * > Writing always sets the info encoding to `utf-8`,
+     * > since the default fields (such as the creation date) are always written.
      * > This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
      *
      */
@@ -190,7 +196,7 @@ export interface RMIDIWriteOptions {
     /**
      * The sound bank instance that `soundBankBinary` contains.
      * Used for correcting bank and program changes when `correctBankOffset` is enabled.
-     * If omitted, bank correction may be less accurate.
+     * It is required in that case, an error is thrown if it is omitted.
      */
     soundBank?: BasicSoundBank;
 }
@@ -235,6 +241,8 @@ export type RMIDInfoFourCC =
     | "DBNK";
 
 /**
+ * A reference to an event in {@link BasicMIDI.timeline}, pointing at its track and its index in that track.
+ *
  * @group MIDI.Sequence
  */
 export interface TimelineEvent {
@@ -253,10 +261,7 @@ export interface TimelineEvent {
  * @group MIDI.Protocol
  */
 export type SysExAcceptedArray =
-    | number[]
-    | Uint8Array
-    | Int8Array
-    | Uint8ClampedArray;
+    number[] | Uint8Array | Int8Array | Uint8ClampedArray;
 
 /**
  * An interface that represents a virtual sound bank which can return a preset.

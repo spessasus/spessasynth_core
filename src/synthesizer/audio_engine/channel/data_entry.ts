@@ -11,10 +11,10 @@ import { SpessaLog } from "../../../utils/loggin";
 import { handleAWE32NRPN } from "./awe32_nrpn";
 
 /**
- * Executes a data entry  change for the current channel.
+ * Executes a data entry change for the current channel.
  */
 export function dataEntry(this: MIDIChannel) {
-    // Stored in cc tabled as 14-bit
+    // Stored in cc table as 14-bit
     const dataValue = this._midiControllers[MIDIControllers.dataEntryMSB];
 
     // RPN Handling
@@ -157,7 +157,7 @@ export function dataEntry(this: MIDIChannel) {
                     A note on this vibrato.
                     This is a completely custom vibrato, with its own oscillator and parameters.
                     It is disabled by default via a system parameter, and when enabled,
-                    it only activates when one of the NPRN messages changing it is received
+                    it only activates when one of the NRPN messages changing it is received
                     and stays on until the next system-reset.
 
                     It was implemented very early in SpessaSynth's development,

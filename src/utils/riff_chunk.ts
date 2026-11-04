@@ -131,8 +131,8 @@ export class RIFFChunk {
      * Writes a RIFF chunk correctly.
      * @param header the fourCC code of the header.
      * @param data the binary chunk data.
-     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
      * @param rf64 if the chunk uses a 64-bit size.
+     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
      * @returns the binary data.
      */
     public static write(
@@ -184,8 +184,8 @@ export class RIFFChunk {
      * This allows avoiding large array allocations and only one writeParts call at the end.
      * @param header  the fourCC code of the header.
      * @param chunks binary chunk data parts, will be combined in order.
-     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
      * @param rf64 if the chunk uses a 64-bit size.
+     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
      * @returns the chunk as binary blobs.
      */
     public static getParts(
@@ -228,8 +228,8 @@ export class RIFFChunk {
      * It merges them together into data and allocates one large array.
      * @param header  the fourCC code of the header.
      * @param chunks binary chunk data parts, will be combined in order.
-     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
      * @param rf64 if the chunk uses a 64-bit size.
+     * @param isList if a "LIST" should be set as the chunk type and the actual type should be written at the start of the data.
      * @returns the binary data.
      */
     public static writeParts(

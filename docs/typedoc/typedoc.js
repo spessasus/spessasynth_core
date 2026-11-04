@@ -192,7 +192,9 @@
                 let preview;
                 let path;
                 try {
-                    path = new URL(anchor.href, window.location.href).pathname;
+                    // Keep the hash so member results don't match their parent page
+                    const url = new URL(anchor.href, window.location.href);
+                    path = url.pathname + url.hash;
                 } catch {
                     continue;
                 }

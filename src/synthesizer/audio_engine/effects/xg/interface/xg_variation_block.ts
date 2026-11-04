@@ -20,7 +20,7 @@ export interface XGVariationParameter
      * Indicates if variation is in the insertion mode (CONNECTION).
      * If `false`, then variation is in the `system` mode.
      *
-     * The two connection modes work as following:
+     * The two connection modes work as follows:
      * - `system` routes all channels via sends (like reverb and chorus).
      * - `insertion` routes a single `partNumber` channel straight through. Note that variation is processed last, after all insertion effects.
      */
@@ -117,7 +117,14 @@ export interface XGVariationBlock
         sampleCount: number
     ): void;
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     getSnapshot(): XGVariationBlockSnapshot;
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     applySnapshot(snapshot: XGVariationBlockSnapshot): void;
 }

@@ -1,7 +1,7 @@
 import type { SpessaSynthSequencer } from "./sequencer";
 
 /**
- * Processes a single MIDI tick.
+ * Processes a single sequencer tick, playing all MIDI events up to the current time.
  * Call this every rendering quantum to process the sequencer events in real-time.
  */
 export function processTick(this: SpessaSynthSequencer) {

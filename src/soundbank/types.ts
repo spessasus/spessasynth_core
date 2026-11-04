@@ -219,7 +219,8 @@ export interface VoiceParameters {
  * This function is used to compress/encode a {@link BasicSample}.
  * The function is recommended to be asynchronous.
  *
- *  > **Note**
+ * > **Note**
+ * >
  * > Using a custom function allows for using *any* type of compression for the SF3 soundBank.
  * > This is allowed by the [RFC describing SF3 spec](https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format),
  * > but SpessaSynth can only read Ogg Vorbis compression.
@@ -303,7 +304,7 @@ export interface SoundBankWriteOptions {
     software: string;
 
     /**
-     * A function to allow showing progress long operations. It can be undefined.
+     * A function to allow showing progress of long operations. It can be undefined.
      */
     progressFunction?: ProgressFunction;
 }

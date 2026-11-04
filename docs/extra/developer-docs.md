@@ -82,7 +82,7 @@ It is _highly recommended_ to follow it. If you are using a coding agent, it _mu
 Code must be formatted according to ESLint and Prettier before commits.
 These two dictate most of the formatting. Do not override them.
 
-Rules listed here not covered by ESLint/TypeScript or Prettier.
+The rules listed here are not covered by ESLint/TypeScript or Prettier.
 There are more rules, but they are automatically enforced.
 
 ### Code naming

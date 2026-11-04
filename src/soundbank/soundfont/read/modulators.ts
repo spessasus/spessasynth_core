@@ -10,7 +10,7 @@ import {
 } from "../../basic_soundbank/generator_types";
 
 /**
- * Reads the modulator read
+ * Reads the modulators
  * @param modulatorChunk pmod, imod or DMOD
  * @param allowSFEGenerators if destinations above endOper are allowed (SFE banks)
  */

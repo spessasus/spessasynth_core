@@ -24,7 +24,7 @@ export interface XGEffectBlockSnapshot {
  *
  * It represents a single effect block.
  *
- * There are 4 effect blocks types in XG:
+ * There are 4 effect block types in XG:
  * - Reverb
  * - Chorus
  * - Variation

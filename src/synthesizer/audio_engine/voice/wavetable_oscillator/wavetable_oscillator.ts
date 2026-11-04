@@ -54,6 +54,7 @@ export abstract class WavetableOscillator {
      * @param sampleCount The amount of samples to write into the buffer.
      * @param tuningRatio the tuning ratio to apply.
      * @param outputBuffer The output buffer to write to.
+     * @returns false if the sample has ended (the rest of the buffer is filled with zeros), true otherwise.
      */
     public abstract process(
         sampleCount: number,

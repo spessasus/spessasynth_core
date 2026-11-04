@@ -43,7 +43,6 @@ import { StbVorbis } from "stb-vorbis";
  *
  * It also contains support for `.dls` files and experimental read and write support for [64-bit SFE](https://github.com/SFe-Team-was-taken/SFE).
  *
-
  * **Specifications:**
  *
  * - [SoundFont2 Specification](http://www.synthfont.com/sfspec24.pdf)
@@ -90,7 +89,7 @@ export class BasicSoundBank {
     };
 
     /**
-     * An array of all presets in the bank, ordered by bank and preset number.
+     * An array of all presets in the bank, ordered by program and bank number, with GM/GS drum presets last.
      */
     public presets: BasicPreset[] = [];
 
@@ -185,8 +184,9 @@ export class BasicSoundBank {
     }
 
     /**
-     * Creates a simple sound bank with a single saw wave preset.
+     * Creates a simple SF2 file with a single saw wave preset.
      * Useful for testing synthesizer's functionality without providing a file.
+     * @returns The binary representation of the SF2 file.
      */
     public static getSampleSoundBankFile() {
         const font = new BasicSoundBank();
@@ -228,7 +228,8 @@ export class BasicSoundBank {
     }
 
     /**
-     * Copies a given sound bank, deeply cloning all presets instruments and samples.
+     * Copies a given sound bank, cloning all presets, instruments and samples.
+     * The sample data is shared with the original, not copied.
      * @param bank The sound bank to copy.
      */
     public static copyFrom(bank: BasicSoundBank) {
@@ -361,7 +362,7 @@ export class BasicSoundBank {
 
     /**
      * Writes out a DLS Level 2 sound bank. This may not be 100% accurate.
-     * Samples data is always written in the S16LE PCM encoding.
+     * Sample data is always written in the S16LE PCM encoding.
      *
      * > **Note**
      * >
@@ -518,16 +519,15 @@ export class BasicSoundBank {
     /**
      * Trims the sound bank _in-place_ to only contain samples in a given MIDI file.
      *
-
      * Absent presets will be removed from the sound bank,
      * and samples that don't get activated in the remaining presets will be removed as well.
      *
      * > **Note**
      * >
-     * > This exact type is returned from {@link BasicMIDI.getUsedProgramsAndKeys}
+     * > This exact type is returned from {@link BasicMIDI.getUsedProgramsAndKeys}.
      * > Consider reading the page for more explanation about the parameter.
      *
-     * @param presetData - A `Map`: `BasicPreset` -> `Set<"key-velocity">`.
+     * @param presetData A `Map`: `BasicPreset` -> `Map<MIDI note, Set<velocity>>`.
      * Absent presets will be removed from the sound bank,
      * and samples that don't get activated in the remaining presets will be removed as well.
      */

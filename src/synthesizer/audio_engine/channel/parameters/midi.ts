@@ -97,7 +97,7 @@ export interface ChannelMIDIParameter {
 
     /**
      * Assign mode for the channel:
-     * - `0` - A new note will kill the previous one if it is still playing.
+     * - `0` - A new note will kill the previous one on the same key if it is still playing.
      * - Any other value - A new note will not kill the previous notes (default).
      *
      * While GS and XG differentiate 1 (Limited Multi for GS/Multi for XG) and 2 (Full Multi for GS/Inst (for Drum)),

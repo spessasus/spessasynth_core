@@ -32,7 +32,6 @@ import {
 
 /**
  * Represents a proper DLS instrument, with regions and articulation.
- * DLS
  */
 export class DownloadableSoundsInstrument
     extends DLSVerifier
@@ -191,8 +190,8 @@ export class DownloadableSoundsInstrument
         const regionChunks = this.regions.flatMap((r) => r.write());
         chunks.push(...RIFFChunk.getParts("lrgn", regionChunks, false, true));
 
-        // This will mostly be false as SF2 -> DLS can't have both global and local regions,
-        // So it only has global, hence this check.
+        // This will mostly be false as SF2 -> DLS only writes the region articulation,
+        // So the instrument one is empty, hence this check.
         if (this.articulation.length > 0) {
             chunks.push(...this.articulation.write());
         }

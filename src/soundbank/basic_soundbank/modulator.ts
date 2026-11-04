@@ -45,7 +45,7 @@ export const DEFAULT_RESONANT_MOD_SOURCE = getModSourceEnum(
     false,
     true,
     MIDIControllers.filterResonance
-); // Linear forwards bipolar cc 74
+); // Linear forwards bipolar cc 71
 
 /**
  * This class represents a single modulator (map from a source to a given synthesis parameter).

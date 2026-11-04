@@ -170,7 +170,8 @@ function wordToFloat(word: number, mode: number) {
 }
 
 /**
- * Rounds a scaled coefficient half away from zero, like the DLL's biased truncation.
+ * Adds the DLL's half step bias (away from zero) to a scaled coefficient.
+ * Truncating the result rounds half away from zero, like the DLL's biased truncation.
  * @param value The exact scaled value.
  */
 export function biasedRound(value: number) {

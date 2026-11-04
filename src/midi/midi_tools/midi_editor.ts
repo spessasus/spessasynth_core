@@ -221,7 +221,7 @@ export interface ModifyMIDIOptions {
      * > **Note**
      * >
      * > By default, a meaningful GM reset (one with notes after it)
-     * > is replaced with a GS reset. Set the `system` parameter to `gm`
+     * > is replaced with a GS reset (or `fallbackReset`, if set). Set the `system` parameter to `gm`
      * > to keep the GM reset (and replace all others with GM).
      * > This is done to allow the bank selections and other parameters to work.
      */
@@ -293,8 +293,9 @@ export interface ModifyMIDIOptions {
     /**
      * The system reset to add when the file contains no reset.
      * Unlike `midiParams.system`, existing resets are left untouched.
-     * Ignored when `midiParams.system` is set (it takes precedence)
-     * and when `midiParams.system` is `"clear"` (no reset is added).
+     * Ignored when `midiParams.system` is set (it takes precedence).
+     * When `midiParams.system` is `"clear"`, no reset is added,
+     * but this still selects the system the setup messages are written for.
      * When unset, the added reset defaults to `"xg"`
      * if only XG setups are requested, otherwise to `"gs"`.
      *
@@ -439,7 +440,7 @@ export class MIDIEditor {
      * GM -> GS -> note data
      *
      * That GM reset is meaningless, so it can stay unmodified as the actual reset that matters is GS.
-     * Meaningful ones are replaced with GS in-place
+     * Meaningful GM ones are replaced with the fallback reset in-place
      * (unless the `system` parameter is explicitly set).
      */
     private meaningfulResets = new Array<ResetPosition>();
@@ -1214,7 +1215,7 @@ export class MIDIEditor {
                         }
 
                         case "XG Insertion Param": {
-                            // Delete all reverb params since we're setting new ones
+                            // Delete all insertion params since we're setting new ones
                             if (
                                 this.xgInsertionParams?.get(syx.insertionNumber)
                             ) {
@@ -1992,7 +1993,7 @@ export class MIDIEditor {
         };
         // A GM reset: if notes follow, it's meaningful
         // And gets pushed to gmResets on the first note
-        // To be replaced with GS in apply().
+        // To be replaced with the fallback reset in apply().
         // Track it here.
         this.isPendingResetGM = system === "gm";
 

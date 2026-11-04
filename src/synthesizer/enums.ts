@@ -27,7 +27,7 @@ export const InterpolationTypes = {
      * 32-point windowed sinc interpolation.
      *
      * Very high quality with almost no aliasing or harmonic distortion,
-     * usable in real time at, but at a significantly higher CPU cost.
+     * usable in real time, but at a significantly higher CPU cost.
      */
     sinc32: 3,
     /**

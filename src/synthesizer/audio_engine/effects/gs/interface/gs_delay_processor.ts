@@ -9,7 +9,7 @@ import type { GSSystemEffectParameter } from "./gs_system_effect_parameter";
  */
 export interface GSDelayParameter extends GSSystemEffectParameter {
     /**
-     * 0-115
+     * 1-115
      * 0.1ms-340ms-1000ms
      * The delay effect has three delay times; center, left and
      * right (when listening in stereo). Delay Time Center sets the delay time of the delay
@@ -19,7 +19,7 @@ export interface GSDelayParameter extends GSSystemEffectParameter {
     timeCenter: number;
 
     /**
-     * 0-120
+     * 1-120
      * 4% - 500%
      * This parameter sets the delay time of the delay located at the left as a percentage of
      * the Delay Time Center (up to a max. of 1.0 s).

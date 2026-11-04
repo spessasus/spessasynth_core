@@ -383,7 +383,7 @@ export class BasicPreset implements MIDIPatchFull {
      * >
      * > Consider reading about [the DLS conversion problem](../../../docs/extra/dls-conversion-problem.md).
      *
-     * @returns The instrument containing the flattened zones. If flattening was successful, it should exactly the same as this preset.
+     * @returns The instrument containing the flattened zones. If flattening was successful, it should sound exactly the same as this preset.
      */
     public toFlattenedInstrument(): BasicInstrument {
         const addUnique = (main: Generator[], adder: Generator[]) => {

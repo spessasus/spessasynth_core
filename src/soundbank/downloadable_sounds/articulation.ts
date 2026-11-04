@@ -93,8 +93,8 @@ export class DownloadableSoundsArticulation extends DLSVerifier {
     }
 
     /**
-     * Chunk list for the region/instrument (containing lar2 or lart)
-     * @param chunks
+     * Reads the articulation from a chunk list.
+     * @param chunks Chunk list for the region/instrument (containing lar2 or lart)
      */
     public read(chunks: RIFFChunk[]) {
         const lart = RIFFChunk.findListType(chunks, "lart");

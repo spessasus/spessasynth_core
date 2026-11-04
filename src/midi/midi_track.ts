@@ -18,7 +18,7 @@ export class MIDITrack {
      */
     public port = 0;
     /**
-     * A set that contains the MIDI channel numbers used by this track.
+     * A set that contains the MIDI channel numbers (0-15) that have note on events in this track.
      */
     public channels = new Set<number>();
     /**
@@ -60,7 +60,7 @@ export class MIDITrack {
 
     /**
      * Adds events to the track.
-     * @param index The index at which to add these event.
+     * @param index The index at which to add these events.
      * @param events The events to add.
      */
     public addEvents(index: number, ...events: MIDIMessage[]) {

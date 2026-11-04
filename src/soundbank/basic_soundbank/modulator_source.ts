@@ -34,7 +34,7 @@ export class ModulatorSource {
     /**
      * If this field is set true, the direction of the controller should be from the maximum value to the minimum value. So, for
      * example, if the controller source is Key Number, then a Key Number value of 0 corresponds to the maximum possible
-     * controller output, and the Key Number value of 127 corresponds to the minimum possible controller input.
+     * controller output, and the Key Number value of 127 corresponds to the minimum possible controller output.
      */
     public isNegative;
 

@@ -10,7 +10,7 @@ import { BasicPresetZone } from "../../basic_soundbank/basic_preset_zone";
 import { GeneratorTypes } from "../../basic_soundbank/generator_types";
 
 /**
- * Parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
+ * Parses soundfont presets
  */
 
 export class SoundFontPreset extends BasicPreset {

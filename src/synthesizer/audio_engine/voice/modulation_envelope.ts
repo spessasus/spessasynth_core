@@ -129,7 +129,7 @@ export class ModulationEnvelope {
      * Calculates the current modulation envelope value for the given time and voice.
      * @param voice the voice we are working on.
      * @param currentTime in seconds.
-     * @returns  mod env value, from 0 to 1.
+     * @returns mod env value, from 0 to 1.
      */
     public process(voice: Voice, currentTime: number): number {
         if (this.enteredRelease) {

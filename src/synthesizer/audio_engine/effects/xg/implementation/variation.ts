@@ -99,6 +99,9 @@ const VARIATION_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
 /**
  * The default implementation for {@link XGVariationBlock}.
  *
+ * The default type is DELAY L,C,R in the insertion connection.
+ * Unknown types use the type with LSB 0, or THRU if that is missing too.
+ *
  * @group Synthesizer.XG Effects
  * @sealed
  */
@@ -124,6 +127,9 @@ export class DefaultXGVariation
         super(VARIATION_MAP, XGThru, 0x05_00, sampleRate, maxBufferSize, true);
     }
 
+    /**
+     * Resets this block to default values, including the processor type.
+     */
     public reset() {
         super.reset();
         this.insertionMode = true;
@@ -200,6 +206,9 @@ export class DefaultXGVariation
         }
     }
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     public getSnapshot() {
         return {
             ...super.getSnapshot(),
@@ -210,6 +219,10 @@ export class DefaultXGVariation
         };
     }
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     public applySnapshot(snapshot: XGVariationBlockSnapshot) {
         super.applySnapshot(snapshot);
         this.insertionMode = snapshot.insertionMode;

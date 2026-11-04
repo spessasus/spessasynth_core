@@ -89,7 +89,7 @@ export class GSTimeControlDelay extends GSEffect {
     protected update() {
         const p = this.parameters;
         this.target = ((delay2(this.controlled(0, 0)) * 127) / 128) * 32;
-        // The slew per 32 kHz sample is 1/32000 of the time constant
+        // The slew per 32 kHz sample is 1 / (32000 x the time constant)
         const step = 1 / (32_000 * slewTime(p[1]));
         this.slew = 1 - (1 - step) ** (32_000 / this.sampleRate);
         this.feedback = feedbackGain(this.controlled(1, 2));

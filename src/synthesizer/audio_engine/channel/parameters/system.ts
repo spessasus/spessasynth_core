@@ -92,7 +92,7 @@ export interface ChannelSystemParameter {
     /**
      * Indicates whether the channel is in monophonic retrigger mode.
      * This emulates the behavior of Microsoft GS Wavetable Synth,
-     * Where a new note will kill the previous one if it is still playing.
+     * where a new note will kill the previous one on the same key if it is still playing.
      *
      * Overrides the global parameter if set.
      */

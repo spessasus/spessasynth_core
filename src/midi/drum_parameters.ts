@@ -56,7 +56,7 @@ export class DrumParameterUtils {
         dest.rxNoteOn = source.rxNoteOn;
     }
     /**
-     * Checks if this user drum parameter is the default.
+     * Checks if this drum parameter is the default.
      * @param param the param to check.
      * @param midiNote the MIDI note of this parameter.
      */

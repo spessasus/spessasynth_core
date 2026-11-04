@@ -44,6 +44,8 @@ const REVERB_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
 /**
  * The default implementation for {@link XGReverbBlock}.
  *
+ * The default type is HALL 1. Unknown types use the type with LSB 0, or NO EFFECT (silence) if that is missing too.
+ *
  * @group Synthesizer.XG Effects
  * @sealed
  */

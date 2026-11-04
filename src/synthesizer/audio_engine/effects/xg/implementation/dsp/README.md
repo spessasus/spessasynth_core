@@ -20,7 +20,8 @@ and dumps the internal DSP state. The reverse engineering workspace is not part 
 
 The goal is to sound like the S-YXG50, not like a generic effect. Most programs match the DLL output to about 1e-6
 relative error (float32 rounding). The distortion family is about 1e-5 because of its clipping stages.
-Only the S-YXG50 effect set is implemented. Types it does not have stay THRU.
+Only the S-YXG50 effect set is implemented. Types it does not have fall back to the type with LSB 0,
+then to THRU (NO EFFECT in the reverb and chorus blocks).
 
 ### How the DLL works, and how the code mirrors it
 
@@ -34,7 +35,9 @@ The code keeps this model on purpose, so its state can be compared with the DLL 
 - `coefficientWords` and `addressWords` are the word RAMs. A converter writes words, then pushes a list of them.
   Only pushed words reach the DSP (`coefficients` and `taps`), exactly like the original.
   This is why the code is full of hexadecimal slot numbers. They are the DLL's own coefficient and address indices.
-- Each type is a tiny class holding only its preset (the words and the 16 default parameters).
+- Each type is a small class holding its preset (the words and the 16 default parameters).
+  Many variation types also hold their own parameter converters, and the single-type routines
+  (symphonic, rotary speaker, auto wah and the EQs) are one class each.
   The algorithm lives in a shared base class per family (reverb, chorus, delay, tremolo and so on).
 - Some float operations are written with `Math.fround` and `chop32` to reproduce the original's x87 float32
   arithmetic with truncating rounding. This matters for slow accumulators such as the LFO smoothing filters.
@@ -79,12 +82,12 @@ and their variants), also used by the variation and insertion blocks.
 
 The input is mono (the sum of both sides). It goes through a high pass and a low pass filter,
 then into an input node with its own feedback, then through two diffusion allpasses.
-The diffused signal feeds four delay lines, each with a one-pole damping filter in its feedback path.
+The diffused signal feeds four delay lines, each with a two-tap damping filter in its feedback path.
 Each side of the output sums taps of all four lines plus one early reflection tap, then runs through one more allpass
 so the two sides are decorrelated.
 
 - Reverb time selects the damping of each line from a table, with a fixed per-line offset for each type.
-- Diffusion moves the allpass taps, density enables more of the density allpasses.
+- Diffusion spreads the left and right output taps of each line apart, density enables more of the density allpasses.
 - Initial delay places the early reflection tap, reverb delay places the start of the reverb lines after it.
 - ER/Rev balance sets the early reflection and reverb levels.
 - In the variation block, Dry/Wet mixes in the dry input. The reverb block itself is always fully wet.
@@ -111,7 +114,7 @@ by a triangle LFO (updated every 4 samples, linearly interpolated between sample
 
 Files: `delay/xg_delay.ts`. Types: DELAY L,C,R, DELAY L,R, ECHO, CROSS DELAY.
 
-One routine with two delay lines. Each line has a feedback tap with a one-pole low pass (high damp)
+One routine with two delay lines. Each line has a feedback tap with a two-tap low pass (high damp)
 and output taps. A coefficient matrix decides which inputs and feedback taps enter which line
 and which taps reach which output. Each type only sets this routing:
 
@@ -223,7 +226,8 @@ Two output allpasses decorrelate the left and right echoes. The three types diff
 
 Files: `no_effect.ts`, `thru.ts`. NO EFFECT outputs silence. THRU passes the input through unchanged
 in the insertion mode and outputs silence as a system effect. THRU also stands in for every type
-that the S-YXG50 does not have.
+that the S-YXG50 does not have (when no type with LSB 0 exists) in the variation and insertion blocks.
+The reverb and chorus blocks use NO EFFECT for that.
 
 ### Known limits
 

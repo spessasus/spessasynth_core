@@ -707,7 +707,7 @@ export function rolandSystemExclusive(
                         const channel =
                             MIDIUtils.gsPartToChannel(a2 & 0x0f) +
                             channelOffset;
-                        // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                        // For example, 0x1A means A = 10, which corresponds to channel 11 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
                             // Testcase: Sarah Geronimo - Maybe This Time
@@ -1032,7 +1032,7 @@ export function rolandSystemExclusive(
                         const channel =
                             MIDIUtils.gsPartToChannel(a2 & 0x0f) +
                             channelOffset;
-                        // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                        // For example, 0x1A means A = 10, which corresponds to channel 11 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
                             SpessaLog.gsFail(
@@ -1171,7 +1171,7 @@ export function rolandSystemExclusive(
                         const channel =
                             MIDIUtils.gsPartToChannel(a2 & 0x0f) +
                             channelOffset;
-                        // For example, 0x1A means A = 11, which corresponds to channel 12 (counting from 1)
+                        // For example, 0x1A means A = 10, which corresponds to channel 11 (counting from 1)
                         const ch = this.midiChannels[channel];
                         if (!ch) {
                             SpessaLog.gsFail(
@@ -1221,7 +1221,7 @@ export function rolandSystemExclusive(
                     // Testcase: 95043-2.KYC.mid
                     if (this.systemParameters.drumLock) return;
                     // In gs, the map is offset by the default (e.g. 1)
-                    // So 0 means drum map 1, 1 means drum map 1, etc.
+                    // So 0 means drum map 1, 1 means drum map 2, etc.
                     const map = (a2 >> 4) + DEFAULT_GS_DRUM_MAP;
                     const drumKey = a3;
                     const param = a2 & 0xf;

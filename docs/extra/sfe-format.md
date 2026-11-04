@@ -11,7 +11,7 @@ SFE is a superset of SoundFont 2.04. Everything not listed here works as in the
 > **Note**
 >
 > This page only lists the SFE extensions. SF2 extensions that `spessasynth_core` supports in SF2 files as well,
-> such as SF3 compressed samples.
+> such as SF3 compressed samples, are not described here.
 
 `spessasynth_core` implements a subset of the "release draft" of mine
 ([What SFe 4.0 should have been](https://github.com/spessasus/soundfont-proposals/blob/main/sfe4.md)).
@@ -105,10 +105,11 @@ same result for regular SF2 values below 128.
 
 The SF2 specification defines generators up to 60 (`endOper`). SFE adds generators above it, in two groups:
 
-- SFE only.
-- Follow value generator SF2 rules.
 - 61 to 67 extend the LFOs. The GS/XG controller matrix uses them at runtime as well.
 - 68 to 88 add voice features that SF2 cannot express, for example from XG voices.
+
+Both groups follow the SF2 rules for value generators, with these additions:
+
 - They are only stored in SFE banks. The SFE writer keeps them in `pgen` and `igen`, along with every
   modulator (in zones and in `DMOD`) whose destination is one of them.
 - `ignoreNoteOff`, `vibLfoWaveform` and `modLfoWaveform` are only valid in instrument zones.

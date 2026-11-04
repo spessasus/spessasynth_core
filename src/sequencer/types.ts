@@ -44,7 +44,11 @@ export interface SequencerEvent {
     };
 
     /**
-     * This event is called when the playback stops.
+     * This event is called when the song finishes and the playback stops.
+     * It is not called when pausing manually.
+     *
+     * With more than one song in the list, the sequencer moves on to the next song instead,
+     * so this event is not called.
      */
     songEnded: object;
 
@@ -53,7 +57,8 @@ export interface SequencerEvent {
      */
     songChange: {
         /**
-         * The index of the new song in {@link SpessaSynthSequencer.songs}.
+         * The new {@link SpessaSynthSequencer.songIndex}.
+         * If shuffle mode is enabled, this is the index in the shuffled song list, not in {@link SpessaSynthSequencer.songs}.
          */
         songIndex: number;
     };

@@ -60,7 +60,7 @@ export type ChannelMIDIParameterMessage = {
     };
 }[keyof ChannelMIDIParameter];
 /**
- * Represents an analyzed channel GS Reverb Processor change.
+ * Represents an analyzed GS Reverb Processor change.
  *
  * @group MIDI.Protocol
  */
@@ -96,7 +96,7 @@ export type GSReverbParameterMessage =
           value: number;
       };
 /**
- * Represents an analyzed channel GS Chorus Processor change.
+ * Represents an analyzed GS Chorus Processor change.
  *
  * @group MIDI.Protocol
  */
@@ -132,7 +132,7 @@ export type GSChorusParameterMessage =
           value: number;
       };
 /**
- * Represents an analyzed channel GS Delay Processor change.
+ * Represents an analyzed GS Delay Processor change.
  *
  * @group MIDI.Protocol
  */
@@ -168,7 +168,7 @@ export type GSDelayParameterMessage =
           value: number;
       };
 /**
- * Represents an analyzed channel GS Insertion Processor change.
+ * Represents an analyzed GS Insertion Processor change.
  *
  * @group MIDI.Protocol
  */

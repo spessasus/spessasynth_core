@@ -6,7 +6,7 @@
 export interface WaveWriteOptions {
     /**
      * If true, the gain of the entire song will be adjusted,
-     * so the max sample is always 32,767 or min is always -32,768 (whichever is greater). Recommended.
+     * so the loudest sample (by absolute value) becomes 32,767 or -32,767. Recommended.
      */
     normalizeAudio: boolean;
     /**

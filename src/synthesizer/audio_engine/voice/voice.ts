@@ -162,7 +162,7 @@ export class Voice {
      * This is the effective MIDI note number,
      * used to calculate scale tuning and envelope times,
      * and can be overridden by generators.
-     * It is also used
+     * It is also used for the octave tuning and as the portamento target.
      */
     public targetKey = 0;
 
@@ -279,7 +279,9 @@ export class Voice {
     }
 
     /**
-     * Releases the voice as exclusiveClass.
+     * Releases the voice as exclusiveClass, with a nearly instant release time.
+     * @param currentTime the current time in seconds.
+     * @param minExclusiveLength minimum note length in seconds.
      */
     public exclusiveRelease(
         currentTime: number,
@@ -291,8 +293,9 @@ export class Voice {
     }
 
     /**
-     * Stops the voice
-     * @param currentTime
+     * Releases the voice. The release phase starts on the first render at or after the release time,
+     * which is pushed back if the note would be shorter than the minimum length.
+     * @param currentTime the current time in seconds.
      * @param minNoteLength minimum note length in seconds
      */
     public releaseVoice(currentTime: number, minNoteLength = MIN_NOTE_LENGTH) {

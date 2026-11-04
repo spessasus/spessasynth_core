@@ -164,7 +164,8 @@ export class BasicMIDI {
      * The loop points (in ticks) of the sequence, including both start and end points.
      *
      * If there's nothing detected, the loop will start from the first note on event and end will be the last voice message.
-     * Current looping detection is: CC 2/4, 116/117 and "start," "loopStart" and "loopEnd" markers.
+     * Current looping detection is: CC 2/4 (Touhou), CC 111 (RPG Maker), CC 116/117 and 118/119 (EMIDI/XMI)
+     * and the "start", "loopStart" and "loopEnd" markers.
      */
     public loop: MIDILoop = { start: 0, end: 0, type: "hard" };
 
@@ -181,6 +182,7 @@ export class BasicMIDI {
 
     /**
      * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
+     * XMF metadata and converted tracker modules are stored here as well.
      * Otherwise, this object is empty.
      * Info type: Chunk data as a binary array.
      *
@@ -267,7 +269,7 @@ export class BasicMIDI {
      * This function reads the MIDI file format, extracts the header and track chunks,
      * and populates the BasicMIDI instance with the parsed data.
      * It supports Standard MIDI Files (SMF), RIFF MIDI (RMIDI), and Extensible Music Format (XMF).
-     * It also handles embedded soundbanks in RMIDI files.
+     * It also handles embedded soundbanks in RMIDI and XMF files.
      * Tracker modules (ProTracker MOD, Fast Tracker 2 XM, Scream Tracker 3 S3M) are converted
      * into MIDI with an embedded sound bank.
      */
@@ -328,7 +330,7 @@ export class BasicMIDI {
     }
 
     /**
-     * Copies another instance this `BasicMIDI` instance, including track data.
+     * Copies another instance into this `BasicMIDI` instance, including track data.
      * @param mid The MIDI to copy.
      */
     public copyFrom(mid: BasicMIDI) {
@@ -454,7 +456,7 @@ export class BasicMIDI {
 
     /**
      * Preloads all voices for this sequence in a given {@link SpessaSynthProcessor}.
-     * This caches all the needed voices for playing back this sequencer, resulting in a smooth playback.
+     * This caches all the needed voices for playing back this sequence, resulting in a smooth playback.
      * The sequencer calls this function by default when loading the songs. (it can be disabled: {@link SpessaSynthSequencer.preload}).
      * @param synth The synthesizer to preload.
      */
@@ -556,7 +558,7 @@ export class BasicMIDI {
     }
 
     /**
-     * Writes out an RMIDI file (MIDI + SF2).
+     * Writes out an RMIDI file (MIDI + SF2 or DLS).
      * [See more info about this format](https://github.com/spessasus/sf2-rmidi-specification#readme).
      *
      * Note that this method modifies the MIDI file in-place.
@@ -565,11 +567,16 @@ export class BasicMIDI {
      * The method is called on a `BasicMIDI` instance;
      * that instance is the MIDI file to embed.
      *
+     * > **Warning**
+     * >
+     * > Do not call in audioWorkletGlobalScope as it uses TextDecoder and TextEncoder.
+     * > With the default options, `soundBank` must be provided, otherwise an error is thrown.
+     *
      * > **Tip**
      * >
      * > Use {@link BasicSoundBank.trim} to drastically reduce the file size.
-     * > consider also using compression (like shown in example) to save even more space.
-     * > (using these both methods, I managed to shrink a 1GB sound bank into a 5MB RMIDI!)
+     * > Consider also using compression (like shown in example) to save even more space.
+     * > (using both of these methods, I managed to shrink a 1GB sound bank into a 5MB RMIDI!)
      *
      * @param soundBankBinary The binary sound bank (SF2 or DLS) to embed into the file.
      * @param configuration Extra options for writing the file.
@@ -607,7 +614,7 @@ export class BasicMIDI {
      *
      *     // trim the soundfont
      *     soundBank.trim(midi.getUsedProgramsAndKeys(soundBank));
-     *     // write out with compression to save space (0.5 is medium quality)
+     *     // write out with compression to save space
      *     await soundBank.setSampleFormat({
      *         format: "compressed",
      *         compressionFunction: SampleEncodingFunction // Remember to get your compression function
@@ -653,6 +660,8 @@ export class BasicMIDI {
      * and inserts/deletes messages appropriately.
      *
      * This modifies the MIDI sequence _in-place_.
+     *
+     * @param opts The modifications to apply.
      */
     public modify(opts: Partial<ModifyMIDIOptions>) {
         const editor = new MIDIEditor(this, opts);
@@ -665,8 +674,10 @@ export class BasicMIDI {
      * This means changing the programs and controllers if they are locked.
      *
      * For example, if channel 1 has locked preset on `Drawbar Organ`,
-     * this will remove all program changes for channel 1 and add one at the start to change the program to
+     * this will remove all program changes for channel 1 and add one before the channel's first note on
+     * (and again after every system reset) to change the program to
      * `Drawbar organ` (using bank MSB/LSB and program change).
+     * Muted channels are removed from the sequence.
      *
      * > **Warning**
      * >
@@ -757,6 +768,10 @@ export class BasicMIDI {
      * >
      * > This sets the Info encoding to `utf-8`.
      *
+     * > **Warning**
+     * >
+     * > Do not call in audioWorkletGlobalScope as it uses TextEncoder.
+     *
      * @param infoType The type to set.
      * @param infoData The value to set it to.
      */
@@ -784,6 +799,11 @@ export class BasicMIDI {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Gets a given chunk from the RMIDI information.
+     *
+     * > **Warning**
+     * >
+     * > Do not call in audioWorkletGlobalScope as it uses TextDecoder.
+     *
      * @param infoType The metadata type.
      * @returns `string`, `Date`, `ArrayBuffer` or undefined if the info is not set.
      */
@@ -828,7 +848,7 @@ export class BasicMIDI {
      * > if you are not editing the MIDI file in your loop.
      * > It is usually a faster solution and allows custom loops.
      *
-     *     If the track data is being edited, remember to call {@link BasicMIDI.flush} it after editing!
+     * If the track data is being edited, remember to call {@link BasicMIDI.flush} after editing!
      *
      * @param callback The callback function to process each event.
      */

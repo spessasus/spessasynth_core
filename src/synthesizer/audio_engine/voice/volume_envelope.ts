@@ -51,7 +51,7 @@ export class VolumeEnvelope {
     /**
      * The sample count between updates of the volume envelope.
      * Since the volume envelope calculation runs once per rendering quantum,
-     * this effectively the buffer size.
+     * this is effectively the buffer size.
      */
     private readonly updateInterval: number;
     /**
@@ -59,11 +59,11 @@ export class VolumeEnvelope {
      */
     private sampleTime = 0;
     /**
-     * The dB attenuation of the envelope when it entered the release stage.
+     * The cB attenuation of the envelope when it entered the release stage.
      */
     private releaseStartCb: number = CB_SILENCE;
     /**
-     * The time in samples relative to the start of the envelope.
+     * The time in samples when the release stage started, relative to the start of the envelope.
      */
     private releaseStartTimeSamples = 0;
     /**
@@ -144,7 +144,7 @@ export class VolumeEnvelope {
         const timecents =
             voice.overrideReleaseVolEnv ||
             voice.modulatedGenerators[GeneratorTypes.releaseVolEnv];
-        // Min is set to -7200 prevent clicks
+        // Min is set to -7200 to prevent clicks
         this.releaseDuration = this.timecentsToSamples(
             Math.max(-7200, timecents)
         );
@@ -330,10 +330,10 @@ export class VolumeEnvelope {
 
     /**
      * Calculates the gain value for the last sample in the block and writes it to `outputGain`.
-     * Essentially we use approach of 100dB is silence, 0dB is peak.
-     * @param sampleCount the amount of samples to write
+     * Essentially we use approach of 96 dB (CB_SILENCE) is silence, 0dB is peak.
+     * @param sampleCount the amount of samples in the block to advance the envelope by.
      * @param gainTarget the gain to apply.
-     * @returns if the voice has finished.
+     * @returns if the voice is still active (false once the envelope has finished).
      */
     public process(sampleCount: number, gainTarget: number): boolean {
         const {

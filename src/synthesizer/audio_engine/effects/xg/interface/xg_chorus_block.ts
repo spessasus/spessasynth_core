@@ -53,8 +53,8 @@ export interface XGChorusBlock extends XGSystemEffectBlock, XGChorusParameter {
      * @param inputRight The input buffer to process. It always starts at index 0.
      * @param outputLeft The left output buffer.
      * @param outputRight The right output buffer.
-     * @param reverbLeft The left reverb send buffer.
-     * @param reverbRight The right reverb send buffer.
+     * @param reverbLeft The left reverb send buffer. It always starts at index 0.
+     * @param reverbRight The right reverb send buffer. It always starts at index 0.
      * @param startIndex The index to start mixing at into the output buffers.
      * @param sampleCount The amount of samples to mix. This will never be larger than {@link SynthProcessorOptions.maxBufferSize} of the parent {@link SpessaSynthProcessor} instance.
      */
@@ -69,7 +69,14 @@ export interface XGChorusBlock extends XGSystemEffectBlock, XGChorusParameter {
         sampleCount: number
     ): void;
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     getSnapshot(): XGChorusBlockSnapshot;
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     applySnapshot(snapshot: XGChorusBlockSnapshot): void;
 }

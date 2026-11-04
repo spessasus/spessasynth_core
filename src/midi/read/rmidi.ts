@@ -41,7 +41,7 @@ export function parseRMIDIInternal(
 
     let isSF2RMIDI = false;
     let dbnk: number | undefined;
-    // Keep loading chunks until we get the "SFBK" header
+    // Load the remaining chunks (the embedded sound bank and the INFO list)
     while (binaryData.currentIndex < binaryData.length) {
         const startIndex = binaryData.currentIndex;
         const currentChunk = RIFFChunk.read(binaryData);

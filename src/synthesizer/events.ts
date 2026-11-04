@@ -113,7 +113,7 @@ export interface ControllerChangeEvent extends ChannelEvent {
 
 /**
  * This event is triggered when a MIDI polyphonic pressure event is received. This controls the pressure of a single note.
- * By default, this controls vibrato in SpessaSynth, though it can be changed with sound bank modulators.
+ * It has no effect by default, it has to be assigned with sound bank modulators or system exclusives.
  *
  * @group Synthesizer.Events
  */
@@ -426,8 +426,7 @@ export type UserDrumSetChangeEvent = {
  * | `noteOff`            | {@link NoteOffEvent}                      | Key has been released.                          |
  * | `controllerChange`   | {@link ControllerChangeEvent}             | Controller has been changed.                    |
  * | `programChange`      | {@link ProgramChangeEvent}                | Program has been changed.                       |
- * | `channelPressure`    | —                                         | Channel's pressure has been changed.            |
- * | `polyPressure`       | {@link PolyPressureEvent}                 | Note's pressure has been changed.               |
+ * | `polyPressure`       | {@link PolyPressureEvent}                | Note's pressure has been changed.               |
  * | `stopAll`            | {@link StopAllEvent}                      | All voices were stopped on a given channel.     |
  * | `channelAdded`       | —                                         | A new channel was added to the synth.           |
  * | `presetListChange`   | —                                         | The preset list has been changed/initialized.   |
@@ -444,6 +443,11 @@ export type UserDrumSetChangeEvent = {
  * > It automatically combines the sound banks and sends the list of presets as they will be played.
  * > It also signals that the sound bank has been fully loaded.
  *
+ * > **Note**
+ * >
+ * > There is no separate channel pressure event.
+ * > Channel pressure changes are reported as `channelParamChange` with the `pressure` parameter.
+ *
  * @group Synthesizer.Events
  */
 export interface SynthesizerEvent {
@@ -458,7 +462,7 @@ export interface SynthesizerEvent {
 
     /**
      * This event is triggered when a controller is changed on any channel (usually MIDI controller change),
-     * though  [some system exclusives can change it too.](../../docs/extra/midi-implementation.md)
+     * though [some system exclusives can change it too.](../../docs/extra/midi-implementation.md)
      *
      * > **Note**
      * >
@@ -477,7 +481,7 @@ export interface SynthesizerEvent {
     programChange: ProgramChangeEvent;
     /**
      * This event is triggered when a MIDI polyphonic pressure event is received. This controls the pressure of a single note.
-     * By default, this controls vibrato in SpessaSynth, though it can be changed with sound bank modulators.
+     * It has no effect by default, it has to be assigned with sound bank modulators or system exclusives.
      */
     polyPressure: PolyPressureEvent;
     /**
@@ -526,9 +530,10 @@ export interface SynthesizerEvent {
      *
      * Notable messages that can trigger this event:
      *
-     * - All messages with GS Model ID of `0x45` (Display Data)
+     * - GS Display Data (Model ID `0x45`) messages with the first address byte `0x10` or `0x20`
      * - GS Patch Name
      * - GS Drum Map Name
+     * - GS User Drum Set Name
      * - XG Display Letter
      * - XG Display Bitmap
      *

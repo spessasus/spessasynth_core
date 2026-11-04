@@ -33,12 +33,18 @@ export abstract class DefaultXGSystemEffect
     public return = 64;
     public pan = 64;
 
+    /**
+     * Resets this block to default values, including the processor type.
+     */
     public reset() {
         super.reset();
         this.return = 64;
         this.pan = 64;
     }
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     public getSnapshot(): XGSystemEffectBlockSnapshot {
         return {
             ...super.getSnapshot(),
@@ -47,6 +53,10 @@ export abstract class DefaultXGSystemEffect
         };
     }
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     public applySnapshot(snapshot: XGSystemEffectBlockSnapshot) {
         super.applySnapshot(snapshot);
         this.return = snapshot.return;

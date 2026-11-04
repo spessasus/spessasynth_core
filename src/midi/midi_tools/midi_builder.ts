@@ -32,12 +32,14 @@ export interface MIDIBuilderOptions {
     /**
      * The MIDI file track format.
      * Format 0 allows only one track while format 1 allows more than one.
-     * Format 2 is very rare and should not be used.
+     * Format 2 is very rare and is not supported by the builder (an error is thrown).
+     * Defaults to 0.
      */
     format: MIDIFormat;
 
     /**
      * The MIDI file's name. Will be appended to the conductor (first) track and encoded with UTF-8.
+     * Defaults to `Untitled song`.
      */
     name: string;
 }
@@ -60,6 +62,7 @@ const DEFAULT_MIDI_BUILDER_OPTIONS: MIDIBuilderOptions = {
  * > **Warning**
  * >
  * > Remember to call {@link BasicMIDI.flush} after you're done building the file!
+ * > Do not use in audioWorkletGlobalScope as it uses TextEncoder.
  *
  * @group MIDI.Files
  */

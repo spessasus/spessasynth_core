@@ -49,8 +49,9 @@ export class SpessaLog {
     /**
      * Enables or disables logging at various levels.
      * All the input variables are booleans corresponding to the things SpessaSynth logs.
-     * @param enableInfo enables info: all general info such as parsing sound banks, MIDI files, RPN changes, etc.
-     * @param enableWarn enables warning: all messages unrecognized by the synthesizer, other warnings.
+     * @param enableInfo enables info: all general info such as parsing sound banks, MIDI files, RPN changes,
+     * messages unrecognized by the synthesizer, etc.
+     * @param enableWarn enables warning: unexpected and erroneous behavior, such as invalid data or missing presets.
      * @param enableGroup enables groups: the groups for parsing the sound banks and MIDI files.
      */
     public static setLogLevel(

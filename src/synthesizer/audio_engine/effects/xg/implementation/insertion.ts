@@ -89,6 +89,10 @@ const INSERTION_MAP = new Map<number, DefaultXGEffectProcessorConstructor>([
 /**
  * The default implementation for {@link XGInsertionBlock}.
  *
+ * The default type is DISTORTION. The EFFECT 2 types run on the same processors as the variation block types.
+ * The early reflection types and PHASER 2 are variation only, so PHASER 2 falls back to PHASER 1 here.
+ * Unknown types use the type with LSB 0, or THRU if that is missing too.
+ *
  * @group Synthesizer.XG Effects
  * @sealed
  */
@@ -107,6 +111,9 @@ export class DefaultXGInsertion
         super(INSERTION_MAP, XGThru, 0x49_00, sampleRate, maxBufferSize, true);
     }
 
+    /**
+     * Resets this block to default values, including the processor type.
+     */
     public reset() {
         super.reset();
         this.partNumber = 127;
@@ -133,6 +140,9 @@ export class DefaultXGInsertion
         }
     }
 
+    /**
+     * Gets a snapshot of this XG effect block.
+     */
     public getSnapshot() {
         return {
             ...super.getSnapshot(),
@@ -140,6 +150,10 @@ export class DefaultXGInsertion
         };
     }
 
+    /**
+     * Restores this XG effect block from a snapshot.
+     * @param snapshot The snapshot to restore.
+     */
     public applySnapshot(snapshot: XGInsertionBlockSnapshot) {
         super.applySnapshot(snapshot);
         this.partNumber = snapshot.partNumber;

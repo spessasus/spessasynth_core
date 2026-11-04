@@ -103,7 +103,7 @@ function clamp32(x: number) {
  *
  * - White (x 1/32) or "pink": the white noise times a 500 Hz saw (on the SC-88Pro too).
  * - Disc: one click per turn of a record at 33 1/3, 45 or 78 rpm, 0.125 + 0.25 abs(saw) while the turn's phase is
- *   within 0.012 % of its wrap. RND adds a second train whose phase is offset by twice the hum's (pseudo-random
+ *   within 0.014 % of its wrap. RND adds a second train whose phase is offset by twice the hum's (pseudo-random
  *   times).
  * - Hum: a unipolar 50 or 60 Hz square, 0 or 1/16 (it carries DC, on the hardware too).
  *

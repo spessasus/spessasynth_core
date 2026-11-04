@@ -33,7 +33,7 @@ export const DEFAULT_SYNTH_METHOD_OPTIONS: SynthMethodOptions = {
     time: 0
 };
 /**
- * If the note is released faster than that, it forced to last that long
+ * If the note is released faster than that, it is forced to last that long
  * This is used mostly for drum channels, where a lot of midis like to send instant note off after a note on
  * @internal
  */
@@ -60,7 +60,7 @@ export const SPESSASYNTH_GAIN_FACTOR = 0.6;
 export const SPESSA_BUFSIZE = 128;
 
 /**
- * This is needed because effects (regular ones) are send straight from the mono signal, whereas
+ * This is needed because effects (regular ones) are sent straight from the mono signal, whereas
  * insertion effects receive the panned audio (twice), which reduces gain by a factor of cos(pi/4) * cos(pi/4) (master pan + voice pan).
  * This reverses it.
  * 1 / Math.cos(Math.PI / 4) ** 2 == 2

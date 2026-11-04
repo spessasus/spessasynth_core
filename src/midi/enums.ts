@@ -60,7 +60,7 @@ export type MIDIMessageType =
     (typeof MIDIMessageTypes)[keyof typeof MIDIMessageTypes];
 
 /**
- * All MIDI 1.0 controller values.
+ * All MIDI 1.0 controller numbers.
  *
  * > **Tip**
  * >

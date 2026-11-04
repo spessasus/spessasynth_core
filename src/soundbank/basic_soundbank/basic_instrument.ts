@@ -100,7 +100,7 @@ export class BasicInstrument {
     }
 
     /**
-     * Links the instrument ta a given preset.
+     * Links the instrument to a given preset.
      * @param preset The preset to link to.
      * @internal
      */

@@ -228,7 +228,7 @@ export class SpessaSynthProcessor {
      */
     public readonly sharedVoiceSendBuffer;
     /**
-     * The insertion processor's left input buffer.
+     * The GS insertion processor's left input buffer.
      * @internal
      */
     public readonly insertionInputL;
@@ -503,7 +503,7 @@ export class SpessaSynthProcessor {
      */
     protected readonly xgReverbBlock: XGReverbBlock;
     /**
-     * The synthesizer's XG reverb block.
+     * The synthesizer's XG chorus block.
      *
      * Used when {@link GlobalMIDIParameter.system} is `xg`.
      * @internal
@@ -749,7 +749,7 @@ export class SpessaSynthProcessor {
      * > Refer to the [MIDI Implementation](../../docs/extra/midi-implementation.md)
      * > for the list of supported System Exclusives.
      *
-     * @param syx The system exclusive message as an array of bytes.
+     * @param syx The system exclusive message as an array of bytes, without the starting `F0` byte.
      * @param channelOffset The channel offset for the message as they usually can only address the first 16 channels.
      * For example, to send a system exclusive on channel 16,
      * send a system exclusive for channel 0 and set an offset of 16.
@@ -1086,11 +1086,11 @@ export class SpessaSynthProcessor {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     *  Destroy the synthesizer processor, clearing all channels and voices.
+     * Destroy the synthesizer processor, clearing all channels and voices.
      *
-     *  > **Warning**
-     *  >
-     *  > This is irreversible, so use with caution.
+     * > **Warning**
+     * >
+     * > This is irreversible, so use with caution.
      */
     public destroy() {
         this.voices.length = 0;
@@ -2583,7 +2583,7 @@ export class SpessaSynthProcessor {
         const bankMSB = isGMGSDrum ? 128 + patch.bankMSB : patch.bankMSB;
         // 256x128x128x128x128 array!
         return (
-            bankMSB + // 256 * 128 ^ 0
+            bankMSB + // 1
             bankLSB * 256 + // 256 * 128 ^ 0
             program * 32_768 + // 256 * 128 ^ 1
             4_194_304 * midiNote + // 256 * 128 ^ 2

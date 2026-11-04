@@ -5,7 +5,7 @@ to render their output using `spessasynth_core` and reference VST plugins.
 
 - `tests` contains actual MIDI test generators grouped by features.
 - `config.json` contains the render paths and render target configuration. _Edit this to add your own targets!_
-- `config.example.json` is example configuration file. Will be used if `config.json` is missing.
+- `config.example.json` is the example configuration file. It gets copied to `config.json` if that file is missing.
 - `config.schema.json` JSON schema for the configuration file.
 - `midi_test_maker.ts` contains the shared MIDI test builder used across the entire test suite.
 - `generate_midi.ts` generates all MIDI test files and places them into the directory specified by `config.json`.

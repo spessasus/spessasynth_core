@@ -8,7 +8,7 @@ import type { SysExAcceptedArray } from "../../../midi/types";
  * @param byte1 The first byte (midi note).
  * @param byte2 The second byte (most significant bits).
  * @param byte3 The third byte (the least significant bits).
- * @return An object containing the MIDI note and the cent tuning value.
+ * @returns The MIDI note with the fraction added (in semitones), or -1 for no change.
  */
 function getTuning(byte1: number, byte2: number, byte3: number): number {
     const midiNote = byte1;
