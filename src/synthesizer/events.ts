@@ -430,7 +430,7 @@ export type UserDrumSetChangeEvent = {
  * | `stopAll`            | {@link StopAllEvent}                      | All voices were stopped on a given channel.     |
  * | `channelAdded`       | —                                         | A new channel was added to the synth.           |
  * | `presetListChange`   | —                                         | The preset list has been changed/initialized.   |
- * | `reset`              | —                                         | The synthesizer has been reset.                 |
+ * | `reset`              | —                                         | The synthesizer is about to be reset.           |
  * | `displayMessage`     | —                                         | The synthesizer has received a display message. |
  * | `globalParamChange`  | {@link GlobalMIDIParameterChangeEvent}    | A global MIDI Parameter has been changed.       |
  * | `channelParamChange` | {@link ChannelMIDIParameterChangeEvent}   | A channel MIDI Parameter has been changed.      |
@@ -514,9 +514,10 @@ export interface SynthesizerEvent {
      */
     presetListChange: MIDIPatchFull[];
     /**
-     * This event is triggered when all controllers and programs have been reset. Effectively a system reset.
+     * This event is triggered when the synthesizer is about to be reset (all controllers and programs). Effectively a system reset.
+     * It is called before anything is reset, so the synthesizer still has its old state at that point.
      *
-     * The data is the new system the synthesizer was reset with.
+     * The data is the new system the synthesizer will be reset to.
      *
      * > **Note**
      * >

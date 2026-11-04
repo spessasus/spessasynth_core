@@ -136,7 +136,7 @@
             }
         }
 
-        // Hide settings on md files
+        // Hide settings on md files, the homepage and 404
         {
             /**
              * @type {HTMLElement}
@@ -144,7 +144,7 @@
             const settings = document.querySelector(".tsd-navigation.settings");
             if (settings) {
                 settings.style.display = document.querySelector(
-                    'meta[name="page-kind"][content="document"]'
+                    'meta[name="page-kind"]:is([content="document"], [content="home"])'
                 )
                     ? "none"
                     : "";

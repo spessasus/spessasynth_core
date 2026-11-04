@@ -72,39 +72,39 @@ Legend for the "Type" column:
 >
 > For exact values of the modulators, see [default modulators](modulator-information.md#default-modulators)
 
-| CC#                  | Controller Name                     | Type     | Behavior                                                                                                                                                                            |
-| -------------------- | ----------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0                    | Bank Select                         | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                                |
-| 1                    | Modulation Wheel                    | SF2      | Controls the vibrato for the given patch.                                                                                                                                           |
-| 5                    | Portamento Time                     | Engine   | Controls the portamento time. [More info](#portamento-implementation)                                                                                                               |
-| 6                    | Data Entry MSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Upper 7 bits. [More info](#parameter-numbers)                                                                                     |
-| 7                    | Main Volume                         | SF2      | Changes the channel's volume.                                                                                                                                                       |
-| 10                   | Pan                                 | SF2      | Controls the channel's stereo pan.                                                                                                                                                  |
-| 11                   | Expression                          | SF2      | Changes the channel's volume, similarly to Main Volume, but independent of it.                                                                                                      |
-| 32                   | Bank Select LSB                     | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                                |
-| 33 - 63 excluding 38 | Controller LSB values               | Engine   | Extends the precision of the corresponding controllers from 7-bit to 14-bit.                                                                                                        |
-| 38                   | Data Entry LSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Lower 7 bits. [More info](#parameter-numbers)                                                                                     |
-| 64                   | Sustain Pedal                       | Engine   | Holds the Note Off messages until the pedal is off, then stops them all at once.                                                                                                    |
-| 65                   | Portamento On/Off                   | Engine   | Controls if the portamento is enabled or not. [More info](#portamento-implementation)                                                                                               |
-| 67                   | Soft Pedal                          | Extended | Lowers the low-pass filter cutoff frequency.                                                                                                                                        |
-| 71                   | Filter Resonance                    | Extended | Controls the filter resonance of the given patch.                                                                                                                                   |
-| 72                   | Release Time                        | Extended | Controls the release time for the given patch.                                                                                                                                      |
-| 73                   | Attack Time                         | Extended | Controls the attack time for the given patch.                                                                                                                                       |
-| 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                     |
-| 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                        |
-| 84                   | Portamento Control                  | Engine   | Sets the key the next note glides from. Forces portamento once, even if portamento is off. The value persists across channel reset. [More info](#portamento-implementation)         |
-| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                           |
-| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                |
-| 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                 |
-| 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                           |
-| 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                           |
-| 100                  | Registered Parameter Number LSB     | Engine   | Selects the LSB of the Registered Parameter Number. [More info](#supported-registered-parameters)                                                                                   |
-| 101                  | Registered Parameter Number MSB     | Engine   | Selects the MSB of the Registered Parameter Number. [More info](#supported-registered-parameters)                                                                                   |
-| 120                  | All Sound Off                       | Engine   | Immediately terminates all active voices, disregarding their release time.                                                                                                          |
-| 121                  | Reset All Controllers               | Engine   | Resets controllers to their default values according to the [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)                 |
-| 123                  | All Notes Off                       | Engine   | Stops all notes, respecting their release time.                                                                                                                                     |
-| 124 or 125           | Omni mode On/Off                    | Engine   | Stops all notes, respecting their release time.                                                                                                                                     |
-| 126 or 127           | Poly/Mono Mode On/Off               | Engine   | Setting the corresponding controller to any value switches the Poly mode on or off, immediately terminating all active voices on the channel. [More info](#polymono-implementation) |
+| CC#                  | Controller Name                     | Type     | Behavior                                                                                                                                                                                                           |
+| -------------------- | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0                    | Bank Select                         | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                                                               |
+| 1                    | Modulation Wheel                    | SF2      | Controls the vibrato for the given patch.                                                                                                                                                                          |
+| 5                    | Portamento Time                     | Engine   | Controls the portamento time. [More info](#portamento-implementation)                                                                                                                                              |
+| 6                    | Data Entry MSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Upper 7 bits. [More info](#parameter-numbers)                                                                                                                    |
+| 7                    | Main Volume                         | SF2      | Changes the channel's volume.                                                                                                                                                                                      |
+| 10                   | Pan                                 | SF2      | Controls the channel's stereo pan.                                                                                                                                                                                 |
+| 11                   | Expression                          | SF2      | Changes the channel's volume, similarly to Main Volume, but independent of it.                                                                                                                                     |
+| 32                   | Bank Select LSB                     | Engine   | Changes the bank number that is used in Program Change. More info: {@link MIDIPatch}                                                                                                                               |
+| 33 - 63 excluding 38 | Controller LSB values               | Engine   | Extends the precision of the corresponding controllers from 7-bit to 14-bit.                                                                                                                                       |
+| 38                   | Data Entry LSB                      | Engine   | Sets the selected RPN or NRPN to the given value. Lower 7 bits. [More info](#parameter-numbers)                                                                                                                    |
+| 64                   | Sustain Pedal                       | Engine   | Holds the Note Off messages until the pedal is off, then stops them all at once.                                                                                                                                   |
+| 65                   | Portamento On/Off                   | Engine   | Controls if the portamento is enabled or not. [More info](#portamento-implementation)                                                                                                                              |
+| 67                   | Soft Pedal                          | Extended | Lowers the low-pass filter cutoff frequency.                                                                                                                                                                       |
+| 71                   | Filter Resonance                    | Extended | Controls the filter resonance of the given patch.                                                                                                                                                                  |
+| 72                   | Release Time                        | Extended | Controls the release time for the given patch.                                                                                                                                                                     |
+| 73                   | Attack Time                         | Extended | Controls the attack time for the given patch.                                                                                                                                                                      |
+| 74                   | Brightness                          | Extended | Controls the brightness (lowpass frequency) of the given patch.                                                                                                                                                    |
+| 75                   | Decay time                          | Extended | Controls the decay time for the given patch.                                                                                                                                                                       |
+| 84                   | Portamento Control                  | Engine   | Sets the key the next note glides from. Forces portamento once, even if portamento is off. The key persists across channel reset, but a pending forced glide is cancelled. [More info](#portamento-implementation) |
+| 91                   | Reverb Depth                        | SF2      | Controls the reverb effect send for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                                          |
+| 93                   | Chorus Depth                        | SF2      | Controls the chorus effect for the given channel. [More info](modulator-information.md#reverb-and-chorus-modulators)                                                                                               |
+| 94                   | Variation Depth                     | Engine   | In GS mode, it controls the delay effect for the given channel.[^1]                                                                                                                                                |
+| 98                   | Non-Registered Parameter Number LSB | Engine   | Selects the LSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                                                          |
+| 99                   | Non-Registered Parameter Number MSB | Engine   | Selects the MSB of the Non-Registered Parameter Number. [More info](#supported-non-registered-parameters)                                                                                                          |
+| 100                  | Registered Parameter Number LSB     | Engine   | Selects the LSB of the Registered Parameter Number. [More info](#supported-registered-parameters)                                                                                                                  |
+| 101                  | Registered Parameter Number MSB     | Engine   | Selects the MSB of the Registered Parameter Number. [More info](#supported-registered-parameters)                                                                                                                  |
+| 120                  | All Sound Off                       | Engine   | Immediately terminates all active voices, disregarding their release time.                                                                                                                                         |
+| 121                  | Reset All Controllers               | Engine   | Resets controllers to their default values according to the [RP-15 recommended practice.](https://amei.or.jp/midistandardcommittee/Recommended_Practice/e/rp15.pdf)                                                |
+| 123                  | All Notes Off                       | Engine   | Stops all notes, respecting their release time.                                                                                                                                                                    |
+| 124 or 125           | Omni mode On/Off                    | Engine   | Stops all notes, respecting their release time.                                                                                                                                                                    |
+| 126 or 127           | Poly/Mono Mode On/Off               | Engine   | Setting the corresponding controller to any value switches the Poly mode on or off, immediately terminating all active voices on the channel. [More info](#polymono-implementation)                                |
 
 [^1]: In XG mode it controls the variation send level instead (only when variation connection is set to "system").
 
@@ -298,6 +298,7 @@ Jump to the links:
 - [Roland GS](#roland-gs)
 - [Yamaha XG](#yamaha-xg)
 - [Universal MIDI System Exclusive](#universal-midi-system-exclusive)
+- [Other](#other)
 
 ### Roland GS
 
@@ -681,7 +682,9 @@ Below are the supported Universal System Exclusive messages.
 #### MIDI Tuning Standard
 
 Below are the supported messages for the MTS.
-Both non-realtime and realtime are treated as realtime.
+All changes apply immediately, even for non-realtime messages.
+The Bulk Tuning Dump is only accepted as non-realtime and the Single Note Tuning Change only as realtime.
+The other messages, including the bank variant of the Single Note Tuning Change, are accepted as both.
 
 | Name                          | Description                                                   |
 | ----------------------------- | ------------------------------------------------------------- |
@@ -691,6 +694,15 @@ Both non-realtime and realtime are treated as realtime.
 | Single Note Tuning Change     | Tunes a single note. The bank variant is also supported.[^5]  |
 
 [^5]: Note that this can theoretically be used as per-note Pitch Wheel.
+
+### Other
+
+Messages that are not part of the standards above.
+
+| Name                                       | Description                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Port Select (Falcosoft MIDI Player)        | `F0 F5 pp F7`. Selects port `pp` (1-based, `00` is treated as port 1). All following channel messages and System Exclusives are offset by `(pp - 1) * 16` channels. If the synthesizer does not have the channels for that port yet, it adds them. The device ID is not checked. The selected port stays until the next port select message. |
+| Roland MT-32 Master Volume (Model ID `16`) | `F0 41 dd 16 12 10 xx xx vv cs F7`, emitted by Falcosoft MIDI Player. Sets the Global MIDI Parameter {@link GlobalMIDIParameter.volume `volume`} to `vv / 100`. Only the first address byte (`10`) is checked.                                                                                                                               |
 
 ## Implementation Details
 

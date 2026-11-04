@@ -276,9 +276,10 @@ export function universalSystemExclusive(
                         currentMessageIndex
                     );
                     currentMessageIndex += 16;
-                    if (syx.length < 384) {
+                    // 21 header bytes and 3 bytes for each of the 128 notes
+                    if (syx.length < 405) {
                         SpessaLog.warn(
-                            `The Bulk Tuning Dump is too short! (${syx.length} bytes, at least 384 are expected)`
+                            `The Bulk Tuning Dump is too short! (${syx.length} bytes, at least 405 are expected)`
                         );
                         return;
                     }

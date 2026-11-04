@@ -10,6 +10,9 @@ export const LIST_LOW_B = [0x73, 0x72, 0x74];
  */
 const UNWRITTEN_CATEGORY_2 = [0x75, 0x7a, 0x7d, 0x80, 0xae];
 
+// Mono input level push list
+const LIST_MONO_INPUT = [0x6d, 0x6e];
+
 /**
  * The base for the S-YXG50 category 2 variation programs (3-band EQ, distortion, early reflections).
  * They process a mono sum of the input through two first-order input sections, keeping scaled copies
@@ -196,6 +199,6 @@ export abstract class XGMonoVariationProgram extends XGVariationProgram {
     protected monoInputLevel() {
         const w = this.coefficientWords;
         w[0x6d] = w[0x6e] = this.insertion ? 0x1_00 : 0x2_00;
-        this.pushCoefficients([0x6d, 0x6e]);
+        this.pushCoefficients(LIST_MONO_INPUT);
     }
 }

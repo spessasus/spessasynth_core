@@ -7,6 +7,9 @@ const TITLE = "404 - Not Found";
 const BODY = `<h1>${TITLE}</h1>
 <p>The page you are looking for does not exist or has been moved.</p>
 <p><a href="./index.html">Go back to the homepage</a>.</p>`;
+// GitHub Pages serves 404.html at any missing path,
+// So relative links need a fixed base
+const GITHUB_PAGES_BASE = "/spessasynth_core/";
 
 // noinspection JSUnusedGlobalSymbols
 export function load(application: Application) {
@@ -14,6 +17,11 @@ export function load(application: Application) {
         application.renderer.postRenderAsyncJobs.push(
             async (event: RendererEvent) => {
                 const { outputDirectory } = event;
+                const hostedBaseUrl =
+                    application.options.getValue("hostedBaseUrl");
+                const base = hostedBaseUrl
+                    ? new URL(hostedBaseUrl).pathname.replace(/\/?$/, "/")
+                    : GITHUB_PAGES_BASE;
 
                 let html: string;
                 try {
@@ -30,7 +38,7 @@ export function load(application: Application) {
                 );
                 html = html.replace(
                     "<head>",
-                    '<head><meta name="robots" content="noindex" />'
+                    `<head><base href="${escapeHTML(base)}" /><meta name="robots" content="noindex" />`
                 );
 
                 const contentStart = html.indexOf('<div class="col-content">');

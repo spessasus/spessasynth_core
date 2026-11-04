@@ -43,7 +43,7 @@ export class DefaultGSChorus implements GSChorusProcessor {
      * Constructs a new default GS chorus processor.
      * @param sampleRate The sample rate, in Hertz.
      * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
-     * Attempting to `.process()` more samples than this will result in an error.
+     * Processing more samples than this is not supported and produces undefined output.
      */
     public constructor(sampleRate: number, maxBufferSize: number) {
         this.sampleRate = sampleRate;

@@ -234,7 +234,8 @@ export class ModulationEnvelope {
 
     private tc2Sec(timecents: number) {
         // At such low values, buffer size of 128 may cause clicks in the lowpass filter
-        // -10114 is the lowest for it to fit at least twice in 128 samples@44.1kHz
+        // -10114 timecents is about 2.9 ms, one 128-sample block at 44.1kHz,
+        // So anything at or below that is treated as instant
         // Testcase: MS_Basic-v0.2.1.sf2 Bass & Lead
         if (timecents <= -10_114) return 0;
         return timecentsToSeconds(timecents);

@@ -166,11 +166,10 @@ if (path) {
         file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength)
     );
     const copy = BasicSoundBank.copyFrom(bank);
-    // Presets with a name that repeats are reused by name, like before the cloner existed
-    const uniqueNames = new Set(bank.presets.map((p) => p.name)).size;
+    // Every preset is copied, even when names repeat
     check(
-        copy.presets.length === uniqueNames,
-        `copyFrom keeps ${copy.presets.length} of ${bank.presets.length} presets (${uniqueNames} unique names)`
+        copy.presets.length === bank.presets.length,
+        `copyFrom keeps ${copy.presets.length} of ${bank.presets.length} presets`
     );
     const a = new Uint8Array(bank.writeSF2());
     const b = new Uint8Array(copy.writeSF2());

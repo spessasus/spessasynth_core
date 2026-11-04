@@ -1,12 +1,7 @@
 /* noinspection CssUnusedSymbol */
 body {
     font-family:
-        "Inter",
-        -apple-system,
-        BlinkMacSystemFont,
-        Helvetica,
-        Arial,
-        sans-serif;
+        -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
     font-size: 1rem;
 }
 
@@ -26,7 +21,7 @@ pre .ts {
 }
 
 .tsd-signature,
-code,
+code:not(.tsd-tag),
 pre {
     font-size: 0.95em !important;
 }

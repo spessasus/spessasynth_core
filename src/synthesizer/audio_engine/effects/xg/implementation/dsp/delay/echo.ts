@@ -25,6 +25,9 @@ const PARAMETER_RANGES: XGParameterRanges = {
     15: [52, 76]
 };
 
+// Dry/wet push list
+const LIST_MIX = [0xb2, 0xb4, 0xb5, 0xb8, 0xb9, 0xbb];
+
 /**
  * ECHO (`07 00`): two independent delay lines with feedback and a second tap each.
  */
@@ -91,7 +94,7 @@ export class XGEcho extends XGDelayBase {
                 w[0xb9] = w[0xb4] = wet & 0x3_ff;
                 w[0xbb] = w[0xb5] =
                     Math.trunc(wet * DELAY_LEVEL[p[7]]) & 0x3_ff;
-                this.pushCoefficients([0xb2, 0xb4, 0xb5, 0xb8, 0xb9, 0xbb]);
+                this.pushCoefficients(LIST_MIX);
                 break;
             }
             case 12:

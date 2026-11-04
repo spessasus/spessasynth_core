@@ -12,6 +12,13 @@ const PARAMETER_RANGES: XGParameterRanges = {
     10: [6, 10]
 };
 
+// Dry/wet and input mix push lists
+const LIST_DRY_LEFT = [0xa2];
+const LIST_MIX_RIGHT = [0xa6, 0xa7];
+const LIST_WET_SECOND = [0xa4];
+const LIST_WET_FOURTH = [0xa5];
+const LIST_INPUT_MIX = [0x84, 0x85];
+
 /**
  * The converter index of the input mix level, which depends on the connection.
  */
@@ -84,14 +91,14 @@ export class XGPhaser1 extends XGPhaserBase {
             case 9: {
                 w[0xa6] = w[0xa2] = PAN_LEFT[mix];
                 w[0xa7] = PAN_RIGHT[mix];
-                this.pushCoefficients([0xa2]);
-                this.pushCoefficients([0xa6, 0xa7]);
+                this.pushCoefficients(LIST_DRY_LEFT);
+                this.pushCoefficients(LIST_MIX_RIGHT);
                 if (p[10] < 9) {
                     w[0xa4] = PAN_RIGHT[mix];
-                    this.pushCoefficients([0xa4]);
+                    this.pushCoefficients(LIST_WET_SECOND);
                 } else {
                     w[0xa5] = PAN_RIGHT[mix];
-                    this.pushCoefficients([0xa5]);
+                    this.pushCoefficients(LIST_WET_FOURTH);
                 }
                 break;
             }
@@ -113,7 +120,7 @@ export class XGPhaser1 extends XGPhaserBase {
             case INPUT_MIX: {
                 // L+R in the system mode, their average in the insertion mode
                 w[0x84] = w[0x85] = this.insertion ? 0x1_00 : 0x2_00;
-                this.pushCoefficients([0x84, 0x85]);
+                this.pushCoefficients(LIST_INPUT_MIX);
                 break;
             }
         }

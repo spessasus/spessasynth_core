@@ -17,6 +17,9 @@ const PARAMETER_RANGES: XGParameterRanges = {
     15: [52, 76]
 };
 
+// Dry/wet push list
+const LIST_MIX = [0xb2, 0xb5, 0xb8, 0xbb];
+
 /**
  * DELAY L,R (`06 00`): left and right taps with two feedback taps.
  */
@@ -76,7 +79,7 @@ export class XGDelayLR extends XGDelayBase {
                 let wet = MIX_WET[mix];
                 if (this.insertion) wet >>= 1;
                 w[0xbb] = w[0xb5] = wet & 0x3_ff;
-                this.pushCoefficients([0xb2, 0xb5, 0xb8, 0xbb]);
+                this.pushCoefficients(LIST_MIX);
                 break;
             }
             case 12:

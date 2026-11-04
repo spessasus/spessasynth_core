@@ -105,8 +105,7 @@ export function handleAWE32NRPN(
     const dataLSB = dataValue & 0x7f;
     dataValue -= 8192;
     const generator = AWE_NRPN_GENERATOR_MAPPINGS[paramLSB] as
-        | GeneratorType
-        | undefined;
+        GeneratorType | undefined;
     if (generator === undefined) {
         SpessaLog.unsupported(
             `AWE32 LSB for ${this.channel}`,

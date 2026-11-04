@@ -97,7 +97,7 @@ Every default value makes the voice play exactly as it would without the generat
 
 > **Tip**
 >
-> Consider reading [The SFE Format](sfe-format.md)
+> Consider reading [SFE Format](sfe-format.md)
 
 | Generator ID | Generator Name                     | Minimum Value | Maximum Value | Default Value | Description                                                                                   |
 | ------------ | ---------------------------------- | ------------- | ------------- | ------------- | --------------------------------------------------------------------------------------------- |

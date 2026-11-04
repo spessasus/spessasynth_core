@@ -23,6 +23,9 @@ const PARAMETER_RANGES: XGParameterRanges = {
     15: [52, 76]
 };
 
+// Dry/wet push list
+const LIST_MIX = [0xb2, 0xb4, 0xb8, 0xb9];
+
 /**
  * CROSS DELAY (`08 00`): two delay lines feeding back into each other.
  */
@@ -92,7 +95,7 @@ export class XGCrossDelay extends XGDelayBase {
                 let wet = MIX_WET[mix];
                 if (p[3] < 2) wet >>= 1;
                 w[0xb9] = w[0xb4] = wet & 0x3_ff;
-                this.pushCoefficients([0xb2, 0xb4, 0xb8, 0xb9]);
+                this.pushCoefficients(LIST_MIX);
                 break;
             }
             case 12:

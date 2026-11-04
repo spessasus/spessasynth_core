@@ -1,7 +1,11 @@
 import type { DelayMemory } from "./delay_memory";
 import { Crossfade } from "./crossfade";
 import type { DelayLine } from "./delay_line";
-import { DC_BLOCKER_HZ, FirstOrderFilter } from "./first_order_filter";
+import {
+    dampCorner,
+    DC_BLOCKER_HZ,
+    FirstOrderFilter
+} from "./first_order_filter";
 
 /**
  * The lines of the reverb. Each holds what one stage writes: the pre delay, the diffuser's three allpasses, then per
@@ -147,16 +151,6 @@ const ALLPASS = 0.5;
  * The pre delay line's write and read gains.
  */
 const PRE_GAIN = (127 / 128) ** 2;
-
-/**
- * The corner of the hardware's one-pole low pass `(1 - B) x + B y[n-1]` at 32 kHz (-3 dB, the inverse of
- * `FirstOrderFilter.setDamp`).
- * @param pole B.
- */
-function dampCorner(pole: number) {
-    const k = (1 + pole * pole) / (2 * pole);
-    return (Math.acos(2 - k) * 32_000) / (2 * Math.PI);
-}
 
 /**
  * The Reverb: a mono input through a DC blocker and an input low pass into a pre delay, a diffuser of three

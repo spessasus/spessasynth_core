@@ -1131,6 +1131,9 @@ export class SpessaSynthProcessor {
      * >
      * > This method overrides the existing System Parameters with the ones from the snapshot.
      *
+     * If this processor has more XG insertion blocks than the snapshot,
+     * the blocks without snapshot data are reset to their defaults.
+     *
      * @param snapshot The snapshot to apply.
      */
     public applySnapshot(snapshot: SynthesizerSnapshot) {
@@ -1211,7 +1214,7 @@ export class SpessaSynthProcessor {
      * @param system The MIDI system to reset the synthesizer to. Defaults to `gs`.
      */
     public reset(system: MIDISystem = DEFAULT_SYNTH_MODE) {
-        // Call here because there are returns in this function.
+        // Listeners get this before anything is reset
         this.callEvent("reset", system);
         this.stopAll();
         // Reset MIDI parameters
@@ -1563,14 +1566,20 @@ export class SpessaSynthProcessor {
 
             // If a channel has insertion assigned (or variation in insertion mode) then its sends are routed globally (not in renderVoice)
             // If effectsEnabled is false it does not matter, so the code here can also be skipped.
+            // The reverb and chorus gains apply here too, like they do in renderVoice
+            const { reverbGain, chorusGain } = this.systemParameters;
             for (const ch of this.midiChannels) {
                 if (!ch.xgInsertionAssigned) continue;
 
                 const revSend =
-                    (ch.midiControllers[MIDIControllers.reverbDepth] >> 7) /
+                    (reverbGain *
+                        (ch.midiControllers[MIDIControllers.reverbDepth] >>
+                            7)) /
                     127;
                 const choSend =
-                    (ch.midiControllers[MIDIControllers.chorusDepth] >> 7) /
+                    (chorusGain *
+                        (ch.midiControllers[MIDIControllers.chorusDepth] >>
+                            7)) /
                     127;
                 if (revSend <= 0 && choSend <= 0) continue;
 

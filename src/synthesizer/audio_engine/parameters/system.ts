@@ -56,7 +56,7 @@ export interface GlobalSystemParameter {
      * The reverb effect gain.
      * From 0 to any number. 1 is 100% reverb.
      *
-     * Applies to both GS and XG reverb.
+     * Applies to both GS and XG reverb, including XG parts with an insertion effect assigned.
      */
     reverbGain: number;
 
@@ -80,7 +80,7 @@ export interface GlobalSystemParameter {
      * The chorus effect gain.
      * From 0 to any number. 1 is 100% chorus.
      *
-     * Applies to both GS and XG chorus.
+     * Applies to both GS and XG chorus, including XG parts with an insertion effect assigned.
      */
     chorusGain: number;
 
@@ -228,7 +228,11 @@ export interface GlobalSystemParameter {
     interpolationType: InterpolationType;
 
     /**
-     * If the synthesizer should prevent changing any parameters via NRPN.
+     * If the synthesizer should prevent changing the part parameters via NRPN (MSB 0x01).
+     * Drum, AWE32 and SF2 NRPNs are not affected.
+     * The vibrato NRPNs are only locked when they control the custom vibrato.
+     *
+     * Channels can override it with {@link ChannelSystemParameter.nrpnParamLock}.
      */
     nrpnParamLock: boolean;
 

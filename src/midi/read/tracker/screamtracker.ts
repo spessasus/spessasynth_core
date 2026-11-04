@@ -293,7 +293,7 @@ export class ScreamTrackerModule extends TrackerModule {
             }
             const end = offset + readLittleEndian(binary, 2, offset);
             let position = offset + 2;
-            for (let row = 0; row < 64 && position < end; ) {
+            for (let row = 0; row < 64 && position < end;) {
                 const what = binary[position++];
                 if (what === 0) {
                     row++;

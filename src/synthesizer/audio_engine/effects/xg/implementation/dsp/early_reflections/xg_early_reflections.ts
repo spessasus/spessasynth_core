@@ -31,6 +31,8 @@ const LIST_DENSITY_COEFFICIENT = [
 ];
 const LIST_DENSITY_ADDRESS = [0x2a, 0x24, 0x2c, 0x28, 0x2e, 0x29, 0x34, 0x2b];
 const LIST_HIGH_DAMP = [0x78, 0x77, 0x79];
+// Dry/wet push list
+const LIST_DRY_WET = [0xad, 0xaf, 0xb1, 0xb2];
 
 /**
  * The converter index of the mono input level, which depends on the connection.
@@ -219,7 +221,7 @@ export abstract class XGEarlyReflectionsBase extends XGMonoVariationProgram {
                 const mix = this.mixIndex();
                 w[0xad] = w[0xb1] = MIX_DRY[mix] & 0x3_ff;
                 w[0xaf] = w[0xb2] = MIX_WET[mix] & 0x3_ff;
-                this.pushCoefficients([0xad, 0xaf, 0xb1, 0xb2]);
+                this.pushCoefficients(LIST_DRY_WET);
                 break;
             }
             case 10: {

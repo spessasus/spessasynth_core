@@ -236,13 +236,14 @@ export class LowpassFilter {
         cutoffHz = Math.min(cutoffHz, this.maxCutoff);
 
         // The coefficient calculation code was originally ported from meltysynth by sinshu.
-        // Turn resonance to gain, -3.01 so it gives a non-resonant peak
+        // Turn resonance to Q, -30.1 cB (3.01 dB) so zero resonance gives Q = 0.707,
+        // A Butterworth response with no peak (FluidSynth does the same in dB)
         // -1 because it's attenuation, and we don't want attenuation
-        const resonanceGain = cbAttenuationToGain(-(qCb - 3.01));
+        const resonanceGain = cbAttenuationToGain(-(qCb - 30.1));
 
         // The sf spec asks for a reduction in gain based on the Q value.
         // Note that we calculate it again,
-        // Without the 3.01-peak offset as it only applies to the coefficients, not the gain.
+        // Without the 30.1 cB offset as it only applies to the coefficients, not the gain.
         const qGain = 1 / Math.sqrt(cbAttenuationToGain(-qCb));
 
         // Note: no sin or cos tables are used here as the coefficients are cached

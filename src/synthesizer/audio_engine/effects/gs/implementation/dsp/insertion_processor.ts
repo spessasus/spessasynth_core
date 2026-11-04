@@ -27,8 +27,9 @@ export interface DefaultGSInsertionProcessor {
     /**
      * Sets the EFX control offsets. Each type adds them to its controlled parameters
      * (the ones marked `+` and `#` in the SC-8850 manual), clamped to the parameter range.
-     * @param offset1 The signed offset of control source 1 (-127 to 127).
-     * @param offset2 The signed offset of control source 2 (-127 to 127).
+     * The offsets are signed bytes and can wrap (see `controlOffset` in the insertion block).
+     * @param offset1 The signed offset of control source 1 (-128 to 127).
+     * @param offset2 The signed offset of control source 2 (-128 to 127).
      */
     setControl(offset1: number, offset2: number): void;
 

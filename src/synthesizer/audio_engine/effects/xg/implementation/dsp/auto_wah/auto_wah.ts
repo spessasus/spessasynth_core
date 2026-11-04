@@ -22,6 +22,9 @@ const LIST_LOW_RIGHT = [0x70, 0x6f, 0x71];
 const LIST_LOW_LEFT = [0x81, 0x80, 0x82];
 const LIST_HIGH_RIGHT = [0x73, 0x72, 0x74];
 const LIST_HIGH_LEFT = [0x84, 0x83, 0x85];
+// Dry/wet push lists
+const LIST_OUTPUT = [0xb9, 0xba];
+const LIST_DRY_WET = [0xab, 0xad];
 
 /**
  * AUTO WAH (`4E 00`): a resonant filter per side, swept by an exponential LFO.
@@ -214,8 +217,8 @@ export class XGAutoWah extends XGFilterVariationProgram {
                 const mix = this.mixIndex();
                 w[0xab] = w[0xb9] = PAN_LEFT[mix];
                 w[0xad] = w[0xba] = PAN_RIGHT[mix];
-                this.pushCoefficients([0xb9, 0xba]);
-                this.pushCoefficients([0xab, 0xad]);
+                this.pushCoefficients(LIST_OUTPUT);
+                this.pushCoefficients(LIST_DRY_WET);
                 break;
             }
         }

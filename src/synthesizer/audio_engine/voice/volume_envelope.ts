@@ -13,7 +13,8 @@ import { GeneratorTypes } from "../../../soundbank/basic_soundbank/generator_typ
  * For performance reasons, cbAttenuationToGain is inlined here.
  */
 
-// Per SF2 definition
+// The engine's silence level (96 dB), the FluidSynth convention.
+// The SF2 spec times decay and release against 100 dB.
 const CB_SILENCE = 960;
 const PERCEIVED_CB_SILENCE = 900;
 
@@ -161,9 +162,10 @@ export class VolumeEnvelope {
             const sustainCb = Math.max(0, Math.min(CB_SILENCE, this.sustainCb));
             const fraction = sustainCb / CB_SILENCE;
 
-            // Decay: sf spec page 35: the time is for change from attenuation to -100dB,
-            // Therefore, we need to calculate the real time
-            // (changing from attenuation to sustain instead of -100dB)
+            // Decay: sf spec page 35: the time is for change from attenuation to -100dB.
+            // We use CB_SILENCE (96 dB) as the full range instead.
+            // Calculate the real time
+            // (changing from attenuation to sustain instead of to silence)
             const keyNumAddition =
                 (60 - voice.targetKey) *
                 voice.modulatedGenerators[GeneratorTypes.keyNumToVolEnvDecay];
@@ -233,9 +235,10 @@ export class VolumeEnvelope {
         }
         this.enteredRelease = true;
 
-        // Release: sf spec page 35: the time is for change from attenuation to -100dB,
-        // Therefore, we need to calculate the real time
-        // (changing from release start to -100dB instead of from peak to -100dB)
+        // Release: sf spec page 35: the time is for change from attenuation to -100dB.
+        // We use CB_SILENCE (96 dB) as the full range instead.
+        // Calculate the real time
+        // (changing from release start to silence instead of from peak to silence)
         const releaseFraction = (CB_SILENCE - this.releaseStartCb) / CB_SILENCE;
         this.releaseDuration *= releaseFraction;
         // Voice may be off instantly
@@ -281,9 +284,10 @@ export class VolumeEnvelope {
             voice.modulatedGenerators[GeneratorTypes.attackVolEnv]
         );
 
-        // Decay: sf spec page 35: the time is for change from attenuation to -100dB,
-        // Therefore, we need to calculate the real time
-        // (changing from attenuation to sustain instead of -100dB)
+        // Decay: sf spec page 35: the time is for change from attenuation to -100dB.
+        // We use CB_SILENCE (96 dB) as the full range instead.
+        // Calculate the real time
+        // (changing from attenuation to sustain instead of to silence)
         const keyNumAddition =
             (60 - voice.targetKey) *
             voice.modulatedGenerators[GeneratorTypes.keyNumToVolEnvDecay];
@@ -312,7 +316,7 @@ export class VolumeEnvelope {
 
         this.decayEnd = this.decayDuration + this.holdEnd;
 
-        // Decay 2 uses the same rate convention (time for 100dB) and key scaling as decay
+        // Decay 2 uses the same rate convention (scaled against CB_SILENCE) and key scaling as decay
         this.decay2Duration =
             this.timecentsToSamples(
                 voice.modulatedGenerators[GeneratorTypes.decay2VolEnv] +

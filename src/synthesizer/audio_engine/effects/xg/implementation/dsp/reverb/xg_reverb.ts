@@ -10,7 +10,7 @@ import {
 import { DELAY_TABLE, DENSITY_TABLE, MIX_DRY, MIX_WET } from "../xg_dsp_tables";
 import {
     DAMP_FEEDBACK,
-    DAMP_FILTER,
+    DAMP_INPUT,
     DIFFUSION_SCALE,
     DIFFUSION_STEP,
     DIFFUSION_TABLE,
@@ -64,7 +64,7 @@ const LIST_DIFFUSION = [
     0x23, 0x20, 0x03, 0x07
 ];
 /**
- * Damping line coefficients, 3 per line: feedback, filter, filter.
+ * Damping line coefficients, 3 per line: input, read and previous read gains.
  */
 const LIST_TIME = [
     0x5b, 0x5a, 0x59, 0x5e, 0x5d, 0x5c, 0x64, 0x63, 0x62, 0x67, 0x66, 0x65
@@ -457,10 +457,11 @@ export abstract class XGReverb extends XGDSPProgram {
         list: ArrayLike<number>,
         offset: number
     ) {
-        this.coefficientWords[list[offset]] = DAMP_FEEDBACK[index];
-        const filter = index > 0xca ? 0xff : DAMP_FILTER[index];
-        this.coefficientWords[list[offset + 1]] = filter;
-        this.coefficientWords[list[offset + 2]] = filter;
+        this.coefficientWords[list[offset]] = DAMP_INPUT[index];
+        // Both taps of the feedback filter get the same gain
+        const feedback = index > 0xca ? 0xff : DAMP_FEEDBACK[index];
+        this.coefficientWords[list[offset + 1]] = feedback;
+        this.coefficientWords[list[offset + 2]] = feedback;
     }
 
     /**

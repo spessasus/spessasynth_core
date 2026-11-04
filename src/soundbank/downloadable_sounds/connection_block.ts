@@ -856,9 +856,7 @@ export class ConnectionBlock {
      * @private
      */
     private toSFDestination():
-        | GeneratorType
-        | undefined
-        | { gen: GeneratorType; newAmount: number } {
+        GeneratorType | undefined | { gen: GeneratorType; newAmount: number } {
         const amount = this.shortScale;
         switch (this.destination) {
             default:

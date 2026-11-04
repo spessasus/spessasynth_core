@@ -56,7 +56,7 @@ export const ModulatorControllerSources = {
      */
     pitchWheel: 14,
     /**
-     * The current pitch wheel range (where 1 means 127 semitones) on the channel.
+     * The current pitch wheel range (where 1 means 128 semitones) on the channel.
      */
     pitchWheelRange: 16,
     /**
@@ -88,7 +88,7 @@ export const ModulatorCurveTypes = {
      */
     concave: 1,
     /**
-     * Inverse of concave.
+     * Exponential ramp, the inverse of concave.
      */
     convex: 2,
     /**

@@ -403,16 +403,21 @@ export function writeRMIDIInternal(
 ): ArrayBuffer {
     // Copy to avoid modifying the defaults or the caller's object
     const metadata = { ...options.metadata };
-    if (options.correctBankOffset && !options.soundBank) {
-        throw new Error(
-            "Sound bank must be provided if correcting bank offset."
-        );
-    }
     SpessaLog.group("%cWriting the RMIDI File...", ConsoleColors.info);
     SpessaLog.info("metadata", metadata);
     SpessaLog.info("Initial bank offset", mid.bankOffset);
-    if (options.correctBankOffset && options.soundBank) {
-        correctBankOffsetInternal(mid, options.bankOffset, options.soundBank);
+    if (options.correctBankOffset) {
+        if (options.soundBank) {
+            correctBankOffsetInternal(
+                mid,
+                options.bankOffset,
+                options.soundBank
+            );
+        } else {
+            SpessaLog.warn(
+                "No sound bank provided, skipping the bank offset correction."
+            );
+        }
     }
     const newMid = new IndexedByteArray(mid.writeMIDI());
 

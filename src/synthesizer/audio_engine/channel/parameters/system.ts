@@ -83,7 +83,9 @@ export interface ChannelSystemParameter {
     interpolationType: InterpolationType | null;
 
     /**
-     * If the channel should prevent changing any parameters via NRPN.
+     * If the channel should prevent changing the part parameters via NRPN (MSB 0x01).
+     * Drum, AWE32 and SF2 NRPNs are not affected.
+     * The vibrato NRPNs are only locked when they control the custom vibrato.
      *
      * Overrides the global parameter if set.
      */

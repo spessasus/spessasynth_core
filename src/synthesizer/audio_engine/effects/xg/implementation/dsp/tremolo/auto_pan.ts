@@ -10,6 +10,9 @@ const PARAMETER_RANGES: XGParameterRanges = {
     8: [52, 76]
 };
 
+// Output level push list
+const LIST_OUTPUT = [0xb4, 0xb9];
+
 /**
  * LFO phases (left, right) per pan direction: L<->R, L->R, L<-R, L turn, R turn.
  */
@@ -110,7 +113,7 @@ export class XGAutoPan extends XGTremoloBase {
                 w[0xb9] = w[0xb4] = this.outputWord(
                     this.insertion ? 0x1_6a : 0x2_d4
                 );
-                this.pushCoefficients([0xb4, 0xb9]);
+                this.pushCoefficients(LIST_OUTPUT);
                 break;
             }
         }

@@ -28,9 +28,11 @@ const DEFAULT_CONTROL_DEPTH = 64;
 /**
  * The offset an EFX control source adds to its parameter, like Sound Canvas VA computes it:
  * `(depth - 64) * value / 63`, truncated and stored in a signed byte. Depth 0 counts as 1 (both are -100%).
+ * The byte wraps without a clamp, like in SCCore.dll: pitch bend fully down (-128) at depth 0 or 1 gives +128,
+ * which is stored as -128, so the offset flips sign there.
  * @param depth The control depth (0-127).
  * @param value The signed controller value.
- * @returns The signed offset.
+ * @returns The signed offset (-128 to 127).
  */
 function controlOffset(depth: number, value: number) {
     const amount = (depth === 0 ? 1 : depth) - 64;
@@ -90,7 +92,7 @@ export class DefaultGSInsertion implements GSInsertionBlock {
      * Constructs a new default GS insertion block.
      * @param sampleRate The sample rate, in Hertz.
      * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
-     * Attempting to `.process()` more samples than this will result in an error.
+     * Processing more samples than this is not supported and produces undefined output.
      */
     public constructor(sampleRate: number, maxBufferSize: number) {
         // The types run at the host rate and share one delay memory (only one runs at a time)

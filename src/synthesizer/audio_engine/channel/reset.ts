@@ -122,6 +122,8 @@ export function resetChannelInternal(this: MIDIChannel, sendCCEvents = true) {
     // For XG, control is set to 60
     // For others, it's set to nothing (no portamento on first note-on)
     this.lastPortamentoNote = this.channelSystem === "xg" ? 60 : -1;
+    // A pending CC 84 glide should not survive the reset
+    this.portamentoForce = false;
 
     this.resetDrumParams();
     this.resetGeneratorOverrides();

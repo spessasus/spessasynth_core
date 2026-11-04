@@ -6,6 +6,7 @@ import type { NoteTime } from "../types";
 
 /**
  * Calculates all note times in seconds.
+ * MIDI ports are ignored, every port is merged into the same 16 channels.
  * @param midi the midi to use
  * @param minDrumLength the shortest a drum note (channel 10) can be, in seconds.
  * @returns an array of 16 channels, each channel containing its notes,

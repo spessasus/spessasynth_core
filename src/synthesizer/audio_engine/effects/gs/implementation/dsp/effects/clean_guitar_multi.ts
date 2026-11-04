@@ -20,10 +20,10 @@ const LINEAR_INPUT = 127 / 128;
 
 /**
  * Clean GTR Multi 1 (`04 03`): `L+R -> compressor -> 3-band EQ -> chorus/flanger -> delay`.
- * Parameters: 1-4 compressor sustain, attack, level and switch, 5 low gain, 6-8 mid frequency, Q and gain, 9 high
- * gain, 10 chorus or flanger, 11 rate (Rate2 column), 12 depth, 13 flanger feedback, 14 chorus level, 15 delay time
- * (Dly4 column), 16 feedback, 17 HF damp, 18 delay level, 20 level. EFX control source 1 moves the chorus level,
- * source 2 the delay level.
+ * Parameters: 1-4 compressor sustain, attack (the manuals swap these two names, see `GSCompressor`), level and
+ * switch, 5 low gain, 6-8 mid-frequency, Q and gain, 9 high gain, 10 chorus or flanger, 11 rate (Rate2 column),
+ * 12 depth, 13 flanger feedback, 14 chorus level, 15 delay time (Dly4 column), 16 feedback, 17 HF damp, 18 delay
+ * level, 20 level. EFX control source 1 moves the chorus level, source 2 the delay level.
  * @internal
  */
 export class GSCleanGuitarMulti1 extends GSMulti {
@@ -93,7 +93,7 @@ export class GSCleanGuitarMulti1 extends GSMulti {
  * Clean GTR Multi 2 (`04 04`): `L+R -> wah -> 3-band EQ -> chorus/flanger -> delay`. The wah is the Auto Wah's without
  * the envelope follower, its LFO raises the cutoff (polarity up).
  * Parameters: 1 wah filter type (LPF, BPF), 2 manual, 3 peak, 4 rate (Rate1 column), 5 depth, 6 wah switch (SC-VA's
- * code calls it the EQ switch, but it bypasses the wah), 7 low gain, 8-10 mid frequency, Q and gain, 11 high gain,
+ * code calls it the EQ switch, but it bypasses the wah), 7 low gain, 8-10 mid-frequency, Q and gain, 11 high gain,
  * 12 chorus or flanger, 13 rate (Rate2 column), 14 depth, 15 flanger feedback, 16 chorus level, 17 delay time (Dly4
  * column), 18 feedback, 19 delay level, 20 level. EFX control source 1 moves the wah manual, source 2 the delay
  * level.

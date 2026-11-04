@@ -12,12 +12,12 @@ You've reached the central documentation for the spessasynth_core library, a pow
 
 _If you're looking for the SpessaSynth web app, it can be found [here](https://spessasus.github.io/SpessaSynth)._
 
-## Table of contents
-
 > **DANGER**
 >
 > SpessaSynth below `4.4.0` is no longer supported!
 > Please consider updating to get the best performance and latest features.
+
+## Table of contents
 
 ### Getting Started
 

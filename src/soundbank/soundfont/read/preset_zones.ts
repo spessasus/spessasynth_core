@@ -41,7 +41,7 @@ export function applyPresetZones(
                 preset.globalZone.addGenerators(...gens);
                 preset.globalZone.addModulators(...mods);
             }
-            // Other zones without an instrument must be ignored (SF2 2.04 section 7.3)
+            // Other zones without an instrument must be ignored (SF2 2.04 section 7.5)
         }
     }
 }

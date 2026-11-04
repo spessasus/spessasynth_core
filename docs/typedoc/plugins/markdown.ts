@@ -14,6 +14,22 @@ export function load(application: Application) {
                 parser.use(admonitionPlugin);
                 parser.use(footnotePlugin);
                 parser.use(snippetsPlugin);
+                // Wrap tables so wide ones can scroll
+                parser.renderer.rules.table_open = (
+                    tokens,
+                    index,
+                    options,
+                    _env,
+                    self
+                ) =>
+                    `<div class="tsd-table-wrapper">${self.renderToken(tokens, index, options)}`;
+                parser.renderer.rules.table_close = (
+                    tokens,
+                    index,
+                    options,
+                    _env,
+                    self
+                ) => `${self.renderToken(tokens, index, options)}</div>`;
             }
         );
     });

@@ -6,6 +6,8 @@ import { OUTPUT_LEVEL } from "./distortion_tables";
 export const LIST_LOW_PASS = [0xa3, 0xa2, 0xa4];
 export const LIST_SHELF = [0xab, 0xaa, 0xac];
 export const LIST_MID = [0xa9, 0xa8, 0xa7, 0xa6, 0xa5];
+// Dry/wet push list
+const LIST_DRY_WET = [0xad, 0xb0, 0xb1, 0xb3];
 
 /**
  * The clipping range (the original works on a 16-bit scale, which is 4 times the full scale).
@@ -129,6 +131,6 @@ export abstract class XGDistortionBase extends XGMonoVariationProgram {
         if (this.insertion) wet >>= 1;
         w[0xad] = w[0xb1] = PAN_LEFT[mix];
         w[0xb0] = w[0xb3] = (VARIATION_GAIN * wet) >> 6;
-        this.pushCoefficients([0xad, 0xb0, 0xb1, 0xb3]);
+        this.pushCoefficients(LIST_DRY_WET);
     }
 }

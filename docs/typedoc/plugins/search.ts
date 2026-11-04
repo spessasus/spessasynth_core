@@ -24,6 +24,32 @@ function unescapeHTML(html: string) {
         .replaceAll(/\s+/g, " ");
 }
 
+// Search previews are plain text,
+// So drop the Markdown syntax from comment summaries
+function markdownToText(markdown: string) {
+    return (
+        markdown
+            // Code fences, keeping the code
+            .replaceAll(/^\s*(```|~~~).*$/gm, "")
+            // Blockquote markers and admonition labels
+            .replaceAll(/^\s*>[\s>]*/gm, "")
+            .replaceAll(
+                /^\s*\*\*(tip|note|important|warning|danger)\*\*\s*$/gim,
+                ""
+            )
+            // Headings and list markers
+            .replaceAll(/^\s*#{1,6}\s+/gm, "")
+            .replaceAll(/^\s*(?:[-*+]|\d+\.)\s+/gm, "")
+            // Images and links become their text
+            .replaceAll(/!?\[([^\]]*)]\([^)]*\)/g, "$1")
+            // Emphasis and inline code
+            .replaceAll(/(\*\*|__)(.+?)\1/g, "$2")
+            .replaceAll(/(?<!\w)([*_])(.+?)\1(?!\w)/g, "$2")
+            .replaceAll(/`([^`]*)`/g, "$1")
+            .replaceAll(/\s+/g, " ")
+    );
+}
+
 function truncated(text: string, length: number) {
     const clean = text.trim();
     return clean.length > length ? clean.slice(0, length) : clean;
@@ -129,10 +155,13 @@ export function load(application: Application) {
                         !reflection.flags.isExternal &&
                         reflection.comment
                     ) {
+                        // Parts already carry their own spacing
                         const text = truncated(
-                            reflection.comment.summary
-                                .map((part) => part.text)
-                                .join(" "),
+                            markdownToText(
+                                reflection.comment.summary
+                                    .map((part) => part.text)
+                                    .join("")
+                            ),
                             MAX_PREVIEW_TEXT
                         );
                         if (text) previews[url] = text;

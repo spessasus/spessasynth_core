@@ -267,6 +267,7 @@ export abstract class XGDSPProgram implements DefaultXGEffectProcessor {
     protected abstract readonly initOrder: readonly number[];
     /**
      * The converters run again when the connection (system or insertion) changes.
+     * They run inside {@link process}, so they must not allocate (their push lists are module constants).
      */
     protected abstract readonly connectionParameters: readonly number[];
     /**

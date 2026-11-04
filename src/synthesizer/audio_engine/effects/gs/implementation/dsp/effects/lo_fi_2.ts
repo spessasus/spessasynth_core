@@ -8,7 +8,11 @@ import {
     STAGE_GAIN
 } from "../glue";
 import { MonoMix } from "../blocks/mono_mix";
-import { DC_BLOCKER_HZ, FirstOrderFilter } from "../blocks/first_order_filter";
+import {
+    dampCorner,
+    DC_BLOCKER_HZ,
+    FirstOrderFilter
+} from "../blocks/first_order_filter";
 import {
     NoiseGenerator,
     setColumnHighPass,
@@ -151,9 +155,9 @@ export class GSLoFi2 extends GSEffect {
         this.chainL = new LoFiShaperChain(sampleRate);
         this.chainR = new LoFiShaperChain(sampleRate);
         this.noise = new NoiseGenerator(sampleRate);
-        // The radio noise: a chaotic map through a one-pole of pole 0.5 at 32 kHz (3.5 kHz)
+        // The radio noise: a chaotic map through a one-pole of pole 0.5 at 32 kHz (3.68 kHz), like SCCore.dll
         this.radioNoise = new FirstOrderFilter(sampleRate);
-        this.radioNoise.setDamp(3500);
+        this.radioNoise.setDamp(dampCorner(0.5));
         this.shelvesL = new ShelfEQ(sampleRate);
         this.shelvesR = new ShelfEQ(sampleRate);
         this.pan = new MonoPan(sampleRate);
@@ -253,7 +257,7 @@ export class GSLoFi2 extends GSEffect {
         this.radioPhase += this.radioStep;
         if (this.radioPhase >= 1) this.radioPhase -= 1;
         this.seed = (Math.imul(this.seed, 1_664_525) + 1_013_904_223) | 0;
-        // A noise of mean -0.27 and RMS 0.49 like the chaotic map (at 32 kHz), then the 3.5 kHz low pass
+        // A noise of mean -0.27 and RMS 0.49 like the chaotic map (at 32 kHz), then the 3.68 kHz low pass
         this.radioNoiseValue =
             RADIO_NOISE_GAIN *
             this.radioNoise.process(

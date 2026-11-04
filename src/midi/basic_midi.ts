@@ -504,6 +504,12 @@ export class BasicMIDI {
     // noinspection JSUnusedGlobalSymbols
     /**
      * Calculates all note times in seconds.
+     *
+     * > **Note**
+     * >
+     * > MIDI ports are ignored, so the channels of every port are merged into the 16 channels.
+     * > For example, channel 1 of port 2 is returned as channel 1.
+     *
      * @param minDrumLength In seconds, represents the minimum allowed time for a drum note,
      *   since they sometimes have a length of 0.
      * @returns An array of 16 channels, each channel containing its notes,
@@ -570,7 +576,7 @@ export class BasicMIDI {
      * > **Warning**
      * >
      * > Do not call in audioWorkletGlobalScope as it uses TextDecoder and TextEncoder.
-     * > With the default options, `soundBank` must be provided, otherwise an error is thrown.
+     * > Bank offset correction (on by default) needs `soundBank`. Without it, the correction is skipped with a warning.
      *
      * > **Tip**
      * >
@@ -767,10 +773,12 @@ export class BasicMIDI {
      * > **Note**
      * >
      * > This sets the Info encoding to `utf-8`.
+     * > Text chunks that are already present get re-encoded from their old encoding (IENC) to UTF-8,
+     * > so they stay readable. Without IENC, they are assumed to be UTF-8 already, like {@link BasicMIDI.getRMIDInfo} does.
      *
      * > **Warning**
      * >
-     * > Do not call in audioWorkletGlobalScope as it uses TextEncoder.
+     * > Do not call in audioWorkletGlobalScope as it uses TextDecoder and TextEncoder.
      *
      * @param infoType The type to set.
      * @param infoData The value to set it to.
@@ -779,6 +787,45 @@ export class BasicMIDI {
         infoType: K,
         infoData: RMIDInfoData[K]
     ) {
+        // The old chunks would get labeled as UTF-8 too, so convert them first
+        const oldEncoding = this.infoEncoding;
+        if (
+            oldEncoding !== undefined &&
+            !/^utf-?8$/i.test(oldEncoding.trim())
+        ) {
+            try {
+                const decoder = new TextDecoder(oldEncoding.trim());
+                const encoder = new TextEncoder();
+                for (const key of Object.keys(
+                    this.rmidiInfo
+                ) as (keyof RMIDInfoData)[]) {
+                    // Not text, or ASCII only
+                    if (
+                        key === "picture" ||
+                        key === "creationDate" ||
+                        key === "infoEncoding"
+                    ) {
+                        continue;
+                    }
+                    const data = this.rmidiInfo[key];
+                    if (!data) continue;
+                    // Drop the terminal zero, it is added back below
+                    const text = decoder.decode(
+                        data[data.length - 1] === 0
+                            ? data.subarray(0, -1)
+                            : data
+                    );
+                    this.rmidiInfo[key] = new Uint8Array([
+                        ...encoder.encode(text),
+                        0
+                    ]);
+                }
+            } catch (error) {
+                SpessaLog.warn(
+                    `Failed to re-encode the RMIDI info from ${oldEncoding}: ${error as string}`
+                );
+            }
+        }
         this.rmidiInfo.infoEncoding = getStringBytes("utf-8", true);
         if (infoType === "picture") {
             // TS2339: Property buffer does not exist on type string | ArrayBuffer | Date
@@ -997,17 +1044,25 @@ export class BasicMIDI {
                         case MIDIMessageTypes.controllerChange: {
                             switch (e.data[0]) {
                                 // Touhou
-                                case MIDIControllers.breathController:
-                                // RPG Maker
-                                case MIDIControllers.undefinedCC111LSB: {
-                                    // For Touhou and RPG Maker, the data value must be 0.
+                                case MIDIControllers.breathController: {
+                                    // For Touhou, the data value must be 0.
                                     if (e.data[1] === 0) loopStart = e.ticks;
                                     break;
                                 }
+                                // RPG Maker
+                                case MIDIControllers.undefinedCC111: {
+                                    // The data value must be 0 here too.
+                                    if (e.data[1] !== 0) break;
+                                    loopStart = e.ticks;
+                                    // RPG Maker players seek straight back to the marker.
+                                    // Nothing is reset or replayed (see EasyRPG Player and mkxp-z)
+                                    loopType = "soft";
+                                    break;
+                                }
                                 // EMIDI/XMI
-                                case MIDIControllers.undefinedCC116LSB:
+                                case MIDIControllers.undefinedCC116:
                                 // EMIDI global loop
-                                case MIDIControllers.undefinedCC118LSB: {
+                                case MIDIControllers.undefinedCC118: {
                                     loopStart = e.ticks;
                                     break;
                                 }
@@ -1030,9 +1085,9 @@ export class BasicMIDI {
                                 }
 
                                 // EMIDI/XMI
-                                case MIDIControllers.undefinedCC117LSB:
+                                case MIDIControllers.undefinedCC117:
                                 // EMIDI global loop
-                                case MIDIControllers.undefinedCC119LSB: {
+                                case MIDIControllers.undefinedCC119: {
                                     // A repeated loop end does not indicate the loop
                                     loopEnd = loopEnd === null ? e.ticks : 0;
                                     loopType = "hard";

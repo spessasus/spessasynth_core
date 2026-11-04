@@ -146,7 +146,8 @@ export abstract class Dynamics {
 
 /**
  * The compressor: 1 ms lookahead, the gain recovers linearly, the output has a makeup gain (the "Attack" parameter,
- * which sets how far below the fixed output ceiling the knee sits) and a two-sample average.
+ * which sets how far below the fixed output ceiling the knee sits, the manuals call it Sustain, see `GSCompressor`)
+ * and a two-sample average.
  * @internal
  */
 export class Compressor extends Dynamics {

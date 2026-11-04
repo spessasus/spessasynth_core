@@ -30,8 +30,8 @@ If it is set, the index is the MIDI controller number.
 Below are the defined curve types of modulators:
 
 - 0 Linear - normal linear scale
-- 1 Concave - exponential ramp
-- 2 Convex - logarithmic ramp
+- 1 Concave - logarithmic ramp
+- 2 Convex - exponential ramp, the inverse of concave
 - 3 Switch - 0.5 and below is 0 (or -1 for bipolar), above is 1
 
 ## Default Modulators

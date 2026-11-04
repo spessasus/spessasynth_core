@@ -326,7 +326,7 @@ export class DownloadableSounds extends DLSVerifier {
         for (let i = 0; i < bank.samples.length; i++) {
             const s = bank.samples[i];
             dls.samples.push(DownloadableSoundsSample.fromSFSample(s));
-            progressFunc?.(i / bank.samples.length);
+            progressFunc?.((i + 1) / bank.samples.length);
         }
         for (const p of bank.presets) {
             dls.instruments.push(
@@ -398,6 +398,7 @@ export class DownloadableSounds extends DLSVerifier {
         let written = 0;
         for (const s of this.samples) {
             const out = s.write();
+            written++;
             options.progressFunction?.(written / this.samples.length);
             SpessaLog.info(
                 `%cWrote sample %c${written}. ${s.name}%c of %c${this.samples.length}.`,
@@ -409,7 +410,6 @@ export class DownloadableSounds extends DLSVerifier {
             ptblOffsets.push(currentIndex);
             currentIndex += out.reduce((sum, cur) => sum + cur.length, 0);
             samples.push(...out);
-            written++;
         }
         const wvpl = RIFFChunk.getParts("wvpl", samples, false, true);
         SpessaLog.info("%cSucceeded!", ConsoleColors.recognized);

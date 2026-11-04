@@ -13,6 +13,10 @@ const PARAMETER_RANGES: XGParameterRanges = {
     12: [4, 124]
 };
 
+// Dry/wet push lists
+const LIST_MIX_LEFT = [0xa2, 0xa3];
+const LIST_MIX_RIGHT = [0xa6, 0xa7];
+
 /**
  * PHASER 2 (`48 08`): a stereo phaser with 3 to 5 stages and an LFO phase difference between the sides.
  */
@@ -69,8 +73,8 @@ export class XGPhaser2 extends XGPhaserBase {
                 const mix = this.mixIndex();
                 w[0xa6] = w[0xa2] = PAN_LEFT[mix];
                 w[0xa7] = w[0xa3] = PAN_RIGHT[mix];
-                this.pushCoefficients([0xa2, 0xa3]);
-                this.pushCoefficients([0xa6, 0xa7]);
+                this.pushCoefficients(LIST_MIX_LEFT);
+                this.pushCoefficients(LIST_MIX_RIGHT);
                 break;
             }
             case 10: {

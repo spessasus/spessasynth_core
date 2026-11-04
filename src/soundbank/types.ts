@@ -269,7 +269,7 @@ export type SetSampleFormatOptions = {
            * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
            * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
            *
-           * Note that decompressing usually results in permanent sample quality loss!
+           * Note that compressing usually results in permanent sample quality loss! Decompressing does not restore it.
            */
           format: "pcm";
       }
@@ -279,7 +279,7 @@ export type SetSampleFormatOptions = {
            * - `pcm` - decompresses the sound bank and changes its version to `2.04` (SF2)
            * - `compressed` - compresses the sound bank with a given function and changes its version to `3.0` (SF3)
            *
-           * Note that decompressing usually results in permanent sample quality loss!
+           * Note that compressing usually results in permanent sample quality loss! Decompressing does not restore it.
            */
           format: "compressed";
 
@@ -370,7 +370,7 @@ export interface GenericRange {
  *   - Key: The MIDI note number.
  *   - Value: A set of all velocities this key was pressed with.
  *
- * @group MIDI.Protocol
+ * @group Sound Banks
  */
 export type PresetsWithKeyCombinations<T extends MIDIPatchFull> = Map<
     T,

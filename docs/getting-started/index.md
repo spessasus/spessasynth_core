@@ -114,8 +114,9 @@ You can find all examples in the `examples` directory in this repository.
 
 > **Note**
 >
-> To run these examples, run `npm install` in the `examples` directory,
+> To run these examples, run `npm install` in the root directory of this repository,
 > then run an example with `npx tsx examples/<example name>.ts` from the root directory.
+> The real-time playback examples and `compress_to_sf3.ts` also need `ffmpeg`.
 
 ### MIDI to WAV converter
 

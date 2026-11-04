@@ -45,8 +45,9 @@ const DRIVE_INPUT = 128 / 127;
 const DRIVE_OUTPUT = 127 / 128;
 
 /**
- * The compressor of the multis (parameters 1-4: sustain, attack, level, switch): the Compressor's dynamics with
- * its post gain at +6 dB and a level after it. The compressor runs when it is switched off too.
+ * The compressor of the multis (parameters 1-4: sustain, attack, level, switch, the manuals swap the first two
+ * names, see `GSCompressor`): the Compressor's dynamics with its post gain at +6 dB and a level after it. The
+ * compressor runs when it is switched off too.
  * @internal
  */
 export class MultiCompressor {

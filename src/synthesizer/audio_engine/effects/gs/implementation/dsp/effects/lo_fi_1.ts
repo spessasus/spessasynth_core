@@ -21,12 +21,12 @@ import { ShelfCorners, ShelfEQ } from "../blocks/shelf_eq";
 import { MonoPan } from "../blocks/mono_pan";
 
 /**
- * The gain after the compressor per pre filter (1 bypasses the compressor).
+ * The gain after the compressor per pre-ilter (1 bypasses the compressor).
  */
 const PRE_GAINS = [1, 2, 2, 4, 4, (2 * 127) / 32];
 
 /**
- * The pre filters' low pass: the hardware's bytes (b = 37/128, pole 53/128), 4.0 kHz with -0.11 dB at DC.
+ * The pre-filters' low pass: the hardware's bytes (b = 37/128, pole 53/128), 4.0 kHz with -0.11 dB at DC.
  */
 const PRE_POLE = 53 / 128;
 const PRE_HZ = (32_000 / Math.PI) * Math.atan((1 - PRE_POLE) / (1 + PRE_POLE));
@@ -46,9 +46,9 @@ const POST_FILTERS = [
 ];
 
 /**
- * Lo-Fi 1 (`01 72`): `L+R -> compressor (pre filter) -> low pass -> quantizer -> high pass and dip (post filter)`,
+ * Lo-Fi 1 (`01 72`): `L+R -> compressor (pre-filter) -> low pass -> quantizer -> high pass and dip (post filter)`,
  * mixed with the mono input by the balance, then the EQ and the pan.
- * Parameters: 1 pre filter (1 dry, 2-6 the compressor with a gain of 2 to 7.94, 3 and 5 with a 4 kHz low pass),
+ * Parameters: 1 pre-filter (1 dry, 2-6 the compressor with a gain of 2 to 7.94, 3 and 5 with a 4 kHz low pass),
  * 2 lo-fi type (15 or 11 bits at 16000, 10667 or 8000 Hz), 3 post filter (high pass at 633 or 1595 Hz and a dip at
  * 1 kHz of Q 2, 1 or 0.5), 16 balance (the pan law), 17 low gain, 18 high gain, 19 pan, 20 level. EFX control source
  * 1 modulates the balance, source 2 the pan.
@@ -64,7 +64,7 @@ export class GSLoFi1 extends GSEffect {
     private readonly mix: MonoMix;
     private readonly compressor: Compressor;
     /**
-     * The compressor's own DC blocker, for the dry path and the pre filter that bypasses it.
+     * The compressor's own DC blocker, for the dry path and the pre-filter that bypasses it.
      */
     private readonly dcBlocker: FirstOrderFilter;
     private readonly lowPass: FirstOrderFilter;
@@ -83,7 +83,7 @@ export class GSLoFi1 extends GSEffect {
         super(sampleRate);
         this.mix = new MonoMix(sampleRate);
         this.compressor = new Compressor(sampleRate);
-        // The Compressor's defaults: sustain 72, attack 100
+        // The Compressor's defaults: sustain 72, attack 100 (parameters 1 and 2, see GSCompressor for the names)
         this.compressor.setRecoveryRate(recoveryRate(72));
         this.compressor.setMakeup(detectorGain(100));
         this.dcBlocker = new FirstOrderFilter(sampleRate);
@@ -116,13 +116,13 @@ export class GSLoFi1 extends GSEffect {
             // The dry path waits for the quantizer's latency
             this.dryLine.write(now);
             const h = this.dryLine.read(this.quantizer.latency);
-            // Both paths run, so a pre filter change does not click
+            // Both paths run, so a pre-filter change does not click
             const c = this.compressor.process(x);
             let y = this.quantizer.process(
                 (127 / 128) * this.lowPass.process(this.compressed ? c : now)
             );
             if (this.postOn) {
-                // Every operation saturates: after pre filter 6 the dip clips
+                // Every operation saturates: after pre-filter 6 the dip clips
                 y = saturate(
                     this.dip.process(saturate(this.highPass.process(y)))
                 );

@@ -97,10 +97,10 @@ abstract class GSDriveDelayMulti extends GSMulti {
 /**
  * GTR Multi 1 (`04 00`): `L+R -> compressor -> overdrive/distortion -> 2-band EQ -> amp simulator -> chorus/flanger
  * -> delay`.
- * Parameters: 1-4 compressor sustain, attack, level and switch, 5 drive type (OD, DS), 6 drive, 7 amp type, 8 amp
- * switch, 9 low gain, 10 high gain, 11 drive switch, 12 chorus or flanger, 13 rate (Rate2 column), 14 depth,
- * 15 flanger feedback, 16 chorus level, 17 delay time (Dly4 column), 18 feedback, 19 delay level, 20 level.
- * EFX control source 1 moves the drive, source 2 the delay level.
+ * Parameters: 1-4 compressor sustain, attack (the manuals swap these two names, see `GSCompressor`), level and
+ * switch, 5 drive type (OD, DS), 6 drive, 7 amp type, 8 amp switch, 9 low gain, 10 high gain, 11 drive switch,
+ * 12 chorus or flanger, 13 rate (Rate2 column), 14 depth, 15 flanger feedback, 16 chorus level, 17 delay time (Dly4
+ * column), 18 feedback, 19 delay level, 20 level. EFX control source 1 moves the drive, source 2 the delay level.
  * @internal
  */
 export class GSGuitarMulti1 extends GSDriveDelayMulti {
@@ -282,10 +282,10 @@ export abstract class GSDriveEQMulti extends GSMulti {
 
 /**
  * GTR Multi 2 (`04 01`): `L+R -> compressor -> overdrive/distortion -> amp simulator -> 3-band EQ -> chorus/flanger`.
- * Parameters: 1-4 compressor sustain, attack, level and switch, 5 drive type (OD, DS), 6 drive, 7 amp type, 8 amp
- * switch, 9 drive switch, 10 low gain, 11-13 mid frequency, Q and gain, 14 high gain, 15 chorus or flanger, 16 rate
- * (Rate2 column), 17 depth, 18 flanger feedback, 19 chorus level, 20 level. EFX control source 1 moves the drive,
- * source 2 the chorus level.
+ * Parameters: 1-4 compressor sustain, attack (the manuals swap these two names, see `GSCompressor`), level and
+ * switch, 5 drive type (OD, DS), 6 drive, 7 amp type, 8 amp switch, 9 drive switch, 10 low gain, 11-13 mid-frequency,
+ * Q and gain, 14 high gain, 15 chorus or flanger, 16 rate (Rate2 column), 17 depth, 18 flanger feedback,
+ * 19 chorus level, 20 level. EFX control source 1 moves the drive, source 2 the chorus level.
  * @internal
  */
 export class GSGuitarMulti2 extends GSDriveEQMulti {

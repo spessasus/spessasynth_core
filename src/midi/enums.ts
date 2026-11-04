@@ -117,10 +117,10 @@ export const MIDIControllers = {
     effectControl2LSB: 45,
     undefinedCC14LSB: 46,
     undefinedCC15LSB: 47,
-    undefinedCC16LSB: 48,
-    undefinedCC17LSB: 49,
-    undefinedCC18LSB: 50,
-    undefinedCC19LSB: 51,
+    generalPurposeController1LSB: 48,
+    generalPurposeController2LSB: 49,
+    generalPurposeController3LSB: 50,
+    generalPurposeController4LSB: 51,
     undefinedCC20LSB: 52,
     undefinedCC21LSB: 53,
     undefinedCC22LSB: 54,
@@ -171,24 +171,24 @@ export const MIDIControllers = {
     nonRegisteredParameterMSB: 99,
     registeredParameterLSB: 100,
     registeredParameterMSB: 101,
-    undefinedCC102LSB: 102,
-    undefinedCC103LSB: 103,
-    undefinedCC104LSB: 104,
-    undefinedCC105LSB: 105,
-    undefinedCC106LSB: 106,
-    undefinedCC107LSB: 107,
-    undefinedCC108LSB: 108,
-    undefinedCC109LSB: 109,
-    undefinedCC110LSB: 110,
-    undefinedCC111LSB: 111,
-    undefinedCC112LSB: 112,
-    undefinedCC113LSB: 113,
-    undefinedCC114LSB: 114,
-    undefinedCC115LSB: 115,
-    undefinedCC116LSB: 116,
-    undefinedCC117LSB: 117,
-    undefinedCC118LSB: 118,
-    undefinedCC119LSB: 119,
+    undefinedCC102: 102,
+    undefinedCC103: 103,
+    undefinedCC104: 104,
+    undefinedCC105: 105,
+    undefinedCC106: 106,
+    undefinedCC107: 107,
+    undefinedCC108: 108,
+    undefinedCC109: 109,
+    undefinedCC110: 110,
+    undefinedCC111: 111,
+    undefinedCC112: 112,
+    undefinedCC113: 113,
+    undefinedCC114: 114,
+    undefinedCC115: 115,
+    undefinedCC116: 116,
+    undefinedCC117: 117,
+    undefinedCC118: 118,
+    undefinedCC119: 119,
     allSoundOff: 120,
     resetAllControllers: 121,
     localControlOnOff: 122,
@@ -196,7 +196,98 @@ export const MIDIControllers = {
     omniModeOff: 124,
     omniModeOn: 125,
     monoModeOn: 126,
-    polyModeOn: 127
+    polyModeOn: 127,
+
+    // Deprecated old names, kept until the next major version.
+    // They come last so reverse lookups find the new names first.
+    /**
+     * @deprecated Use {@link MIDIControllers.generalPurposeController1LSB} instead.
+     */
+    undefinedCC16LSB: 48,
+    /**
+     * @deprecated Use {@link MIDIControllers.generalPurposeController2LSB} instead.
+     */
+    undefinedCC17LSB: 49,
+    /**
+     * @deprecated Use {@link MIDIControllers.generalPurposeController3LSB} instead.
+     */
+    undefinedCC18LSB: 50,
+    /**
+     * @deprecated Use {@link MIDIControllers.generalPurposeController4LSB} instead.
+     */
+    undefinedCC19LSB: 51,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC102} instead.
+     */
+    undefinedCC102LSB: 102,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC103} instead.
+     */
+    undefinedCC103LSB: 103,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC104} instead.
+     */
+    undefinedCC104LSB: 104,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC105} instead.
+     */
+    undefinedCC105LSB: 105,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC106} instead.
+     */
+    undefinedCC106LSB: 106,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC107} instead.
+     */
+    undefinedCC107LSB: 107,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC108} instead.
+     */
+    undefinedCC108LSB: 108,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC109} instead.
+     */
+    undefinedCC109LSB: 109,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC110} instead.
+     */
+    undefinedCC110LSB: 110,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC111} instead.
+     */
+    undefinedCC111LSB: 111,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC112} instead.
+     */
+    undefinedCC112LSB: 112,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC113} instead.
+     */
+    undefinedCC113LSB: 113,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC114} instead.
+     */
+    undefinedCC114LSB: 114,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC115} instead.
+     */
+    undefinedCC115LSB: 115,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC116} instead.
+     */
+    undefinedCC116LSB: 116,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC117} instead.
+     */
+    undefinedCC117LSB: 117,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC118} instead.
+     */
+    undefinedCC118LSB: 118,
+    /**
+     * @deprecated Use {@link MIDIControllers.undefinedCC119} instead.
+     */
+    undefinedCC119LSB: 119
 } as const;
 
 /**

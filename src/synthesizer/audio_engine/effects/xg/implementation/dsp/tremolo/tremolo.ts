@@ -11,6 +11,10 @@ const PARAMETER_RANGES: XGParameterRanges = {
     14: [0, 1]
 };
 
+// Input mode push lists
+const LIST_INPUT_COEFFICIENT = [0xaa, 0xb4, 0xb9];
+const LIST_INPUT_ADDRESS = [0x3b, 0x2d, 0x2e];
+
 /**
  * TREMOLO (`46 00`): amplitude and pitch modulation.
  */
@@ -92,8 +96,8 @@ export class XGTremolo extends XGTremoloBase {
                     a[0x2d] = 0x4_01;
                     a[0x2e] = 0x4_02;
                 }
-                this.pushCoefficients([0xaa, 0xb4, 0xb9]);
-                this.pushAddresses([0x3b, 0x2d, 0x2e]);
+                this.pushCoefficients(LIST_INPUT_COEFFICIENT);
+                this.pushAddresses(LIST_INPUT_ADDRESS);
                 this.convert(5);
                 this.convert(7);
                 break;

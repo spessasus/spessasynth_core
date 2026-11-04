@@ -20,6 +20,8 @@ import type {
 export abstract class DefaultXGEffect implements XGEffectBlock {
     /**
      * The currently used processor.
+     * Hidden from the docs as the processor types are internal.
+     * @hidden
      */
     protected processor: DefaultXGEffectProcessor;
     protected readonly outputLeft;
@@ -40,8 +42,9 @@ export abstract class DefaultXGEffect implements XGEffectBlock {
      * @param defaultType The default effect type.
      * @param sampleRate The sample rate, in Hertz.
      * @param maxBufferSize The maximum buffer size the synthesizer can render at once.
-     * Attempting to `.process()` more samples than this will result in an error.
+     * Processing more samples than this is not supported and produces undefined output.
      * @param variation True for the variation and insertion blocks.
+     * @hidden
      */
     protected constructor(
         effectMap: Map<number, DefaultXGEffectProcessorConstructor>,

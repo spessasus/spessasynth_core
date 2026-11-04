@@ -15,10 +15,6 @@
     "searchInDocuments": true,
     "searchInComments": true,
     "treatWarningsAsErrors": true,
-    "intentionallyNotExported": [
-        "DefaultXGEffectProcessor",
-        "DefaultXGEffectProcessorConstructor"
-    ],
     "githubPages": true,
     "excludeNotDocumented": true,
     "customCss": "docs/typedoc/typedoc.css",

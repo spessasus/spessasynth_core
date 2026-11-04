@@ -6,10 +6,10 @@ import { GSDriveEQMulti } from "./guitar_multis";
 /**
  * Bass Multi (`04 05`): `L+R -> compressor -> bass overdrive/distortion -> bass amp simulator -> 3-band EQ ->
  * chorus/flanger`.
- * Parameters: 1-4 compressor sustain, attack, level and switch, 5 drive type (OD, DS), 6 drive, 7 amp type (0-2),
- * 8 amp switch, 9 drive switch, 10 low gain, 11-13 mid frequency, Q and gain, 14 high gain, 15 chorus or flanger,
- * 16 rate (Rate2 column), 17 depth, 18 flanger feedback, 19 chorus level, 20 level. EFX control source 1 moves the
- * drive, source 2 the chorus level.
+ * Parameters: 1-4 compressor sustain, attack (the manuals swap these two names, see `GSCompressor`), level and
+ * switch, 5 drive type (OD, DS), 6 drive, 7 amp type (0-2), 8 amp switch, 9 drive switch, 10 low gain, 11-13 mid- * frequency,
+ * Q and gain, 14 high gain, 15 chorus or flanger, 16 rate (Rate2 column), 17 depth, 18 flanger feedback,
+ * 19 chorus level, 20 level. EFX control source 1 moves the drive, source 2 the chorus level.
  * @internal
  */
 export class GSBassMulti extends GSDriveEQMulti {

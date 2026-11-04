@@ -113,7 +113,10 @@ export function applySnapshot(
     this.xgVariationBlock.applySnapshot(snapshot.xgVariationBlock);
     for (let i = 0; i < this.xgInsertionBlocks.length; i++) {
         const insertion = this.xgInsertionBlocks[i];
-        insertion.applySnapshot(snapshot.xgInsertionBlocks[i]);
+        // The synth may have more insertion blocks than the snapshot (custom blocks)
+        if (i < snapshot.xgInsertionBlocks.length)
+            insertion.applySnapshot(snapshot.xgInsertionBlocks[i]);
+        else insertion.reset();
     }
 
     // Restore user drum sets

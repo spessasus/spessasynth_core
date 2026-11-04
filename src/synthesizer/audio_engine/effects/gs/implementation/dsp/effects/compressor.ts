@@ -5,6 +5,10 @@ import { GSDynamicsEffect } from "./dynamics_effect";
  * Compressor (`01 30`).
  * Parameters: 1 sustain (how fast the gain comes back), 2 attack (the makeup gain: the output ceiling stays, the
  * knee moves), 3 post gain, then the EQ, pan and level.
+ *
+ * The SC-VA and SC-8850 manuals list parameter 1 as Attack and 2 as Sustain, the other way round from the names
+ * here. Only the names differ: parameter 1 still sets how fast the gain recovers (0.09 to 2.25 per second) and
+ * parameter 2 the makeup gain, like in Sound Canvas VA. The multis' compressors and Lo-Fi 1 use the same names.
  * @internal
  */
 export class GSCompressor extends GSDynamicsEffect {

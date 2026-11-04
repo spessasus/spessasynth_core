@@ -902,12 +902,12 @@ export function yamahaSystemExclusive(
                     for (const ch of this.midiChannels) {
                         if (ch.midiParameters.drumMap !== setupNumber) continue;
                         ch.drumParams[drumKey].pitchFine = pitch;
-                        SpessaLog.xgInfo(
-                            `Drum Pitch Fine for key ${drumKey}`,
-                            pitch,
-                            "semitones"
-                        );
                     }
+                    SpessaLog.xgInfo(
+                        `Drum Pitch Fine for key ${drumKey}`,
+                        pitch,
+                        "cents"
+                    );
                     break;
                 }
 

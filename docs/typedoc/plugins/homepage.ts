@@ -29,9 +29,15 @@ export function load(application: Application) {
             .trim();
         if (!title) return;
 
-        event.contents = withoutHeader.replace(
-            /<title>[\s\S]*?<\/title>/,
-            `<title>${escapeHTML(title)}</title>`
-        );
+        // The page kind meta hides the settings panel, which does nothing here
+        event.contents = withoutHeader
+            .replace(
+                /<title>[\s\S]*?<\/title>/,
+                `<title>${escapeHTML(title)}</title>`
+            )
+            .replace(
+                "</head>",
+                '<meta name="page-kind" content="home" />\n</head>'
+            );
     });
 }

@@ -215,7 +215,7 @@ export class DynamicModulatorManager {
                 SpessaLog.xgInfo(
                     `Channel ${this.channel} ${sourceName} LFO amplitude depth control`,
                     normalizedNotCentered * 200,
-                    "dB"
+                    "cB"
                 );
                 break;
             }

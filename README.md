@@ -50,7 +50,7 @@ a more capable MIDI editor, and a faster synthesis engine!
 - **Modular design:** _Easy integration into other projects (only load what you need)_
 - **Flexible:** _It's not just a MIDI player!_
 - **Easy to Use:** _Basic setup is
-  just [two lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
+  just [a few lines of code!](https://spessasus.github.io/spessasynth_core/getting-started#minimal-setup)_
 - **Minimal dependencies:** _Only tiny `fflate` for XMF and `stb-vorbis` for SF3 support!_
 - **Full TypeScript definitions:** _Autocompletion in IDEs!_
 
@@ -163,15 +163,18 @@ a more capable MIDI editor, and a faster synthesis engine!
 - **Easy info access:** _Just
   an [object of strings!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#soundbankinfo)_
 - **Smart trimming:** Trim the sound bank to only include samples used in the MIDI _(down to key and velocity!)_
-- **SF3 conversion:** _Compress SoundFont2 files to SoundFont3 with variable quality!_
+- **SF3 conversion:** _Compress SoundFont2 files to SoundFont3 with an encoder of your choice
+  ([see the example](https://github.com/spessasus/spessasynth_core/blob/master/examples/compress_to_sf3.ts))!_
 - **Easy saving:** _Also just [one function!](https://spessasus.github.io/spessasynth_core/classes/BasicSoundBank/#writesf2)_
+- **SFE support:** _Experimental reading and writing of [SF-Enhanced](https://sfe-team-was-taken.github.io/SFE/) banks!_
 
 #### Read and write SoundFont3 files
 
-- Same features as SoundFont2 but with now with **Ogg Vorbis compression!**
+- Same features as SoundFont2 but now with **Ogg Vorbis compression!**
 - **Variable compression quality:** _You choose between file size and quality!_
 - **Compression preserving:** _Avoid decompressing and recompressing uncompressed samples for minimal quality loss!_
-- **Custom compression function:** _Want a different format than Vorbis? No problem!_
+- **Custom compression function:** _You supply the encoder, so other formats than Vorbis can be written too
+  (SpessaSynth only plays Ogg Vorbis back)._
 
 #### Read and write DLS Level One or Two files
 

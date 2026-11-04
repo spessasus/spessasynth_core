@@ -18,6 +18,11 @@ const LIST_DENSITY_COEFFICIENT = [
     0xa4, 0xa3, 0xa2, 0xa1
 ];
 const LIST_DENSITY_ADDRESS = [0x28, 0x25, 0x29, 0x26, 0x3c, 0x37, 0x36, 0x33];
+// Dry/wet and mono input level push lists
+const LIST_DRY = [0xb9];
+const LIST_WET = [0xbb];
+const LIST_DRY_WET = [0xae, 0xac];
+const LIST_MONO_INPUT = [0x6d, 0x6e];
 
 /**
  * The converter index of the mono input level, which depends on the connection.
@@ -189,9 +194,9 @@ export abstract class XGKaraokeBase extends XGFilterVariationProgram {
                 const mix = this.mixIndex();
                 w[0xac] = w[0xb9] = MIX_DRY[mix] & 0x3_ff;
                 w[0xae] = w[0xbb] = MIX_WET[mix] & 0x3_ff;
-                this.pushCoefficients([0xb9]);
-                this.pushCoefficients([0xbb]);
-                this.pushCoefficients([0xae, 0xac]);
+                this.pushCoefficients(LIST_DRY);
+                this.pushCoefficients(LIST_WET);
+                this.pushCoefficients(LIST_DRY_WET);
                 break;
             }
             case 10: {
@@ -209,7 +214,7 @@ export abstract class XGKaraokeBase extends XGFilterVariationProgram {
             case MONO_INPUT: {
                 // L+R at 0.707 in the system mode, half of that in the insertion mode
                 w[0x6d] = w[0x6e] = this.insertion ? 0xb5 : 0x1_6a;
-                this.pushCoefficients([0x6d, 0x6e]);
+                this.pushCoefficients(LIST_MONO_INPUT);
                 break;
             }
         }

@@ -149,6 +149,7 @@ export class MIDIChannel {
     /**
      * If true, this skips sends as they all go through insertion.
      * Set by {@link SpessaSynthProcessor}.
+     * @internal
      */
     public xgInsertionAssigned = false;
 

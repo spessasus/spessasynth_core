@@ -386,7 +386,7 @@ export function dataEntry(this: MIDIChannel) {
             this.drumParams[parameterFine].variationSend = dataCoarse;
             SpessaLog.coolInfo(
                 `Drum ${parameterFine} Variation Send for ${this.channel}`,
-                dataValue,
+                dataCoarse,
                 ""
             );
             break;

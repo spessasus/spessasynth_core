@@ -41,7 +41,7 @@ import { StbVorbis } from "stb-vorbis";
  * This module handles parsing and writing SoundFont2 (`.sf2`, `.sf3` and `.sfogg`) files.
  * It represents a single sound bank.
  *
- * It also contains support for `.dls` files and experimental read and write support for [64-bit SFE](https://github.com/SFe-Team-was-taken/SFE).
+ * It also contains support for `.dls` files and experimental read and write support for [64-bit SFE](https://sfe-team-was-taken.github.io/SFE/).
  *
  * **Specifications:**
  *
@@ -230,12 +230,17 @@ export class BasicSoundBank {
     /**
      * Copies a given sound bank, cloning all presets, instruments and samples.
      * The sample data is shared with the original, not copied.
+     * Elements sharing a name are all copied, the repeats get a free name like `Piano-1`.
      * @param bank The sound bank to copy.
      */
     public static copyFrom(bank: BasicSoundBank) {
         const copied = new BasicSoundBank(bank.type);
         // One session, so shared instruments and samples are copied once
-        const cloner = new SoundBankCloner(copied);
+        // No reuse by name, same-named elements in the source are all copied
+        const cloner = new SoundBankCloner(copied, {
+            reuseByName: false,
+            reuseChildrenByName: false
+        });
         for (const p of bank.presets) cloner.clonePreset(p);
         copied.soundBankInfo = { ...bank.soundBankInfo };
         copied.defaultModulators = bank.defaultModulators.map((m) =>
@@ -283,8 +288,8 @@ export class BasicSoundBank {
      *
      * > **Warning**
      * >
-     * > Note that decompressing (sample format `pcm`) usually results
-     * > in permanent sample quality loss!
+     * > Note that compressing (sample format `compressed`) usually results
+     * > in permanent sample quality loss! Decompressing does not restore it.
      * > This method is memory and CPU intensive with large sound banks.
      *
      * @param options Options associated with setting the sample format.

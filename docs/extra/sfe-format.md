@@ -2,7 +2,7 @@
 title: SFE Format
 ---
 
-# The SFE Format
+# SFE Format
 
 This page describes the SFE (SF-Enhanced 4) sound bank format exactly as `spessasynth_core` reads and writes it.
 SFE is a superset of SoundFont 2.04. Everything not listed here works as in the

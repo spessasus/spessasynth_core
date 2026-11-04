@@ -1,4 +1,5 @@
 import type { BasicSample } from "../../soundbank/basic_soundbank/basic_sample";
+import { DLSSample } from "../../soundbank/downloadable_sounds/dls_sample";
 
 interface DecodedEntry {
     bytes: number;
@@ -9,7 +10,8 @@ interface DecodedEntry {
 /**
  * Keeps the decoded sample data under a size budget by releasing the least recently used samples.
  * A released sample decodes again the next time it plays.
- * Samples that cannot decode again (replaced float data) are never released.
+ * Samples that cannot decode again (replaced float data) are never released
+ * and are not tracked, so they do not count towards the budget.
  * @internal
  */
 export class DecodedSampleCache {
@@ -25,6 +27,9 @@ export class DecodedSampleCache {
 
     // Map order is the use order, the first entry is the least recently used
     private readonly entries = new Map<BasicSample, DecodedEntry>();
+
+    // DLS samples whose decoded data could not be released, these are not tracked
+    private readonly unreleasable = new WeakSet<BasicSample>();
 
     private readonly voiceCache: Map<number, unknown>;
 
@@ -51,7 +56,19 @@ export class DecodedSampleCache {
         if (entry) {
             // Move to the end
             this.entries.delete(sample);
-        } else {
+        }
+        // Float data has nothing to decode again from, so it can't be released.
+        // DLS samples in formats other than s16le report float32 too, but they can be released.
+        // Those are tracked until releasing them fails
+        if (
+            this.unreleasable.has(sample) ||
+            (sample.storedForm === "float32" && !(sample instanceof DLSSample))
+        ) {
+            // The data may have been replaced after it was tracked
+            if (entry) this.totalBytes -= entry.bytes;
+            return;
+        }
+        if (!entry) {
             entry = {
                 bytes: sample.getAudioData().byteLength,
                 cacheKeys: new Set()
@@ -77,7 +94,11 @@ export class DecodedSampleCache {
             this.entries.delete(sample);
             this.totalBytes -= entry.bytes;
             // Release only drops data that can be decoded again
-            sample.releaseDecoded();
+            if (!sample.releaseDecoded()) {
+                // The data stays, so keep its cached voices and stop counting it
+                this.unreleasable.add(sample);
+                continue;
+            }
             // Cached voices hold the data too, playing voices keep their own reference
             for (const key of entry.cacheKeys) {
                 this.voiceCache.delete(key);

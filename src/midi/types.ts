@@ -125,7 +125,7 @@ export interface MIDILoop {
      * the start of the file to ensure that synthesizer is in the correct state.
      * This is the default behavior.
      *
-     * Soft loop types are enabled for Touhou loop points (CC 2 and CC 4).
+     * Soft loop types are enabled for Touhou loop points (CC 2 and CC 4) and RPG Maker loop points (CC 111).
      */
     type: "soft" | "hard";
 }
@@ -184,6 +184,7 @@ export interface RMIDIWriteOptions {
      * > Writing always sets the info encoding to `utf-8`,
      * > since the default fields (such as the creation date) are always written.
      * > This behavior is forced due to lack of support for other encodings by the `TextEncoder` class.
+     * > Existing info chunks in another encoding (see {@link BasicMIDI.infoEncoding}) are re-encoded to UTF-8.
      *
      */
     metadata: Partial<Omit<RMIDInfoData, "infoEncoding">>;
@@ -196,7 +197,7 @@ export interface RMIDIWriteOptions {
     /**
      * The sound bank instance that `soundBankBinary` contains.
      * Used for correcting bank and program changes when `correctBankOffset` is enabled.
-     * It is required in that case, an error is thrown if it is omitted.
+     * If it is omitted, the correction is skipped and a warning is logged.
      */
     soundBank?: BasicSoundBank;
 }

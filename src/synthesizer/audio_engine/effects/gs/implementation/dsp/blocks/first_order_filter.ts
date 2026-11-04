@@ -25,6 +25,17 @@ export function prewarp(frequency: number, sampleRate: number) {
 }
 
 /**
+ * The corner of the hardware's one-pole low pass `(1 - B) x + B y[n-1]` at 32 kHz (-3 dB, the inverse of
+ * `FirstOrderFilter.setDamp`).
+ * @param pole B.
+ * @internal
+ */
+export function dampCorner(pole: number) {
+    const k = (1 + pole * pole) / (2 * pole);
+    return (Math.acos(2 - k) * 32_000) / (2 * Math.PI);
+}
+
+/**
  * A first order section, `y = b0 x + b1 x[n-1] + a1 y[n-1]`, designed with the bilinear transform.
  * The tone filters, the shelves and the DC blockers of the Sound Canvas are all this section.
  * @internal
